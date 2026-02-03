@@ -4,6 +4,7 @@ import { ref, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import CommentSection from '@/Components/CommentSection.vue';
+import VideoPlayer from '@/Components/VideoPlayer.vue';
 import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -11,6 +12,19 @@ const props = defineProps({
     relatedVideos: Array,
     userLike: String,
     isSubscribed: Boolean,
+});
+
+const hlsPlaylistUrl = computed(() => {
+    if (props.video.qualities_available?.length > 1 && !props.video.qualities_available?.includes('original') || 
+        (props.video.qualities_available?.length > 1 && props.video.qualities_available?.some(q => q !== 'original'))) {
+        // Construct HLS master playlist URL
+        const videoPath = props.video.video_path;
+        if (videoPath) {
+            const basePath = videoPath.substring(0, videoPath.lastIndexOf('/'));
+            return `/storage/${basePath}/processed/master.m3u8`;
+        }
+    }
+    return '';
 });
 
 const page = usePage();
@@ -94,20 +108,18 @@ const formattedViews = computed(() => {
             <div class="flex-1">
                 <!-- Video Player -->
                 <div class="aspect-video bg-black rounded-xl overflow-hidden">
-                    <video
-                        controls
-                        autoplay
-                        class="w-full h-full"
+                    <VideoPlayer
+                        :src="video.video_url"
                         :poster="video.thumbnail_url"
-                    >
-                        <source :src="video.video_url" type="video/mp4" />
-                        Your browser does not support the video tag.
-                    </video>
+                        :qualities="video.qualities_available || []"
+                        :hls-playlist="hlsPlaylistUrl"
+                        :autoplay="true"
+                    />
                 </div>
 
                 <!-- Video Info -->
                 <div class="mt-4">
-                    <h1 class="text-xl font-bold text-white">{{ video.title }}</h1>
+                    <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ video.title }}</h1>
                     
                     <div class="flex flex-wrap items-center justify-between gap-4 mt-4">
                         <!-- Channel Info -->
@@ -115,13 +127,13 @@ const formattedViews = computed(() => {
                             <Link :href="`/channel/${video.user.username}`" class="flex items-center gap-3">
                                 <div class="w-10 h-10 avatar">
                                     <img v-if="video.user.avatar" :src="video.user.avatar" :alt="video.user.username" class="w-full h-full object-cover" />
-                                    <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white font-medium">
+                                    <div v-else class="w-full h-full flex items-center justify-center text-white font-medium" style="background-color: var(--color-accent);">
                                         {{ video.user.username.charAt(0).toUpperCase() }}
                                     </div>
                                 </div>
                                 <div>
-                                    <p class="font-medium text-white">{{ video.user.username }}</p>
-                                    <p class="text-sm text-dark-400">{{ video.user.subscriber_count }} subscribers</p>
+                                    <p class="font-medium" style="color: var(--color-text-primary);">{{ video.user.username }}</p>
+                                    <p class="text-sm" style="color: var(--color-text-muted);">{{ video.user.subscriber_count }} subscribers</p>
                                 </div>
                             </Link>
                             
@@ -139,24 +151,20 @@ const formattedViews = computed(() => {
 
                         <!-- Actions -->
                         <div class="flex items-center gap-2">
-                            <div class="flex items-center bg-dark-800 rounded-full">
+                            <div class="flex items-center rounded-full" style="background-color: var(--color-bg-card);">
                                 <button
                                     @click="handleLike"
-                                    :class="[
-                                        'flex items-center gap-2 px-4 py-2 rounded-l-full hover:bg-dark-700',
-                                        liked ? 'text-primary-500' : 'text-dark-300'
-                                    ]"
+                                    class="flex items-center gap-2 px-4 py-2 rounded-l-full hover:opacity-80"
+                                    :style="{ color: liked ? 'var(--color-accent)' : 'var(--color-text-secondary)' }"
                                 >
                                     <ThumbsUp class="w-5 h-5" :fill="liked ? 'currentColor' : 'none'" />
                                     <span>{{ likesCount }}</span>
                                 </button>
-                                <div class="w-px h-6 bg-dark-700"></div>
+                                <div class="w-px h-6" style="background-color: var(--color-border);"></div>
                                 <button
                                     @click="handleDislike"
-                                    :class="[
-                                        'flex items-center gap-2 px-4 py-2 rounded-r-full hover:bg-dark-700',
-                                        disliked ? 'text-primary-500' : 'text-dark-300'
-                                    ]"
+                                    class="flex items-center gap-2 px-4 py-2 rounded-r-full hover:opacity-80"
+                                    :style="{ color: disliked ? 'var(--color-accent)' : 'var(--color-text-secondary)' }"
                                 >
                                     <ThumbsDown class="w-5 h-5" :fill="disliked ? 'currentColor' : 'none'" />
                                 </button>
@@ -176,16 +184,17 @@ const formattedViews = computed(() => {
 
                     <!-- Description -->
                     <div class="card p-4 mt-4">
-                        <p class="text-dark-400 text-sm mb-2">
+                        <p class="text-sm mb-2" style="color: var(--color-text-muted);">
                             {{ formattedViews }} views • {{ new Date(video.published_at).toLocaleDateString() }}
                         </p>
-                        <p class="text-dark-200 whitespace-pre-wrap">{{ video.description }}</p>
+                        <p class="whitespace-pre-wrap" style="color: var(--color-text-secondary);">{{ video.description }}</p>
                         
                         <div v-if="video.tags && video.tags.length" class="flex flex-wrap gap-2 mt-4">
                             <span
                                 v-for="tag in video.tags"
                                 :key="tag"
-                                class="px-2 py-1 bg-dark-700 rounded text-sm text-dark-300"
+                                class="px-2 py-1 rounded text-sm"
+                                style="background-color: var(--color-bg-secondary); color: var(--color-text-secondary);"
                             >
                                 #{{ tag }}
                             </span>
@@ -199,7 +208,7 @@ const formattedViews = computed(() => {
 
             <!-- Sidebar -->
             <div class="lg:w-96">
-                <h3 class="font-medium text-white mb-4">Related Videos</h3>
+                <h3 class="font-medium mb-4" style="color: var(--color-text-primary);">Related Videos</h3>
                 <div class="space-y-4">
                     <VideoCard
                         v-for="relatedVideo in relatedVideos"

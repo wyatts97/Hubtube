@@ -50,6 +50,9 @@ class SiteSettings extends Page implements HasForms
             'ffmpeg_path' => Setting::get('ffmpeg_path', ''),
             'ffprobe_path' => Setting::get('ffprobe_path', ''),
             'video_quality_preset' => Setting::get('video_quality_preset', 'medium'),
+            'multi_resolution_enabled' => Setting::get('multi_resolution_enabled', true),
+            'enabled_resolutions' => Setting::get('enabled_resolutions', ['360p', '480p', '720p']),
+            'generate_hls' => Setting::get('generate_hls', true),
             'watermark_enabled' => Setting::get('watermark_enabled', false),
             'watermark_image' => Setting::get('watermark_image', ''),
             'watermark_position' => Setting::get('watermark_position', 'bottom-right'),
@@ -166,6 +169,29 @@ class SiteSettings extends Page implements HasForms
                                                 'slow' => 'Slow (Higher Quality)',
                                             ])
                                             ->default('medium'),
+                                        Toggle::make('multi_resolution_enabled')
+                                            ->label('Enable Multi-Resolution Transcoding')
+                                            ->helperText('Create multiple resolution versions of uploaded videos')
+                                            ->default(true)
+                                            ->reactive(),
+                                        \Filament\Forms\Components\CheckboxList::make('enabled_resolutions')
+                                            ->label('Enabled Resolutions')
+                                            ->options([
+                                                '240p' => '240p (426x240) - Low bandwidth',
+                                                '360p' => '360p (640x360) - Mobile',
+                                                '480p' => '480p (854x480) - SD',
+                                                '720p' => '720p (1280x720) - HD',
+                                                '1080p' => '1080p (1920x1080) - Full HD',
+                                            ])
+                                            ->default(['360p', '480p', '720p'])
+                                            ->helperText('Select which resolutions to generate. Original quality is always preserved.')
+                                            ->visible(fn ($get) => $get('multi_resolution_enabled'))
+                                            ->columns(2),
+                                        Toggle::make('generate_hls')
+                                            ->label('Generate HLS Streaming')
+                                            ->helperText('Create HLS playlists for adaptive bitrate streaming')
+                                            ->default(true)
+                                            ->visible(fn ($get) => $get('multi_resolution_enabled')),
                                     ])->columns(2),
                                 Section::make('Watermark')
                                     ->schema([

@@ -135,7 +135,7 @@ class ProcessVideoJob implements ShouldQueue
         }
 
         $qualities = [];
-        $targetQualities = [
+        $allQualities = [
             '240p' => ['width' => 426, 'height' => 240, 'bitrate' => '400k'],
             '360p' => ['width' => 640, 'height' => 360, 'bitrate' => '800k'],
             '480p' => ['width' => 854, 'height' => 480, 'bitrate' => '1400k'],
@@ -153,14 +153,34 @@ class ProcessVideoJob implements ShouldQueue
             $this->generateAnimatedPreview($inputPath, $outputDir, $videoInfo['duration']);
         }
 
-        foreach ($targetQualities as $quality => $settings) {
-            if ($videoInfo['height'] >= $settings['height']) {
-                $this->transcodeToQuality($inputPath, $outputDir, $quality, $settings);
-                $qualities[] = $quality;
+        // Check if multi-resolution transcoding is enabled
+        $multiResolutionEnabled = Setting::get('multi_resolution_enabled', true);
+        
+        if ($multiResolutionEnabled) {
+            // Get enabled resolutions from settings
+            $enabledResolutions = Setting::get('enabled_resolutions', ['360p', '480p', '720p']);
+            
+            // Ensure it's an array
+            if (is_string($enabledResolutions)) {
+                $enabledResolutions = json_decode($enabledResolutions, true) ?? ['360p', '480p', '720p'];
+            }
+            
+            foreach ($allQualities as $quality => $settings) {
+                // Only transcode if: resolution is enabled AND source video is large enough
+                if (in_array($quality, $enabledResolutions) && $videoInfo['height'] >= $settings['height']) {
+                    $this->transcodeToQuality($inputPath, $outputDir, $quality, $settings);
+                    $qualities[] = $quality;
+                }
+            }
+
+            // Generate HLS playlist if enabled and we have qualities
+            if (!empty($qualities) && Setting::get('generate_hls', true)) {
+                $this->generateHlsPlaylist($outputDir, $qualities);
             }
         }
-
-        $this->generateHlsPlaylist($outputDir, $qualities);
+        
+        // Always add 'original' to indicate the original file is available
+        $qualities[] = 'original';
 
         return $qualities;
     }
@@ -296,31 +316,50 @@ class ProcessVideoJob implements ShouldQueue
         
         $output = "{$outputDir}/{$quality}.mp4";
         
-        // Build video filter chain
-        $videoFilters = ["scale={$settings['width']}:{$settings['height']}"];
+        // Check if watermark is enabled and valid
+        $watermarkInput = $this->getWatermarkInputs();
+        $hasWatermark = !empty($watermarkInput);
         
-        // Add watermark if enabled
-        $watermarkFilter = $this->getWatermarkFilter($settings['width']);
-        if ($watermarkFilter) {
-            $videoFilters[] = $watermarkFilter;
+        if ($hasWatermark) {
+            // Use -filter_complex for watermark overlay (multiple inputs)
+            $filterComplex = $this->buildWatermarkFilterComplex($settings['width'], $settings['height']);
+            
+            $cmd = sprintf(
+                '%s -y -i %s %s -filter_complex "%s" -map "[outv]" -map 0:a? -c:v libx264 -preset %s -b:v %s -c:a aac -b:a 128k -threads %d -movflags +faststart %s 2>&1',
+                $ffmpeg,
+                escapeshellarg($inputPath),
+                $watermarkInput,
+                $filterComplex,
+                $preset,
+                $settings['bitrate'],
+                $threads,
+                escapeshellarg($output)
+            );
+        } else {
+            // Simple scale filter without watermark
+            $cmd = sprintf(
+                '%s -y -i %s -vf "scale=%d:%d" -c:v libx264 -preset %s -b:v %s -c:a aac -b:a 128k -threads %d -movflags +faststart %s 2>&1',
+                $ffmpeg,
+                escapeshellarg($inputPath),
+                $settings['width'],
+                $settings['height'],
+                $preset,
+                $settings['bitrate'],
+                $threads,
+                escapeshellarg($output)
+            );
         }
-        
-        $vfString = implode(',', $videoFilters);
-        
-        $cmd = sprintf(
-            '%s -y -i %s %s -vf "%s" -c:v libx264 -preset %s -b:v %s -c:a aac -b:a 128k -threads %d -movflags +faststart %s 2>&1',
-            $ffmpeg,
-            escapeshellarg($inputPath),
-            $this->getWatermarkInputs(),
-            $vfString,
-            $preset,
-            $settings['bitrate'],
-            $threads,
-            escapeshellarg($output)
-        );
 
         Log::info('Transcoding video', ['quality' => $quality, 'command' => $cmd]);
-        shell_exec($cmd);
+        $result = shell_exec($cmd);
+        
+        // Check if output file was created successfully
+        if (!file_exists($output) || filesize($output) === 0) {
+            Log::error('Transcoding failed', [
+                'quality' => $quality,
+                'output' => $result,
+            ]);
+        }
     }
 
     protected function getWatermarkInputs(): string
@@ -342,22 +381,8 @@ class ProcessVideoJob implements ShouldQueue
         return '-i ' . escapeshellarg($watermarkPath);
     }
 
-    protected function getWatermarkFilter(int $videoWidth): ?string
+    protected function buildWatermarkFilterComplex(int $videoWidth, int $videoHeight): string
     {
-        if (!Setting::get('watermark_enabled', false)) {
-            return null;
-        }
-        
-        $watermarkImage = Setting::get('watermark_image', '');
-        if (empty($watermarkImage)) {
-            return null;
-        }
-        
-        $watermarkPath = Storage::disk('public')->path($watermarkImage);
-        if (!file_exists($watermarkPath)) {
-            return null;
-        }
-        
         $position = Setting::get('watermark_position', 'bottom-right');
         $opacity = Setting::get('watermark_opacity', 70) / 100;
         $scale = Setting::get('watermark_scale', 15) / 100;
@@ -381,8 +406,11 @@ class ProcessVideoJob implements ShouldQueue
         
         $pos = $positions[$position] ?? $positions['bottom-right'];
         
-        // Build the filter: scale watermark, apply opacity, then overlay
-        return "[1:v]scale={$wmWidth}:-1,format=rgba,colorchannelmixer=aa={$opacity}[wm];[0:v][wm]overlay={$pos}";
+        // Build the complex filter:
+        // 1. Scale the video to target resolution
+        // 2. Scale the watermark and apply opacity
+        // 3. Overlay watermark on video
+        return "[0:v]scale={$videoWidth}:{$videoHeight}[scaled];[1:v]scale={$wmWidth}:-1,format=rgba,colorchannelmixer=aa={$opacity}[wm];[scaled][wm]overlay={$pos}[outv]";
     }
 
     protected function generateHlsPlaylist(string $outputDir, array $qualities): void
