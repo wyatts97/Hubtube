@@ -24,15 +24,17 @@ class GiftSeeder extends Seeder
         ];
 
         foreach ($gifts as $index => $gift) {
-            Gift::create([
-                'name' => $gift['name'],
-                'slug' => Str::slug($gift['name']),
-                'icon' => $gift['icon'],
-                'price' => $gift['price'],
-                'animation_type' => $gift['animation_type'],
-                'is_active' => true,
-                'sort_order' => $index + 1,
-            ]);
+            Gift::firstOrCreate(
+                ['slug' => Str::slug($gift['name'])],
+                [
+                    'name' => $gift['name'],
+                    'icon' => $gift['icon'],
+                    'price' => $gift['price'],
+                    'animation_type' => $gift['animation_type'],
+                    'is_active' => true,
+                    'sort_order' => $index + 1,
+                ]
+            );
         }
     }
 }
