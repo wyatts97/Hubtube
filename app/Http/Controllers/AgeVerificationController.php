@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -16,30 +17,37 @@ class AgeVerificationController extends Controller
 
     public function verify(Request $request): RedirectResponse
     {
-        // Store in session (may not work with Redis issues)
+        // Store in session
         try {
             $request->session()->put('age_verified', true);
             $request->session()->save();
         } catch (\Exception $e) {
-            // Continue even if session fails
+            \Log::error('Session save failed: ' . $e->getMessage());
         }
-        
-        // Set cookie directly using PHP's setcookie for maximum reliability
-        // This bypasses Laravel's cookie encryption and queuing
-        $expires = time() + (60 * 60 * 24); // 24 hours
-        setcookie('age_verified', 'true', [
-            'expires' => $expires,
-            'path' => '/',
-            'domain' => '',  // Empty string = current domain only
-            'secure' => false,  // Allow HTTP (not just HTTPS)
-            'httponly' => false,  // Allow JavaScript access if needed
-            'samesite' => 'Lax',  // Prevent CSRF but allow normal navigation
-        ]);
 
         // Get intended URL or default to home
-        $intended = $request->session()->get('url.intended', route('home'));
+        $intended = route('home');
+        try {
+            $intended = $request->session()->get('url.intended', route('home'));
+        } catch (\Exception $e) {
+            // Use default
+        }
         
-        return redirect($intended);
+        // Create cookie that lasts 24 hours
+        // Using Cookie::make with explicit parameters
+        $cookie = cookie(
+            'age_verified',     // name
+            'true',             // value
+            60 * 24,            // minutes (24 hours)
+            '/',                // path
+            null,               // domain (null = current domain)
+            false,              // secure (false = allow HTTP)
+            false               // httpOnly (false = allow JS access)
+        );
+
+        \Log::debug('Age verification confirmed, redirecting to: ' . $intended);
+        
+        return redirect($intended)->withCookie($cookie);
     }
 
     public function decline(): RedirectResponse

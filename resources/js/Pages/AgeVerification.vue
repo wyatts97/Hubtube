@@ -1,16 +1,29 @@
 <script setup>
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
-import { ShieldAlert } from 'lucide-vue-next';
+import { ref } from 'vue';
+import { ShieldAlert, Loader2 } from 'lucide-vue-next';
 
 const page = usePage();
+const isSubmitting = ref(false);
 
-// Get CSRF token from Inertia props (most reliable) or meta tag as fallback
-const csrfToken = computed(() => {
-    return page.props.csrf_token || 
-           document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
-           '';
-});
+// Set cookie using JavaScript (most reliable method)
+const setCookie = (name, value, days) => {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+};
+
+const confirm = () => {
+    isSubmitting.value = true;
+    
+    // Set the cookie BEFORE redirecting
+    setCookie('age_verified', 'true', 1); // 1 day
+    
+    // Small delay to ensure cookie is set, then redirect
+    setTimeout(() => {
+        window.location.href = '/';
+    }, 100);
+};
 
 const decline = () => {
     window.location.href = '/age-verify/decline';
@@ -37,19 +50,19 @@ const decline = () => {
                     By clicking "I am 18 or older", you confirm that you are at least 18 years of age and consent to viewing adult content.
                 </p>
 
-                <!-- Use standard HTML form for reliable CSRF handling -->
-                <form method="POST" action="/age-verify" class="flex flex-col sm:flex-row gap-4">
-                    <input type="hidden" name="_token" :value="csrfToken" />
+                <div class="flex flex-col sm:flex-row gap-4">
                     <button 
-                        type="submit"
-                        class="btn btn-primary flex-1 py-3"
+                        @click="confirm"
+                        :disabled="isSubmitting"
+                        class="btn btn-primary flex-1 py-3 inline-flex items-center justify-center gap-2"
                     >
-                        I am 18 or older
+                        <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin" />
+                        {{ isSubmitting ? 'Entering...' : 'I am 18 or older' }}
                     </button>
-                    <button type="button" @click="decline" class="btn btn-secondary flex-1 py-3">
+                    <button type="button" @click="decline" :disabled="isSubmitting" class="btn btn-secondary flex-1 py-3">
                         Exit
                     </button>
-                </form>
+                </div>
 
                 <p class="text-sm mt-6" style="color: var(--color-text-muted);">
                     By entering this site, you agree to our
