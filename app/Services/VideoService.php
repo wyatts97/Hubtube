@@ -60,7 +60,7 @@ class VideoService
     public function delete(Video $video): void
     {
         if ($video->video_path) {
-            Storage::disk('videos')->delete($video->video_path);
+            Storage::disk('public')->delete($video->video_path);
         }
 
         if ($video->thumbnail) {
@@ -72,9 +72,10 @@ class VideoService
 
     protected function handleVideoUpload(Video $video, UploadedFile $file): void
     {
+        // Store in public storage for direct access when FFmpeg is not available
         $path = $file->store(
             "videos/{$video->user_id}/{$video->uuid}",
-            'videos'
+            'public'
         );
 
         $video->update([

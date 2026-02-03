@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,7 +13,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable implements MustVerifyEmail, FilamentUser
 {
     use HasApiTokens, HasFactory, HasRoles, Notifiable;
 
@@ -172,5 +174,23 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->is_pro 
             ? config('hubtube.limits.pro.max_video_size')
             : config('hubtube.limits.free.max_video_size');
+    }
+
+    public function getFilamentName(): string
+    {
+        return $this->username ?? $this->email;
+    }
+
+    public function getNameAttribute(): string
+    {
+        if ($this->first_name || $this->last_name) {
+            return trim($this->first_name . ' ' . $this->last_name);
+        }
+        return $this->username ?? '';
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->is_admin;
     }
 }

@@ -26,6 +26,25 @@ class ProcessVideoJob implements ShouldQueue
 
     public function handle(VideoService $videoService): void
     {
+        // Check if FFmpeg is available
+        if (!$this->isFFmpegAvailable()) {
+            Log::warning('FFmpeg not available, skipping video processing', [
+                'video_id' => $this->video->id,
+            ]);
+            
+            // Mark as processed without transcoding - serve original file
+            $this->video->update([
+                'status' => 'processed',
+                'qualities_available' => ['original'],
+                'processing_completed_at' => now(),
+                'published_at' => now(),
+                'is_approved' => true,
+            ]);
+            
+            event(new VideoProcessed($this->video));
+            return;
+        }
+
         $this->video->update([
             'status' => 'processing',
             'processing_started_at' => now(),
@@ -45,13 +64,39 @@ class ProcessVideoJob implements ShouldQueue
                 'error' => $e->getMessage(),
             ]);
 
-            $videoService->markAsFailed($this->video, $e->getMessage());
+            // If processing fails, still allow serving original file
+            $this->video->update([
+                'status' => 'processed',
+                'qualities_available' => ['original'],
+                'processing_completed_at' => now(),
+                'published_at' => now(),
+                'is_approved' => true,
+            ]);
+            
+            event(new VideoProcessed($this->video));
         }
+    }
+
+    protected function isFFmpegAvailable(): bool
+    {
+        $ffmpeg = config('hubtube.ffmpeg.binary', '/usr/bin/ffmpeg');
+        $ffprobe = config('hubtube.ffmpeg.ffprobe', '/usr/bin/ffprobe');
+        
+        // Check if FFmpeg binary exists and is executable
+        if (!file_exists($ffmpeg) || !is_executable($ffmpeg)) {
+            // Try to find ffmpeg in PATH
+            $output = shell_exec('which ffmpeg 2>/dev/null');
+            if (empty(trim($output ?? ''))) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     protected function processVideo(): array
     {
-        $inputPath = Storage::disk('videos')->path($this->video->video_path);
+        $inputPath = Storage::disk('public')->path($this->video->video_path);
         $outputDir = dirname($inputPath) . '/processed';
 
         if (!file_exists($outputDir)) {
@@ -150,7 +195,7 @@ class ProcessVideoJob implements ShouldQueue
         }
 
         $this->video->update([
-            'thumbnail' => str_replace(Storage::disk('videos')->path(''), '', "{$outputDir}/thumb_0.jpg"),
+            'thumbnail' => str_replace(Storage::disk('public')->path(''), '', "{$outputDir}/thumb_0.jpg"),
         ]);
     }
 

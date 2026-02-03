@@ -204,6 +204,19 @@ class Video extends Model
         return asset('storage/' . $this->thumbnail);
     }
 
+    public function getVideoUrlAttribute(): ?string
+    {
+        if (!$this->video_path) {
+            return null;
+        }
+
+        if (config('hubtube.storage.cdn_enabled')) {
+            return config('hubtube.storage.cdn_url') . '/' . $this->video_path;
+        }
+
+        return asset('storage/' . $this->video_path);
+    }
+
     public function hasPurchasedBy(?User $user): bool
     {
         if (!$user) {
