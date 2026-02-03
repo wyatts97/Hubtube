@@ -6,6 +6,7 @@ use App\Models\Comment;
 use App\Models\Video;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CommentController extends Controller
 {
@@ -68,57 +69,63 @@ class CommentController extends Controller
 
     public function like(Request $request, Comment $comment): JsonResponse
     {
-        $existing = $comment->likes()
-            ->where('user_id', $request->user()->id)
-            ->first();
+        return DB::transaction(function () use ($request, $comment) {
+            $existing = $comment->likes()
+                ->where('user_id', $request->user()->id)
+                ->lockForUpdate()
+                ->first();
 
-        if ($existing) {
-            if ($existing->type === 'like') {
-                $existing->delete();
-                $comment->decrement('likes_count');
-                return response()->json(['liked' => false, 'disliked' => false]);
-            } else {
-                $existing->update(['type' => 'like']);
-                $comment->increment('likes_count');
-                $comment->decrement('dislikes_count');
-                return response()->json(['liked' => true, 'disliked' => false]);
+            if ($existing) {
+                if ($existing->type === 'like') {
+                    $existing->delete();
+                    $comment->decrement('likes_count');
+                    return response()->json(['liked' => false, 'disliked' => false]);
+                } else {
+                    $existing->update(['type' => 'like']);
+                    $comment->increment('likes_count');
+                    $comment->decrement('dislikes_count');
+                    return response()->json(['liked' => true, 'disliked' => false]);
+                }
             }
-        }
 
-        $comment->likes()->create([
-            'user_id' => $request->user()->id,
-            'type' => 'like',
-        ]);
-        $comment->increment('likes_count');
+            $comment->likes()->create([
+                'user_id' => $request->user()->id,
+                'type' => 'like',
+            ]);
+            $comment->increment('likes_count');
 
-        return response()->json(['liked' => true, 'disliked' => false]);
+            return response()->json(['liked' => true, 'disliked' => false]);
+        });
     }
 
     public function dislike(Request $request, Comment $comment): JsonResponse
     {
-        $existing = $comment->likes()
-            ->where('user_id', $request->user()->id)
-            ->first();
+        return DB::transaction(function () use ($request, $comment) {
+            $existing = $comment->likes()
+                ->where('user_id', $request->user()->id)
+                ->lockForUpdate()
+                ->first();
 
-        if ($existing) {
-            if ($existing->type === 'dislike') {
-                $existing->delete();
-                $comment->decrement('dislikes_count');
-                return response()->json(['liked' => false, 'disliked' => false]);
-            } else {
-                $existing->update(['type' => 'dislike']);
-                $comment->decrement('likes_count');
-                $comment->increment('dislikes_count');
-                return response()->json(['liked' => false, 'disliked' => true]);
+            if ($existing) {
+                if ($existing->type === 'dislike') {
+                    $existing->delete();
+                    $comment->decrement('dislikes_count');
+                    return response()->json(['liked' => false, 'disliked' => false]);
+                } else {
+                    $existing->update(['type' => 'dislike']);
+                    $comment->decrement('likes_count');
+                    $comment->increment('dislikes_count');
+                    return response()->json(['liked' => false, 'disliked' => true]);
+                }
             }
-        }
 
-        $comment->likes()->create([
-            'user_id' => $request->user()->id,
-            'type' => 'dislike',
-        ]);
-        $comment->increment('dislikes_count');
+            $comment->likes()->create([
+                'user_id' => $request->user()->id,
+                'type' => 'dislike',
+            ]);
+            $comment->increment('dislikes_count');
 
-        return response()->json(['liked' => false, 'disliked' => true]);
+            return response()->json(['liked' => false, 'disliked' => true]);
+        });
     }
 }

@@ -191,12 +191,34 @@ class Video extends Model
         return sprintf('%d:%02d', $minutes, $secs);
     }
 
-    public function getThumbnailUrlAttribute(): string
+    public function getThumbnailUrlAttribute(): ?string
     {
+        if (!$this->thumbnail) {
+            return null;
+        }
+
         if (config('hubtube.storage.cdn_enabled')) {
             return config('hubtube.storage.cdn_url') . '/' . $this->thumbnail;
         }
 
         return asset('storage/' . $this->thumbnail);
+    }
+
+    public function hasPurchasedBy(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        return $this->transactions()
+            ->where('buyer_id', $user->id)
+            ->where(function ($query) {
+                $query->where('type', 'purchase')
+                    ->orWhere(function ($q) {
+                        $q->where('type', 'rental')
+                            ->where('expires_at', '>', now());
+                    });
+            })
+            ->exists();
     }
 }

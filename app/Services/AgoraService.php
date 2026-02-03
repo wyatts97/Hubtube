@@ -10,13 +10,22 @@ class AgoraService
 
     public function __construct()
     {
-        $this->appId = config('hubtube.agora.app_id');
-        $this->appCertificate = config('hubtube.agora.app_certificate');
+        $this->appId = config('hubtube.agora.app_id', '');
+        $this->appCertificate = config('hubtube.agora.app_certificate', '');
         $this->tokenExpiry = config('hubtube.agora.token_expiry', 86400);
     }
 
-    public function generateToken(string $channelName, int $uid, string $role = 'audience'): string
+    public function isConfigured(): bool
     {
+        return !empty($this->appId) && !empty($this->appCertificate);
+    }
+
+    public function generateToken(string $channelName, int $uid, string $role = 'audience'): ?string
+    {
+        if (!$this->isConfigured()) {
+            return null;
+        }
+
         $roleValue = $role === 'host' ? 1 : 2;
         $privilegeExpiredTs = time() + $this->tokenExpiry;
 

@@ -27,6 +27,8 @@ class VideoController extends Controller
             ->approved()
             ->processed()
             ->when($request->category, fn($q, $cat) => $q->where('category_id', $cat))
+            ->when($request->sort === 'popular', fn($q) => $q->orderByDesc('views_count'))
+            ->when($request->sort === 'oldest', fn($q) => $q->oldest('published_at'))
             ->when($request->search, fn($q, $search) => $q->where('title', 'like', "%{$search}%"))
             ->latest('published_at')
             ->paginate(24);

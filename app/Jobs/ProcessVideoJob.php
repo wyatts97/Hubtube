@@ -86,11 +86,25 @@ class ProcessVideoJob implements ShouldQueue
 
     protected function getVideoInfo(string $path): array
     {
-        $ffprobe = config('hubtube.ffmpeg.ffprobe');
-        $cmd = "{$ffprobe} -v quiet -print_format json -show_format -show_streams \"{$path}\"";
+        $ffprobe = config('hubtube.ffmpeg.ffprobe', '/usr/bin/ffprobe');
+        
+        if (!file_exists($path)) {
+            throw new \RuntimeException("Video file not found: {$path}");
+        }
+
+        $cmd = "{$ffprobe} -v quiet -print_format json -show_format -show_streams " . escapeshellarg($path);
         
         $output = shell_exec($cmd);
+        
+        if (empty($output)) {
+            throw new \RuntimeException('FFprobe returned empty output. Check if FFprobe is installed.');
+        }
+
         $info = json_decode($output, true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \RuntimeException('Failed to parse FFprobe output: ' . json_last_error_msg());
+        }
 
         $duration = 0;
         $width = 0;
@@ -101,7 +115,7 @@ class ProcessVideoJob implements ShouldQueue
         }
 
         foreach ($info['streams'] ?? [] as $stream) {
-            if ($stream['codec_type'] === 'video') {
+            if (($stream['codec_type'] ?? '') === 'video') {
                 $width = $stream['width'] ?? 0;
                 $height = $stream['height'] ?? 0;
                 break;
@@ -117,7 +131,7 @@ class ProcessVideoJob implements ShouldQueue
 
     protected function generateThumbnails(string $inputPath, string $outputDir): void
     {
-        $ffmpeg = config('hubtube.ffmpeg.binary');
+        $ffmpeg = config('hubtube.ffmpeg.binary', '/usr/bin/ffmpeg');
         $duration = $this->video->duration;
         $count = config('hubtube.video.thumbnail_count', 3);
 
@@ -125,7 +139,13 @@ class ProcessVideoJob implements ShouldQueue
             $time = (int) ($duration / ($count + 1) * ($i + 1));
             $output = "{$outputDir}/thumb_{$i}.jpg";
             
-            $cmd = "{$ffmpeg} -y -ss {$time} -i \"{$inputPath}\" -vframes 1 -q:v 2 \"{$output}\"";
+            $cmd = sprintf(
+                '%s -y -ss %d -i %s -vframes 1 -q:v 2 %s 2>&1',
+                $ffmpeg,
+                $time,
+                escapeshellarg($inputPath),
+                escapeshellarg($output)
+            );
             shell_exec($cmd);
         }
 
@@ -136,25 +156,28 @@ class ProcessVideoJob implements ShouldQueue
 
     protected function transcodeToQuality(string $inputPath, string $outputDir, string $quality, array $settings): void
     {
-        $ffmpeg = config('hubtube.ffmpeg.binary');
+        $ffmpeg = config('hubtube.ffmpeg.binary', '/usr/bin/ffmpeg');
         $threads = config('hubtube.ffmpeg.threads', 4);
         
         $output = "{$outputDir}/{$quality}.mp4";
         
-        $cmd = "{$ffmpeg} -y -i \"{$inputPath}\" " .
-            "-vf scale={$settings['width']}:{$settings['height']} " .
-            "-c:v libx264 -preset medium -b:v {$settings['bitrate']} " .
-            "-c:a aac -b:a 128k " .
-            "-threads {$threads} " .
-            "-movflags +faststart " .
-            "\"{$output}\"";
+        $cmd = sprintf(
+            '%s -y -i %s -vf scale=%d:%d -c:v libx264 -preset medium -b:v %s -c:a aac -b:a 128k -threads %d -movflags +faststart %s 2>&1',
+            $ffmpeg,
+            escapeshellarg($inputPath),
+            $settings['width'],
+            $settings['height'],
+            $settings['bitrate'],
+            $threads,
+            escapeshellarg($output)
+        );
 
         shell_exec($cmd);
     }
 
     protected function generateHlsPlaylist(string $outputDir, array $qualities): void
     {
-        $ffmpeg = config('hubtube.ffmpeg.binary');
+        $ffmpeg = config('hubtube.ffmpeg.binary', '/usr/bin/ffmpeg');
 
         foreach ($qualities as $quality) {
             $input = "{$outputDir}/{$quality}.mp4";

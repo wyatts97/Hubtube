@@ -6,15 +6,17 @@ use App\Models\Like;
 use App\Models\Video;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class LikeController extends Controller
 {
     public function like(Request $request, Video $video): JsonResponse
     {
-        $existing = Like::where([
-            'user_id' => $request->user()->id,
-            'video_id' => $video->id,
-        ])->first();
+        return DB::transaction(function () use ($request, $video) {
+            $existing = Like::where([
+                'user_id' => $request->user()->id,
+                'video_id' => $video->id,
+            ])->lockForUpdate()->first();
 
         if ($existing) {
             if ($existing->type === 'like') {
@@ -41,19 +43,21 @@ class LikeController extends Controller
         }
 
         return response()->json([
-            'liked' => true,
-            'disliked' => false,
-            'likesCount' => $video->fresh()->likes_count,
-            'dislikesCount' => $video->fresh()->dislikes_count,
-        ]);
+                'liked' => true,
+                'disliked' => false,
+                'likesCount' => $video->fresh()->likes_count,
+                'dislikesCount' => $video->fresh()->dislikes_count,
+            ]);
+        });
     }
 
     public function dislike(Request $request, Video $video): JsonResponse
     {
-        $existing = Like::where([
-            'user_id' => $request->user()->id,
-            'video_id' => $video->id,
-        ])->first();
+        return DB::transaction(function () use ($request, $video) {
+            $existing = Like::where([
+                'user_id' => $request->user()->id,
+                'video_id' => $video->id,
+            ])->lockForUpdate()->first();
 
         if ($existing) {
             if ($existing->type === 'dislike') {
@@ -80,10 +84,11 @@ class LikeController extends Controller
         }
 
         return response()->json([
-            'liked' => false,
-            'disliked' => true,
-            'likesCount' => $video->fresh()->likes_count,
-            'dislikesCount' => $video->fresh()->dislikes_count,
-        ]);
+                'liked' => false,
+                'disliked' => true,
+                'likesCount' => $video->fresh()->likes_count,
+                'dislikesCount' => $video->fresh()->dislikes_count,
+            ]);
+        });
     }
 }
