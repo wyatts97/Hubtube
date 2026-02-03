@@ -11,6 +11,7 @@ import { useTheme } from '@/Composables/useTheme';
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
 const themeSettings = computed(() => page.props.theme || {});
+const iconSettings = computed(() => themeSettings.value?.icons || {});
 const showUserMenu = ref(false);
 const showMobileMenu = ref(false);
 const sidebarCollapsed = ref(false);
@@ -18,16 +19,33 @@ const searchQuery = ref('');
 
 const { currentTheme, isDark, setTheme, toggleTheme } = useTheme();
 
+const getIconColor = (navKey) => {
+    const icons = iconSettings.value;
+    if (!icons) return 'var(--color-text-secondary)';
+    
+    // Check if there's a specific color for this nav item
+    const navItem = icons[navKey];
+    if (navItem?.color) return navItem.color;
+    
+    // Check for global icon color
+    if (icons.colorMode === 'custom' && icons.globalColor) {
+        return icons.globalColor;
+    }
+    
+    // Default to text secondary
+    return 'var(--color-text-secondary)';
+};
+
 const navigation = [
-    { name: 'Home', href: '/', icon: Home },
-    { name: 'Trending', href: '/trending', icon: TrendingUp },
-    { name: 'Shorts', href: '/shorts', icon: Zap },
-    { name: 'Live', href: '/live', icon: Radio },
+    { name: 'Home', href: '/', icon: Home, key: 'home' },
+    { name: 'Trending', href: '/trending', icon: TrendingUp, key: 'trending' },
+    { name: 'Shorts', href: '/shorts', icon: Zap, key: 'shorts' },
+    { name: 'Live', href: '/live', icon: Radio, key: 'live' },
 ];
 
 const libraryNav = [
-    { name: 'Playlists', href: '/playlists', icon: ListVideo },
-    { name: 'History', href: '/history', icon: History },
+    { name: 'Playlists', href: '/playlists', icon: ListVideo, key: 'playlists' },
+    { name: 'History', href: '/history', icon: History, key: 'history' },
 ];
 
 const handleSearch = () => {
@@ -71,15 +89,15 @@ const toggleSidebar = () => {
                             placeholder="Search videos..."
                             class="input pr-12"
                         />
-                        <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-dark-700 rounded-full">
-                            <Search class="w-5 h-5 text-dark-400" />
+                        <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80" style="color: var(--color-text-muted);">
+                            <Search class="w-5 h-5" />
                         </button>
                     </form>
                 </div>
 
                 <!-- Right: Actions -->
                 <div class="flex items-center gap-2">
-                    <button class="p-2 hover:bg-dark-800 rounded-full md:hidden">
+                    <button class="p-2 rounded-full md:hidden" style="color: var(--color-text-secondary);">
                         <Search class="w-5 h-5" />
                     </button>
 
@@ -94,9 +112,9 @@ const toggleSidebar = () => {
                             <span>Go Live</span>
                         </Link>
 
-                        <button class="p-2 hover:bg-dark-800 rounded-full relative">
+                        <button class="p-2 rounded-full relative" style="color: var(--color-text-secondary);">
                             <Bell class="w-5 h-5" />
-                            <span class="absolute top-1 right-1 w-2 h-2 bg-primary-600 rounded-full"></span>
+                            <span class="absolute top-1 right-1 w-2 h-2 rounded-full" style="background-color: var(--color-accent);"></span>
                         </button>
 
                         <div class="relative">
@@ -190,13 +208,17 @@ const toggleSidebar = () => {
                         <Link 
                             :href="item.href" 
                             :class="[
-                                'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors',
+                                'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:opacity-80',
                                 sidebarCollapsed ? 'justify-center' : ''
                             ]"
                             :title="sidebarCollapsed ? item.name : ''"
                             style="color: var(--color-text-secondary);"
                         >
-                            <component :is="item.icon" class="w-5 h-5 flex-shrink-0" />
+                            <component 
+                                :is="item.icon" 
+                                class="w-5 h-5 flex-shrink-0" 
+                                :style="{ color: getIconColor(item.key) }"
+                            />
                             <span v-if="!sidebarCollapsed">{{ item.name }}</span>
                         </Link>
                     </li>
@@ -204,11 +226,15 @@ const toggleSidebar = () => {
 
                 <template v-if="user && !sidebarCollapsed">
                     <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
-                        <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-secondary);">Library</h3>
+                        <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">Library</h3>
                         <ul class="space-y-1">
                             <li v-for="item in libraryNav" :key="item.name">
-                                <Link :href="item.href" class="flex items-center gap-3 px-3 py-2 rounded-lg" style="color: var(--color-text-secondary);">
-                                    <component :is="item.icon" class="w-5 h-5" />
+                                <Link :href="item.href" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
+                                    <component 
+                                        :is="item.icon" 
+                                        class="w-5 h-5" 
+                                        :style="{ color: getIconColor(item.key) }"
+                                    />
                                     <span>{{ item.name }}</span>
                                 </Link>
                             </li>
@@ -222,11 +248,15 @@ const toggleSidebar = () => {
                             <li v-for="item in libraryNav" :key="item.name">
                                 <Link 
                                     :href="item.href" 
-                                    class="flex items-center justify-center px-3 py-2 rounded-lg"
+                                    class="flex items-center justify-center px-3 py-2 rounded-lg hover:opacity-80"
                                     :title="item.name"
                                     style="color: var(--color-text-secondary);"
                                 >
-                                    <component :is="item.icon" class="w-5 h-5" />
+                                    <component 
+                                        :is="item.icon" 
+                                        class="w-5 h-5" 
+                                        :style="{ color: getIconColor(item.key) }"
+                                    />
                                 </Link>
                             </li>
                         </ul>
@@ -242,16 +272,38 @@ const toggleSidebar = () => {
             @click="showMobileMenu = false"
         >
             <div class="absolute inset-0 bg-black/50"></div>
-            <aside class="absolute left-0 top-0 bottom-0 w-64 bg-dark-900 pt-14 overflow-y-auto">
+            <aside class="absolute left-0 top-0 bottom-0 w-64 pt-14 overflow-y-auto" style="background-color: var(--color-bg-secondary);">
                 <nav class="p-4">
                     <ul class="space-y-1">
                         <li v-for="item in navigation" :key="item.name">
-                            <Link :href="item.href" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-dark-800 text-dark-300 hover:text-white">
-                                <component :is="item.icon" class="w-5 h-5" />
+                            <Link :href="item.href" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
+                                <component 
+                                    :is="item.icon" 
+                                    class="w-5 h-5" 
+                                    :style="{ color: getIconColor(item.key) }"
+                                />
                                 <span>{{ item.name }}</span>
                             </Link>
                         </li>
                     </ul>
+                    
+                    <template v-if="user">
+                        <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
+                            <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">Library</h3>
+                            <ul class="space-y-1">
+                                <li v-for="item in libraryNav" :key="item.name">
+                                    <Link :href="item.href" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
+                                        <component 
+                                            :is="item.icon" 
+                                            class="w-5 h-5" 
+                                            :style="{ color: getIconColor(item.key) }"
+                                        />
+                                        <span>{{ item.name }}</span>
+                                    </Link>
+                                </li>
+                            </ul>
+                        </div>
+                    </template>
                 </nav>
             </aside>
         </div>

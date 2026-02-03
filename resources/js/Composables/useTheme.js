@@ -53,7 +53,10 @@ export function useTheme() {
         root.style.setProperty('--color-accent', colors.accent || '#ef4444');
         root.style.setProperty('--color-text-primary', colors.textPrimary || (currentTheme.value === 'dark' ? '#ffffff' : '#171717'));
         root.style.setProperty('--color-text-secondary', colors.textSecondary || (currentTheme.value === 'dark' ? '#a3a3a3' : '#525252'));
+        root.style.setProperty('--color-text-muted', colors.textMuted || (currentTheme.value === 'dark' ? '#737373' : '#737373'));
         root.style.setProperty('--color-border', colors.border || (currentTheme.value === 'dark' ? '#262626' : '#e5e5e5'));
+        root.style.setProperty('--color-input-bg', colors.inputBg || (currentTheme.value === 'dark' ? '#262626' : '#f5f5f5'));
+        root.style.setProperty('--color-hover', colors.hover || (currentTheme.value === 'dark' ? '#2a2a2a' : '#e5e5e5'));
         
         // Update body classes
         document.body.classList.remove('theme-dark', 'theme-light');

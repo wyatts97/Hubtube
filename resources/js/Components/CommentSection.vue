@@ -191,7 +191,7 @@ fetchComments();
 
 <template>
     <div class="mt-6">
-        <h3 class="text-lg font-semibold text-white mb-4">
+        <h3 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">
             {{ comments.length }} Comments
         </h3>
 
@@ -199,7 +199,7 @@ fetchComments();
         <div v-if="user" class="flex gap-3 mb-6">
             <div class="w-10 h-10 avatar flex-shrink-0">
                 <img v-if="user.avatar" :src="user.avatar" :alt="user.username" class="w-full h-full object-cover" />
-                <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white font-medium">
+                <div v-else class="w-full h-full flex items-center justify-center text-white font-medium" style="background-color: var(--color-accent);">
                     {{ user.username?.charAt(0)?.toUpperCase() }}
                 </div>
             </div>
@@ -231,15 +231,15 @@ fetchComments();
         </div>
 
         <div v-else class="card p-4 mb-6 text-center">
-            <p class="text-dark-400">
-                <Link href="/login" class="text-primary-400 hover:underline">Sign in</Link>
+            <p style="color: var(--color-text-secondary);">
+                <Link href="/login" class="hover:underline" style="color: var(--color-accent);">Sign in</Link>
                 to leave a comment
             </p>
         </div>
 
         <!-- Loading State -->
         <div v-if="loading" class="text-center py-8">
-            <div class="animate-spin w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full mx-auto"></div>
+            <div class="animate-spin w-8 h-8 border-2 border-t-transparent rounded-full mx-auto" style="border-color: var(--color-accent); border-top-color: transparent;"></div>
         </div>
 
         <!-- Comments List -->
@@ -248,39 +248,42 @@ fetchComments();
                 <Link :href="`/channel/${comment.user?.username}`" class="flex-shrink-0">
                     <div class="w-10 h-10 avatar">
                         <img v-if="comment.user?.avatar" :src="comment.user.avatar" :alt="comment.user.username" class="w-full h-full object-cover" />
-                        <div v-else class="w-full h-full flex items-center justify-center bg-dark-700 text-white font-medium">
+                        <div v-else class="w-full h-full flex items-center justify-center text-white font-medium" style="background-color: var(--color-bg-card);">
                             {{ comment.user?.username?.charAt(0)?.toUpperCase() || '?' }}
                         </div>
                     </div>
                 </Link>
                 <div class="flex-1">
                     <div class="flex items-center gap-2">
-                        <Link :href="`/channel/${comment.user?.username}`" class="font-medium text-white hover:text-primary-400">
+                        <Link :href="`/channel/${comment.user?.username}`" class="font-medium hover:opacity-80" style="color: var(--color-text-primary);">
                             {{ comment.user?.username }}
                         </Link>
-                        <span class="text-dark-500 text-sm">{{ timeAgo(comment.created_at) }}</span>
+                        <span class="text-sm" style="color: var(--color-text-muted);">{{ timeAgo(comment.created_at) }}</span>
                     </div>
-                    <p class="text-dark-300 mt-1 whitespace-pre-wrap">{{ comment.content }}</p>
+                    <p class="mt-1 whitespace-pre-wrap" style="color: var(--color-text-secondary);">{{ comment.content }}</p>
                     
                     <!-- Comment Actions -->
                     <div class="flex items-center gap-4 mt-2">
                         <button 
                             @click="likeComment(comment)"
-                            :class="['flex items-center gap-1 text-sm', comment.user_liked ? 'text-primary-500' : 'text-dark-400 hover:text-white']"
+                            class="flex items-center gap-1 text-sm"
+                            :style="{ color: comment.user_liked ? 'var(--color-accent)' : 'var(--color-text-muted)' }"
                         >
                             <ThumbsUp class="w-4 h-4" />
                             <span v-if="comment.likes_count">{{ comment.likes_count }}</span>
                         </button>
                         <button 
                             @click="dislikeComment(comment)"
-                            :class="['flex items-center gap-1 text-sm', comment.user_disliked ? 'text-primary-500' : 'text-dark-400 hover:text-white']"
+                            class="flex items-center gap-1 text-sm"
+                            :style="{ color: comment.user_disliked ? 'var(--color-accent)' : 'var(--color-text-muted)' }"
                         >
                             <ThumbsDown class="w-4 h-4" />
                         </button>
                         <button 
                             v-if="user"
                             @click="replyingTo = replyingTo === comment.id ? null : comment.id"
-                            class="text-sm text-dark-400 hover:text-white"
+                            class="text-sm hover:opacity-80"
+                            style="color: var(--color-text-muted);"
                         >
                             Reply
                         </button>
@@ -296,7 +299,7 @@ fetchComments();
                     <!-- Reply Input -->
                     <div v-if="replyingTo === comment.id" class="flex gap-3 mt-4">
                         <div class="w-8 h-8 avatar flex-shrink-0">
-                            <div class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-sm font-medium">
+                            <div class="w-full h-full flex items-center justify-center text-white text-sm font-medium" style="background-color: var(--color-accent);">
                                 {{ user.username?.charAt(0)?.toUpperCase() }}
                             </div>
                         </div>
@@ -321,20 +324,20 @@ fetchComments();
                     </div>
 
                     <!-- Replies -->
-                    <div v-if="comment.replies?.length" class="mt-4 space-y-4 pl-4 border-l-2 border-dark-800">
+                    <div v-if="comment.replies?.length" class="mt-4 space-y-4 pl-4 border-l-2" style="border-color: var(--color-border);">
                         <div v-for="reply in comment.replies" :key="reply.id" class="flex gap-3">
                             <div class="w-8 h-8 avatar flex-shrink-0">
                                 <img v-if="reply.user?.avatar" :src="reply.user.avatar" class="w-full h-full object-cover" />
-                                <div v-else class="w-full h-full flex items-center justify-center bg-dark-700 text-white text-sm font-medium">
+                                <div v-else class="w-full h-full flex items-center justify-center text-white text-sm font-medium" style="background-color: var(--color-bg-card);">
                                     {{ reply.user?.username?.charAt(0)?.toUpperCase() || '?' }}
                                 </div>
                             </div>
                             <div class="flex-1">
                                 <div class="flex items-center gap-2">
-                                    <span class="font-medium text-white text-sm">{{ reply.user?.username }}</span>
-                                    <span class="text-dark-500 text-xs">{{ timeAgo(reply.created_at) }}</span>
+                                    <span class="font-medium text-sm" style="color: var(--color-text-primary);">{{ reply.user?.username }}</span>
+                                    <span class="text-xs" style="color: var(--color-text-muted);">{{ timeAgo(reply.created_at) }}</span>
                                 </div>
-                                <p class="text-dark-300 text-sm mt-1">{{ reply.content }}</p>
+                                <p class="text-sm mt-1" style="color: var(--color-text-secondary);">{{ reply.content }}</p>
                             </div>
                         </div>
                     </div>
@@ -342,7 +345,7 @@ fetchComments();
             </div>
 
             <div v-if="!loading && comments.length === 0" class="text-center py-8">
-                <p class="text-dark-400">No comments yet. Be the first to comment!</p>
+                <p style="color: var(--color-text-muted);">No comments yet. Be the first to comment!</p>
             </div>
         </div>
     </div>

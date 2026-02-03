@@ -88,7 +88,7 @@ const fileSizeFormatted = computed(() => {
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">
-            <h1 class="text-2xl font-bold text-white mb-6">Upload Video</h1>
+            <h1 class="text-2xl font-bold mb-6" style="color: var(--color-text-primary);">Upload Video</h1>
 
             <form @submit.prevent="submit" class="space-y-6">
                 <!-- Video Upload Area -->
@@ -97,16 +97,14 @@ const fileSizeFormatted = computed(() => {
                     @dragover.prevent="dragActive = true"
                     @dragleave.prevent="dragActive = false"
                     @drop.prevent="handleDrop"
-                    :class="[
-                        'card border-2 border-dashed p-12 text-center transition-colors',
-                        dragActive ? 'border-primary-500 bg-primary-500/10' : 'border-dark-700'
-                    ]"
+                    class="card border-2 border-dashed p-12 text-center transition-colors"
+                    :style="{ borderColor: dragActive ? 'var(--color-accent)' : 'var(--color-border)' }"
                 >
-                    <div class="w-16 h-16 bg-dark-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Upload class="w-8 h-8 text-dark-400" />
+                    <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: var(--color-bg-secondary);">
+                        <Upload class="w-8 h-8" style="color: var(--color-text-muted);" />
                     </div>
-                    <p class="text-lg font-medium text-white mb-2">Drag and drop video file</p>
-                    <p class="text-dark-400 mb-4">or click to browse</p>
+                    <p class="text-lg font-medium mb-2" style="color: var(--color-text-primary);">Drag and drop video file</p>
+                    <p class="mb-4" style="color: var(--color-text-muted);">or click to browse</p>
                     <label class="btn btn-primary cursor-pointer">
                         Select File
                         <input
@@ -116,7 +114,7 @@ const fileSizeFormatted = computed(() => {
                             @change="handleFileSelect"
                         />
                     </label>
-                    <p class="text-dark-500 text-sm mt-4">
+                    <p class="text-sm mt-4" style="color: var(--color-text-muted);">
                         Supported formats: MP4, MOV, AVI, MKV, WebM
                     </p>
                 </div>
@@ -124,15 +122,15 @@ const fileSizeFormatted = computed(() => {
                 <!-- Video Preview -->
                 <div v-else class="card p-4">
                     <div class="flex items-start gap-4">
-                        <div class="w-48 aspect-video bg-dark-800 rounded-lg overflow-hidden flex-shrink-0">
+                        <div class="w-48 aspect-video rounded-lg overflow-hidden flex-shrink-0" style="background-color: var(--color-bg-secondary);">
                             <video :src="videoPreview" class="w-full h-full object-cover"></video>
                         </div>
                         <div class="flex-1">
-                            <p class="font-medium text-white">{{ form.video_file.name }}</p>
-                            <p class="text-dark-400 text-sm">{{ fileSizeFormatted }}</p>
+                            <p class="font-medium" style="color: var(--color-text-primary);">{{ form.video_file.name }}</p>
+                            <p class="text-sm" style="color: var(--color-text-muted);">{{ fileSizeFormatted }}</p>
                         </div>
-                        <button type="button" @click="removeVideo" class="p-2 hover:bg-dark-700 rounded-full">
-                            <X class="w-5 h-5 text-dark-400" />
+                        <button type="button" @click="removeVideo" class="p-2 rounded-full hover:opacity-80" style="background-color: var(--color-bg-secondary);">
+                            <X class="w-5 h-5" style="color: var(--color-text-muted);" />
                         </button>
                     </div>
                     <p v-if="form.errors.video_file" class="text-red-500 text-sm mt-2">{{ form.errors.video_file }}</p>
@@ -141,7 +139,7 @@ const fileSizeFormatted = computed(() => {
                 <!-- Video Details -->
                 <div class="card p-6 space-y-4">
                     <div>
-                        <label for="title" class="block text-sm font-medium text-dark-300 mb-1">Title</label>
+                        <label for="title" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Title</label>
                         <input
                             id="title"
                             v-model="form.title"
@@ -154,7 +152,7 @@ const fileSizeFormatted = computed(() => {
                     </div>
 
                     <div>
-                        <label for="description" class="block text-sm font-medium text-dark-300 mb-1">Description</label>
+                        <label for="description" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Description</label>
                         <textarea
                             id="description"
                             v-model="form.description"
@@ -166,7 +164,7 @@ const fileSizeFormatted = computed(() => {
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="category" class="block text-sm font-medium text-dark-300 mb-1">Category</label>
+                            <label for="category" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Category</label>
                             <select id="category" v-model="form.category_id" class="input">
                                 <option value="">Select category</option>
                                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">
@@ -176,7 +174,7 @@ const fileSizeFormatted = computed(() => {
                         </div>
 
                         <div>
-                            <label for="privacy" class="block text-sm font-medium text-dark-300 mb-1">Privacy</label>
+                            <label for="privacy" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Privacy</label>
                             <select id="privacy" v-model="form.privacy" class="input">
                                 <option value="public">Public</option>
                                 <option value="unlisted">Unlisted</option>
@@ -186,12 +184,13 @@ const fileSizeFormatted = computed(() => {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-dark-300 mb-1">Tags</label>
+                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Tags</label>
                         <div class="flex flex-wrap gap-2 mb-2">
                             <span
                                 v-for="(tag, index) in form.tags"
                                 :key="index"
-                                class="flex items-center gap-1 px-2 py-1 bg-dark-700 rounded text-sm"
+                                class="flex items-center gap-1 px-2 py-1 rounded text-sm"
+                                style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);"
                             >
                                 #{{ tag }}
                                 <button type="button" @click="removeTag(index)" class="hover:text-red-400">
