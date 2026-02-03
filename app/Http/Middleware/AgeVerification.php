@@ -14,7 +14,9 @@ class AgeVerification
             return $next($request);
         }
 
-        $ageVerified = $request->session()->get('age_verified', false);
+        // Check session first, then cookie as fallback
+        $ageVerified = $request->session()->get('age_verified', false) 
+                    || $request->cookie('age_verified') === 'true';
 
         if (!$ageVerified) {
             if ($request->wantsJson()) {
@@ -22,6 +24,11 @@ class AgeVerification
             }
 
             return redirect()->route('age.verify');
+        }
+
+        // If verified via cookie but not in session, sync to session
+        if (!$request->session()->get('age_verified') && $request->cookie('age_verified') === 'true') {
+            $request->session()->put('age_verified', true);
         }
 
         return $next($request);

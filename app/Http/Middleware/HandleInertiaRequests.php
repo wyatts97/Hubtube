@@ -30,12 +30,16 @@ class HandleInertiaRequests extends Middleware
                     'is_admin' => $request->user()->is_admin,
                     'wallet_balance' => $request->user()->wallet_balance,
                     'age_verified' => $request->user()->isAgeVerified(),
+                    'settings' => $request->user()->settings ?? [],
                 ] : null,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
+                'warning' => fn () => $request->session()->get('warning'),
+                'info' => fn () => $request->session()->get('info'),
             ],
+            'csrf_token' => csrf_token(),
             'app' => [
                 'name' => config('app.name'),
                 'age_verification_required' => config('hubtube.age_verification_required'),

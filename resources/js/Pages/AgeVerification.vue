@@ -1,41 +1,16 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
-import { ShieldAlert, Loader2 } from 'lucide-vue-next';
+import { Head, Link, usePage } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import { ShieldAlert } from 'lucide-vue-next';
 
-// Use Inertia form for proper CSRF handling
-const form = useForm({});
-const isSubmitting = ref(false);
-const errorMessage = ref('');
+const page = usePage();
 
-const confirm = () => {
-    isSubmitting.value = true;
-    errorMessage.value = '';
-    
-    form.post('/age-verify', {
-        preserveScroll: true,
-        onSuccess: () => {
-            // Successfully verified
-        },
-        onError: (errors) => {
-            isSubmitting.value = false;
-            // If CSRF error or session expired, show message and offer refresh
-            if (errors.message?.includes('CSRF') || errors.message?.includes('session') || Object.keys(errors).length === 0) {
-                errorMessage.value = 'Your session has expired. The page will refresh automatically.';
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            } else {
-                errorMessage.value = 'An error occurred. Please try again.';
-            }
-        },
-        onFinish: () => {
-            if (!errorMessage.value) {
-                isSubmitting.value = false;
-            }
-        },
-    });
-};
+// Get CSRF token from Inertia props (most reliable) or meta tag as fallback
+const csrfToken = computed(() => {
+    return page.props.csrf_token || 
+           document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+           '';
+});
 
 const decline = () => {
     window.location.href = '/age-verify/decline';
@@ -62,24 +37,19 @@ const decline = () => {
                     By clicking "I am 18 or older", you confirm that you are at least 18 years of age and consent to viewing adult content.
                 </p>
 
-                <!-- Error Message -->
-                <div v-if="errorMessage" class="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500 text-sm">
-                    {{ errorMessage }}
-                </div>
-
-                <div class="flex flex-col sm:flex-row gap-4">
+                <!-- Use standard HTML form for reliable CSRF handling -->
+                <form method="POST" action="/age-verify" class="flex flex-col sm:flex-row gap-4">
+                    <input type="hidden" name="_token" :value="csrfToken" />
                     <button 
-                        @click="confirm" 
-                        :disabled="isSubmitting"
-                        class="btn btn-primary flex-1 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                        type="submit"
+                        class="btn btn-primary flex-1 py-3"
                     >
-                        <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin mr-2" />
-                        {{ isSubmitting ? 'Verifying...' : 'I am 18 or older' }}
+                        I am 18 or older
                     </button>
-                    <button @click="decline" :disabled="isSubmitting" class="btn btn-secondary flex-1 py-3">
+                    <button type="button" @click="decline" class="btn btn-secondary flex-1 py-3">
                         Exit
                     </button>
-                </div>
+                </form>
 
                 <p class="text-sm mt-6" style="color: var(--color-text-muted);">
                     By entering this site, you agree to our
