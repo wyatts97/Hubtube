@@ -66,6 +66,17 @@ class Video extends Model
         ];
     }
 
+    public function shouldBeSearchable(): bool
+    {
+        // Only index if using a real search driver (not database or null)
+        $driver = config('scout.driver');
+        if (in_array($driver, ['database', 'null', null])) {
+            return false;
+        }
+        
+        return $this->status === 'processed' && $this->is_approved;
+    }
+
     public function toSearchableArray(): array
     {
         return [
