@@ -56,17 +56,17 @@ const timeAgo = computed(() => {
             <span v-if="video.is_short" class="absolute top-2 left-2 badge badge-pro">Short</span>
         </div>
         <div class="flex gap-3 mt-3">
-            <Link :href="`/channel/${video.user.username}`" class="flex-shrink-0">
+            <Link v-if="video.user" :href="`/channel/${video.user.username}`" class="flex-shrink-0">
                 <div class="w-9 h-9 avatar">
                     <img v-if="video.user.avatar" :src="video.user.avatar" :alt="video.user.username" class="w-full h-full object-cover" />
                     <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-sm font-medium">
-                        {{ video.user.username.charAt(0).toUpperCase() }}
+                        {{ video.user.username?.charAt(0)?.toUpperCase() || '?' }}
                     </div>
                 </div>
             </Link>
             <div class="flex-1 min-w-0">
                 <h3 class="font-medium text-white line-clamp-2 leading-tight">{{ video.title }}</h3>
-                <Link :href="`/channel/${video.user.username}`" class="text-sm text-dark-400 hover:text-dark-300 mt-1 block">
+                <Link v-if="video.user" :href="`/channel/${video.user.username}`" class="text-sm text-dark-400 hover:text-dark-300 mt-1 block">
                     {{ video.user.username }}
                     <span v-if="video.user.is_verified" class="inline-block ml-1">✓</span>
                 </Link>

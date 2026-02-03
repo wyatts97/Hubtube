@@ -46,9 +46,11 @@ const handleThumbnailSelect = (e) => {
 };
 
 const submit = () => {
-    form.post(`/videos/${props.video.id}`, {
-        forceFormData: true,
+    form.transform((data) => ({
+        ...data,
         _method: 'PUT',
+    })).post(`/videos/${props.video.id}`, {
+        forceFormData: true,
     });
 };
 

@@ -47,6 +47,12 @@ class Video extends Model
         'processing_completed_at',
     ];
 
+    protected $appends = [
+        'video_url',
+        'thumbnail_url',
+        'formatted_duration',
+    ];
+
     protected function casts(): array
     {
         return [

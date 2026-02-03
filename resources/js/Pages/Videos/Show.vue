@@ -99,7 +99,7 @@ const formattedViews = computed(() => {
                         class="w-full h-full"
                         :poster="video.thumbnail_url"
                     >
-                        <source :src="video.video_path" type="video/mp4" />
+                        <source :src="video.video_url" type="video/mp4" />
                         Your browser does not support the video tag.
                     </video>
                 </div>

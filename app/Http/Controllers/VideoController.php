@@ -50,6 +50,7 @@ class VideoController extends Controller
         $video->incrementViews();
 
         $relatedVideos = Video::query()
+            ->with('user')
             ->where('id', '!=', $video->id)
             ->where('category_id', $video->category_id)
             ->public()
