@@ -19,11 +19,13 @@ class AgeVerificationController extends Controller
     {
         // Store in session
         $request->session()->put('age_verified', true);
+        $request->session()->save();
         
         // Also store in a cookie as backup (lasts 24 hours)
-        $cookie = Cookie::make('age_verified', 'true', 60 * 24, '/', null, false, true);
+        // Using queue to ensure it's added to response
+        Cookie::queue('age_verified', 'true', 60 * 24, '/', null, false, false);
 
-        return redirect()->intended(route('home'))->withCookie($cookie);
+        return redirect()->intended(route('home'));
     }
 
     public function decline(): RedirectResponse
