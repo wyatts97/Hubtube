@@ -28,7 +28,7 @@ return new class extends Migration
             $table->foreignId('gift_id')->constrained()->cascadeOnDelete();
             $table->foreignId('sender_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('receiver_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('live_stream_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('live_stream_id')->nullable();
             $table->decimal('amount', 10, 2);
             $table->decimal('platform_cut', 10, 2);
             $table->decimal('receiver_amount', 10, 2);

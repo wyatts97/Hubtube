@@ -32,6 +32,11 @@ return new class extends Migration
             $table->index(['status', 'started_at']);
             $table->index(['user_id', 'status']);
         });
+
+        // Add foreign key constraint for gift_transactions
+        Schema::table('gift_transactions', function (Blueprint $table) {
+            $table->foreign('live_stream_id')->references('id')->on('live_streams')->onDelete('set null');
+        });
     }
 
     public function down(): void
