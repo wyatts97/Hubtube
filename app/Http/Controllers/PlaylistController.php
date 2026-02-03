@@ -21,7 +21,7 @@ class PlaylistController extends Controller
             ->latest()
             ->paginate(24);
 
-        return Inertia::render('Playlists/Index', [
+        return Inertia::render('Playlists', [
             'playlists' => $playlists,
         ]);
     }

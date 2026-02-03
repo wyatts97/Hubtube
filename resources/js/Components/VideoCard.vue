@@ -1,6 +1,6 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 
 const props = defineProps({
     video: {
@@ -8,6 +8,9 @@ const props = defineProps({
         required: true,
     },
 });
+
+const isHovering = ref(false);
+const previewLoaded = ref(false);
 
 const formattedViews = computed(() => {
     const views = props.video.views_count;
@@ -18,6 +21,18 @@ const formattedViews = computed(() => {
         return (views / 1000).toFixed(1) + 'K';
     }
     return views.toString();
+});
+
+const formattedDuration = computed(() => {
+    const duration = props.video.duration || 0;
+    const hours = Math.floor(duration / 3600);
+    const minutes = Math.floor((duration % 3600) / 60);
+    const seconds = duration % 60;
+    
+    if (hours > 0) {
+        return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
 });
 
 const timeAgo = computed(() => {
@@ -42,17 +57,53 @@ const timeAgo = computed(() => {
     }
     return 'Just now';
 });
+
+const handleMouseEnter = () => {
+    isHovering.value = true;
+};
+
+const handleMouseLeave = () => {
+    isHovering.value = false;
+};
+
+const onPreviewLoad = () => {
+    previewLoaded.value = true;
+};
 </script>
 
 <template>
-    <Link :href="`/watch/${video.slug}`" class="video-card">
-        <div class="thumbnail">
+    <Link 
+        :href="`/watch/${video.slug}`" 
+        class="video-card"
+        @mouseenter="handleMouseEnter"
+        @mouseleave="handleMouseLeave"
+    >
+        <div class="thumbnail relative overflow-hidden rounded-xl">
+            <!-- Static Thumbnail -->
             <img
                 :src="video.thumbnail_url || '/images/placeholder.jpg'"
                 :alt="video.title"
                 loading="lazy"
+                class="w-full h-full object-cover transition-opacity duration-200"
+                :class="{ 'opacity-0': isHovering && video.preview_url && previewLoaded }"
             />
-            <span class="duration">{{ video.formatted_duration }}</span>
+            
+            <!-- Animated Preview (WebP) -->
+            <img
+                v-if="video.preview_url"
+                :src="isHovering ? video.preview_url : ''"
+                :alt="video.title"
+                class="absolute inset-0 w-full h-full object-cover transition-opacity duration-200"
+                :class="isHovering && previewLoaded ? 'opacity-100' : 'opacity-0'"
+                @load="onPreviewLoad"
+            />
+            
+            <!-- Duration Badge -->
+            <span class="duration absolute bottom-2 right-2 bg-black/80 text-white text-xs font-medium px-1.5 py-0.5 rounded">
+                {{ video.formatted_duration || formattedDuration }}
+            </span>
+            
+            <!-- Short Badge -->
             <span v-if="video.is_short" class="absolute top-2 left-2 badge badge-pro">Short</span>
         </div>
         <div class="flex gap-3 mt-3">

@@ -10,11 +10,23 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
 
+    <style>
+        :root {
+            --color-bg-primary: #0a0a0a;
+            --color-bg-secondary: #171717;
+            --color-bg-card: #1f1f1f;
+            --color-accent: #ef4444;
+            --color-text-primary: #ffffff;
+            --color-text-secondary: #a3a3a3;
+            --color-border: #262626;
+        }
+    </style>
+
     @routes
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @inertiaHead
 </head>
-<body class="font-sans antialiased bg-dark-950 text-dark-100">
+<body class="font-sans antialiased" style="background-color: var(--color-bg-primary); color: var(--color-text-primary);">
     @inertia
 </body>
 </html>

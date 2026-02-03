@@ -1,18 +1,22 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { 
     Menu, Search, Upload, Bell, User, LogOut, Settings, Wallet, 
     Video, Radio, Home, TrendingUp, Zap, ListVideo, History, 
-    ChevronLeft, ChevronRight, Shield
+    ChevronLeft, ChevronRight, Shield, Sun, Moon, Monitor
 } from 'lucide-vue-next';
+import { useTheme } from '@/Composables/useTheme';
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
+const themeSettings = computed(() => page.props.theme || {});
 const showUserMenu = ref(false);
 const showMobileMenu = ref(false);
 const sidebarCollapsed = ref(false);
 const searchQuery = ref('');
+
+const { currentTheme, isDark, setTheme, toggleTheme } = useTheme();
 
 const navigation = [
     { name: 'Home', href: '/', icon: Home },
@@ -38,23 +42,23 @@ const toggleSidebar = () => {
 </script>
 
 <template>
-    <div class="min-h-screen bg-dark-950">
+    <div class="min-h-screen" style="background-color: var(--color-bg-primary);">
         <!-- Header -->
-        <header class="fixed top-0 left-0 right-0 z-50 bg-dark-900 border-b border-dark-800">
+        <header class="fixed top-0 left-0 right-0 z-50" style="background-color: var(--color-bg-secondary); border-bottom: 1px solid var(--color-border);">
             <div class="flex items-center justify-between h-14 px-4">
                 <!-- Left: Logo & Menu -->
                 <div class="flex items-center gap-4">
-                    <button @click="toggleSidebar" class="p-2 hover:bg-dark-800 rounded-full hidden lg:flex">
+                    <button @click="toggleSidebar" class="p-2 rounded-full hidden lg:flex" style="color: var(--color-text-primary);" :style="{ ':hover': { backgroundColor: 'var(--color-bg-card)' } }">
                         <Menu class="w-5 h-5" />
                     </button>
-                    <button @click="showMobileMenu = !showMobileMenu" class="p-2 hover:bg-dark-800 rounded-full lg:hidden">
+                    <button @click="showMobileMenu = !showMobileMenu" class="p-2 rounded-full lg:hidden" style="color: var(--color-text-primary);">
                         <Menu class="w-5 h-5" />
                     </button>
                     <Link href="/" class="flex items-center gap-2">
-                        <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background-color: var(--color-accent);">
                             <Video class="w-5 h-5 text-white" />
                         </div>
-                        <span class="text-xl font-bold text-white hidden sm:block">HubTube</span>
+                        <span class="text-xl font-bold hidden sm:block" style="color: var(--color-text-primary);">HubTube</span>
                     </Link>
                 </div>
 
@@ -105,36 +109,57 @@ const toggleSidebar = () => {
                                 </div>
                             </button>
 
-                            <div v-if="showUserMenu" class="absolute right-0 mt-2 w-56 card p-2 shadow-xl">
-                                <div class="px-3 py-2 border-b border-dark-800">
-                                    <p class="font-medium">{{ user.username }}</p>
-                                    <p class="text-sm text-dark-400">{{ user.email }}</p>
+                            <div v-if="showUserMenu" class="absolute right-0 mt-2 w-56 card p-2 shadow-xl" style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);">
+                                <div class="px-3 py-2" style="border-bottom: 1px solid var(--color-border);">
+                                    <p class="font-medium" style="color: var(--color-text-primary);">{{ user.username }}</p>
+                                    <p class="text-sm" style="color: var(--color-text-secondary);">{{ user.email }}</p>
                                 </div>
                                 <div class="py-2">
                                     <!-- Admin Panel Link - Only for admins -->
                                     <a 
                                         v-if="user.is_admin" 
                                         href="/admin" 
-                                        class="flex items-center gap-3 px-3 py-2 hover:bg-dark-800 rounded-lg text-primary-400"
+                                        class="flex items-center gap-3 px-3 py-2 rounded-lg"
+                                        style="color: var(--color-accent);"
                                     >
                                         <Shield class="w-4 h-4" />
                                         <span>Admin Panel</span>
                                     </a>
-                                    <Link :href="`/channel/${user.username}`" class="flex items-center gap-3 px-3 py-2 hover:bg-dark-800 rounded-lg">
+                                    <Link :href="`/channel/${user.username}`" class="flex items-center gap-3 px-3 py-2 rounded-lg" style="color: var(--color-text-primary);">
                                         <User class="w-4 h-4" />
                                         <span>Your Channel</span>
                                     </Link>
-                                    <Link href="/wallet" class="flex items-center gap-3 px-3 py-2 hover:bg-dark-800 rounded-lg">
+                                    <Link href="/wallet" class="flex items-center gap-3 px-3 py-2 rounded-lg" style="color: var(--color-text-primary);">
                                         <Wallet class="w-4 h-4" />
                                         <span>Wallet: ${{ user.wallet_balance }}</span>
                                     </Link>
-                                    <Link href="/settings" class="flex items-center gap-3 px-3 py-2 hover:bg-dark-800 rounded-lg">
+                                    <Link href="/settings" class="flex items-center gap-3 px-3 py-2 rounded-lg" style="color: var(--color-text-primary);">
                                         <Settings class="w-4 h-4" />
                                         <span>Settings</span>
                                     </Link>
                                 </div>
-                                <div class="pt-2 border-t border-dark-800">
-                                    <Link href="/logout" method="post" as="button" class="flex items-center gap-3 px-3 py-2 hover:bg-dark-800 rounded-lg w-full text-left text-red-400">
+                                <!-- Theme Toggle -->
+                                <div v-if="themeSettings.allowToggle" class="py-2" style="border-top: 1px solid var(--color-border);">
+                                    <p class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-secondary);">Theme</p>
+                                    <div class="flex gap-1 px-2">
+                                        <button 
+                                            @click="setTheme('light')"
+                                            :class="['flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm', currentTheme === 'light' ? 'bg-primary-600 text-white' : '']"
+                                            :style="currentTheme !== 'light' ? { color: 'var(--color-text-secondary)' } : {}"
+                                        >
+                                            <Sun class="w-4 h-4" />
+                                        </button>
+                                        <button 
+                                            @click="setTheme('dark')"
+                                            :class="['flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm', currentTheme === 'dark' ? 'bg-primary-600 text-white' : '']"
+                                            :style="currentTheme !== 'dark' ? { color: 'var(--color-text-secondary)' } : {}"
+                                        >
+                                            <Moon class="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="pt-2" style="border-top: 1px solid var(--color-border);">
+                                    <Link href="/logout" method="post" as="button" class="flex items-center gap-3 px-3 py-2 rounded-lg w-full text-left text-red-400">
                                         <LogOut class="w-4 h-4" />
                                         <span>Sign Out</span>
                                     </Link>
@@ -154,9 +179,10 @@ const toggleSidebar = () => {
         <!-- Sidebar -->
         <aside 
             :class="[
-                'fixed left-0 top-14 bottom-0 bg-dark-900 border-r border-dark-800 overflow-y-auto hidden lg:block transition-all duration-300',
+                'fixed left-0 top-14 bottom-0 overflow-y-auto hidden lg:block transition-all duration-300',
                 sidebarCollapsed ? 'w-16' : 'w-64'
             ]"
+            style="background-color: var(--color-bg-secondary); border-right: 1px solid var(--color-border);"
         >
             <nav class="p-2">
                 <ul class="space-y-1">
@@ -164,10 +190,11 @@ const toggleSidebar = () => {
                         <Link 
                             :href="item.href" 
                             :class="[
-                                'flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-dark-800 text-dark-300 hover:text-white transition-colors',
+                                'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors',
                                 sidebarCollapsed ? 'justify-center' : ''
                             ]"
                             :title="sidebarCollapsed ? item.name : ''"
+                            style="color: var(--color-text-secondary);"
                         >
                             <component :is="item.icon" class="w-5 h-5 flex-shrink-0" />
                             <span v-if="!sidebarCollapsed">{{ item.name }}</span>
@@ -176,11 +203,11 @@ const toggleSidebar = () => {
                 </ul>
 
                 <template v-if="user && !sidebarCollapsed">
-                    <div class="mt-6 pt-6 border-t border-dark-800">
-                        <h3 class="px-3 text-xs font-semibold text-dark-500 uppercase tracking-wider mb-2">Library</h3>
+                    <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
+                        <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-secondary);">Library</h3>
                         <ul class="space-y-1">
                             <li v-for="item in libraryNav" :key="item.name">
-                                <Link :href="item.href" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-dark-800 text-dark-300 hover:text-white">
+                                <Link :href="item.href" class="flex items-center gap-3 px-3 py-2 rounded-lg" style="color: var(--color-text-secondary);">
                                     <component :is="item.icon" class="w-5 h-5" />
                                     <span>{{ item.name }}</span>
                                 </Link>
@@ -190,13 +217,14 @@ const toggleSidebar = () => {
                 </template>
 
                 <template v-if="user && sidebarCollapsed">
-                    <div class="mt-6 pt-6 border-t border-dark-800">
+                    <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
                         <ul class="space-y-1">
                             <li v-for="item in libraryNav" :key="item.name">
                                 <Link 
                                     :href="item.href" 
-                                    class="flex items-center justify-center px-3 py-2 rounded-lg hover:bg-dark-800 text-dark-300 hover:text-white"
+                                    class="flex items-center justify-center px-3 py-2 rounded-lg"
                                     :title="item.name"
+                                    style="color: var(--color-text-secondary);"
                                 >
                                     <component :is="item.icon" class="w-5 h-5" />
                                 </Link>

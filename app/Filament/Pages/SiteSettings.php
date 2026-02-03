@@ -45,6 +45,17 @@ class SiteSettings extends Page implements HasForms
             'max_upload_size_pro' => Setting::get('max_upload_size_pro', 5000),
             'max_daily_uploads_free' => Setting::get('max_daily_uploads_free', 5),
             'max_daily_uploads_pro' => Setting::get('max_daily_uploads_pro', 50),
+            'ffmpeg_enabled' => Setting::get('ffmpeg_enabled', true),
+            'animated_previews_enabled' => Setting::get('animated_previews_enabled', true),
+            'ffmpeg_path' => Setting::get('ffmpeg_path', ''),
+            'ffprobe_path' => Setting::get('ffprobe_path', ''),
+            'video_quality_preset' => Setting::get('video_quality_preset', 'medium'),
+            'watermark_enabled' => Setting::get('watermark_enabled', false),
+            'watermark_image' => Setting::get('watermark_image', ''),
+            'watermark_position' => Setting::get('watermark_position', 'bottom-right'),
+            'watermark_opacity' => Setting::get('watermark_opacity', 70),
+            'watermark_scale' => Setting::get('watermark_scale', 15),
+            'watermark_padding' => Setting::get('watermark_padding', 10),
             'video_auto_approve' => Setting::get('video_auto_approve', false),
             'comments_enabled' => Setting::get('comments_enabled', true),
             'comments_require_approval' => Setting::get('comments_require_approval', false),
@@ -127,6 +138,87 @@ class SiteSettings extends Page implements HasForms
                                         TextInput::make('max_daily_uploads_pro')
                                             ->label('Max Daily Uploads (Pro)')
                                             ->numeric(),
+                                    ])->columns(2),
+                                Section::make('FFmpeg & Transcoding')
+                                    ->schema([
+                                        Toggle::make('ffmpeg_enabled')
+                                            ->label('Enable FFmpeg Processing')
+                                            ->helperText('Process videos with FFmpeg for transcoding and thumbnails')
+                                            ->reactive(),
+                                        Toggle::make('animated_previews_enabled')
+                                            ->label('Enable Animated Previews')
+                                            ->helperText('Generate animated WebP previews shown on thumbnail hover')
+                                            ->default(true),
+                                        TextInput::make('ffmpeg_path')
+                                            ->label('FFmpeg Binary Path')
+                                            ->placeholder('/usr/bin/ffmpeg')
+                                            ->helperText('Leave empty to use system default'),
+                                        TextInput::make('ffprobe_path')
+                                            ->label('FFprobe Binary Path')
+                                            ->placeholder('/usr/bin/ffprobe')
+                                            ->helperText('Leave empty to use system default'),
+                                        Select::make('video_quality_preset')
+                                            ->label('Quality Preset')
+                                            ->options([
+                                                'ultrafast' => 'Ultra Fast (Lower Quality)',
+                                                'fast' => 'Fast',
+                                                'medium' => 'Medium (Balanced)',
+                                                'slow' => 'Slow (Higher Quality)',
+                                            ])
+                                            ->default('medium'),
+                                    ])->columns(2),
+                                Section::make('Watermark')
+                                    ->schema([
+                                        Toggle::make('watermark_enabled')
+                                            ->label('Enable Watermark')
+                                            ->helperText('Add a watermark to all processed videos')
+                                            ->reactive(),
+                                        \Filament\Forms\Components\FileUpload::make('watermark_image')
+                                            ->label('Watermark Image')
+                                            ->image()
+                                            ->directory('watermarks')
+                                            ->visibility('public')
+                                            ->helperText('Upload a PNG image with transparency for best results')
+                                            ->visible(fn ($get) => $get('watermark_enabled')),
+                                        Select::make('watermark_position')
+                                            ->label('Watermark Position')
+                                            ->options([
+                                                'top-left' => 'Top Left',
+                                                'top-center' => 'Top Center',
+                                                'top-right' => 'Top Right',
+                                                'center-left' => 'Center Left',
+                                                'center' => 'Center',
+                                                'center-right' => 'Center Right',
+                                                'bottom-left' => 'Bottom Left',
+                                                'bottom-center' => 'Bottom Center',
+                                                'bottom-right' => 'Bottom Right',
+                                            ])
+                                            ->default('bottom-right')
+                                            ->visible(fn ($get) => $get('watermark_enabled')),
+                                        TextInput::make('watermark_opacity')
+                                            ->label('Watermark Opacity')
+                                            ->numeric()
+                                            ->minValue(0)
+                                            ->maxValue(100)
+                                            ->suffix('%')
+                                            ->default(70)
+                                            ->visible(fn ($get) => $get('watermark_enabled')),
+                                        TextInput::make('watermark_scale')
+                                            ->label('Watermark Scale')
+                                            ->numeric()
+                                            ->minValue(5)
+                                            ->maxValue(50)
+                                            ->suffix('% of video width')
+                                            ->default(15)
+                                            ->visible(fn ($get) => $get('watermark_enabled')),
+                                        TextInput::make('watermark_padding')
+                                            ->label('Watermark Padding')
+                                            ->numeric()
+                                            ->minValue(0)
+                                            ->maxValue(100)
+                                            ->suffix('px')
+                                            ->default(10)
+                                            ->visible(fn ($get) => $get('watermark_enabled')),
                                     ])->columns(2),
                                 Section::make('Moderation')
                                     ->schema([

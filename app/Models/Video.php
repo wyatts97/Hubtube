@@ -21,6 +21,7 @@ class Video extends Model
         'slug',
         'description',
         'thumbnail',
+        'preview_path',
         'video_path',
         'trailer_path',
         'duration',
@@ -50,6 +51,7 @@ class Video extends Model
     protected $appends = [
         'video_url',
         'thumbnail_url',
+        'preview_url',
         'formatted_duration',
     ];
 
@@ -219,6 +221,19 @@ class Video extends Model
         }
 
         return asset('storage/' . $this->thumbnail);
+    }
+
+    public function getPreviewUrlAttribute(): ?string
+    {
+        if (!$this->preview_path) {
+            return null;
+        }
+
+        if (config('hubtube.storage.cdn_enabled')) {
+            return config('hubtube.storage.cdn_url') . '/' . $this->preview_path;
+        }
+
+        return asset('storage/' . $this->preview_path);
     }
 
     public function getVideoUrlAttribute(): ?string
