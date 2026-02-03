@@ -39,7 +39,7 @@ A scalable, feature-rich video-sharing CMS optimized for adult content, built wi
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url> hubtube
+   git clone https://github.com/wyatts97/Hubtube.git hubtube
    cd hubtube
    ```
 
