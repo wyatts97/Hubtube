@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Video;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Number;
 
 class StoreVideoRequest extends FormRequest
 {
@@ -36,7 +37,7 @@ class StoreVideoRequest extends FormRequest
     {
         return [
             'video_file.max' => 'Video file is too large. Maximum size is ' . 
-                formatBytes($this->user()->max_video_size),
+                Number::fileSize($this->user()->max_video_size),
         ];
     }
 }
