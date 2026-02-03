@@ -16,7 +16,7 @@ class Comment extends Model
         'user_id',
         'video_id',
         'parent_id',
-        'body',
+        'content',
         'likes_count',
         'dislikes_count',
         'is_pinned',

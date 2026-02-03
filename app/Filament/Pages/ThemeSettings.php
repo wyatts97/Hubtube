@@ -1,0 +1,287 @@
+<?php
+
+namespace App\Filament\Pages;
+
+use App\Models\Setting;
+use Filament\Forms\Components\ColorPicker;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Form;
+use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+
+class ThemeSettings extends Page implements HasForms
+{
+    use InteractsWithForms;
+
+    protected static ?string $navigationIcon = 'heroicon-o-paint-brush';
+    protected static ?string $navigationLabel = 'Theme & Appearance';
+    protected static ?string $navigationGroup = 'Settings';
+    protected static ?int $navigationSort = 2;
+    protected static string $view = 'filament.pages.site-settings';
+
+    public ?array $data = [];
+
+    protected static array $availableIcons = [
+        'home' => 'Home',
+        'trending-up' => 'Trending Up',
+        'zap' => 'Zap/Lightning',
+        'radio' => 'Radio/Live',
+        'video' => 'Video',
+        'play-circle' => 'Play Circle',
+        'film' => 'Film',
+        'tv' => 'TV',
+        'monitor' => 'Monitor',
+        'list-video' => 'List Video',
+        'history' => 'History',
+        'clock' => 'Clock',
+        'bookmark' => 'Bookmark',
+        'heart' => 'Heart',
+        'star' => 'Star',
+        'flame' => 'Flame',
+        'sparkles' => 'Sparkles',
+        'compass' => 'Compass',
+        'globe' => 'Globe',
+        'music' => 'Music',
+        'gamepad' => 'Gamepad',
+        'trophy' => 'Trophy',
+        'graduation-cap' => 'Education',
+        'newspaper' => 'News',
+        'camera' => 'Camera',
+        'mic' => 'Microphone',
+        'podcast' => 'Podcast',
+    ];
+
+    public function mount(): void
+    {
+        $this->form->fill([
+            // Theme Mode
+            'theme_mode' => Setting::get('theme_mode', 'dark'),
+            'allow_user_theme_toggle' => Setting::get('allow_user_theme_toggle', true),
+            
+            // Dark Mode Colors
+            'dark_bg_primary' => Setting::get('dark_bg_primary', '#0a0a0a'),
+            'dark_bg_secondary' => Setting::get('dark_bg_secondary', '#171717'),
+            'dark_bg_card' => Setting::get('dark_bg_card', '#1f1f1f'),
+            'dark_accent_color' => Setting::get('dark_accent_color', '#ef4444'),
+            'dark_text_primary' => Setting::get('dark_text_primary', '#ffffff'),
+            'dark_text_secondary' => Setting::get('dark_text_secondary', '#a3a3a3'),
+            'dark_border_color' => Setting::get('dark_border_color', '#262626'),
+            
+            // Light Mode Colors
+            'light_bg_primary' => Setting::get('light_bg_primary', '#ffffff'),
+            'light_bg_secondary' => Setting::get('light_bg_secondary', '#f5f5f5'),
+            'light_bg_card' => Setting::get('light_bg_card', '#ffffff'),
+            'light_accent_color' => Setting::get('light_accent_color', '#dc2626'),
+            'light_text_primary' => Setting::get('light_text_primary', '#171717'),
+            'light_text_secondary' => Setting::get('light_text_secondary', '#525252'),
+            'light_border_color' => Setting::get('light_border_color', '#e5e5e5'),
+            
+            // Navigation Icons
+            'nav_home_icon' => Setting::get('nav_home_icon', 'home'),
+            'nav_home_color' => Setting::get('nav_home_color', ''),
+            'nav_trending_icon' => Setting::get('nav_trending_icon', 'trending-up'),
+            'nav_trending_color' => Setting::get('nav_trending_color', ''),
+            'nav_shorts_icon' => Setting::get('nav_shorts_icon', 'zap'),
+            'nav_shorts_color' => Setting::get('nav_shorts_color', ''),
+            'nav_live_icon' => Setting::get('nav_live_icon', 'radio'),
+            'nav_live_color' => Setting::get('nav_live_color', ''),
+            'nav_playlists_icon' => Setting::get('nav_playlists_icon', 'list-video'),
+            'nav_playlists_color' => Setting::get('nav_playlists_color', ''),
+            'nav_history_icon' => Setting::get('nav_history_icon', 'history'),
+            'nav_history_color' => Setting::get('nav_history_color', ''),
+            
+            // Global Icon Settings
+            'icon_color_mode' => Setting::get('icon_color_mode', 'inherit'),
+            'icon_global_color' => Setting::get('icon_global_color', ''),
+        ]);
+    }
+
+    public function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Tabs::make('Theme Settings')
+                    ->tabs([
+                        Tabs\Tab::make('Theme Mode')
+                            ->icon('heroicon-o-sun')
+                            ->schema([
+                                Section::make('Default Theme')
+                                    ->description('Configure the default theme mode for your site')
+                                    ->schema([
+                                        Select::make('theme_mode')
+                                            ->label('Default Theme Mode')
+                                            ->options([
+                                                'dark' => 'Dark Mode',
+                                                'light' => 'Light Mode',
+                                                'system' => 'System Preference',
+                                            ])
+                                            ->required(),
+                                        Toggle::make('allow_user_theme_toggle')
+                                            ->label('Allow Users to Toggle Theme')
+                                            ->helperText('Let users switch between light and dark mode'),
+                                    ])->columns(2),
+                            ]),
+                        
+                        Tabs\Tab::make('Dark Mode')
+                            ->icon('heroicon-o-moon')
+                            ->schema([
+                                Section::make('Dark Mode Colors')
+                                    ->description('Customize colors for dark mode')
+                                    ->schema([
+                                        Grid::make(3)->schema([
+                                            ColorPicker::make('dark_bg_primary')
+                                                ->label('Primary Background'),
+                                            ColorPicker::make('dark_bg_secondary')
+                                                ->label('Secondary Background'),
+                                            ColorPicker::make('dark_bg_card')
+                                                ->label('Card Background'),
+                                        ]),
+                                        Grid::make(3)->schema([
+                                            ColorPicker::make('dark_accent_color')
+                                                ->label('Accent Color'),
+                                            ColorPicker::make('dark_text_primary')
+                                                ->label('Primary Text'),
+                                            ColorPicker::make('dark_text_secondary')
+                                                ->label('Secondary Text'),
+                                        ]),
+                                        ColorPicker::make('dark_border_color')
+                                            ->label('Border Color'),
+                                    ]),
+                            ]),
+                        
+                        Tabs\Tab::make('Light Mode')
+                            ->icon('heroicon-o-sun')
+                            ->schema([
+                                Section::make('Light Mode Colors')
+                                    ->description('Customize colors for light mode')
+                                    ->schema([
+                                        Grid::make(3)->schema([
+                                            ColorPicker::make('light_bg_primary')
+                                                ->label('Primary Background'),
+                                            ColorPicker::make('light_bg_secondary')
+                                                ->label('Secondary Background'),
+                                            ColorPicker::make('light_bg_card')
+                                                ->label('Card Background'),
+                                        ]),
+                                        Grid::make(3)->schema([
+                                            ColorPicker::make('light_accent_color')
+                                                ->label('Accent Color'),
+                                            ColorPicker::make('light_text_primary')
+                                                ->label('Primary Text'),
+                                            ColorPicker::make('light_text_secondary')
+                                                ->label('Secondary Text'),
+                                        ]),
+                                        ColorPicker::make('light_border_color')
+                                            ->label('Border Color'),
+                                    ]),
+                            ]),
+                        
+                        Tabs\Tab::make('Navigation Icons')
+                            ->icon('heroicon-o-squares-2x2')
+                            ->schema([
+                                Section::make('Global Icon Settings')
+                                    ->schema([
+                                        Select::make('icon_color_mode')
+                                            ->label('Icon Color Mode')
+                                            ->options([
+                                                'inherit' => 'Inherit from Theme',
+                                                'global' => 'Use Global Color',
+                                                'individual' => 'Individual Colors',
+                                            ])
+                                            ->reactive(),
+                                        ColorPicker::make('icon_global_color')
+                                            ->label('Global Icon Color')
+                                            ->visible(fn ($get) => $get('icon_color_mode') === 'global'),
+                                    ])->columns(2),
+                                
+                                Section::make('Main Navigation Icons')
+                                    ->description('Customize icons for the main navigation menu')
+                                    ->schema([
+                                        Grid::make(2)->schema([
+                                            Select::make('nav_home_icon')
+                                                ->label('Home Icon')
+                                                ->options(self::$availableIcons),
+                                            ColorPicker::make('nav_home_color')
+                                                ->label('Home Icon Color')
+                                                ->visible(fn ($get) => $get('icon_color_mode') === 'individual'),
+                                        ]),
+                                        Grid::make(2)->schema([
+                                            Select::make('nav_trending_icon')
+                                                ->label('Trending Icon')
+                                                ->options(self::$availableIcons),
+                                            ColorPicker::make('nav_trending_color')
+                                                ->label('Trending Icon Color')
+                                                ->visible(fn ($get) => $get('icon_color_mode') === 'individual'),
+                                        ]),
+                                        Grid::make(2)->schema([
+                                            Select::make('nav_shorts_icon')
+                                                ->label('Shorts Icon')
+                                                ->options(self::$availableIcons),
+                                            ColorPicker::make('nav_shorts_color')
+                                                ->label('Shorts Icon Color')
+                                                ->visible(fn ($get) => $get('icon_color_mode') === 'individual'),
+                                        ]),
+                                        Grid::make(2)->schema([
+                                            Select::make('nav_live_icon')
+                                                ->label('Live Icon')
+                                                ->options(self::$availableIcons),
+                                            ColorPicker::make('nav_live_color')
+                                                ->label('Live Icon Color')
+                                                ->visible(fn ($get) => $get('icon_color_mode') === 'individual'),
+                                        ]),
+                                    ]),
+                                
+                                Section::make('Library Navigation Icons')
+                                    ->schema([
+                                        Grid::make(2)->schema([
+                                            Select::make('nav_playlists_icon')
+                                                ->label('Playlists Icon')
+                                                ->options(self::$availableIcons),
+                                            ColorPicker::make('nav_playlists_color')
+                                                ->label('Playlists Icon Color')
+                                                ->visible(fn ($get) => $get('icon_color_mode') === 'individual'),
+                                        ]),
+                                        Grid::make(2)->schema([
+                                            Select::make('nav_history_icon')
+                                                ->label('History Icon')
+                                                ->options(self::$availableIcons),
+                                            ColorPicker::make('nav_history_color')
+                                                ->label('History Icon Color')
+                                                ->visible(fn ($get) => $get('icon_color_mode') === 'individual'),
+                                        ]),
+                                    ]),
+                            ]),
+                    ])->columnSpanFull(),
+            ])
+            ->statePath('data');
+    }
+
+    public function save(): void
+    {
+        $data = $this->form->getState();
+
+        foreach ($data as $key => $value) {
+            $type = match (true) {
+                is_bool($value) => 'boolean',
+                is_int($value) => 'integer',
+                is_array($value) => 'array',
+                default => 'string',
+            };
+
+            Setting::set($key, $value, 'theme', $type);
+        }
+
+        Notification::make()
+            ->title('Theme settings saved successfully')
+            ->success()
+            ->send();
+    }
+}

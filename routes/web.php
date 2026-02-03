@@ -13,6 +13,7 @@ use App\Http\Controllers\LikeController;
 use App\Http\Controllers\LiveStreamController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\WalletController;
@@ -106,5 +107,10 @@ Route::middleware('age.verified')->group(function () {
 
         Route::get('/gifts', [GiftController::class, 'index'])->name('gifts.index');
         Route::post('/live/{liveStream}/gift', [GiftController::class, 'send'])->name('gifts.send');
+
+        Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
+        Route::put('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile');
+        Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password');
+        Route::put('/settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications');
     });
 });

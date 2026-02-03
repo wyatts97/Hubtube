@@ -18,29 +18,30 @@ class CommentController extends Controller
             ->approved()
             ->orderByDesc('is_pinned')
             ->latest()
-            ->paginate(20);
+            ->get();
 
-        return response()->json($comments);
+        return response()->json(['comments' => $comments]);
     }
 
     public function store(Request $request, Video $video): JsonResponse
     {
         $validated = $request->validate([
-            'body' => 'required|string|max:5000',
+            'content' => 'required|string|max:5000',
             'parent_id' => 'nullable|exists:comments,id',
         ]);
 
         $comment = $video->comments()->create([
             'user_id' => $request->user()->id,
-            'body' => $validated['body'],
+            'content' => $validated['content'],
             'parent_id' => $validated['parent_id'] ?? null,
+            'is_approved' => true,
         ]);
 
         $video->increment('comments_count');
 
         $comment->load('user');
 
-        return response()->json($comment, 201);
+        return response()->json(['comment' => $comment], 201);
     }
 
     public function update(Request $request, Comment $comment): JsonResponse
@@ -48,12 +49,12 @@ class CommentController extends Controller
         $this->authorize('update', $comment);
 
         $validated = $request->validate([
-            'body' => 'required|string|max:5000',
+            'content' => 'required|string|max:5000',
         ]);
 
-        $comment->update($validated);
+        $comment->update(['content' => $validated['content']]);
 
-        return response()->json($comment);
+        return response()->json(['comment' => $comment]);
     }
 
     public function destroy(Comment $comment): JsonResponse
@@ -79,12 +80,20 @@ class CommentController extends Controller
                 if ($existing->type === 'like') {
                     $existing->delete();
                     $comment->decrement('likes_count');
-                    return response()->json(['liked' => false, 'disliked' => false]);
+                    return response()->json([
+                        'liked' => false, 
+                        'disliked' => false,
+                        'likesCount' => $comment->fresh()->likes_count,
+                    ]);
                 } else {
                     $existing->update(['type' => 'like']);
                     $comment->increment('likes_count');
                     $comment->decrement('dislikes_count');
-                    return response()->json(['liked' => true, 'disliked' => false]);
+                    return response()->json([
+                        'liked' => true, 
+                        'disliked' => false,
+                        'likesCount' => $comment->fresh()->likes_count,
+                    ]);
                 }
             }
 
@@ -94,7 +103,11 @@ class CommentController extends Controller
             ]);
             $comment->increment('likes_count');
 
-            return response()->json(['liked' => true, 'disliked' => false]);
+            return response()->json([
+                'liked' => true, 
+                'disliked' => false,
+                'likesCount' => $comment->fresh()->likes_count,
+            ]);
         });
     }
 
@@ -110,12 +123,20 @@ class CommentController extends Controller
                 if ($existing->type === 'dislike') {
                     $existing->delete();
                     $comment->decrement('dislikes_count');
-                    return response()->json(['liked' => false, 'disliked' => false]);
+                    return response()->json([
+                        'liked' => false, 
+                        'disliked' => false,
+                        'dislikesCount' => $comment->fresh()->dislikes_count,
+                    ]);
                 } else {
                     $existing->update(['type' => 'dislike']);
                     $comment->decrement('likes_count');
                     $comment->increment('dislikes_count');
-                    return response()->json(['liked' => false, 'disliked' => true]);
+                    return response()->json([
+                        'liked' => false, 
+                        'disliked' => true,
+                        'dislikesCount' => $comment->fresh()->dislikes_count,
+                    ]);
                 }
             }
 
@@ -125,7 +146,11 @@ class CommentController extends Controller
             ]);
             $comment->increment('dislikes_count');
 
-            return response()->json(['liked' => false, 'disliked' => true]);
+            return response()->json([
+                'liked' => false, 
+                'disliked' => true,
+                'dislikesCount' => $comment->fresh()->dislikes_count,
+            ]);
         });
     }
 }

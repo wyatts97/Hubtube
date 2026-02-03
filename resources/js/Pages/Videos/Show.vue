@@ -3,6 +3,7 @@ import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
+import CommentSection from '@/Components/CommentSection.vue';
 import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -13,7 +14,7 @@ const props = defineProps({
 });
 
 const page = usePage();
-const user = computed(() => page.props.auth.user);
+const user = computed(() => page.props.auth?.user);
 
 const liked = ref(props.userLike === 'like');
 const disliked = ref(props.userLike === 'dislike');
@@ -190,6 +191,9 @@ const formattedViews = computed(() => {
                             </span>
                         </div>
                     </div>
+
+                    <!-- Comments Section -->
+                    <CommentSection :video-id="video.id" />
                 </div>
             </div>
 
