@@ -38,7 +38,7 @@
     }
 
     .video-card {
-        @apply group cursor-pointer;
+        @apply cursor-pointer;
     }
 
     .video-card .thumbnail {
