@@ -3,8 +3,18 @@ import { Head, usePage, router } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
+import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
 import LiveStreamCard from '@/Components/LiveStreamCard.vue';
 import { Loader2, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+
+// Initial loading state for skeleton display
+const isInitialLoad = ref(true);
+onMounted(() => {
+    // Simulate brief loading for skeleton demo, or remove for instant load
+    setTimeout(() => {
+        isInitialLoad.value = false;
+    }, 100);
+});
 
 const props = defineProps({
     featuredVideos: Array,
@@ -30,7 +40,15 @@ const loadMore = async () => {
     
     loading.value = true;
     try {
-        const response = await fetch(`/api/videos/load-more?page=${currentPage.value + 1}`);
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const response = await fetch(`/api/videos/load-more?page=${currentPage.value + 1}`, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken || '',
+            },
+            credentials: 'same-origin',
+        });
         const data = await response.json();
         
         videos.value.push(...data.data);
@@ -92,12 +110,17 @@ const goToPage = (pageNum) => {
         </section>
 
         <!-- Featured Videos -->
-        <section v-if="featuredVideos.length > 0" class="mb-8">
+        <section v-if="featuredVideos.length > 0 || isInitialLoad" class="mb-8">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold" style="color: var(--color-text-primary);">Featured</h2>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                <VideoCard v-for="video in featuredVideos" :key="video.id" :video="video" />
+                <template v-if="isInitialLoad">
+                    <VideoCardSkeleton v-for="i in 4" :key="'skeleton-featured-' + i" />
+                </template>
+                <template v-else>
+                    <VideoCard v-for="video in featuredVideos" :key="video.id" :video="video" />
+                </template>
             </div>
         </section>
 
@@ -108,8 +131,13 @@ const goToPage = (pageNum) => {
                 <a href="/videos" class="text-sm font-medium" style="color: var(--color-accent);">View All</a>
             </div>
             
+            <!-- Skeleton Loading State -->
+            <div v-if="isInitialLoad" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <VideoCardSkeleton v-for="i in 8" :key="'skeleton-latest-' + i" />
+            </div>
+            
             <!-- Infinite Scroll Mode -->
-            <template v-if="infiniteScrollEnabled">
+            <template v-else-if="infiniteScrollEnabled">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     <VideoCard v-for="video in videos" :key="video.id" :video="video" />
                 </div>
@@ -184,13 +212,18 @@ const goToPage = (pageNum) => {
         </section>
 
         <!-- Popular Videos -->
-        <section v-if="popularVideos.length > 0" class="mb-8">
+        <section v-if="popularVideos.length > 0 || isInitialLoad" class="mb-8">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold" style="color: var(--color-text-primary);">Popular</h2>
                 <a href="/trending" class="text-sm font-medium" style="color: var(--color-accent);">View All</a>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                <VideoCard v-for="video in popularVideos" :key="video.id" :video="video" />
+                <template v-if="isInitialLoad">
+                    <VideoCardSkeleton v-for="i in 4" :key="'skeleton-popular-' + i" />
+                </template>
+                <template v-else>
+                    <VideoCard v-for="video in popularVideos" :key="video.id" :video="video" />
+                </template>
             </div>
         </section>
     </AppLayout>

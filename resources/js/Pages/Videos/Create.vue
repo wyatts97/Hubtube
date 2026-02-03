@@ -1,8 +1,8 @@
 <script setup>
-import { Head, useForm } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { Head, useForm, router } from '@inertiajs/vue3';
+import { ref, computed, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Upload, X, Video } from 'lucide-vue-next';
+import { Upload, X, Video, FileVideo, CheckCircle, AlertCircle } from 'lucide-vue-next';
 
 const props = defineProps({
     categories: Array,
@@ -10,6 +10,10 @@ const props = defineProps({
 
 const dragActive = ref(false);
 const videoPreview = ref(null);
+const uploadProgress = ref(0);
+const uploadStatus = ref('idle'); // idle, uploading, processing, success, error
+const uploadError = ref('');
+const videoDuration = ref(null);
 
 const form = useForm({
     title: '',
@@ -37,9 +41,18 @@ const removeTag = (index) => {
 
 const handleDrop = (e) => {
     dragActive.value = false;
-    const file = e.dataTransfer.files[0];
+    const files = e.dataTransfer.files;
+    
+    if (files.length > 1) {
+        uploadError.value = 'Please drop only one video file at a time.';
+        return;
+    }
+    
+    const file = files[0];
     if (file && file.type.startsWith('video/')) {
         handleFile(file);
+    } else {
+        uploadError.value = 'Please drop a valid video file.';
     }
 };
 
@@ -51,8 +64,18 @@ const handleFileSelect = (e) => {
 };
 
 const handleFile = (file) => {
+    uploadError.value = '';
     form.video_file = file;
     videoPreview.value = URL.createObjectURL(file);
+    
+    // Get video duration
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+        videoDuration.value = video.duration;
+        URL.revokeObjectURL(video.src);
+    };
+    video.src = URL.createObjectURL(file);
     
     if (!form.title) {
         form.title = file.name.replace(/\.[^/.]+$/, '');
@@ -62,11 +85,34 @@ const handleFile = (file) => {
 const removeVideo = () => {
     form.video_file = null;
     videoPreview.value = null;
+    videoDuration.value = null;
+    uploadProgress.value = 0;
+    uploadStatus.value = 'idle';
+    uploadError.value = '';
 };
 
 const submit = () => {
+    uploadStatus.value = 'uploading';
+    uploadProgress.value = 0;
+    uploadError.value = '';
+    
     form.post('/upload', {
         forceFormData: true,
+        onProgress: (progress) => {
+            uploadProgress.value = Math.round(progress.percentage);
+        },
+        onSuccess: () => {
+            uploadStatus.value = 'success';
+        },
+        onError: (errors) => {
+            uploadStatus.value = 'error';
+            uploadError.value = Object.values(errors).flat().join(', ');
+        },
+        onFinish: () => {
+            if (uploadStatus.value === 'uploading') {
+                uploadStatus.value = 'processing';
+            }
+        },
     });
 };
 
@@ -80,6 +126,26 @@ const fileSizeFormatted = computed(() => {
         return (bytes / 1048576).toFixed(2) + ' MB';
     }
     return (bytes / 1024).toFixed(2) + ' KB';
+});
+
+const durationFormatted = computed(() => {
+    if (!videoDuration.value) return '';
+    const duration = Math.floor(videoDuration.value);
+    const hours = Math.floor(duration / 3600);
+    const minutes = Math.floor((duration % 3600) / 60);
+    const seconds = duration % 60;
+    
+    if (hours > 0) {
+        return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
+});
+
+// Cleanup on unmount
+onUnmounted(() => {
+    if (videoPreview.value) {
+        URL.revokeObjectURL(videoPreview.value);
+    }
 });
 </script>
 
@@ -122,18 +188,73 @@ const fileSizeFormatted = computed(() => {
                 <!-- Video Preview -->
                 <div v-else class="card p-4">
                     <div class="flex items-start gap-4">
-                        <div class="w-48 aspect-video rounded-lg overflow-hidden flex-shrink-0" style="background-color: var(--color-bg-secondary);">
+                        <div class="w-48 aspect-video rounded-lg overflow-hidden flex-shrink-0 relative" style="background-color: var(--color-bg-secondary);">
                             <video :src="videoPreview" class="w-full h-full object-cover"></video>
+                            <div v-if="durationFormatted" class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-xs font-medium bg-black/80 text-white">
+                                {{ durationFormatted }}
+                            </div>
                         </div>
-                        <div class="flex-1">
-                            <p class="font-medium" style="color: var(--color-text-primary);">{{ form.video_file.name }}</p>
-                            <p class="text-sm" style="color: var(--color-text-muted);">{{ fileSizeFormatted }}</p>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <FileVideo class="w-5 h-5 flex-shrink-0" style="color: var(--color-accent);" />
+                                <p class="font-medium truncate" style="color: var(--color-text-primary);">{{ form.video_file.name }}</p>
+                            </div>
+                            <p class="text-sm mt-1" style="color: var(--color-text-muted);">
+                                {{ fileSizeFormatted }}
+                                <span v-if="durationFormatted"> • {{ durationFormatted }}</span>
+                            </p>
+                            
+                            <!-- Upload Progress Bar -->
+                            <div v-if="uploadStatus === 'uploading'" class="mt-3">
+                                <div class="flex items-center justify-between text-sm mb-1">
+                                    <span style="color: var(--color-text-secondary);">Uploading...</span>
+                                    <span style="color: var(--color-accent);">{{ uploadProgress }}%</span>
+                                </div>
+                                <div class="h-2 rounded-full overflow-hidden" style="background-color: var(--color-bg-secondary);">
+                                    <div 
+                                        class="h-full rounded-full transition-all duration-300 ease-out"
+                                        :style="{ width: uploadProgress + '%', backgroundColor: 'var(--color-accent)' }"
+                                    ></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Processing Status -->
+                            <div v-else-if="uploadStatus === 'processing'" class="mt-3 flex items-center gap-2">
+                                <div class="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style="border-color: var(--color-accent); border-top-color: transparent;"></div>
+                                <span class="text-sm" style="color: var(--color-text-secondary);">Processing video...</span>
+                            </div>
+                            
+                            <!-- Success Status -->
+                            <div v-else-if="uploadStatus === 'success'" class="mt-3 flex items-center gap-2 text-green-500">
+                                <CheckCircle class="w-4 h-4" />
+                                <span class="text-sm">Upload complete!</span>
+                            </div>
+                            
+                            <!-- Error Status -->
+                            <div v-else-if="uploadStatus === 'error'" class="mt-3 flex items-center gap-2 text-red-500">
+                                <AlertCircle class="w-4 h-4" />
+                                <span class="text-sm">{{ uploadError || 'Upload failed' }}</span>
+                            </div>
                         </div>
-                        <button type="button" @click="removeVideo" class="p-2 rounded-full hover:opacity-80" style="background-color: var(--color-bg-secondary);">
+                        <button 
+                            type="button" 
+                            @click="removeVideo" 
+                            :disabled="uploadStatus === 'uploading'"
+                            class="p-2 rounded-full hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed" 
+                            style="background-color: var(--color-bg-secondary);"
+                        >
                             <X class="w-5 h-5" style="color: var(--color-text-muted);" />
                         </button>
                     </div>
                     <p v-if="form.errors.video_file" class="text-red-500 text-sm mt-2">{{ form.errors.video_file }}</p>
+                </div>
+                
+                <!-- Upload Error Message -->
+                <div v-if="uploadError && !form.video_file" class="p-4 rounded-lg border border-red-500/30 bg-red-500/10">
+                    <div class="flex items-center gap-2 text-red-500">
+                        <AlertCircle class="w-5 h-5" />
+                        <span>{{ uploadError }}</span>
+                    </div>
                 </div>
 
                 <!-- Video Details -->

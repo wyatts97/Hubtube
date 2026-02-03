@@ -39,13 +39,21 @@ export function useTheme() {
         setTheme(currentTheme.value === 'dark' ? 'light' : 'dark');
     };
     
-    const applyTheme = () => {
+    const applyTheme = (animate = true) => {
         const root = document.documentElement;
         const colors = currentTheme.value === 'dark' 
             ? themeSettings.value?.dark 
             : themeSettings.value?.light;
         
         if (!colors) return;
+        
+        // Add transition class for smooth theme switching
+        if (animate && isInitialized.value) {
+            root.classList.add('theme-transitioning');
+            setTimeout(() => {
+                root.classList.remove('theme-transitioning');
+            }, 300);
+        }
         
         root.style.setProperty('--color-bg-primary', colors.bgPrimary || (currentTheme.value === 'dark' ? '#0a0a0a' : '#ffffff'));
         root.style.setProperty('--color-bg-secondary', colors.bgSecondary || (currentTheme.value === 'dark' ? '#171717' : '#f5f5f5'));

@@ -25,8 +25,14 @@ const loadMore = async () => {
     
     loading.value = true;
     try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         const response = await fetch(`/trending?page=${currentPage.value + 1}`, {
-            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            headers: { 
+                'Accept': 'application/json', 
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken || '',
+            },
+            credentials: 'same-origin',
         });
         const data = await response.json();
         

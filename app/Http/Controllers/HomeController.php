@@ -81,8 +81,10 @@ class HomeController extends Controller
         return response()->json($videos);
     }
 
-    public function trending(): Response
+    public function trending(Request $request): Response|JsonResponse
     {
+        $perPage = Setting::get('videos_per_page', 24);
+        
         $videos = Video::query()
             ->with('user')
             ->public()
@@ -90,7 +92,12 @@ class HomeController extends Controller
             ->processed()
             ->where('published_at', '>=', now()->subDays(7))
             ->orderByDesc('views_count')
-            ->paginate(24);
+            ->paginate($perPage);
+
+        // Return JSON for AJAX requests (infinite scroll)
+        if ($request->wantsJson()) {
+            return response()->json($videos);
+        }
 
         return Inertia::render('Trending', [
             'videos' => $videos,

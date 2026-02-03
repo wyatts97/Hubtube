@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Video;
 
+use App\Rules\ValidVideoFile;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Number;
 
@@ -27,8 +28,9 @@ class StoreVideoRequest extends FormRequest
             'video_file' => [
                 'required',
                 'file',
-                'mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm',
+                'mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm,video/x-flv,video/x-ms-wmv',
                 "max:{$maxSize}",
+                new ValidVideoFile(),
             ],
         ];
     }
@@ -38,6 +40,7 @@ class StoreVideoRequest extends FormRequest
         return [
             'video_file.max' => 'Video file is too large. Maximum size is ' . 
                 Number::fileSize($this->user()->max_video_size),
+            'video_file.mimetypes' => 'The video must be a valid video file (MP4, MOV, AVI, MKV, WebM, FLV, or WMV).',
         ];
     }
 }
