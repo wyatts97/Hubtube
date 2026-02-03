@@ -4,7 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
 class AgeVerification
@@ -26,30 +26,48 @@ class AgeVerification
             return $next($request);
         }
 
-        // Check session first
-        $sessionVerified = $request->session()->get('age_verified', false);
-        
-        // Check cookie as fallback (handle both string and boolean)
-        $cookieValue = $request->cookie('age_verified');
-        $cookieVerified = $cookieValue === 'true' || $cookieValue === true || $cookieValue === '1' || $cookieValue === 1;
+        // Skip for age verification routes themselves
+        if ($request->is('age-verify') || $request->is('age-verify/*')) {
+            return $next($request);
+        }
 
-        $ageVerified = $sessionVerified || $cookieVerified;
+        // Primary check: Use cookie (most reliable across requests)
+        // The cookie is NOT encrypted (excluded in bootstrap/app.php)
+        $cookieValue = $_COOKIE['age_verified'] ?? null;
+        $cookieVerified = $cookieValue === 'true';
+
+        // Secondary check: Session (may not persist with Redis issues)
+        $sessionVerified = false;
+        try {
+            $sessionVerified = $request->session()->get('age_verified', false);
+        } catch (\Exception $e) {
+            // Session might not be available, continue with cookie check
+        }
+
+        $ageVerified = $cookieVerified || $sessionVerified;
 
         if (!$ageVerified) {
             // Store intended URL for redirect after verification
-            $request->session()->put('url.intended', $request->url());
+            try {
+                $request->session()->put('url.intended', $request->url());
+            } catch (\Exception $e) {
+                // Ignore session errors
+            }
             
-            if ($request->wantsJson()) {
+            if ($request->wantsJson() || $request->expectsJson()) {
                 return response()->json(['error' => 'Age verification required'], 403);
             }
 
             return redirect()->route('age.verify');
         }
 
-        // If verified via cookie but not in session, sync to session
-        if (!$sessionVerified && $cookieVerified) {
-            $request->session()->put('age_verified', true);
-            $request->session()->save();
+        // Sync cookie to session if needed
+        if ($cookieVerified && !$sessionVerified) {
+            try {
+                $request->session()->put('age_verified', true);
+            } catch (\Exception $e) {
+                // Ignore session errors
+            }
         }
 
         return $next($request);
