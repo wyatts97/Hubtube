@@ -3,6 +3,10 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
+use Inertia\Inertia;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withProviders([
@@ -29,5 +33,20 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Handle CSRF token mismatch for Inertia requests
+        $exceptions->render(function (HttpException $e, Request $request) {
+            if ($e->getStatusCode() === 419 || str_contains($e->getMessage(), 'CSRF')) {
+                if ($request->inertia()) {
+                    return Inertia::render('Error', [
+                        'status' => 419,
+                        'message' => 'Your session has expired. Please refresh the page.',
+                    ])->toResponse($request)->setStatusCode(419);
+                }
+                
+                // For non-Inertia requests, redirect back with error
+                return redirect()->back()->withErrors([
+                    'session' => 'Your session has expired. Please try again.',
+                ]);
+            }
+        });
     })->create();

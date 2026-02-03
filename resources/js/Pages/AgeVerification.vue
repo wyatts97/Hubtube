@@ -1,9 +1,40 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
-import { ShieldAlert } from 'lucide-vue-next';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import { ShieldAlert, Loader2 } from 'lucide-vue-next';
+
+// Use Inertia form for proper CSRF handling
+const form = useForm({});
+const isSubmitting = ref(false);
+const errorMessage = ref('');
 
 const confirm = () => {
-    router.post('/age-verify');
+    isSubmitting.value = true;
+    errorMessage.value = '';
+    
+    form.post('/age-verify', {
+        preserveScroll: true,
+        onSuccess: () => {
+            // Successfully verified
+        },
+        onError: (errors) => {
+            isSubmitting.value = false;
+            // If CSRF error or session expired, show message and offer refresh
+            if (errors.message?.includes('CSRF') || errors.message?.includes('session') || Object.keys(errors).length === 0) {
+                errorMessage.value = 'Your session has expired. The page will refresh automatically.';
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                errorMessage.value = 'An error occurred. Please try again.';
+            }
+        },
+        onFinish: () => {
+            if (!errorMessage.value) {
+                isSubmitting.value = false;
+            }
+        },
+    });
 };
 
 const decline = () => {
@@ -31,11 +62,21 @@ const decline = () => {
                     By clicking "I am 18 or older", you confirm that you are at least 18 years of age and consent to viewing adult content.
                 </p>
 
+                <!-- Error Message -->
+                <div v-if="errorMessage" class="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500 text-sm">
+                    {{ errorMessage }}
+                </div>
+
                 <div class="flex flex-col sm:flex-row gap-4">
-                    <button @click="confirm" class="btn btn-primary flex-1 py-3">
-                        I am 18 or older
+                    <button 
+                        @click="confirm" 
+                        :disabled="isSubmitting"
+                        class="btn btn-primary flex-1 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin mr-2" />
+                        {{ isSubmitting ? 'Verifying...' : 'I am 18 or older' }}
                     </button>
-                    <button @click="decline" class="btn btn-secondary flex-1 py-3">
+                    <button @click="decline" :disabled="isSubmitting" class="btn btn-secondary flex-1 py-3">
                         Exit
                     </button>
                 </div>
