@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             GiftSeeder::class,
             UserSeeder::class,
+            SettingsSeeder::class,
         ]);
     }
 }

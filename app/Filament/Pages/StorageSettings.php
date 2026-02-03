@@ -1,0 +1,238 @@
+<?php
+
+namespace App\Filament\Pages;
+
+use App\Models\Setting;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Form;
+use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+
+class StorageSettings extends Page implements HasForms
+{
+    use InteractsWithForms;
+
+    protected static ?string $navigationIcon = 'heroicon-o-cloud';
+    protected static ?string $navigationLabel = 'Storage & CDN';
+    protected static ?string $navigationGroup = 'Settings';
+    protected static ?int $navigationSort = 3;
+    protected static string $view = 'filament.pages.site-settings';
+
+    public ?array $data = [];
+
+    public function mount(): void
+    {
+        $this->form->fill([
+            // Storage Driver
+            'storage_driver' => Setting::get('storage_driver', 'local'),
+            // Wasabi
+            'wasabi_enabled' => Setting::get('wasabi_enabled', false),
+            'wasabi_key' => Setting::get('wasabi_key', ''),
+            'wasabi_secret' => Setting::get('wasabi_secret', ''),
+            'wasabi_region' => Setting::get('wasabi_region', 'us-east-1'),
+            'wasabi_bucket' => Setting::get('wasabi_bucket', ''),
+            'wasabi_endpoint' => Setting::get('wasabi_endpoint', 'https://s3.wasabisys.com'),
+            // Backblaze B2
+            'b2_enabled' => Setting::get('b2_enabled', false),
+            'b2_key_id' => Setting::get('b2_key_id', ''),
+            'b2_application_key' => Setting::get('b2_application_key', ''),
+            'b2_bucket' => Setting::get('b2_bucket', ''),
+            'b2_bucket_id' => Setting::get('b2_bucket_id', ''),
+            'b2_endpoint' => Setting::get('b2_endpoint', ''),
+            // AWS S3
+            's3_enabled' => Setting::get('s3_enabled', false),
+            's3_key' => Setting::get('s3_key', ''),
+            's3_secret' => Setting::get('s3_secret', ''),
+            's3_region' => Setting::get('s3_region', 'us-east-1'),
+            's3_bucket' => Setting::get('s3_bucket', ''),
+            // CDN
+            'cdn_enabled' => Setting::get('cdn_enabled', false),
+            'cdn_url' => Setting::get('cdn_url', ''),
+            'bunnycdn_enabled' => Setting::get('bunnycdn_enabled', false),
+            'bunnycdn_zone' => Setting::get('bunnycdn_zone', ''),
+            'bunnycdn_key' => Setting::get('bunnycdn_key', ''),
+            // FFmpeg
+            'ffmpeg_enabled' => Setting::get('ffmpeg_enabled', true),
+            'ffmpeg_path' => Setting::get('ffmpeg_path', '/usr/bin/ffmpeg'),
+            'ffprobe_path' => Setting::get('ffprobe_path', '/usr/bin/ffprobe'),
+            'ffmpeg_threads' => Setting::get('ffmpeg_threads', 4),
+        ]);
+    }
+
+    public function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Tabs::make('Storage Settings')
+                    ->tabs([
+                        Tabs\Tab::make('General')
+                            ->schema([
+                                Section::make('Storage Driver')
+                                    ->schema([
+                                        Select::make('storage_driver')
+                                            ->label('Primary Storage')
+                                            ->options([
+                                                'local' => 'Local Storage',
+                                                'wasabi' => 'Wasabi Cloud Storage',
+                                                'b2' => 'Backblaze B2',
+                                                's3' => 'Amazon S3',
+                                            ])
+                                            ->helperText('Where to store uploaded videos'),
+                                    ]),
+                                Section::make('CDN Configuration')
+                                    ->schema([
+                                        Toggle::make('cdn_enabled')
+                                            ->label('Enable CDN'),
+                                        TextInput::make('cdn_url')
+                                            ->label('CDN URL')
+                                            ->url()
+                                            ->placeholder('https://cdn.yourdomain.com'),
+                                    ])->columns(2),
+                            ]),
+                        Tabs\Tab::make('Wasabi')
+                            ->schema([
+                                Section::make('Wasabi Cloud Storage')
+                                    ->description('S3-compatible cloud storage with no egress fees')
+                                    ->schema([
+                                        Toggle::make('wasabi_enabled')
+                                            ->label('Enable Wasabi'),
+                                        TextInput::make('wasabi_key')
+                                            ->label('Access Key')
+                                            ->password()
+                                            ->revealable(),
+                                        TextInput::make('wasabi_secret')
+                                            ->label('Secret Key')
+                                            ->password()
+                                            ->revealable(),
+                                        Select::make('wasabi_region')
+                                            ->label('Region')
+                                            ->options([
+                                                'us-east-1' => 'US East 1 (N. Virginia)',
+                                                'us-east-2' => 'US East 2 (N. Virginia)',
+                                                'us-central-1' => 'US Central 1 (Texas)',
+                                                'us-west-1' => 'US West 1 (Oregon)',
+                                                'eu-central-1' => 'EU Central 1 (Amsterdam)',
+                                                'eu-central-2' => 'EU Central 2 (Frankfurt)',
+                                                'eu-west-1' => 'EU West 1 (London)',
+                                                'eu-west-2' => 'EU West 2 (Paris)',
+                                                'ap-northeast-1' => 'AP Northeast 1 (Tokyo)',
+                                                'ap-northeast-2' => 'AP Northeast 2 (Osaka)',
+                                                'ap-southeast-1' => 'AP Southeast 1 (Singapore)',
+                                                'ap-southeast-2' => 'AP Southeast 2 (Sydney)',
+                                            ]),
+                                        TextInput::make('wasabi_bucket')
+                                            ->label('Bucket Name'),
+                                        TextInput::make('wasabi_endpoint')
+                                            ->label('Endpoint URL')
+                                            ->placeholder('https://s3.wasabisys.com'),
+                                    ])->columns(2),
+                            ]),
+                        Tabs\Tab::make('Backblaze B2')
+                            ->schema([
+                                Section::make('Backblaze B2 Storage')
+                                    ->schema([
+                                        Toggle::make('b2_enabled')
+                                            ->label('Enable Backblaze B2'),
+                                        TextInput::make('b2_key_id')
+                                            ->label('Application Key ID')
+                                            ->password()
+                                            ->revealable(),
+                                        TextInput::make('b2_application_key')
+                                            ->label('Application Key')
+                                            ->password()
+                                            ->revealable(),
+                                        TextInput::make('b2_bucket')
+                                            ->label('Bucket Name'),
+                                        TextInput::make('b2_bucket_id')
+                                            ->label('Bucket ID'),
+                                        TextInput::make('b2_endpoint')
+                                            ->label('S3 Endpoint')
+                                            ->placeholder('https://s3.us-west-001.backblazeb2.com'),
+                                    ])->columns(2),
+                            ]),
+                        Tabs\Tab::make('Amazon S3')
+                            ->schema([
+                                Section::make('Amazon S3 Storage')
+                                    ->schema([
+                                        Toggle::make('s3_enabled')
+                                            ->label('Enable Amazon S3'),
+                                        TextInput::make('s3_key')
+                                            ->label('Access Key ID')
+                                            ->password()
+                                            ->revealable(),
+                                        TextInput::make('s3_secret')
+                                            ->label('Secret Access Key')
+                                            ->password()
+                                            ->revealable(),
+                                        TextInput::make('s3_region')
+                                            ->label('Region')
+                                            ->placeholder('us-east-1'),
+                                        TextInput::make('s3_bucket')
+                                            ->label('Bucket Name'),
+                                    ])->columns(2),
+                            ]),
+                        Tabs\Tab::make('BunnyCDN')
+                            ->schema([
+                                Section::make('BunnyCDN')
+                                    ->schema([
+                                        Toggle::make('bunnycdn_enabled')
+                                            ->label('Enable BunnyCDN'),
+                                        TextInput::make('bunnycdn_zone')
+                                            ->label('Pull Zone Name'),
+                                        TextInput::make('bunnycdn_key')
+                                            ->label('API Key')
+                                            ->password()
+                                            ->revealable(),
+                                    ])->columns(2),
+                            ]),
+                        Tabs\Tab::make('FFmpeg')
+                            ->schema([
+                                Section::make('Video Processing')
+                                    ->schema([
+                                        Toggle::make('ffmpeg_enabled')
+                                            ->label('Enable FFmpeg Processing')
+                                            ->helperText('Disable if FFmpeg is not installed'),
+                                        TextInput::make('ffmpeg_path')
+                                            ->label('FFmpeg Binary Path')
+                                            ->placeholder('/usr/bin/ffmpeg'),
+                                        TextInput::make('ffprobe_path')
+                                            ->label('FFprobe Binary Path')
+                                            ->placeholder('/usr/bin/ffprobe'),
+                                        TextInput::make('ffmpeg_threads')
+                                            ->label('Processing Threads')
+                                            ->numeric()
+                                            ->minValue(1)
+                                            ->maxValue(16),
+                                    ])->columns(2),
+                            ]),
+                    ])->columnSpanFull(),
+            ])
+            ->statePath('data');
+    }
+
+    public function save(): void
+    {
+        $data = $this->form->getState();
+
+        foreach ($data as $key => $value) {
+            $type = match (true) {
+                is_bool($value) => 'boolean',
+                is_int($value) => 'integer',
+                default => 'string',
+            };
+
+            Setting::set($key, $value, 'storage', $type);
+        }
+
+        Notification::make()
+            ->title('Storage settings saved successfully')
+            ->success()
+            ->send();
+    }
+}
