@@ -116,12 +116,12 @@ const onPreviewLoad = () => {
                 </div>
             </Link>
             <div class="flex-1 min-w-0">
-                <h3 class="font-medium text-white line-clamp-2 leading-tight">{{ video.title }}</h3>
-                <Link v-if="video.user" :href="`/channel/${video.user.username}`" class="text-sm text-dark-400 hover:text-dark-300 mt-1 block">
+                <h3 class="font-medium line-clamp-2 leading-tight" style="color: var(--color-text-primary);">{{ video.title }}</h3>
+                <Link v-if="video.user" :href="`/channel/${video.user.username}`" class="text-sm mt-1 block" style="color: var(--color-text-secondary);">
                     {{ video.user.username }}
                     <span v-if="video.user.is_verified" class="inline-block ml-1">✓</span>
                 </Link>
-                <p class="text-sm text-dark-500">
+                <p class="text-sm" style="color: var(--color-text-muted);">
                     {{ formattedViews }} views • {{ timeAgo }}
                 </p>
             </div>

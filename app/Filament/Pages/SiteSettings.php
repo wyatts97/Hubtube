@@ -65,6 +65,8 @@ class SiteSettings extends Page implements HasForms
             'google_analytics_id' => Setting::get('google_analytics_id', ''),
             'custom_head_scripts' => Setting::get('custom_head_scripts', ''),
             'custom_footer_scripts' => Setting::get('custom_footer_scripts', ''),
+            'infinite_scroll_enabled' => Setting::get('infinite_scroll_enabled', false),
+            'videos_per_page' => Setting::get('videos_per_page', 24),
         ]);
     }
 
@@ -105,6 +107,19 @@ class SiteSettings extends Page implements HasForms
                                             ->label('Maintenance Mode')
                                             ->helperText('When enabled, only admins can access the site'),
                                     ]),
+                                Section::make('Video Display')
+                                    ->schema([
+                                        Toggle::make('infinite_scroll_enabled')
+                                            ->label('Enable Infinite Scroll')
+                                            ->helperText('When enabled, videos load automatically as user scrolls. When disabled, traditional pagination is used.'),
+                                        TextInput::make('videos_per_page')
+                                            ->label('Videos Per Page/Load')
+                                            ->numeric()
+                                            ->minValue(6)
+                                            ->maxValue(48)
+                                            ->default(24)
+                                            ->helperText('Number of videos to show per page or load'),
+                                    ])->columns(2),
                             ]),
                         Tabs\Tab::make('Users')
                             ->schema([

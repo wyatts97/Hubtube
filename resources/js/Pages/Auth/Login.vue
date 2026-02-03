@@ -21,22 +21,22 @@ const submit = () => {
 <template>
     <Head title="Sign In" />
 
-    <div class="min-h-screen flex items-center justify-center bg-dark-950 px-4">
+    <div class="min-h-screen flex items-center justify-center px-4" style="background-color: var(--color-bg-primary);">
         <div class="w-full max-w-md">
             <div class="text-center mb-8">
                 <Link href="/" class="inline-flex items-center gap-2">
-                    <div class="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background-color: var(--color-accent);">
                         <span class="text-2xl font-bold text-white">H</span>
                     </div>
                 </Link>
-                <h1 class="text-2xl font-bold text-white mt-4">Welcome back</h1>
-                <p class="text-dark-400 mt-2">Sign in to your account</p>
+                <h1 class="text-2xl font-bold mt-4" style="color: var(--color-text-primary);">Welcome back</h1>
+                <p class="mt-2" style="color: var(--color-text-secondary);">Sign in to your account</p>
             </div>
 
             <div class="card p-6">
                 <form @submit.prevent="submit" class="space-y-4">
                     <div>
-                        <label for="login" class="block text-sm font-medium text-dark-300 mb-1">
+                        <label for="login" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
                             Email or Username
                         </label>
                         <input
@@ -51,7 +51,7 @@ const submit = () => {
                     </div>
 
                     <div>
-                        <label for="password" class="block text-sm font-medium text-dark-300 mb-1">
+                        <label for="password" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
                             Password
                         </label>
                         <div class="relative">
@@ -65,7 +65,7 @@ const submit = () => {
                             <button
                                 type="button"
                                 @click="showPassword = !showPassword"
-                                class="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-300"
+                                class="absolute right-3 top-1/2 -translate-y-1/2" style="color: var(--color-text-secondary);"
                             >
                                 <EyeOff v-if="showPassword" class="w-5 h-5" />
                                 <Eye v-else class="w-5 h-5" />
@@ -81,9 +81,9 @@ const submit = () => {
                                 type="checkbox"
                                 class="w-4 h-4 rounded border-dark-600 bg-dark-800 text-primary-600 focus:ring-primary-500"
                             />
-                            <span class="text-sm text-dark-400">Remember me</span>
+                            <span class="text-sm" style="color: var(--color-text-secondary);">Remember me</span>
                         </label>
-                        <Link href="/forgot-password" class="text-sm text-primary-500 hover:text-primary-400">
+                        <Link href="/forgot-password" class="text-sm" style="color: var(--color-accent);">
                             Forgot password?
                         </Link>
                     </div>
@@ -99,9 +99,9 @@ const submit = () => {
                 </form>
 
                 <div class="mt-6 text-center">
-                    <p class="text-dark-400">
+                    <p style="color: var(--color-text-secondary);">
                         Don't have an account?
-                        <Link href="/register" class="text-primary-500 hover:text-primary-400 font-medium">
+                        <Link href="/register" class="font-medium" style="color: var(--color-accent);">
                             Sign up
                         </Link>
                     </p>

@@ -14,20 +14,20 @@ const decline = () => {
 <template>
     <Head title="Age Verification" />
 
-    <div class="min-h-screen flex items-center justify-center bg-dark-950 px-4">
+    <div class="min-h-screen flex items-center justify-center px-4" style="background-color: var(--color-bg-primary);">
         <div class="w-full max-w-lg text-center">
             <div class="mb-8">
-                <div class="w-20 h-20 bg-primary-600/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <ShieldAlert class="w-10 h-10 text-primary-500" />
+                <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style="background-color: color-mix(in srgb, var(--color-accent) 20%, transparent);">
+                    <ShieldAlert class="w-10 h-10" style="color: var(--color-accent);" />
                 </div>
-                <h1 class="text-3xl font-bold text-white mb-4">Age Verification Required</h1>
-                <p class="text-dark-400 text-lg">
+                <h1 class="text-3xl font-bold mb-4" style="color: var(--color-text-primary);">Age Verification Required</h1>
+                <p class="text-lg" style="color: var(--color-text-muted);">
                     This website contains age-restricted content. You must be at least 18 years old to enter.
                 </p>
             </div>
 
             <div class="card p-8">
-                <p class="text-dark-300 mb-6">
+                <p class="mb-6" style="color: var(--color-text-secondary);">
                     By clicking "I am 18 or older", you confirm that you are at least 18 years of age and consent to viewing adult content.
                 </p>
 
@@ -40,11 +40,11 @@ const decline = () => {
                     </button>
                 </div>
 
-                <p class="text-dark-500 text-sm mt-6">
+                <p class="text-sm mt-6" style="color: var(--color-text-muted);">
                     By entering this site, you agree to our
-                    <a href="/terms" class="text-primary-500 hover:text-primary-400">Terms of Service</a>
+                    <a href="/terms" style="color: var(--color-accent);" class="hover:opacity-80">Terms of Service</a>
                     and
-                    <a href="/privacy" class="text-primary-500 hover:text-primary-400">Privacy Policy</a>.
+                    <a href="/privacy" style="color: var(--color-accent);" class="hover:opacity-80">Privacy Policy</a>.
                 </p>
             </div>
         </div>

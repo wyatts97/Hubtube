@@ -74,7 +74,7 @@ const statusColors = {
     <AppLayout>
         <div class="max-w-4xl mx-auto">
             <div class="flex items-center justify-between mb-6">
-                <h1 class="text-2xl font-bold text-white">Edit Video</h1>
+                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">Edit Video</h1>
                 <span :class="['px-3 py-1 rounded-full text-sm font-medium', statusColors[video.status]]">
                     {{ video.status.charAt(0).toUpperCase() + video.status.slice(1) }}
                 </span>
@@ -84,30 +84,30 @@ const statusColors = {
                 <!-- Video Preview -->
                 <div class="card p-4">
                     <div class="flex items-start gap-4">
-                        <div class="w-64 aspect-video bg-dark-800 rounded-lg overflow-hidden flex-shrink-0">
+                        <div class="w-64 aspect-video rounded-lg overflow-hidden flex-shrink-0" style="background-color: var(--color-bg-secondary);">
                             <img 
                                 v-if="video.thumbnail_url" 
                                 :src="video.thumbnail_url" 
                                 :alt="video.title"
                                 class="w-full h-full object-cover"
                             />
-                            <div v-else class="w-full h-full flex items-center justify-center text-dark-500">
+                            <div v-else class="w-full h-full flex items-center justify-center" style="color: var(--color-text-muted);">
                                 No thumbnail
                             </div>
                         </div>
                         <div class="flex-1">
-                            <p class="font-medium text-white text-lg">{{ video.title }}</p>
-                            <p class="text-dark-400 text-sm mt-1">
+                            <p class="font-medium text-lg" style="color: var(--color-text-primary);">{{ video.title }}</p>
+                            <p class="text-sm mt-1" style="color: var(--color-text-muted);">
                                 {{ video.views_count.toLocaleString() }} views
                             </p>
-                            <p class="text-dark-500 text-sm">
+                            <p class="text-sm" style="color: var(--color-text-muted);">
                                 Uploaded {{ new Date(video.created_at).toLocaleDateString() }}
                             </p>
                             <div v-if="video.video_url" class="mt-3">
                                 <a 
                                     :href="video.video_url" 
                                     target="_blank"
-                                    class="text-primary-400 hover:text-primary-300 text-sm"
+                                    class="text-sm hover:opacity-80" style="color: var(--color-accent);"
                                 >
                                     View Original File
                                 </a>
@@ -118,16 +118,16 @@ const statusColors = {
 
                 <!-- Custom Thumbnail -->
                 <div class="card p-6">
-                    <h2 class="text-lg font-semibold text-white mb-4">Custom Thumbnail</h2>
+                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">Custom Thumbnail</h2>
                     <div class="flex items-center gap-4">
-                        <div class="w-40 aspect-video bg-dark-800 rounded-lg overflow-hidden">
+                        <div class="w-40 aspect-video rounded-lg overflow-hidden" style="background-color: var(--color-bg-secondary);">
                             <img 
                                 v-if="thumbnailPreview" 
                                 :src="thumbnailPreview" 
                                 class="w-full h-full object-cover"
                             />
                             <div v-else class="w-full h-full flex items-center justify-center">
-                                <Image class="w-8 h-8 text-dark-500" />
+                                <Image class="w-8 h-8" style="color: var(--color-text-muted);" />
                             </div>
                         </div>
                         <label class="btn btn-secondary cursor-pointer">
@@ -145,10 +145,10 @@ const statusColors = {
 
                 <!-- Video Details -->
                 <div class="card p-6 space-y-4">
-                    <h2 class="text-lg font-semibold text-white mb-4">Video Details</h2>
+                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">Video Details</h2>
                     
                     <div>
-                        <label for="title" class="block text-sm font-medium text-dark-300 mb-1">Title</label>
+                        <label for="title" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Title</label>
                         <input
                             id="title"
                             v-model="form.title"
@@ -161,7 +161,7 @@ const statusColors = {
                     </div>
 
                     <div>
-                        <label for="description" class="block text-sm font-medium text-dark-300 mb-1">Description</label>
+                        <label for="description" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Description</label>
                         <textarea
                             id="description"
                             v-model="form.description"
@@ -173,7 +173,7 @@ const statusColors = {
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="category" class="block text-sm font-medium text-dark-300 mb-1">Category</label>
+                            <label for="category" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Category</label>
                             <select id="category" v-model="form.category_id" class="input">
                                 <option value="">Select category</option>
                                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">
@@ -183,7 +183,7 @@ const statusColors = {
                         </div>
 
                         <div>
-                            <label for="privacy" class="block text-sm font-medium text-dark-300 mb-1">Privacy</label>
+                            <label for="privacy" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Privacy</label>
                             <select id="privacy" v-model="form.privacy" class="input">
                                 <option value="public">Public</option>
                                 <option value="unlisted">Unlisted</option>
@@ -193,12 +193,12 @@ const statusColors = {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-dark-300 mb-1">Tags</label>
+                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Tags</label>
                         <div class="flex flex-wrap gap-2 mb-2">
                             <span
                                 v-for="(tag, index) in form.tags"
                                 :key="index"
-                                class="flex items-center gap-1 px-2 py-1 bg-dark-700 rounded text-sm"
+                                class="flex items-center gap-1 px-2 py-1 rounded text-sm" style="background-color: var(--color-bg-secondary); color: var(--color-text-secondary);"
                             >
                                 #{{ tag }}
                                 <button type="button" @click="removeTag(index)" class="hover:text-red-400">
@@ -218,7 +218,7 @@ const statusColors = {
 
                 <!-- Monetization -->
                 <div class="card p-6 space-y-4">
-                    <h2 class="text-lg font-semibold text-white mb-4">Monetization</h2>
+                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">Monetization</h2>
                     
                     <div class="flex items-center gap-3">
                         <input
@@ -227,12 +227,12 @@ const statusColors = {
                             type="checkbox"
                             class="w-4 h-4 rounded bg-dark-700 border-dark-600"
                         />
-                        <label for="monetization" class="text-dark-300">Enable monetization for this video</label>
+                        <label for="monetization" style="color: var(--color-text-secondary);">Enable monetization for this video</label>
                     </div>
 
                     <div v-if="form.monetization_enabled" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="price" class="block text-sm font-medium text-dark-300 mb-1">Purchase Price ($)</label>
+                            <label for="price" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Purchase Price ($)</label>
                             <input
                                 id="price"
                                 v-model="form.price"
@@ -246,7 +246,7 @@ const statusColors = {
                         </div>
 
                         <div>
-                            <label for="rent_price" class="block text-sm font-medium text-dark-300 mb-1">Rent Price ($)</label>
+                            <label for="rent_price" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Rent Price ($)</label>
                             <input
                                 id="rent_price"
                                 v-model="form.rent_price"

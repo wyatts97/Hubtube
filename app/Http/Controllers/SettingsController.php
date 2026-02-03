@@ -55,4 +55,23 @@ class SettingsController extends Controller
 
         return back()->with('success', 'Notification preferences updated.');
     }
+
+    public function updatePrivacy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'private_profile' => ['boolean'],
+            'show_watch_history' => ['boolean'],
+            'show_liked_videos' => ['boolean'],
+            'allow_comments' => ['boolean'],
+        ]);
+
+        $user = $request->user();
+        $settings = $user->settings ?? [];
+        
+        $user->update([
+            'settings' => array_merge($settings, $validated),
+        ]);
+
+        return back()->with('success', 'Privacy settings updated.');
+    }
 }

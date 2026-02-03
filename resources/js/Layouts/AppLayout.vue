@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { 
     Menu, Search, Upload, Bell, User, LogOut, Settings, Wallet, 
@@ -7,6 +7,10 @@ import {
     ChevronLeft, ChevronRight, Shield, Sun, Moon, Monitor
 } from 'lucide-vue-next';
 import { useTheme } from '@/Composables/useTheme';
+import { useToast } from '@/Composables/useToast';
+import ToastContainer from '@/Components/ToastContainer.vue';
+
+const toast = useToast();
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
@@ -18,6 +22,23 @@ const sidebarCollapsed = ref(false);
 const searchQuery = ref('');
 
 const { currentTheme, isDark, setTheme, toggleTheme } = useTheme();
+
+// Watch for flash messages and show toasts
+const flash = computed(() => page.props.flash);
+watch(flash, (newFlash) => {
+    if (newFlash?.success) {
+        toast.success(newFlash.success);
+    }
+    if (newFlash?.error) {
+        toast.error(newFlash.error);
+    }
+    if (newFlash?.warning) {
+        toast.warning(newFlash.warning);
+    }
+    if (newFlash?.info) {
+        toast.info(newFlash.info);
+    }
+}, { immediate: true, deep: true });
 
 const getIconColor = (navKey) => {
     const icons = iconSettings.value;
@@ -314,5 +335,8 @@ const toggleSidebar = () => {
                 <slot />
             </div>
         </main>
+
+        <!-- Toast Notifications -->
+        <ToastContainer />
     </div>
 </template>

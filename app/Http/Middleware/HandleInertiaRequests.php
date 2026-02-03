@@ -39,6 +39,8 @@ class HandleInertiaRequests extends Middleware
             'app' => [
                 'name' => config('app.name'),
                 'age_verification_required' => config('hubtube.age_verification_required'),
+                'infinite_scroll_enabled' => Setting::get('infinite_scroll_enabled', false),
+                'videos_per_page' => Setting::get('videos_per_page', 24),
             ],
             'theme' => fn () => $this->getThemeSettings(),
         ];

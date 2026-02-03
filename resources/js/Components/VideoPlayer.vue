@@ -238,6 +238,7 @@ watch(() => props.hlsPlaylist, () => {
 .video-player-wrapper {
     width: 100%;
     height: 100%;
+    background: #000;
 }
 
 .video-player-wrapper .plyr {
@@ -248,6 +249,12 @@ watch(() => props.hlsPlaylist, () => {
     --plyr-menu-background: var(--color-bg-card, #1f1f1f);
     --plyr-menu-color: var(--color-text-primary, #fff);
     --plyr-menu-border-color: var(--color-border, #262626);
+}
+
+.video-player-wrapper .plyr video {
+    object-fit: contain !important;
+    width: 100%;
+    height: 100%;
 }
 
 .video-player-wrapper .plyr__control--overlaid {

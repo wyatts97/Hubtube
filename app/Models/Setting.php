@@ -22,17 +22,32 @@ class Setting extends Model
         ];
     }
 
+    protected static string $cachePrefix = 'settings:';
+    protected static int $cacheTtl = 86400; // 24 hours
+
     public static function get(string $key, mixed $default = null): mixed
     {
-        $setting = Cache::remember("setting.{$key}", 3600, function () use ($key) {
-            return static::where('key', $key)->first();
-        });
+        $cacheKey = static::$cachePrefix . $key;
+        
+        // Try to get from cache first
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        // Query database
+        $setting = static::where('key', $key)->first();
 
         if (!$setting) {
+            // Cache null values to prevent repeated DB queries
+            Cache::put($cacheKey, $default, static::$cacheTtl);
             return $default;
         }
 
-        return static::castValue($setting->value, $setting->type);
+        $value = static::castValue($setting->value, $setting->type);
+        Cache::put($cacheKey, $value, static::$cacheTtl);
+
+        return $value;
     }
 
     public static function set(string $key, mixed $value, string $group = 'general', string $type = 'string'): void
@@ -46,7 +61,13 @@ class Setting extends Model
             ]
         );
 
-        Cache::forget("setting.{$key}");
+        // Clear specific key cache
+        Cache::forget(static::$cachePrefix . $key);
+        // Clear group cache
+        Cache::forget(static::$cachePrefix . 'group:' . $group);
+        // Clear all settings cache
+        Cache::forget(static::$cachePrefix . 'all');
+        Cache::forget(static::$cachePrefix . 'public');
     }
 
     protected static function castValue(mixed $value, string $type): mixed
@@ -62,21 +83,59 @@ class Setting extends Model
 
     public static function getGroup(string $group): array
     {
-        return static::where('group', $group)
-            ->get()
-            ->mapWithKeys(fn ($setting) => [
-                $setting->key => static::castValue($setting->value, $setting->type)
-            ])
-            ->toArray();
+        $cacheKey = static::$cachePrefix . 'group:' . $group;
+
+        return Cache::remember($cacheKey, static::$cacheTtl, function () use ($group) {
+            return static::where('group', $group)
+                ->get()
+                ->mapWithKeys(fn ($setting) => [
+                    $setting->key => static::castValue($setting->value, $setting->type)
+                ])
+                ->toArray();
+        });
     }
 
     public static function getPublic(): array
     {
-        return static::where('is_public', true)
-            ->get()
-            ->mapWithKeys(fn ($setting) => [
-                $setting->key => static::castValue($setting->value, $setting->type)
-            ])
-            ->toArray();
+        $cacheKey = static::$cachePrefix . 'public';
+
+        return Cache::remember($cacheKey, static::$cacheTtl, function () {
+            return static::where('is_public', true)
+                ->get()
+                ->mapWithKeys(fn ($setting) => [
+                    $setting->key => static::castValue($setting->value, $setting->type)
+                ])
+                ->toArray();
+        });
+    }
+
+    public static function getAll(): array
+    {
+        $cacheKey = static::$cachePrefix . 'all';
+
+        return Cache::remember($cacheKey, static::$cacheTtl, function () {
+            return static::all()
+                ->mapWithKeys(fn ($setting) => [
+                    $setting->key => static::castValue($setting->value, $setting->type)
+                ])
+                ->toArray();
+        });
+    }
+
+    public static function clearCache(): void
+    {
+        // Clear all settings-related cache keys
+        $keys = static::pluck('key')->toArray();
+        foreach ($keys as $key) {
+            Cache::forget(static::$cachePrefix . $key);
+        }
+        
+        $groups = static::distinct()->pluck('group')->toArray();
+        foreach ($groups as $group) {
+            Cache::forget(static::$cachePrefix . 'group:' . $group);
+        }
+        
+        Cache::forget(static::$cachePrefix . 'all');
+        Cache::forget(static::$cachePrefix . 'public');
     }
 }

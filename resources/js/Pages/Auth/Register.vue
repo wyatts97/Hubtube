@@ -22,22 +22,22 @@ const submit = () => {
 <template>
     <Head title="Sign Up" />
 
-    <div class="min-h-screen flex items-center justify-center bg-dark-950 px-4 py-8">
+    <div class="min-h-screen flex items-center justify-center px-4 py-8" style="background-color: var(--color-bg-primary);">
         <div class="w-full max-w-md">
             <div class="text-center mb-8">
                 <Link href="/" class="inline-flex items-center gap-2">
-                    <div class="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background-color: var(--color-accent);">
                         <span class="text-2xl font-bold text-white">H</span>
                     </div>
                 </Link>
-                <h1 class="text-2xl font-bold text-white mt-4">Create your account</h1>
-                <p class="text-dark-400 mt-2">Join the community today</p>
+                <h1 class="text-2xl font-bold mt-4" style="color: var(--color-text-primary);">Create your account</h1>
+                <p class="mt-2" style="color: var(--color-text-secondary);">Join the community today</p>
             </div>
 
             <div class="card p-6">
                 <form @submit.prevent="submit" class="space-y-4">
                     <div>
-                        <label for="username" class="block text-sm font-medium text-dark-300 mb-1">
+                        <label for="username" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
                             Username
                         </label>
                         <input
@@ -52,7 +52,7 @@ const submit = () => {
                     </div>
 
                     <div>
-                        <label for="email" class="block text-sm font-medium text-dark-300 mb-1">
+                        <label for="email" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
                             Email
                         </label>
                         <input
@@ -66,7 +66,7 @@ const submit = () => {
                     </div>
 
                     <div>
-                        <label for="password" class="block text-sm font-medium text-dark-300 mb-1">
+                        <label for="password" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
                             Password
                         </label>
                         <div class="relative">
@@ -80,7 +80,7 @@ const submit = () => {
                             <button
                                 type="button"
                                 @click="showPassword = !showPassword"
-                                class="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-300"
+                                class="absolute right-3 top-1/2 -translate-y-1/2" style="color: var(--color-text-secondary);"
                             >
                                 <EyeOff v-if="showPassword" class="w-5 h-5" />
                                 <Eye v-else class="w-5 h-5" />
@@ -90,7 +90,7 @@ const submit = () => {
                     </div>
 
                     <div>
-                        <label for="password_confirmation" class="block text-sm font-medium text-dark-300 mb-1">
+                        <label for="password_confirmation" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
                             Confirm Password
                         </label>
                         <input
@@ -102,11 +102,11 @@ const submit = () => {
                         />
                     </div>
 
-                    <div class="text-sm text-dark-400">
+                    <div class="text-sm" style="color: var(--color-text-secondary);">
                         By signing up, you confirm that you are at least 18 years old and agree to our
-                        <a href="/terms" class="text-primary-500 hover:text-primary-400">Terms of Service</a>
+                        <a href="/terms" style="color: var(--color-accent);">Terms of Service</a>
                         and
-                        <a href="/privacy" class="text-primary-500 hover:text-primary-400">Privacy Policy</a>.
+                        <a href="/privacy" style="color: var(--color-accent);">Privacy Policy</a>.
                     </div>
 
                     <button
@@ -120,9 +120,9 @@ const submit = () => {
                 </form>
 
                 <div class="mt-6 text-center">
-                    <p class="text-dark-400">
+                    <p style="color: var(--color-text-secondary);">
                         Already have an account?
-                        <Link href="/login" class="text-primary-500 hover:text-primary-400 font-medium">
+                        <Link href="/login" class="font-medium" style="color: var(--color-accent);">
                             Sign in
                         </Link>
                     </p>

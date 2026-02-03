@@ -59,12 +59,34 @@ class VideoService
 
     public function delete(Video $video): void
     {
+        // Delete original video file
         if ($video->video_path) {
             Storage::disk('public')->delete($video->video_path);
         }
 
+        // Delete thumbnail
         if ($video->thumbnail) {
             Storage::disk('public')->delete($video->thumbnail);
+        }
+
+        // Delete processed files directory (HLS segments, quality variants, etc.)
+        $processedDir = "videos/{$video->user_id}/{$video->uuid}/processed";
+        if (Storage::disk('public')->exists($processedDir)) {
+            Storage::disk('public')->deleteDirectory($processedDir);
+        }
+
+        // Delete the entire video directory if empty
+        $videoDir = "videos/{$video->user_id}/{$video->uuid}";
+        if (Storage::disk('public')->exists($videoDir)) {
+            $files = Storage::disk('public')->allFiles($videoDir);
+            if (empty($files)) {
+                Storage::disk('public')->deleteDirectory($videoDir);
+            }
+        }
+
+        // Delete preview file if exists
+        if ($video->preview_path) {
+            Storage::disk('public')->delete($video->preview_path);
         }
 
         $video->delete();

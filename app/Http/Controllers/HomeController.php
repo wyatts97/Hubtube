@@ -4,14 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\LiveStream;
+use App\Models\Setting;
 use App\Models\Video;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class HomeController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $perPage = Setting::get('videos_per_page', 24);
+
         $featuredVideos = Video::query()
             ->with('user')
             ->featured()
@@ -28,8 +33,7 @@ class HomeController extends Controller
             ->approved()
             ->processed()
             ->latest('published_at')
-            ->limit(24)
-            ->get();
+            ->paginate($perPage);
 
         $popularVideos = Video::query()
             ->with('user')
@@ -59,6 +63,22 @@ class HomeController extends Controller
             'liveStreams' => $liveStreams,
             'categories' => $categories,
         ]);
+    }
+
+    public function loadMoreVideos(Request $request): JsonResponse
+    {
+        $perPage = Setting::get('videos_per_page', 24);
+        $page = $request->input('page', 1);
+
+        $videos = Video::query()
+            ->with('user')
+            ->public()
+            ->approved()
+            ->processed()
+            ->latest('published_at')
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json($videos);
     }
 
     public function trending(): Response

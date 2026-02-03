@@ -26,6 +26,7 @@ Route::get('/age-verify/decline', [AgeVerificationController::class, 'decline'])
 
 Route::middleware('age.verified')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
+    Route::get('/api/videos/load-more', [HomeController::class, 'loadMoreVideos'])->name('videos.loadMore');
     Route::get('/trending', [HomeController::class, 'trending'])->name('trending');
     Route::get('/shorts', [HomeController::class, 'shorts'])->name('shorts');
     Route::get('/search', [SearchController::class, 'index'])->name('search');
@@ -116,5 +117,6 @@ Route::middleware('age.verified')->group(function () {
         Route::put('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile');
         Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password');
         Route::put('/settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications');
+        Route::put('/settings/privacy', [SettingsController::class, 'updatePrivacy'])->name('settings.privacy');
     });
 });

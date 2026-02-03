@@ -133,6 +133,11 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         return $this->hasMany(ComplianceRecord::class);
     }
 
+    public function withdrawalRequests(): HasMany
+    {
+        return $this->hasMany(WithdrawalRequest::class);
+    }
+
     public function isAgeVerified(): bool
     {
         return $this->age_verified_at !== null;
