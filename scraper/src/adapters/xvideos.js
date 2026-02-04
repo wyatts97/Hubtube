@@ -10,27 +10,40 @@ class XVideosAdapter extends BaseAdapter {
         const $ = await this.fetchPage(searchUrl);
         
         const videos = [];
+        const seenIds = new Set();
         
-        $('.thumb-block').each((i, el) => {
+        // XVideos uses .mozaique for the video grid and .thumb-block for each video
+        $('#content .mozaique .thumb-block').each((i, el) => {
             const $el = $(el);
-            const $link = $el.find('.thumb a').first();
-            const $img = $el.find('.thumb img');
-            const $title = $el.find('.thumb-under .title a');
-            const $duration = $el.find('.duration');
-            const $metadata = $el.find('.metadata');
+            const $thumbInside = $el.find('.thumb-inside');
+            const $thumbUnder = $el.find('.thumb-under');
             
+            const $link = $thumbInside.find('.thumb a').first();
             const href = $link.attr('href') || '';
+            
+            // Extract video ID - format: /video12345678/title
             const videoIdMatch = href.match(/video(\d+)/);
             const sourceId = videoIdMatch ? videoIdMatch[1] : '';
             
-            if (!sourceId) return;
+            if (!sourceId || seenIds.has(sourceId)) return;
+            seenIds.add(sourceId);
+            
+            const $img = $thumbInside.find('img').first();
+            const $title = $thumbUnder.find('.title a').first();
+            const $duration = $thumbInside.find('.duration').first();
+            const $metadata = $thumbUnder.find('.metadata').first();
+            
+            let title = $title.attr('title') || $title.text().trim() || 'Untitled';
             
             const durationText = $duration.text().trim();
             const duration = this.parseDuration(durationText);
             
+            // Get thumbnail
+            let thumbnail = $img.attr('data-src') || $img.attr('src') || '';
+            
             // Extract views from metadata
             let views = 0;
-            const viewsText = $metadata.text();
+            const viewsText = $metadata.text() || '';
             const viewsMatch = viewsText.match(/([\d.]+)\s*(M|K)?/i);
             if (viewsMatch) {
                 views = parseFloat(viewsMatch[1]);
@@ -41,9 +54,9 @@ class XVideosAdapter extends BaseAdapter {
             
             const video = this.standardizeResult({
                 sourceId,
-                title: $title.attr('title') || $title.text().trim(),
+                title,
                 duration,
-                thumbnail: $img.attr('data-src') || $img.attr('src') || '',
+                thumbnail,
                 url: `${this.baseUrl}${href}`,
                 embedUrl: `${this.baseUrl}/embedframe/${sourceId}`,
                 embedCode: `<iframe src="${this.baseUrl}/embedframe/${sourceId}" frameborder="0" width="640" height="360" allowfullscreen></iframe>`,

@@ -10,29 +10,37 @@ class XHamsterAdapter extends BaseAdapter {
         const $ = await this.fetchPage(searchUrl);
         
         const videos = [];
+        const seenIds = new Set();
         
-        $('.thumb-list__item, .video-thumb').each((i, el) => {
+        // xHamster uses article.thumb-list__item or div.video-thumb
+        $('article.thumb-list__item, div.thumb-list__item').each((i, el) => {
             const $el = $(el);
-            const $link = $el.find('a.video-thumb__image-container, a.thumb-image-container').first();
+            const $link = $el.find('a[href*="/videos/"]').first();
             const href = $link.attr('href') || '';
             
-            // Extract video ID from URL
-            const videoIdMatch = href.match(/videos\/([^\/]+)/);
+            // Extract video ID from URL - format: /videos/title-123456
+            const videoIdMatch = href.match(/videos\/[^\/]+-(\d+)/);
             const sourceId = videoIdMatch ? videoIdMatch[1] : '';
             
-            if (!sourceId) return;
+            if (!sourceId || seenIds.has(sourceId)) return;
+            seenIds.add(sourceId);
             
             const $img = $el.find('img').first();
-            const $title = $el.find('.video-thumb-info__name, .thumb-info a').first();
+            const $title = $el.find('a.video-thumb-info__name, .video-thumb__title a').first();
             const $duration = $el.find('.thumb-image-container__duration, .duration').first();
-            const $views = $el.find('.video-thumb-views, .views').first();
+            const $views = $el.find('.video-thumb-info__views, .views').first();
+            
+            let title = $title.attr('title') || $title.text().trim() || 'Untitled';
             
             const durationText = $duration.text().trim();
             const duration = this.parseDuration(durationText);
             
+            // Get thumbnail
+            let thumbnail = $img.attr('data-src') || $img.attr('src') || '';
+            
             // Parse views
             let views = 0;
-            const viewsText = $views.text().trim();
+            const viewsText = $views.text().trim() || '';
             const viewsMatch = viewsText.match(/([\d.]+)\s*(M|K)?/i);
             if (viewsMatch) {
                 views = parseFloat(viewsMatch[1]);
@@ -43,19 +51,19 @@ class XHamsterAdapter extends BaseAdapter {
             
             const video = this.standardizeResult({
                 sourceId,
-                title: $title.text().trim(),
+                title,
                 duration,
-                thumbnail: $img.attr('data-src') || $img.attr('src') || '',
+                thumbnail,
                 url: href.startsWith('http') ? href : `${this.baseUrl}${href}`,
-                embedUrl: `${this.baseUrl}/embed/${sourceId}`,
-                embedCode: `<iframe src="${this.baseUrl}/embed/${sourceId}" frameborder="0" width="640" height="360" allowfullscreen></iframe>`,
+                embedUrl: `${this.baseUrl}/xembed.php?video=${sourceId}`,
+                embedCode: `<iframe src="${this.baseUrl}/xembed.php?video=${sourceId}" frameborder="0" width="640" height="360" allowfullscreen></iframe>`,
                 views
             });
             
             videos.push(video);
         });
         
-        const hasNextPage = $('.pager .next, .pagination .next').length > 0;
+        const hasNextPage = $('a.next, .pager__button--next').length > 0;
         const hasPrevPage = page > 1;
         
         return {

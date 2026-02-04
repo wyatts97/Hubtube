@@ -102,9 +102,9 @@
         <!-- Video Grid -->
         @if(count($searchResults) > 0)
             <div wire:loading.remove wire:target="search,nextPage,prevPage" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                @foreach($searchResults as $video)
+                @foreach($searchResults as $index => $video)
                     <div 
-                        wire:key="video-{{ $video['sourceId'] }}"
+                        wire:key="video-{{ $index }}-{{ $video['sourceId'] }}"
                         class="relative group rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow hover:shadow-lg transition-shadow cursor-pointer
                             {{ in_array($video['sourceId'], $selectedVideos) ? 'ring-2 ring-primary-500' : '' }}
                             {{ ($video['isImported'] ?? false) ? 'opacity-50' : '' }}"

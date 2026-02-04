@@ -180,11 +180,28 @@ class VideoEmbedder extends Page implements HasForms
 
         $result = $this->scraperService->bulkImport(array_values($videosToImport));
 
-        Notification::make()
-            ->title('Import Complete')
-            ->body("Imported: {$result['imported']}, Skipped: {$result['skipped']}")
-            ->success()
-            ->send();
+        if ($result['imported'] > 0) {
+            Notification::make()
+                ->title('Import Complete')
+                ->body("Imported: {$result['imported']}, Skipped: {$result['skipped']}. View imported videos in Embedded Videos section.")
+                ->success()
+                ->actions([
+                    \Filament\Notifications\Actions\Action::make('view')
+                        ->label('View Embedded Videos')
+                        ->url(route('filament.admin.resources.embedded-videos.index'))
+                ])
+                ->send();
+        } else {
+            $errorMsg = '';
+            if (!empty($result['errors'])) {
+                $errorMsg = ' Errors: ' . collect($result['errors'])->pluck('error')->implode(', ');
+            }
+            Notification::make()
+                ->title('Import Failed')
+                ->body("No videos were imported. Skipped: {$result['skipped']}.{$errorMsg}")
+                ->warning()
+                ->send();
+        }
 
         // Refresh results to update imported status
         $this->fetchResults();

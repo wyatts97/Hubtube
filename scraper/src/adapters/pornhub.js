@@ -10,26 +10,35 @@ class PornHubAdapter extends BaseAdapter {
         const $ = await this.fetchPage(searchUrl);
         
         const videos = [];
+        const seenIds = new Set();
         
-        $('.pcVideoListItem, .videoBox').each((i, el) => {
+        // PornHub uses li.pcVideoListItem for video items
+        $('ul#videoSearchResult li.pcVideoListItem, .videos-list .videoBox').each((i, el) => {
             const $el = $(el);
-            const sourceId = $el.attr('data-video-vkey') || $el.attr('data-id') || '';
+            const sourceId = $el.attr('data-video-vkey') || $el.attr('_vkey') || '';
             
-            if (!sourceId) return;
+            if (!sourceId || seenIds.has(sourceId)) return;
+            seenIds.add(sourceId);
             
-            const $link = $el.find('a.videoPreviewBg, a.linkVideoThumb').first();
-            const $img = $el.find('img.thumb, img').first();
-            const $title = $el.find('.title a, .videoTitle a').first();
-            const $duration = $el.find('.duration, .videoDuration').first();
-            const $views = $el.find('.views var, .videoViews var').first();
-            const $rating = $el.find('.rating-container .value, .videoRating .value').first();
+            const $wrapper = $el.find('.phimage, .videoWrapper').first();
+            const $link = $wrapper.find('a').first();
+            const $img = $wrapper.find('img').first();
+            const $title = $el.find('.title a, span.title a').first();
+            const $duration = $el.find('.duration, .marker-overlays var').first();
+            const $views = $el.find('.views var, span.views var').first();
+            const $rating = $el.find('.value, .rating-container .value').first();
+            
+            let title = $title.attr('title') || $title.text().trim() || 'Untitled';
             
             const durationText = $duration.text().trim();
             const duration = this.parseDuration(durationText);
             
+            // Get thumbnail - PornHub uses data-thumb_url or data-src
+            let thumbnail = $img.attr('data-thumb_url') || $img.attr('data-src') || $img.attr('src') || '';
+            
             // Parse views
             let views = 0;
-            const viewsText = $views.text().trim();
+            const viewsText = $views.text().trim() || '';
             const viewsMatch = viewsText.match(/([\d.]+)\s*(M|K)?/i);
             if (viewsMatch) {
                 views = parseFloat(viewsMatch[1]);
@@ -40,7 +49,7 @@ class PornHubAdapter extends BaseAdapter {
             
             // Parse rating
             let rating = 0;
-            const ratingText = $rating.text().trim();
+            const ratingText = $rating.text().trim() || '';
             const ratingMatch = ratingText.match(/(\d+)/);
             if (ratingMatch) {
                 rating = parseInt(ratingMatch[1]);
@@ -48,9 +57,9 @@ class PornHubAdapter extends BaseAdapter {
             
             const video = this.standardizeResult({
                 sourceId,
-                title: $title.attr('title') || $title.text().trim(),
+                title,
                 duration,
-                thumbnail: $img.attr('data-src') || $img.attr('data-thumb_url') || $img.attr('src') || '',
+                thumbnail,
                 url: `${this.baseUrl}/view_video.php?viewkey=${sourceId}`,
                 embedUrl: `${this.baseUrl}/embed/${sourceId}`,
                 embedCode: `<iframe src="${this.baseUrl}/embed/${sourceId}" frameborder="0" width="640" height="360" allowfullscreen></iframe>`,
@@ -62,7 +71,7 @@ class PornHubAdapter extends BaseAdapter {
         });
         
         // Check for pagination
-        const hasNextPage = $('.pagination3 .page_next').length > 0;
+        const hasNextPage = $('.pagination3 .page_next:not(.disabled)').length > 0;
         const hasPrevPage = page > 1;
         
         return {

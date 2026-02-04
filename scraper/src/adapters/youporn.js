@@ -10,29 +10,37 @@ class YouPornAdapter extends BaseAdapter {
         const $ = await this.fetchPage(searchUrl);
         
         const videos = [];
+        const seenIds = new Set();
         
-        $('.video-box, .videoBox').each((i, el) => {
+        // YouPorn uses div.video-box or similar containers
+        $('div.video-box, .video-listing .video-item').each((i, el) => {
             const $el = $(el);
-            const $link = $el.find('a.video-box-image, a.thumb').first();
+            const $link = $el.find('a[href*="/watch/"]').first();
             const href = $link.attr('href') || '';
             
-            // Extract video ID from URL
+            // Extract video ID from URL - format: /watch/12345/title
             const videoIdMatch = href.match(/\/watch\/(\d+)/);
             const sourceId = videoIdMatch ? videoIdMatch[1] : '';
             
-            if (!sourceId) return;
+            if (!sourceId || seenIds.has(sourceId)) return;
+            seenIds.add(sourceId);
             
             const $img = $el.find('img').first();
-            const $title = $el.find('.video-box-title, .title').first();
+            const $title = $el.find('.video-box-title a, .video-title a').first();
             const $duration = $el.find('.video-duration, .duration').first();
             const $views = $el.find('.video-views, .views').first();
-            const $rating = $el.find('.video-rating, .rating').first();
+            const $rating = $el.find('.video-rating .percent, .rating').first();
+            
+            let title = $title.attr('title') || $title.text().trim() || 'Untitled';
             
             const durationText = $duration.text().trim();
             const duration = this.parseDuration(durationText);
             
+            // Get thumbnail
+            let thumbnail = $img.attr('data-thumb_url') || $img.attr('data-src') || $img.attr('src') || '';
+            
             let views = 0;
-            const viewsText = $views.text().trim();
+            const viewsText = $views.text().trim() || '';
             const viewsMatch = viewsText.match(/([\d.]+)\s*(M|K)?/i);
             if (viewsMatch) {
                 views = parseFloat(viewsMatch[1]);
@@ -42,7 +50,7 @@ class YouPornAdapter extends BaseAdapter {
             }
             
             let rating = 0;
-            const ratingText = $rating.text().trim();
+            const ratingText = $rating.text().trim() || '';
             const ratingMatch = ratingText.match(/(\d+)/);
             if (ratingMatch) {
                 rating = parseInt(ratingMatch[1]);
@@ -50,10 +58,10 @@ class YouPornAdapter extends BaseAdapter {
             
             const video = this.standardizeResult({
                 sourceId,
-                title: $title.text().trim(),
+                title,
                 duration,
-                thumbnail: $img.attr('data-src') || $img.attr('data-thumb_url') || $img.attr('src') || '',
-                url: `${this.baseUrl}${href}`,
+                thumbnail,
+                url: href.startsWith('http') ? href : `${this.baseUrl}${href}`,
                 embedUrl: `${this.baseUrl}/embed/${sourceId}`,
                 embedCode: `<iframe src="${this.baseUrl}/embed/${sourceId}" frameborder="0" width="640" height="360" allowfullscreen></iframe>`,
                 views,
@@ -63,7 +71,7 @@ class YouPornAdapter extends BaseAdapter {
             videos.push(video);
         });
         
-        const hasNextPage = $('.pagination .next, .page-next').length > 0;
+        const hasNextPage = $('a.next, .pagination .page-next').length > 0;
         const hasPrevPage = page > 1;
         
         return {

@@ -89,13 +89,16 @@ class EmbedScraperService
     {
         // Check if already imported
         if (EmbeddedVideo::isAlreadyImported($videoData['sourceSite'], $videoData['sourceId'])) {
+            Log::info("Video already imported: {$videoData['sourceSite']}/{$videoData['sourceId']}");
             return null;
         }
 
-        return EmbeddedVideo::create([
+        Log::info("Importing video: {$videoData['sourceSite']}/{$videoData['sourceId']} - {$videoData['title']}");
+
+        $video = EmbeddedVideo::create([
             'source_site' => $videoData['sourceSite'],
             'source_video_id' => $videoData['sourceId'],
-            'title' => $videoData['title'],
+            'title' => $videoData['title'] ?? 'Untitled',
             'description' => $videoData['description'] ?? null,
             'duration' => $videoData['duration'] ?? 0,
             'duration_formatted' => $videoData['durationFormatted'] ?? null,
@@ -111,6 +114,10 @@ class EmbedScraperService
             'is_published' => false,
             'imported_at' => now(),
         ]);
+
+        Log::info("Video imported successfully with ID: {$video->id}");
+
+        return $video;
     }
 
     public function bulkImport(array $videos): array

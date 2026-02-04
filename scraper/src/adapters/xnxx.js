@@ -10,30 +10,43 @@ class XNXXAdapter extends BaseAdapter {
         const $ = await this.fetchPage(searchUrl);
         
         const videos = [];
+        const seenIds = new Set();
         
-        $('.thumb-block, .mozaique .thumb').each((i, el) => {
+        // Use only .thumb-block which is the main container
+        $('.mozaique .thumb-block').each((i, el) => {
             const $el = $(el);
-            const $link = $el.find('a').first();
+            const $thumbInside = $el.find('.thumb-inside');
+            const $thumbUnder = $el.find('.thumb-under');
+            
+            const $link = $thumbInside.find('a').first();
             const href = $link.attr('href') || '';
             
             // Extract video ID from URL (format: /video-xxxxx/title)
             const videoIdMatch = href.match(/video-([a-z0-9]+)/i);
             const sourceId = videoIdMatch ? videoIdMatch[1] : '';
             
-            if (!sourceId) return;
+            // Skip if no ID or already seen (dedup)
+            if (!sourceId || seenIds.has(sourceId)) return;
+            seenIds.add(sourceId);
             
-            const $img = $el.find('img').first();
-            const $title = $el.find('.thumb-under p a, .title').first();
-            const $duration = $el.find('.duration, .video-duration').first();
-            const $metadata = $el.find('.metadata, .video-metadata').first();
+            const $img = $thumbInside.find('img').first();
+            const $title = $thumbUnder.find('a').first();
+            const $duration = $thumbInside.find('.duration').first();
+            const $metadata = $thumbUnder.find('.metadata').first();
+            
+            // Get title from title attribute or text
+            let title = $title.attr('title') || $title.text().trim() || 'Untitled';
             
             const durationText = $duration.text().trim();
             const duration = this.parseDuration(durationText);
             
-            // Parse views
+            // Get thumbnail - prefer data-src for lazy loaded images
+            let thumbnail = $img.attr('data-src') || $img.attr('src') || '';
+            
+            // Parse views from metadata
             let views = 0;
-            const viewsText = $metadata.text();
-            const viewsMatch = viewsText.match(/([\d.]+)\s*(M|K)?/i);
+            const metaText = $metadata.text() || '';
+            const viewsMatch = metaText.match(/([\d.]+)\s*(M|K)?/i);
             if (viewsMatch) {
                 views = parseFloat(viewsMatch[1]);
                 if (viewsMatch[2]?.toUpperCase() === 'M') views *= 1000000;
@@ -43,9 +56,9 @@ class XNXXAdapter extends BaseAdapter {
             
             const video = this.standardizeResult({
                 sourceId,
-                title: $title.attr('title') || $title.text().trim(),
+                title,
                 duration,
-                thumbnail: $img.attr('data-src') || $img.attr('src') || '',
+                thumbnail,
                 url: `${this.baseUrl}${href}`,
                 embedUrl: `${this.baseUrl}/embedframe/${sourceId}`,
                 embedCode: `<iframe src="${this.baseUrl}/embedframe/${sourceId}" frameborder="0" width="640" height="360" allowfullscreen></iframe>`,
@@ -55,7 +68,7 @@ class XNXXAdapter extends BaseAdapter {
             videos.push(video);
         });
         
-        const hasNextPage = $('.pagination .next, .nav-page-next').length > 0;
+        const hasNextPage = $('.pagination .next-page, .nav-page-next').length > 0;
         const hasPrevPage = page > 1;
         
         return {

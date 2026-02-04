@@ -10,33 +10,36 @@ class RedTubeAdapter extends BaseAdapter {
         const $ = await this.fetchPage(searchUrl);
         
         const videos = [];
+        const seenIds = new Set();
         
-        $('.video-item, .videoBox').each((i, el) => {
+        // RedTube uses li.videoblock or div.video_block
+        $('li.videoblock, .video_block_wrapper').each((i, el) => {
             const $el = $(el);
-            const sourceId = $el.attr('data-video-id') || $el.attr('data-id') || '';
+            const $link = $el.find('a[href*="/"]').first();
+            const href = $link.attr('href') || '';
             
-            if (!sourceId) {
-                // Try to extract from link
-                const $link = $el.find('a').first();
-                const href = $link.attr('href') || '';
-                const match = href.match(/\/(\d+)/);
-                if (match) {
-                    // Use the matched ID
-                }
-            }
+            // Extract video ID from URL - format: /12345/title
+            const videoIdMatch = href.match(/\/(\d+)/);
+            const sourceId = videoIdMatch ? videoIdMatch[1] : '';
             
-            if (!sourceId) return;
+            if (!sourceId || seenIds.has(sourceId)) return;
+            seenIds.add(sourceId);
             
             const $img = $el.find('img').first();
-            const $title = $el.find('.video-title, .title').first();
-            const $duration = $el.find('.duration, .video-duration').first();
-            const $views = $el.find('.views, .video-views').first();
+            const $title = $el.find('.video_title, .video-title a, a[title]').first();
+            const $duration = $el.find('.duration, .video_duration').first();
+            const $views = $el.find('.video_count, .views').first();
+            
+            let title = $title.attr('title') || $title.text().trim() || 'Untitled';
             
             const durationText = $duration.text().trim();
             const duration = this.parseDuration(durationText);
             
+            // Get thumbnail
+            let thumbnail = $img.attr('data-thumb_url') || $img.attr('data-src') || $img.attr('src') || '';
+            
             let views = 0;
-            const viewsText = $views.text().trim();
+            const viewsText = $views.text().trim() || '';
             const viewsMatch = viewsText.match(/([\d.]+)\s*(M|K)?/i);
             if (viewsMatch) {
                 views = parseFloat(viewsMatch[1]);
@@ -47,9 +50,9 @@ class RedTubeAdapter extends BaseAdapter {
             
             const video = this.standardizeResult({
                 sourceId,
-                title: $title.text().trim(),
+                title,
                 duration,
-                thumbnail: $img.attr('data-src') || $img.attr('data-thumb_url') || $img.attr('src') || '',
+                thumbnail,
                 url: `${this.baseUrl}/${sourceId}`,
                 embedUrl: `${this.baseUrl}/embed/${sourceId}`,
                 embedCode: `<iframe src="${this.baseUrl}/embed/${sourceId}" frameborder="0" width="640" height="360" allowfullscreen></iframe>`,
@@ -59,7 +62,7 @@ class RedTubeAdapter extends BaseAdapter {
             videos.push(video);
         });
         
-        const hasNextPage = $('.pagination .next, .page-next').length > 0;
+        const hasNextPage = $('a.page_next, .pagination .next').length > 0;
         const hasPrevPage = page > 1;
         
         return {
