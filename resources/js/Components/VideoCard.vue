@@ -12,6 +12,17 @@ const props = defineProps({
 const isHovering = ref(false);
 const previewLoaded = ref(false);
 
+// Check if this is an embedded video
+const isEmbedded = computed(() => props.video.is_embedded === true);
+
+// Get the correct URL for the video
+const videoUrl = computed(() => {
+    if (isEmbedded.value) {
+        return `/embedded/${props.video.id}`;
+    }
+    return `/watch/${props.video.slug}`;
+});
+
 const formattedViews = computed(() => {
     const views = props.video.views_count;
     if (views >= 1000000) {
@@ -73,7 +84,7 @@ const onPreviewLoad = () => {
 
 <template>
     <Link 
-        :href="`/watch/${video.slug}`" 
+        :href="videoUrl" 
         class="video-card"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
@@ -81,11 +92,12 @@ const onPreviewLoad = () => {
         <div class="thumbnail relative overflow-hidden rounded-xl">
             <!-- Static Thumbnail -->
             <img
-                :src="video.thumbnail_url || '/images/placeholder.jpg'"
+                :src="video.thumbnail_url || video.thumbnail || '/images/placeholder.jpg'"
                 :alt="video.title"
                 loading="lazy"
                 class="w-full h-full object-cover transition-opacity duration-200"
                 :class="{ 'opacity-0': isHovering && video.preview_url && previewLoaded }"
+                @error="(e) => e.target.src = '/images/placeholder.jpg'"
             />
             
             <!-- Animated Preview (WebP) -->
@@ -100,27 +112,50 @@ const onPreviewLoad = () => {
             
             <!-- Duration Badge -->
             <span class="duration absolute bottom-2 right-2 bg-black/80 text-white text-xs font-medium px-1.5 py-0.5 rounded">
-                {{ video.formatted_duration || formattedDuration }}
+                {{ video.duration_formatted || video.formatted_duration || formattedDuration }}
             </span>
             
             <!-- Short Badge -->
             <span v-if="video.is_short" class="absolute top-2 left-2 badge badge-pro">Short</span>
+            
+            <!-- Embedded Badge -->
+            <span v-if="isEmbedded" class="absolute top-2 left-2 bg-purple-600 text-white text-xs font-medium px-1.5 py-0.5 rounded uppercase">
+                {{ video.source_site }}
+            </span>
         </div>
         <div class="flex gap-3 mt-3">
-            <Link v-if="video.user" :href="`/channel/${video.user.username}`" class="flex-shrink-0">
-                <div class="w-9 h-9 avatar">
-                    <img v-if="video.user.avatar" :src="video.user.avatar" :alt="video.user.username" class="w-full h-full object-cover" />
-                    <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-sm font-medium">
-                        {{ video.user.username?.charAt(0)?.toUpperCase() || '?' }}
+            <template v-if="!isEmbedded">
+                <Link v-if="video.user" :href="`/channel/${video.user.username}`" class="flex-shrink-0">
+                    <div class="w-9 h-9 avatar">
+                        <img v-if="video.user.avatar" :src="video.user.avatar" :alt="video.user.username" class="w-full h-full object-cover" />
+                        <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-sm font-medium">
+                            {{ video.user.username?.charAt(0)?.toUpperCase() || '?' }}
+                        </div>
+                    </div>
+                </Link>
+            </template>
+            <template v-else>
+                <div class="flex-shrink-0">
+                    <div class="w-9 h-9 avatar">
+                        <div class="w-full h-full flex items-center justify-center bg-purple-600 text-white text-sm font-medium">
+                            {{ video.source_site?.charAt(0)?.toUpperCase() || 'E' }}
+                        </div>
                     </div>
                 </div>
-            </Link>
+            </template>
             <div class="flex-1 min-w-0">
                 <h3 class="font-medium line-clamp-2 leading-tight" style="color: var(--color-text-primary);">{{ video.title }}</h3>
-                <Link v-if="video.user" :href="`/channel/${video.user.username}`" class="text-sm mt-1 block" style="color: var(--color-text-secondary);">
-                    {{ video.user.username }}
-                    <span v-if="video.user.is_verified" class="inline-block ml-1">✓</span>
-                </Link>
+                <template v-if="!isEmbedded">
+                    <Link v-if="video.user" :href="`/channel/${video.user.username}`" class="text-sm mt-1 block" style="color: var(--color-text-secondary);">
+                        {{ video.user.username }}
+                        <span v-if="video.user.is_verified" class="inline-block ml-1">✓</span>
+                    </Link>
+                </template>
+                <template v-else>
+                    <span class="text-sm mt-1 block" style="color: var(--color-text-secondary);">
+                        {{ video.source_site }}
+                    </span>
+                </template>
                 <p class="text-sm" style="color: var(--color-text-muted);">
                     {{ formattedViews }} views • {{ timeAgo }}
                 </p>

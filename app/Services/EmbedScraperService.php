@@ -54,6 +54,18 @@ class EmbedScraperService
                 return $data;
             }
 
+            // Check for blocked/geo-restricted response
+            if ($response->status() === 403) {
+                $data = $response->json();
+                return [
+                    'error' => 'Site access blocked',
+                    'message' => $data['message'] ?? 'This site appears to be geo-restricted in your region (common in Texas for adult sites).',
+                    'blocked' => true,
+                    'suggestion' => $data['suggestion'] ?? 'Try using a VPN or proxy service, or select a different source site.',
+                    'videos' => [],
+                ];
+            }
+
             return [
                 'error' => 'Failed to fetch videos',
                 'message' => $response->body(),

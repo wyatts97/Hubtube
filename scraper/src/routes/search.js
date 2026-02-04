@@ -40,6 +40,18 @@ router.get('/:site', async (req, res) => {
         res.json({ ...results, cached: false });
     } catch (error) {
         console.error('Search error:', error);
+        
+        // Check if this is a blocked/geo-restricted error
+        if (error.code === 'BLOCKED') {
+            return res.status(403).json({ 
+                error: 'Site access blocked',
+                message: error.message,
+                blocked: true,
+                details: error.details,
+                suggestion: 'This site may be geo-restricted in your region (common in Texas). Try using a VPN or proxy, or try a different site.'
+            });
+        }
+        
         res.status(500).json({ 
             error: 'Failed to fetch videos',
             message: error.message 
@@ -70,6 +82,17 @@ router.get('/:site/video/:videoId', async (req, res) => {
         res.json({ ...details, cached: false });
     } catch (error) {
         console.error('Video details error:', error);
+        
+        // Check if this is a blocked/geo-restricted error
+        if (error.code === 'BLOCKED') {
+            return res.status(403).json({ 
+                error: 'Site access blocked',
+                message: error.message,
+                blocked: true,
+                suggestion: 'This site may be geo-restricted in your region.'
+            });
+        }
+        
         res.status(500).json({ 
             error: 'Failed to fetch video details',
             message: error.message 

@@ -29,9 +29,20 @@
         <!-- Error Message -->
         @if($errorMessage)
             <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                <div class="flex items-center gap-2 text-red-700 dark:text-red-400">
-                    <x-heroicon-m-exclamation-circle class="w-5 h-5" />
-                    <span>{{ $errorMessage }}</span>
+                <div class="flex items-start gap-3">
+                    <x-heroicon-m-exclamation-circle class="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                        <p class="font-medium text-red-700 dark:text-red-400">{{ $errorMessage }}</p>
+                        @if($errorSuggestion ?? false)
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-300">{{ $errorSuggestion }}</p>
+                        @endif
+                        @if($isBlocked ?? false)
+                            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                <strong>Tip:</strong> Some adult sites block access from certain US states (like Texas). 
+                                XNXX typically works without restrictions. You can also try using a VPN or proxy service.
+                            </p>
+                        @endif
+                    </div>
                 </div>
             </div>
         @endif
@@ -111,29 +122,33 @@
                         wire:click="toggleVideoSelection('{{ $video['sourceId'] }}')"
                     >
                         <!-- Thumbnail -->
-                        <div class="relative aspect-video bg-gray-200 dark:bg-gray-700">
-                            @if($video['thumbnail'])
+                        <div class="relative aspect-video bg-gray-900 overflow-hidden">
+                            @if(!empty($video['thumbnail']))
                                 <img 
                                     src="{{ $video['thumbnail'] }}" 
-                                    alt="{{ $video['title'] }}"
+                                    alt=""
                                     class="w-full h-full object-cover"
                                     loading="lazy"
+                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
                                 >
+                                <div class="w-full h-full items-center justify-center absolute inset-0 bg-gray-800" style="display: none;">
+                                    <x-heroicon-o-film class="w-12 h-12 text-gray-500" />
+                                </div>
                             @else
-                                <div class="w-full h-full flex items-center justify-center">
-                                    <x-heroicon-o-film class="w-12 h-12 text-gray-400" />
+                                <div class="w-full h-full flex items-center justify-center bg-gray-800">
+                                    <x-heroicon-o-film class="w-12 h-12 text-gray-500" />
                                 </div>
                             @endif
                             
                             <!-- Duration Badge -->
-                            @if($video['durationFormatted'])
-                                <div class="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded">
+                            @if(!empty($video['durationFormatted']))
+                                <div class="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded z-10">
                                     {{ $video['durationFormatted'] }}
                                 </div>
                             @endif
                             
                             <!-- Selection Checkbox -->
-                            <div class="absolute top-2 left-2">
+                            <div class="absolute top-2 left-2 z-10">
                                 @if($video['isImported'] ?? false)
                                     <div class="bg-green-500 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
                                         <x-heroicon-m-check class="w-3 h-3" />
@@ -152,21 +167,21 @@
                             </div>
                             
                             <!-- Source Badge -->
-                            <div class="absolute top-2 right-2 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded uppercase">
-                                {{ $video['sourceSite'] }}
+                            <div class="absolute top-2 right-2 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded uppercase z-10">
+                                {{ $video['sourceSite'] ?? 'unknown' }}
                             </div>
                         </div>
                         
                         <!-- Video Info -->
                         <div class="p-3">
-                            <h3 class="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-tight">
-                                {{ $video['title'] }}
+                            <h3 class="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-tight" title="{{ $video['title'] }}">
+                                {{ Str::limit($video['title'] ?? 'Untitled', 60) }}
                             </h3>
                             <div class="mt-1 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                @if($video['views'])
+                                @if(!empty($video['views']))
                                     <span>{{ number_format($video['views']) }} views</span>
                                 @endif
-                                @if($video['rating'])
+                                @if(!empty($video['rating']))
                                     <span>{{ $video['rating'] }}%</span>
                                 @endif
                             </div>

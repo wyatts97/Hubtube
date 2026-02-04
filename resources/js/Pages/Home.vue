@@ -19,6 +19,7 @@ onMounted(() => {
 const props = defineProps({
     featuredVideos: Array,
     latestVideos: Object, // Now a paginated object
+    latestEmbedded: Array, // Embedded videos from external sites
     popularVideos: Array,
     liveStreams: Array,
     categories: Array,
@@ -209,6 +210,28 @@ const goToPage = (pageNum) => {
                     </button>
                 </div>
             </template>
+        </section>
+
+        <!-- Embedded Videos Section -->
+        <section v-if="(latestEmbedded && latestEmbedded.length > 0) || isInitialLoad" class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold" style="color: var(--color-text-primary);">
+                    External Videos
+                </h2>
+                <a href="/embedded" class="text-sm font-medium" style="color: var(--color-accent);">View All</a>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <template v-if="isInitialLoad">
+                    <VideoCardSkeleton v-for="i in 4" :key="'skeleton-embedded-' + i" />
+                </template>
+                <template v-else>
+                    <VideoCard 
+                        v-for="video in latestEmbedded" 
+                        :key="'embedded-' + video.id" 
+                        :video="video" 
+                    />
+                </template>
+            </div>
         </section>
 
         <!-- Popular Videos -->

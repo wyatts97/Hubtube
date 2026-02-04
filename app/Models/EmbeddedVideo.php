@@ -90,4 +90,38 @@ class EmbeddedVideo extends Model
     {
         return $this->belongsTo(Category::class);
     }
+
+    /**
+     * Convert embedded video to a format compatible with regular video display
+     */
+    public function toVideoFormat(): array
+    {
+        return [
+            'id' => $this->id,
+            'title' => $this->title,
+            'slug' => 'embedded-' . $this->id,
+            'description' => $this->description,
+            'thumbnail' => $this->thumbnail_url,
+            'thumbnail_url' => $this->thumbnail_url,
+            'duration' => $this->duration,
+            'duration_formatted' => $this->duration_formatted,
+            'views_count' => $this->views_count,
+            'formatted_views' => $this->formatted_views,
+            'likes_count' => 0,
+            'dislikes_count' => 0,
+            'published_at' => $this->imported_at,
+            'created_at' => $this->created_at,
+            'is_embedded' => true,
+            'embed_url' => $this->embed_url,
+            'embed_code' => $this->embed_code,
+            'source_site' => $this->source_site,
+            'source_url' => $this->source_url,
+            'user' => [
+                'id' => 0,
+                'name' => ucfirst($this->source_site),
+                'username' => $this->source_site,
+                'avatar' => null,
+            ],
+        ];
+    }
 }

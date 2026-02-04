@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\EmbeddedVideo;
 use App\Models\LiveStream;
 use App\Models\Setting;
 use App\Models\Video;
@@ -27,6 +28,17 @@ class HomeController extends Controller
             ->limit(8)
             ->get();
 
+        // Get featured embedded videos
+        $featuredEmbedded = EmbeddedVideo::published()
+            ->featured()
+            ->latest('imported_at')
+            ->limit(4)
+            ->get()
+            ->map(fn ($v) => $v->toVideoFormat());
+
+        // Merge featured videos
+        $featuredVideos = $featuredVideos->concat($featuredEmbedded)->take(8);
+
         $latestVideos = Video::query()
             ->with('user')
             ->public()
@@ -34,6 +46,13 @@ class HomeController extends Controller
             ->processed()
             ->latest('published_at')
             ->paginate($perPage);
+
+        // Get latest embedded videos and merge with regular videos
+        $latestEmbedded = EmbeddedVideo::published()
+            ->latest('imported_at')
+            ->limit($perPage)
+            ->get()
+            ->map(fn ($v) => $v->toVideoFormat());
 
         $popularVideos = Video::query()
             ->with('user')
@@ -43,6 +62,19 @@ class HomeController extends Controller
             ->orderByDesc('views_count')
             ->limit(12)
             ->get();
+
+        // Get popular embedded videos
+        $popularEmbedded = EmbeddedVideo::published()
+            ->orderByDesc('views_count')
+            ->limit(6)
+            ->get()
+            ->map(fn ($v) => $v->toVideoFormat());
+
+        // Merge popular videos
+        $popularVideos = $popularVideos->concat($popularEmbedded)
+            ->sortByDesc('views_count')
+            ->take(12)
+            ->values();
 
         $liveStreams = LiveStream::query()
             ->with('user')
@@ -59,6 +91,7 @@ class HomeController extends Controller
         return Inertia::render('Home', [
             'featuredVideos' => $featuredVideos,
             'latestVideos' => $latestVideos,
+            'latestEmbedded' => $latestEmbedded,
             'popularVideos' => $popularVideos,
             'liveStreams' => $liveStreams,
             'categories' => $categories,

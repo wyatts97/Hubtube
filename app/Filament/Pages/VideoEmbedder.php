@@ -36,6 +36,8 @@ class VideoEmbedder extends Page implements HasForms
     public bool $hasNextPage = false;
     public bool $hasPrevPage = false;
     public ?string $errorMessage = null;
+    public ?string $errorSuggestion = null;
+    public bool $isBlocked = false;
 
     protected EmbedScraperService $scraperService;
 
@@ -112,6 +114,9 @@ class VideoEmbedder extends Page implements HasForms
     protected function fetchResults(): void
     {
         $this->isLoading = true;
+        $this->errorMessage = null;
+        $this->errorSuggestion = null;
+        $this->isBlocked = false;
         
         $results = $this->scraperService->search(
             $this->selectedSite,
@@ -123,6 +128,8 @@ class VideoEmbedder extends Page implements HasForms
 
         if (isset($results['error'])) {
             $this->errorMessage = $results['message'] ?? $results['error'];
+            $this->errorSuggestion = $results['suggestion'] ?? null;
+            $this->isBlocked = $results['blocked'] ?? false;
             $this->searchResults = [];
             return;
         }
