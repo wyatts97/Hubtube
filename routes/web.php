@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\EmbeddedVideoController;
 use App\Http\Controllers\GiftController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\HomeController;
@@ -44,6 +45,11 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/live/{liveStream}', [LiveStreamController::class, 'show'])->name('live.show');
 
     Route::get('/playlist/{playlist:slug}', [PlaylistController::class, 'show'])->name('playlists.show');
+
+    // Embedded Videos
+    Route::get('/embedded', [EmbeddedVideoController::class, 'index'])->name('embedded.index');
+    Route::get('/embedded/featured', [EmbeddedVideoController::class, 'featured'])->name('embedded.featured');
+    Route::get('/embedded/{embeddedVideo}', [EmbeddedVideoController::class, 'show'])->name('embedded.show');
 
     Route::middleware('guest')->group(function () {
         Route::get('/register', [RegisterController::class, 'create'])->name('register');

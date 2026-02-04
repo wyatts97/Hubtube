@@ -109,6 +109,18 @@ else
     print_status "Node dependencies already installed"
 fi
 
+# Step 3b: Install Scraper dependencies
+print_step "Installing Scraper microservice dependencies..."
+if [ -d "scraper" ]; then
+    if [ ! -d "scraper/node_modules" ]; then
+        cd scraper && npm install && cd ..
+    else
+        print_status "Scraper dependencies already installed"
+    fi
+else
+    print_warning "Scraper directory not found - skipping"
+fi
+
 # Step 4: Build frontend assets
 print_step "Building frontend assets..."
 npm run build
@@ -148,10 +160,11 @@ php artisan view:clear
 # Step 10: Start services
 print_step "Starting development services..."
 
-# Kill any existing processes on ports 8000, 6001
+# Kill any existing processes on ports 8000, 6001, 3001
 pkill -f "php artisan serve" 2>/dev/null || true
 pkill -f "php artisan reverb:start" 2>/dev/null || true
 pkill -f "php artisan horizon" 2>/dev/null || true
+pkill -f "node.*scraper" 2>/dev/null || true
 
 # Start Laravel development server
 print_status "Starting Laravel server on http://$SERVER_IP:8000"
@@ -168,6 +181,17 @@ print_status "Starting queue worker (Horizon)"
 php artisan horizon &
 HORIZON_PID=$!
 
+# Start Scraper microservice
+if [ -d "scraper" ]; then
+    print_status "Starting Scraper microservice on http://$SERVER_IP:3001"
+    cd scraper && npm start &
+    SCRAPER_PID=$!
+    cd ..
+else
+    print_warning "Scraper directory not found - skipping"
+    SCRAPER_PID=""
+fi
+
 # Wait a moment for services to start
 sleep 3
 
@@ -179,6 +203,7 @@ echo "📱 Access URLs:"
 echo "   Main App:     http://$SERVER_IP:8000"
 echo "   Admin Panel:  http://$SERVER_IP:8000/admin"
 echo "   WebSocket:    ws://$SERVER_IP:6001"
+echo "   Scraper API:  http://$SERVER_IP:3001"
 echo ""
 echo "👤 Default Login:"
 echo "   Admin:        admin@hubtube.com / password"
@@ -188,11 +213,17 @@ echo "🔧 Services Running:"
 echo "   Laravel Server (PID: $SERVER_PID)"
 echo "   WebSocket Server (PID: $REVERB_PID)"
 echo "   Queue Worker (PID: $HORIZON_PID)"
+if [ -n "$SCRAPER_PID" ]; then
+    echo "   Scraper Service (PID: $SCRAPER_PID)"
+fi
 echo ""
 echo "📋 Useful Commands:"
 echo "   View logs:    tail -f storage/logs/laravel.log"
 echo "   Queue status: php artisan horizon"
-echo "   Stop all:     pkill -f 'php artisan'"
+echo "   Stop all:     pkill -f 'php artisan' && pkill -f 'node.*scraper'"
+echo ""
+echo "🎬 Video Embedder:"
+echo "   Import videos from adult tube sites at /admin -> Video Embedder"
 echo ""
 echo "Press Ctrl+C to stop all services"
 
@@ -202,6 +233,9 @@ cleanup() {
     kill $SERVER_PID 2>/dev/null || true
     kill $REVERB_PID 2>/dev/null || true
     kill $HORIZON_PID 2>/dev/null || true
+    if [ -n "$SCRAPER_PID" ]; then
+        kill $SCRAPER_PID 2>/dev/null || true
+    fi
     print_status "All services stopped"
     exit 0
 }
