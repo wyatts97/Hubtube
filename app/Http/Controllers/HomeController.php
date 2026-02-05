@@ -101,8 +101,8 @@ class HomeController extends Controller
 
         // Get ad settings
         $adSettings = [
-            'videoGridEnabled' => Setting::get('video_grid_ad_enabled', false),
-            'videoGridCode' => Setting::get('video_grid_ad_code', ''),
+            'videoGridEnabled' => (bool) Setting::get('video_grid_ad_enabled', false),
+            'videoGridCode' => (string) Setting::get('video_grid_ad_code', ''),
             'videoGridFrequency' => (int) Setting::get('video_grid_ad_frequency', 8),
         ];
 

@@ -21,9 +21,17 @@ const props = defineProps({
     },
 });
 
+// Check if ads are enabled (handle both boolean and string values)
+const adsEnabled = computed(() => {
+    const enabled = props.adSettings?.videoGridEnabled;
+    return enabled === true || enabled === 'true' || enabled === 1 || enabled === '1';
+});
+
+const adCode = computed(() => props.adSettings?.videoGridCode || '');
+
 // Compute items with ads inserted at the right frequency
 const itemsWithAds = computed(() => {
-    if (!props.adSettings?.videoGridEnabled || !props.adSettings?.videoGridCode) {
+    if (!adsEnabled.value || !adCode.value.trim()) {
         return props.videos.map((video, index) => ({
             type: 'video',
             data: video,
@@ -31,7 +39,7 @@ const itemsWithAds = computed(() => {
         }));
     }
 
-    const frequency = props.adSettings.videoGridFrequency || 8;
+    const frequency = parseInt(props.adSettings?.videoGridFrequency) || 8;
     const items = [];
     let adCount = 0;
 
@@ -46,7 +54,7 @@ const itemsWithAds = computed(() => {
         if ((index + 1) % frequency === 0 && index < props.videos.length - 1) {
             items.push({
                 type: 'ad',
-                key: `ad-${adCount++}`,
+                key: `${props.keyPrefix}-ad-${adCount++}`,
             });
         }
     });
@@ -64,10 +72,10 @@ const itemsWithAds = computed(() => {
             <!-- Ad Slot -->
             <div 
                 v-else-if="item.type === 'ad'" 
-                class="ad-slot flex items-center justify-center rounded-xl overflow-hidden"
-                style="min-height: 250px; background-color: var(--color-bg-card);"
+                class="ad-slot col-span-1 flex items-center justify-center rounded-xl overflow-hidden p-4"
+                style="min-height: 280px; background-color: var(--color-bg-card); border: 1px solid var(--color-border);"
             >
-                <div v-html="adSettings.videoGridCode" class="w-full h-full flex items-center justify-center"></div>
+                <div v-html="adCode" class="flex items-center justify-center"></div>
             </div>
         </template>
     </div>

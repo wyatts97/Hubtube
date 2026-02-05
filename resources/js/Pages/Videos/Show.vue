@@ -117,15 +117,14 @@ const formattedViews = computed(() => {
                         :autoplay="false"
                         :preview-thumbnails="video.preview_thumbnails_url || ''"
                     />
-                    <!-- View counter overlay -->
-                    <div class="absolute bottom-14 right-4 flex items-center gap-2 text-white text-sm bg-black/60 px-2 py-1 rounded">
-                        <span class="font-medium">{{ formattedViews }} views</span>
-                    </div>
                 </div>
 
                 <!-- Video Info -->
                 <div class="mt-4">
-                    <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ video.title }}</h1>
+                    <div class="flex items-start justify-between gap-4">
+                        <h1 class="text-xl font-bold flex-1" style="color: var(--color-text-primary);">{{ video.title }}</h1>
+                        <span class="text-sm font-medium whitespace-nowrap" style="color: var(--color-text-secondary);">{{ formattedViews }} views</span>
+                    </div>
                     
                     <!-- Tags - Horizontally Scrollable -->
                     <div v-if="video.tags && video.tags.length" class="mt-3 -mx-1 px-1 overflow-x-auto scrollbar-hide">
