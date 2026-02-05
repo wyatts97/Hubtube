@@ -43,6 +43,12 @@ class XNXXAdapter extends BaseAdapter {
             // Get thumbnail - prefer data-src for lazy loaded images
             let thumbnail = $img.attr('data-src') || $img.attr('src') || '';
             
+            // XNXX uses THUMBNUM as a JS placeholder for lazy-loaded thumbnails.
+            // Replace it with a concrete number (1) to get a valid thumbnail URL.
+            if (thumbnail.includes('THUMBNUM')) {
+                thumbnail = thumbnail.replace(/THUMBNUM/g, '1');
+            }
+            
             // Parse views from metadata
             let views = 0;
             const metaText = $metadata.text() || '';
@@ -54,12 +60,15 @@ class XNXXAdapter extends BaseAdapter {
                 views = Math.floor(views);
             }
             
+            // Clean THUMBNUM from href too (XNXX sometimes includes it in the URL path)
+            const cleanHref = href.replace(/\/THUMBNUM\//g, '/');
+            
             const video = this.standardizeResult({
                 sourceId,
                 title,
                 duration,
                 thumbnail,
-                url: `${this.baseUrl}${href}`,
+                url: `${this.baseUrl}${cleanHref}`,
                 embedUrl: `${this.baseUrl}/embedframe/${sourceId}`,
                 embedCode: `<iframe src="${this.baseUrl}/embedframe/${sourceId}" frameborder="0" width="640" height="360" allowfullscreen></iframe>`,
                 views

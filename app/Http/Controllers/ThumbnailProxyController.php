@@ -23,9 +23,11 @@ class ThumbnailProxyController extends Controller
             'ci.phncdn.com', 'di.phncdn.com', 'ei.phncdn.com',
             'thumb-p', // xhamster CDN pattern
             'img-egc.xnxx-cdn.com', 'img-l3.xnxx-cdn.com', 'img-hw.xnxx-cdn.com',
-            'cdn77-pic.xnxx-cdn.com',
-            'thumbs-cdn.redtube.com',
+            'cdn77-pic.xnxx-cdn.com', 'thumb-cdn77.xnxx-cdn.com',
+            'thumb-cdn77.xvideos-cdn.com',
+            'thumbs-cdn.redtube.com', 'thumb-cdn77.redtube.com',
             'fi1.ypncdn.com', 'fi2.ypncdn.com',
+            'thumb-v', // generic thumb CDN patterns
         ];
 
         $host = parse_url($url, PHP_URL_HOST);

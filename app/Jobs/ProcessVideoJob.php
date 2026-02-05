@@ -406,12 +406,11 @@ class ProcessVideoJob implements ShouldQueue
                 escapeshellarg($output)
             );
         } else {
-            // Simple scale filter without watermark
+            // Scale preserving aspect ratio: fit within target height, auto-calculate width (divisible by 2)
             $cmd = sprintf(
-                '%s -y -i %s -vf "scale=%d:%d" -c:v libx264 -preset %s -b:v %s -c:a aac -b:a 128k -threads %d -movflags +faststart %s 2>&1',
+                '%s -y -i %s -vf "scale=-2:%d" -c:v libx264 -preset %s -b:v %s -c:a aac -b:a 128k -threads %d -movflags +faststart %s 2>&1',
                 $ffmpeg,
                 escapeshellarg($inputPath),
-                $settings['width'],
                 $settings['height'],
                 $preset,
                 $settings['bitrate'],
@@ -480,7 +479,7 @@ class ProcessVideoJob implements ShouldQueue
         // 1. Scale the video to target resolution
         // 2. Scale the watermark and apply opacity
         // 3. Overlay watermark on video
-        return "[0:v]scale={$videoWidth}:{$videoHeight}[scaled];[1:v]scale={$wmWidth}:-1,format=rgba,colorchannelmixer=aa={$opacity}[wm];[scaled][wm]overlay={$pos}[outv]";
+        return "[0:v]scale=-2:{$videoHeight}[scaled];[1:v]scale={$wmWidth}:-1,format=rgba,colorchannelmixer=aa={$opacity}[wm];[scaled][wm]overlay={$pos}[outv]";
     }
 
     protected function generateHlsPlaylist(string $outputDir, array $qualities): void

@@ -187,6 +187,11 @@ class BaseAdapter {
             return '';
         }
         
+        // Replace THUMBNUM placeholder used by XNXX/XVideos for lazy-loaded thumbnails
+        if (url.includes('THUMBNUM')) {
+            url = url.replace(/THUMBNUM/g, '1');
+        }
+        
         return url;
     }
 

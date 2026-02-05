@@ -125,7 +125,7 @@
                         <div class="relative aspect-video bg-gray-900 overflow-hidden">
                             @if(!empty($video['thumbnail']))
                                 <img 
-                                    src="{{ $video['thumbnail'] }}" 
+                                    src="{{ route('thumb.proxy', ['url' => $video['thumbnail']]) }}" 
                                     alt=""
                                     class="w-full h-full object-cover"
                                     loading="lazy"
