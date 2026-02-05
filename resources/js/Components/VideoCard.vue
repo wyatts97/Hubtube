@@ -20,7 +20,7 @@ const videoUrl = computed(() => {
     if (isEmbedded.value) {
         return `/embedded/${props.video.id}`;
     }
-    return `/watch/${props.video.slug}`;
+    return `/${props.video.slug}`;
 });
 
 const formattedViews = computed(() => {
@@ -117,45 +117,32 @@ const onPreviewLoad = () => {
             
             <!-- Short Badge -->
             <span v-if="video.is_short" class="absolute top-2 left-2 badge badge-pro">Short</span>
-            
-            <!-- Embedded Badge -->
-            <span v-if="isEmbedded" class="absolute top-2 left-2 bg-purple-600 text-white text-xs font-medium px-1.5 py-0.5 rounded uppercase">
-                {{ video.source_site }}
-            </span>
         </div>
         <div class="flex gap-3 mt-3">
-            <template v-if="!isEmbedded">
-                <Link v-if="video.user" :href="`/channel/${video.user.username}`" class="flex-shrink-0">
-                    <div class="w-9 h-9 avatar">
-                        <img v-if="video.user.avatar" :src="video.user.avatar" :alt="video.user.username" class="w-full h-full object-cover" />
-                        <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-sm font-medium">
-                            {{ video.user.username?.charAt(0)?.toUpperCase() || '?' }}
-                        </div>
-                    </div>
-                </Link>
-            </template>
-            <template v-else>
-                <div class="flex-shrink-0">
-                    <div class="w-9 h-9 avatar">
-                        <div class="w-full h-full flex items-center justify-center bg-purple-600 text-white text-sm font-medium">
-                            {{ video.source_site?.charAt(0)?.toUpperCase() || 'E' }}
-                        </div>
+            <Link v-if="video.user" :href="isEmbedded ? '#' : `/channel/${video.user.username}`" class="flex-shrink-0" @click.prevent="isEmbedded ? null : undefined">
+                <div class="w-9 h-9 avatar">
+                    <img v-if="video.user.avatar" :src="video.user.avatar" :alt="video.user.username || video.user.name" class="w-full h-full object-cover" />
+                    <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-sm font-medium">
+                        {{ (video.user.username || video.user.name)?.charAt(0)?.toUpperCase() || '?' }}
                     </div>
                 </div>
-            </template>
+            </Link>
+            <div v-else class="flex-shrink-0">
+                <div class="w-9 h-9 avatar">
+                    <div class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-sm font-medium">
+                        ?
+                    </div>
+                </div>
+            </div>
             <div class="flex-1 min-w-0">
                 <h3 class="font-medium line-clamp-2 leading-tight" style="color: var(--color-text-primary);">{{ video.title }}</h3>
-                <template v-if="!isEmbedded">
-                    <Link v-if="video.user" :href="`/channel/${video.user.username}`" class="text-sm mt-1 block" style="color: var(--color-text-secondary);">
-                        {{ video.user.username }}
-                        <span v-if="video.user.is_verified" class="inline-block ml-1">✓</span>
-                    </Link>
-                </template>
-                <template v-else>
-                    <span class="text-sm mt-1 block" style="color: var(--color-text-secondary);">
-                        {{ video.source_site }}
-                    </span>
-                </template>
+                <Link v-if="video.user && !isEmbedded" :href="`/channel/${video.user.username}`" class="text-sm mt-1 block" style="color: var(--color-text-secondary);">
+                    {{ video.user.username }}
+                    <span v-if="video.user.is_verified" class="inline-block ml-1">✓</span>
+                </Link>
+                <span v-else-if="video.user" class="text-sm mt-1 block" style="color: var(--color-text-secondary);">
+                    {{ video.user.username || video.user.name }}
+                </span>
                 <p class="text-sm" style="color: var(--color-text-muted);">
                     {{ formattedViews }} views • {{ timeAgo }}
                 </p>

@@ -9,6 +9,7 @@ use App\Models\Setting;
 use App\Models\Video;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,6 +19,7 @@ class HomeController extends Controller
     {
         $perPage = Setting::get('videos_per_page', 24);
 
+        // Get regular featured videos
         $featuredVideos = Video::query()
             ->with('user')
             ->featured()
@@ -28,7 +30,7 @@ class HomeController extends Controller
             ->limit(8)
             ->get();
 
-        // Get featured embedded videos
+        // Get featured embedded videos and merge
         $featuredEmbedded = EmbeddedVideo::published()
             ->featured()
             ->latest('imported_at')
@@ -36,10 +38,10 @@ class HomeController extends Controller
             ->get()
             ->map(fn ($v) => $v->toVideoFormat());
 
-        // Merge featured videos
         $featuredVideos = $featuredVideos->concat($featuredEmbedded)->take(8);
 
-        $latestVideos = Video::query()
+        // Get regular latest videos
+        $regularVideos = Video::query()
             ->with('user')
             ->public()
             ->approved()
@@ -47,13 +49,24 @@ class HomeController extends Controller
             ->latest('published_at')
             ->paginate($perPage);
 
-        // Get latest embedded videos and merge with regular videos
-        $latestEmbedded = EmbeddedVideo::published()
+        // Get embedded videos and merge into latest
+        $embeddedVideos = EmbeddedVideo::published()
             ->latest('imported_at')
-            ->limit($perPage)
             ->get()
             ->map(fn ($v) => $v->toVideoFormat());
 
+        // Merge and sort by date for latest videos data
+        $mergedLatest = collect($regularVideos->items())
+            ->concat($embeddedVideos)
+            ->sortByDesc(fn ($v) => $v['published_at'] ?? $v['created_at'] ?? now())
+            ->take($perPage)
+            ->values();
+
+        // Replace paginated data with merged data
+        $latestVideos = $regularVideos;
+        $latestVideos->setCollection($mergedLatest);
+
+        // Get popular videos (regular + embedded)
         $popularVideos = Video::query()
             ->with('user')
             ->public()
@@ -63,16 +76,14 @@ class HomeController extends Controller
             ->limit(12)
             ->get();
 
-        // Get popular embedded videos
         $popularEmbedded = EmbeddedVideo::published()
             ->orderByDesc('views_count')
             ->limit(6)
             ->get()
             ->map(fn ($v) => $v->toVideoFormat());
 
-        // Merge popular videos
         $popularVideos = $popularVideos->concat($popularEmbedded)
-            ->sortByDesc('views_count')
+            ->sortByDesc(fn ($v) => $v['views_count'] ?? $v->views_count ?? 0)
             ->take(12)
             ->values();
 
@@ -88,13 +99,20 @@ class HomeController extends Controller
             ->orderBy('sort_order')
             ->get();
 
+        // Get ad settings
+        $adSettings = [
+            'videoGridEnabled' => Setting::get('video_grid_ad_enabled', false),
+            'videoGridCode' => Setting::get('video_grid_ad_code', ''),
+            'videoGridFrequency' => (int) Setting::get('video_grid_ad_frequency', 8),
+        ];
+
         return Inertia::render('Home', [
             'featuredVideos' => $featuredVideos,
             'latestVideos' => $latestVideos,
-            'latestEmbedded' => $latestEmbedded,
             'popularVideos' => $popularVideos,
             'liveStreams' => $liveStreams,
             'categories' => $categories,
+            'adSettings' => $adSettings,
         ]);
     }
 

@@ -6,6 +6,7 @@ use App\Http\Requests\Video\StoreVideoRequest;
 use App\Http\Requests\Video\UpdateVideoRequest;
 use App\Models\Video;
 use App\Models\Category;
+use App\Models\Setting;
 use App\Services\VideoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -65,6 +66,12 @@ class VideoController extends Controller
             ->limit(12)
             ->get();
 
+        // Get sidebar ad settings
+        $sidebarAd = [
+            'enabled' => Setting::get('video_sidebar_ad_enabled', false),
+            'code' => Setting::get('video_sidebar_ad_code', ''),
+        ];
+
         return Inertia::render('Videos/Show', [
             'video' => $video,
             'relatedVideos' => $relatedVideos,
@@ -74,6 +81,7 @@ class VideoController extends Controller
             'isSubscribed' => auth()->check() 
                 ? auth()->user()->isSubscribedTo($video->user) 
                 : false,
+            'sidebarAd' => $sidebarAd,
         ]);
     }
 

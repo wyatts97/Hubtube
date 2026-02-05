@@ -53,6 +53,12 @@ class HandleInertiaRequests extends Middleware
     protected function getThemeSettings(): array
     {
         return [
+            // Site Title Settings
+            'siteTitle' => Setting::get('site_title', 'HubTube'),
+            'siteTitleFont' => Setting::get('site_title_font', ''),
+            'siteTitleSize' => Setting::get('site_title_size', 20),
+            'siteTitleColor' => Setting::get('site_title_color', ''),
+            
             'mode' => Setting::get('theme_mode', 'dark'),
             'allowToggle' => Setting::get('allow_user_theme_toggle', true),
             'dark' => [

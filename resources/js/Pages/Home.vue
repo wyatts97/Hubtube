@@ -4,6 +4,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
+import VideoGridWithAds from '@/Components/VideoGridWithAds.vue';
 import LiveStreamCard from '@/Components/LiveStreamCard.vue';
 import { Loader2, ChevronLeft, ChevronRight } from 'lucide-vue-next';
 
@@ -19,10 +20,10 @@ onMounted(() => {
 const props = defineProps({
     featuredVideos: Array,
     latestVideos: Object, // Now a paginated object
-    latestEmbedded: Array, // Embedded videos from external sites
     popularVideos: Array,
     liveStreams: Array,
     categories: Array,
+    adSettings: Object, // Ad settings from admin
 });
 
 const page = usePage();
@@ -139,9 +140,11 @@ const goToPage = (pageNum) => {
             
             <!-- Infinite Scroll Mode -->
             <template v-else-if="infiniteScrollEnabled">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    <VideoCard v-for="video in videos" :key="video.id" :video="video" />
-                </div>
+                <VideoGridWithAds 
+                    :videos="videos" 
+                    :ad-settings="adSettings"
+                    key-prefix="latest-scroll"
+                />
                 
                 <!-- Load More Trigger -->
                 <div ref="loadMoreTrigger" class="flex justify-center py-8">
@@ -157,9 +160,11 @@ const goToPage = (pageNum) => {
             
             <!-- Pagination Mode -->
             <template v-else>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    <VideoCard v-for="video in latestVideos.data" :key="video.id" :video="video" />
-                </div>
+                <VideoGridWithAds 
+                    :videos="latestVideos.data" 
+                    :ad-settings="adSettings"
+                    key-prefix="latest-page"
+                />
                 
                 <!-- Pagination Controls -->
                 <div v-if="latestVideos.last_page > 1" class="flex justify-center items-center gap-2 mt-8">
@@ -210,28 +215,6 @@ const goToPage = (pageNum) => {
                     </button>
                 </div>
             </template>
-        </section>
-
-        <!-- Embedded Videos Section -->
-        <section v-if="(latestEmbedded && latestEmbedded.length > 0) || isInitialLoad" class="mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold" style="color: var(--color-text-primary);">
-                    External Videos
-                </h2>
-                <a href="/embedded" class="text-sm font-medium" style="color: var(--color-accent);">View All</a>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                <template v-if="isInitialLoad">
-                    <VideoCardSkeleton v-for="i in 4" :key="'skeleton-embedded-' + i" />
-                </template>
-                <template v-else>
-                    <VideoCard 
-                        v-for="video in latestEmbedded" 
-                        :key="'embedded-' + video.id" 
-                        :video="video" 
-                    />
-                </template>
-            </div>
         </section>
 
         <!-- Popular Videos -->

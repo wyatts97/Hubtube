@@ -33,7 +33,6 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/search', [SearchController::class, 'index'])->name('search');
 
     Route::get('/videos', [VideoController::class, 'index'])->name('videos.index');
-    Route::get('/watch/{video:slug}', [VideoController::class, 'show'])->name('videos.show');
 
     Route::get('/channel/{user:username}', [ChannelController::class, 'show'])->name('channel.show');
     Route::get('/channel/{user:username}/videos', [ChannelController::class, 'videos'])->name('channel.videos');
@@ -125,4 +124,7 @@ Route::middleware('age.verified')->group(function () {
         Route::put('/settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications');
         Route::put('/settings/privacy', [SettingsController::class, 'updatePrivacy'])->name('settings.privacy');
     });
+
+    // Video show route - must be last to avoid conflicts with other routes
+    Route::get('/{video:slug}', [VideoController::class, 'show'])->name('videos.show');
 });

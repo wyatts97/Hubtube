@@ -24,6 +24,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    previewThumbnails: {
+        type: String,
+        default: '',
+    },
 });
 
 const videoRef = ref(null);
@@ -69,6 +73,7 @@ const initPlayer = () => {
         ],
         settings: ['quality', 'speed'],
         speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
+        autoplay: false,
         quality: {
             default: 720,
             options: qualityOptions.value.map(q => q.value),
@@ -81,6 +86,14 @@ const initPlayer = () => {
             },
         },
     };
+    
+    // Add preview thumbnails if available
+    if (props.previewThumbnails) {
+        plyrOptions.previewThumbnails = {
+            enabled: true,
+            src: props.previewThumbnails,
+        };
+    }
 
     // Add quality labels
     qualityOptions.value.forEach(q => {

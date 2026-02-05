@@ -93,11 +93,17 @@ const toggleSidebar = () => {
                     <button @click="showMobileMenu = !showMobileMenu" class="p-2 rounded-full lg:hidden" style="color: var(--color-text-primary);">
                         <Menu class="w-5 h-5" />
                     </button>
-                    <Link href="/" class="flex items-center gap-2">
-                        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background-color: var(--color-accent);">
-                            <Video class="w-5 h-5 text-white" />
-                        </div>
-                        <span class="text-xl font-bold hidden sm:block" style="color: var(--color-text-primary);">HubTube</span>
+                    <Link href="/" class="flex items-center">
+                        <span 
+                            class="hidden sm:block font-bold"
+                            :style="{
+                                color: themeSettings.siteTitleColor || 'var(--color-text-primary)',
+                                fontSize: (themeSettings.siteTitleSize || 20) + 'px',
+                                fontFamily: themeSettings.siteTitleFont || 'inherit'
+                            }"
+                        >
+                            {{ themeSettings.siteTitle || 'HubTube' }}
+                        </span>
                     </Link>
                 </div>
 
@@ -219,7 +225,7 @@ const toggleSidebar = () => {
         <aside 
             :class="[
                 'fixed left-0 top-14 bottom-0 overflow-y-auto hidden lg:block transition-all duration-300',
-                sidebarCollapsed ? 'w-16' : 'w-64'
+sidebarCollapsed ? 'w-16' : 'w-48'
             ]"
             style="background-color: var(--color-bg-secondary); border-right: 1px solid var(--color-border);"
         >
@@ -330,7 +336,7 @@ const toggleSidebar = () => {
         </div>
 
         <!-- Main Content -->
-        <main :class="['pt-14 transition-all duration-300', sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64']">
+        <main :class="['pt-14 transition-all duration-300', sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-48']">
             <div class="p-4 lg:p-6">
                 <slot />
             </div>

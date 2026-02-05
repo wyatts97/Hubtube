@@ -59,9 +59,49 @@ class ThemeSettings extends Page implements HasForms
         'podcast' => 'Podcast',
     ];
 
+    // Popular Google Fonts
+    protected static array $googleFonts = [
+        '' => 'System Default',
+        'Roboto' => 'Roboto',
+        'Open Sans' => 'Open Sans',
+        'Lato' => 'Lato',
+        'Montserrat' => 'Montserrat',
+        'Oswald' => 'Oswald',
+        'Raleway' => 'Raleway',
+        'Poppins' => 'Poppins',
+        'Ubuntu' => 'Ubuntu',
+        'Nunito' => 'Nunito',
+        'Playfair Display' => 'Playfair Display',
+        'Merriweather' => 'Merriweather',
+        'PT Sans' => 'PT Sans',
+        'Source Sans Pro' => 'Source Sans Pro',
+        'Noto Sans' => 'Noto Sans',
+        'Inter' => 'Inter',
+        'Rubik' => 'Rubik',
+        'Work Sans' => 'Work Sans',
+        'Quicksand' => 'Quicksand',
+        'Barlow' => 'Barlow',
+        'Mulish' => 'Mulish',
+        'Fira Sans' => 'Fira Sans',
+        'Bebas Neue' => 'Bebas Neue',
+        'Anton' => 'Anton',
+        'Archivo Black' => 'Archivo Black',
+        'Righteous' => 'Righteous',
+        'Permanent Marker' => 'Permanent Marker',
+        'Pacifico' => 'Pacifico',
+        'Lobster' => 'Lobster',
+        'Dancing Script' => 'Dancing Script',
+    ];
+
     public function mount(): void
     {
         $this->form->fill([
+            // Site Title Settings
+            'site_title' => Setting::get('site_title', 'HubTube'),
+            'site_title_font' => Setting::get('site_title_font', ''),
+            'site_title_size' => Setting::get('site_title_size', 20),
+            'site_title_color' => Setting::get('site_title_color', ''),
+            
             // Theme Mode
             'theme_mode' => Setting::get('theme_mode', 'dark'),
             'allow_user_theme_toggle' => Setting::get('allow_user_theme_toggle', true),
@@ -110,6 +150,43 @@ class ThemeSettings extends Page implements HasForms
             ->schema([
                 Tabs::make('Theme Settings')
                     ->tabs([
+                        Tabs\Tab::make('Site Title')
+                            ->icon('heroicon-o-pencil')
+                            ->schema([
+                                Section::make('Site Title Customization')
+                                    ->description('Customize your site title appearance with Google Fonts')
+                                    ->schema([
+                                        TextInput::make('site_title')
+                                            ->label('Site Title')
+                                            ->placeholder('Enter your site title')
+                                            ->default('HubTube')
+                                            ->live(onBlur: true)
+                                            ->columnSpanFull(),
+                                        Grid::make(3)->schema([
+                                            Select::make('site_title_font')
+                                                ->label('Font Family')
+                                                ->options(self::$googleFonts)
+                                                ->searchable()
+                                                ->live()
+                                                ->placeholder('Select a font'),
+                                            TextInput::make('site_title_size')
+                                                ->label('Font Size (px)')
+                                                ->numeric()
+                                                ->default(20)
+                                                ->minValue(12)
+                                                ->maxValue(48)
+                                                ->live(onBlur: true),
+                                            ColorPicker::make('site_title_color')
+                                                ->label('Title Color')
+                                                ->live(),
+                                        ]),
+                                        Section::make('Preview')
+                                            ->schema([
+                                                \Filament\Forms\Components\View::make('filament.components.site-title-preview'),
+                                            ]),
+                                    ]),
+                            ]),
+                        
                         Tabs\Tab::make('Theme Mode')
                             ->icon('heroicon-o-sun')
                             ->schema([
