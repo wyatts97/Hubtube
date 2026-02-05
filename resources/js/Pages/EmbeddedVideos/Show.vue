@@ -2,7 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import EmbeddedVideoPlayer from '@/Components/EmbeddedVideoPlayer.vue';
-import { Film, ExternalLink, Tag, Users } from 'lucide-vue-next';
+import { Film, ExternalLink } from 'lucide-vue-next';
 
 const props = defineProps({
     video: Object,
@@ -18,7 +18,7 @@ const props = defineProps({
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <!-- Main Content -->
                 <div class="lg:col-span-2">
-                    <!-- Video Player -->
+                    <!-- Video Player (with built-in title + meta) -->
                     <EmbeddedVideoPlayer :video="video" />
                     
                     <!-- Description -->
@@ -31,32 +31,23 @@ const props = defineProps({
                         </p>
                     </div>
                     
-                    <!-- Tags -->
-                    <div v-if="video.tags?.length" class="mt-4 card p-4">
-                        <div class="flex items-center gap-2 mb-3">
-                            <Tag class="w-4 h-4" style="color: var(--color-text-muted);" />
-                            <h3 class="font-semibold" style="color: var(--color-text-primary);">Tags</h3>
+                    <!-- Tags + Actors + Source (single card) -->
+                    <div v-if="video.tags?.length || video.actors?.length || video.source_url" class="mt-4 card p-4 space-y-4">
+                        <div v-if="video.tags?.length">
+                            <div class="flex flex-wrap gap-2">
+                                <Link
+                                    v-for="tag in video.tags"
+                                    :key="tag"
+                                    :href="`/embedded?tag=${encodeURIComponent(tag)}`"
+                                    class="px-3 py-1 text-sm rounded-full hover:opacity-80 transition-opacity"
+                                    style="background-color: var(--color-bg-tertiary); color: var(--color-text-secondary);"
+                                >
+                                    {{ tag }}
+                                </Link>
+                            </div>
                         </div>
-                        <div class="flex flex-wrap gap-2">
-                            <Link
-                                v-for="tag in video.tags"
-                                :key="tag"
-                                :href="`/embedded?tag=${encodeURIComponent(tag)}`"
-                                class="px-3 py-1 text-sm rounded-full hover:opacity-80 transition-opacity"
-                                style="background-color: var(--color-bg-tertiary); color: var(--color-text-secondary);"
-                            >
-                                {{ tag }}
-                            </Link>
-                        </div>
-                    </div>
-                    
-                    <!-- Actors -->
-                    <div v-if="video.actors?.length" class="mt-4 card p-4">
-                        <div class="flex items-center gap-2 mb-3">
-                            <Users class="w-4 h-4" style="color: var(--color-text-muted);" />
-                            <h3 class="font-semibold" style="color: var(--color-text-primary);">Featuring</h3>
-                        </div>
-                        <div class="flex flex-wrap gap-2">
+                        <div v-if="video.actors?.length" class="flex flex-wrap items-center gap-2">
+                            <span class="text-sm font-medium" style="color: var(--color-text-secondary);">Featuring:</span>
                             <span
                                 v-for="actor in video.actors"
                                 :key="actor"
@@ -66,11 +57,8 @@ const props = defineProps({
                                 {{ actor }}
                             </span>
                         </div>
-                    </div>
-                    
-                    <!-- Source Link -->
-                    <div class="mt-4">
                         <a
+                            v-if="video.source_url"
                             :href="video.source_url"
                             target="_blank"
                             rel="noopener noreferrer"
@@ -99,11 +87,12 @@ const props = defineProps({
                             <div class="relative w-40 flex-shrink-0">
                                 <div class="aspect-video bg-gray-800 rounded overflow-hidden">
                                     <img
-                                        v-if="relatedVideo.thumbnail_url"
-                                        :src="relatedVideo.thumbnail_url"
+                                        v-if="relatedVideo.proxied_thumbnail_url || relatedVideo.thumbnail_url"
+                                        :src="relatedVideo.proxied_thumbnail_url || `/api/thumb-proxy?url=${encodeURIComponent(relatedVideo.thumbnail_url)}`"
                                         :alt="relatedVideo.title"
                                         class="w-full h-full object-cover group-hover:scale-105 transition-transform"
                                         loading="lazy"
+                                        @error="(e) => e.target.style.display = 'none'"
                                     />
                                     <div v-else class="w-full h-full flex items-center justify-center">
                                         <Film class="w-8 h-8 text-gray-600" />

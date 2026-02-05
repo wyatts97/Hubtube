@@ -46,12 +46,14 @@ class Video extends Model
         'published_at',
         'processing_started_at',
         'processing_completed_at',
+        'scrubber_vtt_path',
     ];
 
     protected $appends = [
         'video_url',
         'thumbnail_url',
         'preview_url',
+        'preview_thumbnails_url',
         'formatted_duration',
     ];
 
@@ -234,6 +236,19 @@ class Video extends Model
         }
 
         return asset('storage/' . $this->preview_path);
+    }
+
+    public function getPreviewThumbnailsUrlAttribute(): ?string
+    {
+        if (!$this->scrubber_vtt_path) {
+            return null;
+        }
+
+        if (config('hubtube.storage.cdn_enabled')) {
+            return config('hubtube.storage.cdn_url') . '/' . $this->scrubber_vtt_path;
+        }
+
+        return asset('storage/' . $this->scrubber_vtt_path);
     }
 
     public function getVideoUrlAttribute(): ?string

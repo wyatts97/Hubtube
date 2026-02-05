@@ -129,21 +129,14 @@
                                     alt=""
                                     class="w-full h-full object-cover"
                                     loading="lazy"
-                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                    onerror="this.parentElement.querySelector('.thumb-fallback').style.display='flex'; this.style.display='none';"
                                 >
-                                <div class="w-full h-full items-center justify-center absolute inset-0 bg-gray-800" style="display: none;">
-                                    <x-heroicon-o-film class="w-12 h-12 text-gray-500" />
+                                <div class="thumb-fallback w-full h-full items-center justify-center absolute inset-0 bg-gray-800/90" style="display: none;">
+                                    <x-heroicon-o-film class="w-10 h-10 text-gray-500" />
                                 </div>
                             @else
-                                <div class="w-full h-full flex items-center justify-center bg-gray-800">
-                                    <x-heroicon-o-film class="w-12 h-12 text-gray-500" />
-                                </div>
-                            @endif
-                            
-                            <!-- Duration Badge -->
-                            @if(!empty($video['durationFormatted']))
-                                <div class="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded z-10">
-                                    {{ $video['durationFormatted'] }}
+                                <div class="w-full h-full flex items-center justify-center bg-gray-800/90">
+                                    <x-heroicon-o-film class="w-10 h-10 text-gray-500" />
                                 </div>
                             @endif
                             
@@ -170,6 +163,24 @@
                             <div class="absolute top-2 right-2 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded uppercase z-10">
                                 {{ $video['sourceSite'] ?? 'unknown' }}
                             </div>
+                            
+                            <!-- Duration Badge - always at bottom-right, inside the thumbnail area -->
+                            @if(!empty($video['durationFormatted']) && $video['durationFormatted'] !== '0:00')
+                                <div class="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-xs font-medium px-1.5 py-0.5 rounded z-10">
+                                    {{ $video['durationFormatted'] }}
+                                </div>
+                            @elseif(!empty($video['duration']) && $video['duration'] > 0)
+                                @php
+                                    $d = (int) $video['duration'];
+                                    $h = intdiv($d, 3600);
+                                    $m = intdiv($d % 3600, 60);
+                                    $s = $d % 60;
+                                    $fmt = $h > 0 ? sprintf('%d:%02d:%02d', $h, $m, $s) : sprintf('%d:%02d', $m, $s);
+                                @endphp
+                                <div class="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-xs font-medium px-1.5 py-0.5 rounded z-10">
+                                    {{ $fmt }}
+                                </div>
+                            @endif
                         </div>
                         
                         <!-- Video Info -->

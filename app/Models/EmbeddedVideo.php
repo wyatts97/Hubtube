@@ -92,8 +92,17 @@ class EmbeddedVideo extends Model
     }
 
     /**
-     * Convert embedded video to a format compatible with regular video display
+     * Get a proxied thumbnail URL to avoid hotlink blocking from external sites.
      */
+    public function getProxiedThumbnailUrlAttribute(): ?string
+    {
+        if (!$this->thumbnail_url) {
+            return null;
+        }
+
+        return '/api/thumb-proxy?url=' . urlencode($this->thumbnail_url);
+    }
+
     public function toVideoFormat(): array
     {
         return [
@@ -101,8 +110,9 @@ class EmbeddedVideo extends Model
             'title' => $this->title,
             'slug' => 'embedded-' . $this->id,
             'description' => $this->description,
-            'thumbnail' => $this->thumbnail_url,
-            'thumbnail_url' => $this->thumbnail_url,
+            'thumbnail' => $this->proxied_thumbnail_url,
+            'thumbnail_url' => $this->proxied_thumbnail_url,
+            'original_thumbnail_url' => $this->thumbnail_url,
             'duration' => $this->duration,
             'duration_formatted' => $this->duration_formatted,
             'views_count' => $this->views_count,

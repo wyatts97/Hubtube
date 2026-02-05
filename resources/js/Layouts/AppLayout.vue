@@ -9,10 +9,12 @@ import {
 } from 'lucide-vue-next';
 import { useTheme } from '@/Composables/useTheme';
 import { useToast } from '@/Composables/useToast';
+import { useFetch } from '@/Composables/useFetch';
 import ToastContainer from '@/Components/ToastContainer.vue';
 import AgeVerificationModal from '@/Components/AgeVerificationModal.vue';
 
 const toast = useToast();
+const { get, post } = useFetch();
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
@@ -33,19 +35,12 @@ const notificationsLoaded = ref(false);
 
 const fetchNotifications = async () => {
     if (!user.value) return;
-    try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        const res = await fetch('/notifications', {
-            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken || '' },
-            credentials: 'same-origin',
-        });
-        if (res.ok) {
-            const data = await res.json();
-            notifications.value = data.notifications || [];
-            unreadCount.value = data.unreadCount || 0;
-            notificationsLoaded.value = true;
-        }
-    } catch (e) { /* silent */ }
+    const { ok, data } = await get('/notifications');
+    if (ok && data) {
+        notifications.value = data.notifications || [];
+        unreadCount.value = data.unreadCount || 0;
+        notificationsLoaded.value = true;
+    }
 };
 
 const toggleNotifications = () => {
@@ -57,16 +52,11 @@ const toggleNotifications = () => {
 };
 
 const markAllRead = async () => {
-    try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        await fetch('/notifications/read-all', {
-            method: 'POST',
-            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken || '', 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-        });
+    const { ok } = await post('/notifications/read-all');
+    if (ok) {
         notifications.value = notifications.value.map(n => ({ ...n, read_at: new Date().toISOString() }));
         unreadCount.value = 0;
-    } catch (e) { /* silent */ }
+    }
 };
 
 const handleMobileSearch = () => {

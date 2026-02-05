@@ -19,6 +19,14 @@ class HomeController extends Controller
     {
         $perPage = Setting::get('videos_per_page', 24);
 
+        // Single query for all published embedded videos (paginated, not ->get() all)
+        $allEmbedded = EmbeddedVideo::published()
+            ->latest('imported_at')
+            ->limit($perPage)
+            ->get();
+
+        $embeddedFormatted = $allEmbedded->map(fn ($v) => $v->toVideoFormat());
+
         // Get regular featured videos
         $featuredVideos = Video::query()
             ->with('user')
@@ -30,12 +38,9 @@ class HomeController extends Controller
             ->limit(8)
             ->get();
 
-        // Get featured embedded videos and merge
-        $featuredEmbedded = EmbeddedVideo::published()
-            ->featured()
-            ->latest('imported_at')
-            ->limit(4)
-            ->get()
+        // Merge featured embedded videos from the single query
+        $featuredEmbedded = $allEmbedded->filter(fn ($v) => $v->is_featured)
+            ->take(4)
             ->map(fn ($v) => $v->toVideoFormat());
 
         $featuredVideos = $featuredVideos->concat($featuredEmbedded)->take(8);
@@ -49,15 +54,9 @@ class HomeController extends Controller
             ->latest('published_at')
             ->paginate($perPage);
 
-        // Get embedded videos and merge into latest
-        $embeddedVideos = EmbeddedVideo::published()
-            ->latest('imported_at')
-            ->get()
-            ->map(fn ($v) => $v->toVideoFormat());
-
         // Merge and sort by date for latest videos data
         $mergedLatest = collect($regularVideos->items())
-            ->concat($embeddedVideos)
+            ->concat($embeddedFormatted)
             ->sortByDesc(fn ($v) => $v['published_at'] ?? $v['created_at'] ?? now())
             ->take($perPage)
             ->values();
@@ -76,10 +75,8 @@ class HomeController extends Controller
             ->limit(12)
             ->get();
 
-        $popularEmbedded = EmbeddedVideo::published()
-            ->orderByDesc('views_count')
-            ->limit(6)
-            ->get()
+        $popularEmbedded = $allEmbedded->sortByDesc('views_count')
+            ->take(6)
             ->map(fn ($v) => $v->toVideoFormat());
 
         $popularVideos = $popularVideos->concat($popularEmbedded)
@@ -121,24 +118,29 @@ class HomeController extends Controller
         $perPage = Setting::get('videos_per_page', 24);
         $page = $request->input('page', 1);
 
+        // Split the page budget between regular and embedded videos
+        $embeddedPerPage = (int) ceil($perPage * 0.25); // ~25% embedded
+        $regularPerPage = $perPage - $embeddedPerPage;
+
         $regularVideos = Video::query()
             ->with('user')
             ->public()
             ->approved()
             ->processed()
             ->latest('published_at')
-            ->paginate($perPage, ['*'], 'page', $page);
+            ->paginate($regularPerPage, ['*'], 'page', $page);
 
-        // Merge embedded videos into results for consistency with initial page load
+        // Paginate embedded videos with the same page offset
         $embeddedVideos = EmbeddedVideo::published()
             ->latest('imported_at')
+            ->offset(($page - 1) * $embeddedPerPage)
+            ->limit($embeddedPerPage)
             ->get()
             ->map(fn ($v) => $v->toVideoFormat());
 
         $merged = collect($regularVideos->items())
             ->concat($embeddedVideos)
             ->sortByDesc(fn ($v) => $v['published_at'] ?? $v['created_at'] ?? now())
-            ->take($perPage)
             ->values();
 
         $regularVideos->setCollection($merged);
@@ -185,55 +187,4 @@ class HomeController extends Controller
         ]);
     }
 
-    public function feed(Request $request): Response
-    {
-        $subscribedChannelIds = $request->user()
-            ->subscriptions()
-            ->pluck('channel_id');
-
-        $videos = Video::query()
-            ->with('user')
-            ->whereIn('user_id', $subscribedChannelIds)
-            ->public()
-            ->approved()
-            ->processed()
-            ->latest('published_at')
-            ->paginate(24);
-
-        return Inertia::render('Feed', [
-            'videos' => $videos,
-        ]);
-    }
-
-    public function dashboard(Request $request): Response
-    {
-        $user = $request->user();
-
-        $totalVideos = $user->videos()->count();
-        $totalViews = $user->videos()->sum('views_count');
-        $totalLikes = $user->videos()->sum('likes_count');
-        $subscriberCount = $user->subscribers()->count();
-
-        $recentVideos = $user->videos()
-            ->latest()
-            ->limit(10)
-            ->get();
-
-        $topVideos = $user->videos()
-            ->orderByDesc('views_count')
-            ->limit(5)
-            ->get();
-
-        return Inertia::render('Dashboard', [
-            'stats' => [
-                'totalVideos' => $totalVideos,
-                'totalViews' => $totalViews,
-                'totalLikes' => $totalLikes,
-                'subscriberCount' => $subscriberCount,
-                'walletBalance' => $user->wallet_balance,
-            ],
-            'recentVideos' => $recentVideos,
-            'topVideos' => $topVideos,
-        ]);
-    }
 }

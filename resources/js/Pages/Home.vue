@@ -160,7 +160,7 @@ const shouldShowAd = (index, totalLength) => {
                         <!-- Ad after every X videos -->
                         <div 
                             v-if="shouldShowAd(index, videos.length)"
-                            class="col-span-1 flex items-center justify-center rounded-xl p-2"
+                            class="col-span-1 flex items-start justify-center rounded-xl p-2"
                         >
                             <div v-html="adCode"></div>
                         </div>
@@ -187,7 +187,7 @@ const shouldShowAd = (index, totalLength) => {
                         <!-- Ad after every X videos -->
                         <div 
                             v-if="shouldShowAd(index, latestVideos.data.length)"
-                            class="col-span-1 flex items-center justify-center rounded-xl p-2"
+                            class="col-span-1 flex items-start justify-center rounded-xl p-2"
                         >
                             <div v-html="adCode"></div>
                         </div>

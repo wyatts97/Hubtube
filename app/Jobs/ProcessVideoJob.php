@@ -153,6 +153,9 @@ class ProcessVideoJob implements ShouldQueue
             $this->generateAnimatedPreview($inputPath, $outputDir, $videoInfo['duration']);
         }
 
+        // Generate scrubber preview sprite sheet + VTT for Plyr
+        $this->generateScrubberPreviews($inputPath, $outputDir, $videoInfo['duration']);
+
         // Check if multi-resolution transcoding is enabled
         $multiResolutionEnabled = Setting::get('multi_resolution_enabled', true);
         
@@ -306,6 +309,73 @@ class ProcessVideoJob implements ShouldQueue
                 'output' => $result,
             ]);
         }
+    }
+
+    protected function generateScrubberPreviews(string $inputPath, string $outputDir, int $duration): void
+    {
+        if ($duration < 5) return;
+
+        $ffmpeg = $this->getFFmpegPath();
+        $spriteDir = "{$outputDir}/sprites";
+
+        if (!is_dir($spriteDir)) {
+            mkdir($spriteDir, 0755, true);
+        }
+
+        // Generate one thumbnail every 5 seconds, 160x90px
+        $interval = max(5, (int) ($duration / 100)); // At most ~100 frames
+        $thumbWidth = 160;
+        $thumbHeight = 90;
+
+        $cmd = sprintf(
+            '%s -y -i %s -vf "fps=1/%d,scale=%d:%d" -q:v 5 %s/sprite_%%04d.jpg 2>&1',
+            $ffmpeg,
+            escapeshellarg($inputPath),
+            $interval,
+            $thumbWidth,
+            $thumbHeight,
+            escapeshellarg($spriteDir)
+        );
+
+        shell_exec($cmd);
+
+        // Count generated frames
+        $frames = glob("{$spriteDir}/sprite_*.jpg");
+        if (empty($frames)) {
+            Log::warning('Failed to generate scrubber preview sprites', ['video_id' => $this->video->id]);
+            return;
+        }
+
+        sort($frames);
+
+        // Generate VTT file referencing individual thumbnails
+        $storagePath = Storage::disk('public')->path('');
+        $vttContent = "WEBVTT\n\n";
+
+        foreach ($frames as $i => $frame) {
+            $startSec = $i * $interval;
+            $endSec = min(($i + 1) * $interval, $duration);
+
+            $startTime = sprintf('%02d:%02d:%02d.000', intdiv($startSec, 3600), intdiv($startSec % 3600, 60), $startSec % 60);
+            $endTime = sprintf('%02d:%02d:%02d.000', intdiv($endSec, 3600), intdiv($endSec % 3600, 60), $endSec % 60);
+
+            $relativePath = str_replace($storagePath, '/storage/', $frame);
+            $relativePath = str_replace('\\', '/', $relativePath);
+
+            $vttContent .= "{$startTime} --> {$endTime}\n{$relativePath}\n\n";
+        }
+
+        $vttPath = "{$outputDir}/scrubber.vtt";
+        file_put_contents($vttPath, $vttContent);
+
+        $vttRelative = str_replace($storagePath, '', $vttPath);
+        $this->video->update(['scrubber_vtt_path' => $vttRelative]);
+
+        Log::info('Scrubber preview sprites generated', [
+            'video_id' => $this->video->id,
+            'frames' => count($frames),
+            'interval' => $interval,
+        ]);
     }
 
     protected function transcodeToQuality(string $inputPath, string $outputDir, string $quality, array $settings): void

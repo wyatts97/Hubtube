@@ -67,9 +67,19 @@ class EmbeddedVideoController extends Controller
             ->limit(12)
             ->get();
 
+        // Append proxied thumbnail URLs
+        $videoData = $embeddedVideo->toArray();
+        $videoData['proxied_thumbnail_url'] = $embeddedVideo->proxied_thumbnail_url;
+
+        $relatedData = $related->map(function ($v) {
+            $arr = $v->toArray();
+            $arr['proxied_thumbnail_url'] = $v->proxied_thumbnail_url;
+            return $arr;
+        });
+
         return Inertia::render('EmbeddedVideos/Show', [
-            'video' => $embeddedVideo,
-            'related' => $related,
+            'video' => $videoData,
+            'related' => $relatedData,
         ]);
     }
 

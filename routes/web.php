@@ -6,7 +6,9 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmbeddedVideoController;
+use App\Http\Controllers\FeedController;
 use App\Http\Controllers\GiftController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\HomeController;
@@ -20,11 +22,15 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\ThumbnailProxyController;
 use App\Http\Controllers\WalletController;
 use Illuminate\Support\Facades\Route;
 
 // Sitemap (outside age verification)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+
+// Thumbnail proxy for embedded video thumbnails
+Route::get('/api/thumb-proxy', [ThumbnailProxyController::class, 'proxy'])->name('thumb.proxy');
 
 Route::middleware('age.verified')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -136,10 +142,10 @@ Route::middleware('age.verified')->group(function () {
         Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
 
         // Subscriptions Feed
-        Route::get('/feed', [HomeController::class, 'feed'])->name('feed');
+        Route::get('/feed', FeedController::class)->name('feed');
 
         // Creator Dashboard
-        Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
+        Route::get('/dashboard', DashboardController::class)->name('dashboard');
     });
 
     // Video show route - must be last to avoid conflicts with other routes

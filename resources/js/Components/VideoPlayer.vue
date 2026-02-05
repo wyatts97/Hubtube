@@ -246,7 +246,7 @@ watch(() => props.hlsPlaylist, () => {
 </template>
 
 <style>
-@import 'plyr/dist/plyr.css';
+/* plyr.css is now imported globally in app.css */
 
 .video-player-wrapper {
     width: 100%;

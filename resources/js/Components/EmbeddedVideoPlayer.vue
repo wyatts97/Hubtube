@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 
 const props = defineProps({
     video: {
@@ -9,6 +9,10 @@ const props = defineProps({
     autoplay: {
         type: Boolean,
         default: false
+    },
+    showInfo: {
+        type: Boolean,
+        default: true
     }
 });
 
@@ -52,8 +56,8 @@ const embedUrl = computed(() => {
             ></iframe>
         </div>
         
-        <!-- Video info -->
-        <div class="mt-4">
+        <!-- Video info (can be hidden when parent renders its own info) -->
+        <div v-if="showInfo" class="mt-4">
             <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">
                 {{ video.title }}
             </h1>
@@ -62,28 +66,6 @@ const embedUrl = computed(() => {
                 <span>{{ video.formatted_views || video.views_count?.toLocaleString() }} views</span>
                 <span v-if="video.duration_formatted">{{ video.duration_formatted }}</span>
                 <span class="capitalize">{{ video.source_site }}</span>
-            </div>
-            
-            <!-- Tags -->
-            <div v-if="video.tags?.length" class="flex flex-wrap gap-2 mt-4">
-                <span 
-                    v-for="tag in video.tags" 
-                    :key="tag"
-                    class="px-2 py-1 text-xs rounded-full"
-                    style="background-color: var(--color-bg-tertiary); color: var(--color-text-secondary);"
-                >
-                    {{ tag }}
-                </span>
-            </div>
-            
-            <!-- Actors -->
-            <div v-if="video.actors?.length" class="mt-4">
-                <span class="text-sm font-medium" style="color: var(--color-text-secondary);">
-                    Featuring:
-                </span>
-                <span class="text-sm ml-2" style="color: var(--color-text-muted);">
-                    {{ video.actors.join(', ') }}
-                </span>
             </div>
         </div>
     </div>
