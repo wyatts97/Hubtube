@@ -18,31 +18,31 @@ class LikeController extends Controller
                 'video_id' => $video->id,
             ])->lockForUpdate()->first();
 
-        if ($existing) {
-            if ($existing->type === 'like') {
-                $existing->delete();
-                $video->decrement('likes_count');
-                return response()->json([
-                    'liked' => false,
-                    'disliked' => false,
-                    'likesCount' => $video->likes_count,
-                    'dislikesCount' => $video->dislikes_count,
-                ]);
+            if ($existing) {
+                if ($existing->type === 'like') {
+                    $existing->delete();
+                    $video->decrement('likes_count');
+                    return response()->json([
+                        'liked' => false,
+                        'disliked' => false,
+                        'likesCount' => $video->likes_count,
+                        'dislikesCount' => $video->dislikes_count,
+                    ]);
+                } else {
+                    $existing->update(['type' => 'like']);
+                    $video->increment('likes_count');
+                    $video->decrement('dislikes_count');
+                }
             } else {
-                $existing->update(['type' => 'like']);
+                Like::create([
+                    'user_id' => $request->user()->id,
+                    'video_id' => $video->id,
+                    'type' => 'like',
+                ]);
                 $video->increment('likes_count');
-                $video->decrement('dislikes_count');
             }
-        } else {
-            Like::create([
-                'user_id' => $request->user()->id,
-                'video_id' => $video->id,
-                'type' => 'like',
-            ]);
-            $video->increment('likes_count');
-        }
 
-        return response()->json([
+            return response()->json([
                 'liked' => true,
                 'disliked' => false,
                 'likesCount' => $video->fresh()->likes_count,
@@ -59,31 +59,31 @@ class LikeController extends Controller
                 'video_id' => $video->id,
             ])->lockForUpdate()->first();
 
-        if ($existing) {
-            if ($existing->type === 'dislike') {
-                $existing->delete();
-                $video->decrement('dislikes_count');
-                return response()->json([
-                    'liked' => false,
-                    'disliked' => false,
-                    'likesCount' => $video->likes_count,
-                    'dislikesCount' => $video->dislikes_count,
-                ]);
+            if ($existing) {
+                if ($existing->type === 'dislike') {
+                    $existing->delete();
+                    $video->decrement('dislikes_count');
+                    return response()->json([
+                        'liked' => false,
+                        'disliked' => false,
+                        'likesCount' => $video->likes_count,
+                        'dislikesCount' => $video->dislikes_count,
+                    ]);
+                } else {
+                    $existing->update(['type' => 'dislike']);
+                    $video->decrement('likes_count');
+                    $video->increment('dislikes_count');
+                }
             } else {
-                $existing->update(['type' => 'dislike']);
-                $video->decrement('likes_count');
+                Like::create([
+                    'user_id' => $request->user()->id,
+                    'video_id' => $video->id,
+                    'type' => 'dislike',
+                ]);
                 $video->increment('dislikes_count');
             }
-        } else {
-            Like::create([
-                'user_id' => $request->user()->id,
-                'video_id' => $video->id,
-                'type' => 'dislike',
-            ]);
-            $video->increment('dislikes_count');
-        }
 
-        return response()->json([
+            return response()->json([
                 'liked' => false,
                 'disliked' => true,
                 'likesCount' => $video->fresh()->likes_count,

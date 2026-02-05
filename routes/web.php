@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\AgeVerificationController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -13,17 +12,19 @@ use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\LiveStreamController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PlaylistController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\VideoController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\WalletController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/age-verify', [AgeVerificationController::class, 'show'])->name('age.verify');
-Route::post('/age-verify', [AgeVerificationController::class, 'verify'])->name('age.verify.confirm');
-Route::get('/age-verify/decline', [AgeVerificationController::class, 'decline'])->name('age.verify.decline');
+// Sitemap (outside age verification)
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 Route::middleware('age.verified')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -80,11 +81,11 @@ Route::middleware('age.verified')->group(function () {
         Route::put('/videos/{video}', [VideoController::class, 'update'])->name('videos.update');
         Route::delete('/videos/{video}', [VideoController::class, 'destroy'])->name('videos.destroy');
 
-        Route::post('/videos/{video}/like', [LikeController::class, 'like'])->name('videos.like');
-        Route::post('/videos/{video}/dislike', [LikeController::class, 'dislike'])->name('videos.dislike');
+        Route::post('/videos/{video}/like', [LikeController::class, 'like'])->middleware('throttle:30,1')->name('videos.like');
+        Route::post('/videos/{video}/dislike', [LikeController::class, 'dislike'])->middleware('throttle:30,1')->name('videos.dislike');
 
         Route::get('/videos/{video}/comments', [CommentController::class, 'index'])->name('comments.index');
-        Route::post('/videos/{video}/comments', [CommentController::class, 'store'])->name('comments.store');
+        Route::post('/videos/{video}/comments', [CommentController::class, 'store'])->middleware('throttle:10,1')->name('comments.store');
         Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
         Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
         Route::post('/comments/{comment}/like', [CommentController::class, 'like'])->name('comments.like');
@@ -123,8 +124,24 @@ Route::middleware('age.verified')->group(function () {
         Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password');
         Route::put('/settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications');
         Route::put('/settings/privacy', [SettingsController::class, 'updatePrivacy'])->name('settings.privacy');
+
+        // Notifications
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+        Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.readAll');
+        Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+        Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unreadCount');
+
+        // Reports
+        Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
+
+        // Subscriptions Feed
+        Route::get('/feed', [HomeController::class, 'feed'])->name('feed');
+
+        // Creator Dashboard
+        Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
     });
 
     // Video show route - must be last to avoid conflicts with other routes
-    Route::get('/{video:slug}', [VideoController::class, 'show'])->name('videos.show');
+    Route::get('/{video:slug}', [VideoController::class, 'show'])->where('video', '^(?!api|admin|livewire).*')->name('videos.show');
 });

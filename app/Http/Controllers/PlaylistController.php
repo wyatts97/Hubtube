@@ -91,6 +91,11 @@ class PlaylistController extends Controller
 
         $video = Video::findOrFail($validated['video_id']);
 
+        // Verify the video is accessible (public or owned by user)
+        if (!$video->isAccessibleBy($request->user())) {
+            return response()->json(['error' => 'Video is not accessible'], 403);
+        }
+
         if (!$playlist->videos()->where('video_id', $video->id)->exists()) {
             $playlist->addVideo($video);
         }

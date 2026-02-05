@@ -13,7 +13,8 @@ class CommentController extends Controller
     public function index(Video $video): JsonResponse
     {
         $comments = $video->comments()
-            ->with(['user', 'replies.user'])
+            ->with(['user', 'replies' => fn($q) => $q->with('user')->approved()->latest()->limit(5)])
+            ->withCount(['replies' => fn($q) => $q->approved()])
             ->topLevel()
             ->approved()
             ->orderByDesc('is_pinned')

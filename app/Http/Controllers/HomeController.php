@@ -121,7 +121,7 @@ class HomeController extends Controller
         $perPage = Setting::get('videos_per_page', 24);
         $page = $request->input('page', 1);
 
-        $videos = Video::query()
+        $regularVideos = Video::query()
             ->with('user')
             ->public()
             ->approved()
@@ -129,7 +129,21 @@ class HomeController extends Controller
             ->latest('published_at')
             ->paginate($perPage, ['*'], 'page', $page);
 
-        return response()->json($videos);
+        // Merge embedded videos into results for consistency with initial page load
+        $embeddedVideos = EmbeddedVideo::published()
+            ->latest('imported_at')
+            ->get()
+            ->map(fn ($v) => $v->toVideoFormat());
+
+        $merged = collect($regularVideos->items())
+            ->concat($embeddedVideos)
+            ->sortByDesc(fn ($v) => $v['published_at'] ?? $v['created_at'] ?? now())
+            ->take($perPage)
+            ->values();
+
+        $regularVideos->setCollection($merged);
+
+        return response()->json($regularVideos);
     }
 
     public function trending(Request $request): Response|JsonResponse
@@ -168,6 +182,58 @@ class HomeController extends Controller
 
         return Inertia::render('Shorts', [
             'shorts' => $shorts,
+        ]);
+    }
+
+    public function feed(Request $request): Response
+    {
+        $subscribedChannelIds = $request->user()
+            ->subscriptions()
+            ->pluck('channel_id');
+
+        $videos = Video::query()
+            ->with('user')
+            ->whereIn('user_id', $subscribedChannelIds)
+            ->public()
+            ->approved()
+            ->processed()
+            ->latest('published_at')
+            ->paginate(24);
+
+        return Inertia::render('Feed', [
+            'videos' => $videos,
+        ]);
+    }
+
+    public function dashboard(Request $request): Response
+    {
+        $user = $request->user();
+
+        $totalVideos = $user->videos()->count();
+        $totalViews = $user->videos()->sum('views_count');
+        $totalLikes = $user->videos()->sum('likes_count');
+        $subscriberCount = $user->subscribers()->count();
+
+        $recentVideos = $user->videos()
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        $topVideos = $user->videos()
+            ->orderByDesc('views_count')
+            ->limit(5)
+            ->get();
+
+        return Inertia::render('Dashboard', [
+            'stats' => [
+                'totalVideos' => $totalVideos,
+                'totalViews' => $totalViews,
+                'totalLikes' => $totalLikes,
+                'subscriberCount' => $subscriberCount,
+                'walletBalance' => $user->wallet_balance,
+            ],
+            'recentVideos' => $recentVideos,
+            'topVideos' => $topVideos,
         ]);
     }
 }

@@ -83,10 +83,12 @@ class ChannelController extends Controller
 
     public function about(User $user): Response
     {
+        $user->load('channel');
+
         return Inertia::render('Channel/About', [
-            'channel' => $user->load('channel'),
+            'channel' => $user,
             'stats' => [
-                'totalViews' => $user->channel->total_views,
+                'totalViews' => $user->channel?->total_views ?? 0,
                 'joinedAt' => $user->created_at,
                 'videoCount' => $user->videos()->public()->approved()->count(),
             ],

@@ -145,7 +145,12 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
 
     public function getSubscriberCountAttribute(): int
     {
-        return $this->subscribers()->count();
+        // Use cached channel subscriber_count if available, otherwise fall back to live count
+        if ($this->relationLoaded('channel') && $this->channel) {
+            return $this->channel->subscriber_count ?? 0;
+        }
+
+        return $this->channel?->subscriber_count ?? $this->subscribers()->count();
     }
 
     public function isSubscribedTo(User $user): bool

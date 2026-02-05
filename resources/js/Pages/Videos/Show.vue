@@ -94,6 +94,48 @@ const handleSubscribe = async () => {
     subscribed.value = !subscribed.value;
 };
 
+// Report modal
+const showReportModal = ref(false);
+const reportReason = ref('');
+const reportDescription = ref('');
+const reportSubmitting = ref(false);
+const reportSuccess = ref(false);
+
+const submitReport = async () => {
+    if (!reportReason.value || !user.value) return;
+    reportSubmitting.value = true;
+    try {
+        const res = await fetch('/reports', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify({
+                reportable_type: 'video',
+                reportable_id: props.video.id,
+                reason: reportReason.value,
+                description: reportDescription.value,
+            }),
+        });
+        if (res.ok) {
+            reportSuccess.value = true;
+            setTimeout(() => { showReportModal.value = false; reportSuccess.value = false; reportReason.value = ''; reportDescription.value = ''; }, 1500);
+        }
+    } catch (e) { /* silent */ }
+    reportSubmitting.value = false;
+};
+
+const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+        try { await navigator.share({ title: props.video.title, url }); } catch (e) { /* cancelled */ }
+    } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        alert('Link copied to clipboard!');
+    }
+};
+
 const formattedViews = computed(() => {
     const views = props.video.views_count;
     return views.toLocaleString();
@@ -101,7 +143,18 @@ const formattedViews = computed(() => {
 </script>
 
 <template>
-    <Head :title="video.title" />
+    <Head :title="video.title">
+        <meta name="description" :content="video.description?.substring(0, 160) || video.title" />
+        <meta property="og:title" :content="video.title" />
+        <meta property="og:description" :content="video.description?.substring(0, 160) || video.title" />
+        <meta property="og:image" :content="video.thumbnail_url" />
+        <meta property="og:type" content="video.other" />
+        <meta property="og:video:duration" :content="String(video.duration || 0)" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" :content="video.title" />
+        <meta name="twitter:description" :content="video.description?.substring(0, 160) || video.title" />
+        <meta name="twitter:image" :content="video.thumbnail_url" />
+    </Head>
 
     <AppLayout>
         <div class="flex flex-col lg:flex-row gap-6">
@@ -189,12 +242,12 @@ const formattedViews = computed(() => {
                                 </button>
                             </div>
 
-                            <button class="btn btn-secondary gap-2">
+                            <button @click="handleShare" class="btn btn-secondary gap-2">
                                 <Share2 class="w-5 h-5" />
                                 <span class="hidden sm:inline">Share</span>
                             </button>
 
-                            <button class="btn btn-secondary gap-2">
+                            <button @click="user ? (showReportModal = true) : router.visit('/login')" class="btn btn-secondary gap-2">
                                 <Flag class="w-5 h-5" />
                                 <span class="hidden sm:inline">Report</span>
                             </button>
@@ -234,4 +287,42 @@ const formattedViews = computed(() => {
             </div>
         </div>
     </AppLayout>
+
+    <!-- Report Modal -->
+    <Teleport to="body">
+        <div v-if="showReportModal" class="fixed inset-0 z-50 flex items-center justify-center px-4" style="background-color: rgba(0,0,0,0.6);" @click.self="showReportModal = false">
+            <div class="w-full max-w-md card p-6 shadow-xl" style="background-color: var(--color-bg-card);">
+                <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">Report Video</h3>
+
+                <div v-if="reportSuccess" class="text-center py-4">
+                    <p class="text-green-500 font-medium">Report submitted successfully!</p>
+                </div>
+
+                <form v-else @submit.prevent="submitReport" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">Reason</label>
+                        <select v-model="reportReason" class="input" required>
+                            <option value="" disabled>Select a reason</option>
+                            <option value="spam">Spam or misleading</option>
+                            <option value="harassment">Harassment or bullying</option>
+                            <option value="illegal">Illegal content</option>
+                            <option value="copyright">Copyright violation</option>
+                            <option value="underage">Underage content</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Details (optional)</label>
+                        <textarea v-model="reportDescription" class="input" rows="3" placeholder="Provide additional details..." maxlength="2000"></textarea>
+                    </div>
+                    <div class="flex gap-3 justify-end">
+                        <button type="button" @click="showReportModal = false" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" :disabled="reportSubmitting || !reportReason" class="btn btn-primary">
+                            {{ reportSubmitting ? 'Submitting...' : 'Submit Report' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </Teleport>
 </template>

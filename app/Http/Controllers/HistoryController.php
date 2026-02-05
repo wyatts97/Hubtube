@@ -15,6 +15,7 @@ class HistoryController extends Controller
         $videos = $request->user()
             ->watchHistory()
             ->with('video.user')
+            ->whereHas('video')
             ->latest('updated_at')
             ->paginate(24);
 

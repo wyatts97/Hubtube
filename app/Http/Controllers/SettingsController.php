@@ -51,7 +51,16 @@ class SettingsController extends Controller
             'subscription_notifications' => ['boolean'],
         ]);
 
-        $request->user()->update($validated);
+        $user = $request->user();
+        $settings = $user->settings ?? [];
+
+        $user->update([
+            'settings' => array_merge($settings, [
+                'email_notifications' => $validated['email_notifications'] ?? true,
+                'push_notifications' => $validated['push_notifications'] ?? true,
+                'subscription_notifications' => $validated['subscription_notifications'] ?? true,
+            ]),
+        ]);
 
         return back()->with('success', 'Notification preferences updated.');
     }

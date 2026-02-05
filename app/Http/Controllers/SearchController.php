@@ -36,8 +36,25 @@ class SearchController extends Controller
             return collect();
         }
 
-        return Video::search($query)
-            ->query(fn($q) => $q->with('user')->public()->approved()->processed())
+        // Use Scout search if a real driver is configured, otherwise fallback to LIKE
+        $driver = config('scout.driver');
+        if ($driver && !in_array($driver, ['database', 'null', 'collection'])) {
+            return Video::search($query)
+                ->query(fn($q) => $q->with('user')->public()->approved()->processed())
+                ->paginate(24);
+        }
+
+        return Video::query()
+            ->with('user')
+            ->public()
+            ->approved()
+            ->processed()
+            ->where(function ($q) use ($query) {
+                $q->where('title', 'like', "%{$query}%")
+                  ->orWhere('description', 'like', "%{$query}%")
+                  ->orWhereJsonContains('tags', $query);
+            })
+            ->latest('published_at')
             ->paginate(24);
     }
 
