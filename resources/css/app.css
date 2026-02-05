@@ -2,9 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Plyr video player styles - imported globally to avoid re-importing per component */
-@import 'plyr/dist/plyr.css';
-
 :root {
     --color-bg-primary: #0a0a0a;
     --color-bg-secondary: #171717;

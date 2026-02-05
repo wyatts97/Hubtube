@@ -1,13 +1,16 @@
 <script setup>
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { X, Save, Trash2, Image } from 'lucide-vue-next';
+import { useFetch } from '@/Composables/useFetch';
+import { X, Save, Trash2, Image, Loader2, CheckCircle } from 'lucide-vue-next';
 
 const props = defineProps({
     video: Object,
     categories: Array,
 });
+
+const { get, post } = useFetch();
 
 const form = useForm({
     title: props.video.title,
@@ -24,6 +27,56 @@ const form = useForm({
 
 const tagInput = ref('');
 const thumbnailPreview = ref(props.video.thumbnail_url);
+const videoStatus = ref(props.video.status);
+const generatedThumbnails = ref([]);
+const selectedThumbIndex = ref(null);
+const selectingThumb = ref(false);
+let pollTimer = null;
+
+const pollProcessingStatus = async () => {
+    const { ok, data } = await get(`/videos/${props.video.id}/processing-status`);
+    if (ok && data) {
+        videoStatus.value = data.status;
+        if (data.thumbnail_url && !thumbnailPreview.value) {
+            thumbnailPreview.value = data.thumbnail_url;
+        }
+        if (data.thumbnails?.length) {
+            generatedThumbnails.value = data.thumbnails;
+        }
+        // Stop polling once processed or failed
+        if (data.status === 'processed' || data.status === 'failed') {
+            clearInterval(pollTimer);
+            pollTimer = null;
+        }
+    }
+};
+
+const selectThumbnail = async (index) => {
+    selectingThumb.value = true;
+    const { ok, data } = await post(`/videos/${props.video.id}/select-thumbnail`, { index });
+    if (ok && data) {
+        thumbnailPreview.value = data.thumbnail_url;
+        selectedThumbIndex.value = index;
+        form.thumbnail = null; // Clear custom upload since we selected a generated one
+    }
+    selectingThumb.value = false;
+};
+
+onMounted(() => {
+    // Start polling if video is still processing
+    if (videoStatus.value === 'pending' || videoStatus.value === 'processing') {
+        pollTimer = setInterval(pollProcessingStatus, 5000);
+        // Also poll immediately
+        pollProcessingStatus();
+    } else {
+        // Already processed — fetch thumbnails once
+        pollProcessingStatus();
+    }
+});
+
+onUnmounted(() => {
+    if (pollTimer) clearInterval(pollTimer);
+});
 
 const addTag = () => {
     const tag = tagInput.value.trim().replace(/^#/, '');
@@ -42,6 +95,7 @@ const handleThumbnailSelect = (e) => {
     if (file) {
         form.thumbnail = file;
         thumbnailPreview.value = URL.createObjectURL(file);
+        selectedThumbIndex.value = null; // Clear generated selection
     }
 };
 
@@ -81,16 +135,48 @@ const statusColors = {
             </div>
 
             <form @submit.prevent="submit" class="space-y-6">
+                <!-- Processing Status Banner -->
+                <div v-if="videoStatus === 'pending' || videoStatus === 'processing'" class="card p-4">
+                    <div class="flex items-center gap-3">
+                        <Loader2 class="w-5 h-5 animate-spin" style="color: var(--color-accent);" />
+                        <div class="flex-1">
+                            <p class="font-medium" style="color: var(--color-text-primary);">
+                                {{ videoStatus === 'pending' ? 'Waiting to process...' : 'Processing video...' }}
+                            </p>
+                            <p class="text-sm mt-0.5" style="color: var(--color-text-muted);">
+                                FFmpeg is transcoding your video. Thumbnails will appear below when ready.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="mt-3 w-full rounded-full h-2 overflow-hidden" style="background-color: var(--color-bg-secondary);">
+                        <div
+                            class="h-full rounded-full transition-all duration-500"
+                            :class="videoStatus === 'processing' ? 'animate-pulse' : ''"
+                            :style="{
+                                width: videoStatus === 'processing' ? '60%' : '10%',
+                                backgroundColor: 'var(--color-accent)',
+                            }"
+                        ></div>
+                    </div>
+                </div>
+
                 <!-- Video Preview -->
                 <div class="card p-4">
                     <div class="flex items-start gap-4">
                         <div class="w-64 aspect-video rounded-lg overflow-hidden flex-shrink-0" style="background-color: var(--color-bg-secondary);">
                             <img 
-                                v-if="video.thumbnail_url" 
-                                :src="video.thumbnail_url" 
+                                v-if="thumbnailPreview" 
+                                :src="thumbnailPreview" 
                                 :alt="video.title"
                                 class="w-full h-full object-cover"
                             />
+                            <video
+                                v-else-if="video.video_url"
+                                :src="video.video_url"
+                                class="w-full h-full object-cover"
+                                preload="metadata"
+                                muted
+                            ></video>
                             <div v-else class="w-full h-full flex items-center justify-center" style="color: var(--color-text-muted);">
                                 No thumbnail
                             </div>
@@ -103,7 +189,10 @@ const statusColors = {
                             <p class="text-sm" style="color: var(--color-text-muted);">
                                 Uploaded {{ new Date(video.created_at).toLocaleDateString() }}
                             </p>
-                            <div v-if="video.video_url" class="mt-3">
+                            <span :class="['mt-2 inline-block px-3 py-1 rounded-full text-xs font-medium', statusColors[videoStatus]]">
+                                {{ videoStatus.charAt(0).toUpperCase() + videoStatus.slice(1) }}
+                            </span>
+                            <div v-if="video.video_url" class="mt-2">
                                 <a 
                                     :href="video.video_url" 
                                     target="_blank"
@@ -116,9 +205,43 @@ const statusColors = {
                     </div>
                 </div>
 
-                <!-- Custom Thumbnail -->
+                <!-- Thumbnail Selection -->
                 <div class="card p-6">
-                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">Custom Thumbnail</h2>
+                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">Thumbnail</h2>
+                    
+                    <!-- Generated Thumbnails -->
+                    <div v-if="generatedThumbnails.length" class="mb-4">
+                        <p class="text-sm mb-2" style="color: var(--color-text-secondary);">Choose from generated thumbnails:</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <button
+                                v-for="(thumb, index) in generatedThumbnails"
+                                :key="index"
+                                type="button"
+                                @click="selectThumbnail(index)"
+                                :disabled="selectingThumb"
+                                class="relative aspect-video rounded-lg overflow-hidden border-2 transition-all hover:opacity-90"
+                                :style="{
+                                    borderColor: selectedThumbIndex === index ? 'var(--color-accent)' : 'var(--color-border)',
+                                }"
+                            >
+                                <img :src="thumb" class="w-full h-full object-cover" />
+                                <div
+                                    v-if="selectedThumbIndex === index"
+                                    class="absolute inset-0 flex items-center justify-center"
+                                    style="background-color: rgba(0,0,0,0.4);"
+                                >
+                                    <CheckCircle class="w-6 h-6 text-white" />
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                    <div v-else-if="videoStatus === 'pending' || videoStatus === 'processing'" class="mb-4">
+                        <p class="text-sm" style="color: var(--color-text-muted);">
+                            Thumbnails will be generated once processing completes...
+                        </p>
+                    </div>
+
+                    <!-- Custom Upload -->
                     <div class="flex items-center gap-4">
                         <div class="w-40 aspect-video rounded-lg overflow-hidden" style="background-color: var(--color-bg-secondary);">
                             <img 
@@ -130,15 +253,18 @@ const statusColors = {
                                 <Image class="w-8 h-8" style="color: var(--color-text-muted);" />
                             </div>
                         </div>
-                        <label class="btn btn-secondary cursor-pointer">
-                            Upload Thumbnail
-                            <input
-                                type="file"
-                                accept="image/*"
-                                class="hidden"
-                                @change="handleThumbnailSelect"
-                            />
-                        </label>
+                        <div>
+                            <label class="btn btn-secondary cursor-pointer">
+                                Upload Custom Thumbnail
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    class="hidden"
+                                    @change="handleThumbnailSelect"
+                                />
+                            </label>
+                            <p class="text-xs mt-1" style="color: var(--color-text-muted);">Or upload your own image</p>
+                        </div>
                     </div>
                     <p v-if="form.errors.thumbnail" class="text-red-500 text-sm mt-2">{{ form.errors.thumbnail }}</p>
                 </div>

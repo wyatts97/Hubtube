@@ -8,9 +8,11 @@ use App\Models\Video;
 use App\Models\Category;
 use App\Models\Setting;
 use App\Services\VideoService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -133,5 +135,51 @@ class VideoController extends Controller
         return redirect()
             ->route('dashboard.videos')
             ->with('success', 'Video deleted successfully.');
+    }
+
+    public function processingStatus(Video $video): JsonResponse
+    {
+        $this->authorize('update', $video);
+
+        $thumbnails = [];
+        if ($video->video_path) {
+            $dir = dirname(Storage::disk('public')->path($video->video_path)) . '/processed';
+            for ($i = 0; $i < 4; $i++) {
+                $thumbPath = "{$dir}/thumb_{$i}.jpg";
+                if (file_exists($thumbPath)) {
+                    $relative = str_replace(Storage::disk('public')->path(''), '', $thumbPath);
+                    $thumbnails[] = asset('storage/' . $relative);
+                }
+            }
+        }
+
+        return response()->json([
+            'status' => $video->status,
+            'thumbnail_url' => $video->thumbnail_url,
+            'thumbnails' => $thumbnails,
+            'qualities_available' => $video->qualities_available,
+        ]);
+    }
+
+    public function selectThumbnail(Request $request, Video $video): JsonResponse
+    {
+        $this->authorize('update', $video);
+
+        $request->validate(['index' => 'required|integer|min:0|max:3']);
+
+        $index = $request->input('index');
+        $dir = dirname(Storage::disk('public')->path($video->video_path)) . '/processed';
+        $thumbPath = "{$dir}/thumb_{$index}.jpg";
+
+        if (!file_exists($thumbPath)) {
+            return response()->json(['error' => 'Thumbnail not found'], 404);
+        }
+
+        $relative = str_replace(Storage::disk('public')->path(''), '', $thumbPath);
+        $video->update(['thumbnail' => $relative]);
+
+        return response()->json([
+            'thumbnail_url' => asset('storage/' . $relative),
+        ]);
     }
 }

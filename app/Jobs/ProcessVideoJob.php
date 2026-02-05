@@ -237,7 +237,7 @@ class ProcessVideoJob implements ShouldQueue
     {
         $ffmpeg = $this->getFFmpegPath();
         $duration = $this->video->duration;
-        $count = config('hubtube.video.thumbnail_count', 3);
+        $count = config('hubtube.video.thumbnail_count', 4);
 
         for ($i = 0; $i < $count; $i++) {
             $time = (int) ($duration / ($count + 1) * ($i + 1));
