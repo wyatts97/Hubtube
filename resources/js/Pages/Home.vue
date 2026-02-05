@@ -4,7 +4,6 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
-import VideoGridWithAds from '@/Components/VideoGridWithAds.vue';
 import LiveStreamCard from '@/Components/LiveStreamCard.vue';
 import { Loader2, ChevronLeft, ChevronRight } from 'lucide-vue-next';
 
@@ -91,6 +90,21 @@ onUnmounted(() => {
 const goToPage = (pageNum) => {
     router.get('/', { page: pageNum }, { preserveState: true, preserveScroll: false });
 };
+
+// Check if ads are enabled
+const adsEnabled = computed(() => {
+    const enabled = props.adSettings?.videoGridEnabled;
+    return enabled === true || enabled === 'true' || enabled === 1 || enabled === '1';
+});
+
+const adCode = computed(() => props.adSettings?.videoGridCode || '');
+const adFrequency = computed(() => parseInt(props.adSettings?.videoGridFrequency) || 8);
+
+// Helper to check if ad should show after index
+const shouldShowAd = (index, totalLength) => {
+    if (!adsEnabled.value || !adCode.value.trim()) return false;
+    return (index + 1) % adFrequency.value === 0 && index < totalLength - 1;
+};
 </script>
 
 <template>
@@ -140,11 +154,18 @@ const goToPage = (pageNum) => {
             
             <!-- Infinite Scroll Mode -->
             <template v-else-if="infiniteScrollEnabled">
-                <VideoGridWithAds 
-                    :videos="videos" 
-                    :ad-settings="adSettings"
-                    key-prefix="latest-scroll"
-                />
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <template v-for="(video, index) in videos" :key="'scroll-' + video.id">
+                        <VideoCard :video="video" />
+                        <!-- Ad after every X videos -->
+                        <div 
+                            v-if="shouldShowAd(index, videos.length)"
+                            class="col-span-1 flex items-center justify-center rounded-xl p-2"
+                        >
+                            <div v-html="adCode"></div>
+                        </div>
+                    </template>
+                </div>
                 
                 <!-- Load More Trigger -->
                 <div ref="loadMoreTrigger" class="flex justify-center py-8">
@@ -160,11 +181,18 @@ const goToPage = (pageNum) => {
             
             <!-- Pagination Mode -->
             <template v-else>
-                <VideoGridWithAds 
-                    :videos="latestVideos.data" 
-                    :ad-settings="adSettings"
-                    key-prefix="latest-page"
-                />
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <template v-for="(video, index) in latestVideos.data" :key="'page-' + video.id">
+                        <VideoCard :video="video" />
+                        <!-- Ad after every X videos -->
+                        <div 
+                            v-if="shouldShowAd(index, latestVideos.data.length)"
+                            class="col-span-1 flex items-center justify-center rounded-xl p-2"
+                        >
+                            <div v-html="adCode"></div>
+                        </div>
+                    </template>
+                </div>
                 
                 <!-- Pagination Controls -->
                 <div v-if="latestVideos.last_page > 1" class="flex justify-center items-center gap-2 mt-8">

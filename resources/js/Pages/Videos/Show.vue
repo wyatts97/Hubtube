@@ -218,11 +218,8 @@ const formattedViews = computed(() => {
             <div class="lg:w-96">
                 <!-- Ad Space - Only show if enabled and has code -->
                 <div v-if="sidebarAd?.enabled && sidebarAd?.code" class="mb-6">
-                    <div 
-                        class="ad-container flex items-center justify-center rounded-lg overflow-hidden"
-                        style="min-height: 250px; background-color: var(--color-bg-card);"
-                    >
-                        <div v-html="sidebarAd.code" class="w-full flex items-center justify-center"></div>
+                    <div class="ad-container flex items-center justify-center">
+                        <div v-html="sidebarAd.code" class="flex items-center justify-center"></div>
                     </div>
                 </div>
 

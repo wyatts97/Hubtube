@@ -9,6 +9,7 @@ import {
 import { useTheme } from '@/Composables/useTheme';
 import { useToast } from '@/Composables/useToast';
 import ToastContainer from '@/Components/ToastContainer.vue';
+import AgeVerificationModal from '@/Components/AgeVerificationModal.vue';
 
 const toast = useToast();
 
@@ -225,7 +226,7 @@ const toggleSidebar = () => {
         <aside 
             :class="[
                 'fixed left-0 top-14 bottom-0 overflow-y-auto hidden lg:block transition-all duration-300',
-sidebarCollapsed ? 'w-16' : 'w-48'
+                sidebarCollapsed ? 'w-16' : 'sidebar-expanded'
             ]"
             style="background-color: var(--color-bg-secondary); border-right: 1px solid var(--color-border);"
         >
@@ -336,7 +337,7 @@ sidebarCollapsed ? 'w-16' : 'w-48'
         </div>
 
         <!-- Main Content -->
-        <main :class="['pt-14 transition-all duration-300', sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-48']">
+        <main :class="['pt-14 transition-all duration-300', sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-sidebar']">
             <div class="p-4 lg:p-6">
                 <slot />
             </div>
@@ -344,5 +345,27 @@ sidebarCollapsed ? 'w-16' : 'w-48'
 
         <!-- Toast Notifications -->
         <ToastContainer />
+        
+        <!-- Age Verification Modal -->
+        <AgeVerificationModal />
     </div>
 </template>
+
+<style scoped>
+.sidebar-expanded {
+    width: fit-content;
+    min-width: 120px;
+    max-width: 180px;
+    padding-right: 0.75rem;
+}
+
+.lg\:pl-sidebar {
+    padding-left: 140px;
+}
+
+@media (min-width: 1024px) {
+    .lg\:pl-sidebar {
+        padding-left: 140px;
+    }
+}
+</style>

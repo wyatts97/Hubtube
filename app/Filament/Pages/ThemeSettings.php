@@ -141,6 +141,23 @@ class ThemeSettings extends Page implements HasForms
             // Global Icon Settings
             'icon_color_mode' => Setting::get('icon_color_mode', 'inherit'),
             'icon_global_color' => Setting::get('icon_global_color', ''),
+            
+            // Age Verification Modal Settings
+            'age_overlay_color' => Setting::get('age_overlay_color', 'rgba(0, 0, 0, 0.85)'),
+            'age_overlay_blur' => Setting::get('age_overlay_blur', 8),
+            'age_show_logo' => Setting::get('age_show_logo', false),
+            'age_logo_url' => Setting::get('age_logo_url', ''),
+            'age_header_text' => Setting::get('age_header_text', 'Age Verification Required'),
+            'age_header_size' => Setting::get('age_header_size', 28),
+            'age_header_color' => Setting::get('age_header_color', ''),
+            'age_description_text' => Setting::get('age_description_text', 'This website contains age-restricted content. You must be at least 18 years old to enter.'),
+            'age_disclaimer_text' => Setting::get('age_disclaimer_text', 'By clicking "{confirm}", you confirm that you are at least 18 years of age and consent to viewing adult content.'),
+            'age_confirm_text' => Setting::get('age_confirm_text', 'I am 18 or older'),
+            'age_decline_text' => Setting::get('age_decline_text', 'Exit'),
+            'age_terms_text' => Setting::get('age_terms_text', 'By entering this site, you agree to our'),
+            'age_button_color' => Setting::get('age_button_color', ''),
+            'age_text_color' => Setting::get('age_text_color', ''),
+            'age_font_family' => Setting::get('age_font_family', ''),
         ]);
     }
 
@@ -334,6 +351,93 @@ class ThemeSettings extends Page implements HasForms
                                                 ->label('History Icon Color')
                                                 ->visible(fn ($get) => $get('icon_color_mode') === 'individual'),
                                         ]),
+                                    ]),
+                            ]),
+                        
+                        Tabs\Tab::make('Age Verification')
+                            ->icon('heroicon-o-shield-check')
+                            ->schema([
+                                Section::make('Overlay Settings')
+                                    ->description('Customize the modal overlay appearance')
+                                    ->schema([
+                                        Grid::make(2)->schema([
+                                            TextInput::make('age_overlay_color')
+                                                ->label('Overlay Color')
+                                                ->placeholder('rgba(0, 0, 0, 0.85)')
+                                                ->helperText('Use rgba for transparency, e.g., rgba(0, 0, 0, 0.85)'),
+                                            TextInput::make('age_overlay_blur')
+                                                ->label('Overlay Blur (px)')
+                                                ->numeric()
+                                                ->default(8)
+                                                ->minValue(0)
+                                                ->maxValue(20),
+                                        ]),
+                                    ]),
+                                
+                                Section::make('Logo & Branding')
+                                    ->schema([
+                                        Toggle::make('age_show_logo')
+                                            ->label('Show Site Logo')
+                                            ->helperText('Display your site logo instead of the shield icon'),
+                                        TextInput::make('age_logo_url')
+                                            ->label('Logo URL')
+                                            ->placeholder('/images/logo.png')
+                                            ->visible(fn ($get) => $get('age_show_logo')),
+                                    ]),
+                                
+                                Section::make('Typography')
+                                    ->schema([
+                                        Select::make('age_font_family')
+                                            ->label('Font Family')
+                                            ->options(self::$googleFonts)
+                                            ->searchable()
+                                            ->placeholder('System Default'),
+                                        Grid::make(2)->schema([
+                                            TextInput::make('age_header_size')
+                                                ->label('Header Font Size (px)')
+                                                ->numeric()
+                                                ->default(28)
+                                                ->minValue(16)
+                                                ->maxValue(48),
+                                            ColorPicker::make('age_header_color')
+                                                ->label('Header Color'),
+                                        ]),
+                                        ColorPicker::make('age_text_color')
+                                            ->label('Body Text Color'),
+                                        ColorPicker::make('age_button_color')
+                                            ->label('Button Color'),
+                                    ]),
+                                
+                                Section::make('Content')
+                                    ->description('Customize all text displayed in the modal')
+                                    ->schema([
+                                        TextInput::make('age_header_text')
+                                            ->label('Header Text')
+                                            ->default('Age Verification Required')
+                                            ->columnSpanFull(),
+                                        \Filament\Forms\Components\Textarea::make('age_description_text')
+                                            ->label('Description Text')
+                                            ->default('This website contains age-restricted content. You must be at least 18 years old to enter.')
+                                            ->rows(2)
+                                            ->columnSpanFull(),
+                                        \Filament\Forms\Components\Textarea::make('age_disclaimer_text')
+                                            ->label('Disclaimer Text')
+                                            ->default('By clicking "{confirm}", you confirm that you are at least 18 years of age and consent to viewing adult content.')
+                                            ->helperText('Use {confirm} to insert the confirm button text')
+                                            ->rows(2)
+                                            ->columnSpanFull(),
+                                        Grid::make(2)->schema([
+                                            TextInput::make('age_confirm_text')
+                                                ->label('Confirm Button Text')
+                                                ->default('I am 18 or older'),
+                                            TextInput::make('age_decline_text')
+                                                ->label('Decline Button Text')
+                                                ->default('Exit'),
+                                        ]),
+                                        TextInput::make('age_terms_text')
+                                            ->label('Terms Text Prefix')
+                                            ->default('By entering this site, you agree to our')
+                                            ->columnSpanFull(),
                                     ]),
                             ]),
                     ])->columnSpanFull(),

@@ -11,30 +11,9 @@ class AgeVerification
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // Skip age verification if disabled in config
-        if (!config('hubtube.age_verification_required')) {
-            return $next($request);
-        }
-
-        // Check if age is verified using multiple methods
-        $ageVerified = $this->isAgeVerified($request);
-
-        if (!$ageVerified) {
-            // Store intended URL for redirect after verification
-            try {
-                $request->session()->put('url.intended', $request->url());
-            } catch (\Exception $e) {
-                // Ignore session errors
-            }
-            
-            // For Inertia requests, use Inertia::location to force a full page redirect
-            if ($request->header('X-Inertia')) {
-                return Inertia::location(route('age.verify'));
-            }
-
-            return redirect()->route('age.verify');
-        }
-
+        // Age verification is now handled by the frontend modal
+        // This middleware just ensures the cookie/session check is available
+        // The modal component checks the cookie client-side
         return $next($request);
     }
 

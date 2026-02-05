@@ -89,6 +89,23 @@ class HandleInertiaRequests extends Middleware
                 'playlists' => ['icon' => Setting::get('nav_playlists_icon', 'list-video'), 'color' => Setting::get('nav_playlists_color', '')],
                 'history' => ['icon' => Setting::get('nav_history_icon', 'history'), 'color' => Setting::get('nav_history_color', '')],
             ],
+            'ageVerification' => [
+                'overlayColor' => Setting::get('age_overlay_color', 'rgba(0, 0, 0, 0.85)'),
+                'overlayBlur' => (int) Setting::get('age_overlay_blur', 8),
+                'showLogo' => (bool) Setting::get('age_show_logo', false),
+                'logoUrl' => Setting::get('age_logo_url', ''),
+                'headerText' => Setting::get('age_header_text', 'Age Verification Required'),
+                'headerSize' => (int) Setting::get('age_header_size', 28),
+                'headerColor' => Setting::get('age_header_color', ''),
+                'descriptionText' => Setting::get('age_description_text', 'This website contains age-restricted content. You must be at least 18 years old to enter.'),
+                'disclaimerText' => Setting::get('age_disclaimer_text', 'By clicking "{confirm}", you confirm that you are at least 18 years of age and consent to viewing adult content.'),
+                'confirmText' => Setting::get('age_confirm_text', 'I am 18 or older'),
+                'declineText' => Setting::get('age_decline_text', 'Exit'),
+                'termsText' => Setting::get('age_terms_text', 'By entering this site, you agree to our'),
+                'buttonColor' => Setting::get('age_button_color', ''),
+                'textColor' => Setting::get('age_text_color', ''),
+                'fontFamily' => Setting::get('age_font_family', ''),
+            ],
         ];
     }
 }
