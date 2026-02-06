@@ -294,10 +294,17 @@ class BunnyStreamMigrator extends Page
     public function getEmbeddedVideosProperty(): array
     {
         return Video::where('is_embedded', true)
-            ->select(['id', 'title', 'source_video_id', 'source_site', 'status', 'views_count', 'created_at'])
             ->orderByDesc('created_at')
             ->limit(20)
             ->get()
+            ->map(fn ($v) => [
+                'id' => $v->id,
+                'title' => $v->title,
+                'source_video_id' => $v->source_video_id,
+                'source_site' => $v->source_site,
+                'status' => $v->status,
+                'views_count' => $v->views_count,
+            ])
             ->toArray();
     }
 
@@ -309,10 +316,17 @@ class BunnyStreamMigrator extends Page
         return Video::where('is_embedded', false)
             ->whereNotNull('source_video_id')
             ->whereNotNull('video_path')
-            ->select(['id', 'title', 'source_video_id', 'video_path', 'status', 'updated_at'])
             ->orderByDesc('updated_at')
             ->limit(10)
             ->get()
+            ->map(fn ($v) => [
+                'id' => $v->id,
+                'title' => $v->title,
+                'source_video_id' => $v->source_video_id,
+                'video_path' => $v->video_path,
+                'status' => $v->status,
+                'updated_at' => $v->updated_at?->toISOString(),
+            ])
             ->toArray();
     }
 
