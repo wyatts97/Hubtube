@@ -39,4 +39,10 @@ return [
         'url' => env('SCRAPER_URL', 'http://localhost:3001'),
     ],
 
+    'bunny_stream' => [
+        'api_key' => env('BUNNY_STREAM_API_KEY', ''),
+        'library_id' => env('BUNNY_STREAM_LIBRARY_ID', '250371'),
+        'cdn_host' => env('BUNNY_STREAM_CDN_HOST', 'vz-1530c1f0-3aa.b-cdn.net'),
+    ],
+
 ];
