@@ -39,7 +39,7 @@ class Playlist extends Model
         return $this->belongsToMany(Video::class, 'playlist_videos')
             ->withPivot('position')
             ->withTimestamps()
-            ->orderBy('pivot_position');
+            ->orderBy('playlist_videos.position');
     }
 
     public function scopePublic($query)
