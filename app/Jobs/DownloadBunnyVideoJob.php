@@ -44,6 +44,6 @@ class DownloadBunnyVideoJob implements ShouldQueue
             'error' => $exception->getMessage(),
         ]);
 
-        $this->video->update(['status' => 'download_failed']);
+        $this->video->update(['status' => 'failed']);
     }
 }

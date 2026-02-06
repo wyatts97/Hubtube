@@ -59,14 +59,16 @@ class BunnyStreamMigrator extends Page
         $this->embeddedCount = Video::where('is_embedded', true)
             ->where('source_site', 'bunnystream')
             ->whereNotNull('source_video_id')
-            ->where('status', '!=', 'download_failed')
+            ->where('status', '!=', 'failed')
             ->count();
 
         $this->nativeCount = Video::where('is_embedded', false)
             ->whereNotNull('video_path')
             ->count();
 
-        $this->downloadFailedCount = Video::where('status', 'download_failed')->count();
+        $this->downloadFailedCount = Video::where('status', 'failed')
+            ->where('is_embedded', true)
+            ->count();
     }
 
     /**
@@ -121,7 +123,7 @@ class BunnyStreamMigrator extends Page
         $this->totalToMigrate = Video::where('is_embedded', true)
             ->where('source_site', 'bunnystream')
             ->whereNotNull('source_video_id')
-            ->whereNotIn('status', ['download_failed'])
+            ->whereNotIn('status', ['failed'])
             ->count();
 
         if ($this->totalToMigrate === 0) {
@@ -160,7 +162,7 @@ class BunnyStreamMigrator extends Page
         $video = Video::where('is_embedded', true)
             ->where('source_site', 'bunnystream')
             ->whereNotNull('source_video_id')
-            ->whereNotIn('status', ['download_failed'])
+            ->whereNotIn('status', ['failed'])
             ->first();
 
         if (!$video) {
@@ -233,7 +235,7 @@ class BunnyStreamMigrator extends Page
      */
     public function retryFailed(): void
     {
-        $count = Video::where('status', 'download_failed')
+        $count = Video::where('status', 'failed')
             ->where('is_embedded', true)
             ->update(['status' => 'processed']);
 

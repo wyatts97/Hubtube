@@ -258,7 +258,7 @@ class BunnyStreamService
                 'video_id' => $video->id,
                 'bunny_id' => $bunnyVideoId,
             ]);
-            $video->update(['status' => 'download_failed']);
+            $video->update(['status' => 'failed']);
             return ['success' => false, 'error' => 'Could not download video file (no original or MP4 fallback available)'];
         }
 
