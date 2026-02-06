@@ -1,14 +1,18 @@
 <script setup>
-import { Head, useForm, router } from '@inertiajs/vue3';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { Head, useForm, router, usePage } from '@inertiajs/vue3';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useFetch } from '@/Composables/useFetch';
-import { X, Save, Trash2, Image, Loader2, CheckCircle } from 'lucide-vue-next';
+import { X, Save, Trash2, Image, Loader2, CheckCircle, ShieldCheck } from 'lucide-vue-next';
 
 const props = defineProps({
     video: Object,
     categories: Array,
 });
+
+const page = usePage();
+const user = computed(() => page.props.auth?.user);
+const requiresModeration = computed(() => !user.value?.is_admin);
 
 const { get, post } = useFetch();
 
@@ -144,7 +148,7 @@ const statusColors = {
                                 {{ videoStatus === 'pending' ? 'Waiting to process...' : 'Processing video...' }}
                             </p>
                             <p class="text-sm mt-0.5" style="color: var(--color-text-muted);">
-                                FFmpeg is transcoding your video. Thumbnails will appear below when ready.
+                                Your video is being processed. Thumbnails will appear below when ready.
                             </p>
                         </div>
                     </div>
@@ -157,6 +161,16 @@ const statusColors = {
                                 backgroundColor: 'var(--color-accent)',
                             }"
                         ></div>
+                    </div>
+                </div>
+
+                <!-- Moderation Notice -->
+                <div v-if="requiresModeration && (videoStatus === 'pending' || videoStatus === 'processing')" class="card p-4">
+                    <div class="flex items-center gap-3">
+                        <ShieldCheck class="w-5 h-5 flex-shrink-0" style="color: var(--color-text-secondary);" />
+                        <p class="text-sm" style="color: var(--color-text-secondary);">
+                            Your video will be posted after moderation and approval.
+                        </p>
                     </div>
                 </div>
 
@@ -212,9 +226,9 @@ const statusColors = {
                     <!-- Generated Thumbnails -->
                     <div v-if="generatedThumbnails.length" class="mb-6">
                         <p class="text-sm mb-2" style="color: var(--color-text-secondary);">Choose from generated thumbnails:</p>
-                        <div class="grid grid-cols-2 gap-3 max-w-xl">
+                        <div class="grid grid-cols-2 gap-3" style="max-width: 32rem;">
                             <button
-                                v-for="(thumb, index) in generatedThumbnails"
+                                v-for="(thumb, index) in generatedThumbnails.slice(0, 4)"
                                 :key="index"
                                 type="button"
                                 @click="selectThumbnail(index)"

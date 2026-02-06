@@ -2,7 +2,7 @@
 import { Head, useForm, usePage, router } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { User, Lock, Bell, Shield, CreditCard, ExternalLink, Loader2 } from 'lucide-vue-next';
+import { User, Lock, Bell, Shield, CreditCard, ExternalLink, Loader2, Camera, ImageIcon } from 'lucide-vue-next';
 import { usePushNotifications } from '@/Composables/usePushNotifications';
 
 const page = usePage();
@@ -14,6 +14,47 @@ const profileForm = useForm({
     email: user.value?.email || '',
     bio: user.value?.bio || '',
 });
+
+const avatarForm = useForm({ avatar: null });
+const bannerForm = useForm({ banner: null });
+const avatarPreview = ref(null);
+const bannerPreview = ref(null);
+
+const handleAvatarSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    avatarForm.avatar = file;
+    avatarPreview.value = URL.createObjectURL(file);
+};
+
+const handleBannerSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    bannerForm.banner = file;
+    bannerPreview.value = URL.createObjectURL(file);
+};
+
+const uploadAvatar = () => {
+    avatarForm.post('/settings/avatar', {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => {
+            avatarPreview.value = null;
+            avatarForm.reset();
+        },
+    });
+};
+
+const uploadBanner = () => {
+    bannerForm.post('/settings/banner', {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => {
+            bannerPreview.value = null;
+            bannerForm.reset();
+        },
+    });
+};
 
 const passwordForm = useForm({
     current_password: '',
@@ -115,7 +156,79 @@ const tabs = [
                 <!-- Content -->
                 <div class="flex-1">
                     <!-- Profile Tab -->
-                    <div v-if="activeTab === 'profile'" class="card p-6">
+                    <div v-if="activeTab === 'profile'" class="space-y-6">
+                        <!-- Avatar & Banner Upload -->
+                        <div class="card p-6">
+                            <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">Profile Images</h2>
+                            
+                            <!-- Banner Upload -->
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">Channel Banner</label>
+                                <div class="relative h-32 md:h-40 rounded-xl overflow-hidden" style="background-color: var(--color-bg-secondary);">
+                                    <img
+                                        v-if="bannerPreview || user?.channel?.banner"
+                                        :src="bannerPreview || user.channel.banner"
+                                        alt="Channel banner"
+                                        class="w-full h-full object-cover"
+                                    />
+                                    <div v-else class="w-full h-full flex items-center justify-center">
+                                        <ImageIcon class="w-10 h-10" style="color: var(--color-text-muted);" />
+                                    </div>
+                                    <label class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
+                                        <div class="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium" style="background-color: rgba(0,0,0,0.6);">
+                                            <Camera class="w-4 h-4" />
+                                            Change Banner
+                                        </div>
+                                        <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="handleBannerSelect" />
+                                    </label>
+                                </div>
+                                <p v-if="bannerForm.errors.banner" class="text-red-500 text-sm mt-1">{{ bannerForm.errors.banner }}</p>
+                                <div v-if="bannerPreview" class="flex items-center gap-2 mt-2">
+                                    <button @click="uploadBanner" :disabled="bannerForm.processing" class="btn btn-primary text-sm">
+                                        <Loader2 v-if="bannerForm.processing" class="w-4 h-4 animate-spin mr-1" />
+                                        Save Banner
+                                    </button>
+                                    <button @click="bannerPreview = null; bannerForm.reset()" class="btn btn-ghost text-sm">Cancel</button>
+                                </div>
+                                <p class="text-xs mt-1" style="color: var(--color-text-muted);">Recommended: 1280×320px, max 5MB (JPG, PNG, WebP)</p>
+                            </div>
+
+                            <!-- Avatar Upload -->
+                            <div>
+                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">Avatar</label>
+                                <div class="flex items-center gap-4">
+                                    <div class="relative w-20 h-20 rounded-full overflow-hidden flex-shrink-0" style="background-color: var(--color-bg-secondary);">
+                                        <img
+                                            v-if="avatarPreview || user?.avatar"
+                                            :src="avatarPreview || user.avatar"
+                                            alt="Avatar"
+                                            class="w-full h-full object-cover"
+                                        />
+                                        <div v-else class="w-full h-full flex items-center justify-center text-white text-2xl font-bold" style="background-color: var(--color-accent);">
+                                            {{ user?.username?.charAt(0)?.toUpperCase() }}
+                                        </div>
+                                        <label class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity cursor-pointer rounded-full">
+                                            <Camera class="w-5 h-5 text-white" />
+                                            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" @change="handleAvatarSelect" />
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm" style="color: var(--color-text-secondary);">Click to change your avatar</p>
+                                        <p class="text-xs" style="color: var(--color-text-muted);">Max 2MB (JPG, PNG, WebP, GIF)</p>
+                                        <p v-if="avatarForm.errors.avatar" class="text-red-500 text-sm mt-1">{{ avatarForm.errors.avatar }}</p>
+                                        <div v-if="avatarPreview" class="flex items-center gap-2 mt-2">
+                                            <button @click="uploadAvatar" :disabled="avatarForm.processing" class="btn btn-primary text-sm">
+                                                <Loader2 v-if="avatarForm.processing" class="w-4 h-4 animate-spin mr-1" />
+                                                Save Avatar
+                                            </button>
+                                            <button @click="avatarPreview = null; avatarForm.reset()" class="btn btn-ghost text-sm">Cancel</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card p-6">
                         <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">Profile Settings</h2>
                         <form @submit.prevent="updateProfile" class="space-y-4">
                             <div>
@@ -140,6 +253,7 @@ const tabs = [
                                 Save Changes
                             </button>
                         </form>
+                        </div>
                     </div>
 
                     <!-- Password Tab -->

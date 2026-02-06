@@ -17,7 +17,7 @@ class StoreVideoRequest extends FormRequest
     {
         $maxSize = $this->user()->max_video_size / 1024;
 
-        return [
+        $rules = [
             'title' => 'required|string|max:200',
             'description' => 'nullable|string|max:5000',
             'category_id' => 'nullable|exists:categories,id',
@@ -34,6 +34,13 @@ class StoreVideoRequest extends FormRequest
                 new ValidVideoFile(),
             ],
         ];
+
+        // Only admin/pro users can schedule videos
+        if ($this->user()->is_admin || $this->user()->is_pro) {
+            $rules['scheduled_at'] = 'nullable|date|after:now';
+        }
+
+        return $rules;
     }
 
     public function messages(): array

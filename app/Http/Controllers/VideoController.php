@@ -74,6 +74,19 @@ class VideoController extends Controller
             'code' => Setting::get('video_sidebar_ad_code', ''),
         ];
 
+        // Get user's playlists with flag indicating if this video is already in each
+        $userPlaylists = [];
+        if (auth()->check()) {
+            $userPlaylists = auth()->user()->playlists()
+                ->select('id', 'title', 'slug')
+                ->withCount('videos')
+                ->get()
+                ->map(function ($playlist) use ($video) {
+                    $playlist->has_video = $playlist->videos()->where('video_id', $video->id)->exists();
+                    return $playlist;
+                });
+        }
+
         return Inertia::render('Videos/Show', [
             'video' => $video,
             'relatedVideos' => $relatedVideos,
@@ -84,6 +97,7 @@ class VideoController extends Controller
                 ? auth()->user()->isSubscribedTo($video->user) 
                 : false,
             'sidebarAd' => $sidebarAd,
+            'userPlaylists' => $userPlaylists,
         ]);
     }
 

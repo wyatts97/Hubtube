@@ -5,7 +5,10 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
 import LiveStreamCard from '@/Components/LiveStreamCard.vue';
-import { Loader2, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import ShortsCarousel from '@/Components/ShortsCarousel.vue';
+import { Loader2 } from 'lucide-vue-next';
+import Pagination from '@/Components/Pagination.vue';
+import { sanitizeHtml } from '@/Composables/useSanitize';
 
 // Initial loading state for skeleton display
 const isInitialLoad = ref(true);
@@ -23,6 +26,8 @@ const props = defineProps({
     liveStreams: Array,
     categories: Array,
     adSettings: Object, // Ad settings from admin
+    shortsCarousel: Array,
+    shortsCarouselEnabled: Boolean,
 });
 
 const page = usePage();
@@ -97,7 +102,7 @@ const adsEnabled = computed(() => {
     return enabled === true || enabled === 'true' || enabled === 1 || enabled === '1';
 });
 
-const adCode = computed(() => props.adSettings?.videoGridCode || '');
+const adCode = computed(() => sanitizeHtml(props.adSettings?.videoGridCode || ''));
 const adFrequency = computed(() => parseInt(props.adSettings?.videoGridFrequency) || 8);
 
 // Helper to check if ad should show after index
@@ -124,6 +129,9 @@ const shouldShowAd = (index, totalLength) => {
                 <LiveStreamCard v-for="stream in liveStreams" :key="stream.id" :stream="stream" />
             </div>
         </section>
+
+        <!-- Shorts Carousel -->
+        <ShortsCarousel v-if="shortsCarouselEnabled && shortsCarousel?.length" :shorts="shortsCarousel" />
 
         <!-- Featured Videos -->
         <section v-if="featuredVideos.length > 0 || isInitialLoad" class="mb-8">
@@ -194,54 +202,11 @@ const shouldShowAd = (index, totalLength) => {
                     </template>
                 </div>
                 
-                <!-- Pagination Controls -->
-                <div v-if="latestVideos.last_page > 1" class="flex justify-center items-center gap-2 mt-8">
-                    <button 
-                        @click="goToPage(latestVideos.current_page - 1)"
-                        :disabled="latestVideos.current_page === 1"
-                        class="p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        :style="{ 
-                            backgroundColor: 'var(--color-bg-secondary)',
-                            color: 'var(--color-text-primary)'
-                        }"
-                    >
-                        <ChevronLeft class="w-5 h-5" />
-                    </button>
-                    
-                    <div class="flex items-center gap-1">
-                        <template v-for="pageNum in latestVideos.last_page" :key="pageNum">
-                            <button
-                                v-if="pageNum === 1 || pageNum === latestVideos.last_page || 
-                                      (pageNum >= latestVideos.current_page - 2 && pageNum <= latestVideos.current_page + 2)"
-                                @click="goToPage(pageNum)"
-                                class="w-10 h-10 rounded-lg text-sm font-medium transition-colors"
-                                :style="pageNum === latestVideos.current_page 
-                                    ? { backgroundColor: 'var(--color-accent)', color: 'white' }
-                                    : { backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }"
-                            >
-                                {{ pageNum }}
-                            </button>
-                            <span 
-                                v-else-if="pageNum === latestVideos.current_page - 3 || pageNum === latestVideos.current_page + 3"
-                                style="color: var(--color-text-muted);"
-                            >
-                                ...
-                            </span>
-                        </template>
-                    </div>
-                    
-                    <button 
-                        @click="goToPage(latestVideos.current_page + 1)"
-                        :disabled="latestVideos.current_page === latestVideos.last_page"
-                        class="p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        :style="{ 
-                            backgroundColor: 'var(--color-bg-secondary)',
-                            color: 'var(--color-text-primary)'
-                        }"
-                    >
-                        <ChevronRight class="w-5 h-5" />
-                    </button>
-                </div>
+                <Pagination
+                    :current-page="latestVideos.current_page"
+                    :last-page="latestVideos.last_page"
+                    @page-change="goToPage"
+                />
             </template>
         </section>
 

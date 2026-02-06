@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { ThumbsUp, ThumbsDown, MoreVertical, Reply, Trash2, Edit2 } from 'lucide-vue-next';
+import { useFetch } from '@/Composables/useFetch';
+import { timeAgo } from '@/Composables/useFormatters';
 
 const props = defineProps({
     videoId: {
@@ -12,6 +14,8 @@ const props = defineProps({
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
+
+const { get, post, del } = useFetch();
 
 const comments = ref([]);
 const newComment = ref('');
@@ -24,165 +28,71 @@ const editContent = ref('');
 
 const fetchComments = async () => {
     loading.value = true;
-    try {
-        const response = await fetch(`/videos/${props.videoId}/comments`);
-        const data = await response.json();
+    const { ok, data } = await get(`/videos/${props.videoId}/comments`);
+    if (ok && data) {
         comments.value = data.comments || [];
-    } catch (error) {
-        console.error('Failed to fetch comments:', error);
-    } finally {
-        loading.value = false;
     }
+    loading.value = false;
 };
 
 const submitComment = async () => {
     if (!newComment.value.trim() || submitting.value) return;
     
     submitting.value = true;
-    try {
-        const response = await fetch(`/videos/${props.videoId}/comments`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({ content: newComment.value }),
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            comments.value.unshift(data.comment);
-            newComment.value = '';
-        }
-    } catch (error) {
-        console.error('Failed to submit comment:', error);
-    } finally {
-        submitting.value = false;
+    const { ok, data } = await post(`/videos/${props.videoId}/comments`, { content: newComment.value });
+    if (ok && data) {
+        comments.value.unshift(data.comment);
+        newComment.value = '';
     }
+    submitting.value = false;
 };
 
 const submitReply = async (parentId) => {
     if (!replyContent.value.trim() || submitting.value) return;
     
     submitting.value = true;
-    try {
-        const response = await fetch(`/videos/${props.videoId}/comments`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({ 
-                content: replyContent.value,
-                parent_id: parentId,
-            }),
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            const parentComment = comments.value.find(c => c.id === parentId);
-            if (parentComment) {
-                if (!parentComment.replies) parentComment.replies = [];
-                parentComment.replies.push(data.comment);
-            }
-            replyContent.value = '';
-            replyingTo.value = null;
+    const { ok, data } = await post(`/videos/${props.videoId}/comments`, {
+        content: replyContent.value,
+        parent_id: parentId,
+    });
+    if (ok && data) {
+        const parentComment = comments.value.find(c => c.id === parentId);
+        if (parentComment) {
+            if (!parentComment.replies) parentComment.replies = [];
+            parentComment.replies.push(data.comment);
         }
-    } catch (error) {
-        console.error('Failed to submit reply:', error);
-    } finally {
-        submitting.value = false;
+        replyContent.value = '';
+        replyingTo.value = null;
     }
+    submitting.value = false;
 };
 
 const likeComment = async (comment) => {
     if (!user.value) return;
-    
-    try {
-        const response = await fetch(`/comments/${comment.id}/like`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-                'Accept': 'application/json',
-            },
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            comment.likes_count = data.likesCount;
-            comment.user_liked = data.liked;
-            comment.user_disliked = data.disliked;
-        }
-    } catch (error) {
-        console.error('Failed to like comment:', error);
+    const { ok, data } = await post(`/comments/${comment.id}/like`);
+    if (ok && data) {
+        comment.likes_count = data.likesCount;
+        comment.user_liked = data.liked;
+        comment.user_disliked = data.disliked;
     }
 };
 
 const dislikeComment = async (comment) => {
     if (!user.value) return;
-    
-    try {
-        const response = await fetch(`/comments/${comment.id}/dislike`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-                'Accept': 'application/json',
-            },
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            comment.dislikes_count = data.dislikesCount;
-            comment.user_liked = data.liked;
-            comment.user_disliked = data.disliked;
-        }
-    } catch (error) {
-        console.error('Failed to dislike comment:', error);
+    const { ok, data } = await post(`/comments/${comment.id}/dislike`);
+    if (ok && data) {
+        comment.dislikes_count = data.dislikesCount;
+        comment.user_liked = data.liked;
+        comment.user_disliked = data.disliked;
     }
 };
 
 const deleteComment = async (comment) => {
     if (!confirm('Are you sure you want to delete this comment?')) return;
-    
-    try {
-        const response = await fetch(`/comments/${comment.id}`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-                'Accept': 'application/json',
-            },
-        });
-        
-        if (response.ok) {
-            comments.value = comments.value.filter(c => c.id !== comment.id);
-        }
-    } catch (error) {
-        console.error('Failed to delete comment:', error);
+    const { ok } = await del(`/comments/${comment.id}`);
+    if (ok) {
+        comments.value = comments.value.filter(c => c.id !== comment.id);
     }
-};
-
-const timeAgo = (date) => {
-    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-    const intervals = [
-        { label: 'year', seconds: 31536000 },
-        { label: 'month', seconds: 2592000 },
-        { label: 'week', seconds: 604800 },
-        { label: 'day', seconds: 86400 },
-        { label: 'hour', seconds: 3600 },
-        { label: 'minute', seconds: 60 },
-    ];
-
-    for (const interval of intervals) {
-        const count = Math.floor(seconds / interval.seconds);
-        if (count >= 1) {
-            return `${count} ${interval.label}${count > 1 ? 's' : ''} ago`;
-        }
-    }
-    return 'Just now';
 };
 
 // Fetch comments on mount

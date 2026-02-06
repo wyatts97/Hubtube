@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\MenuItem;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -47,6 +48,7 @@ class HandleInertiaRequests extends Middleware
                 'videos_per_page' => Setting::get('videos_per_page', 24),
             ],
             'theme' => fn () => $this->getThemeSettings(),
+            'menuItems' => fn () => $this->getMenuItems(),
         ];
     }
 
@@ -106,6 +108,29 @@ class HandleInertiaRequests extends Middleware
                 'textColor' => Setting::get('age_text_color', ''),
                 'fontFamily' => Setting::get('age_font_family', ''),
             ],
+            'categoryTypography' => [
+                'font' => Setting::get('category_title_font', ''),
+                'size' => Setting::get('category_title_size', 18),
+                'color' => Setting::get('category_title_color', '#ffffff'),
+                'opacity' => Setting::get('category_title_opacity', 90),
+            ],
         ];
+    }
+
+    protected function getMenuItems(): array
+    {
+        try {
+            $items = MenuItem::getMenuTree('both');
+            $headerOnly = MenuItem::getMenuTree('header');
+            $mobileOnly = MenuItem::getMenuTree('mobile');
+
+            return [
+                'header' => $items->merge($headerOnly)->sortBy('sort_order')->values()->toArray(),
+                'mobile' => $items->merge($mobileOnly)->sortBy('sort_order')->values()->toArray(),
+            ];
+        } catch (\Exception $e) {
+            // Table may not exist yet (pre-migration)
+            return ['header' => [], 'mobile' => []];
+        }
     }
 }

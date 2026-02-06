@@ -1,9 +1,10 @@
 <script setup>
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import { useFetch } from '@/Composables/useFetch';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
-import { Bell, BellOff, Share2, Flag } from 'lucide-vue-next';
+import { Bell, BellOff, Share2, Flag, Loader2 } from 'lucide-vue-next';
 
 const props = defineProps({
     channel: Object,
@@ -17,27 +18,27 @@ const user = computed(() => page.props.auth?.user);
 const subscribed = ref(props.isSubscribed);
 const subCount = ref(props.subscriberCount);
 
+const { post, del } = useFetch();
+const subscribing = ref(false);
+
 const handleSubscribe = async () => {
     if (!user.value) {
         router.visit('/login');
         return;
     }
     
-    const method = subscribed.value ? 'DELETE' : 'POST';
-    await fetch(`/channel/${props.channel.username}/subscribe`, {
-        method,
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-        },
-    });
-    
-    if (subscribed.value) {
-        subCount.value--;
-    } else {
-        subCount.value++;
+    subscribing.value = true;
+    const fn = subscribed.value ? del : post;
+    const { ok } = await fn(`/channel/${props.channel.id}/subscribe`);
+    if (ok) {
+        if (subscribed.value) {
+            subCount.value--;
+        } else {
+            subCount.value++;
+        }
+        subscribed.value = !subscribed.value;
     }
-    subscribed.value = !subscribed.value;
+    subscribing.value = false;
 };
 
 const tabs = [
@@ -53,7 +54,7 @@ const tabs = [
 
     <AppLayout>
         <!-- Channel Banner -->
-        <div class="relative h-48 md:h-64 bg-gradient-to-r from-primary-600 to-primary-800 rounded-xl overflow-hidden mb-6">
+        <div class="relative h-48 md:h-64 rounded-xl overflow-hidden mb-6" style="background: linear-gradient(to right, var(--color-accent), var(--color-accent)); opacity: 0.85;">
             <img 
                 v-if="channel.channel?.banner" 
                 :src="channel.channel.banner" 
@@ -71,20 +72,20 @@ const tabs = [
                     :alt="channel.username"
                     class="w-full h-full object-cover"
                 />
-                <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-4xl font-bold">
+                <div v-else class="w-full h-full flex items-center justify-center text-white text-4xl font-bold" style="background-color: var(--color-accent);">
                     {{ channel.username?.charAt(0)?.toUpperCase() }}
                 </div>
             </div>
             
             <div class="flex-1">
-                <h1 class="text-2xl md:text-3xl font-bold text-white">
+                <h1 class="text-2xl md:text-3xl font-bold" style="color: var(--color-text-primary);">
                     {{ channel.username }}
-                    <span v-if="channel.is_verified" class="text-primary-500 ml-2">✓</span>
+                    <span v-if="channel.is_verified" class="ml-2" style="color: var(--color-accent);">✓</span>
                 </h1>
-                <p class="text-dark-400 mt-1">
+                <p class="mt-1" style="color: var(--color-text-secondary);">
                     @{{ channel.username }} • {{ subCount.toLocaleString() }} subscribers • {{ videos.total }} videos
                 </p>
-                <p v-if="channel.channel?.description" class="text-dark-300 mt-2 line-clamp-2">
+                <p v-if="channel.channel?.description" class="mt-2 line-clamp-2" style="color: var(--color-text-secondary);">
                     {{ channel.channel.description }}
                 </p>
             </div>
@@ -93,12 +94,14 @@ const tabs = [
                 <button
                     v-if="user && user.id !== channel.id"
                     @click="handleSubscribe"
+                    :disabled="subscribing"
                     :class="[
                         'btn',
                         subscribed ? 'btn-secondary' : 'btn-primary'
                     ]"
                 >
-                    {{ subscribed ? 'Subscribed' : 'Subscribe' }}
+                    <Loader2 v-if="subscribing" class="w-4 h-4 animate-spin" />
+                    <template v-else>{{ subscribed ? 'Subscribed' : 'Subscribe' }}</template>
                 </button>
                 <button class="btn btn-secondary">
                     <Share2 class="w-4 h-4" />
@@ -107,13 +110,14 @@ const tabs = [
         </div>
 
         <!-- Tabs -->
-        <div class="border-b border-dark-800 mb-6">
+        <div class="mb-6" style="border-bottom: 1px solid var(--color-border);">
             <nav class="flex gap-6">
                 <Link
                     v-for="tab in tabs"
                     :key="tab.name"
                     :href="tab.href"
-                    class="pb-3 px-1 text-dark-400 hover:text-white border-b-2 border-transparent hover:border-primary-500 transition-colors"
+                    class="pb-3 px-1 border-b-2 border-transparent transition-colors hover:opacity-80"
+                    style="color: var(--color-text-secondary);"
                 >
                     {{ tab.name }}
                 </Link>
@@ -130,8 +134,8 @@ const tabs = [
         </div>
 
         <div v-else class="text-center py-12">
-            <p class="text-dark-400 text-lg">No videos yet</p>
-            <p class="text-dark-500 mt-2">This channel hasn't uploaded any videos</p>
+            <p class="text-lg" style="color: var(--color-text-secondary);">No videos yet</p>
+            <p class="mt-2" style="color: var(--color-text-muted);">This channel hasn't uploaded any videos</p>
         </div>
 
         <!-- Pagination -->
@@ -140,12 +144,10 @@ const tabs = [
                 <Link
                     v-if="link.url"
                     :href="link.url"
-                    :class="[
-                        'px-4 py-2 rounded-lg text-sm',
-                        link.active 
-                            ? 'bg-primary-600 text-white' 
-                            : 'bg-dark-800 text-dark-300 hover:bg-dark-700'
-                    ]"
+                    class="px-4 py-2 rounded-lg text-sm"
+                    :style="link.active 
+                        ? { backgroundColor: 'var(--color-accent)', color: 'white' } 
+                        : { backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }"
                     v-html="link.label"
                     preserve-scroll
                 />

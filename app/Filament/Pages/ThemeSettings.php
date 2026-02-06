@@ -158,6 +158,12 @@ class ThemeSettings extends Page implements HasForms
             'age_button_color' => Setting::get('age_button_color', ''),
             'age_text_color' => Setting::get('age_text_color', ''),
             'age_font_family' => Setting::get('age_font_family', ''),
+
+            // Category Title Typography
+            'category_title_font' => Setting::get('category_title_font', ''),
+            'category_title_size' => Setting::get('category_title_size', 18),
+            'category_title_color' => Setting::get('category_title_color', '#ffffff'),
+            'category_title_opacity' => Setting::get('category_title_opacity', 90),
         ]);
     }
 
@@ -354,6 +360,40 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
                             ]),
                         
+                        Tabs\Tab::make('Category Pages')
+                            ->icon('heroicon-o-rectangle-group')
+                            ->schema([
+                                Section::make('Category Title Typography')
+                                    ->description('Customize how category names appear as overlays on the category browse page thumbnails')
+                                    ->schema([
+                                        Grid::make(2)->schema([
+                                            Select::make('category_title_font')
+                                                ->label('Font Family')
+                                                ->options(self::$googleFonts)
+                                                ->searchable()
+                                                ->placeholder('System Default'),
+                                            TextInput::make('category_title_size')
+                                                ->label('Font Size (px)')
+                                                ->numeric()
+                                                ->default(18)
+                                                ->minValue(10)
+                                                ->maxValue(48),
+                                        ]),
+                                        Grid::make(2)->schema([
+                                            ColorPicker::make('category_title_color')
+                                                ->label('Text Color')
+                                                ->default('#ffffff'),
+                                            TextInput::make('category_title_opacity')
+                                                ->label('Text Opacity (%)')
+                                                ->numeric()
+                                                ->default(90)
+                                                ->minValue(10)
+                                                ->maxValue(100)
+                                                ->suffix('%'),
+                                        ]),
+                                    ]),
+                            ]),
+
                         Tabs\Tab::make('Age Verification')
                             ->icon('heroicon-o-shield-check')
                             ->schema([

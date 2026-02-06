@@ -5,7 +5,8 @@ import {
     Menu, Search, Upload, Bell, User, LogOut, Settings, Wallet, 
     Video, Radio, Home, TrendingUp, Zap, ListVideo, History, 
     ChevronLeft, ChevronRight, Shield, Sun, Moon, Monitor,
-    X, Check, CheckCheck, Rss, LayoutDashboard, ChevronDown, Film, Clapperboard
+    X, Check, CheckCheck, Rss, LayoutDashboard, ChevronDown, ChevronUp, Film, Clapperboard,
+    Tag, Folder, Star, ExternalLink
 } from 'lucide-vue-next';
 import { useTheme } from '@/Composables/useTheme';
 import { useToast } from '@/Composables/useToast';
@@ -27,6 +28,31 @@ const sidebarCollapsed = ref(false);
 const searchQuery = ref('');
 const showMobileSearch = ref(false);
 const mobileSearchQuery = ref('');
+const openMegaMenu = ref(null);
+
+// Menu items from admin panel
+const menuItems = computed(() => page.props.menuItems || { header: [], mobile: [] });
+const headerMenuItems = computed(() => menuItems.value.header || []);
+const mobileMenuItems = computed(() => menuItems.value.mobile || []);
+
+const lucideIconMap = {
+    tag: Tag, folder: Folder, star: Star, home: Home, zap: Zap,
+    radio: Radio, 'trending-up': TrendingUp, video: Video, film: Film,
+    'list-video': ListVideo, history: History, search: Search,
+};
+
+const getMenuIcon = (iconName) => {
+    if (!iconName) return null;
+    return lucideIconMap[iconName] || Tag;
+};
+
+const toggleMegaMenu = (itemId) => {
+    openMegaMenu.value = openMegaMenu.value === itemId ? null : itemId;
+};
+
+const closeMegaMenu = () => {
+    openMegaMenu.value = null;
+};
 
 // Notification state
 const showNotifications = ref(false);
@@ -77,6 +103,9 @@ const closeDropdowns = (e) => {
     }
     if (!e.target.closest('.upload-menu-dropdown') && !e.target.closest('.upload-menu-trigger')) {
         showUploadMenu.value = false;
+    }
+    if (!e.target.closest('.mega-menu-area')) {
+        openMegaMenu.value = null;
     }
 };
 
@@ -171,7 +200,7 @@ const toggleSidebar = () => {
                     </button>
                     <Link href="/" class="flex items-center">
                         <span 
-                            class="hidden sm:block font-bold"
+                            class="font-bold truncate max-w-[120px] sm:max-w-none"
                             :style="{
                                 color: themeSettings.siteTitleColor || 'var(--color-text-primary)',
                                 fontSize: (themeSettings.siteTitleSize || 20) + 'px',
@@ -356,15 +385,87 @@ const toggleSidebar = () => {
                     </template>
                 </div>
             </div>
+
+            <!-- Mega Menu Bar (desktop only) -->
+            <div v-if="headerMenuItems.length" class="hidden lg:block border-t mega-menu-area" style="border-color: var(--color-border);">
+                <div class="flex items-center gap-1 px-4 h-10">
+                    <template v-for="item in headerMenuItems" :key="item.id">
+                        <!-- Divider -->
+                        <div v-if="item.type === 'divider'" class="w-px h-5 mx-1" style="background-color: var(--color-border);"></div>
+
+                        <!-- Dropdown / Mega menu parent -->
+                        <div v-else-if="(item.type === 'dropdown' || item.is_mega) && item.children?.length" class="relative">
+                            <button
+                                @click.stop="toggleMegaMenu(item.id)"
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:opacity-80"
+                                style="color: var(--color-text-secondary);"
+                            >
+                                <component v-if="item.icon && getMenuIcon(item.icon)" :is="getMenuIcon(item.icon)" class="w-4 h-4" />
+                                <span>{{ item.label }}</span>
+                                <ChevronDown class="w-3.5 h-3.5 transition-transform" :class="{ 'rotate-180': openMegaMenu === item.id }" />
+                            </button>
+
+                            <!-- Mega dropdown -->
+                            <div
+                                v-if="openMegaMenu === item.id"
+                                class="absolute left-0 top-full mt-1 card shadow-xl p-4 z-50"
+                                :style="{
+                                    backgroundColor: 'var(--color-bg-card)',
+                                    border: '1px solid var(--color-border)',
+                                    minWidth: item.is_mega ? (item.mega_columns * 160 + 'px') : '200px',
+                                }"
+                            >
+                                <div
+                                    :class="item.is_mega ? 'grid gap-3' : 'flex flex-col gap-1'"
+                                    :style="item.is_mega ? { gridTemplateColumns: `repeat(${item.mega_columns || 4}, minmax(0, 1fr))` } : {}"
+                                >
+                                    <template v-for="child in item.children" :key="child.id">
+                                        <Link
+                                            v-if="child.type !== 'divider'"
+                                            :href="child.url || '#'"
+                                            :target="child.target || '_self'"
+                                            class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:opacity-80"
+                                            style="color: var(--color-text-secondary);"
+                                            @click="closeMegaMenu"
+                                        >
+                                            <component v-if="child.icon && getMenuIcon(child.icon)" :is="getMenuIcon(child.icon)" class="w-4 h-4 flex-shrink-0" />
+                                            <span>{{ child.label }}</span>
+                                            <ExternalLink v-if="child.target === '_blank'" class="w-3 h-3 ml-auto opacity-50" />
+                                        </Link>
+                                        <div v-else class="border-t my-1" style="border-color: var(--color-border);"></div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Regular link -->
+                        <Link
+                            v-else
+                            :href="item.url || '#'"
+                            :target="item.target || '_self'"
+                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:opacity-80"
+                            style="color: var(--color-text-secondary);"
+                        >
+                            <component v-if="item.icon && getMenuIcon(item.icon)" :is="getMenuIcon(item.icon)" class="w-4 h-4" />
+                            <span>{{ item.label }}</span>
+                            <ExternalLink v-if="item.target === '_blank'" class="w-3 h-3 opacity-50" />
+                        </Link>
+                    </template>
+                </div>
+            </div>
         </header>
 
         <!-- Sidebar -->
         <aside 
             :class="[
-                'fixed left-0 top-14 bottom-0 overflow-y-auto hidden lg:block transition-all duration-300',
+                'fixed left-0 bottom-0 overflow-y-auto hidden lg:block transition-all duration-300',
                 sidebarCollapsed ? 'w-16' : 'sidebar-expanded'
             ]"
-            style="background-color: var(--color-bg-secondary); border-right: 1px solid var(--color-border);"
+            :style="{
+                top: headerMenuItems.length ? '96px' : '56px',
+                backgroundColor: 'var(--color-bg-secondary)',
+                borderRight: '1px solid var(--color-border)',
+            }"
         >
             <nav class="p-2">
                 <ul class="space-y-1">
@@ -477,6 +578,43 @@ const toggleSidebar = () => {
                             </ul>
                         </div>
 
+                        <!-- Mobile Custom Menu Items -->
+                        <div v-if="mobileMenuItems.length" class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
+                            <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">Browse</h3>
+                            <ul class="space-y-1">
+                                <template v-for="item in mobileMenuItems" :key="item.id">
+                                    <li v-if="item.type === 'divider'" class="my-2 mx-3 border-t" style="border-color: var(--color-border);"></li>
+                                    <li v-else-if="item.children?.length">
+                                        <p class="px-3 py-1 text-xs font-semibold uppercase tracking-wider" style="color: var(--color-text-muted);">{{ item.label }}</p>
+                                        <ul class="space-y-0.5 pl-2">
+                                            <li v-for="child in item.children" :key="child.id">
+                                                <Link
+                                                    :href="child.url || '#'"
+                                                    :target="child.target || '_self'"
+                                                    class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80"
+                                                    style="color: var(--color-text-secondary);"
+                                                >
+                                                    <component v-if="child.icon && getMenuIcon(child.icon)" :is="getMenuIcon(child.icon)" class="w-4 h-4" />
+                                                    <span class="text-sm">{{ child.label }}</span>
+                                                </Link>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                    <li v-else>
+                                        <Link
+                                            :href="item.url || '#'"
+                                            :target="item.target || '_self'"
+                                            class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80"
+                                            style="color: var(--color-text-secondary);"
+                                        >
+                                            <component v-if="item.icon && getMenuIcon(item.icon)" :is="getMenuIcon(item.icon)" class="w-5 h-5" />
+                                            <span>{{ item.label }}</span>
+                                        </Link>
+                                    </li>
+                                </template>
+                            </ul>
+                        </div>
+
                         <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
                             <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">Library</h3>
                             <ul class="space-y-1">
@@ -498,8 +636,11 @@ const toggleSidebar = () => {
         </div>
 
         <!-- Main Content -->
-        <main :class="['pt-14 transition-all duration-300', sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-sidebar']">
-            <div class="p-4 lg:p-6">
+        <main 
+            :class="['transition-all duration-300', sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-sidebar']"
+            :style="{ paddingTop: headerMenuItems.length ? '96px' : '56px' }"
+        >
+            <div class="px-3 py-4 sm:p-4 lg:p-6">
                 <slot />
             </div>
         </main>

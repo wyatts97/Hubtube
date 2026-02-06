@@ -1,12 +1,16 @@
 <script setup>
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Upload, X, Video, FileVideo, CheckCircle, AlertCircle, Smartphone } from 'lucide-vue-next';
+import { Upload, X, Video, FileVideo, CheckCircle, AlertCircle, Smartphone, Calendar } from 'lucide-vue-next';
 
 const props = defineProps({
     categories: Array,
 });
+
+const page = usePage();
+const currentUser = computed(() => page.props.auth?.user);
+const canSchedule = computed(() => currentUser.value?.is_admin || currentUser.value?.is_pro);
 
 // Detect short upload mode from URL query param
 const urlParams = new URLSearchParams(window.location.search);
@@ -21,6 +25,8 @@ const videoDuration = ref(null);
 const videoWidth = ref(null);
 const videoHeight = ref(null);
 
+const enableScheduling = ref(false);
+
 const form = useForm({
     title: '',
     description: '',
@@ -30,6 +36,13 @@ const form = useForm({
     tags: [],
     video_file: null,
     is_short: isShortMode.value,
+    scheduled_at: '',
+});
+
+const minScheduleDate = computed(() => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() + 5);
+    return d.toISOString().slice(0, 16);
 });
 
 const tagInput = ref('');
@@ -383,14 +396,45 @@ onUnmounted(() => {
                     </div>
                 </div>
 
+                <!-- Scheduling (Admin/Pro only) -->
+                <div v-if="canSchedule && !isShortMode" class="card p-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <Calendar class="w-5 h-5" style="color: var(--color-accent);" />
+                            <div>
+                                <p class="font-medium" style="color: var(--color-text-primary);">Schedule Upload</p>
+                                <p class="text-sm" style="color: var(--color-text-muted);">Set a future date and time to publish</p>
+                            </div>
+                        </div>
+                        <input
+                            v-model="enableScheduling"
+                            type="checkbox"
+                            class="w-5 h-5 rounded"
+                            @change="!enableScheduling && (form.scheduled_at = '')"
+                        />
+                    </div>
+                    <div v-if="enableScheduling" class="mt-4">
+                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Publish Date & Time</label>
+                        <input
+                            v-model="form.scheduled_at"
+                            type="datetime-local"
+                            :min="minScheduleDate"
+                            class="input"
+                            required
+                        />
+                        <p v-if="form.errors.scheduled_at" class="text-red-500 text-sm mt-1">{{ form.errors.scheduled_at }}</p>
+                        <p class="text-xs mt-1" style="color: var(--color-text-muted);">The video will be processed immediately but published at the scheduled time.</p>
+                    </div>
+                </div>
+
                 <div class="flex justify-end gap-4">
-                    <button type="button" class="btn btn-secondary">Save as Draft</button>
                     <button
                         type="submit"
                         :disabled="form.processing || !form.video_file"
                         class="btn btn-primary"
                     >
                         <span v-if="form.processing">Uploading...</span>
+                        <span v-else-if="enableScheduling && form.scheduled_at">Schedule {{ isShortMode ? 'Short' : 'Video' }}</span>
                         <span v-else>{{ isShortMode ? 'Upload Short' : 'Upload Video' }}</span>
                     </button>
                 </div>

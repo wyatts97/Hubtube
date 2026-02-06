@@ -1,6 +1,10 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import { timeAgo as timeAgoFn, formatViews } from '@/Composables/useFormatters';
+import { useOptimizedImage } from '@/Composables/useOptimizedImage';
+
+const { thumbnailProps, avatarProps } = useOptimizedImage();
 
 const props = defineProps({
     video: {
@@ -23,16 +27,7 @@ const videoUrl = computed(() => {
     return `/${props.video.slug}`;
 });
 
-const formattedViews = computed(() => {
-    const views = props.video.views_count;
-    if (views >= 1000000) {
-        return (views / 1000000).toFixed(1) + 'M';
-    }
-    if (views >= 1000) {
-        return (views / 1000).toFixed(1) + 'K';
-    }
-    return views.toString();
-});
+const formattedViews = computed(() => formatViews(props.video.views_count));
 
 const formattedDuration = computed(() => {
     const duration = props.video.duration || 0;
@@ -46,28 +41,7 @@ const formattedDuration = computed(() => {
     return `${minutes}:${String(seconds).padStart(2, '0')}`;
 });
 
-const timeAgo = computed(() => {
-    const date = new Date(props.video.published_at || props.video.created_at);
-    const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
-
-    const intervals = [
-        { label: 'year', seconds: 31536000 },
-        { label: 'month', seconds: 2592000 },
-        { label: 'week', seconds: 604800 },
-        { label: 'day', seconds: 86400 },
-        { label: 'hour', seconds: 3600 },
-        { label: 'minute', seconds: 60 },
-    ];
-
-    for (const interval of intervals) {
-        const count = Math.floor(seconds / interval.seconds);
-        if (count >= 1) {
-            return `${count} ${interval.label}${count > 1 ? 's' : ''} ago`;
-        }
-    }
-    return 'Just now';
-});
+const timeAgo = computed(() => timeAgoFn(props.video.published_at || props.video.created_at));
 
 const handleMouseEnter = () => {
     isHovering.value = true;
@@ -92,9 +66,7 @@ const onPreviewLoad = () => {
         <div class="thumbnail relative overflow-hidden rounded-xl">
             <!-- Static Thumbnail -->
             <img
-                :src="video.thumbnail_url || video.thumbnail || '/images/placeholder.jpg'"
-                :alt="video.title"
-                loading="lazy"
+                v-bind="thumbnailProps(video.thumbnail_url || video.thumbnail || '/images/placeholder.jpg', video.title)"
                 class="w-full h-full object-cover transition-opacity duration-200"
                 :class="{ 'opacity-0': isHovering && video.preview_url && previewLoaded }"
                 @error="(e) => e.target.src = '/images/placeholder.jpg'"
@@ -115,13 +87,11 @@ const onPreviewLoad = () => {
                 {{ video.duration_formatted || video.formatted_duration || formattedDuration }}
             </span>
             
-            <!-- Short Badge -->
-            <span v-if="video.is_short" class="absolute top-2 left-2 badge badge-pro">Short</span>
         </div>
         <div class="flex gap-3 mt-3">
             <Link v-if="video.user" :href="isEmbedded ? '#' : `/channel/${video.user.username}`" class="flex-shrink-0" @click.prevent="isEmbedded ? null : undefined">
                 <div class="w-9 h-9 avatar">
-                    <img v-if="video.user.avatar" :src="video.user.avatar" :alt="video.user.username || video.user.name" class="w-full h-full object-cover" />
+                    <img v-if="video.user.avatar" v-bind="avatarProps(video.user.avatar, 36)" :alt="video.user.username || video.user.name" class="w-full h-full object-cover" />
                     <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-sm font-medium">
                         {{ (video.user.username || video.user.name)?.charAt(0)?.toUpperCase() || '?' }}
                     </div>

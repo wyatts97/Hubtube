@@ -103,6 +103,21 @@ class HomeController extends Controller
             'videoGridFrequency' => (int) Setting::get('video_grid_ad_frequency', 8),
         ];
 
+        // Shorts carousel
+        $shortsCarouselEnabled = (bool) Setting::get('homepage_shorts_carousel', false);
+        $shortsForCarousel = [];
+        if ($shortsCarouselEnabled) {
+            $shortsForCarousel = Video::query()
+                ->with('user')
+                ->shorts()
+                ->public()
+                ->approved()
+                ->processed()
+                ->latest('published_at')
+                ->limit(20)
+                ->get();
+        }
+
         return Inertia::render('Home', [
             'featuredVideos' => $featuredVideos,
             'latestVideos' => $latestVideos,
@@ -110,6 +125,8 @@ class HomeController extends Controller
             'liveStreams' => $liveStreams,
             'categories' => $categories,
             'adSettings' => $adSettings,
+            'shortsCarousel' => $shortsForCarousel,
+            'shortsCarouselEnabled' => $shortsCarouselEnabled,
         ]);
     }
 
@@ -207,4 +224,58 @@ class HomeController extends Controller
         return response()->json($shorts);
     }
 
+    public function categories(): Response
+    {
+        $categories = Category::active()
+            ->parentCategories()
+            ->withCount('videos')
+            ->orderBy('sort_order')
+            ->get()
+            ->map(function ($category) {
+                $latestVideo = Video::where('category_id', $category->id)
+                    ->public()->approved()->processed()
+                    ->latest('published_at')
+                    ->first();
+                $category->latest_thumbnail = $latestVideo?->thumbnail_url ?? $latestVideo?->thumbnail ?? null;
+                return $category;
+            });
+
+        return Inertia::render('Categories/Index', [
+            'categories' => $categories,
+        ]);
+    }
+
+    public function category(Category $category): Response
+    {
+        $videos = Video::query()
+            ->with('user')
+            ->where('category_id', $category->id)
+            ->public()
+            ->approved()
+            ->processed()
+            ->latest('published_at')
+            ->paginate(24);
+
+        return Inertia::render('Categories/Show', [
+            'category' => $category,
+            'videos' => $videos,
+        ]);
+    }
+
+    public function tag(string $tag): Response
+    {
+        $videos = Video::query()
+            ->with('user')
+            ->public()
+            ->approved()
+            ->processed()
+            ->whereJsonContains('tags', $tag)
+            ->latest('published_at')
+            ->paginate(24);
+
+        return Inertia::render('Tags/Show', [
+            'tag' => $tag,
+            'videos' => $videos,
+        ]);
+    }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,6 +28,51 @@ class SettingsController extends Controller
         $request->user()->update($validated);
 
         return back()->with('success', 'Profile updated successfully.');
+    }
+
+    public function updateAvatar(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'avatar' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'],
+        ]);
+
+        $user = $request->user();
+
+        // Delete old avatar if it exists
+        if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+            Storage::disk('public')->delete($user->avatar);
+        }
+
+        $path = $request->file('avatar')->store("avatars/{$user->id}", 'public');
+        $user->update(['avatar' => $path]);
+
+        return back()->with('success', 'Avatar updated successfully.');
+    }
+
+    public function updateBanner(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'banner' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $user = $request->user();
+
+        // Ensure user has a channel record
+        $channel = $user->channel;
+        if (!$channel) {
+            $user->channel()->create([]);
+            $channel = $user->channel()->first();
+        }
+
+        // Delete old banner if it exists
+        if ($channel->banner && Storage::disk('public')->exists($channel->banner)) {
+            Storage::disk('public')->delete($channel->banner);
+        }
+
+        $path = $request->file('banner')->store("banners/{$user->id}", 'public');
+        $channel->update(['banner' => $path]);
+
+        return back()->with('success', 'Banner updated successfully.');
     }
 
     public function updatePassword(Request $request): RedirectResponse

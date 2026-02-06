@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Video, Eye, ThumbsUp, Users, Wallet, TrendingUp, Edit, BarChart3 } from 'lucide-vue-next';
+import { timeAgo, formatViews } from '@/Composables/useFormatters';
 
 const props = defineProps({
     stats: Object,
@@ -9,38 +10,15 @@ const props = defineProps({
     topVideos: Array,
 });
 
-const formatNumber = (num) => {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num.toString();
-};
-
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(parseFloat(amount));
 };
 
-const timeAgo = (date) => {
-    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-    const intervals = [
-        { label: 'year', seconds: 31536000 },
-        { label: 'month', seconds: 2592000 },
-        { label: 'week', seconds: 604800 },
-        { label: 'day', seconds: 86400 },
-        { label: 'hour', seconds: 3600 },
-        { label: 'minute', seconds: 60 },
-    ];
-    for (const interval of intervals) {
-        const count = Math.floor(seconds / interval.seconds);
-        if (count >= 1) return `${count} ${interval.label}${count > 1 ? 's' : ''} ago`;
-    }
-    return 'Just now';
-};
-
 const statCards = [
-    { label: 'Total Videos', value: () => formatNumber(props.stats.totalVideos), icon: Video, color: '#3b82f6' },
-    { label: 'Total Views', value: () => formatNumber(props.stats.totalViews), icon: Eye, color: '#8b5cf6' },
-    { label: 'Total Likes', value: () => formatNumber(props.stats.totalLikes), icon: ThumbsUp, color: '#ef4444' },
-    { label: 'Subscribers', value: () => formatNumber(props.stats.subscriberCount), icon: Users, color: '#22c55e' },
+    { label: 'Total Videos', value: () => formatViews(props.stats.totalVideos), icon: Video, color: '#3b82f6' },
+    { label: 'Total Views', value: () => formatViews(props.stats.totalViews), icon: Eye, color: '#8b5cf6' },
+    { label: 'Total Likes', value: () => formatViews(props.stats.totalLikes), icon: ThumbsUp, color: '#ef4444' },
+    { label: 'Subscribers', value: () => formatViews(props.stats.subscriberCount), icon: Users, color: '#22c55e' },
     { label: 'Wallet Balance', value: () => formatCurrency(props.stats.walletBalance), icon: Wallet, color: '#f59e0b' },
 ];
 </script>

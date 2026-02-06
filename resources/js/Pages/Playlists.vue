@@ -34,8 +34,8 @@ const createPlaylist = () => {
     <AppLayout>
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-white">Your Playlists</h1>
-                <p class="text-dark-400 mt-1">Organize your favorite videos</p>
+                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">Your Playlists</h1>
+                <p class="mt-1" style="color: var(--color-text-secondary);">Organize your favorite videos</p>
             </div>
             <button @click="showCreateModal = true" class="btn btn-primary gap-2">
                 <Plus class="w-4 h-4" />
@@ -48,21 +48,22 @@ const createPlaylist = () => {
                 v-for="playlist in playlists.data"
                 :key="playlist.id"
                 :href="`/playlist/${playlist.slug}`"
-                class="card overflow-hidden hover:ring-2 hover:ring-primary-500 transition-all"
+                class="card overflow-hidden hover:ring-2 transition-all"
+                style="--tw-ring-color: var(--color-accent);"
             >
-                <div class="aspect-video bg-dark-800 flex items-center justify-center">
+                <div class="aspect-video flex items-center justify-center" style="background-color: var(--color-bg-secondary);">
                     <img 
                         v-if="playlist.thumbnail" 
                         :src="playlist.thumbnail" 
                         :alt="playlist.title"
                         class="w-full h-full object-cover"
                     />
-                    <ListVideo v-else class="w-12 h-12 text-dark-600" />
+                    <ListVideo v-else class="w-12 h-12" style="color: var(--color-text-muted);" />
                 </div>
                 <div class="p-3">
-                    <h3 class="font-medium text-white truncate">{{ playlist.title }}</h3>
-                    <p class="text-sm text-dark-400">{{ playlist.videos_count || 0 }} videos</p>
-                    <p class="text-xs text-dark-500 mt-1">
+                    <h3 class="font-medium truncate" style="color: var(--color-text-primary);">{{ playlist.title }}</h3>
+                    <p class="text-sm" style="color: var(--color-text-secondary);">{{ playlist.videos_count || 0 }} videos</p>
+                    <p class="text-xs mt-1" style="color: var(--color-text-muted);">
                         {{ playlist.is_public ? 'Public' : 'Private' }}
                     </p>
                 </div>
@@ -70,9 +71,9 @@ const createPlaylist = () => {
         </div>
 
         <div v-else class="text-center py-12">
-            <ListVideo class="w-16 h-16 text-dark-600 mx-auto mb-4" />
-            <p class="text-dark-400 text-lg">No playlists yet</p>
-            <p class="text-dark-500 mt-2">Create a playlist to organize your favorite videos</p>
+            <ListVideo class="w-16 h-16 mx-auto mb-4" style="color: var(--color-text-muted);" />
+            <p class="text-lg" style="color: var(--color-text-secondary);">No playlists yet</p>
+            <p class="mt-2" style="color: var(--color-text-muted);">Create a playlist to organize your favorite videos</p>
             <button @click="showCreateModal = true" class="btn btn-primary mt-4 gap-2">
                 <Plus class="w-4 h-4" />
                 Create Playlist
@@ -84,24 +85,24 @@ const createPlaylist = () => {
             <div class="absolute inset-0 bg-black/50" @click="showCreateModal = false"></div>
             <div class="card p-6 w-full max-w-md relative z-10">
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-lg font-semibold text-white">Create Playlist</h2>
-                    <button @click="showCreateModal = false" class="p-1 hover:bg-dark-800 rounded">
+                    <h2 class="text-lg font-semibold" style="color: var(--color-text-primary);">Create Playlist</h2>
+                    <button @click="showCreateModal = false" class="p-1 rounded" style="color: var(--color-text-secondary);">
                         <X class="w-5 h-5" />
                     </button>
                 </div>
                 <form @submit.prevent="createPlaylist" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-dark-300 mb-1">Title</label>
+                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Title</label>
                         <input v-model="form.title" type="text" class="input" required />
                         <p v-if="form.errors.title" class="text-red-500 text-sm mt-1">{{ form.errors.title }}</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-dark-300 mb-1">Description</label>
+                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Description</label>
                         <textarea v-model="form.description" rows="3" class="input resize-none"></textarea>
                     </div>
                     <div class="flex items-center gap-2">
                         <input v-model="form.is_public" type="checkbox" id="is_public" class="w-4 h-4 rounded" />
-                        <label for="is_public" class="text-dark-300">Make playlist public</label>
+                        <label for="is_public" style="color: var(--color-text-secondary);">Make playlist public</label>
                     </div>
                     <div class="flex justify-end gap-2">
                         <button type="button" @click="showCreateModal = false" class="btn btn-ghost">Cancel</button>

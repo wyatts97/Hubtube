@@ -1,4 +1,5 @@
 const CACHE_NAME = 'hubtube-v1';
+const API_CACHE_NAME = 'hubtube-api-v1';
 const OFFLINE_URL = '/offline';
 
 const PRECACHE_URLS = [
@@ -20,11 +21,12 @@ self.addEventListener('install', (event) => {
 
 // Activate: clean old caches
 self.addEventListener('activate', (event) => {
+    const keepCaches = [CACHE_NAME, API_CACHE_NAME];
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames
-                    .filter((name) => name !== CACHE_NAME)
+                    .filter((name) => !keepCaches.includes(name))
                     .map((name) => caches.delete(name))
             );
         })
@@ -60,6 +62,38 @@ self.addEventListener('fetch', (event) => {
                     }
                     return response;
                 }).catch(() => new Response('', { status: 408 }));
+            })
+        );
+        return;
+    }
+
+    // For API/JSON responses: stale-while-revalidate strategy
+    // Serve cached response immediately, then update cache in background
+    const acceptHeader = event.request.headers.get('Accept') || '';
+    const isApiRequest = acceptHeader.includes('application/json') ||
+        event.request.url.includes('/api/') ||
+        event.request.url.includes('/notifications/unread-count');
+
+    if (isApiRequest) {
+        event.respondWith(
+            caches.open(API_CACHE_NAME).then((cache) => {
+                return cache.match(event.request).then((cached) => {
+                    const fetchPromise = fetch(event.request).then((response) => {
+                        if (response.ok) {
+                            cache.put(event.request, response.clone());
+                        }
+                        return response;
+                    }).catch(() => {
+                        // Network failed, return cached if available
+                        return cached || new Response(JSON.stringify({ error: 'offline' }), {
+                            status: 503,
+                            headers: { 'Content-Type': 'application/json' },
+                        });
+                    });
+
+                    // Return cached immediately if available, otherwise wait for network
+                    return cached || fetchPromise;
+                });
             })
         );
         return;

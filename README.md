@@ -1,122 +1,162 @@
-# HubTube - Adult Video Tube CMS
+# HubTube - Modern Video Sharing Platform
 
-A scalable, feature-rich video-sharing CMS optimized for adult content, built with Laravel 11, Vue 3, and Inertia.js.
+A feature-rich, scalable video-sharing CMS built with Laravel 11, Vue 3, and Inertia.js. Optimized for modern web standards with PWA capabilities, real-time streaming, and comprehensive monetization features.
 
-## Features
+##  Key Features
 
-- **Video Management**: Upload, transcode (FFmpeg), HLS adaptive streaming, thumbnails
-- **User Channels**: Profiles, subscriptions, verification badges
+### Core Platform
+- **Video Management**: Upload, transcode (FFmpeg), HLS adaptive streaming, thumbnail generation
+- **Shorts Support**: TikTok-style vertical video viewer with swipe navigation and ad interstitials
+- **User Channels**: Profiles, subscriptions, verification badges, customization
 - **Social Features**: Likes, comments, playlists, watch history, notifications
-- **Live Streaming**: TikTok-style interactive streams using Agora.io
-- **Virtual Gifts**: Real-time gift sending during live streams
-- **Monetization**: Wallet system, paid videos, channel subscriptions, ad revenue
-- **Adult Compliance**: Age verification gate, 2257 record-keeping placeholders
-- **Admin Panel**: Filament-powered admin dashboard
+- **Advanced Search**: Full-text search with filters and real-time results
 
-## Tech Stack
+### Live Streaming & Monetization
+- **Live Streaming**: Interactive streams using Agora.io with real-time chat
+- **Virtual Gifts**: Real-time gift sending during live streams with wallet integration
+- **Monetization**: Wallet system, paid content, channel subscriptions, ad revenue
+- **Video Scheduling**: Admin/Pro users can schedule video publishing
 
-- **Backend**: Laravel 11+ (PHP 8.2+)
-- **Frontend**: Vue 3 (Composition API) + Inertia.js
-- **Database**: MariaDB
-- **Video Processing**: FFmpeg
-- **Storage**: Wasabi/Backblaze B2 + BunnyCDN
-- **Real-Time**: Agora.io (RTC/RTM) + Laravel Reverb
+### Modern Web Features
+- **PWA Ready**: Service worker with offline support, push notifications, installable
+- **Responsive Design**: Mobile-first with touch-friendly interfaces
+- **Dark/Light Theme**: CSS variable-based theming system
+- **Multi-language**: i18n framework with 10+ language support
+- **Image Optimization**: Responsive srcset, WebP support, lazy loading
+- **Error Boundaries**: Graceful error handling with retry functionality
+
+### User Experience
+- **Keyboard Shortcuts**: Comprehensive video player controls (Space, arrows, etc.)
+- **Playlist Management**: Save videos to playlists with intuitive UI
+- **Loading States**: Consistent loading indicators across all interactions
+- **Toast Notifications**: Non-intrusive feedback system
+- **Accessibility**: Semantic HTML, ARIA labels, keyboard navigation
+
+## 🛠 Tech Stack
+
+### Backend
+- **Framework**: Laravel 11+ (PHP 8.2+)
+- **Database**: MariaDB 10.6+
 - **Queue**: Laravel Horizon + Redis
+- **Real-time**: Laravel Reverb + Pusher
 - **Search**: Laravel Scout + Meilisearch
 - **Admin**: Filament 3
 
-## Requirements
+### Frontend
+- **Framework**: Vue 3 (Composition API)
+- **Routing**: Inertia.js
+- **Styling**: Tailwind CSS with custom theming
+- **Build Tool**: Vite
+- **Icons**: Lucide Vue
+- **Video**: HLS.js + Plyr
 
-- PHP 8.2+
-- Composer
-- Node.js 18+
-- MariaDB 10.6+
-- Redis
-- FFmpeg
-- Meilisearch (optional, for search)
+### Video & Media
+- **Processing**: FFmpeg
+- **Streaming**: HLS adaptive bitrate
+- **Storage**: Cloud storage (Wasabi/Backblaze B2)
+- **CDN**: BunnyCDN integration
+- **Live**: Agora.io (RTC/RTM)
 
-## Installation
+### PWA & Performance
+- **Service Worker**: Custom SW with cache strategies
+- **Manifest**: Web app manifest
+- **Notifications**: Push API integration
+- **Optimization**: Image lazy loading, API caching
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/wyatts97/Hubtube.git hubtube
-   cd hubtube
-   ```
+##  Requirements
 
-2. **Install PHP dependencies**
-   ```bash
-   composer install
-   ```
+- **PHP**: 8.2+
+- **Composer**: Latest
+- **Node.js**: 18+
+- **Database**: MariaDB 10.6+ or MySQL 8+
+- **Redis**: For queues and caching
+- **FFmpeg**: For video processing
+- **Meilisearch**: Optional, for search functionality
 
-3. **Install Node dependencies**
-   ```bash
-   npm install
-   ```
+##  Installation
 
-4. **Configure environment**
-   ```bash
-   cp .env.example .env
-   php artisan key:generate
-   ```
+### 1. Clone Repository
+```bash
+git clone https://github.com/wyatts97/Hubtube.git hubtube
+cd hubtube
+```
 
-5. **Configure your `.env` file**
-   - Set database credentials
-   - Configure Redis
-   - Add Agora.io credentials
-   - Configure cloud storage (Wasabi/B2)
-   - Set payment gateway credentials
+### 2. Install Dependencies
+```bash
+# PHP dependencies
+composer install
 
-6. **Run migrations and seeders**
-   ```bash
-   php artisan migrate
-   php artisan db:seed
-   ```
+# Node dependencies
+npm install
+```
 
-7. **Build frontend assets**
-   ```bash
-   npm run build
-   ```
+### 3. Environment Setup
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-8. **Start the development server**
-   ```bash
-   php artisan serve
-   ```
+### 4. Configure Environment
+Edit your `.env` file with:
+- Database credentials
+- Redis configuration
+- Agora.io credentials (for live streaming)
+- Cloud storage settings
+- Payment gateway credentials
 
-9. **Start queue worker (in separate terminal)**
-   ```bash
-   php artisan horizon
-   ```
+### 5. Database Setup
+```bash
+php artisan migrate
+php artisan db:seed
+```
 
-10. **Start WebSocket server (in separate terminal)**
-    ```bash
-    php artisan reverb:start
-    ```
+### 6. Build Assets
+```bash
+npm run build
+```
 
-## Default Credentials
+### 7. Start Services
+```bash
+# Main application
+php artisan serve
 
-- **Admin**: admin@hubtube.com / password
-- **Demo User**: demo@hubtube.com / password
+# Queue worker (separate terminal)
+php artisan horizon
 
-## Admin Panel
+# WebSocket server (separate terminal)
+php artisan reverb:start
+```
 
-Access the admin panel at `/admin` (requires admin user).
+##  Default Credentials
 
-## Configuration
+- **Admin**: `admin@hubtube.com` / `password`
+- **Demo User**: `demo@hubtube.com` / `password`
 
-### Agora.io (Live Streaming)
+##  Admin Panel
 
-1. Create an account at [agora.io](https://agora.io)
-2. Create a project and get App ID + App Certificate
+Access the comprehensive admin dashboard at `/admin`:
+- User management and moderation
+- Video content management
+- Live stream monitoring
+- Financial analytics
+- System metrics and health
+- PWA settings and push notifications
+- Ad configuration
+
+##  Configuration
+
+### Live Streaming (Agora.io)
+1. Create account at [agora.io](https://agora.io)
+2. Create project and get credentials
 3. Add to `.env`:
-   ```
-   AGORA_APP_ID=your_app_id
-   AGORA_APP_CERTIFICATE=your_certificate
-   ```
+```env
+AGORA_APP_ID=your_app_id
+AGORA_APP_CERTIFICATE=your_certificate
+```
 
 ### Cloud Storage
-
-Configure Wasabi or Backblaze B2 in `.env`:
-```
+Configure Wasabi or Backblaze B2:
+```env
 CLOUD_STORAGE_DRIVER=wasabi
 WASABI_ACCESS_KEY=your_key
 WASABI_SECRET_KEY=your_secret
@@ -125,68 +165,164 @@ WASABI_REGION=us-east-1
 ```
 
 ### FFmpeg
-
 Ensure FFmpeg is installed and configure paths:
-```
+```env
 FFMPEG_BINARY=/usr/bin/ffmpeg
 FFPROBE_BINARY=/usr/bin/ffprobe
 ```
 
-## Directory Structure
+##  Directory Structure
 
 ```
-app/
-├── Events/          # Application events
-├── Filament/        # Admin panel resources
-├── Http/
-│   ├── Controllers/ # HTTP controllers
-│   ├── Middleware/  # Custom middleware
-│   └── Requests/    # Form requests
-├── Jobs/            # Queue jobs (video processing)
-├── Listeners/       # Event listeners
-├── Models/          # Eloquent models
-├── Policies/        # Authorization policies
-├── Providers/       # Service providers
-└── Services/        # Business logic services
-
-resources/
-├── css/             # Tailwind CSS
-├── js/
-│   ├── Components/  # Vue components
-│   ├── Layouts/     # Page layouts
-│   └── Pages/       # Inertia pages
-└── views/           # Blade templates
-
-database/
-├── migrations/      # Database migrations
-└── seeders/         # Database seeders
+├── app/
+│   ├── Http/Controllers/     # API and web controllers
+│   ├── Models/              # Eloquent models
+│   ├── Jobs/                # Queue jobs (video processing)
+│   ├── Services/            # Business logic
+│   └── Filament/            # Admin panel resources
+├── resources/
+│   ├── js/
+│   │   ├── Components/      # Reusable Vue components
+│   │   ├── Pages/           # Inertia page components
+│   │   ├── Layouts/         # App layouts
+│   │   └── Composables/     # Vue composables
+│   ├── css/                 # Tailwind styles
+│   └── views/               # Blade templates
+├── database/
+│   ├── migrations/          # Database schema
+│   └── seeders/             # Sample data
+├── public/
+│   ├── icons/               # PWA icons
+│   ├── manifest.json        # Web app manifest
+│   └── sw.js               # Service worker
+└── scraper/                # Content scraping tools
 ```
 
-## API Endpoints
+##  API Endpoints
 
 ### Authentication
-- `POST /register` - User registration
 - `POST /login` - User login
+- `POST /register` - User registration
 - `POST /logout` - User logout
 
 ### Videos
-- `GET /videos` - List videos
-- `GET /watch/{slug}` - View video
+- `GET /videos` - List videos with pagination
+- `GET /{slug}` - View video page
 - `POST /upload` - Upload video
-- `POST /videos/{id}/like` - Like video
-- `POST /videos/{id}/dislike` - Dislike video
+- `POST /videos/{id}/like` - Like/dislike video
+- `POST /videos/{id}/comments` - Add comment
+
+### Playlists
+- `GET /playlists` - User playlists
+- `POST /playlists` - Create playlist
+- `POST /playlists/{id}/videos` - Add video to playlist
 
 ### Live Streaming
-- `GET /live` - List live streams
-- `GET /live/{id}` - View live stream
-- `POST /go-live` - Start live stream
-- `POST /live/{id}/gift` - Send gift
+- `GET /live` - Live streams list
+- `POST /go-live` - Start streaming
+- `POST /live/{id}/gift` - Send virtual gift
 
-### Wallet
-- `GET /wallet` - View wallet
-- `POST /wallet/deposit` - Deposit funds
+### Wallet & Monetization
+- `GET /wallet` - Wallet balance
+- `POST /wallet/deposit` - Add funds
 - `POST /wallet/withdraw` - Request withdrawal
+
+##  Frontend Components
+
+### Core Components
+- `VideoCard` - Responsive video thumbnail with hover effects
+- `VideoPlayer` - HLS video player with controls
+- `ShortsViewer` - TikTok-style vertical video viewer
+- `CommentSection` - Nested comments with real-time updates
+
+### UI Components
+- `ToastContainer` - Non-intrusive notifications
+- `Pagination` - Reusable pagination component
+- `ErrorBoundary` - Graceful error handling
+- `KeyboardShortcuts` - Video player shortcut guide
+- `LanguageSwitcher` - Multi-language selector
+
+### Composables
+- `useFetch` - Centralized API requests with CSRF
+- `useToast` - Toast notification system
+- `useI18n` - Internationalization framework
+- `useOptimizedImage` - Responsive image optimization
+- `usePushNotifications` - Push notification management
+
+##  Internationalization
+
+HubTube supports 10+ languages:
+- English (en)
+- Spanish (es)
+- French (fr)
+- German (de)
+- Portuguese (pt)
+- Arabic (ar) - RTL support
+- Chinese (zh)
+- Japanese (ja)
+- Korean (ko)
+- Hindi (hi)
+
+Add new languages by creating JSON files in `resources/js/i18n/`.
+
+##  PWA Features
+
+- **Offline Support**: Cached pages and assets
+- **Push Notifications**: Browser-based notifications
+- **App-like Experience**: Installable on desktop/mobile
+- **Fast Loading**: Service worker caching strategies
+- **Responsive Design**: Works on all screen sizes
+
+##  Development
+
+### Available Scripts
+```bash
+npm run dev          # Development server
+npm run build        # Production build
+npm run preview      # Preview production build
+```
+
+### Code Quality
+- ESLint and Prettier configured
+- TypeScript support available
+- Component-based architecture
+- Comprehensive error handling
+
+##  Performance Optimizations
+
+- **Lazy Loading**: Images and below-fold content
+- **API Caching**: Service worker stale-while-revalidate
+- **Image Optimization**: Responsive srcset and WebP
+- **Code Splitting**: Automatic with Vite
+- **CSS Optimization**: PurgeCSS in production
+
+##  Security Features
+
+- **Age Verification**: Compliant age gate
+- **CSRF Protection**: Built-in Laravel protection
+- **Input Sanitization**: XSS prevention
+- **Content Moderation**: Admin moderation tools
+- **Privacy Controls**: User privacy settings
+
+##  Monetization Features
+
+- **Virtual Gifts**: Real-time gift economy
+- **Paid Content**: Pay-per-view videos
+- **Channel Subscriptions**: Monthly subscriptions
+- **Ad Revenue**: Integrated ad management
+- **Wallet System**: Secure payment processing
 
 ## License
 
 Proprietary - All rights reserved.
+
+## Support
+
+For support and questions:
+- Create an issue in the repository
+- Check the [GUIDE.MD](./GUIDE.MD) for detailed setup instructions
+- Review the admin documentation at `/admin`
+
+---
+
+Built with ❤️ using modern web technologies

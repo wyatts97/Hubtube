@@ -37,6 +37,12 @@ class AdSettings extends Page implements HasForms
             // Video Page Sidebar Ad (above related videos)
             'video_sidebar_ad_enabled' => Setting::get('video_sidebar_ad_enabled', false),
             'video_sidebar_ad_code' => Setting::get('video_sidebar_ad_code', ''),
+
+            // Shorts Ad Interstitials
+            'shorts_ads_enabled' => Setting::get('shorts_ads_enabled', false),
+            'shorts_ad_frequency' => Setting::get('shorts_ad_frequency', 3),
+            'shorts_ad_skip_delay' => Setting::get('shorts_ad_skip_delay', 5),
+            'shorts_ad_code' => Setting::get('shorts_ad_code', ''),
         ]);
     }
 
@@ -78,6 +84,38 @@ class AdSettings extends Page implements HasForms
                         Textarea::make('video_sidebar_ad_code')
                             ->label('Ad HTML Code')
                             ->helperText('Paste your ad network HTML code here. Supports various sizes: 300x250, 300x300, 300x500, 300x600')
+                            ->rows(8)
+                            ->columnSpanFull(),
+                    ]),
+
+                Section::make('Shorts Ad Interstitials')
+                    ->description('Configure full-screen ads that appear between shorts in the vertical viewer. These are shown as users swipe through shorts.')
+                    ->schema([
+                        Toggle::make('shorts_ads_enabled')
+                            ->label('Enable Shorts Ads')
+                            ->helperText('Show interstitial ads between shorts in the vertical viewer'),
+
+                        Grid::make(2)->schema([
+                            TextInput::make('shorts_ad_frequency')
+                                ->label('Ad Frequency')
+                                ->helperText('Show an ad after every N shorts (e.g., 3 = ad after every 3rd short)')
+                                ->numeric()
+                                ->default(3)
+                                ->minValue(1)
+                                ->maxValue(20),
+
+                            TextInput::make('shorts_ad_skip_delay')
+                                ->label('Skip Delay (seconds)')
+                                ->helperText('Seconds before user can skip. 0 = immediately skippable.')
+                                ->numeric()
+                                ->default(5)
+                                ->minValue(0)
+                                ->maxValue(30),
+                        ]),
+
+                        Textarea::make('shorts_ad_code')
+                            ->label('Ad HTML Code')
+                            ->helperText('Paste your ad network HTML code here. Displayed full-screen between shorts. Recommended: vertical/responsive ad units.')
                             ->rows(8)
                             ->columnSpanFull(),
                     ]),

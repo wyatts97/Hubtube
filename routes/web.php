@@ -44,6 +44,9 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/search', [SearchController::class, 'index'])->name('search');
 
     Route::get('/videos', [VideoController::class, 'index'])->name('videos.index');
+    Route::get('/categories', [HomeController::class, 'categories'])->name('categories.index');
+    Route::get('/category/{category:slug}', [HomeController::class, 'category'])->name('categories.show');
+    Route::get('/tag/{tag}', [HomeController::class, 'tag'])->name('tags.show');
 
     Route::get('/channel/{user:username}', [ChannelController::class, 'show'])->name('channel.show');
     Route::get('/channel/{user:username}/videos', [ChannelController::class, 'videos'])->name('channel.videos');
@@ -133,6 +136,8 @@ Route::middleware('age.verified')->group(function () {
 
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
         Route::put('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile');
+        Route::post('/settings/avatar', [SettingsController::class, 'updateAvatar'])->name('settings.avatar');
+        Route::post('/settings/banner', [SettingsController::class, 'updateBanner'])->name('settings.banner');
         Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password');
         Route::put('/settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications');
         Route::put('/settings/privacy', [SettingsController::class, 'updatePrivacy'])->name('settings.privacy');

@@ -1,12 +1,15 @@
 <script setup>
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useFetch } from '@/Composables/useFetch';
+import { sanitizeHtml } from '@/Composables/useSanitize';
+import { useToast } from '@/Composables/useToast';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import CommentSection from '@/Components/CommentSection.vue';
 import VideoPlayer from '@/Components/VideoPlayer.vue';
-import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff } from 'lucide-vue-next';
+import KeyboardShortcuts from '@/Components/KeyboardShortcuts.vue';
+import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff, Eye, ListVideo, Plus, Check, Loader2 } from 'lucide-vue-next';
 
 const props = defineProps({
     video: Object,
@@ -14,7 +17,10 @@ const props = defineProps({
     userLike: String,
     isSubscribed: Boolean,
     sidebarAd: Object,
+    userPlaylists: { type: Array, default: () => [] },
 });
+
+const toast = useToast();
 
 const hlsPlaylistUrl = computed(() => {
     if (props.video.qualities_available?.length > 1 && !props.video.qualities_available?.includes('original') || 
@@ -37,6 +43,7 @@ const disliked = ref(props.userLike === 'dislike');
 const likesCount = ref(props.video.likes_count);
 const dislikesCount = ref(props.video.dislikes_count);
 const subscribed = ref(props.isSubscribed);
+const subscribing = ref(false);
 
 const { post, del } = useFetch();
 
@@ -64,10 +71,65 @@ const handleDislike = async () => {
 
 const handleSubscribe = async () => {
     if (!user.value) { router.visit('/login'); return; }
+    subscribing.value = true;
     const fn = subscribed.value ? del : post;
     const { ok } = await fn(`/channel/${props.video.user.id}/subscribe`);
     if (ok) subscribed.value = !subscribed.value;
+    subscribing.value = false;
 };
+
+// Save to Playlist
+const showPlaylistMenu = ref(false);
+const playlists = ref(props.userPlaylists.map(p => ({ ...p })));
+const savingPlaylist = ref(null);
+const newPlaylistTitle = ref('');
+const creatingPlaylist = ref(false);
+
+const toggleVideoInPlaylist = async (playlist) => {
+    if (savingPlaylist.value === playlist.id) return;
+    savingPlaylist.value = playlist.id;
+    if (playlist.has_video) {
+        const { ok } = await del(`/playlists/${playlist.id}/videos`, { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ video_id: props.video.id }) });
+        if (ok) {
+            playlist.has_video = false;
+            toast.success(`Removed from "${playlist.title}"`);
+        }
+    } else {
+        const { ok } = await post(`/playlists/${playlist.id}/videos`, { video_id: props.video.id });
+        if (ok) {
+            playlist.has_video = true;
+            toast.success(`Added to "${playlist.title}"`);
+        }
+    }
+    savingPlaylist.value = null;
+};
+
+const createAndAddPlaylist = async () => {
+    if (!newPlaylistTitle.value.trim() || creatingPlaylist.value) return;
+    creatingPlaylist.value = true;
+    const { ok, data } = await post('/playlists', {
+        title: newPlaylistTitle.value.trim(),
+        description: '',
+        privacy: 'private',
+    });
+    if (ok && data) {
+        const newPl = { ...data, has_video: false, videos_count: 0 };
+        playlists.value.push(newPl);
+        newPlaylistTitle.value = '';
+        await toggleVideoInPlaylist(newPl);
+    }
+    creatingPlaylist.value = false;
+};
+
+// Close playlist menu on outside click
+const closePlaylistMenu = (e) => {
+    if (!e.target.closest('.playlist-menu-area')) {
+        showPlaylistMenu.value = false;
+    }
+};
+
+onMounted(() => document.addEventListener('click', closePlaylistMenu));
+onUnmounted(() => document.removeEventListener('click', closePlaylistMenu));
 
 // Report modal
 const showReportModal = ref(false);
@@ -107,8 +169,11 @@ const copyLink = async () => {
     try {
         await navigator.clipboard.writeText(shareUrl.value);
         linkCopied.value = true;
+        toast.success('Link copied to clipboard');
         setTimeout(() => { linkCopied.value = false; }, 2000);
-    } catch (e) { /* silent */ }
+    } catch (e) {
+        toast.error('Failed to copy link');
+    }
 };
 
 const shareToSocial = (platform) => {
@@ -166,20 +231,21 @@ const formattedViews = computed(() => {
                 <div class="mt-4">
                     <div class="flex items-start justify-between gap-4">
                         <h1 class="text-xl font-bold flex-1" style="color: var(--color-text-primary);">{{ video.title }}</h1>
-                        <span class="text-sm font-medium whitespace-nowrap" style="color: var(--color-text-secondary);">{{ formattedViews }} views</span>
+                        <span class="text-sm font-medium whitespace-nowrap flex items-center gap-1.5" style="color: var(--color-text-secondary);"><Eye class="w-4 h-4" /> {{ formattedViews }} views</span>
                     </div>
                     
                     <!-- Tags - Horizontally Scrollable -->
                     <div v-if="video.tags && video.tags.length" class="mt-3 -mx-1 px-1 overflow-x-auto scrollbar-hide">
                         <div class="flex gap-2 pb-2" style="min-width: max-content;">
-                            <span
+                            <Link
                                 v-for="tag in video.tags"
                                 :key="tag"
+                                :href="`/tag/${encodeURIComponent(tag)}`"
                                 class="px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap cursor-pointer hover:opacity-80 transition-opacity"
                                 style="background-color: var(--color-bg-tertiary); color: var(--color-text-secondary);"
                             >
                                 #{{ tag }}
-                            </span>
+                            </Link>
                         </div>
                     </div>
                     
@@ -202,12 +268,14 @@ const formattedViews = computed(() => {
                             <button
                                 v-if="user && user.id !== video.user.id"
                                 @click="handleSubscribe"
+                                :disabled="subscribing"
                                 :class="[
                                     'btn',
                                     subscribed ? 'btn-secondary' : 'btn-primary'
                                 ]"
                             >
-                                {{ subscribed ? 'Subscribed' : 'Subscribe' }}
+                                <Loader2 v-if="subscribing" class="w-4 h-4 animate-spin" />
+                                <template v-else>{{ subscribed ? 'Subscribed' : 'Subscribe' }}</template>
                             </button>
                         </div>
 
@@ -237,10 +305,69 @@ const formattedViews = computed(() => {
                                 <span class="hidden sm:inline">Share</span>
                             </button>
 
+                            <!-- Save to Playlist -->
+                            <div class="relative playlist-menu-area">
+                                <button @click.stop="user ? (showPlaylistMenu = !showPlaylistMenu) : router.visit('/login')" class="btn btn-secondary gap-2">
+                                    <ListVideo class="w-5 h-5" />
+                                    <span class="hidden sm:inline">Save</span>
+                                </button>
+                                <div
+                                    v-if="showPlaylistMenu"
+                                    class="absolute right-0 top-full mt-2 w-72 rounded-xl shadow-xl z-50 overflow-hidden"
+                                    style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);"
+                                >
+                                    <div class="p-3 font-medium text-sm" style="border-bottom: 1px solid var(--color-border); color: var(--color-text-primary);">Save to playlist</div>
+                                    <div class="max-h-60 overflow-y-auto">
+                                        <button
+                                            v-for="pl in playlists"
+                                            :key="pl.id"
+                                            @click="toggleVideoInPlaylist(pl)"
+                                            :disabled="savingPlaylist === pl.id"
+                                            class="flex items-center gap-3 w-full px-3 py-2.5 text-left text-sm hover:opacity-80 transition-colors"
+                                            style="color: var(--color-text-secondary);"
+                                        >
+                                            <div
+                                                class="w-5 h-5 rounded flex items-center justify-center flex-shrink-0"
+                                                :style="pl.has_video
+                                                    ? { backgroundColor: 'var(--color-accent)', color: 'white' }
+                                                    : { border: '2px solid var(--color-border)' }"
+                                            >
+                                                <Check v-if="pl.has_video" class="w-3.5 h-3.5" />
+                                            </div>
+                                            <span class="truncate flex-1">{{ pl.title }}</span>
+                                            <Loader2 v-if="savingPlaylist === pl.id" class="w-4 h-4 animate-spin flex-shrink-0" />
+                                            <span v-else class="text-xs flex-shrink-0" style="color: var(--color-text-muted);">{{ pl.videos_count }} videos</span>
+                                        </button>
+                                        <div v-if="!playlists.length" class="px-3 py-4 text-center text-sm" style="color: var(--color-text-muted);">No playlists yet</div>
+                                    </div>
+                                    <div class="p-2" style="border-top: 1px solid var(--color-border);">
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                v-model="newPlaylistTitle"
+                                                type="text"
+                                                placeholder="New playlist name..."
+                                                class="input text-sm flex-1"
+                                                @keydown.enter.prevent="createAndAddPlaylist"
+                                            />
+                                            <button
+                                                @click="createAndAddPlaylist"
+                                                :disabled="!newPlaylistTitle.trim() || creatingPlaylist"
+                                                class="btn btn-primary p-2"
+                                            >
+                                                <Loader2 v-if="creatingPlaylist" class="w-4 h-4 animate-spin" />
+                                                <Plus v-else class="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <button @click="user ? (showReportModal = true) : router.visit('/login')" class="btn btn-secondary gap-2">
                                 <Flag class="w-5 h-5" />
                                 <span class="hidden sm:inline">Report</span>
                             </button>
+
+                            <KeyboardShortcuts />
                         </div>
                     </div>
 
@@ -262,7 +389,7 @@ const formattedViews = computed(() => {
                 <!-- Ad Space - Only show if enabled and has code -->
                 <div v-if="sidebarAd?.enabled && sidebarAd?.code" class="mb-6">
                     <div class="ad-container flex items-center justify-center">
-                        <div v-html="sidebarAd.code" class="flex items-center justify-center"></div>
+                        <div v-html="sanitizeHtml(sidebarAd.code)" class="flex items-center justify-center"></div>
                     </div>
                 </div>
 

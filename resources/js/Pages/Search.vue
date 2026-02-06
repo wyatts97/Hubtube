@@ -3,7 +3,8 @@ import { Head, router, usePage } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
-import { Search as SearchIcon, Users, Hash, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { Search as SearchIcon, Users, Hash } from 'lucide-vue-next';
+import Pagination from '@/Components/Pagination.vue';
 
 const props = defineProps({
     query: String,
@@ -155,40 +156,12 @@ const hasPages = () => {
                 </div>
             </template>
 
-            <!-- Pagination -->
-            <div v-if="hasPages()" class="flex justify-center items-center gap-2 mt-8">
-                <button
-                    @click="goToPage(results.current_page - 1)"
-                    :disabled="results.current_page === 1"
-                    class="p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    :style="{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }"
-                >
-                    <ChevronLeft class="w-5 h-5" />
-                </button>
-                <div class="flex items-center gap-1">
-                    <template v-for="pageNum in results.last_page" :key="pageNum">
-                        <button
-                            v-if="pageNum === 1 || pageNum === results.last_page || (pageNum >= results.current_page - 2 && pageNum <= results.current_page + 2)"
-                            @click="goToPage(pageNum)"
-                            class="w-10 h-10 rounded-lg text-sm font-medium transition-colors"
-                            :style="pageNum === results.current_page
-                                ? { backgroundColor: 'var(--color-accent)', color: 'white' }
-                                : { backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }"
-                        >
-                            {{ pageNum }}
-                        </button>
-                        <span v-else-if="pageNum === results.current_page - 3 || pageNum === results.current_page + 3" style="color: var(--color-text-muted);">...</span>
-                    </template>
-                </div>
-                <button
-                    @click="goToPage(results.current_page + 1)"
-                    :disabled="results.current_page === results.last_page"
-                    class="p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    :style="{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }"
-                >
-                    <ChevronRight class="w-5 h-5" />
-                </button>
-            </div>
+            <Pagination
+                v-if="hasPages()"
+                :current-page="results.current_page"
+                :last-page="results.last_page"
+                @page-change="goToPage"
+            />
         </div>
 
         <!-- No Query State -->

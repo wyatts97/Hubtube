@@ -1,24 +1,23 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { History, Trash2 } from 'lucide-vue-next';
+import { useFetch } from '@/Composables/useFetch';
 
 defineProps({
     videos: Object,
 });
 
+const { del } = useFetch();
+
 const clearHistory = async () => {
     if (!confirm('Are you sure you want to clear your watch history?')) return;
     
-    await fetch('/history', {
-        method: 'DELETE',
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
-        },
-    });
-    
-    window.location.reload();
+    const { ok } = await del('/history');
+    if (ok) {
+        router.reload();
+    }
 };
 </script>
 
@@ -28,8 +27,8 @@ const clearHistory = async () => {
     <AppLayout>
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-white">Watch History</h1>
-                <p class="text-dark-400 mt-1">Videos you've watched recently</p>
+                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">Watch History</h1>
+                <p class="mt-1" style="color: var(--color-text-secondary);">Videos you've watched recently</p>
             </div>
             <button v-if="videos?.data?.length" @click="clearHistory" class="btn btn-ghost text-red-400 gap-2">
                 <Trash2 class="w-4 h-4" />
@@ -42,9 +41,9 @@ const clearHistory = async () => {
         </div>
 
         <div v-else class="text-center py-12">
-            <History class="w-16 h-16 text-dark-600 mx-auto mb-4" />
-            <p class="text-dark-400 text-lg">No watch history yet</p>
-            <p class="text-dark-500 mt-2">Videos you watch will appear here</p>
+            <History class="w-16 h-16 mx-auto mb-4" style="color: var(--color-text-muted);" />
+            <p class="text-lg" style="color: var(--color-text-secondary);">No watch history yet</p>
+            <p class="mt-2" style="color: var(--color-text-muted);">Videos you watch will appear here</p>
             <Link href="/" class="btn btn-primary mt-4">
                 Browse Videos
             </Link>
@@ -56,12 +55,10 @@ const clearHistory = async () => {
                 <a
                     v-if="link.url"
                     :href="link.url"
-                    :class="[
-                        'px-4 py-2 rounded-lg text-sm',
-                        link.active 
-                            ? 'bg-primary-600 text-white' 
-                            : 'bg-dark-800 text-dark-300 hover:bg-dark-700'
-                    ]"
+                    class="px-4 py-2 rounded-lg text-sm"
+                    :style="link.active 
+                        ? { backgroundColor: 'var(--color-accent)', color: 'white' } 
+                        : { backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }"
                     v-html="link.label"
                 />
             </template>

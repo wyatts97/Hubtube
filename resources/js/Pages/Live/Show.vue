@@ -191,17 +191,17 @@ const cleanup = async () => {
 
                 <!-- Stream Info -->
                 <div class="mt-4">
-                    <h1 class="text-xl font-bold text-white">{{ stream.title }}</h1>
+                    <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ stream.title }}</h1>
                     <div class="flex items-center gap-4 mt-3">
                         <Link :href="`/channel/${stream.user.username}`" class="flex items-center gap-3">
                             <div class="w-10 h-10 avatar ring-2 ring-red-500">
                                 <img v-if="stream.user.avatar" :src="stream.user.avatar" :alt="stream.user.username" class="w-full h-full object-cover" />
-                                <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white font-medium">
+                                <div v-else class="w-full h-full flex items-center justify-center text-white font-medium" style="background-color: var(--color-accent);">
                                     {{ stream.user.username.charAt(0).toUpperCase() }}
                                 </div>
                             </div>
                             <div>
-                                <p class="font-medium text-white">{{ stream.user.username }}</p>
+                                <p class="font-medium" style="color: var(--color-text-primary);">{{ stream.user.username }}</p>
                             </div>
                         </Link>
                     </div>
@@ -210,8 +210,8 @@ const cleanup = async () => {
 
             <!-- Chat Panel -->
             <div class="lg:w-96 flex flex-col card">
-                <div class="p-4 border-b border-dark-800">
-                    <h3 class="font-medium text-white">Live Chat</h3>
+                <div class="p-4" style="border-bottom: 1px solid var(--color-border);">
+                    <h3 class="font-medium" style="color: var(--color-text-primary);">Live Chat</h3>
                 </div>
 
                 <!-- Messages -->
@@ -221,40 +221,40 @@ const cleanup = async () => {
                         :key="msg.id"
                         class="text-sm"
                     >
-                        <span class="font-medium text-primary-400">{{ msg.username }}:</span>
-                        <span class="text-dark-300 ml-1">{{ msg.text }}</span>
+                        <span class="font-medium" style="color: var(--color-accent);">{{ msg.username }}:</span>
+                        <span class="ml-1" style="color: var(--color-text-secondary);">{{ msg.text }}</span>
                     </div>
-                    <p v-if="messages.length === 0" class="text-dark-500 text-center py-8">
+                    <p v-if="messages.length === 0" class="text-center py-8" style="color: var(--color-text-muted);">
                         No messages yet. Be the first to chat!
                     </p>
                 </div>
 
                 <!-- Gift Panel -->
-                <div v-if="showGiftPanel" class="p-4 border-t border-dark-800 bg-dark-800">
+                <div v-if="showGiftPanel" class="p-4" style="border-top: 1px solid var(--color-border); background-color: var(--color-bg-secondary);">
                     <div class="flex items-center justify-between mb-3">
-                        <h4 class="font-medium text-white">Send a Gift</h4>
-                        <button @click="showGiftPanel = false" class="text-dark-400 hover:text-white">×</button>
+                        <h4 class="font-medium" style="color: var(--color-text-primary);">Send a Gift</h4>
+                        <button @click="showGiftPanel = false" class="hover:opacity-80" style="color: var(--color-text-secondary);">×</button>
                     </div>
                     <div class="grid grid-cols-4 gap-2">
                         <button
                             v-for="gift in gifts"
                             :key="gift.id"
                             @click="sendGift(gift)"
-                            class="flex flex-col items-center p-2 rounded-lg hover:bg-dark-700 transition-colors"
+                            class="flex flex-col items-center p-2 rounded-lg transition-colors hover:opacity-80"
                         >
                             <span class="text-2xl">{{ gift.icon }}</span>
-                            <span class="text-xs text-dark-400 mt-1">${{ gift.price }}</span>
+                            <span class="text-xs mt-1" style="color: var(--color-text-muted);">${{ gift.price }}</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- Chat Input -->
-                <div class="p-4 border-t border-dark-800">
+                <div class="p-4" style="border-top: 1px solid var(--color-border);">
                     <div class="flex items-center gap-2">
                         <button
                             v-if="user"
                             @click="showGiftPanel = !showGiftPanel"
-                            class="p-2 hover:bg-dark-700 rounded-full text-amber-400"
+                            class="p-2 rounded-full text-amber-400 hover:opacity-80"
                         >
                             <Gift class="w-5 h-5" />
                         </button>
@@ -274,8 +274,8 @@ const cleanup = async () => {
                             <Send class="w-5 h-5" />
                         </button>
                     </div>
-                    <p v-if="!user" class="text-dark-500 text-xs mt-2 text-center">
-                        <Link href="/login" class="text-primary-500">Sign in</Link> to chat
+                    <p v-if="!user" class="text-xs mt-2 text-center" style="color: var(--color-text-muted);">
+                        <Link href="/login" style="color: var(--color-accent);">Sign in</Link> to chat
                     </p>
                 </div>
             </div>

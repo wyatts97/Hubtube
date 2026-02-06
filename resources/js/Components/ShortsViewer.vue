@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { Heart, MessageCircle, Share2, MoreVertical, Volume2, VolumeX, Play, Pause, ChevronUp, ChevronDown, X, Flag } from 'lucide-vue-next';
 import { useFetch } from '@/Composables/useFetch';
+import { sanitizeHtml } from '@/Composables/useSanitize';
 
 const props = defineProps({
     shorts: { type: Array, required: true },
@@ -437,7 +438,7 @@ watch(() => props.shorts, (newShorts) => {
                         <span class="text-xs font-medium uppercase tracking-wider" style="color: var(--color-text-muted);">Sponsored</span>
                     </div>
 
-                    <div class="shorts-ad-content" v-html="adSettings.code"></div>
+                    <div class="shorts-ad-content" v-html="sanitizeHtml(adSettings.code)"></div>
 
                     <div class="shorts-ad-skip">
                         <button
