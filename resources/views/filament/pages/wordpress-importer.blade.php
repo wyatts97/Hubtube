@@ -161,7 +161,7 @@
                         <select wire:model="importUserId" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm" required>
                             <option value="">-- Select a user --</option>
                             @foreach($this->users as $u)
-                                <option value="{{ $u['id'] }}">{{ $u['username'] }} ({{ $u['name'] }})</option>
+                                <option value="{{ $u['id'] }}">{{ $u['username'] }} ({{ trim(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? '')) ?: $u['username'] }})</option>
                             @endforeach
                         </select>
                         <p class="text-xs text-gray-400 mt-1">All imported videos will be owned by this user</p>

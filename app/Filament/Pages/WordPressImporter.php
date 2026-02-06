@@ -57,7 +57,7 @@ class WordPressImporter extends Page
      */
     public function getUsersProperty(): array
     {
-        return User::select('id', 'username', 'name')->orderBy('username')->get()->toArray();
+        return User::select('id', 'username', 'first_name', 'last_name')->orderBy('username')->get()->toArray();
     }
 
     public function updatedSqlFile(): void
