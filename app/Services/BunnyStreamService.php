@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Video;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -213,6 +214,105 @@ class BunnyStreamService
         }
 
         return '720p';
+    }
+
+    /**
+     * Download a single embedded video's files and convert it to a native video.
+     * Returns an array with status info: ['success' => bool, 'error' => string|null, 'video_path' => string|null]
+     */
+    public function downloadVideo(Video $video, string $targetDisk = 'public'): array
+    {
+        if (!$video->is_embedded || !$video->source_video_id) {
+            return ['success' => false, 'error' => 'Video is not embedded or has no source_video_id'];
+        }
+
+        $bunnyVideoId = $video->source_video_id;
+        $storageBase = "videos/{$video->user_id}/{$video->uuid}";
+
+        Log::info('BunnyStreamService: downloading', [
+            'video_id' => $video->id,
+            'bunny_id' => $bunnyVideoId,
+        ]);
+
+        // 1. Get video info from Bunny API to determine best resolution
+        $videoInfo = $this->getVideo($bunnyVideoId);
+        $hasOriginal = $videoInfo['hasOriginal'] ?? false;
+        $hasMp4Fallback = $videoInfo['hasMP4Fallback'] ?? false;
+
+        // 2. Download the video file
+        $videoPath = null;
+
+        if ($hasOriginal) {
+            $originalUrl = $this->getOriginalUrl($bunnyVideoId);
+            $videoPath = $this->downloadFile($originalUrl, "{$storageBase}/original.mp4", $targetDisk);
+        }
+
+        if (!$videoPath && $hasMp4Fallback && $videoInfo) {
+            $bestRes = $this->getBestMp4Resolution($videoInfo);
+            $mp4Url = $this->getMp4Url($bunnyVideoId, $bestRes);
+            $videoPath = $this->downloadFile($mp4Url, "{$storageBase}/play_{$bestRes}.mp4", $targetDisk);
+        }
+
+        if (!$videoPath) {
+            Log::error('BunnyStreamService: failed to download video file', [
+                'video_id' => $video->id,
+                'bunny_id' => $bunnyVideoId,
+            ]);
+            $video->update(['status' => 'download_failed']);
+            return ['success' => false, 'error' => 'Could not download video file (no original or MP4 fallback available)'];
+        }
+
+        // 3. Download thumbnail
+        $thumbnailFileName = $videoInfo['thumbnailFileName'] ?? null;
+        $thumbnailUrl = $this->getThumbnailUrl($bunnyVideoId, $thumbnailFileName);
+        $thumbnailPath = $this->downloadFile(
+            $thumbnailUrl,
+            "thumbnails/{$video->user_id}/{$video->uuid}_thumb.jpg",
+            $targetDisk
+        );
+
+        // 4. Download animated preview WebP
+        $previewWebpUrl = $this->getPreviewUrl($bunnyVideoId);
+        $previewPath = $this->downloadFile(
+            $previewWebpUrl,
+            "{$storageBase}/preview.webp",
+            $targetDisk
+        );
+
+        // 5. Update the video record to become a native video
+        $updateData = [
+            'video_path' => $videoPath,
+            'is_embedded' => false,
+            'embed_url' => null,
+            'embed_code' => null,
+            'external_thumbnail_url' => null,
+            'external_preview_url' => null,
+            'status' => 'processed',
+            'qualities_available' => ['original'],
+        ];
+
+        if ($thumbnailPath) {
+            $updateData['thumbnail'] = $thumbnailPath;
+        }
+
+        if ($previewPath) {
+            $updateData['preview_path'] = $previewPath;
+        }
+
+        $video->update($updateData);
+
+        Log::info('BunnyStreamService: download completed', [
+            'video_id' => $video->id,
+            'video_path' => $videoPath,
+        ]);
+
+        return [
+            'success' => true,
+            'error' => null,
+            'video_path' => $videoPath,
+            'thumbnail' => $thumbnailPath,
+            'preview' => $previewPath,
+        ];
     }
 
     public function getLibraryId(): string

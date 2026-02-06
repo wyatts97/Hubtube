@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Jobs\DownloadBunnyVideoJob;
 use App\Models\Video;
 use App\Services\BunnyStreamService;
 use Filament\Notifications\Notification;
@@ -24,15 +23,17 @@ class BunnyStreamMigrator extends Page
     public int $embeddedCount = 0;
     public int $nativeCount = 0;
     public int $downloadFailedCount = 0;
-    public int $pendingCount = 0;
 
     // Migration controls
     public string $targetDisk = 'public';
-    public int $concurrency = 3;
     public bool $isMigrating = false;
-    public int $queuedCount = 0;
+    public bool $shouldStop = false;
+    public int $migratedCount = 0;
+    public int $totalToMigrate = 0;
+    public string $currentVideoTitle = '';
+    public int $currentVideoId = 0;
 
-    // Log
+    // Log of completed/failed downloads in this session
     public array $migrationLog = [];
 
     public function getTitle(): string
@@ -56,6 +57,8 @@ class BunnyStreamMigrator extends Page
     public function refreshStats(): void
     {
         $this->embeddedCount = Video::where('is_embedded', true)
+            ->where('source_site', 'bunnystream')
+            ->whereNotNull('source_video_id')
             ->where('status', '!=', 'download_failed')
             ->count();
 
@@ -64,11 +67,6 @@ class BunnyStreamMigrator extends Page
             ->count();
 
         $this->downloadFailedCount = Video::where('status', 'download_failed')->count();
-
-        // Count videos currently queued (is_embedded but status = 'downloading')
-        $this->pendingCount = Video::where('is_embedded', true)
-            ->where('status', 'downloading')
-            ->count();
     }
 
     /**
@@ -109,63 +107,125 @@ class BunnyStreamMigrator extends Page
     }
 
     /**
-     * Queue download jobs for all embedded videos that haven't been downloaded yet.
+     * Start the migration — downloads the next video, then Livewire polls downloadNext().
      */
     public function startMigration(): void
     {
         $service = new BunnyStreamService();
 
         if (!$service->isConfigured()) {
-            Notification::make()
-                ->title('Bunny Stream API not configured')
-                ->danger()
-                ->send();
+            Notification::make()->title('Bunny Stream API not configured')->danger()->send();
             return;
         }
 
-        // Get all embedded videos with a bunny source_video_id that haven't failed or already downloading
-        $videos = Video::where('is_embedded', true)
+        $this->totalToMigrate = Video::where('is_embedded', true)
             ->where('source_site', 'bunnystream')
             ->whereNotNull('source_video_id')
-            ->whereNotIn('status', ['downloading', 'download_failed'])
-            ->get();
+            ->whereNotIn('status', ['download_failed'])
+            ->count();
 
-        if ($videos->isEmpty()) {
+        if ($this->totalToMigrate === 0) {
             Notification::make()
                 ->title('No videos to migrate')
-                ->body('All embedded Bunny Stream videos have already been queued or downloaded.')
+                ->body('All embedded Bunny Stream videos have already been downloaded.')
                 ->warning()
                 ->send();
             return;
         }
 
         $this->isMigrating = true;
-        $this->queuedCount = 0;
+        $this->shouldStop = false;
+        $this->migratedCount = 0;
         $this->migrationLog = [];
+        $this->currentVideoTitle = '';
+        $this->currentVideoId = 0;
 
-        foreach ($videos as $video) {
-            // Mark as downloading so we don't double-queue
-            $video->update(['status' => 'downloading']);
+        // Download the first one immediately
+        $this->downloadNext();
+    }
 
-            DownloadBunnyVideoJob::dispatch($video, $this->targetDisk)
-                ->onQueue('downloads');
+    /**
+     * Download the next pending embedded video. Called by Livewire polling.
+     */
+    public function downloadNext(): void
+    {
+        if ($this->shouldStop || !$this->isMigrating) {
+            $this->isMigrating = false;
+            $this->currentVideoTitle = '';
+            $this->refreshStats();
+            return;
+        }
 
-            $this->queuedCount++;
+        // Get the next embedded video to download
+        $video = Video::where('is_embedded', true)
+            ->where('source_site', 'bunnystream')
+            ->whereNotNull('source_video_id')
+            ->whereNotIn('status', ['download_failed'])
+            ->first();
+
+        if (!$video) {
+            $this->isMigrating = false;
+            $this->currentVideoTitle = '';
+            $this->refreshStats();
+
+            Notification::make()
+                ->title('Migration complete!')
+                ->body("Downloaded {$this->migratedCount} videos successfully.")
+                ->success()
+                ->send();
+            return;
+        }
+
+        $this->currentVideoTitle = $video->title;
+        $this->currentVideoId = $video->id;
+
+        // Run the download synchronously
+        $service = new BunnyStreamService();
+        $result = $service->downloadVideo($video, $this->targetDisk);
+
+        if ($result['success']) {
+            $this->migratedCount++;
             $this->migrationLog[] = [
                 'id' => $video->id,
                 'title' => $video->title,
                 'bunny_id' => $video->source_video_id,
-                'status' => 'queued',
+                'status' => 'completed',
+                'error' => null,
+            ];
+        } else {
+            $this->migrationLog[] = [
+                'id' => $video->id,
+                'title' => $video->title,
+                'bunny_id' => $video->source_video_id,
+                'status' => 'failed',
+                'error' => $result['error'],
             ];
         }
 
+        // Keep only last 50 log entries
+        if (count($this->migrationLog) > 50) {
+            $this->migrationLog = array_slice($this->migrationLog, -50);
+        }
+
         $this->refreshStats();
+    }
+
+    /**
+     * Stop the migration after the current download finishes.
+     */
+    public function stopMigration(): void
+    {
+        $this->shouldStop = true;
+        $this->isMigrating = false;
+        $this->currentVideoTitle = '';
 
         Notification::make()
-            ->title("Queued {$this->queuedCount} videos for download")
-            ->body("Videos will be downloaded in the background via the 'downloads' queue.")
-            ->success()
+            ->title('Migration stopped')
+            ->body("Downloaded {$this->migratedCount} videos before stopping.")
+            ->warning()
             ->send();
+
+        $this->refreshStats();
     }
 
     /**
@@ -173,59 +233,59 @@ class BunnyStreamMigrator extends Page
      */
     public function retryFailed(): void
     {
-        $failed = Video::where('status', 'download_failed')
+        $count = Video::where('status', 'download_failed')
             ->where('is_embedded', true)
-            ->get();
+            ->update(['status' => 'processed']);
 
-        if ($failed->isEmpty()) {
-            Notification::make()
-                ->title('No failed downloads to retry')
-                ->info()
-                ->send();
+        if ($count === 0) {
+            Notification::make()->title('No failed downloads to retry')->info()->send();
             return;
-        }
-
-        $count = 0;
-        foreach ($failed as $video) {
-            $video->update(['status' => 'downloading']);
-            DownloadBunnyVideoJob::dispatch($video, $this->targetDisk)
-                ->onQueue('downloads');
-            $count++;
         }
 
         $this->refreshStats();
 
         Notification::make()
-            ->title("Retrying {$count} failed downloads")
+            ->title("Reset {$count} failed videos")
+            ->body('They will be picked up when you start migration again.')
             ->success()
             ->send();
     }
 
     /**
-     * Download a single video by ID (for testing).
+     * Download a single video by ID directly (synchronous).
      */
     public function downloadSingle(int $videoId): void
     {
         $video = Video::find($videoId);
 
         if (!$video || !$video->is_embedded) {
-            Notification::make()
-                ->title('Video not found or not embedded')
-                ->danger()
-                ->send();
+            Notification::make()->title('Video not found or not embedded')->danger()->send();
             return;
         }
 
-        $video->update(['status' => 'downloading']);
-        DownloadBunnyVideoJob::dispatch($video, $this->targetDisk)
-            ->onQueue('downloads');
+        $this->currentVideoTitle = $video->title;
+        $this->currentVideoId = $video->id;
 
+        $service = new BunnyStreamService();
+        $result = $service->downloadVideo($video, $this->targetDisk);
+
+        $this->currentVideoTitle = '';
+        $this->currentVideoId = 0;
         $this->refreshStats();
 
-        Notification::make()
-            ->title("Queued download for: {$video->title}")
-            ->success()
-            ->send();
+        if ($result['success']) {
+            Notification::make()
+                ->title("Downloaded: {$video->title}")
+                ->body("Saved to: {$result['video_path']}")
+                ->success()
+                ->send();
+        } else {
+            Notification::make()
+                ->title("Failed: {$video->title}")
+                ->body($result['error'])
+                ->danger()
+                ->send();
+        }
     }
 
     /**
