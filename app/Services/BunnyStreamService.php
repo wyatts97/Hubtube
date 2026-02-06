@@ -151,7 +151,10 @@ class BunnyStreamService
     public function downloadFile(string $url, string $storagePath, string $disk = 'public'): ?string
     {
         try {
-            $response = Http::withOptions([
+            $response = Http::withHeaders([
+                'AccessKey' => $this->apiKey,
+                'Referer' => config('app.url', 'https://hubtube.com'),
+            ])->withOptions([
                 'stream' => true,
                 'timeout' => 600,
                 'connect_timeout' => 30,
@@ -161,6 +164,19 @@ class BunnyStreamService
                 Log::warning('Bunny download failed', [
                     'url' => $url,
                     'status' => $response->status(),
+                    'body' => substr($response->body(), 0, 500),
+                ]);
+                return null;
+            }
+
+            $body = $response->body();
+            $bodySize = strlen($body);
+
+            if ($bodySize < 1000) {
+                Log::warning('Bunny download: response too small, likely an error page', [
+                    'url' => $url,
+                    'size' => $bodySize,
+                    'body' => substr($body, 0, 500),
                 ]);
                 return null;
             }
@@ -172,11 +188,16 @@ class BunnyStreamService
                 $diskInstance->makeDirectory($directory);
             }
 
-            // Stream the response body to disk
-            $diskInstance->put($storagePath, $response->body());
+            // Write to disk
+            $diskInstance->put($storagePath, $body);
 
             // Verify file was written
             if ($diskInstance->exists($storagePath) && $diskInstance->size($storagePath) > 0) {
+                Log::info('Bunny download success', [
+                    'url' => $url,
+                    'path' => $storagePath,
+                    'size' => $diskInstance->size($storagePath),
+                ]);
                 return $storagePath;
             }
 
@@ -232,34 +253,49 @@ class BunnyStreamService
         Log::info('BunnyStreamService: downloading', [
             'video_id' => $video->id,
             'bunny_id' => $bunnyVideoId,
+            'title' => $video->title,
         ]);
 
-        // 1. Get video info from Bunny API to determine best resolution
+        // 1. Get video info from Bunny API
         $videoInfo = $this->getVideo($bunnyVideoId);
-        $hasOriginal = $videoInfo['hasOriginal'] ?? false;
-        $hasMp4Fallback = $videoInfo['hasMP4Fallback'] ?? false;
 
-        // 2. Download the video file
+        Log::info('BunnyStreamService: API response', [
+            'bunny_id' => $bunnyVideoId,
+            'api_returned' => $videoInfo !== null,
+            'hasOriginal' => $videoInfo['hasOriginal'] ?? 'N/A',
+            'hasMP4Fallback' => $videoInfo['hasMP4Fallback'] ?? 'N/A',
+            'availableResolutions' => $videoInfo['availableResolutions'] ?? 'N/A',
+            'status' => $videoInfo['status'] ?? 'N/A',
+        ]);
+
+        // 2. Try downloading the video file — attempt all methods regardless of API flags
         $videoPath = null;
 
-        if ($hasOriginal) {
-            $originalUrl = $this->getOriginalUrl($bunnyVideoId);
-            $videoPath = $this->downloadFile($originalUrl, "{$storageBase}/original.mp4", $targetDisk);
-        }
+        // Try original file first
+        $originalUrl = $this->getOriginalUrl($bunnyVideoId);
+        Log::info('BunnyStreamService: trying original', ['url' => $originalUrl]);
+        $videoPath = $this->downloadFile($originalUrl, "{$storageBase}/original.mp4", $targetDisk);
 
-        if (!$videoPath && $hasMp4Fallback && $videoInfo) {
-            $bestRes = $this->getBestMp4Resolution($videoInfo);
-            $mp4Url = $this->getMp4Url($bunnyVideoId, $bestRes);
-            $videoPath = $this->downloadFile($mp4Url, "{$storageBase}/play_{$bestRes}.mp4", $targetDisk);
+        // If original failed, try MP4 fallbacks at each resolution (highest first)
+        if (!$videoPath) {
+            $resolutions = ['1080p', '720p', '480p', '360p', '240p'];
+            foreach ($resolutions as $res) {
+                $mp4Url = $this->getMp4Url($bunnyVideoId, $res);
+                Log::info('BunnyStreamService: trying MP4 fallback', ['url' => $mp4Url, 'resolution' => $res]);
+                $videoPath = $this->downloadFile($mp4Url, "{$storageBase}/play_{$res}.mp4", $targetDisk);
+                if ($videoPath) {
+                    break;
+                }
+            }
         }
 
         if (!$videoPath) {
-            Log::error('BunnyStreamService: failed to download video file', [
+            Log::error('BunnyStreamService: all download attempts failed', [
                 'video_id' => $video->id,
                 'bunny_id' => $bunnyVideoId,
             ]);
             $video->update(['status' => 'failed']);
-            return ['success' => false, 'error' => 'Could not download video file (no original or MP4 fallback available)'];
+            return ['success' => false, 'error' => "Could not download video file. Tried original + 5 MP4 resolutions. Check Bunny Stream security settings (Direct URL Access, Token Auth, Allowed Domains)."];
         }
 
         // 3. Download thumbnail
