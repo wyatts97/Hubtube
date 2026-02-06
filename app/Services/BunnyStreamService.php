@@ -12,6 +12,7 @@ class BunnyStreamService
     private string $apiKey;
     private string $libraryId;
     private string $cdnHost;
+    private string $cdnTokenKey;
     private string $baseUrl = 'https://video.bunnycdn.com';
 
     public function __construct()
@@ -19,6 +20,32 @@ class BunnyStreamService
         $this->apiKey = config('services.bunny_stream.api_key', '');
         $this->libraryId = config('services.bunny_stream.library_id', '');
         $this->cdnHost = config('services.bunny_stream.cdn_host', '');
+        $this->cdnTokenKey = config('services.bunny_stream.cdn_token_key', '');
+    }
+
+    /**
+     * Sign a CDN URL with Bunny's Basic Token Authentication.
+     * Format: Base64(MD5(security_key + path + expiration)) with URL-safe base64.
+     * Returns the original URL if no CDN token key is configured.
+     */
+    public function signUrl(string $url, int $expiresInSeconds = 3600): string
+    {
+        if (empty($this->cdnTokenKey)) {
+            return $url;
+        }
+
+        $parsedUrl = parse_url($url);
+        $path = $parsedUrl['path'] ?? '/';
+        $expires = time() + $expiresInSeconds;
+
+        $hashableBase = $this->cdnTokenKey . $path . $expires;
+        $token = md5($hashableBase, true);
+        $token = base64_encode($token);
+        $token = strtr($token, '+/', '-_');
+        $token = str_replace('=', '', $token);
+
+        $separator = str_contains($url, '?') ? '&' : '?';
+        return $url . $separator . 'token=' . $token . '&expires=' . $expires;
     }
 
     /**
@@ -115,7 +142,8 @@ class BunnyStreamService
      */
     public function getOriginalUrl(string $videoId): string
     {
-        return "https://{$this->cdnHost}/{$videoId}/original";
+        $url = "https://{$this->cdnHost}/{$videoId}/original";
+        return $this->signUrl($url);
     }
 
     /**
@@ -123,7 +151,8 @@ class BunnyStreamService
      */
     public function getMp4Url(string $videoId, string $resolution = '720p'): string
     {
-        return "https://{$this->cdnHost}/{$videoId}/play_{$resolution}.mp4";
+        $url = "https://{$this->cdnHost}/{$videoId}/play_{$resolution}.mp4";
+        return $this->signUrl($url);
     }
 
     /**
@@ -132,7 +161,8 @@ class BunnyStreamService
     public function getThumbnailUrl(string $videoId, ?string $thumbnailFileName = null): string
     {
         $file = $thumbnailFileName ?: 'thumbnail.jpg';
-        return "https://{$this->cdnHost}/{$videoId}/{$file}";
+        $url = "https://{$this->cdnHost}/{$videoId}/{$file}";
+        return $this->signUrl($url);
     }
 
     /**
@@ -140,7 +170,8 @@ class BunnyStreamService
      */
     public function getPreviewUrl(string $videoId): string
     {
-        return "https://{$this->cdnHost}/{$videoId}/preview.webp";
+        $url = "https://{$this->cdnHost}/{$videoId}/preview.webp";
+        return $this->signUrl($url);
     }
 
     /**
