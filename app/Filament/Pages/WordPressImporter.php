@@ -183,6 +183,23 @@ class WordPressImporter extends Page
     }
 
     /**
+     * Purge all previously imported WP videos so user can re-import cleanly.
+     */
+    public function purgeImported(): void
+    {
+        $service = new WordPressImportService();
+        $deleted = $service->purgeImported();
+
+        Notification::make()
+            ->title('Purge Complete')
+            ->body("Deleted {$deleted} previously imported videos. You can now re-import.")
+            ->success()
+            ->send();
+
+        $this->resetState();
+    }
+
+    /**
      * Reset everything for a fresh import.
      */
     public function resetImport(): void

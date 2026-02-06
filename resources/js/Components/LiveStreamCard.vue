@@ -23,7 +23,7 @@ const formattedViewers = computed(() => {
     <Link :href="`/live/${stream.id}`" class="video-card">
         <div class="thumbnail">
             <img
-                :src="stream.thumbnail || '/images/live-placeholder.jpg'"
+                :src="stream.thumbnail || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Crect fill='%23181818' width='640' height='360'/%3E%3Ctext x='320' y='185' text-anchor='middle' fill='%23444' font-size='18'%3ELIVE%3C/text%3E%3C/svg%3E`"
                 :alt="stream.title"
                 loading="lazy"
             />

@@ -215,6 +215,24 @@
                         </span>
                     </x-filament::button>
 
+                    <x-filament::button
+                        wire:click="purgeImported"
+                        wire:loading.attr="disabled"
+                        wire:target="purgeImported"
+                        wire:confirm="This will DELETE all previously imported WP videos from the database. Are you sure?"
+                        color="danger"
+                        size="lg"
+                    >
+                        <span wire:loading.remove wire:target="purgeImported">
+                            <x-heroicon-m-trash class="w-4 h-4 mr-1" />
+                            Purge Previous Import
+                        </span>
+                        <span wire:loading wire:target="purgeImported" class="flex items-center gap-2">
+                            <x-filament::loading-indicator class="w-4 h-4" />
+                            Purging...
+                        </span>
+                    </x-filament::button>
+
                     <x-filament::button wire:click="resetImport" color="gray" size="lg">
                         <x-heroicon-m-arrow-path class="w-4 h-4 mr-1" />
                         Start Over

@@ -117,7 +117,7 @@ class EmbeddedVideo extends Model
             'duration_formatted' => $this->duration_formatted,
             'views_count' => $this->views_count,
             'formatted_views' => $this->formatted_views,
-            'likes_count' => 0,
+            'likes_count' => $this->rating ?? 0,
             'dislikes_count' => 0,
             'published_at' => $this->imported_at,
             'created_at' => $this->created_at,
@@ -126,6 +126,9 @@ class EmbeddedVideo extends Model
             'embed_code' => $this->embed_code,
             'source_site' => $this->source_site,
             'source_url' => $this->source_url,
+            'tags' => $this->tags,
+            'actors' => $this->actors,
+            'category_id' => $this->category_id,
             'user' => [
                 'id' => 0,
                 'name' => ucfirst($this->source_site),

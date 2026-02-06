@@ -16,6 +16,8 @@ const props = defineProps({
 const isHovering = ref(false);
 const previewLoaded = ref(false);
 
+const placeholderImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Crect fill='%23181818' width='640' height='360'/%3E%3Cpolygon fill='%23333' points='280,130 280,230 360,180'/%3E%3C/svg%3E";
+
 // Check if this is an embedded video
 const isEmbedded = computed(() => props.video.is_embedded === true);
 
@@ -69,10 +71,10 @@ const onPreviewLoad = () => {
         <div class="thumbnail relative overflow-hidden rounded-xl">
             <!-- Static Thumbnail -->
             <img
-                v-bind="thumbnailProps(video.thumbnail_url || video.thumbnail || '/images/placeholder.jpg', video.title)"
+                v-bind="thumbnailProps(video.thumbnail_url || video.thumbnail || placeholderImg, video.title)"
                 class="w-full h-full object-cover transition-opacity duration-200"
                 :class="{ 'opacity-0': isHovering && video.preview_url && previewLoaded }"
-                @error="(e) => e.target.src = '/images/placeholder.jpg'"
+                @error="(e) => e.target.src = placeholderImg"
             />
             
             <!-- Animated Preview (WebP) -->

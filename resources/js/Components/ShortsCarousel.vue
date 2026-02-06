@@ -7,6 +7,8 @@ const props = defineProps({
     shorts: { type: Array, required: true },
 });
 
+const placeholderImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='640' viewBox='0 0 360 640'%3E%3Crect fill='%23181818' width='360' height='640'/%3E%3Cpolygon fill='%23333' points='155,270 155,370 215,320'/%3E%3C/svg%3E";
+
 const scrollContainer = ref(null);
 const canScrollLeft = ref(false);
 const canScrollRight = ref(true);
@@ -97,12 +99,12 @@ const formattedDuration = (duration) => {
                     >
                         <!-- Static Thumbnail -->
                         <img
-                            :src="short.thumbnail_url || short.thumbnail || '/images/placeholder.jpg'"
+                            :src="short.thumbnail_url || short.thumbnail || placeholderImg"
                             :alt="short.title"
                             loading="lazy"
                             class="w-full h-full object-cover transition-opacity duration-200"
                             :class="{ 'opacity-0': hoveredId === short.id && short.preview_url && previewLoaded[short.id] }"
-                            @error="(e) => e.target.src = '/images/placeholder.jpg'"
+                            @error="(e) => e.target.src = placeholderImg"
                         />
 
                         <!-- Animated Preview on Hover -->

@@ -18,9 +18,15 @@ const props = defineProps({
 
 const iframeLoaded = ref(false);
 
+const isDirectVideo = computed(() => {
+    const url = props.video.embed_url || '';
+    return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
+});
+
 const embedUrl = computed(() => {
     let url = props.video.embed_url;
-    if (props.autoplay && url) {
+    if (!url) return null;
+    if (props.autoplay && !isDirectVideo.value) {
         const separator = url.includes('?') ? '&' : '?';
         url += `${separator}autoplay=1`;
     }
@@ -33,7 +39,7 @@ const embedUrl = computed(() => {
         <div class="relative aspect-video bg-black rounded-lg overflow-hidden">
             <!-- Loading placeholder -->
             <div 
-                v-if="!iframeLoaded" 
+                v-if="!iframeLoaded && !isDirectVideo" 
                 class="absolute inset-0 flex items-center justify-center bg-gray-900"
             >
                 <div class="animate-pulse flex flex-col items-center gap-2">
@@ -45,8 +51,20 @@ const embedUrl = computed(() => {
                 </div>
             </div>
             
+            <!-- Direct video (mp4 etc.) -->
+            <video
+                v-if="isDirectVideo"
+                :src="embedUrl"
+                :poster="video.thumbnail_url || video.original_thumbnail_url"
+                class="absolute inset-0 w-full h-full"
+                controls
+                :autoplay="autoplay"
+                preload="metadata"
+            ></video>
+
             <!-- Embedded iframe -->
             <iframe
+                v-else-if="embedUrl"
                 :src="embedUrl"
                 class="absolute inset-0 w-full h-full"
                 frameborder="0"

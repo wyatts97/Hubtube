@@ -21,6 +21,7 @@ class WordPressImportService
     private const META_VIDEO_URL = 'beeteam368_video_url';
     private const META_DURATION = 'beeteam368_video_duration';
     private const META_WEBP_PREVIEW = 'beeteam368_video_webp_url_preview';
+    private const META_WEBP_PREVIEW_ALT = 'beeteam368_video_webp_preview_url';
     private const META_VIEWS_TOTAL = 'beeteam368_views_counter_totals';
     private const META_LIKES = 'beeteam368_reactions_like';
     private const META_THUMBNAIL_ID = '_thumbnail_id';
@@ -30,6 +31,10 @@ class WordPressImportService
     private array $terms = [];
     private array $termTaxonomy = [];
     private array $termRelationships = [];
+
+    // In-memory caches to avoid repeated DB queries during import
+    private array $categoryCache = [];
+    private array $hashtagCache = [];
 
     /**
      * Parse the SQL file and extract all relevant data.
@@ -149,7 +154,8 @@ class WordPressImportService
                 // Filter by relevant meta keys to save memory.
                 $relevantKeys = [
                     self::META_VIDEO_URL, self::META_DURATION, self::META_WEBP_PREVIEW,
-                    self::META_VIEWS_TOTAL, self::META_LIKES, self::META_THUMBNAIL_ID,
+                    self::META_WEBP_PREVIEW_ALT, self::META_VIEWS_TOTAL, self::META_LIKES,
+                    self::META_THUMBNAIL_ID,
                 ];
                 if ($postId && $metaKey && in_array($metaKey, $relevantKeys)) {
                     $this->postmeta[$postId][$metaKey] = $row['meta_value'] ?? null;
@@ -283,19 +289,31 @@ class WordPressImportService
         $results = [];
         foreach ($videoPosts as $postId => $post) {
             $meta = $this->postmeta[$postId] ?? [];
-            $embedCode = $meta[self::META_VIDEO_URL] ?? null;
-            $bunnyVideoId = $this->extractBunnyVideoId($embedCode);
+            $rawEmbedCode = $meta[self::META_VIDEO_URL] ?? null;
+            $bunnyVideoId = $this->extractBunnyVideoId($rawEmbedCode);
+
+            // Use post_excerpt for description (post_content is usually empty for vidmov_video)
+            $description = trim($post['post_excerpt'] ?? '');
+            if (empty($description)) {
+                $content = $post['post_content'] ?? '';
+                if (!empty($content)) {
+                    $description = trim(strip_tags($content));
+                }
+            }
+
+            // Get webp preview from either meta key
+            $webpPreview = $meta[self::META_WEBP_PREVIEW] ?? $meta[self::META_WEBP_PREVIEW_ALT] ?? null;
 
             $results[] = [
                 'wp_id' => $postId,
                 'title' => $post['post_title'] ?? 'Untitled',
-                'description' => strip_tags($post['post_content'] ?? ''),
+                'description' => $description,
                 'slug' => $post['post_name'] ?? '',
                 'post_date' => $post['post_date'] ?? null,
-                'embed_code' => $embedCode,
+                'raw_embed_code' => $rawEmbedCode,
                 'bunny_video_id' => $bunnyVideoId,
                 'duration_formatted' => $meta[self::META_DURATION] ?? null,
-                'webp_preview' => $meta[self::META_WEBP_PREVIEW] ?? null,
+                'webp_preview' => $webpPreview,
                 'views_total' => (int) ($meta[self::META_VIEWS_TOTAL] ?? 0),
                 'likes' => (int) ($meta[self::META_LIKES] ?? 0),
                 'tags' => $this->getPostTags($postId),
@@ -407,6 +425,74 @@ class WordPressImportService
     }
 
     /**
+     * Extract the iframe src URL from raw embed HTML.
+     * Works with bare <iframe>, <div>-wrapped iframes, and raw .mp4 URLs.
+     */
+    private function extractEmbedUrl(?string $rawEmbed): ?string
+    {
+        if (!$rawEmbed) return null;
+
+        // If it contains an iframe, extract the src attribute
+        if (preg_match('/src=["\']([^"\']+)["\']/i', $rawEmbed, $m)) {
+            return html_entity_decode($m[1]);
+        }
+
+        // If it's a plain URL (e.g. .mp4), return as-is
+        if (filter_var($rawEmbed, FILTER_VALIDATE_URL)) {
+            return $rawEmbed;
+        }
+
+        return null;
+    }
+
+    /**
+     * Purge all previously imported WP videos so user can re-import cleanly.
+     */
+    public function purgeImported(): int
+    {
+        return EmbeddedVideo::whereIn('source_site', ['bunnystream', 'wordpress'])->delete();
+    }
+
+    /**
+     * Get or create a category, using in-memory cache.
+     */
+    private function resolveCategory(string $name): string
+    {
+        $slug = Str::slug($name);
+        if (isset($this->categoryCache[$slug])) {
+            return $this->categoryCache[$slug];
+        }
+
+        $category = Category::firstOrCreate(
+            ['slug' => $slug],
+            ['name' => $name, 'description' => '', 'is_active' => true]
+        );
+        $this->categoryCache[$slug] = (string) $category->id;
+        return $this->categoryCache[$slug];
+    }
+
+    /**
+     * Get or create a hashtag, using in-memory cache.
+     */
+    private function resolveHashtag(string $name): void
+    {
+        $slug = Str::slug($name);
+        if (empty($slug)) return;
+
+        if (isset($this->hashtagCache[$slug])) {
+            // Already created in this import run, just increment
+            Hashtag::where('slug', $slug)->increment('usage_count');
+            return;
+        }
+
+        Hashtag::firstOrCreate(
+            ['slug' => $slug],
+            ['name' => $name, 'usage_count' => 0]
+        )->increment('usage_count');
+        $this->hashtagCache[$slug] = true;
+    }
+
+    /**
      * Import a batch of video posts into the embedded_videos table.
      * Returns import results.
      */
@@ -416,60 +502,66 @@ class WordPressImportService
         $skipped = 0;
         $errors = [];
 
+        // Pre-load existing imported IDs for this batch to avoid N+1 queries
+        $batchIds = [];
+        foreach ($videoPosts as $video) {
+            $id = $video['bunny_video_id'] ?? $video['wp_id'];
+            $site = $video['bunny_video_id'] ? 'bunnystream' : 'wordpress';
+            $batchIds[$site][] = (string) $id;
+        }
+        $existingIds = [];
+        foreach ($batchIds as $site => $ids) {
+            foreach (EmbeddedVideo::getImportedIds($site, $ids) as $existingId) {
+                $existingIds[$site . ':' . $existingId] = true;
+            }
+        }
+
         foreach ($videoPosts as $video) {
             try {
                 $sourceVideoId = $video['bunny_video_id'] ?? $video['wp_id'];
                 $sourceSite = $video['bunny_video_id'] ? 'bunnystream' : 'wordpress';
 
-                // Skip if already imported
-                if (EmbeddedVideo::isAlreadyImported($sourceSite, (string) $sourceVideoId)) {
+                // Skip if already imported (using pre-loaded set)
+                if (isset($existingIds[$sourceSite . ':' . $sourceVideoId])) {
                     $skipped++;
                     continue;
                 }
 
-                // Build embed URL and code
-                $embedUrl = '';
-                $embedCode = $video['embed_code'] ?? '';
+                // Use the raw embed code exactly as it was in WordPress
+                $rawEmbedCode = $video['raw_embed_code'] ?? '';
 
-                if ($video['bunny_video_id']) {
-                    $embedUrl = "https://iframe.mediadelivery.net/embed/{$this->bunnyLibraryId}/{$video['bunny_video_id']}";
-                    if (!$embedCode || !str_contains($embedCode, 'iframe')) {
-                        $embedCode = '<iframe src="' . $embedUrl . '?autoplay=false" loading="lazy" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;" allowfullscreen="true"></iframe>';
-                    }
-                }
+                // Extract the iframe src for the embed_url field (used by EmbeddedVideoPlayer)
+                $embedUrl = $this->extractEmbedUrl($rawEmbedCode);
 
-                // Build thumbnail URL
+                // For the embed_code field, store the raw HTML as-is
+                $embedCode = $rawEmbedCode;
+
+                // Thumbnail: use webp preview from WP, fallback to Bunny CDN thumbnail
                 $thumbnailUrl = $video['webp_preview'] ?? null;
                 if (!$thumbnailUrl && $video['bunny_video_id']) {
                     $thumbnailUrl = "https://{$this->bunnyCdnHost}/{$video['bunny_video_id']}/thumbnail.jpg";
                 }
 
-                // Build source URL
+                // Preview URL (animated webp) — same as thumbnail source
+                $previewUrl = $video['webp_preview'] ?? null;
+
+                // Source URL on original site
                 $sourceUrl = $video['slug'] ? "https://wedgietube.com/video/{$video['slug']}/" : '';
 
-                // Create or find the HubTube Category record
+                // Duration
+                $durationFormatted = $video['duration_formatted'] ?? null;
+                $durationSeconds = $this->parseDuration($durationFormatted);
+
+                // Resolve category (cached)
                 $categoryId = null;
                 if (!empty($video['category'])) {
-                    $category = Category::firstOrCreate(
-                        ['slug' => Str::slug($video['category'])],
-                        [
-                            'name' => $video['category'],
-                            'description' => '',
-                            'is_active' => true,
-                        ]
-                    );
-                    $categoryId = (string) $category->id;
+                    $categoryId = $this->resolveCategory($video['category']);
                 }
 
-                // Create Hashtag records for each WP tag
+                // Resolve hashtags (cached)
                 if (!empty($video['tags'])) {
                     foreach ($video['tags'] as $tagName) {
-                        $slug = Str::slug($tagName);
-                        if (empty($slug)) continue;
-                        Hashtag::firstOrCreate(
-                            ['slug' => $slug],
-                            ['name' => $tagName, 'usage_count' => 0]
-                        )->increment('usage_count');
+                        $this->resolveHashtag($tagName);
                     }
                 }
 
@@ -477,11 +569,11 @@ class WordPressImportService
                     'source_site' => $sourceSite,
                     'source_video_id' => (string) $sourceVideoId,
                     'title' => $video['title'],
-                    'description' => $video['description'] ?: null,
-                    'duration' => $this->parseDuration($video['duration_formatted']),
-                    'duration_formatted' => $video['duration_formatted'],
+                    'description' => !empty($video['description']) ? $video['description'] : null,
+                    'duration' => $durationSeconds,
+                    'duration_formatted' => $durationFormatted,
                     'thumbnail_url' => $thumbnailUrl,
-                    'thumbnail_preview_url' => $video['webp_preview'],
+                    'thumbnail_preview_url' => $previewUrl,
                     'source_url' => $sourceUrl,
                     'embed_url' => $embedUrl,
                     'embed_code' => $embedCode,
