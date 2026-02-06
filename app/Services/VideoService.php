@@ -17,7 +17,7 @@ class VideoService
             'user_id' => $user->id,
             'uuid' => Str::uuid(),
             'title' => $data['title'],
-            'slug' => Str::slug($data['title']) . '-' . Str::random(8),
+            'slug' => $this->generateUniqueSlug($data['title']),
             'description' => $data['description'] ?? null,
             'category_id' => $data['category_id'] ?? null,
             'privacy' => $data['privacy'] ?? 'public',
@@ -91,6 +91,18 @@ class VideoService
         }
 
         $video->delete();
+    }
+
+    protected function generateUniqueSlug(string $title): string
+    {
+        $baseSlug = Str::slug($title) ?: 'video';
+        $slug = $baseSlug;
+        $suffix = 2;
+        while (Video::withTrashed()->where('slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . $suffix;
+            $suffix++;
+        }
+        return $slug;
     }
 
     protected function handleVideoUpload(Video $video, UploadedFile $file): void

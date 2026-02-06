@@ -542,13 +542,13 @@ class WordPressImportService
                 $embedUrl = $this->extractEmbedUrl($rawEmbedCode);
                 $embedCode = $rawEmbedCode;
 
-                // Thumbnail: use webp preview from WP, fallback to Bunny CDN thumbnail
-                $thumbnailUrl = $video['webp_preview'] ?? null;
-                if (!$thumbnailUrl && $video['bunny_video_id']) {
+                // Thumbnail: always use Bunny CDN still frame, webp is for hover preview only
+                $thumbnailUrl = null;
+                if ($video['bunny_video_id']) {
                     $thumbnailUrl = "https://{$this->bunnyCdnHost}/{$video['bunny_video_id']}/thumbnail.jpg";
                 }
 
-                // Preview URL (animated webp)
+                // Preview URL (animated webp for hover)
                 $previewUrl = $video['webp_preview'] ?? null;
 
                 // Source URL on original site
@@ -557,9 +557,14 @@ class WordPressImportService
                 // Duration
                 $durationSeconds = $this->parseDuration($video['duration_formatted'] ?? null);
 
-                // Generate a unique slug
+                // Generate a clean slug from title, append number only if duplicate
                 $baseSlug = Str::slug($video['title']) ?: 'imported-video';
-                $slug = $baseSlug . '-' . Str::random(8);
+                $slug = $baseSlug;
+                $suffix = 2;
+                while (Video::withTrashed()->where('slug', $slug)->exists()) {
+                    $slug = $baseSlug . '-' . $suffix;
+                    $suffix++;
+                }
 
                 // Resolve category (cached)
                 $categoryId = null;
