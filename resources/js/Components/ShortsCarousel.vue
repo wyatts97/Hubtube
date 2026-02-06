@@ -84,7 +84,7 @@ const formattedDuration = (duration) => {
                 <Link
                     v-for="short in shorts"
                     :key="short.id"
-                    href="/shorts"
+                    :href="`/shorts/${short.id}`"
                     class="flex-shrink-0 group/card cursor-pointer"
                     style="width: 180px;"
                     @mouseenter="hoveredId = short.id"

@@ -24,6 +24,9 @@ const videoUrl = computed(() => {
     if (isEmbedded.value) {
         return `/embedded/${props.video.id}`;
     }
+    if (props.video.is_short) {
+        return `/shorts/${props.video.id}`;
+    }
     return `/${props.video.slug}`;
 });
 

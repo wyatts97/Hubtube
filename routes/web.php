@@ -40,6 +40,7 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/api/videos/load-more', [HomeController::class, 'loadMoreVideos'])->name('videos.loadMore');
     Route::get('/trending', [HomeController::class, 'trending'])->name('trending');
     Route::get('/shorts', [HomeController::class, 'shorts'])->name('shorts');
+    Route::get('/shorts/{video}', [HomeController::class, 'shorts'])->name('shorts.show');
     Route::get('/api/shorts/load-more', [HomeController::class, 'loadMoreShorts'])->name('shorts.loadMore');
     Route::get('/search', [SearchController::class, 'index'])->name('search');
 

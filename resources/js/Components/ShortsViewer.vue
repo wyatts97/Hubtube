@@ -131,6 +131,16 @@ const toggleMute = () => {
     });
 };
 
+// Update browser URL to reflect the current short
+const updateUrl = (item) => {
+    if (item?.type === 'short' && item.data?.id) {
+        const newUrl = `/shorts/${item.data.id}`;
+        if (window.location.pathname !== newUrl) {
+            window.history.replaceState({}, '', newUrl);
+        }
+    }
+};
+
 // Navigate to specific index
 const goToIndex = (index) => {
     if (index < 0 || index >= feed.value.length) return;
@@ -151,6 +161,7 @@ const goToIndex = (index) => {
         if (item?.type === 'short') {
             playVideo(index);
             initLikeState(item.data);
+            updateUrl(item);
         } else if (item?.type === 'ad') {
             startAdTimer();
         }
@@ -221,6 +232,7 @@ const handleScroll = () => {
             if (item?.type === 'short') {
                 playVideo(newIndex);
                 initLikeState(item.data);
+                updateUrl(item);
             } else if (item?.type === 'ad') {
                 startAdTimer();
             }
@@ -265,7 +277,7 @@ const handleLike = async (short) => {
 
 // Share handler
 const handleShare = async (short) => {
-    const url = `${window.location.origin}/${short.slug}`;
+    const url = `${window.location.origin}/shorts/${short.id}`;
     if (navigator.share) {
         try {
             await navigator.share({ title: short.title, url });
@@ -320,11 +332,12 @@ const handleWheel = (e) => {
 onMounted(() => {
     document.addEventListener('keydown', handleKeydown);
 
-    // Play first short
+    // Play first short and set URL
     if (feed.value.length > 0 && feed.value[0].type === 'short') {
         nextTick(() => {
             initLikeState(feed.value[0].data);
             playVideo(0);
+            updateUrl(feed.value[0]);
         });
     }
 });

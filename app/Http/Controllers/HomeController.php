@@ -188,19 +188,40 @@ class HomeController extends Controller
         ]);
     }
 
-    public function shorts(): Response
+    public function shorts(?Video $video = null): Response
     {
-        $shorts = Video::query()
+        $query = Video::query()
             ->with('user')
             ->shorts()
             ->public()
             ->approved()
             ->processed()
-            ->latest('published_at')
-            ->paginate(12);
+            ->latest('published_at');
+
+        // If a specific short was requested, put it first
+        $startingShort = null;
+        if ($video && $video->is_short) {
+            $startingShort = $video->load('user');
+            $query->where('id', '!=', $video->id);
+        }
+
+        $shorts = $query->paginate(12);
+
+        // Prepend the starting short to the first page
+        if ($startingShort && $shorts->currentPage() === 1) {
+            $items = collect([$startingShort])->merge($shorts->items());
+            $shorts = new \Illuminate\Pagination\LengthAwarePaginator(
+                $items,
+                $shorts->total() + 1,
+                $shorts->perPage(),
+                $shorts->currentPage(),
+                ['path' => route('shorts')]
+            );
+        }
 
         return Inertia::render('Shorts', [
             'shorts' => $shorts,
+            'startingShortId' => $startingShort?->id,
             'adSettings' => [
                 'enabled' => (bool) Setting::get('shorts_ads_enabled', false),
                 'frequency' => (int) Setting::get('shorts_ad_frequency', 3),
