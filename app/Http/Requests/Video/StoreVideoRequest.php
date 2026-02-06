@@ -23,6 +23,7 @@ class StoreVideoRequest extends FormRequest
             'category_id' => 'nullable|exists:categories,id',
             'privacy' => 'required|in:public,private,unlisted',
             'age_restricted' => 'boolean',
+            'is_short' => 'boolean',
             'tags' => 'nullable|array|max:20',
             'tags.*' => 'string|max:50',
             'video_file' => [

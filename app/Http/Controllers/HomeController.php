@@ -180,11 +180,31 @@ class HomeController extends Controller
             ->approved()
             ->processed()
             ->latest('published_at')
-            ->paginate(24);
+            ->paginate(12);
 
         return Inertia::render('Shorts', [
             'shorts' => $shorts,
+            'adSettings' => [
+                'enabled' => (bool) Setting::get('shorts_ads_enabled', false),
+                'frequency' => (int) Setting::get('shorts_ad_frequency', 3),
+                'skipDelay' => (int) Setting::get('shorts_ad_skip_delay', 5),
+                'code' => Setting::get('shorts_ad_code', ''),
+            ],
         ]);
+    }
+
+    public function loadMoreShorts(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $shorts = Video::query()
+            ->with('user')
+            ->shorts()
+            ->public()
+            ->approved()
+            ->processed()
+            ->latest('published_at')
+            ->paginate(12);
+
+        return response()->json($shorts);
     }
 
 }

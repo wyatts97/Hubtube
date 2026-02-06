@@ -29,6 +29,9 @@ use Illuminate\Support\Facades\Route;
 // Sitemap (outside age verification)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
+// Offline page for PWA
+Route::get('/offline', fn () => view('offline'))->name('offline');
+
 // Thumbnail proxy for embedded video thumbnails
 Route::get('/api/thumb-proxy', [ThumbnailProxyController::class, 'proxy'])->name('thumb.proxy');
 
@@ -37,6 +40,7 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/api/videos/load-more', [HomeController::class, 'loadMoreVideos'])->name('videos.loadMore');
     Route::get('/trending', [HomeController::class, 'trending'])->name('trending');
     Route::get('/shorts', [HomeController::class, 'shorts'])->name('shorts');
+    Route::get('/api/shorts/load-more', [HomeController::class, 'loadMoreShorts'])->name('shorts.loadMore');
     Route::get('/search', [SearchController::class, 'index'])->name('search');
 
     Route::get('/videos', [VideoController::class, 'index'])->name('videos.index');
@@ -142,6 +146,11 @@ Route::middleware('age.verified')->group(function () {
 
         // Reports
         Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
+
+        // Push Notifications
+        Route::post('/api/push/vapid-key', [\App\Http\Controllers\PushNotificationController::class, 'vapidKey'])->name('push.vapid-key');
+        Route::post('/api/push/subscribe', [\App\Http\Controllers\PushNotificationController::class, 'subscribe'])->name('push.subscribe');
+        Route::delete('/api/push/unsubscribe', [\App\Http\Controllers\PushNotificationController::class, 'unsubscribe'])->name('push.unsubscribe');
 
         // Subscriptions Feed
         Route::get('/feed', FeedController::class)->name('feed');

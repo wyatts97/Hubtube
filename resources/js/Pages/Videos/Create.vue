@@ -2,11 +2,15 @@
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { ref, computed, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Upload, X, Video, FileVideo, CheckCircle, AlertCircle } from 'lucide-vue-next';
+import { Upload, X, Video, FileVideo, CheckCircle, AlertCircle, Smartphone } from 'lucide-vue-next';
 
 const props = defineProps({
     categories: Array,
 });
+
+// Detect short upload mode from URL query param
+const urlParams = new URLSearchParams(window.location.search);
+const isShortMode = ref(urlParams.get('type') === 'short');
 
 const dragActive = ref(false);
 const videoPreview = ref(null);
@@ -14,6 +18,8 @@ const uploadProgress = ref(0);
 const uploadStatus = ref('idle'); // idle, uploading, processing, success, error
 const uploadError = ref('');
 const videoDuration = ref(null);
+const videoWidth = ref(null);
+const videoHeight = ref(null);
 
 const form = useForm({
     title: '',
@@ -23,6 +29,7 @@ const form = useForm({
     age_restricted: true,
     tags: [],
     video_file: null,
+    is_short: isShortMode.value,
 });
 
 const tagInput = ref('');
@@ -65,27 +72,63 @@ const handleFileSelect = (e) => {
 
 const handleFile = (file) => {
     uploadError.value = '';
-    form.video_file = file;
-    videoPreview.value = URL.createObjectURL(file);
     
-    // Get video duration
+    // Create a temporary video element to read metadata
     const video = document.createElement('video');
     video.preload = 'metadata';
+    const objectUrl = URL.createObjectURL(file);
+    
     video.onloadedmetadata = () => {
         videoDuration.value = video.duration;
-        URL.revokeObjectURL(video.src);
+        videoWidth.value = video.videoWidth;
+        videoHeight.value = video.videoHeight;
+        URL.revokeObjectURL(objectUrl);
+        
+        // Validate shorts constraints
+        if (isShortMode.value) {
+            // Must be vertical (height > width)
+            if (video.videoWidth >= video.videoHeight) {
+                uploadError.value = `Shorts must be vertical (portrait) video. Your video is ${video.videoWidth}×${video.videoHeight} which is landscape/square. Please use a 9:16 vertical video.`;
+                resetFileState();
+                return;
+            }
+            
+            // Max 60 seconds
+            if (video.duration > 60) {
+                const dur = Math.ceil(video.duration);
+                uploadError.value = `Shorts must be 60 seconds or less. Your video is ${dur} seconds long.`;
+                resetFileState();
+                return;
+            }
+        }
+        
+        // All good — set the file
+        form.video_file = file;
+        videoPreview.value = URL.createObjectURL(file);
+        
+        if (!form.title) {
+            form.title = file.name.replace(/\.[^/.]+$/, '');
+        }
     };
-    video.src = URL.createObjectURL(file);
     
-    if (!form.title) {
-        form.title = file.name.replace(/\.[^/.]+$/, '');
-    }
+    video.onerror = () => {
+        uploadError.value = 'Could not read video metadata. Please try a different file.';
+        URL.revokeObjectURL(objectUrl);
+    };
+    
+    video.src = objectUrl;
 };
 
-const removeVideo = () => {
+const resetFileState = () => {
     form.video_file = null;
     videoPreview.value = null;
     videoDuration.value = null;
+    videoWidth.value = null;
+    videoHeight.value = null;
+};
+
+const removeVideo = () => {
+    resetFileState();
     uploadProgress.value = 0;
     uploadStatus.value = 'idle';
     uploadError.value = '';
@@ -150,11 +193,19 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <Head title="Upload Video" />
+    <Head :title="isShortMode ? 'Upload Short' : 'Upload Video'" />
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">
-            <h1 class="text-2xl font-bold mb-6" style="color: var(--color-text-primary);">Upload Video</h1>
+            <div class="flex items-center gap-3 mb-6">
+                <div v-if="isShortMode" class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: var(--color-accent);">
+                    <Smartphone class="w-5 h-5 text-white" />
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ isShortMode ? 'Upload Short' : 'Upload Video' }}</h1>
+                    <p v-if="isShortMode" class="text-sm mt-0.5" style="color: var(--color-text-muted);">Vertical video, 60 seconds max</p>
+                </div>
+            </div>
 
             <form @submit.prevent="submit" class="space-y-6">
                 <!-- Video Upload Area -->
@@ -169,7 +220,7 @@ onUnmounted(() => {
                     <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: var(--color-bg-secondary);">
                         <Upload class="w-8 h-8" style="color: var(--color-text-muted);" />
                     </div>
-                    <p class="text-lg font-medium mb-2" style="color: var(--color-text-primary);">Drag and drop video file</p>
+                    <p class="text-lg font-medium mb-2" style="color: var(--color-text-primary);">{{ isShortMode ? 'Drag and drop your short' : 'Drag and drop video file' }}</p>
                     <p class="mb-4" style="color: var(--color-text-muted);">or click to browse</p>
                     <label class="btn btn-primary cursor-pointer">
                         Select File
@@ -182,6 +233,9 @@ onUnmounted(() => {
                     </label>
                     <p class="text-sm mt-4" style="color: var(--color-text-muted);">
                         Supported formats: MP4, MOV, AVI, MKV, WebM
+                    </p>
+                    <p v-if="isShortMode" class="text-sm mt-1" style="color: var(--color-accent);">
+                        Must be vertical (9:16) and 60 seconds or less
                     </p>
                 </div>
 
@@ -337,7 +391,7 @@ onUnmounted(() => {
                         class="btn btn-primary"
                     >
                         <span v-if="form.processing">Uploading...</span>
-                        <span v-else>Upload Video</span>
+                        <span v-else>{{ isShortMode ? 'Upload Short' : 'Upload Video' }}</span>
                     </button>
                 </div>
             </form>

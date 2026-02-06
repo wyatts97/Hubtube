@@ -162,8 +162,8 @@ const statusColors = {
 
                 <!-- Video Preview -->
                 <div class="card p-4">
-                    <div class="flex items-start gap-4">
-                        <div class="w-64 aspect-video rounded-lg overflow-hidden flex-shrink-0" style="background-color: var(--color-bg-secondary);">
+                    <div class="flex flex-col sm:flex-row items-start gap-4">
+                        <div class="w-full sm:w-64 aspect-video rounded-lg overflow-hidden flex-shrink-0" style="background-color: var(--color-bg-secondary);">
                             <img 
                                 v-if="thumbnailPreview" 
                                 :src="thumbnailPreview" 
@@ -181,7 +181,7 @@ const statusColors = {
                                 No thumbnail
                             </div>
                         </div>
-                        <div class="flex-1">
+                        <div class="flex-1 w-full">
                             <p class="font-medium text-lg" style="color: var(--color-text-primary);">{{ video.title }}</p>
                             <p class="text-sm mt-1" style="color: var(--color-text-muted);">
                                 {{ video.views_count.toLocaleString() }} views
@@ -210,9 +210,9 @@ const statusColors = {
                     <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">Thumbnail</h2>
                     
                     <!-- Generated Thumbnails -->
-                    <div v-if="generatedThumbnails.length" class="mb-4">
+                    <div v-if="generatedThumbnails.length" class="mb-6">
                         <p class="text-sm mb-2" style="color: var(--color-text-secondary);">Choose from generated thumbnails:</p>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="grid grid-cols-2 gap-3 max-w-xl">
                             <button
                                 v-for="(thumb, index) in generatedThumbnails"
                                 :key="index"
@@ -235,36 +235,37 @@ const statusColors = {
                             </button>
                         </div>
                     </div>
-                    <div v-else-if="videoStatus === 'pending' || videoStatus === 'processing'" class="mb-4">
+                    <div v-else-if="videoStatus === 'pending' || videoStatus === 'processing'" class="mb-6">
                         <p class="text-sm" style="color: var(--color-text-muted);">
                             Thumbnails will be generated once processing completes...
                         </p>
                     </div>
 
                     <!-- Custom Upload -->
-                    <div class="flex items-center gap-4">
-                        <div class="w-40 aspect-video rounded-lg overflow-hidden" style="background-color: var(--color-bg-secondary);">
-                            <img 
-                                v-if="thumbnailPreview" 
-                                :src="thumbnailPreview" 
-                                class="w-full h-full object-cover"
-                            />
-                            <div v-else class="w-full h-full flex items-center justify-center">
-                                <Image class="w-8 h-8" style="color: var(--color-text-muted);" />
-                            </div>
-                        </div>
-                        <div>
-                            <label class="btn btn-secondary cursor-pointer">
-                                Upload Custom Thumbnail
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    class="hidden"
-                                    @change="handleThumbnailSelect"
+                    <div class="pt-4" style="border-top: 1px solid var(--color-border);">
+                        <p class="text-sm mb-3" style="color: var(--color-text-secondary);">Or upload your own image:</p>
+                        <label class="flex items-center gap-4 cursor-pointer group">
+                            <div class="w-32 aspect-video rounded-lg overflow-hidden flex-shrink-0 group-hover:opacity-80 transition-opacity" style="background-color: var(--color-bg-secondary);">
+                                <img 
+                                    v-if="thumbnailPreview" 
+                                    :src="thumbnailPreview" 
+                                    class="w-full h-full object-cover"
                                 />
-                            </label>
-                            <p class="text-xs mt-1" style="color: var(--color-text-muted);">Or upload your own image</p>
-                        </div>
+                                <div v-else class="w-full h-full flex items-center justify-center">
+                                    <Image class="w-6 h-6" style="color: var(--color-text-muted);" />
+                                </div>
+                            </div>
+                            <div>
+                                <span class="btn btn-secondary text-sm">Upload Custom Thumbnail</span>
+                                <p class="text-xs mt-1" style="color: var(--color-text-muted);">JPG, PNG or WebP, max 5MB</p>
+                            </div>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                class="hidden"
+                                @change="handleThumbnailSelect"
+                            />
+                        </label>
                     </div>
                     <p v-if="form.errors.thumbnail" class="text-red-500 text-sm mt-2">{{ form.errors.thumbnail }}</p>
                 </div>

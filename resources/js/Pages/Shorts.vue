@@ -1,46 +1,48 @@
 <script setup>
-import { Head } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
-import VideoCard from '@/Components/VideoCard.vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import ShortsViewer from '@/Components/ShortsViewer.vue';
+import { ArrowLeft } from 'lucide-vue-next';
 
-defineProps({
+const props = defineProps({
     shorts: Object,
+    adSettings: {
+        type: Object,
+        default: () => ({ enabled: false, frequency: 3, skipDelay: 5, code: '' }),
+    },
 });
+
+const shortsList = computed(() => props.shorts?.data || []);
+const nextPageUrl = computed(() => props.shorts?.next_page_url || null);
+
+const goBack = () => {
+    router.visit('/');
+};
 </script>
 
 <template>
     <Head title="Shorts" />
 
-    <AppLayout>
-        <div class="mb-6">
-            <h1 class="text-2xl font-bold text-white">Shorts</h1>
-            <p class="text-dark-400 mt-1">Quick, vertical videos under 60 seconds</p>
-        </div>
+    <!-- Back button overlay -->
+    <button
+        @click="goBack"
+        class="fixed top-4 left-4 z-50 p-2 rounded-full backdrop-blur-sm transition-opacity hover:opacity-80"
+        style="background: rgba(255,255,255,0.1); color: #fff;"
+    >
+        <ArrowLeft class="w-6 h-6" />
+    </button>
 
-        <div v-if="shorts.data?.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            <VideoCard v-for="short in shorts.data" :key="short.id" :video="short" />
-        </div>
+    <ShortsViewer
+        v-if="shortsList.length"
+        :shorts="shortsList"
+        :ad-settings="adSettings"
+        :next-page-url="nextPageUrl"
+    />
 
-        <div v-else class="text-center py-12">
-            <p class="text-dark-400 text-lg">No shorts yet</p>
-            <p class="text-dark-500 mt-2">Be the first to upload a short video!</p>
-        </div>
-
-        <!-- Pagination -->
-        <div v-if="shorts.links?.length > 3" class="mt-8 flex justify-center gap-2">
-            <template v-for="link in shorts.links" :key="link.label">
-                <a
-                    v-if="link.url"
-                    :href="link.url"
-                    :class="[
-                        'px-4 py-2 rounded-lg text-sm',
-                        link.active 
-                            ? 'bg-primary-600 text-white' 
-                            : 'bg-dark-800 text-dark-300 hover:bg-dark-700'
-                    ]"
-                    v-html="link.label"
-                />
-            </template>
-        </div>
-    </AppLayout>
+    <!-- Empty state (no shorts) -->
+    <div v-else class="min-h-screen flex flex-col items-center justify-center" style="background-color: var(--color-bg-primary);">
+        <p class="text-lg font-medium" style="color: var(--color-text-primary);">No shorts yet</p>
+        <p class="text-sm mt-1 mb-4" style="color: var(--color-text-muted);">Be the first to upload a short video!</p>
+        <Link href="/upload?type=short" class="btn btn-primary">Upload Short</Link>
+    </div>
 </template>

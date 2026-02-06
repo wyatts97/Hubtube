@@ -23,6 +23,7 @@ class VideoService
             'privacy' => $data['privacy'] ?? 'public',
             'age_restricted' => $data['age_restricted'] ?? true,
             'tags' => $data['tags'] ?? [],
+            'is_short' => $data['is_short'] ?? false,
             'status' => 'pending',
         ]);
 

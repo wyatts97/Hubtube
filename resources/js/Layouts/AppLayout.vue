@@ -5,7 +5,7 @@ import {
     Menu, Search, Upload, Bell, User, LogOut, Settings, Wallet, 
     Video, Radio, Home, TrendingUp, Zap, ListVideo, History, 
     ChevronLeft, ChevronRight, Shield, Sun, Moon, Monitor,
-    X, Check, CheckCheck, Rss, LayoutDashboard
+    X, Check, CheckCheck, Rss, LayoutDashboard, ChevronDown, Film, Clapperboard
 } from 'lucide-vue-next';
 import { useTheme } from '@/Composables/useTheme';
 import { useToast } from '@/Composables/useToast';
@@ -22,6 +22,7 @@ const themeSettings = computed(() => page.props.theme || {});
 const iconSettings = computed(() => themeSettings.value?.icons || {});
 const showUserMenu = ref(false);
 const showMobileMenu = ref(false);
+const showUploadMenu = ref(false);
 const sidebarCollapsed = ref(false);
 const searchQuery = ref('');
 const showMobileSearch = ref(false);
@@ -73,6 +74,9 @@ const closeDropdowns = (e) => {
     }
     if (!e.target.closest('.user-menu-dropdown') && !e.target.closest('.user-menu-trigger')) {
         showUserMenu.value = false;
+    }
+    if (!e.target.closest('.upload-menu-dropdown') && !e.target.closest('.upload-menu-trigger')) {
+        showUploadMenu.value = false;
     }
 };
 
@@ -201,14 +205,31 @@ const toggleSidebar = () => {
                     </button>
 
                     <template v-if="user">
-                        <Link href="/upload" class="btn btn-secondary gap-2 hidden sm:flex">
-                            <Upload class="w-4 h-4" />
-                            <span>Upload</span>
-                        </Link>
+                        <!-- Upload Dropdown -->
+                        <div class="relative hidden sm:block">
+                            <button 
+                                @click="showUploadMenu = !showUploadMenu; showNotifications = false; showUserMenu = false"
+                                class="upload-menu-trigger p-2 rounded-full hover:opacity-80 transition-opacity"
+                                style="color: var(--color-text-secondary);"
+                                title="Upload"
+                            >
+                                <Upload class="w-5 h-5" />
+                            </button>
+                            <div v-if="showUploadMenu" class="upload-menu-dropdown absolute right-0 mt-2 w-44 card p-1 shadow-xl" style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);">
+                                <Link href="/upload" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showUploadMenu = false">
+                                    <Film class="w-4 h-4" style="color: var(--color-text-secondary);" />
+                                    <span class="text-sm">Upload Video</span>
+                                </Link>
+                                <Link href="/upload?type=short" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showUploadMenu = false">
+                                    <Clapperboard class="w-4 h-4" style="color: var(--color-text-secondary);" />
+                                    <span class="text-sm">Upload Short</span>
+                                </Link>
+                            </div>
+                        </div>
 
-                        <Link href="/go-live" class="btn btn-primary gap-2 hidden sm:flex">
-                            <Radio class="w-4 h-4" />
-                            <span>Go Live</span>
+                        <!-- Go Live Icon -->
+                        <Link href="/go-live" class="p-2 rounded-full hover:opacity-80 transition-opacity hidden sm:flex" style="color: var(--color-text-secondary);" title="Go Live">
+                            <Radio class="w-5 h-5" />
                         </Link>
 
                         <div class="relative">
@@ -431,6 +452,31 @@ const toggleSidebar = () => {
                     </ul>
                     
                     <template v-if="user">
+                        <!-- Mobile Create Actions -->
+                        <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
+                            <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">Create</h3>
+                            <ul class="space-y-1">
+                                <li>
+                                    <Link href="/upload" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
+                                        <Film class="w-5 h-5" style="color: var(--color-text-secondary);" />
+                                        <span>Upload Video</span>
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link href="/upload?type=short" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
+                                        <Clapperboard class="w-5 h-5" style="color: var(--color-text-secondary);" />
+                                        <span>Upload Short</span>
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link href="/go-live" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
+                                        <Radio class="w-5 h-5" style="color: var(--color-text-secondary);" />
+                                        <span>Go Live</span>
+                                    </Link>
+                                </li>
+                            </ul>
+                        </div>
+
                         <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
                             <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">Library</h3>
                             <ul class="space-y-1">

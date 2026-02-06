@@ -1,8 +1,9 @@
 <script setup>
 import { Head, useForm, usePage, router } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { User, Lock, Bell, Shield, CreditCard, ExternalLink } from 'lucide-vue-next';
+import { User, Lock, Bell, Shield, CreditCard, ExternalLink, Loader2 } from 'lucide-vue-next';
+import { usePushNotifications } from '@/Composables/usePushNotifications';
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
@@ -25,6 +26,16 @@ const notificationForm = useForm({
     push_notifications: user.value?.push_notifications ?? true,
     subscription_notifications: user.value?.subscription_notifications ?? true,
 });
+
+const { isSupported: pushSupported, isSubscribed: pushSubscribed, isLoading: pushLoading, checkSubscription, toggle: togglePush } = usePushNotifications();
+
+onMounted(() => {
+    checkSubscription();
+});
+
+const handlePushToggle = async () => {
+    await togglePush();
+};
 
 const privacyForm = useForm({
     private_profile: user.value?.settings?.private_profile ?? false,
@@ -184,6 +195,24 @@ const tabs = [
                                     type="checkbox" 
                                     class="w-5 h-5 rounded bg-dark-700 border-dark-600"
                                 />
+                            </div>
+
+                            <!-- Browser Push Subscription -->
+                            <div v-if="pushSupported" class="flex items-center justify-between p-3 rounded-lg" style="background-color: var(--color-bg-secondary);">
+                                <div>
+                                    <p style="color: var(--color-text-primary);">Browser Push</p>
+                                    <p class="text-sm" style="color: var(--color-text-secondary);">
+                                        {{ pushSubscribed ? 'This browser is receiving push notifications' : 'Enable push notifications for this browser' }}
+                                    </p>
+                                </div>
+                                <button 
+                                    @click="handlePushToggle" 
+                                    :disabled="pushLoading"
+                                    :class="['btn text-sm', pushSubscribed ? 'btn-secondary' : 'btn-primary']"
+                                >
+                                    <Loader2 v-if="pushLoading" class="w-4 h-4 animate-spin" />
+                                    <span v-else>{{ pushSubscribed ? 'Disable' : 'Enable' }}</span>
+                                </button>
                             </div>
                             <div class="flex items-center justify-between">
                                 <div>
