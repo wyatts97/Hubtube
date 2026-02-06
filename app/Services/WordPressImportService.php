@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\Category;
-use App\Models\EmbeddedVideo;
 use App\Models\Hashtag;
+use App\Models\Video;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -35,6 +35,14 @@ class WordPressImportService
     // In-memory caches to avoid repeated DB queries during import
     private array $categoryCache = [];
     private array $hashtagCache = [];
+
+    // The user_id to assign imported videos to (set by the admin)
+    private ?int $importUserId = null;
+
+    public function setImportUserId(int $userId): void
+    {
+        $this->importUserId = $userId;
+    }
 
     /**
      * Parse the SQL file and extract all relevant data.
@@ -450,7 +458,7 @@ class WordPressImportService
      */
     public function purgeImported(): int
     {
-        return EmbeddedVideo::whereIn('source_site', ['bunnystream', 'wordpress'])->delete();
+        return Video::where('is_embedded', true)->forceDelete();
     }
 
     /**
@@ -493,7 +501,7 @@ class WordPressImportService
     }
 
     /**
-     * Import a batch of video posts into the embedded_videos table.
+     * Import a batch of video posts into the videos table as embedded videos.
      * Returns import results.
      */
     public function importBatch(array $videoPosts): array
@@ -502,38 +510,36 @@ class WordPressImportService
         $skipped = 0;
         $errors = [];
 
-        // Pre-load existing imported IDs for this batch to avoid N+1 queries
-        $batchIds = [];
+        if (!$this->importUserId) {
+            return ['imported' => 0, 'skipped' => 0, 'errors' => [['wp_id' => 0, 'title' => '', 'error' => 'No import user selected']]];
+        }
+
+        // Pre-load existing imported source_video_ids for this batch
+        $batchSourceIds = [];
         foreach ($videoPosts as $video) {
-            $id = $video['bunny_video_id'] ?? $video['wp_id'];
-            $site = $video['bunny_video_id'] ? 'bunnystream' : 'wordpress';
-            $batchIds[$site][] = (string) $id;
+            $id = (string) ($video['bunny_video_id'] ?? $video['wp_id']);
+            $batchSourceIds[] = $id;
         }
-        $existingIds = [];
-        foreach ($batchIds as $site => $ids) {
-            foreach (EmbeddedVideo::getImportedIds($site, $ids) as $existingId) {
-                $existingIds[$site . ':' . $existingId] = true;
-            }
-        }
+        $existingSourceIds = Video::where('is_embedded', true)
+            ->whereIn('source_video_id', $batchSourceIds)
+            ->pluck('source_video_id')
+            ->flip()
+            ->all();
 
         foreach ($videoPosts as $video) {
             try {
-                $sourceVideoId = $video['bunny_video_id'] ?? $video['wp_id'];
+                $sourceVideoId = (string) ($video['bunny_video_id'] ?? $video['wp_id']);
                 $sourceSite = $video['bunny_video_id'] ? 'bunnystream' : 'wordpress';
 
-                // Skip if already imported (using pre-loaded set)
-                if (isset($existingIds[$sourceSite . ':' . $sourceVideoId])) {
+                // Skip if already imported
+                if (isset($existingSourceIds[$sourceVideoId])) {
                     $skipped++;
                     continue;
                 }
 
                 // Use the raw embed code exactly as it was in WordPress
                 $rawEmbedCode = $video['raw_embed_code'] ?? '';
-
-                // Extract the iframe src for the embed_url field (used by EmbeddedVideoPlayer)
                 $embedUrl = $this->extractEmbedUrl($rawEmbedCode);
-
-                // For the embed_code field, store the raw HTML as-is
                 $embedCode = $rawEmbedCode;
 
                 // Thumbnail: use webp preview from WP, fallback to Bunny CDN thumbnail
@@ -542,15 +548,18 @@ class WordPressImportService
                     $thumbnailUrl = "https://{$this->bunnyCdnHost}/{$video['bunny_video_id']}/thumbnail.jpg";
                 }
 
-                // Preview URL (animated webp) — same as thumbnail source
+                // Preview URL (animated webp)
                 $previewUrl = $video['webp_preview'] ?? null;
 
                 // Source URL on original site
                 $sourceUrl = $video['slug'] ? "https://wedgietube.com/video/{$video['slug']}/" : '';
 
                 // Duration
-                $durationFormatted = $video['duration_formatted'] ?? null;
-                $durationSeconds = $this->parseDuration($durationFormatted);
+                $durationSeconds = $this->parseDuration($video['duration_formatted'] ?? null);
+
+                // Generate a unique slug
+                $baseSlug = Str::slug($video['title']) ?: 'imported-video';
+                $slug = $baseSlug . '-' . Str::random(8);
 
                 // Resolve category (cached)
                 $categoryId = null;
@@ -565,27 +574,35 @@ class WordPressImportService
                     }
                 }
 
-                EmbeddedVideo::create([
-                    'source_site' => $sourceSite,
-                    'source_video_id' => (string) $sourceVideoId,
+                $publishedAt = $video['post_date'] ? \Carbon\Carbon::parse($video['post_date']) : now();
+
+                Video::create([
+                    'user_id' => $this->importUserId,
+                    'uuid' => (string) Str::uuid(),
                     'title' => $video['title'],
+                    'slug' => $slug,
                     'description' => !empty($video['description']) ? $video['description'] : null,
                     'duration' => $durationSeconds,
-                    'duration_formatted' => $durationFormatted,
-                    'thumbnail_url' => $thumbnailUrl,
-                    'thumbnail_preview_url' => $previewUrl,
-                    'source_url' => $sourceUrl,
+                    'privacy' => 'public',
+                    'status' => 'processed',
+                    'is_short' => false,
+                    'is_embedded' => true,
+                    'is_featured' => false,
+                    'is_approved' => true,
+                    'age_restricted' => true,
                     'embed_url' => $embedUrl,
                     'embed_code' => $embedCode,
-                    'views_count' => $video['views_total'],
-                    'rating' => $video['likes'],
+                    'external_thumbnail_url' => $thumbnailUrl,
+                    'external_preview_url' => $previewUrl,
+                    'source_site' => $sourceSite,
+                    'source_video_id' => $sourceVideoId,
+                    'source_url' => $sourceUrl,
+                    'views_count' => (int) ($video['views_total'] ?? 0),
+                    'likes_count' => (int) ($video['likes'] ?? 0),
                     'tags' => !empty($video['tags']) ? $video['tags'] : null,
-                    'actors' => !empty($video['actors']) ? $video['actors'] : null,
                     'category_id' => $categoryId,
-                    'is_published' => true,
-                    'is_featured' => false,
-                    'source_upload_date' => $video['post_date'] ? \Carbon\Carbon::parse($video['post_date']) : null,
-                    'imported_at' => now(),
+                    'published_at' => $publishedAt,
+                    'processing_completed_at' => $publishedAt,
                 ]);
 
                 $imported++;

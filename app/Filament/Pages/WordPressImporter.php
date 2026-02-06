@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\User;
 use App\Services\WordPressImportService;
 use Filament\Pages\Page;
 use Filament\Notifications\Notification;
@@ -21,6 +22,7 @@ class WordPressImporter extends Page
     public $sqlFile = null;
     public int $batchSize = 50;
     public int $delayMs = 100;
+    public ?int $importUserId = null;
 
     // Parse state
     public bool $isParsing = false;
@@ -47,7 +49,15 @@ class WordPressImporter extends Page
 
     public function getSubheading(): ?string
     {
-        return 'Import vidmov_video posts from WedgieTube WordPress SQL dump into HubTube embedded videos.';
+        return 'Import vidmov_video posts from WedgieTube WordPress SQL dump into HubTube videos.';
+    }
+
+    /**
+     * Get list of users for the import user dropdown.
+     */
+    public function getUsersProperty(): array
+    {
+        return User::select('id', 'username', 'name')->orderBy('username')->get()->toArray();
     }
 
     public function updatedSqlFile(): void
@@ -133,7 +143,14 @@ class WordPressImporter extends Page
         $this->importErrors = [];
 
         try {
+            if (!$this->importUserId) {
+                Notification::make()->title('Please select a user to assign imported videos to.')->warning()->send();
+                $this->isImporting = false;
+                return;
+            }
+
             $service = new WordPressImportService();
+            $service->setImportUserId($this->importUserId);
             $filePath = Storage::disk('local')->path($this->storedFilePath);
 
             // Re-parse the file to get all video posts

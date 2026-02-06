@@ -18,14 +18,8 @@ const previewLoaded = ref(false);
 
 const placeholderImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Crect fill='%23181818' width='640' height='360'/%3E%3Cpolygon fill='%23333' points='280,130 280,230 360,180'/%3E%3C/svg%3E";
 
-// Check if this is an embedded video
-const isEmbedded = computed(() => props.video.is_embedded === true);
-
 // Get the correct URL for the video
 const videoUrl = computed(() => {
-    if (isEmbedded.value) {
-        return `/embedded/${props.video.id}`;
-    }
     if (props.video.is_short) {
         return `/shorts/${props.video.id}`;
     }
@@ -94,7 +88,7 @@ const onPreviewLoad = () => {
             
         </div>
         <div class="flex gap-3 mt-3">
-            <Link v-if="video.user" :href="isEmbedded ? '#' : `/channel/${video.user.username}`" class="flex-shrink-0" @click.prevent="isEmbedded ? null : undefined">
+            <Link v-if="video.user" :href="`/channel/${video.user.username}`" class="flex-shrink-0">
                 <div class="w-9 h-9 avatar">
                     <img v-if="video.user.avatar" v-bind="avatarProps(video.user.avatar, 36)" :alt="video.user.username || video.user.name" class="w-full h-full object-cover" />
                     <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-sm font-medium">
@@ -111,13 +105,10 @@ const onPreviewLoad = () => {
             </div>
             <div class="flex-1 min-w-0">
                 <h3 class="font-medium line-clamp-2 leading-tight" style="color: var(--color-text-primary);">{{ video.title }}</h3>
-                <Link v-if="video.user && !isEmbedded" :href="`/channel/${video.user.username}`" class="text-sm mt-1 block" style="color: var(--color-text-secondary);">
+                <Link v-if="video.user" :href="`/channel/${video.user.username}`" class="text-sm mt-1 block" style="color: var(--color-text-secondary);">
                     {{ video.user.username }}
                     <span v-if="video.user.is_verified" class="inline-block ml-1">✓</span>
                 </Link>
-                <span v-else-if="video.user" class="text-sm mt-1 block" style="color: var(--color-text-secondary);">
-                    {{ video.user.username || video.user.name }}
-                </span>
                 <p class="text-sm" style="color: var(--color-text-muted);">
                     {{ formattedViews }} views • {{ timeAgo }}
                 </p>

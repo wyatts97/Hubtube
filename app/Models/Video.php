@@ -47,6 +47,14 @@ class Video extends Model
         'processing_started_at',
         'processing_completed_at',
         'scrubber_vtt_path',
+        'is_embedded',
+        'embed_url',
+        'embed_code',
+        'external_thumbnail_url',
+        'external_preview_url',
+        'source_site',
+        'source_video_id',
+        'source_url',
     ];
 
     protected $appends = [
@@ -61,6 +69,7 @@ class Video extends Model
     {
         return [
             'is_short' => 'boolean',
+            'is_embedded' => 'boolean',
             'is_featured' => 'boolean',
             'is_approved' => 'boolean',
             'age_restricted' => 'boolean',
@@ -214,6 +223,10 @@ class Video extends Model
 
     public function getThumbnailUrlAttribute(): ?string
     {
+        if ($this->external_thumbnail_url) {
+            return $this->external_thumbnail_url;
+        }
+
         if (!$this->thumbnail) {
             return null;
         }
@@ -227,6 +240,10 @@ class Video extends Model
 
     public function getPreviewUrlAttribute(): ?string
     {
+        if ($this->external_preview_url) {
+            return $this->external_preview_url;
+        }
+
         if (!$this->preview_path) {
             return null;
         }
@@ -253,6 +270,10 @@ class Video extends Model
 
     public function getVideoUrlAttribute(): ?string
     {
+        if ($this->is_embedded && $this->embed_url) {
+            return $this->embed_url;
+        }
+
         if (!$this->video_path) {
             return null;
         }

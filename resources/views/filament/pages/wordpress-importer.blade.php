@@ -155,7 +155,18 @@
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Step 3: Import Settings</h3>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign to User</label>
+                        <select wire:model="importUserId" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm" required>
+                            <option value="">-- Select a user --</option>
+                            @foreach($this->users as $u)
+                                <option value="{{ $u['id'] }}">{{ $u['username'] }} ({{ $u['name'] }})</option>
+                            @endforeach
+                        </select>
+                        <p class="text-xs text-gray-400 mt-1">All imported videos will be owned by this user</p>
+                    </div>
+
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Batch Size</label>
                         <select wire:model="batchSize" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
@@ -188,8 +199,9 @@
                             <p class="text-sm font-medium text-yellow-700 dark:text-yellow-300">Before importing:</p>
                             <ul class="text-sm text-yellow-600 dark:text-yellow-400 mt-1 list-disc list-inside space-y-0.5">
                                 <li>Duplicates are automatically skipped (safe to re-run)</li>
-                                <li>Videos import into the <strong>Embedded Videos</strong> section</li>
-                                <li>Categories will be auto-created if they don't exist</li>
+                                <li>Videos import as regular videos with embedded iframe players</li>
+                                <li>They appear at <strong>/video-title-slug</strong> with full like/share/save/report UI</li>
+                                <li>Categories and hashtags will be auto-created if they don't exist</li>
                                 <li>Bunny Stream embed codes and thumbnails are preserved</li>
                             </ul>
                         </div>

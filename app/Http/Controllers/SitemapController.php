@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Video;
 use App\Models\User;
-use App\Models\EmbeddedVideo;
 use Illuminate\Http\Response;
 
 class SitemapController extends Controller
@@ -26,17 +25,11 @@ class SitemapController extends Controller
             ->limit(5000)
             ->get();
 
-        $embeddedVideos = EmbeddedVideo::published()
-            ->select(['id', 'updated_at'])
-            ->latest('updated_at')
-            ->limit(5000)
-            ->get();
-
         $content = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
         $content .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
 
         // Static pages
-        $staticPages = ['/', '/trending', '/shorts', '/live', '/embedded'];
+        $staticPages = ['/', '/trending', '/shorts', '/live'];
         foreach ($staticPages as $page) {
             $content .= $this->urlEntry(url($page), now()->toW3cString(), 'daily', '0.8');
         }
@@ -58,16 +51,6 @@ class SitemapController extends Controller
                 $channel->updated_at->toW3cString(),
                 'weekly',
                 '0.7'
-            );
-        }
-
-        // Embedded video pages
-        foreach ($embeddedVideos as $embedded) {
-            $content .= $this->urlEntry(
-                url("/embedded/{$embedded->id}"),
-                $embedded->updated_at->toW3cString(),
-                'weekly',
-                '0.6'
             );
         }
 

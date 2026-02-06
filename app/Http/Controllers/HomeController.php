@@ -3,13 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
-use App\Models\EmbeddedVideo;
 use App\Models\LiveStream;
 use App\Models\Setting;
 use App\Models\Video;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -19,15 +17,7 @@ class HomeController extends Controller
     {
         $perPage = Setting::get('videos_per_page', 24);
 
-        // Single query for all published embedded videos (paginated, not ->get() all)
-        $allEmbedded = EmbeddedVideo::published()
-            ->latest('imported_at')
-            ->limit($perPage)
-            ->get();
-
-        $embeddedFormatted = $allEmbedded->map(fn ($v) => $v->toVideoFormat());
-
-        // Get regular featured videos
+        // Featured videos (includes both uploaded and imported)
         $featuredVideos = Video::query()
             ->with('user')
             ->featured()
@@ -38,15 +28,8 @@ class HomeController extends Controller
             ->limit(8)
             ->get();
 
-        // Merge featured embedded videos from the single query
-        $featuredEmbedded = $allEmbedded->filter(fn ($v) => $v->is_featured)
-            ->take(4)
-            ->map(fn ($v) => $v->toVideoFormat());
-
-        $featuredVideos = $featuredVideos->concat($featuredEmbedded)->take(8);
-
-        // Get regular latest videos
-        $regularVideos = Video::query()
+        // Latest videos (includes both uploaded and imported)
+        $latestVideos = Video::query()
             ->with('user')
             ->public()
             ->approved()
@@ -54,18 +37,7 @@ class HomeController extends Controller
             ->latest('published_at')
             ->paginate($perPage);
 
-        // Merge and sort by date for latest videos data
-        $mergedLatest = collect($regularVideos->items())
-            ->concat($embeddedFormatted)
-            ->sortByDesc(fn ($v) => $v['published_at'] ?? $v['created_at'] ?? now())
-            ->take($perPage)
-            ->values();
-
-        // Replace paginated data with merged data
-        $latestVideos = $regularVideos;
-        $latestVideos->setCollection($mergedLatest);
-
-        // Get popular videos (regular + embedded)
+        // Popular videos
         $popularVideos = Video::query()
             ->with('user')
             ->public()
@@ -74,15 +46,6 @@ class HomeController extends Controller
             ->orderByDesc('views_count')
             ->limit(12)
             ->get();
-
-        $popularEmbedded = $allEmbedded->sortByDesc('views_count')
-            ->take(6)
-            ->map(fn ($v) => $v->toVideoFormat());
-
-        $popularVideos = $popularVideos->concat($popularEmbedded)
-            ->sortByDesc(fn ($v) => $v['views_count'] ?? $v->views_count ?? 0)
-            ->take(12)
-            ->values();
 
         $liveStreams = LiveStream::query()
             ->with('user')
@@ -133,36 +96,16 @@ class HomeController extends Controller
     public function loadMoreVideos(Request $request): JsonResponse
     {
         $perPage = Setting::get('videos_per_page', 24);
-        $page = $request->input('page', 1);
 
-        // Split the page budget between regular and embedded videos
-        $embeddedPerPage = (int) ceil($perPage * 0.25); // ~25% embedded
-        $regularPerPage = $perPage - $embeddedPerPage;
-
-        $regularVideos = Video::query()
+        $videos = Video::query()
             ->with('user')
             ->public()
             ->approved()
             ->processed()
             ->latest('published_at')
-            ->paginate($regularPerPage, ['*'], 'page', $page);
+            ->paginate($perPage);
 
-        // Paginate embedded videos with the same page offset
-        $embeddedVideos = EmbeddedVideo::published()
-            ->latest('imported_at')
-            ->offset(($page - 1) * $embeddedPerPage)
-            ->limit($embeddedPerPage)
-            ->get()
-            ->map(fn ($v) => $v->toVideoFormat());
-
-        $merged = collect($regularVideos->items())
-            ->concat($embeddedVideos)
-            ->sortByDesc(fn ($v) => $v['published_at'] ?? $v['created_at'] ?? now())
-            ->values();
-
-        $regularVideos->setCollection($merged);
-
-        return response()->json($regularVideos);
+        return response()->json($videos);
     }
 
     public function trending(Request $request): Response|JsonResponse

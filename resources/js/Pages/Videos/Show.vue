@@ -8,6 +8,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import CommentSection from '@/Components/CommentSection.vue';
 import VideoPlayer from '@/Components/VideoPlayer.vue';
+import EmbeddedVideoPlayer from '@/Components/EmbeddedVideoPlayer.vue';
 import KeyboardShortcuts from '@/Components/KeyboardShortcuts.vue';
 import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff, Eye, ListVideo, Plus, Check, Loader2 } from 'lucide-vue-next';
 
@@ -216,7 +217,14 @@ const formattedViews = computed(() => {
             <!-- Main Content -->
             <div class="flex-1">
                 <!-- Video Player -->
-                <div class="aspect-video bg-black rounded-xl overflow-hidden relative">
+                <div v-if="video.is_embedded" class="aspect-video bg-black rounded-xl overflow-hidden relative">
+                    <EmbeddedVideoPlayer
+                        :video="video"
+                        :autoplay="false"
+                        :show-info="false"
+                    />
+                </div>
+                <div v-else class="aspect-video bg-black rounded-xl overflow-hidden relative">
                     <VideoPlayer
                         :src="video.video_url"
                         :poster="video.thumbnail_url"

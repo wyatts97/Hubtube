@@ -7,7 +7,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\EmbeddedVideoController;
+// EmbeddedVideoController removed - imported videos now use the regular Video model and /<slug> route
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\GiftController;
 use App\Http\Controllers\HistoryController;
@@ -59,11 +59,6 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/live/{liveStream}', [LiveStreamController::class, 'show'])->name('live.show');
 
     Route::get('/playlist/{playlist:slug}', [PlaylistController::class, 'show'])->name('playlists.show');
-
-    // Embedded Videos
-    Route::get('/embedded', [EmbeddedVideoController::class, 'index'])->name('embedded.index');
-    Route::get('/embedded/featured', [EmbeddedVideoController::class, 'featured'])->name('embedded.featured');
-    Route::get('/embedded/{embeddedVideo}', [EmbeddedVideoController::class, 'show'])->name('embedded.show');
 
     Route::middleware('guest')->group(function () {
         Route::get('/register', [RegisterController::class, 'create'])->name('register');
