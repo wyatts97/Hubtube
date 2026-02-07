@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class BunnyStreamService
 {
@@ -519,6 +520,10 @@ class BunnyStreamService
 
         $bunnyVideoId = $video->source_video_id;
         $storageBase = "videos/{$video->user_id}/{$video->uuid}";
+        $fileSlug = Str::slug($video->title, '_');
+        if (empty($fileSlug)) {
+            $fileSlug = $video->uuid;
+        }
 
         Log::info('BunnyStreamService: downloading', [
             'video_id' => $video->id,
@@ -543,13 +548,13 @@ class BunnyStreamService
         // Strategy A: Try direct CDN download first (works if Direct URL Access is allowed)
         $originalUrl = $this->getOriginalUrl($bunnyVideoId);
         Log::info('BunnyStreamService: trying direct CDN original', ['url' => $originalUrl]);
-        $videoPath = $this->downloadFile($originalUrl, "{$storageBase}/original.mp4", $targetDisk);
+        $videoPath = $this->downloadFile($originalUrl, "{$storageBase}/{$fileSlug}.mp4", $targetDisk);
 
         // Strategy B: Download via HLS — the CDN always allows HLS streaming
         // Fetch the playlist, download all .ts segments, remux to MP4 with ffmpeg
         if (!$videoPath) {
             Log::info('BunnyStreamService: direct CDN blocked, trying HLS download');
-            $videoPath = $this->downloadViaHls($bunnyVideoId, "{$storageBase}/video.mp4", $targetDisk);
+            $videoPath = $this->downloadViaHls($bunnyVideoId, "{$storageBase}/{$fileSlug}.mp4", $targetDisk);
         }
 
         // Strategy C: Try signed MP4 fallback URLs (if MP4 fallback is enabled)
@@ -557,7 +562,7 @@ class BunnyStreamService
             $resolutions = ['1080p', '720p', '480p', '360p', '240p'];
             foreach ($resolutions as $res) {
                 $mp4Url = $this->getMp4Url($bunnyVideoId, $res);
-                $videoPath = $this->downloadFile($mp4Url, "{$storageBase}/play_{$res}.mp4", $targetDisk);
+                $videoPath = $this->downloadFile($mp4Url, "{$storageBase}/{$fileSlug}_{$res}.mp4", $targetDisk);
                 if ($videoPath) {
                     break;
                 }
@@ -578,7 +583,7 @@ class BunnyStreamService
         $thumbnailUrl = $this->getThumbnailUrl($bunnyVideoId, $thumbnailFileName);
         $thumbnailPath = $this->downloadFile(
             $thumbnailUrl,
-            "thumbnails/{$video->user_id}/{$video->uuid}_thumb.jpg",
+            "thumbnails/{$video->user_id}/{$fileSlug}_thumb.jpg",
             $targetDisk
         );
 
@@ -586,7 +591,7 @@ class BunnyStreamService
         $previewWebpUrl = $this->getPreviewUrl($bunnyVideoId);
         $previewPath = $this->downloadFile(
             $previewWebpUrl,
-            "{$storageBase}/preview.webp",
+            "{$storageBase}/{$fileSlug}_preview.webp",
             $targetDisk
         );
 
