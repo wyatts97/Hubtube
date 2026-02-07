@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Video;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 
 class BunnyStreamService
@@ -296,6 +297,217 @@ class BunnyStreamService
     }
 
     /**
+     * Download a video via HLS: fetch the master playlist, pick the highest resolution,
+     * download all .ts segments, and use ffmpeg to remux into a single MP4.
+     * Returns the stored path on success, null on failure.
+     */
+    public function downloadViaHls(string $videoId, string $storagePath, string $disk = 'public'): ?string
+    {
+        $baseUrl = "https://{$this->cdnHost}/{$videoId}";
+
+        // 1. Fetch master playlist
+        try {
+            $masterResponse = Http::timeout(30)->get("{$baseUrl}/playlist.m3u8");
+            if (!$masterResponse->successful()) {
+                Log::warning('BunnyStreamService HLS: master playlist failed', [
+                    'url' => "{$baseUrl}/playlist.m3u8",
+                    'status' => $masterResponse->status(),
+                ]);
+                return null;
+            }
+        } catch (\Throwable $e) {
+            Log::error('BunnyStreamService HLS: master playlist error', ['error' => $e->getMessage()]);
+            return null;
+        }
+
+        // 2. Parse master playlist — pick highest resolution variant
+        $masterContent = $masterResponse->body();
+        $lines = explode("\n", trim($masterContent));
+        $bestResolution = null;
+        $bestBandwidth = 0;
+        $bestVariantUri = null;
+
+        for ($i = 0; $i < count($lines); $i++) {
+            if (str_starts_with($lines[$i], '#EXT-X-STREAM-INF:')) {
+                $infoLine = $lines[$i];
+                $variantUri = trim($lines[$i + 1] ?? '');
+
+                if (preg_match('/BANDWIDTH=(\d+)/', $infoLine, $bwMatch)) {
+                    $bandwidth = (int) $bwMatch[1];
+                    if ($bandwidth > $bestBandwidth) {
+                        $bestBandwidth = $bandwidth;
+                        $bestVariantUri = $variantUri;
+                        if (preg_match('/RESOLUTION=(\d+x\d+)/', $infoLine, $resMatch)) {
+                            $bestResolution = $resMatch[1];
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!$bestVariantUri) {
+            Log::warning('BunnyStreamService HLS: no variant found in master playlist');
+            return null;
+        }
+
+        Log::info('BunnyStreamService HLS: selected variant', [
+            'resolution' => $bestResolution,
+            'bandwidth' => $bestBandwidth,
+            'uri' => $bestVariantUri,
+        ]);
+
+        // 3. Fetch variant playlist
+        $variantUrl = "{$baseUrl}/{$bestVariantUri}";
+        $variantBase = dirname($variantUrl);
+
+        try {
+            $variantResponse = Http::timeout(30)->get($variantUrl);
+            if (!$variantResponse->successful()) {
+                Log::warning('BunnyStreamService HLS: variant playlist failed', [
+                    'url' => $variantUrl,
+                    'status' => $variantResponse->status(),
+                ]);
+                return null;
+            }
+        } catch (\Throwable $e) {
+            Log::error('BunnyStreamService HLS: variant playlist error', ['error' => $e->getMessage()]);
+            return null;
+        }
+
+        // 4. Parse segment URLs from variant playlist
+        $variantContent = $variantResponse->body();
+        $variantLines = explode("\n", trim($variantContent));
+        $segments = [];
+        foreach ($variantLines as $line) {
+            $line = trim($line);
+            if ($line && !str_starts_with($line, '#')) {
+                $segments[] = $line;
+            }
+        }
+
+        if (empty($segments)) {
+            Log::warning('BunnyStreamService HLS: no segments found in variant playlist');
+            return null;
+        }
+
+        Log::info('BunnyStreamService HLS: downloading segments', ['count' => count($segments)]);
+
+        // 5. Download all segments to a temp directory
+        $tempDir = storage_path('app/temp/hls_' . $videoId . '_' . time());
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        $segmentFiles = [];
+        foreach ($segments as $index => $segmentFile) {
+            $segmentUrl = "{$variantBase}/{$segmentFile}";
+            $localPath = "{$tempDir}/segment_{$index}.ts";
+
+            try {
+                $segResponse = Http::withOptions([
+                    'timeout' => 120,
+                    'connect_timeout' => 30,
+                    'sink' => $localPath,
+                ])->get($segmentUrl);
+
+                if (!$segResponse->successful() || !file_exists($localPath) || filesize($localPath) === 0) {
+                    Log::warning('BunnyStreamService HLS: segment download failed', [
+                        'segment' => $segmentFile,
+                        'status' => $segResponse->status(),
+                    ]);
+                    $this->cleanupTempDir($tempDir);
+                    return null;
+                }
+
+                $segmentFiles[] = $localPath;
+            } catch (\Throwable $e) {
+                Log::error('BunnyStreamService HLS: segment error', [
+                    'segment' => $segmentFile,
+                    'error' => $e->getMessage(),
+                ]);
+                $this->cleanupTempDir($tempDir);
+                return null;
+            }
+        }
+
+        // 6. Create ffmpeg concat file
+        $concatFile = "{$tempDir}/concat.txt";
+        $concatContent = '';
+        foreach ($segmentFiles as $sf) {
+            $concatContent .= "file '" . str_replace("'", "'\\''", $sf) . "'\n";
+        }
+        file_put_contents($concatFile, $concatContent);
+
+        // 7. Run ffmpeg to remux segments into MP4
+        $outputFile = "{$tempDir}/output.mp4";
+        $ffmpegBinary = config('hubtube.ffmpeg.binary', '/usr/bin/ffmpeg');
+
+        try {
+            $result = Process::timeout(600)->run(
+                "{$ffmpegBinary} -f concat -safe 0 -i {$concatFile} -c copy -movflags +faststart {$outputFile} -y 2>&1"
+            );
+
+            if (!$result->successful() || !file_exists($outputFile) || filesize($outputFile) === 0) {
+                Log::error('BunnyStreamService HLS: ffmpeg concat failed', [
+                    'exit_code' => $result->exitCode(),
+                    'output' => substr($result->output(), -500),
+                ]);
+                $this->cleanupTempDir($tempDir);
+                return null;
+            }
+
+            Log::info('BunnyStreamService HLS: ffmpeg concat success', [
+                'output_size' => filesize($outputFile),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('BunnyStreamService HLS: ffmpeg error', ['error' => $e->getMessage()]);
+            $this->cleanupTempDir($tempDir);
+            return null;
+        }
+
+        // 8. Store the output MP4 to the target disk
+        $diskInstance = Storage::disk($disk);
+        $directory = dirname($storagePath);
+        if ($directory && $directory !== '.') {
+            $diskInstance->makeDirectory($directory);
+        }
+
+        $diskInstance->put($storagePath, file_get_contents($outputFile));
+
+        // 9. Cleanup temp files
+        $this->cleanupTempDir($tempDir);
+
+        // 10. Verify
+        if ($diskInstance->exists($storagePath) && $diskInstance->size($storagePath) > 0) {
+            Log::info('BunnyStreamService HLS: download complete', [
+                'path' => $storagePath,
+                'size' => $diskInstance->size($storagePath),
+            ]);
+            return $storagePath;
+        }
+
+        Log::warning('BunnyStreamService HLS: file empty after write', ['path' => $storagePath]);
+        return null;
+    }
+
+    /**
+     * Remove a temporary directory and all its contents.
+     */
+    private function cleanupTempDir(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+        $files = glob("{$dir}/*");
+        foreach ($files as $file) {
+            if (is_file($file)) {
+                unlink($file);
+            }
+        }
+        rmdir($dir);
+    }
+
+    /**
      * Download a single embedded video's files and convert it to a native video.
      * Returns an array with status info: ['success' => bool, 'error' => string|null, 'video_path' => string|null]
      */
@@ -314,63 +526,40 @@ class BunnyStreamService
             'title' => $video->title,
         ]);
 
-        // 1. Get video play data from Bunny API — returns pre-authorized URLs
-        $playData = $this->getVideoPlayData($bunnyVideoId);
-        $videoInfo = $playData['video'] ?? null;
+        // 1. Get video info from Bunny API
+        $videoInfo = $this->getVideo($bunnyVideoId);
 
-        Log::info('BunnyStreamService: play data response', [
+        Log::info('BunnyStreamService: API response', [
             'bunny_id' => $bunnyVideoId,
-            'play_data_returned' => $playData !== null,
-            'originalUrl' => $playData['originalUrl'] ?? 'N/A',
-            'fallbackUrl' => $playData['fallbackUrl'] ?? 'N/A',
-            'thumbnailUrl' => $playData['thumbnailUrl'] ?? 'N/A',
-            'previewUrl' => $playData['previewUrl'] ?? 'N/A',
+            'api_returned' => $videoInfo !== null,
             'hasOriginal' => $videoInfo['hasOriginal'] ?? 'N/A',
-            'hasMP4Fallback' => $videoInfo['hasMP4Fallback'] ?? 'N/A',
             'availableResolutions' => $videoInfo['availableResolutions'] ?? 'N/A',
+            'status' => $videoInfo['status'] ?? 'N/A',
         ]);
 
-        // 2. Try downloading the video file using pre-authorized URLs from play data
+        // 2. Try downloading the video file
         $videoPath = null;
 
-        // Try original URL from play data first
-        $originalUrl = $playData['originalUrl'] ?? null;
-        if ($originalUrl && !empty($originalUrl)) {
-            Log::info('BunnyStreamService: trying play data originalUrl', ['url' => $originalUrl]);
-            $videoPath = $this->downloadFile($originalUrl, "{$storageBase}/original.mp4", $targetDisk);
+        // Strategy A: Try direct CDN download first (works if Direct URL Access is allowed)
+        $originalUrl = $this->getOriginalUrl($bunnyVideoId);
+        Log::info('BunnyStreamService: trying direct CDN original', ['url' => $originalUrl]);
+        $videoPath = $this->downloadFile($originalUrl, "{$storageBase}/original.mp4", $targetDisk);
+
+        // Strategy B: Download via HLS — the CDN always allows HLS streaming
+        // Fetch the playlist, download all .ts segments, remux to MP4 with ffmpeg
+        if (!$videoPath) {
+            Log::info('BunnyStreamService: direct CDN blocked, trying HLS download');
+            $videoPath = $this->downloadViaHls($bunnyVideoId, "{$storageBase}/video.mp4", $targetDisk);
         }
 
-        // Try fallback URL from play data
+        // Strategy C: Try signed MP4 fallback URLs (if MP4 fallback is enabled)
         if (!$videoPath) {
-            $fallbackUrl = $playData['fallbackUrl'] ?? null;
-            if ($fallbackUrl && !empty($fallbackUrl)) {
-                Log::info('BunnyStreamService: trying play data fallbackUrl', ['url' => $fallbackUrl]);
-                $videoPath = $this->downloadFile($fallbackUrl, "{$storageBase}/fallback.mp4", $targetDisk);
-            }
-        }
-
-        // Try HLS playlist URL — download the highest quality segment
-        if (!$videoPath) {
-            $playlistUrl = $playData['videoPlaylistUrl'] ?? null;
-            if ($playlistUrl && !empty($playlistUrl)) {
-                Log::info('BunnyStreamService: play data has playlist URL (HLS)', ['url' => $playlistUrl]);
-            }
-        }
-
-        // Last resort: try manually constructed CDN URLs with token signing
-        if (!$videoPath) {
-            Log::info('BunnyStreamService: play data URLs failed, trying signed CDN URLs');
-            $signedOriginalUrl = $this->getOriginalUrl($bunnyVideoId);
-            $videoPath = $this->downloadFile($signedOriginalUrl, "{$storageBase}/original.mp4", $targetDisk);
-
-            if (!$videoPath) {
-                $resolutions = ['1080p', '720p', '480p', '360p', '240p'];
-                foreach ($resolutions as $res) {
-                    $mp4Url = $this->getMp4Url($bunnyVideoId, $res);
-                    $videoPath = $this->downloadFile($mp4Url, "{$storageBase}/play_{$res}.mp4", $targetDisk);
-                    if ($videoPath) {
-                        break;
-                    }
+            $resolutions = ['1080p', '720p', '480p', '360p', '240p'];
+            foreach ($resolutions as $res) {
+                $mp4Url = $this->getMp4Url($bunnyVideoId, $res);
+                $videoPath = $this->downloadFile($mp4Url, "{$storageBase}/play_{$res}.mp4", $targetDisk);
+                if ($videoPath) {
+                    break;
                 }
             }
         }
@@ -381,26 +570,20 @@ class BunnyStreamService
                 'bunny_id' => $bunnyVideoId,
             ]);
             $video->update(['status' => 'failed']);
-            return ['success' => false, 'error' => "Could not download video file. Tried play data URLs + signed CDN URLs. Check Bunny Stream settings: enable AllowDirectPlay and/or disable Block Direct URL File Access."];
+            return ['success' => false, 'error' => "Could not download video file. Tried direct CDN, HLS download, and MP4 fallbacks."];
         }
 
-        // 3. Download thumbnail — prefer play data URL
-        $thumbnailUrl = $playData['thumbnailUrl'] ?? null;
-        if (!$thumbnailUrl) {
-            $thumbnailFileName = $videoInfo['thumbnailFileName'] ?? null;
-            $thumbnailUrl = $this->getThumbnailUrl($bunnyVideoId, $thumbnailFileName);
-        }
+        // 3. Download thumbnail
+        $thumbnailFileName = $videoInfo['thumbnailFileName'] ?? null;
+        $thumbnailUrl = $this->getThumbnailUrl($bunnyVideoId, $thumbnailFileName);
         $thumbnailPath = $this->downloadFile(
             $thumbnailUrl,
             "thumbnails/{$video->user_id}/{$video->uuid}_thumb.jpg",
             $targetDisk
         );
 
-        // 4. Download animated preview WebP — prefer play data URL
-        $previewWebpUrl = $playData['previewUrl'] ?? null;
-        if (!$previewWebpUrl) {
-            $previewWebpUrl = $this->getPreviewUrl($bunnyVideoId);
-        }
+        // 4. Download animated preview WebP
+        $previewWebpUrl = $this->getPreviewUrl($bunnyVideoId);
         $previewPath = $this->downloadFile(
             $previewWebpUrl,
             "{$storageBase}/preview.webp",
