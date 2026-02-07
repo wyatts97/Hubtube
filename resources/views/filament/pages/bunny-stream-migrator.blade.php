@@ -1,7 +1,7 @@
 <x-filament-panels::page>
-    {{-- Livewire polling: when migrating, call downloadNext every 1 second after current request completes --}}
+    {{-- Livewire polling: when migrating, check background download status every 3 seconds --}}
     @if($isMigrating)
-        <div wire:poll.1s="downloadNext"></div>
+        <div wire:poll.3s="downloadNext"></div>
     @endif
 
     <div class="space-y-6">

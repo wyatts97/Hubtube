@@ -6,6 +6,9 @@ use App\Models\Video;
 use App\Services\BunnyStreamService;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
 
 class BunnyStreamMigrator extends Page
 {
@@ -35,6 +38,11 @@ class BunnyStreamMigrator extends Page
 
     // Log of completed/failed downloads in this session
     public array $migrationLog = [];
+
+    // Cache keys for background download coordination
+    private const CACHE_DOWNLOADING = 'bunny_migration_downloading';
+    private const CACHE_CURRENT_VIDEO = 'bunny_migration_current_video';
+    private const CACHE_RESULT = 'bunny_migration_result';
 
     public function getTitle(): string
     {
@@ -147,18 +155,60 @@ class BunnyStreamMigrator extends Page
     }
 
     /**
-     * Download the next pending embedded video. Called by Livewire polling.
+     * Poll handler: check if a background download finished, then kick off the next one.
+     * Called by Livewire polling every few seconds.
      */
     public function downloadNext(): void
     {
         if ($this->shouldStop || !$this->isMigrating) {
             $this->isMigrating = false;
             $this->currentVideoTitle = '';
+            Cache::forget(self::CACHE_DOWNLOADING);
+            Cache::forget(self::CACHE_CURRENT_VIDEO);
+            Cache::forget(self::CACHE_RESULT);
             $this->refreshStats();
             return;
         }
 
-        // Get the next embedded video to download
+        // Check if a download is currently running in the background
+        if (Cache::has(self::CACHE_DOWNLOADING)) {
+            // Update UI with current video info from cache
+            $currentInfo = Cache::get(self::CACHE_CURRENT_VIDEO, []);
+            $this->currentVideoTitle = $currentInfo['title'] ?? $this->currentVideoTitle;
+            $this->currentVideoId = $currentInfo['id'] ?? $this->currentVideoId;
+            return; // Still downloading, wait for next poll
+        }
+
+        // Check if the last background download produced a result
+        $lastResult = Cache::pull(self::CACHE_RESULT);
+        if ($lastResult) {
+            if ($lastResult['success']) {
+                $this->migratedCount++;
+                $this->migrationLog[] = [
+                    'id' => $lastResult['video_id'],
+                    'title' => $lastResult['title'],
+                    'bunny_id' => $lastResult['bunny_id'],
+                    'status' => 'completed',
+                    'error' => null,
+                ];
+            } else {
+                $this->migrationLog[] = [
+                    'id' => $lastResult['video_id'],
+                    'title' => $lastResult['title'],
+                    'bunny_id' => $lastResult['bunny_id'],
+                    'status' => 'failed',
+                    'error' => $lastResult['error'],
+                ];
+            }
+
+            if (count($this->migrationLog) > 50) {
+                $this->migrationLog = array_slice($this->migrationLog, -50);
+            }
+
+            $this->refreshStats();
+        }
+
+        // Find the next video to download
         $video = Video::where('is_embedded', true)
             ->where('source_site', 'bunnystream')
             ->whereNotNull('source_video_id')
@@ -178,38 +228,22 @@ class BunnyStreamMigrator extends Page
             return;
         }
 
+        // Mark as downloading and store current video info
+        Cache::put(self::CACHE_DOWNLOADING, true, 900); // 15 min TTL safety
+        Cache::put(self::CACHE_CURRENT_VIDEO, [
+            'id' => $video->id,
+            'title' => $video->title,
+        ], 900);
+
         $this->currentVideoTitle = $video->title;
         $this->currentVideoId = $video->id;
 
-        // Run the download synchronously
-        $service = new BunnyStreamService();
-        $result = $service->downloadVideo($video, $this->targetDisk);
-
-        if ($result['success']) {
-            $this->migratedCount++;
-            $this->migrationLog[] = [
-                'id' => $video->id,
-                'title' => $video->title,
-                'bunny_id' => $video->source_video_id,
-                'status' => 'completed',
-                'error' => null,
-            ];
-        } else {
-            $this->migrationLog[] = [
-                'id' => $video->id,
-                'title' => $video->title,
-                'bunny_id' => $video->source_video_id,
-                'status' => 'failed',
-                'error' => $result['error'],
-            ];
-        }
-
-        // Keep only last 50 log entries
-        if (count($this->migrationLog) > 50) {
-            $this->migrationLog = array_slice($this->migrationLog, -50);
-        }
-
-        $this->refreshStats();
+        // Dispatch background download via artisan command
+        $videoId = $video->id;
+        $disk = $this->targetDisk;
+        Process::timeout(900)->start(
+            "php " . base_path('artisan') . " bunny:download-single {$videoId} --disk={$disk}"
+        );
     }
 
     /**
@@ -254,7 +288,7 @@ class BunnyStreamMigrator extends Page
     }
 
     /**
-     * Download a single video by ID directly (synchronous).
+     * Download a single video by ID (dispatched as background process).
      */
     public function downloadSingle(int $videoId): void
     {
@@ -265,29 +299,37 @@ class BunnyStreamMigrator extends Page
             return;
         }
 
+        if (Cache::has(self::CACHE_DOWNLOADING)) {
+            Notification::make()
+                ->title('A download is already in progress')
+                ->body('Please wait for the current download to finish.')
+                ->warning()
+                ->send();
+            return;
+        }
+
         $this->currentVideoTitle = $video->title;
         $this->currentVideoId = $video->id;
+        $this->isMigrating = true;
+        $this->shouldStop = false;
+        $this->totalToMigrate = max($this->totalToMigrate, 1);
 
-        $service = new BunnyStreamService();
-        $result = $service->downloadVideo($video, $this->targetDisk);
+        Cache::put(self::CACHE_DOWNLOADING, true, 900);
+        Cache::put(self::CACHE_CURRENT_VIDEO, [
+            'id' => $video->id,
+            'title' => $video->title,
+        ], 900);
 
-        $this->currentVideoTitle = '';
-        $this->currentVideoId = 0;
-        $this->refreshStats();
+        $disk = $this->targetDisk;
+        Process::timeout(900)->start(
+            "php " . base_path('artisan') . " bunny:download-single {$videoId} --disk={$disk}"
+        );
 
-        if ($result['success']) {
-            Notification::make()
-                ->title("Downloaded: {$video->title}")
-                ->body("Saved to: {$result['video_path']}")
-                ->success()
-                ->send();
-        } else {
-            Notification::make()
-                ->title("Failed: {$video->title}")
-                ->body($result['error'])
-                ->danger()
-                ->send();
-        }
+        Notification::make()
+            ->title("Downloading: {$video->title}")
+            ->body('Download started in the background. The page will update when complete.')
+            ->info()
+            ->send();
     }
 
     /**

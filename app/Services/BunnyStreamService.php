@@ -298,166 +298,66 @@ class BunnyStreamService
     }
 
     /**
-     * Download a video via HLS: fetch the master playlist, pick the highest resolution,
-     * download all .ts segments, and use ffmpeg to remux into a single MP4.
+     * Download a video via HLS using ffmpeg's native HLS input.
+     * ffmpeg reads the playlist URL directly, downloads segments, and outputs
+     * a properly indexed, seekable MP4 with moov atom at the start.
      * Returns the stored path on success, null on failure.
      */
     public function downloadViaHls(string $videoId, string $storagePath, string $disk = 'public'): ?string
     {
-        $baseUrl = "https://{$this->cdnHost}/{$videoId}";
+        $playlistUrl = "https://{$this->cdnHost}/{$videoId}/playlist.m3u8";
 
-        // 1. Fetch master playlist
+        // 1. Verify playlist is accessible
         try {
-            $masterResponse = Http::timeout(30)->get("{$baseUrl}/playlist.m3u8");
-            if (!$masterResponse->successful()) {
-                Log::warning('BunnyStreamService HLS: master playlist failed', [
-                    'url' => "{$baseUrl}/playlist.m3u8",
-                    'status' => $masterResponse->status(),
+            $checkResponse = Http::timeout(15)->get($playlistUrl);
+            if (!$checkResponse->successful()) {
+                Log::warning('BunnyStreamService HLS: playlist not accessible', [
+                    'url' => $playlistUrl,
+                    'status' => $checkResponse->status(),
                 ]);
                 return null;
             }
         } catch (\Throwable $e) {
-            Log::error('BunnyStreamService HLS: master playlist error', ['error' => $e->getMessage()]);
+            Log::error('BunnyStreamService HLS: playlist check error', ['error' => $e->getMessage()]);
             return null;
         }
 
-        // 2. Parse master playlist — pick highest resolution variant
-        $masterContent = $masterResponse->body();
-        $lines = explode("\n", trim($masterContent));
-        $bestResolution = null;
-        $bestBandwidth = 0;
-        $bestVariantUri = null;
-
-        for ($i = 0; $i < count($lines); $i++) {
-            if (str_starts_with($lines[$i], '#EXT-X-STREAM-INF:')) {
-                $infoLine = $lines[$i];
-                $variantUri = trim($lines[$i + 1] ?? '');
-
-                if (preg_match('/BANDWIDTH=(\d+)/', $infoLine, $bwMatch)) {
-                    $bandwidth = (int) $bwMatch[1];
-                    if ($bandwidth > $bestBandwidth) {
-                        $bestBandwidth = $bandwidth;
-                        $bestVariantUri = $variantUri;
-                        if (preg_match('/RESOLUTION=(\d+x\d+)/', $infoLine, $resMatch)) {
-                            $bestResolution = $resMatch[1];
-                        }
-                    }
-                }
-            }
-        }
-
-        if (!$bestVariantUri) {
-            Log::warning('BunnyStreamService HLS: no variant found in master playlist');
-            return null;
-        }
-
-        Log::info('BunnyStreamService HLS: selected variant', [
-            'resolution' => $bestResolution,
-            'bandwidth' => $bestBandwidth,
-            'uri' => $bestVariantUri,
+        Log::info('BunnyStreamService HLS: starting ffmpeg download', [
+            'playlist' => $playlistUrl,
+            'target' => $storagePath,
         ]);
 
-        // 3. Fetch variant playlist
-        $variantUrl = "{$baseUrl}/{$bestVariantUri}";
-        $variantBase = dirname($variantUrl);
-
-        try {
-            $variantResponse = Http::timeout(30)->get($variantUrl);
-            if (!$variantResponse->successful()) {
-                Log::warning('BunnyStreamService HLS: variant playlist failed', [
-                    'url' => $variantUrl,
-                    'status' => $variantResponse->status(),
-                ]);
-                return null;
-            }
-        } catch (\Throwable $e) {
-            Log::error('BunnyStreamService HLS: variant playlist error', ['error' => $e->getMessage()]);
-            return null;
-        }
-
-        // 4. Parse segment URLs from variant playlist
-        $variantContent = $variantResponse->body();
-        $variantLines = explode("\n", trim($variantContent));
-        $segments = [];
-        foreach ($variantLines as $line) {
-            $line = trim($line);
-            if ($line && !str_starts_with($line, '#')) {
-                $segments[] = $line;
-            }
-        }
-
-        if (empty($segments)) {
-            Log::warning('BunnyStreamService HLS: no segments found in variant playlist');
-            return null;
-        }
-
-        Log::info('BunnyStreamService HLS: downloading segments', ['count' => count($segments)]);
-
-        // 5. Download all segments to a temp directory
+        // 2. Use ffmpeg to read HLS directly and output a seekable MP4
+        //    -i <playlist_url>   : ffmpeg natively handles HLS input
+        //    -c copy             : no re-encoding, just remux (fast)
+        //    -bsf:a aac_adtstoasc : fix AAC stream from MPEG-TS to MP4 container
+        //    -movflags +faststart : move moov atom to start for instant seeking
         $tempDir = storage_path('app/temp/hls_' . $videoId . '_' . time());
         if (!is_dir($tempDir)) {
             mkdir($tempDir, 0755, true);
         }
-
-        $segmentFiles = [];
-        foreach ($segments as $index => $segmentFile) {
-            $segmentUrl = "{$variantBase}/{$segmentFile}";
-            $localPath = "{$tempDir}/segment_{$index}.ts";
-
-            try {
-                $segResponse = Http::withOptions([
-                    'timeout' => 120,
-                    'connect_timeout' => 30,
-                    'sink' => $localPath,
-                ])->get($segmentUrl);
-
-                if (!$segResponse->successful() || !file_exists($localPath) || filesize($localPath) === 0) {
-                    Log::warning('BunnyStreamService HLS: segment download failed', [
-                        'segment' => $segmentFile,
-                        'status' => $segResponse->status(),
-                    ]);
-                    $this->cleanupTempDir($tempDir);
-                    return null;
-                }
-
-                $segmentFiles[] = $localPath;
-            } catch (\Throwable $e) {
-                Log::error('BunnyStreamService HLS: segment error', [
-                    'segment' => $segmentFile,
-                    'error' => $e->getMessage(),
-                ]);
-                $this->cleanupTempDir($tempDir);
-                return null;
-            }
-        }
-
-        // 6. Create ffmpeg concat file
-        $concatFile = "{$tempDir}/concat.txt";
-        $concatContent = '';
-        foreach ($segmentFiles as $sf) {
-            $concatContent .= "file '" . str_replace("'", "'\\''", $sf) . "'\n";
-        }
-        file_put_contents($concatFile, $concatContent);
-
-        // 7. Run ffmpeg to remux segments into MP4
         $outputFile = "{$tempDir}/output.mp4";
         $ffmpegBinary = config('hubtube.ffmpeg.binary', '/usr/bin/ffmpeg');
 
         try {
-            $result = Process::timeout(600)->run(
-                "{$ffmpegBinary} -f concat -safe 0 -i {$concatFile} -c copy -movflags +faststart {$outputFile} -y 2>&1"
-            );
+            $cmd = "{$ffmpegBinary} -i " . escapeshellarg($playlistUrl)
+                . " -c copy -bsf:a aac_adtstoasc -movflags +faststart"
+                . " " . escapeshellarg($outputFile) . " -y 2>&1";
+
+            Log::info('BunnyStreamService HLS: running ffmpeg', ['cmd' => $cmd]);
+
+            $result = Process::timeout(900)->run($cmd);
 
             if (!$result->successful() || !file_exists($outputFile) || filesize($outputFile) === 0) {
-                Log::error('BunnyStreamService HLS: ffmpeg concat failed', [
+                Log::error('BunnyStreamService HLS: ffmpeg failed', [
                     'exit_code' => $result->exitCode(),
-                    'output' => substr($result->output(), -500),
+                    'output' => substr($result->output(), -1000),
                 ]);
                 $this->cleanupTempDir($tempDir);
                 return null;
             }
 
-            Log::info('BunnyStreamService HLS: ffmpeg concat success', [
+            Log::info('BunnyStreamService HLS: ffmpeg success', [
                 'output_size' => filesize($outputFile),
             ]);
         } catch (\Throwable $e) {
@@ -466,7 +366,7 @@ class BunnyStreamService
             return null;
         }
 
-        // 8. Store the output MP4 to the target disk
+        // 3. Store the output MP4 to the target disk
         $diskInstance = Storage::disk($disk);
         $directory = dirname($storagePath);
         if ($directory && $directory !== '.') {
@@ -475,10 +375,10 @@ class BunnyStreamService
 
         $diskInstance->put($storagePath, file_get_contents($outputFile));
 
-        // 9. Cleanup temp files
+        // 4. Cleanup temp files
         $this->cleanupTempDir($tempDir);
 
-        // 10. Verify
+        // 5. Verify
         if ($diskInstance->exists($storagePath) && $diskInstance->size($storagePath) > 0) {
             Log::info('BunnyStreamService HLS: download complete', [
                 'path' => $storagePath,
