@@ -138,6 +138,33 @@ class BunnyStreamService
     }
 
     /**
+     * Get video play data which includes pre-authorized download URLs.
+     * This bypasses CDN security settings (Direct URL Access, Token Auth, etc.)
+     */
+    public function getVideoPlayData(string $videoId): ?array
+    {
+        try {
+            $response = Http::withHeaders([
+                'AccessKey' => $this->apiKey,
+            ])->get("{$this->baseUrl}/library/{$this->libraryId}/videos/{$videoId}/play");
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            Log::warning('Bunny Stream play data failed', [
+                'videoId' => $videoId,
+                'status' => $response->status(),
+                'body' => substr($response->body(), 0, 500),
+            ]);
+            return null;
+        } catch (\Throwable $e) {
+            Log::error('Bunny Stream play data error', ['videoId' => $videoId, 'error' => $e->getMessage()]);
+            return null;
+        }
+    }
+
+    /**
      * Build the direct download URL for the original uploaded file.
      */
     public function getOriginalUrl(string $videoId): string
@@ -287,35 +314,63 @@ class BunnyStreamService
             'title' => $video->title,
         ]);
 
-        // 1. Get video info from Bunny API
-        $videoInfo = $this->getVideo($bunnyVideoId);
+        // 1. Get video play data from Bunny API — returns pre-authorized URLs
+        $playData = $this->getVideoPlayData($bunnyVideoId);
+        $videoInfo = $playData['video'] ?? null;
 
-        Log::info('BunnyStreamService: API response', [
+        Log::info('BunnyStreamService: play data response', [
             'bunny_id' => $bunnyVideoId,
-            'api_returned' => $videoInfo !== null,
+            'play_data_returned' => $playData !== null,
+            'originalUrl' => $playData['originalUrl'] ?? 'N/A',
+            'fallbackUrl' => $playData['fallbackUrl'] ?? 'N/A',
+            'thumbnailUrl' => $playData['thumbnailUrl'] ?? 'N/A',
+            'previewUrl' => $playData['previewUrl'] ?? 'N/A',
             'hasOriginal' => $videoInfo['hasOriginal'] ?? 'N/A',
             'hasMP4Fallback' => $videoInfo['hasMP4Fallback'] ?? 'N/A',
             'availableResolutions' => $videoInfo['availableResolutions'] ?? 'N/A',
-            'status' => $videoInfo['status'] ?? 'N/A',
         ]);
 
-        // 2. Try downloading the video file — attempt all methods regardless of API flags
+        // 2. Try downloading the video file using pre-authorized URLs from play data
         $videoPath = null;
 
-        // Try original file first
-        $originalUrl = $this->getOriginalUrl($bunnyVideoId);
-        Log::info('BunnyStreamService: trying original', ['url' => $originalUrl]);
-        $videoPath = $this->downloadFile($originalUrl, "{$storageBase}/original.mp4", $targetDisk);
+        // Try original URL from play data first
+        $originalUrl = $playData['originalUrl'] ?? null;
+        if ($originalUrl && !empty($originalUrl)) {
+            Log::info('BunnyStreamService: trying play data originalUrl', ['url' => $originalUrl]);
+            $videoPath = $this->downloadFile($originalUrl, "{$storageBase}/original.mp4", $targetDisk);
+        }
 
-        // If original failed, try MP4 fallbacks at each resolution (highest first)
+        // Try fallback URL from play data
         if (!$videoPath) {
-            $resolutions = ['1080p', '720p', '480p', '360p', '240p'];
-            foreach ($resolutions as $res) {
-                $mp4Url = $this->getMp4Url($bunnyVideoId, $res);
-                Log::info('BunnyStreamService: trying MP4 fallback', ['url' => $mp4Url, 'resolution' => $res]);
-                $videoPath = $this->downloadFile($mp4Url, "{$storageBase}/play_{$res}.mp4", $targetDisk);
-                if ($videoPath) {
-                    break;
+            $fallbackUrl = $playData['fallbackUrl'] ?? null;
+            if ($fallbackUrl && !empty($fallbackUrl)) {
+                Log::info('BunnyStreamService: trying play data fallbackUrl', ['url' => $fallbackUrl]);
+                $videoPath = $this->downloadFile($fallbackUrl, "{$storageBase}/fallback.mp4", $targetDisk);
+            }
+        }
+
+        // Try HLS playlist URL — download the highest quality segment
+        if (!$videoPath) {
+            $playlistUrl = $playData['videoPlaylistUrl'] ?? null;
+            if ($playlistUrl && !empty($playlistUrl)) {
+                Log::info('BunnyStreamService: play data has playlist URL (HLS)', ['url' => $playlistUrl]);
+            }
+        }
+
+        // Last resort: try manually constructed CDN URLs with token signing
+        if (!$videoPath) {
+            Log::info('BunnyStreamService: play data URLs failed, trying signed CDN URLs');
+            $signedOriginalUrl = $this->getOriginalUrl($bunnyVideoId);
+            $videoPath = $this->downloadFile($signedOriginalUrl, "{$storageBase}/original.mp4", $targetDisk);
+
+            if (!$videoPath) {
+                $resolutions = ['1080p', '720p', '480p', '360p', '240p'];
+                foreach ($resolutions as $res) {
+                    $mp4Url = $this->getMp4Url($bunnyVideoId, $res);
+                    $videoPath = $this->downloadFile($mp4Url, "{$storageBase}/play_{$res}.mp4", $targetDisk);
+                    if ($videoPath) {
+                        break;
+                    }
                 }
             }
         }
@@ -326,20 +381,26 @@ class BunnyStreamService
                 'bunny_id' => $bunnyVideoId,
             ]);
             $video->update(['status' => 'failed']);
-            return ['success' => false, 'error' => "Could not download video file. Tried original + 5 MP4 resolutions. Check Bunny Stream security settings (Direct URL Access, Token Auth, Allowed Domains)."];
+            return ['success' => false, 'error' => "Could not download video file. Tried play data URLs + signed CDN URLs. Check Bunny Stream settings: enable AllowDirectPlay and/or disable Block Direct URL File Access."];
         }
 
-        // 3. Download thumbnail
-        $thumbnailFileName = $videoInfo['thumbnailFileName'] ?? null;
-        $thumbnailUrl = $this->getThumbnailUrl($bunnyVideoId, $thumbnailFileName);
+        // 3. Download thumbnail — prefer play data URL
+        $thumbnailUrl = $playData['thumbnailUrl'] ?? null;
+        if (!$thumbnailUrl) {
+            $thumbnailFileName = $videoInfo['thumbnailFileName'] ?? null;
+            $thumbnailUrl = $this->getThumbnailUrl($bunnyVideoId, $thumbnailFileName);
+        }
         $thumbnailPath = $this->downloadFile(
             $thumbnailUrl,
             "thumbnails/{$video->user_id}/{$video->uuid}_thumb.jpg",
             $targetDisk
         );
 
-        // 4. Download animated preview WebP
-        $previewWebpUrl = $this->getPreviewUrl($bunnyVideoId);
+        // 4. Download animated preview WebP — prefer play data URL
+        $previewWebpUrl = $playData['previewUrl'] ?? null;
+        if (!$previewWebpUrl) {
+            $previewWebpUrl = $this->getPreviewUrl($bunnyVideoId);
+        }
         $previewPath = $this->downloadFile(
             $previewWebpUrl,
             "{$storageBase}/preview.webp",
