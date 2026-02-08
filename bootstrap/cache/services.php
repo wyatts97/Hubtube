@@ -56,8 +56,9 @@
     52 => 'App\\Providers\\Filament\\AdminPanelProvider',
     53 => 'App\\Providers\\AppServiceProvider',
     54 => 'App\\Providers\\AuthServiceProvider',
-    55 => 'App\\Providers\\EventServiceProvider',
-    56 => 'App\\Providers\\HorizonServiceProvider',
+    55 => 'App\\Providers\\DynamicConfigServiceProvider',
+    56 => 'App\\Providers\\EventServiceProvider',
+    57 => 'App\\Providers\\HorizonServiceProvider',
   ),
   'eager' => 
   array (
@@ -99,8 +100,9 @@
     35 => 'App\\Providers\\Filament\\AdminPanelProvider',
     36 => 'App\\Providers\\AppServiceProvider',
     37 => 'App\\Providers\\AuthServiceProvider',
-    38 => 'App\\Providers\\EventServiceProvider',
-    39 => 'App\\Providers\\HorizonServiceProvider',
+    38 => 'App\\Providers\\DynamicConfigServiceProvider',
+    39 => 'App\\Providers\\EventServiceProvider',
+    40 => 'App\\Providers\\HorizonServiceProvider',
   ),
   'deferred' => 
   array (
