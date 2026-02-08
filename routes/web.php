@@ -60,6 +60,9 @@ Route::middleware('age.verified')->group(function () {
 
     Route::get('/playlist/{playlist:slug}', [PlaylistController::class, 'show'])->name('playlists.show');
 
+    // Video Ads API (accessible by all users including guests)
+    Route::get('/api/video-ads', [\App\Http\Controllers\VideoAdController::class, 'getAds'])->name('video-ads.get');
+
     Route::middleware('guest')->group(function () {
         Route::get('/register', [RegisterController::class, 'create'])->name('register');
         Route::post('/register', [RegisterController::class, 'store']);

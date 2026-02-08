@@ -9,6 +9,7 @@ import VideoCard from '@/Components/VideoCard.vue';
 import CommentSection from '@/Components/CommentSection.vue';
 import VideoPlayer from '@/Components/VideoPlayer.vue';
 import EmbeddedVideoPlayer from '@/Components/EmbeddedVideoPlayer.vue';
+import VideoAdPlayer from '@/Components/VideoAdPlayer.vue';
 import KeyboardShortcuts from '@/Components/KeyboardShortcuts.vue';
 import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff, Eye, ListVideo, Plus, Check, Loader2 } from 'lucide-vue-next';
 
@@ -22,6 +23,87 @@ const props = defineProps({
 });
 
 const toast = useToast();
+
+// Ad system refs
+const adPlayerRef = ref(null);
+const videoWrapperRef = ref(null);
+const preRollDone = ref(false);
+const postRollDone = ref(false);
+
+// Get the underlying <video> element from the wrapper
+const getVideoElement = () => {
+    if (!videoWrapperRef.value) return null;
+    return videoWrapperRef.value.querySelector('video');
+};
+
+// Ad event handlers
+const onAdStarted = (placement) => {
+    const video = getVideoElement();
+    if (video && !video.paused) video.pause();
+};
+
+const onAdEnded = (placement) => {
+    if (placement === 'pre_roll') {
+        preRollDone.value = true;
+        const video = getVideoElement();
+        if (video) video.play().catch(() => {});
+    } else if (placement === 'mid_roll') {
+        const video = getVideoElement();
+        if (video) video.play().catch(() => {});
+    }
+    // post_roll: video already ended, nothing to resume
+};
+
+const onAdRequestPause = () => {
+    const video = getVideoElement();
+    if (video && !video.paused) video.pause();
+};
+
+const onAdRequestPlay = () => {
+    const video = getVideoElement();
+    if (video) video.play().catch(() => {});
+};
+
+// Setup video event listeners for ad triggers
+const setupAdTriggers = () => {
+    const video = getVideoElement();
+    if (!video || !adPlayerRef.value) return;
+
+    // Pre-roll: try to play before video starts
+    if (!preRollDone.value) {
+        const played = adPlayerRef.value.triggerPreRoll();
+        if (!played) preRollDone.value = true;
+    }
+
+    // Mid-roll: check on timeupdate
+    video.addEventListener('timeupdate', () => {
+        if (adPlayerRef.value && !adPlayerRef.value.isPlaying) {
+            adPlayerRef.value.checkMidRoll(video.currentTime);
+        }
+    });
+
+    // Post-roll: trigger when video ends
+    video.addEventListener('ended', () => {
+        if (!postRollDone.value && adPlayerRef.value) {
+            const played = adPlayerRef.value.triggerPostRoll();
+            postRollDone.value = true;
+        }
+    });
+};
+
+// Wait for video element to be ready, then setup ad triggers
+const waitForVideoAndSetupAds = () => {
+    const checkInterval = setInterval(() => {
+        const video = getVideoElement();
+        if (video) {
+            clearInterval(checkInterval);
+            // Small delay to let Plyr initialize
+            setTimeout(setupAdTriggers, 500);
+        }
+    }, 200);
+    // Safety: stop checking after 10s
+    setTimeout(() => clearInterval(checkInterval), 10000);
+};
 
 const hlsPlaylistUrl = computed(() => {
     if (props.video.qualities_available?.length > 1 && !props.video.qualities_available?.includes('original') || 
@@ -129,8 +211,16 @@ const closePlaylistMenu = (e) => {
     }
 };
 
-onMounted(() => document.addEventListener('click', closePlaylistMenu));
-onUnmounted(() => document.removeEventListener('click', closePlaylistMenu));
+onMounted(() => {
+    document.addEventListener('click', closePlaylistMenu);
+    // Setup ad triggers after component mounts (only for non-embedded videos)
+    if (!props.video.is_embedded) {
+        waitForVideoAndSetupAds();
+    }
+});
+onUnmounted(() => {
+    document.removeEventListener('click', closePlaylistMenu);
+});
 
 // Report modal
 const showReportModal = ref(false);
@@ -224,7 +314,7 @@ const formattedViews = computed(() => {
                         :show-info="false"
                     />
                 </div>
-                <div v-else class="aspect-video bg-black rounded-xl overflow-hidden relative">
+                <div v-else ref="videoWrapperRef" class="aspect-video bg-black rounded-xl overflow-hidden relative">
                     <VideoPlayer
                         :src="video.video_url"
                         :poster="video.thumbnail_url"
@@ -232,6 +322,16 @@ const formattedViews = computed(() => {
                         :hls-playlist="hlsPlaylistUrl"
                         :autoplay="false"
                         :preview-thumbnails="video.preview_thumbnails_url || ''"
+                    />
+                    <VideoAdPlayer
+                        ref="adPlayerRef"
+                        :category-id="video.category_id"
+                        :video-duration="video.duration || 0"
+                        @ad-started="onAdStarted"
+                        @ad-ended="onAdEnded"
+                        @ad-skipped="onAdEnded"
+                        @request-pause="onAdRequestPause"
+                        @request-play="onAdRequestPlay"
                     />
                 </div>
 
