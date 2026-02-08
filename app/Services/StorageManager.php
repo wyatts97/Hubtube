@@ -130,7 +130,10 @@ class StorageManager
     }
 
     /**
-     * Get the public URL for a file stored on the active disk.
+     * Get the URL for a file stored on the given disk.
+     * For cloud disks, generates pre-signed temporary URLs by default
+     * since bucket files are typically private. Falls back to plain URL
+     * if the bucket is configured as public via admin setting.
      */
     public static function url(string $path, ?string $diskName = null): string
     {
@@ -147,17 +150,23 @@ class StorageManager
             return asset('storage/' . $path);
         }
 
-        try {
-            return static::disk($diskName)->url($path);
-        } catch (\Throwable $e) {
-            Log::warning('StorageManager: failed to generate URL', [
-                'disk' => $diskName,
-                'path' => $path,
-                'error' => $e->getMessage(),
-            ]);
-            // Fallback to local
-            return asset('storage/' . $path);
+        // For cloud disks, use pre-signed URLs unless bucket is public
+        if (Setting::get('cloud_storage_public_bucket', false)) {
+            try {
+                return static::disk($diskName)->url($path);
+            } catch (\Throwable $e) {
+                Log::warning('StorageManager: failed to generate public URL', [
+                    'disk' => $diskName,
+                    'path' => $path,
+                    'error' => $e->getMessage(),
+                ]);
+                return asset('storage/' . $path);
+            }
         }
+
+        // Default: pre-signed temporary URL (works with private buckets)
+        $minutes = (int) Setting::get('cloud_url_expiry_minutes', 120);
+        return static::temporaryUrl($path, $minutes, $diskName);
     }
 
     /**
@@ -175,12 +184,17 @@ class StorageManager
         try {
             return static::disk($diskName)->temporaryUrl($path, now()->addMinutes($minutes));
         } catch (\Throwable $e) {
-            Log::warning('StorageManager: temporaryUrl failed, falling back to url()', [
+            Log::warning('StorageManager: temporaryUrl failed, falling back to plain URL', [
                 'disk' => $diskName,
                 'path' => $path,
                 'error' => $e->getMessage(),
             ]);
-            return static::url($path, $diskName);
+            // Fall back to plain disk URL (not url() to avoid circular reference)
+            try {
+                return static::disk($diskName)->url($path);
+            } catch (\Throwable $e2) {
+                return asset('storage/' . $path);
+            }
         }
     }
 

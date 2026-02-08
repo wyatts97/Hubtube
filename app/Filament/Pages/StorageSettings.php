@@ -37,6 +37,8 @@ class StorageSettings extends Page implements HasForms
             // Cloud Offloading
             'cloud_offloading_enabled' => Setting::get('cloud_offloading_enabled', false),
             'cloud_offloading_delete_local' => Setting::get('cloud_offloading_delete_local', false),
+            'cloud_storage_public_bucket' => Setting::get('cloud_storage_public_bucket', false),
+            'cloud_url_expiry_minutes' => Setting::get('cloud_url_expiry_minutes', 120),
             'storage_driver' => Setting::get('storage_driver', 'local'),
             // Wasabi
             'wasabi_enabled' => Setting::get('wasabi_enabled', false),
@@ -115,6 +117,17 @@ class StorageSettings extends Page implements HasForms
                                             ->label('Delete Local Files After Upload')
                                             ->helperText('Remove local copies after successful cloud upload to save disk space. Only enable if your cloud storage is reliable.')
                                             ->visible(fn ($get) => $get('cloud_offloading_enabled')),
+                                        Toggle::make('cloud_storage_public_bucket')
+                                            ->label('Bucket Has Public Access')
+                                            ->helperText('Enable if your bucket policy allows public reads. When off (default), pre-signed temporary URLs are used — this works with private buckets and is more secure.')
+                                            ->visible(fn ($get) => $get('cloud_offloading_enabled')),
+                                        TextInput::make('cloud_url_expiry_minutes')
+                                            ->label('Pre-signed URL Expiry (minutes)')
+                                            ->numeric()
+                                            ->minValue(5)
+                                            ->maxValue(10080)
+                                            ->helperText('How long pre-signed URLs remain valid. Only applies when bucket is private. Default: 120 minutes (2 hours).')
+                                            ->visible(fn ($get) => $get('cloud_offloading_enabled') && !$get('cloud_storage_public_bucket')),
                                     ]),
                                 Section::make('CDN Configuration')
                                     ->schema([
