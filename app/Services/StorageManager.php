@@ -34,9 +34,14 @@ class StorageManager
 
     /**
      * Get the name of the active storage disk based on admin settings.
+     * Returns a cloud disk only if cloud offloading is enabled.
      */
     public static function getActiveDiskName(): string
     {
+        if (!Setting::get('cloud_offloading_enabled', false)) {
+            return 'public';
+        }
+
         $driver = Setting::get('storage_driver', 'local');
 
         return match ($driver) {

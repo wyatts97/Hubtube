@@ -34,7 +34,9 @@ class StorageSettings extends Page implements HasForms
     public function mount(): void
     {
         $this->form->fill([
-            // Storage Driver
+            // Cloud Offloading
+            'cloud_offloading_enabled' => Setting::get('cloud_offloading_enabled', false),
+            'cloud_offloading_delete_local' => Setting::get('cloud_offloading_delete_local', false),
             'storage_driver' => Setting::get('storage_driver', 'local'),
             // Wasabi
             'wasabi_enabled' => Setting::get('wasabi_enabled', false),
@@ -78,17 +80,41 @@ class StorageSettings extends Page implements HasForms
                     ->tabs([
                         Tabs\Tab::make('General')
                             ->schema([
-                                Section::make('Storage Driver')
+                                Section::make('Cloud Offloading')
+                                    ->description('When enabled, videos are processed locally with FFmpeg then automatically uploaded to your configured cloud storage. The video\'s storage_disk is updated after a successful upload.')
                                     ->schema([
+                                        Toggle::make('cloud_offloading_enabled')
+                                            ->label('Enable Cloud Offloading')
+                                            ->helperText('Automatically upload processed videos, thumbnails, and previews to cloud storage after processing.')
+                                            ->reactive()
+                                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                                if ($state) {
+                                                    // Auto-set storage_driver based on which provider is enabled
+                                                    if ($get('wasabi_enabled')) {
+                                                        $set('storage_driver', 'wasabi');
+                                                    } elseif ($get('b2_enabled')) {
+                                                        $set('storage_driver', 'b2');
+                                                    } elseif ($get('s3_enabled')) {
+                                                        $set('storage_driver', 's3');
+                                                    }
+                                                } else {
+                                                    $set('storage_driver', 'local');
+                                                }
+                                            }),
                                         Select::make('storage_driver')
-                                            ->label('Primary Storage')
+                                            ->label('Cloud Provider')
                                             ->options([
-                                                'local' => 'Local Storage',
+                                                'local' => 'Local Storage (no offloading)',
                                                 'wasabi' => 'Wasabi Cloud Storage',
                                                 'b2' => 'Backblaze B2',
                                                 's3' => 'Amazon S3',
                                             ])
-                                            ->helperText('Where to store uploaded videos'),
+                                            ->helperText('Which cloud provider to offload files to. Configure credentials in the provider\'s tab first.')
+                                            ->visible(fn ($get) => $get('cloud_offloading_enabled')),
+                                        Toggle::make('cloud_offloading_delete_local')
+                                            ->label('Delete Local Files After Upload')
+                                            ->helperText('Remove local copies after successful cloud upload to save disk space. Only enable if your cloud storage is reliable.')
+                                            ->visible(fn ($get) => $get('cloud_offloading_enabled')),
                                     ]),
                                 Section::make('CDN Configuration')
                                     ->schema([
@@ -250,6 +276,22 @@ class StorageSettings extends Page implements HasForms
             $autoEndpoint = StorageManager::getWasabiEndpoint($data['wasabi_region']);
             if (empty($data['wasabi_endpoint']) || $data['wasabi_endpoint'] === 'https://s3.wasabisys.com') {
                 $data['wasabi_endpoint'] = $autoEndpoint;
+            }
+        }
+
+        // If cloud offloading is disabled, force storage_driver to local
+        if (empty($data['cloud_offloading_enabled'])) {
+            $data['storage_driver'] = 'local';
+        }
+
+        // If cloud offloading is enabled but no driver selected, auto-detect
+        if (!empty($data['cloud_offloading_enabled']) && ($data['storage_driver'] ?? 'local') === 'local') {
+            if (!empty($data['wasabi_enabled'])) {
+                $data['storage_driver'] = 'wasabi';
+            } elseif (!empty($data['b2_enabled'])) {
+                $data['storage_driver'] = 'b2';
+            } elseif (!empty($data['s3_enabled'])) {
+                $data['storage_driver'] = 's3';
             }
         }
 

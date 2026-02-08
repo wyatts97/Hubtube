@@ -56,10 +56,12 @@ class ProcessVideoJob implements ShouldQueue
         try {
             $qualities = $this->processVideo();
 
-            // If cloud storage is active, upload all processed files to cloud
-            $targetDisk = $this->video->storage_disk ?? StorageManager::getActiveDiskName();
-            if (StorageManager::isCloudDisk($targetDisk)) {
-                $this->uploadToCloudStorage($targetDisk);
+            // Check if cloud offloading is enabled in admin settings
+            if (Setting::get('cloud_offloading_enabled', false)) {
+                $targetDisk = StorageManager::getActiveDiskName();
+                if (StorageManager::isCloudDisk($targetDisk)) {
+                    $this->uploadToCloudStorage($targetDisk);
+                }
             }
 
             $videoService->markAsProcessed($this->video, $qualities);
@@ -79,10 +81,12 @@ class ProcessVideoJob implements ShouldQueue
 
     protected function markAsProcessedWithOriginal(): void
     {
-        // If cloud storage is active, upload the original file
-        $targetDisk = $this->video->storage_disk ?? StorageManager::getActiveDiskName();
-        if (StorageManager::isCloudDisk($targetDisk)) {
-            $this->uploadToCloudStorage($targetDisk);
+        // Check if cloud offloading is enabled in admin settings
+        if (Setting::get('cloud_offloading_enabled', false)) {
+            $targetDisk = StorageManager::getActiveDiskName();
+            if (StorageManager::isCloudDisk($targetDisk)) {
+                $this->uploadToCloudStorage($targetDisk);
+            }
         }
 
         $this->video->update([
@@ -633,7 +637,37 @@ class ProcessVideoJob implements ShouldQueue
         ]);
 
         // Update the video's storage_disk to reflect where files now live
-        $this->video->update(['storage_disk' => $targetDisk]);
+        if ($failedCount === 0) {
+            $this->video->update(['storage_disk' => $targetDisk]);
+
+            // Optionally delete local copies after successful cloud upload
+            if (Setting::get('cloud_offloading_delete_local', false)) {
+                Log::info('ProcessVideoJob: deleting local copies after cloud offload', [
+                    'video_id' => $this->video->id,
+                ]);
+
+                foreach ($allFiles as $file) {
+                    $localDisk->delete($file);
+                }
+
+                if ($this->video->thumbnail && $localDisk->exists($this->video->thumbnail)) {
+                    $localDisk->delete($this->video->thumbnail);
+                }
+
+                // Clean up empty directories
+                if ($localDisk->exists($videoDir) && empty($localDisk->allFiles($videoDir))) {
+                    $localDisk->deleteDirectory($videoDir);
+                }
+            }
+        } else {
+            // Some files failed — keep on local, log warning
+            Log::warning('ProcessVideoJob: some files failed to upload, keeping local copies', [
+                'video_id' => $this->video->id,
+                'failed' => $failedCount,
+            ]);
+            // Still update storage_disk so URLs resolve from cloud for files that did upload
+            $this->video->update(['storage_disk' => $targetDisk]);
+        }
     }
 
     public function failed(\Throwable $exception): void

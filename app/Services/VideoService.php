@@ -110,10 +110,8 @@ class VideoService
 
     protected function handleVideoUpload(Video $video, UploadedFile $file): void
     {
-        $activeDisk = StorageManager::getActiveDiskName();
-
         // Always upload to local first — FFmpeg needs local filesystem access for processing.
-        // ProcessVideoJob will push processed files to cloud storage after transcoding.
+        // ProcessVideoJob will offload to cloud and update storage_disk after successful upload.
         $path = $file->store(
             "videos/{$video->user_id}/{$video->uuid}",
             'public'
@@ -121,7 +119,7 @@ class VideoService
 
         $video->update([
             'video_path' => $path,
-            'storage_disk' => StorageManager::isCloudDisk() ? $activeDisk : 'public',
+            'storage_disk' => 'public',
             'size' => $file->getSize(),
         ]);
     }
