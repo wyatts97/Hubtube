@@ -52,6 +52,14 @@ return [
         'driver' => env('CLOUD_STORAGE_DRIVER', 'local'),
         'cdn_enabled' => env('CDN_ENABLED', false),
         'cdn_url' => env('CDN_URL'),
+        'wasabi' => [
+            'access_key' => env('WASABI_ACCESS_KEY'),
+            'secret_key' => env('WASABI_SECRET_KEY'),
+            'bucket' => env('WASABI_BUCKET'),
+            'region' => env('WASABI_REGION', 'us-east-1'),
+            'endpoint' => env('WASABI_ENDPOINT', 'https://s3.wasabisys.com'),
+            'url' => env('WASABI_URL'),
+        ],
     ],
     
     /*

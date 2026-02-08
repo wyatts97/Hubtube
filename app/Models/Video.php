@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\StorageManager;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,6 +24,7 @@ class Video extends Model
         'thumbnail',
         'preview_path',
         'video_path',
+        'storage_disk',
         'trailer_path',
         'duration',
         'size',
@@ -231,11 +233,7 @@ class Video extends Model
             return null;
         }
 
-        if (config('hubtube.storage.cdn_enabled')) {
-            return config('hubtube.storage.cdn_url') . '/' . $this->thumbnail;
-        }
-
-        return asset('storage/' . $this->thumbnail);
+        return StorageManager::url($this->thumbnail, $this->storage_disk ?? 'public');
     }
 
     public function getPreviewUrlAttribute(): ?string
@@ -248,11 +246,7 @@ class Video extends Model
             return null;
         }
 
-        if (config('hubtube.storage.cdn_enabled')) {
-            return config('hubtube.storage.cdn_url') . '/' . $this->preview_path;
-        }
-
-        return asset('storage/' . $this->preview_path);
+        return StorageManager::url($this->preview_path, $this->storage_disk ?? 'public');
     }
 
     public function getPreviewThumbnailsUrlAttribute(): ?string
@@ -261,11 +255,7 @@ class Video extends Model
             return null;
         }
 
-        if (config('hubtube.storage.cdn_enabled')) {
-            return config('hubtube.storage.cdn_url') . '/' . $this->scrubber_vtt_path;
-        }
-
-        return asset('storage/' . $this->scrubber_vtt_path);
+        return StorageManager::url($this->scrubber_vtt_path, $this->storage_disk ?? 'public');
     }
 
     public function getVideoUrlAttribute(): ?string
@@ -278,11 +268,7 @@ class Video extends Model
             return null;
         }
 
-        if (config('hubtube.storage.cdn_enabled')) {
-            return config('hubtube.storage.cdn_url') . '/' . $this->video_path;
-        }
-
-        return asset('storage/' . $this->video_path);
+        return StorageManager::url($this->video_path, $this->storage_disk ?? 'public');
     }
 
     public function hasPurchasedBy(?User $user): bool

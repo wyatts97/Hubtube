@@ -498,6 +498,7 @@ class BunnyStreamService
         // 5. Update the video record to become a native video
         $updateData = [
             'video_path' => $videoPath,
+            'storage_disk' => $targetDisk,
             'is_embedded' => false,
             'embed_url' => null,
             'embed_code' => null,

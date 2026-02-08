@@ -31,6 +31,10 @@ return [
             'region' => env('WASABI_REGION', 'us-east-1'),
             'bucket' => env('WASABI_BUCKET'),
             'endpoint' => env('WASABI_ENDPOINT', 'https://s3.wasabisys.com'),
+            'url' => env('WASABI_URL'),
+            'use_path_style_endpoint' => false,
+            'visibility' => 'public',
+            'throw' => true,
         ],
 
         'b2' => [

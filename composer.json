@@ -20,6 +20,7 @@
         "predis/predis": "^2.2",
         "spatie/laravel-medialibrary": "^11.4",
         "spatie/laravel-permission": "^6.4",
+        "league/flysystem-aws-s3-v3": "^3.0",
         "tightenco/ziggy": "^2.0"
     },
     "require-dev": {

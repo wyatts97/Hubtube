@@ -3,6 +3,10 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use App\Services\StorageManager;
+use Filament\Forms\Components\Actions;
+use Filament\Forms\Components\Actions\Action;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Tabs;
@@ -25,6 +29,7 @@ class StorageSettings extends Page implements HasForms
     protected static string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
+    public ?string $connectionStatus = null;
 
     public function mount(): void
     {
@@ -98,10 +103,11 @@ class StorageSettings extends Page implements HasForms
                         Tabs\Tab::make('Wasabi')
                             ->schema([
                                 Section::make('Wasabi Cloud Storage')
-                                    ->description('S3-compatible cloud storage with no egress fees')
+                                    ->description('S3-compatible object storage with no egress fees. Endpoint auto-resolves from region.')
                                     ->schema([
                                         Toggle::make('wasabi_enabled')
-                                            ->label('Enable Wasabi'),
+                                            ->label('Enable Wasabi')
+                                            ->columnSpanFull(),
                                         TextInput::make('wasabi_key')
                                             ->label('Access Key')
                                             ->password()
@@ -117,20 +123,39 @@ class StorageSettings extends Page implements HasForms
                                                 'us-east-2' => 'US East 2 (N. Virginia)',
                                                 'us-central-1' => 'US Central 1 (Texas)',
                                                 'us-west-1' => 'US West 1 (Oregon)',
+                                                'us-west-2' => 'US West 2 (San Jose)',
+                                                'ca-central-1' => 'CA Central 1 (Toronto)',
                                                 'eu-central-1' => 'EU Central 1 (Amsterdam)',
                                                 'eu-central-2' => 'EU Central 2 (Frankfurt)',
                                                 'eu-west-1' => 'EU West 1 (London)',
                                                 'eu-west-2' => 'EU West 2 (Paris)',
+                                                'eu-west-3' => 'EU West 3 (London)',
+                                                'eu-south-1' => 'EU South 1 (Milan)',
                                                 'ap-northeast-1' => 'AP Northeast 1 (Tokyo)',
                                                 'ap-northeast-2' => 'AP Northeast 2 (Osaka)',
                                                 'ap-southeast-1' => 'AP Southeast 1 (Singapore)',
                                                 'ap-southeast-2' => 'AP Southeast 2 (Sydney)',
-                                            ]),
+                                            ])
+                                            ->reactive()
+                                            ->afterStateUpdated(function ($state, callable $set) {
+                                                $endpoint = StorageManager::getWasabiEndpoint($state ?? 'us-east-1');
+                                                $set('wasabi_endpoint', $endpoint);
+                                            }),
                                         TextInput::make('wasabi_bucket')
                                             ->label('Bucket Name'),
                                         TextInput::make('wasabi_endpoint')
                                             ->label('Endpoint URL')
+                                            ->helperText('Auto-set from region. Override only if needed.')
                                             ->placeholder('https://s3.wasabisys.com'),
+                                        Actions::make([
+                                            Action::make('testWasabiConnection')
+                                                ->label('Test Connection')
+                                                ->icon('heroicon-o-signal')
+                                                ->color('gray')
+                                                ->action(function () {
+                                                    $this->testStorageConnection('wasabi');
+                                                }),
+                                        ])->columnSpanFull(),
                                     ])->columns(2),
                             ]),
                         Tabs\Tab::make('Backblaze B2')
@@ -220,6 +245,14 @@ class StorageSettings extends Page implements HasForms
     {
         $data = $this->form->getState();
 
+        // Auto-resolve Wasabi endpoint from region if endpoint is empty or default
+        if (!empty($data['wasabi_region'])) {
+            $autoEndpoint = StorageManager::getWasabiEndpoint($data['wasabi_region']);
+            if (empty($data['wasabi_endpoint']) || $data['wasabi_endpoint'] === 'https://s3.wasabisys.com') {
+                $data['wasabi_endpoint'] = $autoEndpoint;
+            }
+        }
+
         foreach ($data as $key => $value) {
             $type = match (true) {
                 is_bool($value) => 'boolean',
@@ -234,5 +267,27 @@ class StorageSettings extends Page implements HasForms
             ->title('Storage settings saved successfully')
             ->success()
             ->send();
+    }
+
+    public function testStorageConnection(string $driver = 'wasabi'): void
+    {
+        // Save current form values first so the test uses latest credentials
+        $this->save();
+
+        $result = StorageManager::testConnection($driver);
+
+        if ($result['success']) {
+            Notification::make()
+                ->title('Connection Successful')
+                ->body($result['message'])
+                ->success()
+                ->send();
+        } else {
+            Notification::make()
+                ->title('Connection Failed')
+                ->body($result['message'])
+                ->danger()
+                ->send();
+        }
     }
 }

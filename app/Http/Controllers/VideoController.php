@@ -7,6 +7,7 @@ use App\Http\Requests\Video\UpdateVideoRequest;
 use App\Models\Video;
 use App\Models\Category;
 use App\Models\Setting;
+use App\Services\StorageManager;
 use App\Services\VideoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -155,14 +156,21 @@ class VideoController extends Controller
     {
         $this->authorize('update', $video);
 
+        $disk = $video->storage_disk ?? 'public';
         $thumbnails = [];
+
         if ($video->video_path) {
-            $dir = dirname(Storage::disk('public')->path($video->video_path)) . '/processed';
+            $processedDir = dirname($video->video_path) . '/processed';
             for ($i = 0; $i < 4; $i++) {
-                $thumbPath = "{$dir}/thumb_{$i}.jpg";
-                if (file_exists($thumbPath)) {
-                    $relative = str_replace(Storage::disk('public')->path(''), '', $thumbPath);
-                    $thumbnails[] = asset('storage/' . $relative);
+                $thumbRelative = "{$processedDir}/thumb_{$i}.jpg";
+                if (StorageManager::exists($thumbRelative, $disk)) {
+                    $thumbnails[] = StorageManager::url($thumbRelative, $disk);
+                } elseif ($disk !== 'public') {
+                    // During processing, files may still be on local disk
+                    $localPath = Storage::disk('public')->path($thumbRelative);
+                    if (file_exists($localPath)) {
+                        $thumbnails[] = asset('storage/' . $thumbRelative);
+                    }
                 }
             }
         }
@@ -182,18 +190,26 @@ class VideoController extends Controller
         $request->validate(['index' => 'required|integer|min:0|max:3']);
 
         $index = $request->input('index');
-        $dir = dirname(Storage::disk('public')->path($video->video_path)) . '/processed';
-        $thumbPath = "{$dir}/thumb_{$index}.jpg";
+        $disk = $video->storage_disk ?? 'public';
+        $processedDir = dirname($video->video_path) . '/processed';
+        $thumbRelative = "{$processedDir}/thumb_{$index}.jpg";
 
-        if (!file_exists($thumbPath)) {
-            return response()->json(['error' => 'Thumbnail not found'], 404);
+        if (!StorageManager::exists($thumbRelative, $disk)) {
+            // Fallback: check local disk during processing
+            if ($disk !== 'public') {
+                $localPath = Storage::disk('public')->path($thumbRelative);
+                if (!file_exists($localPath)) {
+                    return response()->json(['error' => 'Thumbnail not found'], 404);
+                }
+            } else {
+                return response()->json(['error' => 'Thumbnail not found'], 404);
+            }
         }
 
-        $relative = str_replace(Storage::disk('public')->path(''), '', $thumbPath);
-        $video->update(['thumbnail' => $relative]);
+        $video->update(['thumbnail' => $thumbRelative]);
 
         return response()->json([
-            'thumbnail_url' => asset('storage/' . $relative),
+            'thumbnail_url' => StorageManager::url($thumbRelative, $disk),
         ]);
     }
 }

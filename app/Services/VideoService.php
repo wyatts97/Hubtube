@@ -6,6 +6,7 @@ use App\Events\VideoUploaded;
 use App\Models\User;
 use App\Models\Video;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -60,34 +61,36 @@ class VideoService
 
     public function delete(Video $video): void
     {
+        $disk = $video->storage_disk ?? 'public';
+
         // Delete original video file
         if ($video->video_path) {
-            Storage::disk('public')->delete($video->video_path);
+            StorageManager::delete($video->video_path, $disk);
         }
 
         // Delete thumbnail
         if ($video->thumbnail) {
-            Storage::disk('public')->delete($video->thumbnail);
+            StorageManager::delete($video->thumbnail, $disk);
         }
 
         // Delete processed files directory (HLS segments, quality variants, etc.)
         $processedDir = "videos/{$video->user_id}/{$video->uuid}/processed";
-        if (Storage::disk('public')->exists($processedDir)) {
-            Storage::disk('public')->deleteDirectory($processedDir);
+        if (StorageManager::exists($processedDir, $disk)) {
+            StorageManager::deleteDirectory($processedDir, $disk);
         }
 
         // Delete the entire video directory if empty
         $videoDir = "videos/{$video->user_id}/{$video->uuid}";
-        if (Storage::disk('public')->exists($videoDir)) {
-            $files = Storage::disk('public')->allFiles($videoDir);
+        if (StorageManager::exists($videoDir, $disk)) {
+            $files = StorageManager::allFiles($videoDir, $disk);
             if (empty($files)) {
-                Storage::disk('public')->deleteDirectory($videoDir);
+                StorageManager::deleteDirectory($videoDir, $disk);
             }
         }
 
         // Delete preview file if exists
         if ($video->preview_path) {
-            Storage::disk('public')->delete($video->preview_path);
+            StorageManager::delete($video->preview_path, $disk);
         }
 
         $video->delete();
@@ -107,7 +110,10 @@ class VideoService
 
     protected function handleVideoUpload(Video $video, UploadedFile $file): void
     {
-        // Store in public storage for direct access when FFmpeg is not available
+        $activeDisk = StorageManager::getActiveDiskName();
+
+        // Always upload to local first — FFmpeg needs local filesystem access for processing.
+        // ProcessVideoJob will push processed files to cloud storage after transcoding.
         $path = $file->store(
             "videos/{$video->user_id}/{$video->uuid}",
             'public'
@@ -115,20 +121,32 @@ class VideoService
 
         $video->update([
             'video_path' => $path,
+            'storage_disk' => StorageManager::isCloudDisk() ? $activeDisk : 'public',
             'size' => $file->getSize(),
         ]);
     }
 
     protected function handleThumbnailUpload(Video $video, UploadedFile $file): void
     {
+        $disk = $video->storage_disk ?? StorageManager::getActiveDiskName();
+
+        // Delete old thumbnail from whichever disk it's on
         if ($video->thumbnail) {
-            Storage::disk('public')->delete($video->thumbnail);
+            StorageManager::delete($video->thumbnail, $disk);
         }
 
-        $path = $file->store(
-            "thumbnails/{$video->user_id}",
-            'public'
-        );
+        if (StorageManager::isCloudDisk($disk)) {
+            // Upload directly to cloud storage
+            $directory = "thumbnails/{$video->user_id}";
+            $filename = $directory . '/' . Str::random(40) . '.' . $file->getClientOriginalExtension();
+            StorageManager::put($filename, file_get_contents($file->getRealPath()), $disk);
+            $path = $filename;
+        } else {
+            $path = $file->store(
+                "thumbnails/{$video->user_id}",
+                'public'
+            );
+        }
 
         $video->update(['thumbnail' => $path]);
     }

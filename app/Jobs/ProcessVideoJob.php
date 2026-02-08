@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Events\VideoProcessed;
 use App\Models\Setting;
 use App\Models\Video;
+use App\Services\StorageManager;
 use App\Services\VideoService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -54,7 +55,13 @@ class ProcessVideoJob implements ShouldQueue
 
         try {
             $qualities = $this->processVideo();
-            
+
+            // If cloud storage is active, upload all processed files to cloud
+            $targetDisk = $this->video->storage_disk ?? StorageManager::getActiveDiskName();
+            if (StorageManager::isCloudDisk($targetDisk)) {
+                $this->uploadToCloudStorage($targetDisk);
+            }
+
             $videoService->markAsProcessed($this->video, $qualities);
             $videoService->publish($this->video);
 
@@ -72,6 +79,12 @@ class ProcessVideoJob implements ShouldQueue
 
     protected function markAsProcessedWithOriginal(): void
     {
+        // If cloud storage is active, upload the original file
+        $targetDisk = $this->video->storage_disk ?? StorageManager::getActiveDiskName();
+        if (StorageManager::isCloudDisk($targetDisk)) {
+            $this->uploadToCloudStorage($targetDisk);
+        }
+
         $this->video->update([
             'status' => 'processed',
             'qualities_available' => ['original'],
@@ -535,6 +548,92 @@ class ProcessVideoJob implements ShouldQueue
         }
 
         file_put_contents("{$outputDir}/master.m3u8", $content);
+    }
+
+    /**
+     * Upload all locally-processed files to cloud storage (Wasabi/S3/B2).
+     * FFmpeg requires local filesystem access, so we process locally first,
+     * then push everything to cloud and optionally clean up local copies.
+     */
+    protected function uploadToCloudStorage(string $targetDisk): void
+    {
+        $localDisk = Storage::disk('public');
+        $storagePath = $localDisk->path('');
+        $videoDir = "videos/{$this->video->user_id}/{$this->video->uuid}";
+        $uploadedCount = 0;
+        $failedCount = 0;
+
+        Log::info('ProcessVideoJob: uploading processed files to cloud storage', [
+            'video_id' => $this->video->id,
+            'target_disk' => $targetDisk,
+            'video_dir' => $videoDir,
+        ]);
+
+        // Upload all files in the video directory (original + processed/)
+        $allFiles = $localDisk->allFiles($videoDir);
+        foreach ($allFiles as $file) {
+            $localPath = $localDisk->path($file);
+            if (StorageManager::uploadLocalFile($localPath, $file, $targetDisk)) {
+                $uploadedCount++;
+            } else {
+                $failedCount++;
+                Log::warning('ProcessVideoJob: failed to upload file to cloud', [
+                    'file' => $file,
+                    'disk' => $targetDisk,
+                ]);
+            }
+        }
+
+        // Upload thumbnail if it exists
+        if ($this->video->thumbnail) {
+            $thumbLocal = $localDisk->path($this->video->thumbnail);
+            if (file_exists($thumbLocal)) {
+                if (StorageManager::uploadLocalFile($thumbLocal, $this->video->thumbnail, $targetDisk)) {
+                    $uploadedCount++;
+                } else {
+                    $failedCount++;
+                }
+            }
+        }
+
+        // Upload preview if it exists
+        if ($this->video->preview_path) {
+            $previewLocal = $localDisk->path($this->video->preview_path);
+            if (file_exists($previewLocal)) {
+                // preview_path is usually inside the video dir, so it may already be uploaded
+                if (!in_array($this->video->preview_path, $allFiles)) {
+                    if (StorageManager::uploadLocalFile($previewLocal, $this->video->preview_path, $targetDisk)) {
+                        $uploadedCount++;
+                    } else {
+                        $failedCount++;
+                    }
+                }
+            }
+        }
+
+        // Upload scrubber VTT if it exists
+        if ($this->video->scrubber_vtt_path) {
+            $vttLocal = $localDisk->path($this->video->scrubber_vtt_path);
+            if (file_exists($vttLocal)) {
+                if (!in_array($this->video->scrubber_vtt_path, $allFiles)) {
+                    if (StorageManager::uploadLocalFile($vttLocal, $this->video->scrubber_vtt_path, $targetDisk)) {
+                        $uploadedCount++;
+                    } else {
+                        $failedCount++;
+                    }
+                }
+            }
+        }
+
+        Log::info('ProcessVideoJob: cloud upload complete', [
+            'video_id' => $this->video->id,
+            'uploaded' => $uploadedCount,
+            'failed' => $failedCount,
+            'disk' => $targetDisk,
+        ]);
+
+        // Update the video's storage_disk to reflect where files now live
+        $this->video->update(['storage_disk' => $targetDisk]);
     }
 
     public function failed(\Throwable $exception): void

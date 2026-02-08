@@ -25,7 +25,18 @@ class SystemStatusBar
         $freeBytes = @disk_free_space($storagePath);
         $usedBytes = $totalBytes ? $totalBytes - $freeBytes : 0;
 
+        $activeDisk = StorageManager::getActiveDiskName();
+        $driverLabels = [
+            'public' => 'Local',
+            'wasabi' => 'Wasabi',
+            'b2' => 'Backblaze B2',
+            's3' => 'Amazon S3',
+        ];
+
         return [
+            'driver' => $driverLabels[$activeDisk] ?? $activeDisk,
+            'driver_key' => $activeDisk,
+            'is_cloud' => StorageManager::isCloudDisk($activeDisk),
             'total' => $totalBytes ? $this->formatBytes($totalBytes) : 'N/A',
             'used' => $totalBytes ? $this->formatBytes($usedBytes) : 'N/A',
             'free' => $freeBytes ? $this->formatBytes($freeBytes) : 'N/A',

@@ -154,15 +154,69 @@ AGORA_APP_ID=your_app_id
 AGORA_APP_CERTIFICATE=your_certificate
 ```
 
-### Cloud Storage
-Configure Wasabi or Backblaze B2:
+### Cloud Storage (Wasabi)
+
+HubTube integrates with [Wasabi](https://wasabi.com) S3-compatible object storage for scalable video hosting with no egress fees.
+
+**1. Create a Wasabi account and bucket:**
+- Sign up at [console.wasabisys.com](https://console.wasabisys.com)
+- Create a bucket in your preferred region
+- Set the bucket policy to **public read** (for video playback) or use signed URLs for private content
+- Create an IAM user with `s3:*` permissions on the bucket
+
+**2. Configure `.env`:**
 ```env
 CLOUD_STORAGE_DRIVER=wasabi
-WASABI_ACCESS_KEY=your_key
-WASABI_SECRET_KEY=your_secret
-WASABI_BUCKET=your_bucket
+WASABI_ACCESS_KEY=your_access_key
+WASABI_SECRET_KEY=your_secret_key
+WASABI_BUCKET=your-bucket-name
 WASABI_REGION=us-east-1
+WASABI_ENDPOINT=https://s3.wasabisys.com
+WASABI_URL=https://your-bucket-name.s3.wasabisys.com
 ```
+
+The endpoint auto-resolves from the region. Available regions:
+| Region | Location | Endpoint |
+|--------|----------|----------|
+| `us-east-1` | N. Virginia | `s3.wasabisys.com` |
+| `us-east-2` | N. Virginia | `s3.us-east-2.wasabisys.com` |
+| `us-central-1` | Texas | `s3.us-central-1.wasabisys.com` |
+| `us-west-1` | Oregon | `s3.us-west-1.wasabisys.com` |
+| `eu-central-1` | Amsterdam | `s3.eu-central-1.wasabisys.com` |
+| `eu-central-2` | Frankfurt | `s3.eu-central-2.wasabisys.com` |
+| `ap-northeast-1` | Tokyo | `s3.ap-northeast-1.wasabisys.com` |
+
+**3. Install the S3 driver (if not already installed):**
+```bash
+composer require league/flysystem-aws-s3-v3
+```
+
+**4. Run the migration to add `storage_disk` tracking:**
+```bash
+php artisan migrate
+```
+
+**5. Configure via Admin Panel:**
+Navigate to **Admin → Settings → Storage & CDN → Wasabi** tab to configure credentials, test the connection, and set Wasabi as the primary storage driver.
+
+**6. Migrate existing local videos to Wasabi:**
+```bash
+# Preview what will be migrated
+php artisan storage:migrate --from=public --to=wasabi --dry-run
+
+# Migrate all local videos
+php artisan storage:migrate --from=public --to=wasabi
+
+# Migrate a limited batch
+php artisan storage:migrate --from=public --to=wasabi --limit=50
+```
+
+**How it works:**
+- New uploads are stored locally first (FFmpeg needs local filesystem access)
+- After processing, `ProcessVideoJob` uploads all files to Wasabi automatically
+- Each video tracks its `storage_disk` so the app knows where to find files
+- URL generation uses `StorageManager` to resolve the correct public URL
+- CDN URL can be configured to override Wasabi direct URLs
 
 ### FFmpeg
 Ensure FFmpeg is installed and configure paths:
