@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -156,21 +157,24 @@ class VideoController extends Controller
     {
         $this->authorize('update', $video);
 
-        $disk = $video->storage_disk ?? 'public';
         $thumbnails = [];
+        $slugTitle = Str::slug($video->title, '_') ?: 'video';
+        $videoDir = "videos/{$video->slug}";
+        $count = (int) Setting::get('thumbnail_count', 4);
 
-        if ($video->video_path) {
-            $processedDir = dirname($video->video_path) . '/processed';
-            for ($i = 0; $i < 4; $i++) {
-                $thumbRelative = "{$processedDir}/thumb_{$i}.jpg";
-                if (StorageManager::exists($thumbRelative, $disk)) {
-                    $thumbnails[] = StorageManager::url($thumbRelative, $disk);
-                } elseif ($disk !== 'public') {
-                    // During processing, files may still be on local disk
-                    $localPath = Storage::disk('public')->path($thumbRelative);
-                    if (file_exists($localPath)) {
-                        $thumbnails[] = asset('storage/' . $thumbRelative);
-                    }
+        // During processing, files are always on local disk
+        // After cloud offload, storage_disk changes — but thumbnails are checked on both
+        for ($i = 0; $i < $count; $i++) {
+            $thumbRelative = "{$videoDir}/{$slugTitle}_thumb_{$i}.jpg";
+
+            // Check local disk first (processing happens locally)
+            $localPath = Storage::disk('public')->path($thumbRelative);
+            if (file_exists($localPath)) {
+                $thumbnails[] = asset('storage/' . $thumbRelative);
+            } elseif ($video->storage_disk && $video->storage_disk !== 'public') {
+                // After cloud offload, check cloud disk
+                if (StorageManager::exists($thumbRelative, $video->storage_disk)) {
+                    $thumbnails[] = StorageManager::url($thumbRelative, $video->storage_disk);
                 }
             }
         }
@@ -187,29 +191,33 @@ class VideoController extends Controller
     {
         $this->authorize('update', $video);
 
-        $request->validate(['index' => 'required|integer|min:0|max:3']);
+        $count = (int) Setting::get('thumbnail_count', 4);
+        $request->validate(['index' => "required|integer|min:0|max:" . ($count - 1)]);
 
         $index = $request->input('index');
-        $disk = $video->storage_disk ?? 'public';
-        $processedDir = dirname($video->video_path) . '/processed';
-        $thumbRelative = "{$processedDir}/thumb_{$index}.jpg";
+        $slugTitle = Str::slug($video->title, '_') ?: 'video';
+        $videoDir = "videos/{$video->slug}";
+        $thumbRelative = "{$videoDir}/{$slugTitle}_thumb_{$index}.jpg";
 
-        if (!StorageManager::exists($thumbRelative, $disk)) {
-            // Fallback: check local disk during processing
-            if ($disk !== 'public') {
-                $localPath = Storage::disk('public')->path($thumbRelative);
-                if (!file_exists($localPath)) {
-                    return response()->json(['error' => 'Thumbnail not found'], 404);
-                }
-            } else {
-                return response()->json(['error' => 'Thumbnail not found'], 404);
-            }
+        // Check local first, then cloud
+        $localPath = Storage::disk('public')->path($thumbRelative);
+        $disk = $video->storage_disk ?? 'public';
+
+        if (!file_exists($localPath) && !StorageManager::exists($thumbRelative, $disk)) {
+            return response()->json(['error' => 'Thumbnail not found'], 404);
         }
 
         $video->update(['thumbnail' => $thumbRelative]);
 
+        // Return URL from whichever disk has the file
+        if ($disk !== 'public' && StorageManager::exists($thumbRelative, $disk)) {
+            $url = StorageManager::url($thumbRelative, $disk);
+        } else {
+            $url = asset('storage/' . $thumbRelative);
+        }
+
         return response()->json([
-            'thumbnail_url' => StorageManager::url($thumbRelative, $disk),
+            'thumbnail_url' => $url,
         ]);
     }
 }

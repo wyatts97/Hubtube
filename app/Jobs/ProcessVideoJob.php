@@ -14,6 +14,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProcessVideoJob implements ShouldQueue
 {
@@ -142,10 +143,21 @@ class ProcessVideoJob implements ShouldQueue
         return Setting::get('video_quality_preset', 'medium');
     }
 
+    protected function getVideoDirectory(): string
+    {
+        return "videos/{$this->video->slug}";
+    }
+
+    protected function getSluggedTitle(): string
+    {
+        return Str::slug($this->video->title, '_') ?: 'video';
+    }
+
     protected function processVideo(): array
     {
         $inputPath = Storage::disk('public')->path($this->video->video_path);
-        $outputDir = dirname($inputPath) . '/processed';
+        $videoDir = Storage::disk('public')->path($this->getVideoDirectory());
+        $outputDir = $videoDir . '/processed';
 
         if (!file_exists($outputDir)) {
             mkdir($outputDir, 0755, true);
@@ -163,15 +175,15 @@ class ProcessVideoJob implements ShouldQueue
         $videoInfo = $this->getVideoInfo($inputPath);
         $this->video->update(['duration' => $videoInfo['duration']]);
 
-        $this->generateThumbnails($inputPath, $outputDir);
+        $this->generateThumbnails($inputPath, $videoDir);
         
         // Generate animated preview if enabled
         if (Setting::get('animated_previews_enabled', true)) {
-            $this->generateAnimatedPreview($inputPath, $outputDir, $videoInfo['duration']);
+            $this->generateAnimatedPreview($inputPath, $videoDir, $videoInfo['duration']);
         }
 
         // Generate scrubber preview sprite sheet + VTT for Plyr
-        $this->generateScrubberPreviews($inputPath, $outputDir, $videoInfo['duration']);
+        $this->generateScrubberPreviews($inputPath, $videoDir, $videoInfo['duration']);
 
         // Check if multi-resolution transcoding is enabled
         $multiResolutionEnabled = Setting::get('multi_resolution_enabled', true);
@@ -250,15 +262,16 @@ class ProcessVideoJob implements ShouldQueue
         ];
     }
 
-    protected function generateThumbnails(string $inputPath, string $outputDir): void
+    protected function generateThumbnails(string $inputPath, string $videoDir): void
     {
         $ffmpeg = $this->getFFmpegPath();
         $duration = $this->video->duration;
         $count = (int) Setting::get('thumbnail_count', 4);
+        $slugTitle = $this->getSluggedTitle();
 
         for ($i = 0; $i < $count; $i++) {
             $time = (int) ($duration / ($count + 1) * ($i + 1));
-            $output = "{$outputDir}/thumb_{$i}.jpg";
+            $output = "{$videoDir}/{$slugTitle}_thumb_{$i}.jpg";
             
             $cmd = sprintf(
                 '%s -y -ss %d -i %s -vframes 1 -q:v 2 %s 2>&1',
@@ -270,15 +283,17 @@ class ProcessVideoJob implements ShouldQueue
             shell_exec($cmd);
         }
 
+        $storagePath = Storage::disk('public')->path('');
         $this->video->update([
-            'thumbnail' => str_replace(Storage::disk('public')->path(''), '', "{$outputDir}/thumb_0.jpg"),
+            'thumbnail' => str_replace($storagePath, '', "{$videoDir}/{$slugTitle}_thumb_0.jpg"),
         ]);
     }
 
-    protected function generateAnimatedPreview(string $inputPath, string $outputDir, int $duration): void
+    protected function generateAnimatedPreview(string $inputPath, string $videoDir, int $duration): void
     {
         $ffmpeg = $this->getFFmpegPath();
-        $output = "{$outputDir}/preview.webp";
+        $slugTitle = $this->getSluggedTitle();
+        $output = "{$videoDir}/{$slugTitle}_preview.webp";
         
         // Calculate preview parameters
         $previewDuration = min(6, max(3, (int)($duration * 0.1))); // 3-6 seconds based on video length
@@ -328,12 +343,12 @@ class ProcessVideoJob implements ShouldQueue
         }
     }
 
-    protected function generateScrubberPreviews(string $inputPath, string $outputDir, int $duration): void
+    protected function generateScrubberPreviews(string $inputPath, string $videoDir, int $duration): void
     {
         if ($duration < 5) return;
 
         $ffmpeg = $this->getFFmpegPath();
-        $spriteDir = "{$outputDir}/sprites";
+        $spriteDir = "{$videoDir}/sprites";
 
         if (!is_dir($spriteDir)) {
             mkdir($spriteDir, 0755, true);
@@ -382,7 +397,7 @@ class ProcessVideoJob implements ShouldQueue
             $vttContent .= "{$startTime} --> {$endTime}\n{$relativePath}\n\n";
         }
 
-        $vttPath = "{$outputDir}/scrubber.vtt";
+        $vttPath = "{$videoDir}/scrubber.vtt";
         file_put_contents($vttPath, $vttContent);
 
         $vttRelative = str_replace($storagePath, '', $vttPath);
@@ -563,7 +578,7 @@ class ProcessVideoJob implements ShouldQueue
     {
         $localDisk = Storage::disk('public');
         $storagePath = $localDisk->path('');
-        $videoDir = "videos/{$this->video->user_id}/{$this->video->uuid}";
+        $videoDir = $this->getVideoDirectory();
         $uploadedCount = 0;
         $failedCount = 0;
 

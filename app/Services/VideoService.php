@@ -63,34 +63,21 @@ class VideoService
     {
         $disk = $video->storage_disk ?? 'public';
 
-        // Delete original video file
-        if ($video->video_path) {
-            StorageManager::delete($video->video_path, $disk);
-        }
-
-        // Delete thumbnail
-        if ($video->thumbnail) {
-            StorageManager::delete($video->thumbnail, $disk);
-        }
-
-        // Delete processed files directory (HLS segments, quality variants, etc.)
-        $processedDir = "videos/{$video->user_id}/{$video->uuid}/processed";
-        if (StorageManager::exists($processedDir, $disk)) {
-            StorageManager::deleteDirectory($processedDir, $disk);
-        }
-
-        // Delete the entire video directory if empty
-        $videoDir = "videos/{$video->user_id}/{$video->uuid}";
+        // All assets live in videos/{slug}/ — delete the entire directory
+        $videoDir = "videos/{$video->slug}";
         if (StorageManager::exists($videoDir, $disk)) {
-            $files = StorageManager::allFiles($videoDir, $disk);
-            if (empty($files)) {
-                StorageManager::deleteDirectory($videoDir, $disk);
-            }
+            StorageManager::deleteDirectory($videoDir, $disk);
         }
 
-        // Delete preview file if exists
-        if ($video->preview_path) {
-            StorageManager::delete($video->preview_path, $disk);
+        // Fallback: also try legacy uuid-based directory
+        $legacyDir = "videos/{$video->user_id}/{$video->uuid}";
+        if (StorageManager::exists($legacyDir, $disk)) {
+            StorageManager::deleteDirectory($legacyDir, $disk);
+        }
+
+        // Delete thumbnail if stored outside video dir (legacy path)
+        if ($video->thumbnail && !str_starts_with($video->thumbnail, 'videos/')) {
+            StorageManager::delete($video->thumbnail, $disk);
         }
 
         $video->delete();
@@ -110,12 +97,15 @@ class VideoService
 
     protected function handleVideoUpload(Video $video, UploadedFile $file): void
     {
+        // All assets live in videos/{slug}/ with title-based filenames
+        $slug = $video->slug;
+        $directory = "videos/{$slug}";
+        $extension = $file->getClientOriginalExtension() ?: 'mp4';
+        $filename = Str::slug($video->title, '_') . '.' . $extension;
+
         // Always upload to local first — FFmpeg needs local filesystem access for processing.
         // ProcessVideoJob will offload to cloud and update storage_disk after successful upload.
-        $path = $file->store(
-            "videos/{$video->user_id}/{$video->uuid}",
-            'public'
-        );
+        $path = $file->storeAs($directory, $filename, 'public');
 
         $video->update([
             'video_path' => $path,
@@ -126,24 +116,23 @@ class VideoService
 
     protected function handleThumbnailUpload(Video $video, UploadedFile $file): void
     {
-        $disk = $video->storage_disk ?? StorageManager::getActiveDiskName();
+        $disk = $video->storage_disk ?? 'public';
 
         // Delete old thumbnail from whichever disk it's on
         if ($video->thumbnail) {
             StorageManager::delete($video->thumbnail, $disk);
         }
 
+        // Store custom thumbnail in the video's directory
+        $directory = "videos/{$video->slug}";
+        $extension = $file->getClientOriginalExtension() ?: 'jpg';
+        $filename = Str::slug($video->title, '_') . '_custom_thumb.' . $extension;
+
         if (StorageManager::isCloudDisk($disk)) {
-            // Upload directly to cloud storage
-            $directory = "thumbnails/{$video->user_id}";
-            $filename = $directory . '/' . Str::random(40) . '.' . $file->getClientOriginalExtension();
-            StorageManager::put($filename, file_get_contents($file->getRealPath()), $disk);
-            $path = $filename;
+            $path = "{$directory}/{$filename}";
+            StorageManager::put($path, file_get_contents($file->getRealPath()), $disk);
         } else {
-            $path = $file->store(
-                "thumbnails/{$video->user_id}",
-                'public'
-            );
+            $path = $file->storeAs($directory, $filename, 'public');
         }
 
         $video->update(['thumbnail' => $path]);
