@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 class BunnyDownloadSingle extends Command
 {
     protected $signature = 'bunny:download-single {videoId} {--disk=public}';
-    protected $description = 'Download a single Bunny Stream video in the background';
+    protected $description = 'Download a single Bunny Stream video in the background. Downloads locally, then ProcessVideoJob handles processing + cloud offload.';
 
     private const CACHE_DOWNLOADING = 'bunny_migration_downloading';
     private const CACHE_CURRENT_VIDEO = 'bunny_migration_current_video';
@@ -20,7 +20,6 @@ class BunnyDownloadSingle extends Command
     public function handle(): int
     {
         $videoId = (int) $this->argument('videoId');
-        $disk = $this->option('disk');
 
         $video = Video::find($videoId);
 
@@ -40,7 +39,8 @@ class BunnyDownloadSingle extends Command
         $this->info("Downloading: {$video->title} (ID: {$video->id})");
 
         $service = new BunnyStreamService();
-        $result = $service->downloadVideo($video, $disk);
+        // Always downloads to local first; ProcessVideoJob handles processing + cloud offload
+        $result = $service->downloadVideo($video);
 
         // Store result for the Livewire page to pick up
         Cache::put(self::CACHE_RESULT, [

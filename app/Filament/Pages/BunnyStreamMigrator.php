@@ -89,7 +89,7 @@ class BunnyStreamMigrator extends Page
         if (!$service->isConfigured()) {
             Notification::make()
                 ->title('Bunny Stream API not configured')
-                ->body('Set BUNNY_STREAM_API_KEY and BUNNY_STREAM_LIBRARY_ID in your .env file.')
+                ->body('Configure Bunny Stream API Key and Library ID in Admin → Integrations.')
                 ->danger()
                 ->send();
             return;
@@ -376,19 +376,11 @@ class BunnyStreamMigrator extends Page
 
     /**
      * Get available storage disks for the dropdown.
+     * Note: Downloads always go to local first for FFmpeg processing.
+     * Cloud offloading happens automatically via ProcessVideoJob if enabled in Storage settings.
      */
     public function getAvailableDisksProperty(): array
     {
-        $disks = ['public' => 'Local (public disk)'];
-
-        if (config('filesystems.disks.wasabi.key')) {
-            $disks['wasabi'] = 'Wasabi S3';
-        }
-
-        if (config('filesystems.disks.b2.key')) {
-            $disks['b2'] = 'Backblaze B2';
-        }
-
-        return $disks;
+        return ['public' => 'Local (ProcessVideoJob handles cloud offload if enabled)'];
     }
 }

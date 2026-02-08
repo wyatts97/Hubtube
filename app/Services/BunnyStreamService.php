@@ -411,8 +411,19 @@ class BunnyStreamService
     }
 
     /**
-     * Download a single embedded video's files and convert it to a native video.
-     * Returns an array with status info: ['success' => bool, 'error' => string|null, 'video_path' => string|null]
+     * Download a single embedded video and run it through the full processing pipeline.
+     *
+     * Flow:
+     *   1. Download video file to local disk at videos/{slug}/{title}.mp4
+     *   2. Mark as non-embedded, set video_path and storage_disk='public'
+     *   3. Dispatch ProcessVideoJob which handles:
+     *      - Thumbnail generation (4 thumbs)
+     *      - Animated preview WebP
+     *      - Scrubber sprite sheet + VTT
+     *      - Multi-quality transcoding (360p, 480p, 720p, etc.)
+     *      - Cloud offload to Wasabi/S3 if enabled
+     *
+     * Returns: ['success' => bool, 'error' => string|null, 'video_path' => string|null]
      */
     public function downloadVideo(Video $video, string $targetDisk = 'public'): array
     {
@@ -421,16 +432,19 @@ class BunnyStreamService
         }
 
         $bunnyVideoId = $video->source_video_id;
-        $storageBase = "videos/{$video->user_id}/{$video->uuid}";
         $fileSlug = Str::slug($video->title, '_');
         if (empty($fileSlug)) {
-            $fileSlug = $video->uuid;
+            $fileSlug = $video->uuid ?? Str::random(10);
         }
+
+        // All assets go in videos/{slug}/ — matching the standard upload flow
+        $videoDir = "videos/{$video->slug}";
 
         Log::info('BunnyStreamService: downloading', [
             'video_id' => $video->id,
             'bunny_id' => $bunnyVideoId,
             'title' => $video->title,
+            'target_dir' => $videoDir,
         ]);
 
         // 1. Get video info from Bunny API
@@ -444,19 +458,19 @@ class BunnyStreamService
             'status' => $videoInfo['status'] ?? 'N/A',
         ]);
 
-        // 2. Try downloading the video file
+        // 2. Download video file — ALWAYS to local disk first (FFmpeg needs local filesystem)
         $videoPath = null;
+        $localStoragePath = "{$videoDir}/{$fileSlug}.mp4";
 
         // Strategy A: Try direct CDN download first (works if Direct URL Access is allowed)
         $originalUrl = $this->getOriginalUrl($bunnyVideoId);
         Log::info('BunnyStreamService: trying direct CDN original', ['url' => $originalUrl]);
-        $videoPath = $this->downloadFile($originalUrl, "{$storageBase}/{$fileSlug}.mp4", $targetDisk);
+        $videoPath = $this->downloadFile($originalUrl, $localStoragePath, 'public');
 
         // Strategy B: Download via HLS — the CDN always allows HLS streaming
-        // Fetch the playlist, download all .ts segments, remux to MP4 with ffmpeg
         if (!$videoPath) {
             Log::info('BunnyStreamService: direct CDN blocked, trying HLS download');
-            $videoPath = $this->downloadViaHls($bunnyVideoId, "{$storageBase}/{$fileSlug}.mp4", $targetDisk);
+            $videoPath = $this->downloadViaHls($bunnyVideoId, $localStoragePath, 'public');
         }
 
         // Strategy C: Try signed MP4 fallback URLs (if MP4 fallback is enabled)
@@ -464,7 +478,7 @@ class BunnyStreamService
             $resolutions = ['1080p', '720p', '480p', '360p', '240p'];
             foreach ($resolutions as $res) {
                 $mp4Url = $this->getMp4Url($bunnyVideoId, $res);
-                $videoPath = $this->downloadFile($mp4Url, "{$storageBase}/{$fileSlug}_{$res}.mp4", $targetDisk);
+                $videoPath = $this->downloadFile($mp4Url, $localStoragePath, 'public');
                 if ($videoPath) {
                     break;
                 }
@@ -480,47 +494,25 @@ class BunnyStreamService
             return ['success' => false, 'error' => "Could not download video file. Tried direct CDN, HLS download, and MP4 fallbacks."];
         }
 
-        // 3. Download thumbnail
-        $thumbnailFileName = $videoInfo['thumbnailFileName'] ?? null;
-        $thumbnailUrl = $this->getThumbnailUrl($bunnyVideoId, $thumbnailFileName);
-        $thumbnailPath = $this->downloadFile(
-            $thumbnailUrl,
-            "thumbnails/{$video->user_id}/{$fileSlug}_thumb.jpg",
-            $targetDisk
-        );
-
-        // 4. Download animated preview WebP
-        $previewWebpUrl = $this->getPreviewUrl($bunnyVideoId);
-        $previewPath = $this->downloadFile(
-            $previewWebpUrl,
-            "{$storageBase}/{$fileSlug}_preview.webp",
-            $targetDisk
-        );
-
-        // 5. Update the video record to become a native video
-        $updateData = [
+        // 3. Update video record: mark as non-embedded, set local path, status=pending
+        //    ProcessVideoJob will handle everything else (thumbs, preview, scrubber, transcoding, cloud offload)
+        $video->update([
             'video_path' => $videoPath,
-            'storage_disk' => $targetDisk,
+            'storage_disk' => 'public',
             'is_embedded' => false,
             'embed_url' => null,
             'embed_code' => null,
             'external_thumbnail_url' => null,
             'external_preview_url' => null,
-            'status' => 'processed',
-            'qualities_available' => ['original'],
-        ];
+            'status' => 'pending',
+        ]);
 
-        if ($thumbnailPath) {
-            $updateData['thumbnail'] = $thumbnailPath;
-        }
+        // 4. Dispatch ProcessVideoJob for full processing pipeline
+        //    This generates: thumbnails, animated preview, scrubber sprites, multi-quality transcoding
+        //    And handles cloud offload to Wasabi/S3 if cloud_offloading_enabled is true
+        \App\Jobs\ProcessVideoJob::dispatch($video);
 
-        if ($previewPath) {
-            $updateData['preview_path'] = $previewPath;
-        }
-
-        $video->update($updateData);
-
-        Log::info('BunnyStreamService: download completed', [
+        Log::info('BunnyStreamService: download completed, ProcessVideoJob dispatched', [
             'video_id' => $video->id,
             'video_path' => $videoPath,
         ]);
@@ -529,8 +521,6 @@ class BunnyStreamService
             'success' => true,
             'error' => null,
             'video_path' => $videoPath,
-            'thumbnail' => $thumbnailPath,
-            'preview' => $previewPath,
         ];
     }
 
