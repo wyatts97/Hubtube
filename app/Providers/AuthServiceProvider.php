@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Setting;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -29,7 +30,7 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('withdraw', function ($user) {
-            return $user->wallet_balance >= config('hubtube.min_withdrawal');
+            return $user->wallet_balance >= (int) Setting::get('min_withdrawal', 50);
         });
     }
 }

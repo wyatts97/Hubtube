@@ -34,11 +34,10 @@ class StorageManager
 
     /**
      * Get the name of the active storage disk based on admin settings.
-     * Falls back to .env CLOUD_STORAGE_DRIVER, then 'public'.
      */
     public static function getActiveDiskName(): string
     {
-        $driver = Setting::get('storage_driver', config('hubtube.storage.driver', 'local'));
+        $driver = Setting::get('storage_driver', 'local');
 
         return match ($driver) {
             'wasabi' => 'wasabi',
@@ -66,15 +65,15 @@ class StorageManager
 
     /**
      * Build a Wasabi S3 disk at runtime using admin-saved credentials.
-     * Falls back to .env values if admin settings are empty.
+     * All values come from the Setting model (admin panel).
      */
     protected static function buildWasabiDisk(): Filesystem
     {
-        $key      = Setting::get('wasabi_key', config('filesystems.disks.wasabi.key'));
-        $secret   = Setting::get('wasabi_secret', config('filesystems.disks.wasabi.secret'));
-        $region   = Setting::get('wasabi_region', config('filesystems.disks.wasabi.region', 'us-east-1'));
-        $bucket   = Setting::get('wasabi_bucket', config('filesystems.disks.wasabi.bucket'));
-        $endpoint = Setting::get('wasabi_endpoint');
+        $key      = Setting::get('wasabi_key', '');
+        $secret   = Setting::get('wasabi_secret', '');
+        $region   = Setting::get('wasabi_region', 'us-east-1');
+        $bucket   = Setting::get('wasabi_bucket', '');
+        $endpoint = Setting::get('wasabi_endpoint', '');
 
         // Auto-resolve endpoint from region if not explicitly set
         if (empty($endpoint)) {
@@ -112,8 +111,8 @@ class StorageManager
     public static function getWasabiPublicUrl(string $bucket, string $region, ?string $endpoint = null): string
     {
         // CDN URL takes priority if configured
-        $cdnUrl = Setting::get('cdn_url', config('hubtube.storage.cdn_url'));
-        if (!empty($cdnUrl) && Setting::get('cdn_enabled', config('hubtube.storage.cdn_enabled', false))) {
+        $cdnUrl = Setting::get('cdn_url', '');
+        if (!empty($cdnUrl) && Setting::get('cdn_enabled', false)) {
             return rtrim($cdnUrl, '/');
         }
 
@@ -134,8 +133,8 @@ class StorageManager
 
         if ($diskName === 'public') {
             // CDN override for local storage
-            if (Setting::get('cdn_enabled', config('hubtube.storage.cdn_enabled', false))) {
-                $cdnUrl = Setting::get('cdn_url', config('hubtube.storage.cdn_url'));
+            if (Setting::get('cdn_enabled', false)) {
+                $cdnUrl = Setting::get('cdn_url', '');
                 if (!empty($cdnUrl)) {
                     return rtrim($cdnUrl, '/') . '/' . ltrim($path, '/');
                 }

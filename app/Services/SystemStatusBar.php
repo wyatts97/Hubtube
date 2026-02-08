@@ -85,7 +85,7 @@ class SystemStatusBar
 
     protected function getScraperStatus(): array
     {
-        $scraperUrl = config('services.scraper.url', 'http://localhost:3001');
+        $scraperUrl = Setting::get('scraper_url', 'http://localhost:3001');
         $online = false;
         try {
             $ctx = stream_context_create(['http' => ['timeout' => 2]]);

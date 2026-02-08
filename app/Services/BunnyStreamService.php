@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Setting;
 use App\Models\Video;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -19,10 +20,10 @@ class BunnyStreamService
 
     public function __construct()
     {
-        $this->apiKey = config('services.bunny_stream.api_key', '');
-        $this->libraryId = config('services.bunny_stream.library_id', '');
-        $this->cdnHost = config('services.bunny_stream.cdn_host', '');
-        $this->cdnTokenKey = config('services.bunny_stream.cdn_token_key', '');
+        $this->apiKey = Setting::get('bunny_stream_api_key', '');
+        $this->libraryId = Setting::get('bunny_stream_library_id', '');
+        $this->cdnHost = Setting::get('bunny_stream_cdn_host', '');
+        $this->cdnTokenKey = Setting::get('bunny_stream_cdn_token_key', '');
     }
 
     /**
@@ -337,7 +338,8 @@ class BunnyStreamService
             mkdir($tempDir, 0755, true);
         }
         $outputFile = "{$tempDir}/output.mp4";
-        $ffmpegBinary = config('hubtube.ffmpeg.binary', '/usr/bin/ffmpeg');
+        $ffmpegBinary = Setting::get('ffmpeg_path', '/usr/bin/ffmpeg');
+        if (empty($ffmpegBinary)) $ffmpegBinary = '/usr/bin/ffmpeg';
 
         try {
             $cmd = "{$ffmpegBinary} -i " . escapeshellarg($playlistUrl)

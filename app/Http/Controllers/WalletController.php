@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Setting;
 use App\Models\WalletTransaction;
 use App\Models\WithdrawalRequest;
 use App\Services\WalletService;
@@ -29,7 +30,7 @@ class WalletController extends Controller
         return Inertia::render('Wallet/Index', [
             'balance' => $request->user()->wallet_balance,
             'transactions' => $transactions,
-            'minWithdrawal' => config('hubtube.min_withdrawal'),
+            'minWithdrawal' => (int) Setting::get('min_withdrawal', 50),
         ]);
     }
 
@@ -63,7 +64,7 @@ class WalletController extends Controller
         return Inertia::render('Wallet/Withdraw', [
             'balance' => $request->user()->wallet_balance,
             'pendingWithdrawals' => $pendingWithdrawals,
-            'minWithdrawal' => config('hubtube.min_withdrawal'),
+            'minWithdrawal' => (int) Setting::get('min_withdrawal', 50),
         ]);
     }
 
@@ -75,7 +76,7 @@ class WalletController extends Controller
             'amount' => [
                 'required',
                 'numeric',
-                'min:' . config('hubtube.min_withdrawal'),
+                'min:' . Setting::get('min_withdrawal', 50),
                 'max:' . $request->user()->wallet_balance,
             ],
             'payment_method' => 'required|in:paypal,bank,crypto',

@@ -6,6 +6,7 @@ use App\Events\GiftSent;
 use App\Models\Gift;
 use App\Models\GiftTransaction;
 use App\Models\LiveStream;
+use App\Models\Setting;
 use App\Services\WalletService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -47,7 +48,7 @@ class GiftController extends Controller
 
         try {
             $result = DB::transaction(function () use ($gift, $user, $liveStream) {
-                $platformCut = $gift->price * (config('hubtube.monetization.gift_platform_cut', 20) / 100);
+                $platformCut = $gift->price * ((int) Setting::get('gift_platform_cut', 20) / 100);
                 $receiverAmount = $gift->price - $platformCut;
 
                 $transaction = GiftTransaction::create([

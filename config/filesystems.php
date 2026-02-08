@@ -24,14 +24,16 @@ return [
             'throw' => false,
         ],
 
+        // Wasabi and B2 disks are configured at runtime by StorageManager
+        // using credentials from the admin panel (Setting model).
+        // These placeholder entries ensure Laravel recognizes the disk names.
         'wasabi' => [
             'driver' => 's3',
-            'key' => env('WASABI_ACCESS_KEY'),
-            'secret' => env('WASABI_SECRET_KEY'),
-            'region' => env('WASABI_REGION', 'us-east-1'),
-            'bucket' => env('WASABI_BUCKET'),
-            'endpoint' => env('WASABI_ENDPOINT', 'https://s3.wasabisys.com'),
-            'url' => env('WASABI_URL'),
+            'key' => '',
+            'secret' => '',
+            'region' => 'us-east-1',
+            'bucket' => '',
+            'endpoint' => 'https://s3.wasabisys.com',
             'use_path_style_endpoint' => false,
             'visibility' => 'public',
             'throw' => true,
@@ -39,11 +41,11 @@ return [
 
         'b2' => [
             'driver' => 's3',
-            'key' => env('B2_ACCESS_KEY'),
-            'secret' => env('B2_SECRET_KEY'),
-            'region' => env('B2_REGION', 'us-west-002'),
-            'bucket' => env('B2_BUCKET'),
-            'endpoint' => env('B2_ENDPOINT'),
+            'key' => '',
+            'secret' => '',
+            'region' => 'us-west-002',
+            'bucket' => '',
+            'endpoint' => '',
         ],
     ],
 

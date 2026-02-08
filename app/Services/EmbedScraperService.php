@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\EmbeddedVideo;
+use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -12,7 +13,7 @@ class EmbedScraperService
 
     public function __construct()
     {
-        $this->scraperUrl = config('services.scraper.url', 'http://localhost:3001');
+        $this->scraperUrl = Setting::get('scraper_url', 'http://localhost:3001');
     }
 
     public function getAvailableSites(): array

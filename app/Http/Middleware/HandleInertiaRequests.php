@@ -43,7 +43,7 @@ class HandleInertiaRequests extends Middleware
             'csrf_token' => csrf_token(),
             'app' => [
                 'name' => config('app.name'),
-                'age_verification_required' => config('hubtube.age_verification_required'),
+                'age_verification_required' => (bool) Setting::get('age_verification_required', true),
                 'infinite_scroll_enabled' => Setting::get('infinite_scroll_enabled', false),
                 'videos_per_page' => Setting::get('videos_per_page', 24),
             ],

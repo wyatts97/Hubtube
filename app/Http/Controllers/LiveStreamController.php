@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Events\LiveStreamStarted;
 use App\Models\LiveStream;
+use App\Models\Setting;
 use App\Services\AgoraService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -50,7 +51,7 @@ class LiveStreamController extends Controller
 
         return Inertia::render('Live/Show', [
             'stream' => $liveStream,
-            'agoraAppId' => config('hubtube.agora.app_id'),
+            'agoraAppId' => Setting::get('agora_app_id', ''),
             'agoraToken' => $token,
             'isSubscribed' => auth()->check() 
                 ? auth()->user()->isSubscribedTo($liveStream->user) 
@@ -93,7 +94,7 @@ class LiveStreamController extends Controller
 
         return response()->json([
             'stream' => $liveStream,
-            'agoraAppId' => config('hubtube.agora.app_id'),
+            'agoraAppId' => Setting::get('agora_app_id', ''),
             'agoraToken' => $token,
             'channelName' => $channelName,
         ]);

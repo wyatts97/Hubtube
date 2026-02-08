@@ -250,7 +250,7 @@ class ProcessVideoJob implements ShouldQueue
     {
         $ffmpeg = $this->getFFmpegPath();
         $duration = $this->video->duration;
-        $count = config('hubtube.video.thumbnail_count', 4);
+        $count = (int) Setting::get('thumbnail_count', 4);
 
         for ($i = 0; $i < $count; $i++) {
             $time = (int) ($duration / ($count + 1) * ($i + 1));
@@ -394,7 +394,7 @@ class ProcessVideoJob implements ShouldQueue
     protected function transcodeToQuality(string $inputPath, string $outputDir, string $quality, array $settings): void
     {
         $ffmpeg = $this->getFFmpegPath();
-        $threads = config('hubtube.ffmpeg.threads', 4);
+        $threads = (int) Setting::get('ffmpeg_threads', 4);
         $preset = $this->getQualityPreset();
         
         $output = "{$outputDir}/{$quality}.mp4";

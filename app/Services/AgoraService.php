@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Setting;
+
 class AgoraService
 {
     protected string $appId;
@@ -10,9 +12,9 @@ class AgoraService
 
     public function __construct()
     {
-        $this->appId = config('hubtube.agora.app_id', '');
-        $this->appCertificate = config('hubtube.agora.app_certificate', '');
-        $this->tokenExpiry = config('hubtube.agora.token_expiry', 86400);
+        $this->appId = Setting::get('agora_app_id', '');
+        $this->appCertificate = Setting::get('agora_app_certificate', '');
+        $this->tokenExpiry = (int) Setting::get('agora_token_expiry', 86400);
     }
 
     public function isConfigured(): bool

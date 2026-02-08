@@ -161,8 +161,8 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     public function canUpload(): bool
     {
         $limit = $this->is_pro 
-            ? config('hubtube.limits.pro.daily_uploads')
-            : config('hubtube.limits.free.daily_uploads');
+            ? (int) Setting::get('max_daily_uploads_pro', 50)
+            : (int) Setting::get('max_daily_uploads_free', 5);
             
         $todayUploads = $this->videos()
             ->whereDate('created_at', today())
@@ -174,16 +174,17 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     public function canGoLive(): bool
     {
         if ($this->is_pro) {
-            return config('hubtube.limits.pro.can_go_live');
+            return true;
         }
-        return config('hubtube.limits.free.can_go_live');
+        return (bool) Setting::get('free_users_can_go_live', false);
     }
 
     public function getMaxVideoSizeAttribute(): int
     {
-        return $this->is_pro 
-            ? config('hubtube.limits.pro.max_video_size')
-            : config('hubtube.limits.free.max_video_size');
+        $sizeMb = $this->is_pro 
+            ? (int) Setting::get('max_upload_size_pro', 5000)
+            : (int) Setting::get('max_upload_size_free', 500);
+        return $sizeMb * 1048576; // Convert MB to bytes
     }
 
     public function getFilamentName(): string
