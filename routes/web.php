@@ -87,6 +87,7 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/upload', [VideoController::class, 'create'])->name('videos.create');
         Route::post('/upload', [VideoController::class, 'store'])->name('videos.store');
         Route::get('/videos/{video}/edit', [VideoController::class, 'edit'])->name('videos.edit');
+        Route::get('/videos/{video}/status', [VideoController::class, 'status'])->name('videos.status');
         Route::get('/videos/{video}/processing-status', [VideoController::class, 'processingStatus'])->name('videos.processing-status');
         Route::post('/videos/{video}/select-thumbnail', [VideoController::class, 'selectThumbnail'])->name('videos.select-thumbnail');
         Route::put('/videos/{video}', [VideoController::class, 'update'])->name('videos.update');

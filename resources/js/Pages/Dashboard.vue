@@ -1,14 +1,23 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Video, Eye, ThumbsUp, Users, Wallet, TrendingUp, Edit, BarChart3 } from 'lucide-vue-next';
+import { Video, Eye, ThumbsUp, Users, Wallet, TrendingUp, Edit, BarChart3, Clock } from 'lucide-vue-next';
+import { ref, computed } from 'vue';
 import { timeAgo, formatViews } from '@/Composables/useFormatters';
+
+const formatNumber = (n) => {
+    if (n == null) return '0';
+    return Number(n).toLocaleString();
+};
 
 const props = defineProps({
     stats: Object,
     recentVideos: Array,
     topVideos: Array,
 });
+
+const page = usePage();
+const canEdit = computed(() => page.props.auth?.user?.can_edit_video);
 
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(parseFloat(amount));
@@ -85,8 +94,11 @@ const statCards = [
                                     >{{ video.status }}</span>
                                 </div>
                             </div>
-                            <Link :href="`/videos/${video.id}/edit`" class="p-2 rounded-lg hover:opacity-80" style="color: var(--color-text-muted);">
+                            <Link v-if="canEdit" :href="`/videos/${video.id}/edit`" class="p-2 rounded-lg hover:opacity-80" style="color: var(--color-text-muted);" title="Edit video">
                                 <Edit class="w-4 h-4" />
+                            </Link>
+                            <Link v-else :href="`/videos/${video.id}/status`" class="p-2 rounded-lg hover:opacity-80" style="color: var(--color-text-muted);" title="View status">
+                                <Clock class="w-4 h-4" />
                             </Link>
                         </div>
                     </div>

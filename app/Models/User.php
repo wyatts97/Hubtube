@@ -158,6 +158,11 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         return $this->subscriptions()->where('channel_id', $user->id)->exists();
     }
 
+    public function canEditVideo(): bool
+    {
+        return $this->is_admin || $this->is_pro;
+    }
+
     public function canUpload(): bool
     {
         $limit = $this->is_pro 

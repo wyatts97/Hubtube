@@ -31,6 +31,7 @@ class HandleInertiaRequests extends Middleware
                     'is_admin' => $request->user()->is_admin,
                     'wallet_balance' => $request->user()->wallet_balance,
                     'age_verified' => $request->user()->isAgeVerified(),
+                    'can_edit_video' => $request->user()->canEditVideo(),
                     'settings' => $request->user()->settings ?? [],
                 ] : null,
             ],

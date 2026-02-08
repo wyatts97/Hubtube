@@ -118,9 +118,16 @@ class VideoController extends Controller
 
         $video = $this->videoService->create($request->validated(), $request->user());
 
+        // Admin/Pro users go to the full edit page; default users go to the status page
+        if ($request->user()->canEditVideo()) {
+            return redirect()
+                ->route('videos.edit', $video)
+                ->with('success', 'Video uploaded! Processing will begin shortly.');
+        }
+
         return redirect()
-            ->route('videos.edit', $video)
-            ->with('success', 'Video uploaded! Processing will begin shortly.');
+            ->route('videos.status', $video)
+            ->with('success', 'Video uploaded! It will be published after processing and moderation.');
     }
 
     public function edit(Video $video): Response
@@ -130,6 +137,16 @@ class VideoController extends Controller
         return Inertia::render('Videos/Edit', [
             'video' => $video,
             'categories' => Category::active()->get(),
+        ]);
+    }
+
+    public function status(Video $video): Response
+    {
+        $this->authorize('viewStatus', $video);
+
+        return Inertia::render('Videos/Status', [
+            'video' => $video,
+            'canEdit' => auth()->user()->canEditVideo(),
         ]);
     }
 
@@ -149,13 +166,13 @@ class VideoController extends Controller
         $this->videoService->delete($video);
 
         return redirect()
-            ->route('dashboard.videos')
+            ->route('dashboard')
             ->with('success', 'Video deleted successfully.');
     }
 
     public function processingStatus(Video $video): JsonResponse
     {
-        $this->authorize('update', $video);
+        $this->authorize('viewStatus', $video);
 
         $thumbnails = [];
         $slugTitle = Str::slug($video->title, '_') ?: 'video';

@@ -442,6 +442,10 @@ const tabs = [
                                     </li>
                                     <li class="flex items-center gap-2">
                                         <span style="color: var(--color-accent);">✓</span>
+                                        Edit videos after upload (thumbnails, title, tags)
+                                    </li>
+                                    <li class="flex items-center gap-2">
+                                        <span style="color: var(--color-accent);">✓</span>
                                         Go Live streaming access
                                     </li>
                                     <li class="flex items-center gap-2">
