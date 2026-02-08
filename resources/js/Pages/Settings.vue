@@ -132,22 +132,22 @@ const tabs = [
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">
-            <h1 class="text-2xl font-bold mb-6" style="color: var(--color-text-primary);">Settings</h1>
+            <h1 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6" style="color: var(--color-text-primary);">Settings</h1>
 
-            <div class="flex flex-col md:flex-row gap-6">
-                <!-- Sidebar -->
+            <div class="flex flex-col md:flex-row gap-4 sm:gap-6">
+                <!-- Sidebar / Horizontal tabs on mobile -->
                 <div class="md:w-48 flex-shrink-0">
-                    <nav class="space-y-1">
+                    <nav class="flex md:flex-col gap-1 overflow-x-auto scrollbar-hide -mx-1 px-1 md:mx-0 md:px-0 pb-2 md:pb-0">
                         <button
                             v-for="tab in tabs"
                             :key="tab.id"
                             @click="activeTab = tab.id"
-                            :class="['flex items-center gap-3 w-full px-3 py-2 rounded-lg text-left transition-colors']"
+                            :class="['flex items-center gap-2 sm:gap-3 px-3 py-2 rounded-lg text-left transition-colors whitespace-nowrap flex-shrink-0 md:w-full text-sm sm:text-base']"
                             :style="activeTab === tab.id 
                                 ? { backgroundColor: 'var(--color-accent)', color: 'white' } 
                                 : { color: 'var(--color-text-secondary)' }"
                         >
-                            <component :is="tab.icon" class="w-5 h-5" />
+                            <component :is="tab.icon" class="w-4 h-4 sm:w-5 sm:h-5" />
                             <span>{{ tab.name }}</span>
                         </button>
                     </nav>

@@ -51,6 +51,27 @@ class AdSettings extends Page implements HasForms
             'shorts_ad_skip_delay' => Setting::get('shorts_ad_skip_delay', 5),
             'shorts_ad_code' => Setting::get('shorts_ad_code', ''),
 
+            // Video Player Banner Ads
+            'banner_above_player_enabled' => Setting::get('banner_above_player_enabled', false),
+            'banner_above_player_type' => Setting::get('banner_above_player_type', 'html'),
+            'banner_above_player_html' => Setting::get('banner_above_player_html', ''),
+            'banner_above_player_image' => Setting::get('banner_above_player_image', ''),
+            'banner_above_player_link' => Setting::get('banner_above_player_link', ''),
+            'banner_above_player_mobile_type' => Setting::get('banner_above_player_mobile_type', 'html'),
+            'banner_above_player_mobile_html' => Setting::get('banner_above_player_mobile_html', ''),
+            'banner_above_player_mobile_image' => Setting::get('banner_above_player_mobile_image', ''),
+            'banner_above_player_mobile_link' => Setting::get('banner_above_player_mobile_link', ''),
+
+            'banner_below_player_enabled' => Setting::get('banner_below_player_enabled', false),
+            'banner_below_player_type' => Setting::get('banner_below_player_type', 'html'),
+            'banner_below_player_html' => Setting::get('banner_below_player_html', ''),
+            'banner_below_player_image' => Setting::get('banner_below_player_image', ''),
+            'banner_below_player_link' => Setting::get('banner_below_player_link', ''),
+            'banner_below_player_mobile_type' => Setting::get('banner_below_player_mobile_type', 'html'),
+            'banner_below_player_mobile_html' => Setting::get('banner_below_player_mobile_html', ''),
+            'banner_below_player_mobile_image' => Setting::get('banner_below_player_mobile_image', ''),
+            'banner_below_player_mobile_link' => Setting::get('banner_below_player_mobile_link', ''),
+
             // Video Roll Ads — Global Settings
             'video_ad_pre_roll_enabled' => Setting::get('video_ad_pre_roll_enabled', false),
             'video_ad_mid_roll_enabled' => Setting::get('video_ad_mid_roll_enabled', false),
@@ -129,6 +150,91 @@ class AdSettings extends Page implements HasForms
                             Toggle::make('video_ad_shuffle')
                                 ->label('Shuffle / Randomize')
                                 ->helperText('Randomly pick ads weighted by priority instead of playing in order'),
+                        ]),
+                    ]),
+
+                // ── Banner Ads Above/Below Player ──
+                Section::make('Banner Ad — Above Video Player')
+                    ->description('728×90 leaderboard banner shown above the video player on desktop. 300×100 or 300×50 on mobile. Supports image+link or HTML ad code.')
+                    ->icon('heroicon-o-arrow-up')
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        Toggle::make('banner_above_player_enabled')
+                            ->label('Enable Above-Player Banner'),
+                        Grid::make(2)->schema([
+                            Select::make('banner_above_player_type')
+                                ->label('Desktop Ad Type')
+                                ->options(['html' => 'HTML Ad Code', 'image' => 'Image + Link'])
+                                ->default('html'),
+                            Select::make('banner_above_player_mobile_type')
+                                ->label('Mobile Ad Type')
+                                ->options(['html' => 'HTML Ad Code', 'image' => 'Image + Link'])
+                                ->default('html'),
+                        ]),
+                        Textarea::make('banner_above_player_html')
+                            ->label('Desktop HTML Ad Code (728×90)')
+                            ->rows(4)->columnSpanFull(),
+                        Grid::make(2)->schema([
+                            TextInput::make('banner_above_player_image')
+                                ->label('Desktop Image URL (728×90)')
+                                ->placeholder('https://example.com/banner-728x90.jpg'),
+                            TextInput::make('banner_above_player_link')
+                                ->label('Desktop Click URL')
+                                ->placeholder('https://example.com'),
+                        ]),
+                        Textarea::make('banner_above_player_mobile_html')
+                            ->label('Mobile HTML Ad Code (300×100 / 300×50)')
+                            ->rows(4)->columnSpanFull(),
+                        Grid::make(2)->schema([
+                            TextInput::make('banner_above_player_mobile_image')
+                                ->label('Mobile Image URL (300×100)')
+                                ->placeholder('https://example.com/banner-300x100.jpg'),
+                            TextInput::make('banner_above_player_mobile_link')
+                                ->label('Mobile Click URL')
+                                ->placeholder('https://example.com'),
+                        ]),
+                    ]),
+
+                Section::make('Banner Ad — Below Video Player')
+                    ->description('728×90 leaderboard banner shown below the video player on desktop. 300×100 or 300×50 on mobile.')
+                    ->icon('heroicon-o-arrow-down')
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        Toggle::make('banner_below_player_enabled')
+                            ->label('Enable Below-Player Banner'),
+                        Grid::make(2)->schema([
+                            Select::make('banner_below_player_type')
+                                ->label('Desktop Ad Type')
+                                ->options(['html' => 'HTML Ad Code', 'image' => 'Image + Link'])
+                                ->default('html'),
+                            Select::make('banner_below_player_mobile_type')
+                                ->label('Mobile Ad Type')
+                                ->options(['html' => 'HTML Ad Code', 'image' => 'Image + Link'])
+                                ->default('html'),
+                        ]),
+                        Textarea::make('banner_below_player_html')
+                            ->label('Desktop HTML Ad Code (728×90)')
+                            ->rows(4)->columnSpanFull(),
+                        Grid::make(2)->schema([
+                            TextInput::make('banner_below_player_image')
+                                ->label('Desktop Image URL (728×90)')
+                                ->placeholder('https://example.com/banner-728x90.jpg'),
+                            TextInput::make('banner_below_player_link')
+                                ->label('Desktop Click URL')
+                                ->placeholder('https://example.com'),
+                        ]),
+                        Textarea::make('banner_below_player_mobile_html')
+                            ->label('Mobile HTML Ad Code (300×100 / 300×50)')
+                            ->rows(4)->columnSpanFull(),
+                        Grid::make(2)->schema([
+                            TextInput::make('banner_below_player_mobile_image')
+                                ->label('Mobile Image URL (300×100)')
+                                ->placeholder('https://example.com/banner-300x100.jpg'),
+                            TextInput::make('banner_below_player_mobile_link')
+                                ->label('Mobile Click URL')
+                                ->placeholder('https://example.com'),
                         ]),
                     ]),
 

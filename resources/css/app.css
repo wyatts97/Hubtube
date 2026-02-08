@@ -249,13 +249,14 @@
 html, body {
     overflow-x: hidden;
     -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* Touch-friendly tap targets */
 @media (max-width: 640px) {
     .btn {
-        min-height: 44px;
-        @apply text-sm;
+        min-height: 40px;
+        @apply text-sm px-3;
     }
 
     .input {
@@ -263,7 +264,8 @@ html, body {
         @apply text-base; /* prevents iOS zoom on focus */
     }
 
-    select.input {
+    select.input,
+    textarea.input {
         @apply text-base;
     }
 
@@ -276,11 +278,6 @@ html, body {
     .card {
         @apply rounded-lg;
     }
-
-    /* Stack video info actions vertically on small screens */
-    .flex-wrap {
-        gap: 0.75rem;
-    }
 }
 
 /* Video watch page: sidebar below player on mobile */
@@ -290,7 +287,52 @@ html, body {
     }
 }
 
-/* Notification dropdown: full-width on mobile */
+/* ===== Video Player Mobile Optimizations ===== */
+
+/* Full-bleed video player on small screens */
+@media (max-width: 640px) {
+    .aspect-video {
+        border-radius: 0.5rem;
+    }
+}
+
+/* Plyr player mobile touch improvements */
+.plyr {
+    --plyr-control-spacing: 8px;
+}
+
+@media (max-width: 640px) {
+    .plyr {
+        --plyr-control-spacing: 4px;
+    }
+
+    .plyr__controls {
+        padding: 4px 8px !important;
+    }
+
+    .plyr__control {
+        padding: 6px !important;
+    }
+
+    .plyr__volume {
+        max-width: 60px !important;
+    }
+}
+
+/* ===== Banner Ad Responsive Containers ===== */
+.ad-banner-desktop {
+    max-width: 728px;
+    max-height: 90px;
+    overflow: hidden;
+}
+
+.ad-banner-mobile {
+    max-width: 300px;
+    max-height: 100px;
+    overflow: hidden;
+}
+
+/* ===== Notification & Menu Dropdowns Mobile ===== */
 @media (max-width: 480px) {
     .notification-dropdown {
         position: fixed !important;
@@ -313,7 +355,154 @@ html, body {
     }
 }
 
-/* Safe area insets for notched phones */
+/* ===== Modal / Dialog Mobile Fixes ===== */
+@media (max-width: 640px) {
+    /* Modals should be nearly full-width on mobile */
+    .fixed.inset-0 .max-w-md,
+    .fixed.inset-0 .max-w-lg {
+        max-width: calc(100vw - 2rem);
+    }
+
+    /* Share modal social grid: smaller on mobile */
+    .grid-cols-5 {
+        gap: 0.5rem;
+    }
+
+    .grid-cols-5 .p-3 {
+        padding: 0.5rem;
+    }
+
+    .grid-cols-5 .w-10 {
+        width: 2.25rem;
+        height: 2.25rem;
+    }
+}
+
+/* ===== Comment Section Mobile ===== */
+@media (max-width: 640px) {
+    /* Tighter comment spacing on mobile */
+    .space-y-6 > * + * {
+        margin-top: 1rem;
+    }
+
+    /* Comment reply indent reduced on mobile */
+    .pl-4.border-l-2 {
+        padding-left: 0.75rem;
+    }
+}
+
+/* ===== Channel Page Mobile ===== */
+@media (max-width: 640px) {
+    /* Channel tabs: horizontally scrollable on mobile */
+    nav.flex.gap-6 {
+        gap: 1rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        padding-bottom: 1px;
+    }
+
+    nav.flex.gap-6::-webkit-scrollbar {
+        display: none;
+    }
+
+    nav.flex.gap-6 > * {
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+}
+
+/* ===== Dashboard Mobile ===== */
+@media (max-width: 640px) {
+    /* Stats cards: 2-col on mobile, tighter padding */
+    .grid-cols-2 .card.p-4 {
+        padding: 0.75rem;
+    }
+
+    .grid-cols-2 .card .w-10 {
+        width: 2rem;
+        height: 2rem;
+    }
+
+    .grid-cols-2 .card .w-10 .w-5 {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .grid-cols-2 .card .text-lg {
+        font-size: 1rem;
+    }
+
+    /* Recent/Top video list items: tighter on mobile */
+    .flex.items-center.gap-3.p-3 {
+        padding: 0.5rem 0.75rem;
+    }
+
+    /* Smaller thumbnails in dashboard lists on mobile */
+    .w-24.h-14 {
+        width: 5rem;
+        height: 2.8rem;
+    }
+
+    .w-20.h-12 {
+        width: 4rem;
+        height: 2.4rem;
+    }
+}
+
+/* ===== Settings Page Mobile ===== */
+@media (max-width: 640px) {
+    /* Settings tabs: horizontal scroll */
+    .settings-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .settings-tabs::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+/* ===== Wallet / Forms Mobile ===== */
+@media (max-width: 640px) {
+    /* Table overflow on mobile */
+    table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    thead, tbody, tr {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+    }
+}
+
+/* ===== General Mobile Typography ===== */
+@media (max-width: 640px) {
+    .text-2xl {
+        font-size: 1.25rem;
+    }
+
+    .text-3xl {
+        font-size: 1.5rem;
+    }
+
+    h1.text-2xl,
+    h1.text-xl {
+        line-height: 1.3;
+    }
+}
+
+/* ===== Smooth scrolling for horizontal scroll areas ===== */
+.overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ===== Safe area insets for notched phones ===== */
 @supports (padding: env(safe-area-inset-bottom)) {
     .min-h-screen {
         min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
@@ -321,5 +510,17 @@ html, body {
 
     header.fixed {
         padding-top: env(safe-area-inset-top);
+    }
+
+    /* Bottom safe area for fixed elements */
+    .fixed.bottom-0 {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+
+/* ===== Prevent content shift on scrollbar appearance ===== */
+@media (min-width: 1024px) {
+    html {
+        scrollbar-gutter: stable;
     }
 }

@@ -54,7 +54,7 @@ const tabs = [
 
     <AppLayout>
         <!-- Channel Banner -->
-        <div class="relative h-48 md:h-64 rounded-xl overflow-hidden mb-6" style="background: linear-gradient(to right, var(--color-accent), var(--color-accent)); opacity: 0.85;">
+        <div class="relative h-32 sm:h-48 md:h-64 rounded-lg sm:rounded-xl overflow-hidden mb-4 sm:mb-6" style="background: linear-gradient(to right, var(--color-accent), var(--color-accent)); opacity: 0.85;">
             <img 
                 v-if="channel.channel?.banner" 
                 :src="channel.channel.banner" 
@@ -64,8 +64,8 @@ const tabs = [
         </div>
 
         <!-- Channel Info -->
-        <div class="flex flex-col md:flex-row items-start md:items-center gap-6 mb-8">
-            <div class="w-24 h-24 md:w-32 md:h-32 avatar flex-shrink-0">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div class="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 avatar flex-shrink-0">
                 <img 
                     v-if="channel.avatar" 
                     :src="channel.avatar" 
@@ -77,12 +77,12 @@ const tabs = [
                 </div>
             </div>
             
-            <div class="flex-1">
-                <h1 class="text-2xl md:text-3xl font-bold" style="color: var(--color-text-primary);">
+            <div class="flex-1 min-w-0">
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold" style="color: var(--color-text-primary);">
                     {{ channel.username }}
                     <span v-if="channel.is_verified" class="ml-2" style="color: var(--color-accent);">✓</span>
                 </h1>
-                <p class="mt-1" style="color: var(--color-text-secondary);">
+                <p class="mt-1 text-sm sm:text-base" style="color: var(--color-text-secondary);">
                     @{{ channel.username }} • {{ subCount.toLocaleString() }} subscribers • {{ videos.total }} videos
                 </p>
                 <p v-if="channel.channel?.description" class="mt-2 line-clamp-2" style="color: var(--color-text-secondary);">
@@ -110,13 +110,13 @@ const tabs = [
         </div>
 
         <!-- Tabs -->
-        <div class="mb-6" style="border-bottom: 1px solid var(--color-border);">
-            <nav class="flex gap-6">
+        <div class="mb-4 sm:mb-6" style="border-bottom: 1px solid var(--color-border);">
+            <nav class="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide -mx-1 px-1">
                 <Link
                     v-for="tab in tabs"
                     :key="tab.name"
                     :href="tab.href"
-                    class="pb-3 px-1 border-b-2 border-transparent transition-colors hover:opacity-80"
+                    class="pb-3 px-1 border-b-2 border-transparent transition-colors hover:opacity-80 whitespace-nowrap flex-shrink-0 text-sm sm:text-base"
                     style="color: var(--color-text-secondary);"
                 >
                     {{ tab.name }}

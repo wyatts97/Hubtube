@@ -76,6 +76,31 @@ class VideoController extends Controller
             'code' => Setting::get('video_sidebar_ad_code', ''),
         ];
 
+        // Banner ads above/below player
+        $bannerAbovePlayer = [
+            'enabled' => (bool) Setting::get('banner_above_player_enabled', false),
+            'type' => Setting::get('banner_above_player_type', 'html'),
+            'html' => Setting::get('banner_above_player_html', ''),
+            'image' => Setting::get('banner_above_player_image', ''),
+            'link' => Setting::get('banner_above_player_link', ''),
+            'mobile_type' => Setting::get('banner_above_player_mobile_type', 'html'),
+            'mobile_html' => Setting::get('banner_above_player_mobile_html', ''),
+            'mobile_image' => Setting::get('banner_above_player_mobile_image', ''),
+            'mobile_link' => Setting::get('banner_above_player_mobile_link', ''),
+        ];
+
+        $bannerBelowPlayer = [
+            'enabled' => (bool) Setting::get('banner_below_player_enabled', false),
+            'type' => Setting::get('banner_below_player_type', 'html'),
+            'html' => Setting::get('banner_below_player_html', ''),
+            'image' => Setting::get('banner_below_player_image', ''),
+            'link' => Setting::get('banner_below_player_link', ''),
+            'mobile_type' => Setting::get('banner_below_player_mobile_type', 'html'),
+            'mobile_html' => Setting::get('banner_below_player_mobile_html', ''),
+            'mobile_image' => Setting::get('banner_below_player_mobile_image', ''),
+            'mobile_link' => Setting::get('banner_below_player_mobile_link', ''),
+        ];
+
         // Get user's playlists with flag indicating if this video is already in each
         $userPlaylists = [];
         if (auth()->check()) {
@@ -99,6 +124,8 @@ class VideoController extends Controller
                 ? auth()->user()->isSubscribedTo($video->user) 
                 : false,
             'sidebarAd' => $sidebarAd,
+            'bannerAbovePlayer' => $bannerAbovePlayer,
+            'bannerBelowPlayer' => $bannerBelowPlayer,
             'userPlaylists' => $userPlaylists,
         ]);
     }

@@ -37,27 +37,28 @@ const statCards = [
 
     <AppLayout>
         <div class="max-w-6xl mx-auto">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">Creator Dashboard</h1>
-                    <p class="mt-1" style="color: var(--color-text-secondary);">Overview of your channel performance</p>
+            <div class="flex items-center justify-between gap-3 mb-6">
+                <div class="min-w-0">
+                    <h1 class="text-xl sm:text-2xl font-bold" style="color: var(--color-text-primary);">Creator Dashboard</h1>
+                    <p class="mt-1 text-sm sm:text-base" style="color: var(--color-text-secondary);">Overview of your channel performance</p>
                 </div>
-                <Link href="/upload" class="btn btn-primary gap-2">
+                <Link href="/upload" class="btn btn-primary gap-2 flex-shrink-0 text-sm sm:text-base">
                     <Video class="w-4 h-4" />
-                    Upload Video
+                    <span class="hidden sm:inline">Upload Video</span>
+                    <span class="sm:hidden">Upload</span>
                 </Link>
             </div>
 
             <!-- Stats Grid -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-                <div v-for="stat in statCards" :key="stat.label" class="card p-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg flex items-center justify-center" :style="{ backgroundColor: stat.color + '15' }">
-                            <component :is="stat.icon" class="w-5 h-5" :style="{ color: stat.color }" />
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 mb-6 sm:mb-8">
+                <div v-for="stat in statCards" :key="stat.label" class="card p-3 sm:p-4">
+                    <div class="flex items-center gap-2 sm:gap-3">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0" :style="{ backgroundColor: stat.color + '15' }">
+                            <component :is="stat.icon" class="w-4 h-4 sm:w-5 sm:h-5" :style="{ color: stat.color }" />
                         </div>
-                        <div>
-                            <p class="text-xs" style="color: var(--color-text-muted);">{{ stat.label }}</p>
-                            <p class="text-lg font-bold" style="color: var(--color-text-primary);">{{ stat.value() }}</p>
+                        <div class="min-w-0">
+                            <p class="text-xs truncate" style="color: var(--color-text-muted);">{{ stat.label }}</p>
+                            <p class="text-sm sm:text-lg font-bold truncate" style="color: var(--color-text-primary);">{{ stat.value() }}</p>
                         </div>
                     </div>
                 </div>
@@ -74,17 +75,17 @@ const statCards = [
                         <div
                             v-for="video in recentVideos"
                             :key="video.id"
-                            class="flex items-center gap-3 p-3 border-b last:border-b-0 hover:opacity-90"
+                            class="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 border-b last:border-b-0 hover:opacity-90"
                             style="border-color: var(--color-border);"
                         >
-                            <div class="w-24 h-14 rounded-lg overflow-hidden flex-shrink-0" style="background-color: var(--color-bg-secondary);">
+                            <div class="w-20 h-12 sm:w-24 sm:h-14 rounded-lg overflow-hidden flex-shrink-0" style="background-color: var(--color-bg-secondary);">
                                 <img v-if="video.thumbnail_url" :src="video.thumbnail_url" :alt="video.title" class="w-full h-full object-cover" />
                             </div>
                             <div class="flex-1 min-w-0">
                                 <Link :href="`/${video.slug}`" class="text-sm font-medium truncate block" style="color: var(--color-text-primary);">{{ video.title }}</Link>
-                                <div class="flex items-center gap-3 mt-1">
+                                <div class="flex items-center gap-2 sm:gap-3 mt-1 flex-wrap">
                                     <span class="text-xs" style="color: var(--color-text-muted);">{{ formatNumber(video.views_count) }} views</span>
-                                    <span class="text-xs" style="color: var(--color-text-muted);">{{ timeAgo(video.created_at) }}</span>
+                                    <span class="text-xs hidden sm:inline" style="color: var(--color-text-muted);">{{ timeAgo(video.created_at) }}</span>
                                     <span
                                         class="text-xs px-1.5 py-0.5 rounded"
                                         :style="{

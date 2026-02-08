@@ -50,12 +50,12 @@ const hasPages = () => {
     <Head :title="query ? `Search: ${query}` : 'Search'" />
 
     <AppLayout>
-        <div class="mb-6">
-            <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">Search</h1>
+        <div class="mb-4 sm:mb-6">
+            <h1 class="text-xl sm:text-2xl font-bold" style="color: var(--color-text-primary);">Search</h1>
         </div>
 
         <!-- Search Bar -->
-        <form @submit.prevent="submitSearch" class="mb-6">
+        <form @submit.prevent="submitSearch" class="mb-4 sm:mb-6">
             <div class="relative max-w-2xl">
                 <input
                     v-model="searchQuery"
@@ -70,12 +70,12 @@ const hasPages = () => {
         </form>
 
         <!-- Tabs -->
-        <div class="flex gap-1 mb-6 border-b" style="border-color: var(--color-border);">
+        <div class="flex gap-1 mb-4 sm:mb-6 border-b overflow-x-auto scrollbar-hide" style="border-color: var(--color-border);">
             <button
                 v-for="tab in tabs"
                 :key="tab.key"
                 @click="switchTab(tab.key)"
-                class="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors -mb-px"
+                class="flex items-center gap-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap flex-shrink-0"
                 :style="activeType === tab.key
                     ? { borderColor: 'var(--color-accent)', color: 'var(--color-accent)' }
                     : { borderColor: 'transparent', color: 'var(--color-text-secondary)' }"

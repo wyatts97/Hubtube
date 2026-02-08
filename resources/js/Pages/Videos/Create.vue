@@ -215,7 +215,7 @@ onUnmounted(() => {
                     <Smartphone class="w-5 h-5 text-white" />
                 </div>
                 <div>
-                    <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ isShortMode ? 'Upload Short' : 'Upload Video' }}</h1>
+                    <h1 class="text-xl sm:text-2xl font-bold" style="color: var(--color-text-primary);">{{ isShortMode ? 'Upload Short' : 'Upload Video' }}</h1>
                     <p v-if="isShortMode" class="text-sm mt-0.5" style="color: var(--color-text-muted);">Vertical video, 60 seconds max</p>
                 </div>
             </div>
@@ -227,7 +227,7 @@ onUnmounted(() => {
                     @dragover.prevent="dragActive = true"
                     @dragleave.prevent="dragActive = false"
                     @drop.prevent="handleDrop"
-                    class="card border-2 border-dashed p-12 text-center transition-colors"
+                    class="card border-2 border-dashed p-6 sm:p-12 text-center transition-colors"
                     :style="{ borderColor: dragActive ? 'var(--color-accent)' : 'var(--color-border)' }"
                 >
                     <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: var(--color-bg-secondary);">
@@ -254,14 +254,14 @@ onUnmounted(() => {
 
                 <!-- Video Preview -->
                 <div v-else class="card p-4">
-                    <div class="flex items-start gap-4">
-                        <div class="w-48 aspect-video rounded-lg overflow-hidden flex-shrink-0 relative" style="background-color: var(--color-bg-secondary);">
+                    <div class="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+                        <div class="w-full sm:w-48 aspect-video rounded-lg overflow-hidden flex-shrink-0 relative" style="background-color: var(--color-bg-secondary);">
                             <video :src="videoPreview" class="w-full h-full object-cover"></video>
                             <div v-if="durationFormatted" class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-xs font-medium bg-black/80 text-white">
                                 {{ durationFormatted }}
                             </div>
                         </div>
-                        <div class="flex-1 min-w-0">
+                        <div class="flex-1 min-w-0 w-full">
                             <div class="flex items-center gap-2">
                                 <FileVideo class="w-5 h-5 flex-shrink-0" style="color: var(--color-accent);" />
                                 <p class="font-medium truncate" style="color: var(--color-text-primary);">{{ form.video_file.name }}</p>

@@ -40,22 +40,22 @@ const formatType = (type) => {
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">
-            <div class="mb-6">
-                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">Wallet</h1>
+            <div class="mb-4 sm:mb-6">
+                <h1 class="text-xl sm:text-2xl font-bold" style="color: var(--color-text-primary);">Wallet</h1>
             </div>
 
             <!-- Balance Card -->
-            <div class="card p-6 mb-6">
+            <div class="card p-4 sm:p-6 mb-4 sm:mb-6">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium" style="color: var(--color-text-secondary);">Available Balance</p>
-                        <p class="text-3xl font-bold mt-1" style="color: var(--color-text-primary);">{{ formatCurrency(balance) }}</p>
+                        <p class="text-2xl sm:text-3xl font-bold mt-1" style="color: var(--color-text-primary);">{{ formatCurrency(balance) }}</p>
                     </div>
-                    <div class="w-14 h-14 rounded-full flex items-center justify-center" style="background-color: var(--color-accent); opacity: 0.15;">
-                        <Wallet class="w-7 h-7" style="color: var(--color-accent);" />
+                    <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: var(--color-accent); opacity: 0.15;">
+                        <Wallet class="w-6 h-6 sm:w-7 sm:h-7" style="color: var(--color-accent);" />
                     </div>
                 </div>
-                <div class="flex gap-3 mt-6">
+                <div class="flex gap-2 sm:gap-3 mt-4 sm:mt-6">
                     <Link href="/wallet/deposit" class="btn btn-primary gap-2">
                         <Plus class="w-4 h-4" />
                         Deposit
@@ -77,12 +77,12 @@ const formatType = (type) => {
                     <div
                         v-for="tx in transactions.data"
                         :key="tx.id"
-                        class="flex items-center justify-between p-4 border-b last:border-b-0"
+                        class="flex items-center justify-between p-3 sm:p-4 border-b last:border-b-0 gap-3"
                         style="border-color: var(--color-border);"
                     >
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2 sm:gap-3 min-w-0">
                             <div
-                                class="w-10 h-10 rounded-full flex items-center justify-center"
+                                class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0"
                                 :style="{ backgroundColor: isCredit(tx.type) ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)' }"
                             >
                                 <component

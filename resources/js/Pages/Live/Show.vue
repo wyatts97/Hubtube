@@ -173,7 +173,7 @@ const cleanup = async () => {
     <Head :title="stream.title" />
 
     <AppLayout>
-        <div class="flex flex-col lg:flex-row gap-4 h-[calc(100vh-8rem)]">
+        <div class="flex flex-col lg:flex-row gap-4 lg:h-[calc(100vh-8rem)]">
             <!-- Video Player -->
             <div class="flex-1 flex flex-col">
                 <div class="relative aspect-video bg-black rounded-xl overflow-hidden">
@@ -209,13 +209,13 @@ const cleanup = async () => {
             </div>
 
             <!-- Chat Panel -->
-            <div class="lg:w-96 flex flex-col card">
-                <div class="p-4" style="border-bottom: 1px solid var(--color-border);">
+            <div class="w-full lg:w-96 flex flex-col card max-h-[60vh] lg:max-h-none">
+                <div class="p-3 sm:p-4" style="border-bottom: 1px solid var(--color-border);">
                     <h3 class="font-medium" style="color: var(--color-text-primary);">Live Chat</h3>
                 </div>
 
                 <!-- Messages -->
-                <div class="flex-1 overflow-y-auto p-4 space-y-2">
+                <div class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 min-h-[200px]">
                     <div
                         v-for="msg in messages"
                         :key="msg.id"

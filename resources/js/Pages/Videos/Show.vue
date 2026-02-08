@@ -19,6 +19,8 @@ const props = defineProps({
     userLike: String,
     isSubscribed: Boolean,
     sidebarAd: Object,
+    bannerAbovePlayer: { type: Object, default: () => ({}) },
+    bannerBelowPlayer: { type: Object, default: () => ({}) },
     userPlaylists: { type: Array, default: () => [] },
 });
 
@@ -306,6 +308,24 @@ const formattedViews = computed(() => {
         <div class="flex flex-col lg:flex-row gap-6">
             <!-- Main Content -->
             <div class="flex-1">
+                <!-- Banner Ad Above Player -->
+                <div v-if="bannerAbovePlayer?.enabled" class="flex justify-center mb-2">
+                    <!-- Desktop banner (728x90) -->
+                    <div class="hidden md:block">
+                        <div v-if="bannerAbovePlayer.type === 'html' && bannerAbovePlayer.html" v-html="sanitizeHtml(bannerAbovePlayer.html)"></div>
+                        <a v-else-if="bannerAbovePlayer.type === 'image' && bannerAbovePlayer.image" :href="bannerAbovePlayer.link || '#'" target="_blank" rel="noopener noreferrer">
+                            <img :src="bannerAbovePlayer.image" alt="Advertisement" style="max-width: 728px; max-height: 90px;" class="rounded" />
+                        </a>
+                    </div>
+                    <!-- Mobile banner (300x100 / 300x50) -->
+                    <div class="md:hidden">
+                        <div v-if="bannerAbovePlayer.mobile_type === 'html' && bannerAbovePlayer.mobile_html" v-html="sanitizeHtml(bannerAbovePlayer.mobile_html)"></div>
+                        <a v-else-if="bannerAbovePlayer.mobile_type === 'image' && bannerAbovePlayer.mobile_image" :href="bannerAbovePlayer.mobile_link || '#'" target="_blank" rel="noopener noreferrer">
+                            <img :src="bannerAbovePlayer.mobile_image" alt="Advertisement" style="max-width: 300px; max-height: 100px;" class="rounded" />
+                        </a>
+                    </div>
+                </div>
+
                 <!-- Video Player -->
                 <div v-if="video.is_embedded" class="aspect-video bg-black rounded-xl overflow-hidden relative">
                     <EmbeddedVideoPlayer
@@ -335,11 +355,29 @@ const formattedViews = computed(() => {
                     />
                 </div>
 
+                <!-- Banner Ad Below Player -->
+                <div v-if="bannerBelowPlayer?.enabled" class="flex justify-center mt-2">
+                    <!-- Desktop banner (728x90) -->
+                    <div class="hidden md:block">
+                        <div v-if="bannerBelowPlayer.type === 'html' && bannerBelowPlayer.html" v-html="sanitizeHtml(bannerBelowPlayer.html)"></div>
+                        <a v-else-if="bannerBelowPlayer.type === 'image' && bannerBelowPlayer.image" :href="bannerBelowPlayer.link || '#'" target="_blank" rel="noopener noreferrer">
+                            <img :src="bannerBelowPlayer.image" alt="Advertisement" style="max-width: 728px; max-height: 90px;" class="rounded" />
+                        </a>
+                    </div>
+                    <!-- Mobile banner (300x100 / 300x50) -->
+                    <div class="md:hidden">
+                        <div v-if="bannerBelowPlayer.mobile_type === 'html' && bannerBelowPlayer.mobile_html" v-html="sanitizeHtml(bannerBelowPlayer.mobile_html)"></div>
+                        <a v-else-if="bannerBelowPlayer.mobile_type === 'image' && bannerBelowPlayer.mobile_image" :href="bannerBelowPlayer.mobile_link || '#'" target="_blank" rel="noopener noreferrer">
+                            <img :src="bannerBelowPlayer.mobile_image" alt="Advertisement" style="max-width: 300px; max-height: 100px;" class="rounded" />
+                        </a>
+                    </div>
+                </div>
+
                 <!-- Video Info -->
                 <div class="mt-4">
-                    <div class="flex items-start justify-between gap-4">
-                        <h1 class="text-xl font-bold flex-1" style="color: var(--color-text-primary);">{{ video.title }}</h1>
-                        <span class="text-sm font-medium whitespace-nowrap flex items-center gap-1.5" style="color: var(--color-text-secondary);"><Eye class="w-4 h-4" /> {{ formattedViews }} views</span>
+                    <div class="flex items-start justify-between gap-2 sm:gap-4">
+                        <h1 class="text-base sm:text-xl font-bold flex-1 line-clamp-2 sm:line-clamp-none" style="color: var(--color-text-primary);">{{ video.title }}</h1>
+                        <span class="text-xs sm:text-sm font-medium whitespace-nowrap flex items-center gap-1 sm:gap-1.5 flex-shrink-0" style="color: var(--color-text-secondary);"><Eye class="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {{ formattedViews }} views</span>
                     </div>
                     
                     <!-- Tags - Horizontally Scrollable -->
@@ -357,19 +395,19 @@ const formattedViews = computed(() => {
                         </div>
                     </div>
                     
-                    <div class="flex flex-wrap items-center justify-between gap-4 mt-4">
+                    <div class="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3 sm:gap-4 mt-3 sm:mt-4">
                         <!-- Channel Info -->
-                        <div class="flex items-center gap-4">
-                            <Link :href="`/channel/${video.user.username}`" class="flex items-center gap-3">
-                                <div class="w-10 h-10 avatar">
+                        <div class="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+                            <Link :href="`/channel/${video.user.username}`" class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                                <div class="w-9 h-9 sm:w-10 sm:h-10 avatar flex-shrink-0">
                                     <img v-if="video.user.avatar" :src="video.user.avatar" :alt="video.user.username" class="w-full h-full object-cover" />
                                     <div v-else class="w-full h-full flex items-center justify-center text-white font-medium" style="background-color: var(--color-accent);">
                                         {{ video.user.username.charAt(0).toUpperCase() }}
                                     </div>
                                 </div>
-                                <div>
-                                    <p class="font-medium" style="color: var(--color-text-primary);">{{ video.user.username }}</p>
-                                    <p class="text-sm" style="color: var(--color-text-muted);">{{ video.user.subscriber_count }} subscribers</p>
+                                <div class="min-w-0">
+                                    <p class="font-medium text-sm sm:text-base truncate" style="color: var(--color-text-primary);">{{ video.user.username }}</p>
+                                    <p class="text-xs sm:text-sm" style="color: var(--color-text-muted);">{{ video.user.subscriber_count }} subscribers</p>
                                 </div>
                             </Link>
                             
@@ -378,7 +416,7 @@ const formattedViews = computed(() => {
                                 @click="handleSubscribe"
                                 :disabled="subscribing"
                                 :class="[
-                                    'btn',
+                                    'btn text-sm sm:text-base',
                                     subscribed ? 'btn-secondary' : 'btn-primary'
                                 ]"
                             >
@@ -388,40 +426,40 @@ const formattedViews = computed(() => {
                         </div>
 
                         <!-- Actions -->
-                        <div class="flex items-center gap-2">
-                            <div class="flex items-center rounded-full" style="background-color: var(--color-bg-card);">
+                        <div class="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto overflow-x-auto scrollbar-hide -mx-1 px-1">
+                            <div class="flex items-center rounded-full flex-shrink-0" style="background-color: var(--color-bg-card);">
                                 <button
                                     @click="handleLike"
-                                    class="flex items-center gap-2 px-4 py-2 rounded-l-full hover:opacity-80"
+                                    class="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-l-full hover:opacity-80"
                                     :style="{ color: liked ? '#22c55e' : 'var(--color-text-secondary)' }"
                                 >
-                                    <ThumbsUp class="w-5 h-5" :fill="liked ? 'currentColor' : 'none'" />
-                                    <span>{{ likesCount }}</span>
+                                    <ThumbsUp class="w-4 h-4 sm:w-5 sm:h-5" :fill="liked ? 'currentColor' : 'none'" />
+                                    <span class="text-sm">{{ likesCount }}</span>
                                 </button>
                                 <div class="w-px h-6" style="background-color: var(--color-border);"></div>
                                 <button
                                     @click="handleDislike"
-                                    class="flex items-center gap-2 px-4 py-2 rounded-r-full hover:opacity-80"
+                                    class="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-r-full hover:opacity-80"
                                     :style="{ color: disliked ? '#ef4444' : 'var(--color-text-secondary)' }"
                                 >
-                                    <ThumbsDown class="w-5 h-5" :fill="disliked ? 'currentColor' : 'none'" />
+                                    <ThumbsDown class="w-4 h-4 sm:w-5 sm:h-5" :fill="disliked ? 'currentColor' : 'none'" />
                                 </button>
                             </div>
 
-                            <button @click="handleShare" class="btn btn-secondary gap-2">
-                                <Share2 class="w-5 h-5" />
+                            <button @click="handleShare" class="btn btn-secondary gap-1.5 sm:gap-2 flex-shrink-0 text-sm">
+                                <Share2 class="w-4 h-4 sm:w-5 sm:h-5" />
                                 <span class="hidden sm:inline">Share</span>
                             </button>
 
                             <!-- Save to Playlist -->
-                            <div class="relative playlist-menu-area">
-                                <button @click.stop="user ? (showPlaylistMenu = !showPlaylistMenu) : router.visit('/login')" class="btn btn-secondary gap-2">
-                                    <ListVideo class="w-5 h-5" />
+                            <div class="relative playlist-menu-area flex-shrink-0">
+                                <button @click.stop="user ? (showPlaylistMenu = !showPlaylistMenu) : router.visit('/login')" class="btn btn-secondary gap-1.5 sm:gap-2 text-sm">
+                                    <ListVideo class="w-4 h-4 sm:w-5 sm:h-5" />
                                     <span class="hidden sm:inline">Save</span>
                                 </button>
                                 <div
                                     v-if="showPlaylistMenu"
-                                    class="absolute right-0 top-full mt-2 w-72 rounded-xl shadow-xl z-50 overflow-hidden"
+                                    class="absolute right-0 sm:right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-72 max-w-72 rounded-xl shadow-xl z-50 overflow-hidden"
                                     style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);"
                                 >
                                     <div class="p-3 font-medium text-sm" style="border-bottom: 1px solid var(--color-border); color: var(--color-text-primary);">Save to playlist</div>
@@ -470,12 +508,14 @@ const formattedViews = computed(() => {
                                 </div>
                             </div>
 
-                            <button @click="user ? (showReportModal = true) : router.visit('/login')" class="btn btn-secondary gap-2">
-                                <Flag class="w-5 h-5" />
+                            <button @click="user ? (showReportModal = true) : router.visit('/login')" class="btn btn-secondary gap-1.5 sm:gap-2 flex-shrink-0 text-sm">
+                                <Flag class="w-4 h-4 sm:w-5 sm:h-5" />
                                 <span class="hidden sm:inline">Report</span>
                             </button>
 
-                            <KeyboardShortcuts />
+                            <div class="flex-shrink-0">
+                                <KeyboardShortcuts />
+                            </div>
                         </div>
                     </div>
 
@@ -493,7 +533,7 @@ const formattedViews = computed(() => {
             </div>
 
             <!-- Sidebar -->
-            <div class="lg:w-96">
+            <div class="w-full lg:w-96 lg:flex-shrink-0">
                 <!-- Ad Space - Only show if enabled and has code -->
                 <div v-if="sidebarAd?.enabled && sidebarAd?.code" class="mb-6">
                     <div class="ad-container flex items-center justify-center">
@@ -502,7 +542,7 @@ const formattedViews = computed(() => {
                 </div>
 
                 <h3 class="font-medium mb-4" style="color: var(--color-text-primary);">Related Videos</h3>
-                <div class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
                     <VideoCard
                         v-for="relatedVideo in relatedVideos"
                         :key="relatedVideo.id"
