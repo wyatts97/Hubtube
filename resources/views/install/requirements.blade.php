@@ -91,6 +91,13 @@
             <span class="check-value">{{ $requirements['composer_installed'] ? 'Installed' : 'Not found' }}</span>
         </li>
         <li class="check-item">
+            <span class="check-icon {{ $requirements['mysql_available'] ? 'check-ok' : 'check-warn' }}">
+                {{ $requirements['mysql_available'] ? '✓' : '!' }}
+            </span>
+            <span class="check-label">MySQL / MariaDB</span>
+            <span class="check-value">{{ $requirements['mysql_available'] ? 'Connected — ' . $requirements['mysql_version'] : 'Not reachable (install mysql-server or mariadb-server)' }}</span>
+        </li>
+        <li class="check-item">
             <span class="check-icon {{ $requirements['redis_available'] ? 'check-ok' : 'check-warn' }}">
                 {{ $requirements['redis_available'] ? '✓' : '!' }}
             </span>

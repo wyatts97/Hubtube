@@ -51,7 +51,7 @@
             </div>
             <div class="form-group">
                 <label for="db_password">Password</label>
-                <input type="password" name="db_password" id="db_password" value="{{ old('db_password', '') }}" placeholder="Leave empty if none" />
+                <input type="password" name="db_password" id="db_password" value="{{ session('db_password_value', old('db_password', '')) }}" placeholder="Leave empty if none" autocomplete="off" />
             </div>
         </div>
 
