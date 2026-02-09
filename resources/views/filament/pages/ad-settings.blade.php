@@ -98,6 +98,13 @@
             </div>
             @endif
 
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1 dark:text-gray-300">Click-Through URL</label>
+                <input type="url" wire:model="adFormData.click_url" class="fi-input block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white font-mono text-sm" placeholder="https://example.com/landing-page" />
+                @error('adFormData.click_url') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                <p class="text-xs text-gray-500 mt-1">Optional. When set, clicking the ad opens this URL in a new tab.</p>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                     <label class="block text-sm font-medium mb-1 dark:text-gray-300">Target Categories</label>

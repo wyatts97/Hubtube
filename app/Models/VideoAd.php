@@ -13,6 +13,7 @@ class VideoAd extends Model
         'placement',
         'content',
         'file_path',
+        'click_url',
         'weight',
         'is_active',
         'category_ids',
@@ -131,6 +132,7 @@ class VideoAd extends Model
             'type' => $ad->type,
             'placement' => $ad->placement,
             'content' => $content,
+            'click_url' => $ad->click_url,
             'name' => $ad->name,
         ];
     }

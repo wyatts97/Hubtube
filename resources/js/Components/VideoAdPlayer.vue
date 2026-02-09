@@ -201,6 +201,13 @@ const tryPlayAd = () => {
     }
 };
 
+// Handle click on ad — open click-through URL in new tab
+const onAdClick = () => {
+    if (currentAd.value?.click_url) {
+        window.open(currentAd.value.click_url, '_blank', 'noopener,noreferrer');
+    }
+};
+
 // Handle ad video ended naturally
 const onAdVideoEnded = () => {
     endAd();
@@ -328,13 +335,17 @@ onUnmounted(() => {
         </div>
 
         <!-- Ad Content Area -->
-        <div class="flex-1 flex items-center justify-center">
+        <div
+            class="flex-1 flex items-center justify-center relative"
+            :class="{ 'cursor-pointer': currentAd?.click_url }"
+            @click="onAdClick"
+        >
             <!-- MP4 Video Ad -->
             <video
                 v-if="adDisplayType === 'video'"
                 ref="adVideoRef"
                 :src="currentAd.content"
-                class="w-full h-full object-contain"
+                class="w-full h-full object-contain pointer-events-none"
                 autoplay
                 playsinline
                 crossorigin="anonymous"
@@ -349,7 +360,7 @@ onUnmounted(() => {
                     v-if="vastMediaUrl"
                     ref="adVideoRef"
                     :src="vastMediaUrl"
-                    class="w-full h-full object-contain"
+                    class="w-full h-full object-contain pointer-events-none"
                     autoplay
                     playsinline
                     crossorigin="anonymous"
@@ -368,6 +379,16 @@ onUnmounted(() => {
                 ref="adHtmlRef"
                 class="w-full h-full flex items-center justify-center"
             ></div>
+
+            <!-- Click-through CTA -->
+            <div
+                v-if="currentAd?.click_url && adDisplayType !== 'html'"
+                class="absolute bottom-16 left-4 z-40"
+            >
+                <span class="px-3 py-1.5 bg-white/20 backdrop-blur-sm text-white text-xs font-medium rounded-lg border border-white/30 inline-flex items-center gap-1.5">
+                    Learn More ↗
+                </span>
+            </div>
         </div>
 
         <!-- Ad Progress Bar -->

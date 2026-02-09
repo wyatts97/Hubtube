@@ -98,6 +98,7 @@ class AdSettings extends Page implements HasForms
             'type' => 'mp4',
             'placement' => 'pre_roll',
             'content' => '',
+            'click_url' => '',
             'weight' => 1,
             'is_active' => true,
             'category_ids' => [],
@@ -341,6 +342,7 @@ class AdSettings extends Page implements HasForms
                 'type' => $ad->type,
                 'placement' => $ad->placement,
                 'content' => $ad->content,
+                'click_url' => $ad->click_url ?? '',
                 'weight' => $ad->weight,
                 'is_active' => $ad->is_active,
                 'category_ids' => $ad->category_ids ?? [],
@@ -365,6 +367,7 @@ class AdSettings extends Page implements HasForms
             'adFormData.content' => $isMp4 && $hasFile ? 'nullable|string' : 'required|string',
             'adFormData.weight' => 'required|integer|min:1|max:100',
             'adFormData.is_active' => 'boolean',
+            'adFormData.click_url' => 'nullable|url|max:2048',
             'adFormData.category_ids' => 'nullable|array',
             'adFormData.target_roles' => 'nullable|array',
         ];
