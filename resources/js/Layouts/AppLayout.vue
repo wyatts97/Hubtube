@@ -188,8 +188,8 @@ const toggleSidebar = () => {
 <template>
     <div class="min-h-screen" style="background-color: var(--color-bg-primary);">
         <!-- Header -->
-        <header class="fixed top-0 left-0 right-0 z-50" style="background-color: var(--color-bg-secondary); border-bottom: 1px solid var(--color-border);">
-            <div class="flex items-center justify-between h-14 px-4">
+        <header class="fixed top-0 left-0 right-0 z-50 w-full" style="background-color: var(--color-bg-secondary); border-bottom: 1px solid var(--color-border);">
+            <div class="flex items-center justify-between h-14 px-4 w-full">
                 <!-- Left: Logo & Menu -->
                 <div class="flex items-center gap-4">
                     <button @click="toggleSidebar" class="p-2 rounded-full hidden lg:flex" style="color: var(--color-text-primary);" :style="{ ':hover': { backgroundColor: 'var(--color-bg-card)' } }">
@@ -276,24 +276,29 @@ const toggleSidebar = () => {
                                     </button>
                                 </div>
                                 <div v-if="notifications.length">
-                                    <div
+                                    <component
+                                        :is="notif.data?.url ? 'a' : 'div'"
                                         v-for="notif in notifications"
                                         :key="notif.id"
-                                        class="flex items-start gap-3 p-3 border-b last:border-b-0 transition-colors"
+                                        :href="notif.data?.url || undefined"
+                                        @click="notif.data?.url ? (showNotifications = false) : null"
+                                        class="flex items-start gap-3 p-3 border-b last:border-b-0 transition-colors hover:opacity-80"
                                         :style="{
                                             borderColor: 'var(--color-border)',
                                             backgroundColor: !notif.read_at ? 'rgba(var(--color-accent-rgb, 220, 38, 38), 0.03)' : 'transparent',
+                                            display: 'flex',
+                                            textDecoration: 'none',
                                         }"
                                     >
-                                        <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center" style="background-color: var(--color-bg-secondary);">
+                                        <div class="w-8 h-8 rounded-full shrink-0 flex items-center justify-center" style="background-color: var(--color-bg-secondary);">
                                             <Bell class="w-4 h-4" style="color: var(--color-text-muted);" />
                                         </div>
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-medium" style="color: var(--color-text-primary);">{{ notif.title }}</p>
                                             <p class="text-xs mt-0.5 line-clamp-2" style="color: var(--color-text-muted);">{{ notif.message }}</p>
                                         </div>
-                                        <div v-if="!notif.read_at" class="w-2 h-2 rounded-full flex-shrink-0 mt-2" style="background-color: var(--color-accent);"></div>
-                                    </div>
+                                        <div v-if="!notif.read_at" class="w-2 h-2 rounded-full shrink-0 mt-2" style="background-color: var(--color-accent);"></div>
+                                    </component>
                                 </div>
                                 <div v-else class="p-6 text-center">
                                     <Bell class="w-8 h-8 mx-auto mb-2" style="color: var(--color-text-muted);" />
@@ -665,6 +670,20 @@ const toggleSidebar = () => {
                 </form>
             </div>
         </div>
+
+        <!-- Footer -->
+        <footer
+            :class="['transition-all duration-300 py-6 px-4 mt-8', sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-sidebar']"
+            style="border-top: 1px solid var(--color-border);"
+        >
+            <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs" style="color: var(--color-text-muted);">
+                <a href="/pages/terms-of-service" class="hover:opacity-80" style="color: var(--color-text-muted);">Terms of Service</a>
+                <a href="/pages/privacy-policy" class="hover:opacity-80" style="color: var(--color-text-muted);">Privacy Policy</a>
+                <a href="/pages/dmca" class="hover:opacity-80" style="color: var(--color-text-muted);">DMCA</a>
+                <a href="/pages/community-guidelines" class="hover:opacity-80" style="color: var(--color-text-muted);">Community Guidelines</a>
+                <a href="/pages/cookie-policy" class="hover:opacity-80" style="color: var(--color-text-muted);">Cookie Policy</a>
+            </div>
+        </footer>
 
         <!-- Toast Notifications -->
         <ToastContainer />

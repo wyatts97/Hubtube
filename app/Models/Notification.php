@@ -37,6 +37,8 @@ class Notification extends Model
     const TYPE_LIVE_STARTED = 'live_started';
     const TYPE_WITHDRAWAL_APPROVED = 'withdrawal_approved';
     const TYPE_VIDEO_APPROVED = 'video_approved';
+    const TYPE_VIDEO_PROCESSED = 'video_processed';
+    const TYPE_VIDEO_REJECTED = 'video_rejected';
 
     public function user(): BelongsTo
     {

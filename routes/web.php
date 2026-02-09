@@ -21,6 +21,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\VideoController;
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\ThumbnailProxyController;
 use App\Http\Controllers\WalletController;
@@ -75,6 +76,9 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/live/{liveStream}', [LiveStreamController::class, 'show'])->name('live.show');
 
     Route::get('/playlist/{playlist:slug}', [PlaylistController::class, 'show'])->name('playlists.show');
+
+    // Legal / Static Pages
+    Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('pages.show');
 
     // Video Ads API (accessible by all users including guests)
     Route::get('/api/video-ads', [\App\Http\Controllers\VideoAdController::class, 'getAds'])->name('video-ads.get');

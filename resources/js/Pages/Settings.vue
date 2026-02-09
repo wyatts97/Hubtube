@@ -166,8 +166,8 @@ const tabs = [
                                 <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">Channel Banner</label>
                                 <div class="relative h-32 md:h-40 rounded-xl overflow-hidden" style="background-color: var(--color-bg-secondary);">
                                     <img
-                                        v-if="bannerPreview || user?.channel?.banner"
-                                        :src="bannerPreview || user.channel.banner"
+                                        v-if="bannerPreview || user?.channel?.banner_image"
+                                        :src="bannerPreview || user.channel.banner_image"
                                         alt="Channel banner"
                                         class="w-full h-full object-cover"
                                     />

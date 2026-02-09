@@ -27,7 +27,7 @@ class SettingsController extends Controller
 
         $request->user()->update($validated);
 
-        return back()->with('success', 'Profile updated successfully.');
+        return redirect()->route('settings')->with('success', 'Profile updated successfully.');
     }
 
     public function updateAvatar(Request $request): RedirectResponse
@@ -39,14 +39,17 @@ class SettingsController extends Controller
         $user = $request->user();
 
         // Delete old avatar if it exists
-        if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
-            Storage::disk('public')->delete($user->avatar);
+        if ($user->avatar) {
+            $oldPath = str_replace('/storage/', '', $user->avatar);
+            if (Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
         }
 
         $path = $request->file('avatar')->store("avatars/{$user->id}", 'public');
-        $user->update(['avatar' => $path]);
+        $user->update(['avatar' => '/storage/' . $path]);
 
-        return back()->with('success', 'Avatar updated successfully.');
+        return redirect()->route('settings')->with('success', 'Avatar updated successfully.');
     }
 
     public function updateBanner(Request $request): RedirectResponse
@@ -60,19 +63,25 @@ class SettingsController extends Controller
         // Ensure user has a channel record
         $channel = $user->channel;
         if (!$channel) {
-            $user->channel()->create([]);
+            $user->channel()->create([
+                'name' => $user->username,
+                'slug' => $user->username,
+            ]);
             $channel = $user->channel()->first();
         }
 
         // Delete old banner if it exists
-        if ($channel->banner && Storage::disk('public')->exists($channel->banner)) {
-            Storage::disk('public')->delete($channel->banner);
+        if ($channel->banner_image) {
+            $oldPath = str_replace('/storage/', '', $channel->banner_image);
+            if (Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
         }
 
         $path = $request->file('banner')->store("banners/{$user->id}", 'public');
-        $channel->update(['banner' => $path]);
+        $channel->update(['banner_image' => '/storage/' . $path]);
 
-        return back()->with('success', 'Banner updated successfully.');
+        return redirect()->route('settings')->with('success', 'Banner updated successfully.');
     }
 
     public function updatePassword(Request $request): RedirectResponse
@@ -86,7 +95,7 @@ class SettingsController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        return back()->with('success', 'Password updated successfully.');
+        return redirect()->route('settings')->with('success', 'Password updated successfully.');
     }
 
     public function updateNotifications(Request $request): RedirectResponse
@@ -108,7 +117,7 @@ class SettingsController extends Controller
             ]),
         ]);
 
-        return back()->with('success', 'Notification preferences updated.');
+        return redirect()->route('settings')->with('success', 'Notification preferences updated.');
     }
 
     public function updatePrivacy(Request $request): RedirectResponse
@@ -127,6 +136,6 @@ class SettingsController extends Controller
             'settings' => array_merge($settings, $validated),
         ]);
 
-        return back()->with('success', 'Privacy settings updated.');
+        return redirect()->route('settings')->with('success', 'Privacy settings updated.');
     }
 }

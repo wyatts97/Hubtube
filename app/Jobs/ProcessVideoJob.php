@@ -15,6 +15,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Models\Notification;
 
 class ProcessVideoJob implements ShouldQueue
 {
@@ -68,7 +69,7 @@ class ProcessVideoJob implements ShouldQueue
             $videoService->markAsProcessed($this->video, $qualities);
             $videoService->publish($this->video);
 
-            event(new VideoProcessed($this->video));
+            $this->notifyOnce();
 
         } catch (\Exception $e) {
             Log::error('Video processing failed', [
@@ -97,8 +98,21 @@ class ProcessVideoJob implements ShouldQueue
             'published_at' => now(),
             'is_approved' => true,
         ]);
-        
-        event(new VideoProcessed($this->video));
+
+        $this->notifyOnce();
+    }
+
+    protected function notifyOnce(): void
+    {
+        // Prevent duplicate notifications on job retries
+        $exists = Notification::where('user_id', $this->video->user_id)
+            ->where('type', 'video_processed')
+            ->where('data->video_id', $this->video->id)
+            ->exists();
+
+        if (!$exists) {
+            event(new VideoProcessed($this->video));
+        }
     }
 
     protected function isFFmpegAvailable(): bool

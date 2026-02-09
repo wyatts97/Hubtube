@@ -25,6 +25,7 @@ class HandleInertiaRequests extends Middleware
                     'id' => $request->user()->id,
                     'username' => $request->user()->username,
                     'email' => $request->user()->email,
+                    'bio' => $request->user()->bio,
                     'avatar' => $request->user()->avatar,
                     'is_verified' => $request->user()->is_verified,
                     'is_pro' => $request->user()->is_pro,
@@ -33,6 +34,11 @@ class HandleInertiaRequests extends Middleware
                     'age_verified' => $request->user()->isAgeVerified(),
                     'can_edit_video' => $request->user()->canEditVideo(),
                     'settings' => $request->user()->settings ?? [],
+                    'channel' => $request->user()->channel ? [
+                        'id' => $request->user()->channel->id,
+                        'name' => $request->user()->channel->name,
+                        'banner_image' => $request->user()->channel->banner_image,
+                    ] : null,
                 ] : null,
             ],
             'flash' => [

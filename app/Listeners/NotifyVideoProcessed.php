@@ -9,14 +9,17 @@ class NotifyVideoProcessed
 {
     public function handle(VideoProcessed $event): void
     {
+        $video = $event->video;
+
         Notification::create([
-            'user_id' => $event->video->user_id,
+            'user_id' => $video->user_id,
             'type' => 'video_processed',
-            'title' => 'Video Ready',
-            'message' => "Your video \"{$event->video->title}\" has been processed and is now live!",
+            'title' => 'Video Published',
+            'message' => "Your video \"{$video->title}\" has been Published.",
             'data' => [
-                'video_id' => $event->video->id,
-                'video_slug' => $event->video->slug,
+                'video_id' => $video->id,
+                'video_slug' => $video->slug,
+                'url' => "/{$video->slug}",
             ],
         ]);
     }

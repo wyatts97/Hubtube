@@ -31,6 +31,7 @@ const form = useForm({
 
 const tagInput = ref('');
 const thumbnailPreview = ref(props.video.thumbnail_url);
+const customThumbnailPreview = ref(null);
 const videoStatus = ref(props.video.status);
 const generatedThumbnails = ref([]);
 const selectedThumbIndex = ref(null);
@@ -98,7 +99,8 @@ const handleThumbnailSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
         form.thumbnail = file;
-        thumbnailPreview.value = URL.createObjectURL(file);
+        customThumbnailPreview.value = URL.createObjectURL(file);
+        thumbnailPreview.value = customThumbnailPreview.value;
         selectedThumbIndex.value = null; // Clear generated selection
     }
 };
@@ -261,8 +263,8 @@ const statusColors = {
                         <label class="flex items-center gap-4 cursor-pointer group">
                             <div class="w-32 aspect-video rounded-lg overflow-hidden flex-shrink-0 group-hover:opacity-80 transition-opacity" style="background-color: var(--color-bg-secondary);">
                                 <img 
-                                    v-if="thumbnailPreview" 
-                                    :src="thumbnailPreview" 
+                                    v-if="customThumbnailPreview" 
+                                    :src="customThumbnailPreview" 
                                     class="w-full h-full object-cover"
                                 />
                                 <div v-else class="w-full h-full flex items-center justify-center">

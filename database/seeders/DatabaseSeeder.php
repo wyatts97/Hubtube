@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             GiftSeeder::class,
             UserSeeder::class,
             SettingsSeeder::class,
+            PageSeeder::class,
         ]);
     }
 }

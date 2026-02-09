@@ -500,9 +500,24 @@ html, body {
     }
 }
 
-/* ===== Prevent content shift on scrollbar appearance ===== */
-@media (min-width: 1024px) {
-    html {
-        scrollbar-gutter: stable;
-    }
+/* ===== Clickable elements should always show pointer cursor ===== */
+button,
+[role="button"],
+a,
+label[for],
+label.cursor-pointer,
+select,
+summary,
+input[type="checkbox"],
+input[type="radio"],
+input[type="submit"],
+input[type="button"],
+input[type="file"] {
+    cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled {
+    cursor: not-allowed;
 }
