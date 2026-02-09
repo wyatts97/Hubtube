@@ -11,3 +11,4 @@ Artisan::command('inspire', function () {
 Schedule::command('horizon:snapshot')->everyFiveMinutes();
 Schedule::command('queue:prune-batches --hours=48')->daily();
 Schedule::command('sanctum:prune-expired --hours=24')->daily();
+Schedule::command('videos:prune-deleted --days=30')->daily();

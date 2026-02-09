@@ -21,6 +21,12 @@ class CheckInstalled
             return redirect('/');
         }
 
+        if ($mode === 'block' && !$installed) {
+            // During installation, force file-based sessions so CSRF works
+            // even when Redis or database drivers aren't configured yet.
+            config(['session.driver' => 'file']);
+        }
+
         if ($mode === 'require' && !$installed) {
             // Not installed — redirect to installer (unless already on /install)
             if (!$request->is('install*')) {

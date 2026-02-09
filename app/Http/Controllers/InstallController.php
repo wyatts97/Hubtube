@@ -94,6 +94,13 @@ class InstallController extends Controller
             'app_name' => env('APP_NAME', 'HubTube'),
             'app_url' => env('APP_URL', 'http://localhost'),
             'app_timezone' => env('APP_TIMEZONE', 'UTC'),
+            'mail_mailer' => env('MAIL_MAILER', 'log'),
+            'mail_host' => env('MAIL_HOST', ''),
+            'mail_port' => env('MAIL_PORT', '587'),
+            'mail_username' => env('MAIL_USERNAME', ''),
+            'mail_from_address' => env('MAIL_FROM_ADDRESS', ''),
+            'mail_from_name' => env('MAIL_FROM_NAME', '${APP_NAME}'),
+            'mail_encryption' => env('MAIL_ENCRYPTION', 'tls'),
         ];
 
         $timezones = \DateTimeZone::listIdentifiers();
@@ -110,6 +117,13 @@ class InstallController extends Controller
             'app_name' => 'required|string|max:255',
             'app_url' => 'required|url|max:255',
             'app_timezone' => 'required|string|max:255',
+            'mail_mailer' => 'required|in:smtp,log,sendmail,ses,postmark,resend',
+            'mail_host' => 'nullable|string|max:255',
+            'mail_port' => 'nullable|integer|min:1|max:65535',
+            'mail_username' => 'nullable|string|max:255',
+            'mail_password' => 'nullable|string|max:255',
+            'mail_from_address' => 'nullable|email|max:255',
+            'mail_encryption' => 'nullable|in:tls,ssl,null',
         ]);
 
         $envUpdates = [
@@ -117,7 +131,21 @@ class InstallController extends Controller
             'APP_URL' => $validated['app_url'],
             'APP_TIMEZONE' => $validated['app_timezone'],
             'VITE_APP_NAME' => '${APP_NAME}',
+            'MAIL_MAILER' => $validated['mail_mailer'],
         ];
+
+        // Only write SMTP settings if mailer is smtp
+        if ($validated['mail_mailer'] === 'smtp') {
+            $envUpdates['MAIL_HOST'] = $validated['mail_host'] ?? '';
+            $envUpdates['MAIL_PORT'] = (string) ($validated['mail_port'] ?? '587');
+            $envUpdates['MAIL_USERNAME'] = $validated['mail_username'] ?? '';
+            $envUpdates['MAIL_PASSWORD'] = $validated['mail_password'] ?? '';
+            $envUpdates['MAIL_ENCRYPTION'] = $validated['mail_encryption'] ?? 'tls';
+        }
+
+        if (!empty($validated['mail_from_address'])) {
+            $envUpdates['MAIL_FROM_ADDRESS'] = $validated['mail_from_address'];
+        }
 
         // Generate APP_KEY if not set
         if (empty(env('APP_KEY'))) {
@@ -315,6 +343,22 @@ class InstallController extends Controller
         $composerPath = trim(shell_exec('which composer 2>/dev/null') ?? '');
         $composerInstalled = !empty($composerPath);
 
+        // Check Redis connectivity
+        $redisAvailable = false;
+        try {
+            $redis = new \Redis();
+            $redisAvailable = @$redis->connect(
+                env('REDIS_HOST', '127.0.0.1'),
+                (int) env('REDIS_PORT', 6379),
+                1.0 // 1 second timeout
+            );
+            if ($redisAvailable) {
+                $redis->close();
+            }
+        } catch (\Exception $e) {
+            $redisAvailable = false;
+        }
+
         $allExtensionsOk = !in_array(false, array_diff_key($extensions, ['redis' => true]));
         $allDirsOk = !in_array(false, $directories);
         $canProceed = $phpOk && $allExtensionsOk && $allDirsOk && $envExists;
@@ -332,6 +376,7 @@ class InstallController extends Controller
             'node_installed' => $nodeInstalled,
             'node_version' => $nodeVersion,
             'composer_installed' => $composerInstalled,
+            'redis_available' => $redisAvailable,
             'can_proceed' => $canProceed,
         ];
     }

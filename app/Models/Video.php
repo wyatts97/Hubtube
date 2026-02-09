@@ -30,6 +30,7 @@ class Video extends Model
         'size',
         'privacy',
         'status',
+        'failure_reason',
         'is_short',
         'is_featured',
         'is_approved',

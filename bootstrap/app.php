@@ -45,6 +45,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->statefulApi();
+
+        $middleware->throttleApi('60,1');
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // Handle CSRF token mismatch for Inertia requests

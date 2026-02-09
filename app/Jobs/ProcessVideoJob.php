@@ -227,10 +227,10 @@ class ProcessVideoJob implements ShouldQueue
 
         $cmd = "{$ffprobe} -v quiet -print_format json -show_format -show_streams " . escapeshellarg($path);
         
-        $output = shell_exec($cmd);
+        [$exitCode, $output] = $this->runCommand($cmd);
         
-        if (empty($output)) {
-            throw new \RuntimeException('FFprobe returned empty output. Check if FFprobe is installed.');
+        if ($exitCode !== 0 || empty($output)) {
+            throw new \RuntimeException("FFprobe failed (exit code {$exitCode}): " . substr($output, 0, 500));
         }
 
         $info = json_decode($output, true);
@@ -280,7 +280,10 @@ class ProcessVideoJob implements ShouldQueue
                 escapeshellarg($inputPath),
                 escapeshellarg($output)
             );
-            shell_exec($cmd);
+            [$exitCode, $cmdOutput] = $this->runCommand($cmd);
+            if ($exitCode !== 0) {
+                Log::warning('Thumbnail generation failed', ['index' => $i, 'exit_code' => $exitCode, 'output' => substr($cmdOutput, 0, 300)]);
+            }
         }
 
         $storagePath = Storage::disk('public')->path('');
@@ -323,10 +326,10 @@ class ProcessVideoJob implements ShouldQueue
             'preview_duration' => $previewDuration,
         ]);
         
-        $result = shell_exec($cmd);
+        [$exitCode, $result] = $this->runCommand($cmd);
         
         // Check if file was created successfully
-        if (file_exists($output) && filesize($output) > 0) {
+        if ($exitCode === 0 && file_exists($output) && filesize($output) > 0) {
             $previewPath = str_replace(Storage::disk('public')->path(''), '', $output);
             $this->video->update(['preview_path' => $previewPath]);
             
@@ -369,7 +372,10 @@ class ProcessVideoJob implements ShouldQueue
             escapeshellarg($spriteDir)
         );
 
-        shell_exec($cmd);
+        [$exitCode, $cmdOutput] = $this->runCommand($cmd);
+        if ($exitCode !== 0) {
+            Log::warning('Scrubber sprite generation failed', ['exit_code' => $exitCode, 'output' => substr($cmdOutput, 0, 300)]);
+        }
 
         // Count generated frames
         $frames = glob("{$spriteDir}/sprite_*.jpg");
@@ -452,14 +458,16 @@ class ProcessVideoJob implements ShouldQueue
         }
 
         Log::info('Transcoding video', ['quality' => $quality, 'command' => $cmd]);
-        $result = shell_exec($cmd);
+        [$exitCode, $result] = $this->runCommand($cmd);
         
         // Check if output file was created successfully
-        if (!file_exists($output) || filesize($output) === 0) {
+        if ($exitCode !== 0 || !file_exists($output) || filesize($output) === 0) {
             Log::error('Transcoding failed', [
                 'quality' => $quality,
-                'output' => $result,
+                'exit_code' => $exitCode,
+                'output' => substr($result, 0, 500),
             ]);
+            throw new \RuntimeException("FFmpeg transcoding failed for {$quality} (exit code {$exitCode})");
         }
     }
 
@@ -532,7 +540,10 @@ class ProcessVideoJob implements ShouldQueue
                 "-hls_segment_filename \"{$hlsDir}/segment_%03d.ts\" " .
                 "\"{$hlsDir}/playlist.m3u8\"";
 
-            shell_exec($cmd);
+            [$exitCode, $cmdOutput] = $this->runCommand($cmd);
+            if ($exitCode !== 0) {
+                Log::warning('HLS playlist generation failed', ['quality' => $quality, 'exit_code' => $exitCode]);
+            }
         }
 
         $this->generateMasterPlaylist($outputDir, $qualities);
@@ -685,6 +696,30 @@ class ProcessVideoJob implements ShouldQueue
         }
     }
 
+    /**
+     * Run a shell command and return [exitCode, output].
+     * Unlike shell_exec(), this captures the exit code so we can detect FFmpeg failures.
+     */
+    protected function runCommand(string $cmd): array
+    {
+        $process = proc_open($cmd, [
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ], $pipes);
+
+        if (!is_resource($process)) {
+            return [1, 'Failed to start process'];
+        }
+
+        $stdout = stream_get_contents($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $exitCode = proc_close($process);
+
+        return [$exitCode, trim($stdout . "\n" . $stderr)];
+    }
+
     public function failed(\Throwable $exception): void
     {
         Log::error('Video processing job failed permanently', [
@@ -692,6 +727,9 @@ class ProcessVideoJob implements ShouldQueue
             'error' => $exception->getMessage(),
         ]);
 
-        $this->video->update(['status' => 'failed']);
+        $this->video->update([
+            'status' => 'failed',
+            'failure_reason' => $exception->getMessage(),
+        ]);
     }
 }

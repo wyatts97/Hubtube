@@ -159,6 +159,7 @@ class VideoService
     {
         $video->update([
             'status' => 'failed',
+            'failure_reason' => $reason,
             'processing_completed_at' => now(),
         ]);
     }

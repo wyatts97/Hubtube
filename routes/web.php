@@ -39,6 +39,9 @@ Route::middleware('installed:block')->prefix('install')->group(function () {
     Route::post('/finalize', [\App\Http\Controllers\InstallController::class, 'executeFinalize'])->name('install.finalize.execute');
 });
 
+// ── App Routes (require installation) ──
+Route::middleware('installed:require')->group(function () {
+
 // Sitemap (outside age verification)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
@@ -101,7 +104,8 @@ Route::middleware('age.verified')->group(function () {
             ->name('verification.send');
 
         Route::get('/upload', [VideoController::class, 'create'])->name('videos.create');
-        Route::post('/upload', [VideoController::class, 'store'])->name('videos.store');
+        Route::post('/upload', [VideoController::class, 'store'])->middleware('throttle:10,1')->name('videos.store');
+        Route::post('/upload/chunk', [VideoController::class, 'uploadChunk'])->middleware('throttle:300,1')->name('videos.upload-chunk');
         Route::get('/videos/{video}/edit', [VideoController::class, 'edit'])->name('videos.edit');
         Route::get('/videos/{video}/status', [VideoController::class, 'status'])->name('videos.status');
         Route::get('/videos/{video}/processing-status', [VideoController::class, 'processingStatus'])->name('videos.processing-status');
@@ -116,8 +120,8 @@ Route::middleware('age.verified')->group(function () {
         Route::post('/videos/{video}/comments', [CommentController::class, 'store'])->middleware('throttle:10,1')->name('comments.store');
         Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
         Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
-        Route::post('/comments/{comment}/like', [CommentController::class, 'like'])->name('comments.like');
-        Route::post('/comments/{comment}/dislike', [CommentController::class, 'dislike'])->name('comments.dislike');
+        Route::post('/comments/{comment}/like', [CommentController::class, 'like'])->middleware('throttle:30,1')->name('comments.like');
+        Route::post('/comments/{comment}/dislike', [CommentController::class, 'dislike'])->middleware('throttle:30,1')->name('comments.dislike');
 
         Route::post('/channel/{user}/subscribe', [SubscriptionController::class, 'store'])->name('subscription.store');
         Route::delete('/channel/{user}/subscribe', [SubscriptionController::class, 'destroy'])->name('subscription.destroy');
@@ -135,17 +139,17 @@ Route::middleware('age.verified')->group(function () {
 
         Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');
         Route::get('/wallet/deposit', [WalletController::class, 'deposit'])->name('wallet.deposit');
-        Route::post('/wallet/deposit', [WalletController::class, 'processDeposit'])->name('wallet.deposit.process');
+        Route::post('/wallet/deposit', [WalletController::class, 'processDeposit'])->middleware('throttle:10,1')->name('wallet.deposit.process');
         Route::get('/wallet/withdraw', [WalletController::class, 'withdraw'])->name('wallet.withdraw');
-        Route::post('/wallet/withdraw', [WalletController::class, 'processWithdraw'])->name('wallet.withdraw.process');
+        Route::post('/wallet/withdraw', [WalletController::class, 'processWithdraw'])->middleware('throttle:5,1')->name('wallet.withdraw.process');
 
         Route::get('/go-live', [LiveStreamController::class, 'create'])->name('live.create');
-        Route::post('/go-live', [LiveStreamController::class, 'store'])->name('live.store');
+        Route::post('/go-live', [LiveStreamController::class, 'store'])->middleware('throttle:5,1')->name('live.store');
         Route::post('/live/{liveStream}/start', [LiveStreamController::class, 'start'])->name('live.start');
         Route::post('/live/{liveStream}/end', [LiveStreamController::class, 'end'])->name('live.end');
 
         Route::get('/gifts', [GiftController::class, 'index'])->name('gifts.index');
-        Route::post('/live/{liveStream}/gift', [GiftController::class, 'send'])->name('gifts.send');
+        Route::post('/live/{liveStream}/gift', [GiftController::class, 'send'])->middleware('throttle:60,1')->name('gifts.send');
 
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
         Route::put('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile');
@@ -163,7 +167,7 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unreadCount');
 
         // Reports
-        Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
+        Route::post('/reports', [ReportController::class, 'store'])->middleware('throttle:5,1')->name('reports.store');
 
         // Push Notifications
         Route::post('/api/push/vapid-key', [\App\Http\Controllers\PushNotificationController::class, 'vapidKey'])->name('push.vapid-key');
@@ -180,3 +184,5 @@ Route::middleware('age.verified')->group(function () {
     // Video show route - must be last to avoid conflicts with other routes
     Route::get('/{video:slug}', [VideoController::class, 'show'])->where('video', '^(?!api|admin|livewire).*')->name('videos.show');
 });
+
+}); // end installed:require

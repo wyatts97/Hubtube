@@ -70,48 +70,52 @@ class VideoController extends Controller
             ->limit(12)
             ->get();
 
-        // Get sidebar ad settings
+        // Batch-load all settings in a single query instead of ~18 individual calls
+        $all = Setting::getAll();
+        $s = fn (string $key, mixed $default = null) => $all[$key] ?? $default;
+
         $sidebarAd = [
-            'enabled' => Setting::get('video_sidebar_ad_enabled', false),
-            'code' => Setting::get('video_sidebar_ad_code', ''),
+            'enabled' => $s('video_sidebar_ad_enabled', false),
+            'code' => $s('video_sidebar_ad_code', ''),
         ];
 
-        // Banner ads above/below player
         $bannerAbovePlayer = [
-            'enabled' => (bool) Setting::get('banner_above_player_enabled', false),
-            'type' => Setting::get('banner_above_player_type', 'html'),
-            'html' => Setting::get('banner_above_player_html', ''),
-            'image' => Setting::get('banner_above_player_image', ''),
-            'link' => Setting::get('banner_above_player_link', ''),
-            'mobile_type' => Setting::get('banner_above_player_mobile_type', 'html'),
-            'mobile_html' => Setting::get('banner_above_player_mobile_html', ''),
-            'mobile_image' => Setting::get('banner_above_player_mobile_image', ''),
-            'mobile_link' => Setting::get('banner_above_player_mobile_link', ''),
+            'enabled' => (bool) $s('banner_above_player_enabled', false),
+            'type' => $s('banner_above_player_type', 'html'),
+            'html' => $s('banner_above_player_html', ''),
+            'image' => $s('banner_above_player_image', ''),
+            'link' => $s('banner_above_player_link', ''),
+            'mobile_type' => $s('banner_above_player_mobile_type', 'html'),
+            'mobile_html' => $s('banner_above_player_mobile_html', ''),
+            'mobile_image' => $s('banner_above_player_mobile_image', ''),
+            'mobile_link' => $s('banner_above_player_mobile_link', ''),
         ];
 
         $bannerBelowPlayer = [
-            'enabled' => (bool) Setting::get('banner_below_player_enabled', false),
-            'type' => Setting::get('banner_below_player_type', 'html'),
-            'html' => Setting::get('banner_below_player_html', ''),
-            'image' => Setting::get('banner_below_player_image', ''),
-            'link' => Setting::get('banner_below_player_link', ''),
-            'mobile_type' => Setting::get('banner_below_player_mobile_type', 'html'),
-            'mobile_html' => Setting::get('banner_below_player_mobile_html', ''),
-            'mobile_image' => Setting::get('banner_below_player_mobile_image', ''),
-            'mobile_link' => Setting::get('banner_below_player_mobile_link', ''),
+            'enabled' => (bool) $s('banner_below_player_enabled', false),
+            'type' => $s('banner_below_player_type', 'html'),
+            'html' => $s('banner_below_player_html', ''),
+            'image' => $s('banner_below_player_image', ''),
+            'link' => $s('banner_below_player_link', ''),
+            'mobile_type' => $s('banner_below_player_mobile_type', 'html'),
+            'mobile_html' => $s('banner_below_player_mobile_html', ''),
+            'mobile_image' => $s('banner_below_player_mobile_image', ''),
+            'mobile_link' => $s('banner_below_player_mobile_link', ''),
         ];
 
         // Get user's playlists with flag indicating if this video is already in each
+        // Uses a single subquery instead of N+1 exists() calls per playlist
         $userPlaylists = [];
         if (auth()->check()) {
+            $videoId = $video->id;
             $userPlaylists = auth()->user()->playlists()
                 ->select('id', 'title', 'slug')
                 ->withCount('videos')
+                ->withCount(['videos as has_video' => function ($q) use ($videoId) {
+                    $q->where('video_id', $videoId);
+                }])
                 ->get()
-                ->map(function ($playlist) use ($video) {
-                    $playlist->has_video = $playlist->videos()->where('video_id', $video->id)->exists();
-                    return $playlist;
-                });
+                ->each(fn ($p) => $p->has_video = (bool) $p->has_video);
         }
 
         return Inertia::render('Videos/Show', [
@@ -155,6 +159,75 @@ class VideoController extends Controller
         return redirect()
             ->route('videos.status', $video)
             ->with('success', 'Video uploaded! It will be published after processing and moderation.');
+    }
+
+    /**
+     * Accept a file chunk for resumable uploads.
+     * Frontend sends: chunk (file), chunkIndex, totalChunks, uploadId, filename, fileSize
+     * On final chunk: assembles all chunks into a single file and returns the temp path.
+     */
+    public function uploadChunk(Request $request): JsonResponse
+    {
+        $request->validate([
+            'chunk' => 'required|file',
+            'chunkIndex' => 'required|integer|min:0',
+            'totalChunks' => 'required|integer|min:1',
+            'uploadId' => 'required|string|max:64',
+            'filename' => 'required|string|max:255',
+            'fileSize' => 'required|integer|min:1',
+        ]);
+
+        $uploadId = $request->input('uploadId');
+        $chunkIndex = (int) $request->input('chunkIndex');
+        $totalChunks = (int) $request->input('totalChunks');
+        $chunkDir = storage_path("app/chunks/{$uploadId}");
+
+        if (!is_dir($chunkDir)) {
+            mkdir($chunkDir, 0755, true);
+        }
+
+        // Store the chunk
+        $request->file('chunk')->move($chunkDir, "chunk_{$chunkIndex}");
+
+        // Check if all chunks have been received
+        $receivedChunks = count(glob("{$chunkDir}/chunk_*"));
+
+        if ($receivedChunks < $totalChunks) {
+            return response()->json([
+                'status' => 'partial',
+                'received' => $receivedChunks,
+                'total' => $totalChunks,
+            ]);
+        }
+
+        // All chunks received — assemble the file
+        $filename = $request->input('filename');
+        $extension = pathinfo($filename, PATHINFO_EXTENSION) ?: 'mp4';
+        $assembledPath = storage_path("app/chunks/{$uploadId}.{$extension}");
+
+        $output = fopen($assembledPath, 'wb');
+        for ($i = 0; $i < $totalChunks; $i++) {
+            $chunkPath = "{$chunkDir}/chunk_{$i}";
+            if (!file_exists($chunkPath)) {
+                fclose($output);
+                return response()->json(['error' => "Missing chunk {$i}"], 422);
+            }
+            $chunk = fopen($chunkPath, 'rb');
+            stream_copy_to_stream($chunk, $output);
+            fclose($chunk);
+        }
+        fclose($output);
+
+        // Clean up chunk directory
+        array_map('unlink', glob("{$chunkDir}/chunk_*"));
+        rmdir($chunkDir);
+
+        return response()->json([
+            'status' => 'complete',
+            'tempPath' => $assembledPath,
+            'uploadId' => $uploadId,
+            'extension' => $extension,
+        ]);
     }
 
     public function edit(Video $video): Response

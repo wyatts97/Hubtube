@@ -90,6 +90,13 @@
             <span class="check-label">Composer</span>
             <span class="check-value">{{ $requirements['composer_installed'] ? 'Installed' : 'Not found' }}</span>
         </li>
+        <li class="check-item">
+            <span class="check-icon {{ $requirements['redis_available'] ? 'check-ok' : 'check-warn' }}">
+                {{ $requirements['redis_available'] ? '✓' : '!' }}
+            </span>
+            <span class="check-label">Redis</span>
+            <span class="check-value">{{ $requirements['redis_available'] ? 'Connected' : 'Not reachable (needed for queues, cache, Horizon)' }}</span>
+        </li>
     </ul>
 
     <div class="btn-group">

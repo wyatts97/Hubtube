@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Models\Video;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -15,20 +16,25 @@ class HomeController extends Controller
 {
     public function index(Request $request): Response
     {
-        $perPage = Setting::get('videos_per_page', 24);
+        $all = Setting::getAll();
+        $s = fn (string $key, mixed $default = null) => $all[$key] ?? $default;
 
-        // Featured videos (includes both uploaded and imported)
-        $featuredVideos = Video::query()
-            ->with('user')
-            ->featured()
-            ->public()
-            ->approved()
-            ->processed()
-            ->latest('published_at')
-            ->limit(8)
-            ->get();
+        $perPage = $s('videos_per_page', 24);
 
-        // Latest videos (includes both uploaded and imported)
+        // Featured videos — cached 2 minutes
+        $featuredVideos = Cache::remember('home:featured', 120, fn () =>
+            Video::query()
+                ->with('user')
+                ->featured()
+                ->public()
+                ->approved()
+                ->processed()
+                ->latest('published_at')
+                ->limit(8)
+                ->get()
+        );
+
+        // Latest videos — paginated, not cached (page-dependent)
         $latestVideos = Video::query()
             ->with('user')
             ->public()
@@ -37,48 +43,56 @@ class HomeController extends Controller
             ->latest('published_at')
             ->paginate($perPage);
 
-        // Popular videos
-        $popularVideos = Video::query()
-            ->with('user')
-            ->public()
-            ->approved()
-            ->processed()
-            ->orderByDesc('views_count')
-            ->limit(12)
-            ->get();
-
-        $liveStreams = LiveStream::query()
-            ->with('user')
-            ->live()
-            ->orderByDesc('viewer_count')
-            ->limit(6)
-            ->get();
-
-        $categories = Category::active()
-            ->parentCategories()
-            ->orderBy('sort_order')
-            ->get();
-
-        // Get ad settings
-        $adSettings = [
-            'videoGridEnabled' => (bool) Setting::get('video_grid_ad_enabled', false),
-            'videoGridCode' => (string) Setting::get('video_grid_ad_code', ''),
-            'videoGridFrequency' => (int) Setting::get('video_grid_ad_frequency', 8),
-        ];
-
-        // Shorts carousel
-        $shortsCarouselEnabled = (bool) Setting::get('homepage_shorts_carousel', false);
-        $shortsForCarousel = [];
-        if ($shortsCarouselEnabled) {
-            $shortsForCarousel = Video::query()
+        // Popular videos — cached 5 minutes
+        $popularVideos = Cache::remember('home:popular', 300, fn () =>
+            Video::query()
                 ->with('user')
-                ->shorts()
                 ->public()
                 ->approved()
                 ->processed()
-                ->latest('published_at')
-                ->limit(20)
-                ->get();
+                ->orderByDesc('views_count')
+                ->limit(12)
+                ->get()
+        );
+
+        // Live streams — cached 30 seconds (changes frequently)
+        $liveStreams = Cache::remember('home:live', 30, fn () =>
+            LiveStream::query()
+                ->with('user')
+                ->live()
+                ->orderByDesc('viewer_count')
+                ->limit(6)
+                ->get()
+        );
+
+        // Categories — cached 10 minutes (rarely changes)
+        $categories = Cache::remember('home:categories', 600, fn () =>
+            Category::active()
+                ->parentCategories()
+                ->orderBy('sort_order')
+                ->get()
+        );
+
+        $adSettings = [
+            'videoGridEnabled' => (bool) $s('video_grid_ad_enabled', false),
+            'videoGridCode' => (string) $s('video_grid_ad_code', ''),
+            'videoGridFrequency' => (int) $s('video_grid_ad_frequency', 8),
+        ];
+
+        $shortsCarouselEnabled = (bool) $s('homepage_shorts_carousel', false);
+        $shortsForCarousel = [];
+        if ($shortsCarouselEnabled) {
+            $shortsForCarousel = Cache::remember('home:shorts', 120, fn () =>
+                Video::query()
+                    ->with('user')
+                    ->shorts()
+                    ->public()
+                    ->approved()
+                    ->processed()
+                    ->latest('published_at')
+                    ->limit(20)
+                    ->get()
+            );
         }
 
         return Inertia::render('Home', [
