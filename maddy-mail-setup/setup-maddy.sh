@@ -48,9 +48,8 @@ fi
 
 DOMAIN="$1"
 MAIL_HOST="${2:-mail.$DOMAIN}"
-MADDY_VERSION="0.7.1"
+MADDY_VERSION="0.8.2"
 MADDY_URL="https://github.com/foxcpp/maddy/releases/download/v${MADDY_VERSION}/maddy-${MADDY_VERSION}-x86_64-linux-musl.tar.zst"
-MADDY_FALLBACK_URL="https://github.com/foxcpp/maddy/releases/download/v${MADDY_VERSION}/maddy-${MADDY_VERSION}-x86_64-linux-musl.tar.gz"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -83,22 +82,38 @@ fi
 
 log "Downloading Maddy v${MADDY_VERSION}..."
 cd /tmp
+rm -rf /tmp/maddy*
 
-# Try zstd first, fall back to gzip
-if wget -q "$MADDY_URL" -O maddy.tar.zst 2>/dev/null; then
-    tar --use-compress-program=unzstd -xf maddy.tar.zst
-elif wget -q "$MADDY_FALLBACK_URL" -O maddy.tar.gz 2>/dev/null; then
-    tar -xzf maddy.tar.gz
-else
+wget -q "$MADDY_URL" -O maddy.tar.zst 2>/dev/null || {
     err "Failed to download Maddy. Check https://github.com/foxcpp/maddy/releases"
+    exit 1
+}
+
+# Extract archive
+zstd -d maddy.tar.zst -o maddy.tar 2>/dev/null
+tar -xf maddy.tar
+
+# Find and install the binary (archive structure varies by version)
+MADDY_BIN=$(find /tmp -maxdepth 2 -name 'maddy' -type f -executable 2>/dev/null | head -1)
+if [ -z "$MADDY_BIN" ]; then
+    # Binary may not be marked executable yet, search by name in extracted dirs
+    MADDY_BIN=$(find /tmp/maddy-* -name 'maddy' -type f 2>/dev/null | head -1)
+fi
+
+if [ -z "$MADDY_BIN" ]; then
+    err "Could not find maddy binary in extracted archive. Contents:"
+    ls -la /tmp/maddy-*/
     exit 1
 fi
 
-# Install binaries
-cp -f maddy-*/maddy /usr/local/bin/maddy
-cp -f maddy-*/maddyctl /usr/local/bin/maddyctl
-chmod +x /usr/local/bin/maddy /usr/local/bin/maddyctl
-rm -rf /tmp/maddy* 
+cp -f "$MADDY_BIN" /usr/local/bin/maddy
+chmod +x /usr/local/bin/maddy
+
+# In v0.8+, maddyctl is merged into the maddy binary.
+# Create a symlink for convenience.
+ln -sf /usr/local/bin/maddy /usr/local/bin/maddyctl
+
+rm -rf /tmp/maddy*
 
 log "Maddy installed to /usr/local/bin/maddy"
 
@@ -308,12 +323,12 @@ systemctl daemon-reload
 log "Creating HubTube mail account..."
 MAIL_PASSWORD=$(openssl rand -base64 24 | tr -d '/+=' | head -c 32)
 
-# Create the account using maddyctl
-maddyctl --config /etc/maddy/maddy.conf creds create "noreply@${DOMAIN}" <<< "$MAIL_PASSWORD
+# Create the account (v0.8+ uses 'maddy creds' instead of 'maddyctl')
+maddy creds create --config /etc/maddy/maddy.conf "noreply@${DOMAIN}" <<< "$MAIL_PASSWORD
 $MAIL_PASSWORD" 2>/dev/null || {
     warn "Could not create credentials now (Maddy may need to run first)."
     warn "After starting Maddy, run:"
-    warn "  maddyctl creds create noreply@${DOMAIN}"
+    warn "  maddy creds create noreply@${DOMAIN}"
 }
 
 # ── Step 10: Start Maddy ──
@@ -382,8 +397,8 @@ echo ""
 echo "  systemctl status maddy        # Check status"
 echo "  journalctl -u maddy -f        # View logs"
 echo "  systemctl restart maddy       # Restart"
-echo "  maddyctl creds list           # List accounts"
-echo "  maddyctl creds create <user>  # Add account"
+echo "  maddy creds list              # List accounts"
+echo "  maddy creds create <user>     # Add account"
 echo ""
 echo -e "${YELLOW}━━━ DELIVERABILITY TIPS ━━━${NC}"
 echo ""

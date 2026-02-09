@@ -4,7 +4,7 @@ Self-hosted transactional email server using [Maddy](https://maddy.email) — a 
 
 ## Why Maddy?
 
-- **Single binary** — no Docker, no Ruby, no Java
+- **Single binary** (v0.8.2) — no Docker, no Ruby, no Java
 - **Built-in DKIM, SPF, DMARC** — critical for adult site email deliverability
 - **SMTP + STARTTLS** — Laravel connects directly via `MAIL_MAILER=smtp`
 - **Lightweight** — ~30MB RAM, minimal CPU
@@ -85,9 +85,9 @@ systemctl restart maddy         # Restart
 journalctl -u maddy -f          # Live logs
 journalctl -u maddy | grep -i bounce  # Check bounces
 
-maddyctl creds list             # List mail accounts
-maddyctl creds create user@domain  # Add account
-maddyctl creds remove user@domain  # Remove account
+maddy creds list                # List mail accounts
+maddy creds create user@domain  # Add account
+maddy creds remove user@domain  # Remove account
 ```
 
 ## Email Warmup Plan (Important for Adult Sites)
