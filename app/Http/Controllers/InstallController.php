@@ -54,7 +54,7 @@ class InstallController extends Controller
         // Test the connection
         try {
             $pdo = new \PDO(
-                "{$validated['db_connection']}:host={$validated['db_host']};port={$validated['db_port']}",
+                "mysql:host={$validated['db_host']};port={$validated['db_port']}",
                 $validated['db_username'],
                 $validated['db_password'] ?? ''
             );
