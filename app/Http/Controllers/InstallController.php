@@ -16,6 +16,9 @@ class InstallController extends Controller
      */
     public function requirements()
     {
+        // Auto-heal common issues before checking requirements
+        $this->autoHeal();
+
         $requirements = $this->checkRequirements();
 
         return view('install.requirements', compact('requirements'));
@@ -78,6 +81,9 @@ class InstallController extends Controller
                 ->with('db_password_value', $password)
                 ->withErrors(['db_connection' => 'Connected to MySQL but failed on database: ' . $e->getMessage()]);
         }
+
+        // Ensure .env is writable before writing
+        $this->ensureEnvWritable();
 
         // Write to .env
         $this->updateEnv([
@@ -166,6 +172,7 @@ class InstallController extends Controller
             Artisan::call('key:generate', ['--force' => true]);
         }
 
+        $this->ensureEnvWritable();
         $this->updateEnv($envUpdates);
 
         return redirect()->route('install.admin');
@@ -300,6 +307,53 @@ class InstallController extends Controller
         $request->session()->forget('install_admin');
 
         return view('install.complete', compact('steps', 'adminData'));
+    }
+
+    /**
+     * Auto-heal common issues that trip up novice users.
+     */
+    protected function autoHeal(): void
+    {
+        // Create .env from .env.example if missing
+        if (!File::exists(base_path('.env')) && File::exists(base_path('.env.example'))) {
+            File::copy(base_path('.env.example'), base_path('.env'));
+            // Generate APP_KEY immediately
+            try {
+                Artisan::call('key:generate', ['--force' => true]);
+            } catch (\Exception $e) {
+                // Will be generated later
+            }
+        }
+
+        // Create all required storage directories
+        $dirs = [
+            storage_path('app/public'),
+            storage_path('framework/cache/data'),
+            storage_path('framework/sessions'),
+            storage_path('framework/views'),
+            storage_path('logs'),
+            base_path('bootstrap/cache'),
+        ];
+
+        foreach ($dirs as $dir) {
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0775, true);
+            }
+        }
+
+        // Fix .env permissions
+        $this->ensureEnvWritable();
+    }
+
+    /**
+     * Ensure .env file exists and is writable by the web server.
+     */
+    protected function ensureEnvWritable(): void
+    {
+        $envPath = base_path('.env');
+        if (File::exists($envPath) && !is_writable($envPath)) {
+            @chmod($envPath, 0664);
+        }
     }
 
     /**

@@ -150,6 +150,12 @@ php artisan db:seed --force
 print_step "Creating storage link..."
 php artisan storage:link
 
+# Step 8b: Mark as installed (skip web installer on dev server)
+if [ ! -f "storage/installed" ]; then
+    print_step "Marking app as installed (skipping web installer)..."
+    date > storage/installed
+fi
+
 # Step 9: Clear caches
 print_step "Clearing caches..."
 php artisan cache:clear

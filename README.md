@@ -2,9 +2,8 @@
 
 A self-hosted, feature-rich video-sharing platform built with Laravel, Vue 3, and Inertia.js. Includes video upload/processing, live streaming, monetization, and a full admin panel.
 
-## Quick Start
+## Quick Start (Local Development)
 
-### Option A: Web Installer (Recommended)
 ```bash
 git clone https://github.com/wyatts97/Hubtube.git hubtube
 cd hubtube
@@ -15,33 +14,226 @@ php artisan serve
 ```
 Then visit **http://localhost:8000/install** — the wizard walks through requirements, database, app config, and admin account creation.
 
-### Option B: Manual Setup
-```bash
-git clone https://github.com/wyatts97/Hubtube.git hubtube
-cd hubtube
-composer install
-npm install
-cp .env.example .env
-php artisan key:generate
-# Edit .env with your database credentials
-php artisan migrate
-php artisan db:seed
-npm run build
-php artisan storage:link
-```
-
-### Option C: Dev Script (Linux/WSL)
+### Dev Script (Linux/WSL)
 ```bash
 ./dev.sh
 ```
 Handles everything: dependency install, build, migrations, seeding, and starts Laravel serve + Reverb + Horizon + Scraper.
 
-### Start Services
+---
+
+## Production Server Setup (Step-by-Step)
+
+This guide walks through deploying HubTube on a fresh Ubuntu server. No prior server experience needed.
+
+### Step 1: Install System Dependencies
+
 ```bash
-php artisan serve              # Web server
-php artisan horizon            # Queue worker (video processing)
-php artisan reverb:start       # WebSocket server (real-time features)
+# Update package list
+sudo apt update
+
+# ── PHP 8.4 ──
+sudo add-apt-repository ppa:ondrej/php -y
+sudo apt update
+sudo apt install -y php8.4 php8.4-cli php8.4-fpm php8.4-mysql php8.4-mbstring \
+  php8.4-curl php8.4-gd php8.4-xml php8.4-bcmath php8.4-redis php8.4-zip \
+  php8.4-intl php8.4-common
+sudo update-alternatives --set php /usr/bin/php8.4
+
+# ── Node.js 20 ──
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# ── Composer ──
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+
+# ── MySQL ──
+sudo apt install -y mysql-server
+sudo systemctl enable mysql
+
+# ── Redis ──
+sudo apt install -y redis-server
+sudo systemctl enable redis-server
+
+# ── Nginx ──
+sudo apt install -y nginx
+
+# ── FFmpeg (for video processing) ──
+sudo apt install -y ffmpeg
+
+# Verify everything
+php --version      # 8.4.x
+node --version     # v20.x
+composer --version # 2.8+
+mysql --version    # 8.x
+redis-cli ping     # PONG
+nginx -v           # 1.x
+ffmpeg -version    # 6.x+
 ```
+
+### Step 2: Clone and Build HubTube
+
+```bash
+cd ~
+git clone https://github.com/wyatts97/Hubtube.git hubtube
+cd hubtube
+
+# Install PHP dependencies
+composer install --no-dev --optimize-autoloader
+
+# Install JS dependencies and build frontend
+npm install
+npm run build
+
+# Create .env file
+cp .env.example .env
+```
+
+### Step 3: Create MySQL Database
+
+```bash
+sudo mysql
+```
+
+Inside the MySQL prompt:
+```sql
+CREATE DATABASE hubtube CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'hubtube'@'localhost' IDENTIFIED WITH mysql_native_password BY 'YOUR_SECURE_PASSWORD';
+GRANT ALL PRIVILEGES ON hubtube.* TO 'hubtube'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+> **Important:** Use `mysql_native_password` — PHP's PDO driver works best with it. Replace `YOUR_SECURE_PASSWORD` with a real password.
+
+### Step 4: Configure Nginx
+
+```bash
+sudo nano /etc/nginx/sites-available/hubtube
+```
+
+Paste this config (replace `yourdomain.com` and the path if different):
+
+```nginx
+server {
+    listen 80;
+    listen [::]:80;
+    server_name yourdomain.com www.yourdomain.com;
+
+    root /home/YOUR_USERNAME/hubtube/public;
+    index index.php;
+
+    client_max_body_size 2G;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+
+    charset utf-8;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.4-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
+```
+
+Enable the site:
+```bash
+sudo ln -s /etc/nginx/sites-available/hubtube /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t        # Test config — should say "ok"
+sudo systemctl enable nginx
+sudo systemctl restart nginx
+```
+
+### Step 5: Fix Permissions
+
+```bash
+# Make sure the web server can read/write storage
+sudo chown -R $USER:www-data ~/hubtube
+sudo chmod -R 775 ~/hubtube/storage ~/hubtube/bootstrap/cache
+sudo chmod 755 ~
+sudo chmod 664 ~/hubtube/.env
+
+# Create required storage directories
+mkdir -p ~/hubtube/storage/app/public
+mkdir -p ~/hubtube/storage/framework/{cache,sessions,views}
+mkdir -p ~/hubtube/storage/logs
+sudo chown -R $USER:www-data ~/hubtube/storage
+```
+
+### Step 6: Run the Web Installer
+
+Open your browser and go to:
+- **Local network:** `http://<server-local-ip>` (find it with `ip addr show | grep "inet 192"`)
+- **Public:** `http://yourdomain.com` (if DNS is pointed to your server)
+
+The installer will walk you through:
+1. **Requirements check** — verifies PHP, extensions, directories, Redis, MySQL
+2. **Database config** — enter the MySQL credentials from Step 3
+3. **Application settings** — site name, URL, timezone, email config
+4. **Admin account** — create your admin login
+5. **Finalize** — runs migrations, seeds data, creates storage link
+
+### Step 7: Start Background Services
+
+```bash
+# Queue worker (REQUIRED for video processing)
+php artisan horizon &
+
+# WebSocket server (REQUIRED for live streaming features)
+php artisan reverb:start &
+
+# Or use systemd services for production (see below)
+```
+
+### Step 8: Create Systemd Services (Production)
+
+Create a Horizon service so it runs on boot:
+
+```bash
+sudo nano /etc/systemd/system/hubtube-horizon.service
+```
+
+```ini
+[Unit]
+Description=HubTube Horizon Queue Worker
+After=redis.service mysql.service
+
+[Service]
+User=YOUR_USERNAME
+Group=www-data
+WorkingDirectory=/home/YOUR_USERNAME/hubtube
+ExecStart=/usr/bin/php artisan horizon
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable hubtube-horizon
+sudo systemctl start hubtube-horizon
+```
+
+Repeat for Reverb if you use live streaming features.
 
 ## Tech Stack
 
@@ -280,11 +472,11 @@ After running seeders (`php artisan db:seed`):
 
 The web installer at `/install` lets you create a custom admin account instead.
 
-## Server Setup & Troubleshooting
+## Troubleshooting
 
 ### ⚠️ Important: Do NOT use default `apt` packages
 
-Ubuntu's default repositories ship **outdated** versions of PHP, Node.js, and Composer that are **incompatible** with HubTube. You must install from the correct sources:
+Ubuntu's default repositories ship **outdated** versions of PHP, Node.js, and Composer that are **incompatible** with HubTube. See [Step 1](#step-1-install-system-dependencies) above for correct installation.
 
 | Dependency | Minimum Version | Ubuntu `apt` Default | What You Need |
 |-----------|----------------|---------------------|---------------|
@@ -294,84 +486,98 @@ Ubuntu's default repositories ship **outdated** versions of PHP, Node.js, and Co
 
 ---
 
-### Installing PHP 8.4 (Ubuntu 20.04+ / Debian 11+)
+### Web Installer Issues
 
+#### Installer page just reloads with no error (silent fail)
+**Cause:** CSRF token mismatch — the session driver (Redis/database) isn't working yet during installation. The installer auto-forces file sessions, but if you're running an older version of HubTube, update `bootstrap/app.php`.
 ```bash
-# Add the Ondrej PHP PPA (the standard PHP repo for Ubuntu)
-sudo add-apt-repository ppa:ondrej/php -y
-sudo apt update
-
-# Install PHP 8.4 with all required extensions
-sudo apt install -y php8.4 php8.4-cli php8.4-fpm php8.4-mysql php8.4-mbstring \
-  php8.4-curl php8.4-gd php8.4-xml php8.4-bcmath php8.4-redis php8.4-zip \
-  php8.4-intl php8.4-common
-
-# Set PHP 8.4 as the default CLI version
-sudo update-alternatives --set php /usr/bin/php8.4
-
-# Verify
-php --version    # Should show 8.4.x
+# Fix: clear stale sessions and restart PHP
+sudo rm -rf ~/hubtube/storage/framework/sessions/*
+sudo chown -R $USER:www-data ~/hubtube/storage
+sudo systemctl restart php8.4-fpm
 ```
 
-> **Note:** `openssl`, `fileinfo`, `tokenizer`, and `ctype` are bundled in `php8.4-common` — they don't have separate packages.
-
-If you're using **Nginx + php-fpm**, update your site config:
-```nginx
-# Change: fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
-# To:
-fastcgi_pass unix:/var/run/php/php8.4-fpm.sock;
-```
-Then: `sudo systemctl restart php8.4-fpm nginx`
-
-For **Apache**: `sudo a2dismod php8.1 && sudo a2enmod php8.4 && sudo systemctl restart apache2`
-
----
-
-### Installing Node.js 20 LTS
-
-**Option A: NodeSource PPA**
+#### `file_put_contents(.env): Permission denied`
+**Cause:** The `.env` file isn't writable by the web server (`www-data`).
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
+sudo chown $USER:www-data ~/hubtube/.env
+sudo chmod 664 ~/hubtube/.env
 ```
 
-**Option B: Direct binary (more reliable if apt repos have issues)**
+#### `storage/app and public aren't writeable`
+**Cause:** Storage directories are missing or have wrong ownership.
 ```bash
-sudo apt remove -y nodejs  # Remove old version first
-wget https://nodejs.org/dist/v20.18.2/node-v20.18.2-linux-x64.tar.xz
-sudo tar -xJf node-v20.18.2-linux-x64.tar.xz -C /usr/local --strip-components=1
-rm node-v20.18.2-linux-x64.tar.xz
+mkdir -p ~/hubtube/storage/app/public
+mkdir -p ~/hubtube/storage/framework/{cache,sessions,views}
+mkdir -p ~/hubtube/storage/logs
+sudo chown -R $USER:www-data ~/hubtube/storage ~/hubtube/public
+sudo chmod -R 775 ~/hubtube/storage ~/hubtube/bootstrap/cache
 ```
 
+#### Database step won't connect (no error shown)
+**Cause:** MySQL user uses `caching_sha2_password` auth plugin, which PHP's PDO may not support.
 ```bash
-# Verify
-node --version   # Should show v20.x.x
-npm --version    # Should show 10.x.x
+# Fix: switch to mysql_native_password
+sudo mysql -e "ALTER USER 'hubtube'@'localhost' IDENTIFIED WITH mysql_native_password BY 'YOUR_PASSWORD';"
+sudo mysql -e "FLUSH PRIVILEGES;"
 ```
 
----
-
-### Installing Composer 2.x
-
-Do **not** use `sudo apt install composer` — it installs an outdated version with deprecation errors on PHP 8.4.
-
+#### `RedisException: Connection refused` on installer page
+**Cause:** Redis server isn't installed or running.
 ```bash
-sudo apt remove -y composer  # Remove apt version if installed
-curl -sS https://getcomposer.org/installer | php
-sudo mv composer.phar /usr/local/bin/composer
+sudo apt install -y redis-server
+sudo systemctl enable redis-server
+sudo systemctl start redis-server
+redis-cli ping  # Should say PONG
+```
 
-# Verify
-composer --version   # Should show 2.8.x or 2.9.x
+#### MySQL password with special characters (`!`, `$`, etc.) fails in bash
+**Cause:** Bash interprets `!` as history expansion and `$` as variable substitution.
+```bash
+# Use the interactive MySQL prompt instead of one-liners:
+sudo mysql
+# Then paste SQL commands directly (special characters are safe inside MySQL)
 ```
 
 ---
 
-### Common Errors & Fixes
+### Nginx Issues
+
+#### `bind() to 0.0.0.0:80 failed (Address already in use)`
+**Cause:** Another web server (Apache, Nextcloud snap, etc.) is using port 80.
+```bash
+# Find what's on port 80
+sudo ss -tlnp | grep :80
+
+# Common fixes:
+sudo systemctl stop apache2       # Stop Apache
+sudo snap disable nextcloud        # Disable Nextcloud snap
+sudo fuser -k 80/tcp              # Force kill anything on port 80
+sudo systemctl restart nginx
+```
+
+#### `502 Bad Gateway`
+**Cause:** PHP-FPM isn't running or the socket path is wrong.
+```bash
+# Check PHP-FPM status
+sudo systemctl status php8.4-fpm
+
+# If not running:
+sudo systemctl start php8.4-fpm
+sudo systemctl enable php8.4-fpm
+
+# Verify socket exists:
+ls /var/run/php/php8.4-fpm.sock
+```
+
+---
+
+### Build & Dependency Errors
 
 #### `SyntaxError: Unexpected reserved word` when running `npm run build`
 **Cause:** Node.js is too old (< 18). Vite requires top-level `await` support.
 ```bash
-node --version  # If < 18, upgrade Node.js (see above)
+node --version  # If < 18, upgrade Node.js (see Step 1)
 ```
 
 #### `Could not resolve "../../vendor/tightenco/ziggy"`
@@ -386,14 +592,12 @@ npm run build
 ```bash
 mkdir -p storage/framework/{cache,sessions,views}
 mkdir -p bootstrap/cache
-composer install
 ```
 
 #### `composer.lock` out of sync / package not in lock file
 **Cause:** `composer.json` was updated but `composer.lock` wasn't regenerated.
 ```bash
 composer update --no-dev --optimize-autoloader
-# Then commit the updated composer.lock to your repo
 ```
 
 #### `-bash: /bin/node: No such file or directory` (but `npm` works)
@@ -414,44 +618,33 @@ sudo systemctl stop unattended-upgrades
 sudo kill -9 <PID_FROM_ERROR>
 sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock
 sudo dpkg --configure -a
-# Then retry your apt command
 ```
 
 #### `E_STRICT is deprecated` warnings from Composer
-**Cause:** System-installed Composer (via `apt`) is too old for PHP 8.4. Reinstall Composer from the official installer (see above).
+**Cause:** System-installed Composer (via `apt`) is too old for PHP 8.4. Reinstall from the official installer:
+```bash
+sudo apt remove -y composer
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+```
 
 ---
 
-### Production Deployment Checklist
+### Redeployment Checklist
+
+After pulling new code:
 
 ```bash
-# On your Linux server:
 cd ~/hubtube
 git pull origin main
-
-# 1. PHP dependencies
 composer install --no-dev --optimize-autoloader
-
-# 2. Frontend build
-npm install
-npm run build
-
-# 3. Database
-cp .env.example .env   # First deploy only — edit with your settings
-php artisan key:generate  # First deploy only
+npm install && npm run build
 php artisan migrate --force
-php artisan db:seed --force  # First deploy only
-
-# 4. Storage & cache
-php artisan storage:link
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
-
-# 5. Start services
-php artisan serve              # Or configure Nginx/Apache
-php artisan horizon            # Queue worker (required for video processing)
-php artisan reverb:start       # WebSocket server (required for live features)
+sudo systemctl restart php8.4-fpm
+sudo systemctl restart hubtube-horizon
 ```
 
 ## License

@@ -7,7 +7,7 @@
 # subscription notifications, withdrawal confirmations, etc.)
 #
 # Requirements:
-#   - Ubuntu 20.04+ / Debian 11+ (amd64)
+#   - Ubuntu 20.04+ / Debian 11+ (amd64 or arm64)
 #   - Root or sudo access
 #   - A domain name with DNS access (for DKIM/SPF/DMARC)
 #
@@ -35,9 +35,25 @@ info() { echo -e "${CYAN}[i]${NC} $1"; }
 
 # ── Validate arguments ──
 if [ $# -lt 1 ]; then
-    err "Usage: sudo bash setup-maddy.sh <domain> [mail-hostname]"
-    err "  Example: sudo bash setup-maddy.sh example.com"
-    err "  Example: sudo bash setup-maddy.sh example.com mail.example.com"
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  Maddy Mail Server Setup for HubTube"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Usage: sudo bash setup-maddy.sh <domain> [mail-hostname]"
+    echo ""
+    echo "Examples:"
+    echo "  sudo bash setup-maddy.sh example.com"
+    echo "  sudo bash setup-maddy.sh example.com mail.example.com"
+    echo ""
+    echo "Before running this script, you need:"
+    echo "  1. A domain name (e.g., example.com)"
+    echo "  2. An A record for mail.example.com pointing to this server's IP"
+    echo "  3. Ports 25, 80, and 587 accessible from the internet"
+    echo "     (port 80 only needed temporarily for TLS certificate)"
+    echo ""
+    echo "To find your server's public IP: curl -4 ifconfig.me"
+    echo ""
     exit 1
 fi
 
@@ -49,7 +65,18 @@ fi
 DOMAIN="$1"
 MAIL_HOST="${2:-mail.$DOMAIN}"
 MADDY_VERSION="0.8.2"
-MADDY_URL="https://github.com/foxcpp/maddy/releases/download/v${MADDY_VERSION}/maddy-${MADDY_VERSION}-x86_64-linux-musl.tar.zst"
+
+# Detect architecture
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64)  MADDY_ARCH="x86_64" ;;
+    aarch64) MADDY_ARCH="aarch64" ;;
+    *)
+        err "Unsupported architecture: $ARCH (need x86_64 or aarch64)"
+        exit 1
+        ;;
+esac
+MADDY_URL="https://github.com/foxcpp/maddy/releases/download/v${MADDY_VERSION}/maddy-${MADDY_VERSION}-${MADDY_ARCH}-linux-musl.tar.zst"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -58,12 +85,73 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 info "Domain:        $DOMAIN"
 info "Mail hostname: $MAIL_HOST"
+info "Architecture:  $ARCH"
 echo ""
+
+# ── Pre-flight checks ──
+log "Running pre-flight checks..."
+
+# Check if port 25 is blocked by ISP
+info "Testing outbound port 25 (SMTP)..."
+if timeout 5 bash -c 'echo QUIT | nc -w3 gmail-smtp-in.l.google.com 25' &>/dev/null; then
+    log "Port 25 is open — your ISP does not block outbound SMTP."
+else
+    echo ""
+    err "Port 25 appears BLOCKED by your ISP or firewall."
+    err "Maddy cannot deliver emails without outbound port 25."
+    echo ""
+    warn "Common causes:"
+    warn "  - Residential ISPs (Comcast, AT&T, etc.) block port 25"
+    warn "  - Cloud providers (AWS, GCP) block it by default (request unblock)"
+    warn "  - Your server firewall is blocking outbound connections"
+    echo ""
+    warn "Solutions:"
+    warn "  1. Use a VPS provider that allows port 25 (DigitalOcean, Hetzner, OVH)"
+    warn "  2. Use an SMTP relay service instead of self-hosting"
+    warn "  3. Contact your ISP/provider to unblock port 25"
+    echo ""
+    read -p "Continue anyway? (y/N): " CONTINUE_BLOCKED
+    if [[ ! "$CONTINUE_BLOCKED" =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+fi
+
+# Check DNS for mail hostname
+info "Checking DNS for $MAIL_HOST..."
+RESOLVED_IP=$(dig +short "$MAIL_HOST" 2>/dev/null | head -1)
+SERVER_IP=$(curl -4 -s --max-time 5 ifconfig.me 2>/dev/null || echo "unknown")
+
+if [ -z "$RESOLVED_IP" ]; then
+    echo ""
+    warn "DNS record for $MAIL_HOST does not exist yet."
+    warn "You need to add an A record at your DNS provider:"
+    echo ""
+    echo -e "  ${CYAN}$MAIL_HOST  A  $SERVER_IP${NC}"
+    echo ""
+    warn "Add this record now, then wait 1-5 minutes for propagation."
+    warn "You can verify with: dig +short $MAIL_HOST"
+    echo ""
+    warn "The TLS certificate step will be SKIPPED if DNS isn't ready."
+    warn "You can get the certificate later by re-running this script."
+    echo ""
+    read -p "Continue without DNS? (y/N): " CONTINUE_DNS
+    if [[ ! "$CONTINUE_DNS" =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+    DNS_READY=false
+elif [ "$RESOLVED_IP" != "$SERVER_IP" ]; then
+    warn "$MAIL_HOST resolves to $RESOLVED_IP but this server is $SERVER_IP"
+    warn "Make sure the A record points to this server's IP."
+    DNS_READY=true
+else
+    log "$MAIL_HOST resolves to $RESOLVED_IP (matches this server)."
+    DNS_READY=true
+fi
 
 # ── Step 1: Install dependencies ──
 log "Installing dependencies..."
 apt-get update -qq
-apt-get install -y -qq wget tar zstd certbot > /dev/null 2>&1
+apt-get install -y -qq wget tar zstd certbot dnsutils netcat-openbsd openssl > /dev/null 2>&1
 
 # ── Step 2: Create maddy user ──
 if ! id -u maddy &>/dev/null; then
@@ -80,29 +168,32 @@ if command -v maddy &>/dev/null; then
     warn "Reinstalling to version $MADDY_VERSION..."
 fi
 
-log "Downloading Maddy v${MADDY_VERSION}..."
+log "Downloading Maddy v${MADDY_VERSION} ($MADDY_ARCH)..."
 cd /tmp
 rm -rf /tmp/maddy*
 
-wget -q "$MADDY_URL" -O maddy.tar.zst 2>/dev/null || {
-    err "Failed to download Maddy. Check https://github.com/foxcpp/maddy/releases"
+wget -q --show-progress "$MADDY_URL" -O maddy.tar.zst || {
+    err "Failed to download Maddy from:"
+    err "  $MADDY_URL"
+    err ""
+    err "Check https://github.com/foxcpp/maddy/releases for available versions."
     exit 1
 }
 
-# Extract archive
-zstd -d maddy.tar.zst -o maddy.tar 2>/dev/null
+# Extract archive (zstd → tar → files)
+log "Extracting archive..."
+zstd -d -f maddy.tar.zst -o maddy.tar 2>/dev/null
 tar -xf maddy.tar
 
 # Find and install the binary (archive structure varies by version)
-MADDY_BIN=$(find /tmp -maxdepth 2 -name 'maddy' -type f -executable 2>/dev/null | head -1)
-if [ -z "$MADDY_BIN" ]; then
-    # Binary may not be marked executable yet, search by name in extracted dirs
-    MADDY_BIN=$(find /tmp/maddy-* -name 'maddy' -type f 2>/dev/null | head -1)
-fi
+MADDY_BIN=$(find /tmp -maxdepth 3 -name 'maddy' -type f 2>/dev/null | grep -v '\.tar' | head -1)
 
 if [ -z "$MADDY_BIN" ]; then
-    err "Could not find maddy binary in extracted archive. Contents:"
-    ls -la /tmp/maddy-*/
+    err "Could not find maddy binary in extracted archive."
+    err "Archive contents:"
+    find /tmp/maddy-* -type f 2>/dev/null || echo "  (no files found)"
+    err ""
+    err "Please report this issue with your OS and architecture ($ARCH)."
     exit 1
 fi
 
@@ -110,12 +201,11 @@ cp -f "$MADDY_BIN" /usr/local/bin/maddy
 chmod +x /usr/local/bin/maddy
 
 # In v0.8+, maddyctl is merged into the maddy binary.
-# Create a symlink for convenience.
 ln -sf /usr/local/bin/maddy /usr/local/bin/maddyctl
 
 rm -rf /tmp/maddy*
 
-log "Maddy installed to /usr/local/bin/maddy"
+log "Maddy v${MADDY_VERSION} installed to /usr/local/bin/maddy"
 
 # ── Step 4: Create directories ──
 mkdir -p /etc/maddy
@@ -125,20 +215,101 @@ mkdir -p /run/maddy
 chown -R maddy:maddy /var/lib/maddy /var/log/maddy /run/maddy
 
 # ── Step 5: Obtain TLS certificate ──
-log "Obtaining TLS certificate for $MAIL_HOST..."
+CERT_OK=false
 if [ -d "/etc/letsencrypt/live/$MAIL_HOST" ]; then
-    warn "Certificate already exists for $MAIL_HOST, skipping."
-else
-    info "Make sure port 80 is open and $MAIL_HOST points to this server."
-    info "If certbot fails, you can run it manually later:"
-    info "  certbot certonly --standalone -d $MAIL_HOST"
+    log "TLS certificate already exists for $MAIL_HOST."
+    CERT_OK=true
+elif [ "$DNS_READY" = false ]; then
+    warn "Skipping TLS certificate — DNS not ready for $MAIL_HOST."
+    warn "After adding the DNS A record, get the cert with ONE of these methods:"
     echo ""
-    
-    certbot certonly --standalone -d "$MAIL_HOST" --non-interactive --agree-tos --register-unsafely-without-email || {
-        warn "Certbot failed. You'll need to obtain a TLS certificate manually."
-        warn "Run: certbot certonly --standalone -d $MAIL_HOST"
-        warn "Then update /etc/maddy/maddy.conf with the certificate paths."
-    }
+    echo -e "  ${CYAN}Method 1 — Standalone (requires port 80 free):${NC}"
+    echo "    sudo certbot certonly --standalone -d $MAIL_HOST"
+    echo ""
+    echo -e "  ${CYAN}Method 2 — DNS challenge (no port 80 needed):${NC}"
+    echo "    sudo certbot certonly --manual --preferred-challenges dns -d $MAIL_HOST"
+    echo ""
+    warn "Then re-run this script to complete setup."
+else
+    log "Obtaining TLS certificate for $MAIL_HOST..."
+
+    # Check if port 80 is in use
+    PORT80_PID=$(ss -tlnp 2>/dev/null | grep ':80 ' | grep -oP 'pid=\K[0-9]+' | head -1 || true)
+    PORT80_PROC=""
+
+    if [ -n "$PORT80_PID" ]; then
+        PORT80_PROC=$(ps -p "$PORT80_PID" -o comm= 2>/dev/null || echo "unknown")
+        echo ""
+        warn "Port 80 is in use by: $PORT80_PROC (PID $PORT80_PID)"
+        warn "Certbot needs port 80 free for the HTTP challenge."
+        echo ""
+        echo "Options:"
+        echo "  1) Stop $PORT80_PROC temporarily (will restart after)"
+        echo "  2) Use DNS challenge instead (no port 80 needed)"
+        echo "  3) Skip certificate for now"
+        echo ""
+        read -p "Choose [1/2/3]: " CERT_CHOICE
+
+        case "$CERT_CHOICE" in
+            1)
+                info "Stopping $PORT80_PROC..."
+                kill "$PORT80_PID" 2>/dev/null || true
+                sleep 2
+                # Try to stop common services
+                systemctl stop apache2 2>/dev/null || true
+                systemctl stop nginx 2>/dev/null || true
+                systemctl stop httpd 2>/dev/null || true
+                snap stop nextcloud 2>/dev/null || true
+
+                # Double-check port 80 is free
+                if ss -tlnp 2>/dev/null | grep -q ':80 '; then
+                    warn "Port 80 still in use. Trying force kill..."
+                    fuser -k 80/tcp 2>/dev/null || true
+                    sleep 2
+                fi
+
+                certbot certonly --standalone -d "$MAIL_HOST" --non-interactive --agree-tos --register-unsafely-without-email && CERT_OK=true || {
+                    warn "Certbot standalone failed. Try DNS challenge instead."
+                }
+
+                # Restart services
+                systemctl start nginx 2>/dev/null || true
+                systemctl start apache2 2>/dev/null || true
+                snap start nextcloud 2>/dev/null || true
+                ;;
+            2)
+                echo ""
+                info "Running DNS challenge. Certbot will ask you to add a TXT record."
+                info "DO NOT press Enter until the TXT record is added and propagated!"
+                info "Verify with: dig +short TXT _acme-challenge.$MAIL_HOST"
+                echo ""
+                certbot certonly --manual --preferred-challenges dns -d "$MAIL_HOST" --agree-tos --register-unsafely-without-email && CERT_OK=true || {
+                    warn "Certbot DNS challenge failed."
+                }
+                ;;
+            *)
+                warn "Skipping TLS certificate."
+                ;;
+        esac
+    else
+        # Port 80 is free, try standalone
+        certbot certonly --standalone -d "$MAIL_HOST" --non-interactive --agree-tos --register-unsafely-without-email && CERT_OK=true || {
+            warn "Certbot failed. Common causes:"
+            warn "  - DNS for $MAIL_HOST doesn't point to this server"
+            warn "  - Port 80 is blocked by firewall/router"
+            warn "  - You're behind NAT without port forwarding"
+            echo ""
+            warn "You can get the cert later with DNS challenge:"
+            warn "  sudo certbot certonly --manual --preferred-challenges dns -d $MAIL_HOST"
+        }
+    fi
+fi
+
+if [ "$CERT_OK" = false ]; then
+    warn ""
+    warn "⚠️  No TLS certificate available. Maddy will NOT start without one."
+    warn "After obtaining a certificate, re-run this script or start Maddy manually:"
+    warn "  sudo systemctl start maddy"
 fi
 
 # ── Step 6: Generate configuration ──
