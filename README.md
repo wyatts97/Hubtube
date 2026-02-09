@@ -2,6 +2,12 @@
 
 A self-hosted, feature-rich video-sharing platform built with Laravel, Vue 3, and Inertia.js. Includes video upload/processing, live streaming, monetization, and a full admin panel.
 
+## Prerequisites (Check/install all server-side dependencies)
+git clone https://github.com/wyatts97/Hubtube.git hubtube
+cd hubtube
+chmod +x prerequisites.sh
+sudo ./prerequisites.sh
+
 ## Quick Start (Local Development)
 
 ```bash
