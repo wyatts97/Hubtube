@@ -50,7 +50,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                     <label class="block text-sm font-medium mb-1 dark:text-gray-300">Ad Type *</label>
-                    <select wire:model="adFormData.type" class="fi-input block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                    <select wire:model.live="adFormData.type" class="fi-input block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
                         <option value="mp4">MP4 Video URL</option>
                         <option value="vast">VAST Tag URL</option>
                         <option value="vpaid">VPAID Tag URL</option>
