@@ -8,6 +8,13 @@ use Illuminate\Session\TokenMismatchException;
 use Inertia\Inertia;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
+// Force file sessions during installation so CSRF works before Redis/DB is configured
+if (!file_exists(dirname(__DIR__) . '/storage/installed')) {
+    $_ENV['SESSION_DRIVER'] = 'file';
+    $_SERVER['SESSION_DRIVER'] = 'file';
+    putenv('SESSION_DRIVER=file');
+}
+
 return Application::configure(basePath: dirname(__DIR__))
     ->withProviders([
         \App\Providers\Filament\AdminPanelProvider::class,
