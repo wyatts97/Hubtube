@@ -26,6 +26,19 @@ use App\Http\Controllers\ThumbnailProxyController;
 use App\Http\Controllers\WalletController;
 use Illuminate\Support\Facades\Route;
 
+// ── Installer Routes ──
+Route::middleware('installed:block')->prefix('install')->group(function () {
+    Route::get('/', [\App\Http\Controllers\InstallController::class, 'requirements'])->name('install.requirements');
+    Route::get('/database', [\App\Http\Controllers\InstallController::class, 'database'])->name('install.database');
+    Route::post('/database', [\App\Http\Controllers\InstallController::class, 'saveDatabase'])->name('install.database.save');
+    Route::get('/application', [\App\Http\Controllers\InstallController::class, 'application'])->name('install.application');
+    Route::post('/application', [\App\Http\Controllers\InstallController::class, 'saveApplication'])->name('install.application.save');
+    Route::get('/admin', [\App\Http\Controllers\InstallController::class, 'admin'])->name('install.admin');
+    Route::post('/admin', [\App\Http\Controllers\InstallController::class, 'saveAdmin'])->name('install.admin.save');
+    Route::get('/finalize', [\App\Http\Controllers\InstallController::class, 'finalize'])->name('install.finalize');
+    Route::post('/finalize', [\App\Http\Controllers\InstallController::class, 'executeFinalize'])->name('install.finalize.execute');
+});
+
 // Sitemap (outside age verification)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 

@@ -41,6 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'age.verified' => \App\Http\Middleware\AgeVerification::class,
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+            'installed' => \App\Http\Middleware\CheckInstalled::class,
         ]);
 
         $middleware->statefulApi();
