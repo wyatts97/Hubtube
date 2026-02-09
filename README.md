@@ -157,6 +157,55 @@ Videos are always processed locally first (FFmpeg needs filesystem access), then
 
 The `StorageManager` service handles all disk operations, URL generation (including pre-signed URLs for private buckets), and CDN URL overrides.
 
+## Email Configuration
+
+HubTube sends transactional emails for signup verification, password resets, subscription notifications, payment receipts, and withdrawal confirmations. Configure email during installation (Step 3) or manually in `.env`.
+
+### Option A: Maddy Mail Server (Self-Hosted, Recommended)
+
+A setup script is included in `maddy-mail-setup/` that installs [Maddy](https://maddy.email) — a lightweight, single-binary mail server with built-in DKIM, SPF, and DMARC support. No Docker required.
+
+```bash
+# On your production server
+sudo bash maddy-mail-setup/setup-maddy.sh yourdomain.com
+```
+
+The script handles installation, TLS certificates, DKIM key generation, account creation, and prints the DNS records and `.env` values you need. See [`maddy-mail-setup/README.md`](./maddy-mail-setup/README.md) for full documentation.
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=127.0.0.1
+MAIL_PORT=587
+MAIL_USERNAME=noreply@yourdomain.com
+MAIL_PASSWORD=<generated-by-script>
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@yourdomain.com
+```
+
+### Option B: External SMTP Provider
+
+Point Laravel at any SMTP server (Gmail, Mailgun, Amazon SES, Postmark, Resend, etc.):
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.yourprovider.com
+MAIL_PORT=587
+MAIL_USERNAME=your-username
+MAIL_PASSWORD=your-password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@yourdomain.com
+```
+
+> **Note for adult sites:** Many hosted email providers (Mailgun, SendGrid, Postmark) prohibit adult content in their TOS. Self-hosted options like Maddy or Postfix avoid this restriction entirely.
+
+### Option C: Log Driver (Development / Skip for Now)
+
+Emails are written to `storage/logs/laravel.log` instead of being sent. Useful during development or if you want to configure email later.
+
+```env
+MAIL_MAILER=log
+```
+
 ## Project Structure
 
 ```
