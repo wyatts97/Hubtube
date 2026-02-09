@@ -1,382 +1,242 @@
-# HubTube - Modern Video Sharing Platform
+# HubTube — Video Sharing & Streaming CMS
 
-A feature-rich, scalable video-sharing CMS built with Laravel 11, Vue 3, and Inertia.js. Optimized for modern web standards with PWA capabilities, real-time streaming, and comprehensive monetization features.
+A self-hosted, feature-rich video-sharing platform built with Laravel, Vue 3, and Inertia.js. Includes video upload/processing, live streaming, monetization, and a full admin panel.
 
-##  Key Features
+## Quick Start
 
-### Core Platform
-- **Video Management**: Upload, transcode (FFmpeg), HLS adaptive streaming, thumbnail generation
-- **Shorts Support**: TikTok-style vertical video viewer with swipe navigation and ad interstitials
-- **User Channels**: Profiles, subscriptions, verification badges, customization
-- **Social Features**: Likes, comments, playlists, watch history, notifications
-- **Advanced Search**: Full-text search with filters and real-time results
-
-### Live Streaming & Monetization
-- **Live Streaming**: Interactive streams using Agora.io with real-time chat
-- **Virtual Gifts**: Real-time gift sending during live streams with wallet integration
-- **Monetization**: Wallet system, paid content, channel subscriptions, ad revenue
-- **Video Scheduling**: Admin/Pro users can schedule video publishing
-
-### Modern Web Features
-- **PWA Ready**: Service worker with offline support, push notifications, installable
-- **Responsive Design**: Mobile-first with touch-friendly interfaces
-- **Dark/Light Theme**: CSS variable-based theming system
-- **Multi-language**: i18n framework with 10+ language support
-- **Image Optimization**: Responsive srcset, WebP support, lazy loading
-- **Error Boundaries**: Graceful error handling with retry functionality
-
-### User Experience
-- **Keyboard Shortcuts**: Comprehensive video player controls (Space, arrows, etc.)
-- **Playlist Management**: Save videos to playlists with intuitive UI
-- **Loading States**: Consistent loading indicators across all interactions
-- **Toast Notifications**: Non-intrusive feedback system
-- **Accessibility**: Semantic HTML, ARIA labels, keyboard navigation
-
-## 🛠 Tech Stack
-
-### Backend
-- **Framework**: Laravel 11+ (PHP 8.2+)
-- **Database**: MariaDB 10.6+
-- **Queue**: Laravel Horizon + Redis
-- **Real-time**: Laravel Reverb + Pusher
-- **Search**: Laravel Scout + Meilisearch
-- **Admin**: Filament 3
-
-### Frontend
-- **Framework**: Vue 3 (Composition API)
-- **Routing**: Inertia.js
-- **Styling**: Tailwind CSS with custom theming
-- **Build Tool**: Vite
-- **Icons**: Lucide Vue
-- **Video**: HLS.js + Plyr
-
-### Video & Media
-- **Processing**: FFmpeg
-- **Streaming**: HLS adaptive bitrate
-- **Storage**: Cloud storage (Wasabi/Backblaze B2)
-- **CDN**: BunnyCDN integration
-- **Live**: Agora.io (RTC/RTM)
-
-### PWA & Performance
-- **Service Worker**: Custom SW with cache strategies
-- **Manifest**: Web app manifest
-- **Notifications**: Push API integration
-- **Optimization**: Image lazy loading, API caching
-
-##  Requirements
-
-- **PHP**: 8.2+
-- **Composer**: Latest
-- **Node.js**: 18+
-- **Database**: MariaDB 10.6+ or MySQL 8+
-- **Redis**: For queues and caching
-- **FFmpeg**: For video processing
-- **Meilisearch**: Optional, for search functionality
-
-##  Installation
-
-### 1. Clone Repository
+### Option A: Web Installer (Recommended)
 ```bash
 git clone https://github.com/wyatts97/Hubtube.git hubtube
 cd hubtube
-```
-
-### 2. Install Dependencies
-```bash
-# PHP dependencies
 composer install
-
-# Node dependencies
-npm install
+npm install && npm run build
+cp .env.example .env
+php artisan serve
 ```
+Then visit **http://localhost:8000/install** — the wizard walks through requirements, database, app config, and admin account creation.
 
-### 3. Environment Setup
+### Option B: Manual Setup
 ```bash
+git clone https://github.com/wyatts97/Hubtube.git hubtube
+cd hubtube
+composer install
+npm install
 cp .env.example .env
 php artisan key:generate
-```
-
-### 4. Configure Environment
-Edit your `.env` file with:
-- Database credentials
-- Redis configuration
-- Agora.io credentials (for live streaming)
-- Cloud storage settings
-- Payment gateway credentials
-
-### 5. Database Setup
-```bash
+# Edit .env with your database credentials
 php artisan migrate
 php artisan db:seed
-```
-
-### 6. Build Assets
-```bash
 npm run build
+php artisan storage:link
 ```
 
-### 7. Start Services
+### Option C: Dev Script (Linux/WSL)
 ```bash
-# Main application
-php artisan serve
+./dev.sh
+```
+Handles everything: dependency install, build, migrations, seeding, and starts Laravel serve + Reverb + Horizon + Scraper.
 
-# Queue worker (separate terminal)
-php artisan horizon
-
-# WebSocket server (separate terminal)
-php artisan reverb:start
+### Start Services
+```bash
+php artisan serve              # Web server
+php artisan horizon            # Queue worker (video processing)
+php artisan reverb:start       # WebSocket server (real-time features)
 ```
 
-##  Default Credentials
+## Tech Stack
 
+| Layer | Technology |
+|-------|-----------|
+| **Backend** | Laravel 11+ (PHP 8.2+), Filament 3 Admin |
+| **Frontend** | Vue 3 (Composition API), Inertia.js, Tailwind CSS |
+| **Database** | MySQL 8+ / MariaDB 10.6+ |
+| **Queue** | Laravel Horizon + Redis |
+| **Real-time** | Laravel Reverb (WebSockets) |
+| **Search** | Laravel Scout (database driver or Meilisearch) |
+| **Video** | FFmpeg (transcode, HLS, thumbnails), HLS.js + Plyr |
+| **Live Streaming** | Agora.io (RTC + RTM) |
+| **Storage** | Local, Wasabi S3, Backblaze B2 (configurable via admin) |
+| **Build** | Vite |
+
+## Requirements
+
+- **PHP** 8.2+ with extensions: pdo_mysql, mbstring, openssl, curl, fileinfo, gd, xml, bcmath
+- **Composer** 2.x
+- **Node.js** 18+
+- **MySQL 8+** or **MariaDB 10.6+**
+- **Redis** (for queues, cache, sessions)
+- **FFmpeg** (for video processing — optional but recommended)
+
+## Features
+
+### Video Platform
+- Upload, transcode to multiple qualities (240p–1080p), HLS adaptive streaming
+- Auto-generated thumbnails, animated WebP previews, scrubber sprite sheets
+- Shorts (vertical video) with TikTok-style swipe viewer
+- Video watermarking (configurable position, opacity, scale)
+- Embedded video support (Bunny Stream, external iframes)
+- Categories, tags, hashtags, playlists, watch history
+- Full-text search with category/tag filters
+
+### Live Streaming
+- Agora.io-powered interactive live streams
+- Real-time chat via Agora RTM
+- Virtual gift system with animations and wallet integration
+- Viewer count tracking, stream moderation
+
+### Monetization
+- Wallet system with deposit/withdrawal
+- Virtual gifts during live streams (platform cut configurable)
+- Paid videos (purchase + rental with expiry)
+- Video ad system: pre-roll, mid-roll, post-roll (MP4, VAST, VPAID, HTML)
+- Ad targeting by category and user role, weighted random selection
+- Click-through URLs on video ads
+- Banner ads (above/below player, sidebar, video grid)
+
+### Admin Panel (`/admin`)
+- **Dashboard**: Stats overview, system status bar (Redis, Horizon, disk usage)
+- **Content**: Videos, embedded videos, categories, comments, reports
+- **Users**: User management, channels, gifts
+- **Settings**: Site settings, theme customization, storage & CDN, payments, live streaming, integrations, PWA, ads
+- **Tools**: WordPress importer, Bunny Stream migrator, video embedder, menu builder
+
+### User Features
+- Registration, login, email verification, password reset
+- User profiles with channels, avatars, banners
+- Subscribe to channels with notification preferences
+- Playlists, watch history, likes/dislikes, nested comments
+- Push notifications (Web Push API)
+- Creator dashboard with upload stats
+
+### Modern Web
+- PWA: service worker, offline support, installable
+- Dark/light theme with full CSS variable customization via admin
+- Responsive mobile-first design
+- Age verification gate (configurable text, styling, behavior)
+- Custom navigation menu builder
+- i18n framework with multi-language support
+
+## Environment Configuration
+
+Only infrastructure settings go in `.env`. All feature settings (storage, payments, streaming, integrations) are managed via the Admin Panel.
+
+```env
+# Database
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=hubtube
+DB_USERNAME=hubtube
+DB_PASSWORD=password
+
+# Session / Cache / Queue
+SESSION_DRIVER=redis
+QUEUE_CONNECTION=redis
+CACHE_STORE=redis
+REDIS_CLIENT=phpredis
+
+# WebSockets
+BROADCAST_CONNECTION=reverb
+REVERB_APP_ID=hubtube
+REVERB_APP_KEY=hubtube-key
+REVERB_APP_SECRET=hubtube-secret
+
+# Search (optional)
+SCOUT_DRIVER=database          # or 'meilisearch'
+```
+
+## Cloud Storage
+
+Storage is configured entirely via **Admin → Settings → Storage & CDN**. Supported providers:
+- **Local** (default)
+- **Wasabi** (S3-compatible, no egress fees)
+- **Backblaze B2** (S3-compatible)
+- **AWS S3**
+
+Videos are always processed locally first (FFmpeg needs filesystem access), then automatically offloaded to cloud storage by `ProcessVideoJob`. Each video tracks its `storage_disk` for correct URL resolution.
+
+The `StorageManager` service handles all disk operations, URL generation (including pre-signed URLs for private buckets), and CDN URL overrides.
+
+## Project Structure
+
+```
+app/
+├── Console/Commands/       # Artisan commands (storage migration, Bunny download)
+├── Events/                 # VideoUploaded, VideoProcessed, GiftSent, etc.
+├── Filament/               # Admin panel (10 settings pages, 8 resources, widgets)
+├── Http/
+│   ├── Controllers/        # 20+ controllers (video, auth, channel, wallet, etc.)
+│   ├── Middleware/          # Age verification, admin check, install guard, Inertia
+│   └── Requests/           # Form request validation
+├── Jobs/                   # ProcessVideoJob (FFmpeg + cloud offload)
+├── Models/                 # 26 Eloquent models
+├── Policies/               # Video, comment, playlist, live stream authorization
+├── Services/               # VideoService, StorageManager, WalletService, AgoraService, etc.
+resources/
+├── js/
+│   ├── Components/         # 15 Vue components (VideoPlayer, VideoAdPlayer, ShortsViewer, etc.)
+│   ├── Composables/        # 8 composables (useFetch, useToast, useTheme, etc.)
+│   ├── Layouts/            # AppLayout with responsive sidebar
+│   └── Pages/              # 30+ Inertia pages
+├── css/                    # Tailwind CSS with custom utilities
+└── views/
+    ├── install/            # Web installer (6 step views)
+    └── filament/           # Admin panel Blade views
+database/
+├── migrations/             # 34 migrations
+└── seeders/                # Categories, gifts, settings, demo users
+scraper/                    # Node.js content scraping microservice
+```
+
+## Key Models
+
+| Model | Purpose |
+|-------|---------|
+| `User` | Auth, wallet, admin/pro flags, channel |
+| `Video` | Uploads + embedded, multi-quality, cloud storage tracking |
+| `Channel` | User profiles with subscriber counts |
+| `LiveStream` | Agora-powered streams with viewer tracking |
+| `VideoAd` | Ad creatives (MP4/VAST/VPAID/HTML) with targeting |
+| `Setting` | Key-value store for all admin-configurable settings |
+| `WalletTransaction` | Financial ledger with balance tracking |
+| `GiftTransaction` | Live stream gift records |
+
+## Video Processing Pipeline
+
+1. User uploads video → stored locally in `storage/app/public/videos/{slug}/`
+2. `ProcessVideoJob` dispatched via Horizon:
+   - FFprobe extracts metadata (duration, resolution)
+   - Generates thumbnails (configurable count)
+   - Generates animated WebP preview
+   - Generates scrubber sprite sheet + VTT
+   - Transcodes to enabled resolutions (240p–1080p)
+   - Generates HLS playlists (master + per-quality)
+   - Applies watermark if enabled
+3. If cloud offloading enabled → uploads all files to Wasabi/S3/B2
+4. Video marked as `processed`, auto-published
+
+## Development
+
+```bash
+npm run dev          # Vite dev server with HMR
+npm run build        # Production build
+php artisan test     # Run test suite
+```
+
+## Default Credentials
+
+After running seeders (`php artisan db:seed`):
 - **Admin**: `admin@hubtube.com` / `password`
 - **Demo User**: `demo@hubtube.com` / `password`
 
-##  Admin Panel
-
-Access the comprehensive admin dashboard at `/admin`:
-- User management and moderation
-- Video content management
-- Live stream monitoring
-- Financial analytics
-- System metrics and health
-- PWA settings and push notifications
-- Ad configuration
-
-##  Configuration
-
-### Live Streaming (Agora.io)
-1. Create account at [agora.io](https://agora.io)
-2. Create project and get credentials
-3. Add to `.env`:
-```env
-AGORA_APP_ID=your_app_id
-AGORA_APP_CERTIFICATE=your_certificate
-```
-
-### Cloud Storage (Wasabi)
-
-HubTube integrates with [Wasabi](https://wasabi.com) S3-compatible object storage for scalable video hosting with no egress fees.
-
-**1. Create a Wasabi account and bucket:**
-- Sign up at [console.wasabisys.com](https://console.wasabisys.com)
-- Create a bucket in your preferred region
-- Set the bucket policy to **public read** (for video playback) or use signed URLs for private content
-- Create an IAM user with `s3:*` permissions on the bucket
-
-**2. Configure `.env`:**
-```env
-CLOUD_STORAGE_DRIVER=wasabi
-WASABI_ACCESS_KEY=your_access_key
-WASABI_SECRET_KEY=your_secret_key
-WASABI_BUCKET=your-bucket-name
-WASABI_REGION=us-east-1
-WASABI_ENDPOINT=https://s3.wasabisys.com
-WASABI_URL=https://your-bucket-name.s3.wasabisys.com
-```
-
-The endpoint auto-resolves from the region. Available regions:
-| Region | Location | Endpoint |
-|--------|----------|----------|
-| `us-east-1` | N. Virginia | `s3.wasabisys.com` |
-| `us-east-2` | N. Virginia | `s3.us-east-2.wasabisys.com` |
-| `us-central-1` | Texas | `s3.us-central-1.wasabisys.com` |
-| `us-west-1` | Oregon | `s3.us-west-1.wasabisys.com` |
-| `eu-central-1` | Amsterdam | `s3.eu-central-1.wasabisys.com` |
-| `eu-central-2` | Frankfurt | `s3.eu-central-2.wasabisys.com` |
-| `ap-northeast-1` | Tokyo | `s3.ap-northeast-1.wasabisys.com` |
-
-**3. Install the S3 driver (if not already installed):**
-```bash
-composer require league/flysystem-aws-s3-v3
-```
-
-**4. Run the migration to add `storage_disk` tracking:**
-```bash
-php artisan migrate
-```
-
-**5. Configure via Admin Panel:**
-Navigate to **Admin → Settings → Storage & CDN → Wasabi** tab to configure credentials, test the connection, and set Wasabi as the primary storage driver.
-
-**6. Migrate existing local videos to Wasabi:**
-```bash
-# Preview what will be migrated
-php artisan storage:migrate --from=public --to=wasabi --dry-run
-
-# Migrate all local videos
-php artisan storage:migrate --from=public --to=wasabi
-
-# Migrate a limited batch
-php artisan storage:migrate --from=public --to=wasabi --limit=50
-```
-
-**How it works:**
-- New uploads are stored locally first (FFmpeg needs local filesystem access)
-- After processing, `ProcessVideoJob` uploads all files to Wasabi automatically
-- Each video tracks its `storage_disk` so the app knows where to find files
-- URL generation uses `StorageManager` to resolve the correct public URL
-- CDN URL can be configured to override Wasabi direct URLs
-
-### FFmpeg
-Ensure FFmpeg is installed and configure paths:
-```env
-FFMPEG_BINARY=/usr/bin/ffmpeg
-FFPROBE_BINARY=/usr/bin/ffprobe
-```
-
-##  Directory Structure
-
-```
-├── app/
-│   ├── Http/Controllers/     # API and web controllers
-│   ├── Models/              # Eloquent models
-│   ├── Jobs/                # Queue jobs (video processing)
-│   ├── Services/            # Business logic
-│   └── Filament/            # Admin panel resources
-├── resources/
-│   ├── js/
-│   │   ├── Components/      # Reusable Vue components
-│   │   ├── Pages/           # Inertia page components
-│   │   ├── Layouts/         # App layouts
-│   │   └── Composables/     # Vue composables
-│   ├── css/                 # Tailwind styles
-│   └── views/               # Blade templates
-├── database/
-│   ├── migrations/          # Database schema
-│   └── seeders/             # Sample data
-├── public/
-│   ├── icons/               # PWA icons
-│   ├── manifest.json        # Web app manifest
-│   └── sw.js               # Service worker
-└── scraper/                # Content scraping tools
-```
-
-##  API Endpoints
-
-### Authentication
-- `POST /login` - User login
-- `POST /register` - User registration
-- `POST /logout` - User logout
-
-### Videos
-- `GET /videos` - List videos with pagination
-- `GET /{slug}` - View video page
-- `POST /upload` - Upload video
-- `POST /videos/{id}/like` - Like/dislike video
-- `POST /videos/{id}/comments` - Add comment
-
-### Playlists
-- `GET /playlists` - User playlists
-- `POST /playlists` - Create playlist
-- `POST /playlists/{id}/videos` - Add video to playlist
-
-### Live Streaming
-- `GET /live` - Live streams list
-- `POST /go-live` - Start streaming
-- `POST /live/{id}/gift` - Send virtual gift
-
-### Wallet & Monetization
-- `GET /wallet` - Wallet balance
-- `POST /wallet/deposit` - Add funds
-- `POST /wallet/withdraw` - Request withdrawal
-
-##  Frontend Components
-
-### Core Components
-- `VideoCard` - Responsive video thumbnail with hover effects
-- `VideoPlayer` - HLS video player with controls
-- `ShortsViewer` - TikTok-style vertical video viewer
-- `CommentSection` - Nested comments with real-time updates
-
-### UI Components
-- `ToastContainer` - Non-intrusive notifications
-- `Pagination` - Reusable pagination component
-- `ErrorBoundary` - Graceful error handling
-- `KeyboardShortcuts` - Video player shortcut guide
-- `LanguageSwitcher` - Multi-language selector
-
-### Composables
-- `useFetch` - Centralized API requests with CSRF
-- `useToast` - Toast notification system
-- `useI18n` - Internationalization framework
-- `useOptimizedImage` - Responsive image optimization
-- `usePushNotifications` - Push notification management
-
-##  Internationalization
-
-HubTube supports 10+ languages:
-- English (en)
-- Spanish (es)
-- French (fr)
-- German (de)
-- Portuguese (pt)
-- Arabic (ar) - RTL support
-- Chinese (zh)
-- Japanese (ja)
-- Korean (ko)
-- Hindi (hi)
-
-Add new languages by creating JSON files in `resources/js/i18n/`.
-
-##  PWA Features
-
-- **Offline Support**: Cached pages and assets
-- **Push Notifications**: Browser-based notifications
-- **App-like Experience**: Installable on desktop/mobile
-- **Fast Loading**: Service worker caching strategies
-- **Responsive Design**: Works on all screen sizes
-
-##  Development
-
-### Available Scripts
-```bash
-npm run dev          # Development server
-npm run build        # Production build
-npm run preview      # Preview production build
-```
-
-### Code Quality
-- ESLint and Prettier configured
-- TypeScript support available
-- Component-based architecture
-- Comprehensive error handling
-
-##  Performance Optimizations
-
-- **Lazy Loading**: Images and below-fold content
-- **API Caching**: Service worker stale-while-revalidate
-- **Image Optimization**: Responsive srcset and WebP
-- **Code Splitting**: Automatic with Vite
-- **CSS Optimization**: PurgeCSS in production
-
-##  Security Features
-
-- **Age Verification**: Compliant age gate
-- **CSRF Protection**: Built-in Laravel protection
-- **Input Sanitization**: XSS prevention
-- **Content Moderation**: Admin moderation tools
-- **Privacy Controls**: User privacy settings
-
-##  Monetization Features
-
-- **Virtual Gifts**: Real-time gift economy
-- **Paid Content**: Pay-per-view videos
-- **Channel Subscriptions**: Monthly subscriptions
-- **Ad Revenue**: Integrated ad management
-- **Wallet System**: Secure payment processing
+The web installer at `/install` lets you create a custom admin account instead.
 
 ## License
 
-Proprietary - All rights reserved.
+Proprietary — All rights reserved.
 
 ## Support
 
-For support and questions:
+- [GUIDE.MD](./GUIDE.MD) — Detailed architecture and development guide
+- Admin panel documentation at `/admin`
 - Create an issue in the repository
-- Check the [GUIDE.MD](./GUIDE.MD) for detailed setup instructions
-- Review the admin documentation at `/admin`
-
----
-
-Built with ❤️ using modern web technologies
