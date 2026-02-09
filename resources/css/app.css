@@ -225,12 +225,6 @@
     padding-right: 0.75rem;
 }
 
-@media (min-width: 1024px) {
-    .lg\:pl-sidebar {
-        padding-left: 140px;
-    }
-}
-
 /* ===== Mobile / Responsive Fixes ===== */
 
 /* Prevent horizontal overflow on all pages */

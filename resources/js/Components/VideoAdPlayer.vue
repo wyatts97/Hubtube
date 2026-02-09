@@ -194,14 +194,23 @@ const endAd = () => {
     emit('request-play');
 };
 
+// Ensure ad video actually starts playing
+const tryPlayAd = () => {
+    if (adVideoRef.value) {
+        adVideoRef.value.play().catch(() => {});
+    }
+};
+
 // Handle ad video ended naturally
 const onAdVideoEnded = () => {
     endAd();
 };
 
 // Handle ad video error
-const onAdVideoError = () => {
-    console.warn('Ad video failed to load');
+const onAdVideoError = (e) => {
+    const video = e?.target;
+    const src = video?.src || video?.currentSrc || 'unknown';
+    console.warn('Ad video failed to load:', src, video?.error?.message || '');
     endAd();
 };
 
@@ -328,8 +337,10 @@ onUnmounted(() => {
                 class="w-full h-full object-contain"
                 autoplay
                 playsinline
+                crossorigin="anonymous"
                 @ended="onAdVideoEnded"
                 @error="onAdVideoError"
+                @loadeddata="tryPlayAd"
             ></video>
 
             <!-- VAST/VPAID — plays the extracted media URL -->
@@ -341,8 +352,10 @@ onUnmounted(() => {
                     class="w-full h-full object-contain"
                     autoplay
                     playsinline
+                    crossorigin="anonymous"
                     @ended="onAdVideoEnded"
                     @error="onAdVideoError"
+                    @loadeddata="tryPlayAd"
                 ></video>
                 <div v-else class="flex items-center justify-center">
                     <div class="w-8 h-8 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>

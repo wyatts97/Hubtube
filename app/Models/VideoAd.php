@@ -12,6 +12,7 @@ class VideoAd extends Model
         'type',
         'placement',
         'content',
+        'file_path',
         'weight',
         'is_active',
         'category_ids',
@@ -119,11 +120,17 @@ class VideoAd extends Model
 
     protected static function formatAd(self $ad): array
     {
+        // For mp4 ads with a local file, serve from storage
+        $content = $ad->content;
+        if ($ad->type === 'mp4' && $ad->file_path) {
+            $content = asset('storage/' . $ad->file_path);
+        }
+
         return [
             'id' => $ad->id,
             'type' => $ad->type,
             'placement' => $ad->placement,
-            'content' => $ad->content,
+            'content' => $content,
             'name' => $ad->name,
         ];
     }

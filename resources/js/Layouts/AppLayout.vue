@@ -682,10 +682,6 @@ const toggleSidebar = () => {
     padding-right: 0.75rem;
 }
 
-.lg\:pl-sidebar {
-    padding-left: 140px;
-}
-
 @media (min-width: 1024px) {
     .lg\:pl-sidebar {
         padding-left: 140px;

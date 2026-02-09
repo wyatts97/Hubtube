@@ -64,14 +64,30 @@
                 </div>
             </div>
 
+            @if($adFormData['type'] === 'mp4')
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1 dark:text-gray-300">Upload MP4 Video</label>
+                <input type="file" wire:model="adVideoFile" accept="video/mp4,video/webm" class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-300" />
+                @error('adVideoFile') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                <p class="text-xs text-gray-500 mt-1">Upload an MP4 or WebM file (max 100MB). Always stored locally.</p>
+                @if($adVideoFile)
+                    <p class="text-xs text-green-600 dark:text-green-400 mt-1">✓ File selected: {{ $adVideoFile->getClientOriginalName() }}</p>
+                @endif
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1 dark:text-gray-300">Or External MP4 URL</label>
+                <input type="text" wire:model="adFormData.content" class="fi-input block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white font-mono text-sm" placeholder="https://example.com/ads/my-ad.mp4" />
+                @error('adFormData.content') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                <p class="text-xs text-gray-500 mt-1">Optional if uploading a file above. Use this for externally hosted MP4 URLs.</p>
+            </div>
+            @else
             <div class="mb-4">
                 <label class="block text-sm font-medium mb-1 dark:text-gray-300">Content *</label>
-                <textarea wire:model="adFormData.content" rows="4" class="fi-input block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white font-mono text-sm" placeholder="{{ $adFormData['type'] === 'mp4' ? 'https://example.com/ads/my-ad.mp4' : ($adFormData['type'] === 'html' ? '<script>...</script>' : 'https://example.com/vast-tag.xml') }}"></textarea>
+                <textarea wire:model="adFormData.content" rows="4" class="fi-input block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white font-mono text-sm" placeholder="{{ $adFormData['type'] === 'html' ? '<script>...</script>' : 'https://example.com/vast-tag.xml' }}"></textarea>
                 @error('adFormData.content') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 <p class="text-xs text-gray-500 mt-1">
-                    @if($adFormData['type'] === 'mp4')
-                        Direct URL to an MP4 video file
-                    @elseif($adFormData['type'] === 'vast')
+                    @if($adFormData['type'] === 'vast')
                         VAST XML tag URL from your ad network
                     @elseif($adFormData['type'] === 'vpaid')
                         VPAID tag URL from your ad network
@@ -80,6 +96,7 @@
                     @endif
                 </p>
             </div>
+            @endif
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
@@ -154,6 +171,11 @@
                                 ">
                                     {{ strtoupper($ad->type) }}
                                 </span>
+                                @if($ad->file_path)
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 ml-1">
+                                        Local
+                                    </span>
+                                @endif
                             </td>
                             <td class="px-4 py-3">
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium

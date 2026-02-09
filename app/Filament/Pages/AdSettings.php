@@ -17,10 +17,13 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Storage;
 
 class AdSettings extends Page implements HasForms
 {
     use InteractsWithForms;
+    use WithFileUploads;
 
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
     protected static ?string $navigationLabel = 'Ad Settings';
@@ -32,6 +35,7 @@ class AdSettings extends Page implements HasForms
     public ?array $adFormData = [];
     public ?int $editingAdId = null;
     public bool $showAdForm = false;
+    public $adVideoFile = null;
 
     public function mount(): void
     {
@@ -101,6 +105,7 @@ class AdSettings extends Page implements HasForms
         ];
         $this->editingAdId = null;
         $this->showAdForm = false;
+        $this->adVideoFile = null;
     }
 
     public function form(Form $form): Form
@@ -350,22 +355,44 @@ class AdSettings extends Page implements HasForms
 
     public function saveAd(): void
     {
+        $isMp4 = ($this->adFormData['type'] ?? '') === 'mp4';
+        $hasFile = $this->adVideoFile !== null;
+
         $rules = [
             'adFormData.name' => 'required|string|max:255',
             'adFormData.type' => 'required|in:vast,vpaid,mp4,html',
             'adFormData.placement' => 'required|in:pre_roll,mid_roll,post_roll',
-            'adFormData.content' => 'required|string',
+            'adFormData.content' => $isMp4 && $hasFile ? 'nullable|string' : 'required|string',
             'adFormData.weight' => 'required|integer|min:1|max:100',
             'adFormData.is_active' => 'boolean',
             'adFormData.category_ids' => 'nullable|array',
             'adFormData.target_roles' => 'nullable|array',
         ];
 
+        if ($hasFile) {
+            $rules['adVideoFile'] = 'file|mimes:mp4,webm|max:102400'; // 100MB max
+        }
+
         $this->validate($rules);
 
         $data = $this->adFormData;
         $data['category_ids'] = !empty($data['category_ids']) ? array_map('intval', $data['category_ids']) : null;
         $data['target_roles'] = !empty($data['target_roles']) ? $data['target_roles'] : null;
+
+        // Handle MP4 file upload — always store locally regardless of cloud offload settings
+        if ($isMp4 && $hasFile) {
+            // Delete old file if replacing
+            if ($this->editingAdId) {
+                $existing = VideoAd::find($this->editingAdId);
+                if ($existing?->file_path && Storage::disk('public')->exists($existing->file_path)) {
+                    Storage::disk('public')->delete($existing->file_path);
+                }
+            }
+
+            $path = $this->adVideoFile->store('ads', 'public');
+            $data['file_path'] = $path;
+            $data['content'] = $data['content'] ?: $this->adVideoFile->getClientOriginalName();
+        }
 
         if ($this->editingAdId) {
             VideoAd::where('id', $this->editingAdId)->update($data);
