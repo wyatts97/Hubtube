@@ -3,8 +3,8 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
-use App\Models\TranslationOverride;
-use App\Services\TranslationService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -24,6 +24,46 @@ class LanguageSettings extends Page implements HasForms
     protected static ?string $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 8;
     protected static string $view = 'filament.pages.language-settings';
+
+    public const LANGUAGES = [
+        'en' => ['name' => 'English', 'native' => 'English', 'flag' => "\u{1F1FA}\u{1F1F8}"],
+        'es' => ['name' => 'Spanish', 'native' => 'Espa\u{00F1}ol', 'flag' => "\u{1F1EA}\u{1F1F8}"],
+        'fr' => ['name' => 'French', 'native' => 'Fran\u{00E7}ais', 'flag' => "\u{1F1EB}\u{1F1F7}"],
+        'de' => ['name' => 'German', 'native' => 'Deutsch', 'flag' => "\u{1F1E9}\u{1F1EA}"],
+        'pt' => ['name' => 'Portuguese', 'native' => 'Portugu\u{00EA}s', 'flag' => "\u{1F1E7}\u{1F1F7}"],
+        'it' => ['name' => 'Italian', 'native' => 'Italiano', 'flag' => "\u{1F1EE}\u{1F1F9}"],
+        'nl' => ['name' => 'Dutch', 'native' => 'Nederlands', 'flag' => "\u{1F1F3}\u{1F1F1}"],
+        'ru' => ['name' => 'Russian', 'native' => 'Russian', 'flag' => "\u{1F1F7}\u{1F1FA}"],
+        'ja' => ['name' => 'Japanese', 'native' => 'Japanese', 'flag' => "\u{1F1EF}\u{1F1F5}"],
+        'ko' => ['name' => 'Korean', 'native' => 'Korean', 'flag' => "\u{1F1F0}\u{1F1F7}"],
+        'zh' => ['name' => 'Chinese', 'native' => 'Chinese', 'flag' => "\u{1F1E8}\u{1F1F3}"],
+        'ar' => ['name' => 'Arabic', 'native' => 'Arabic', 'flag' => "\u{1F1F8}\u{1F1E6}"],
+        'hi' => ['name' => 'Hindi', 'native' => 'Hindi', 'flag' => "\u{1F1EE}\u{1F1F3}"],
+        'tr' => ['name' => 'Turkish', 'native' => 'T\u{00FC}rk\u{00E7}e', 'flag' => "\u{1F1F9}\u{1F1F7}"],
+        'pl' => ['name' => 'Polish', 'native' => 'Polski', 'flag' => "\u{1F1F5}\u{1F1F1}"],
+        'sv' => ['name' => 'Swedish', 'native' => 'Svenska', 'flag' => "\u{1F1F8}\u{1F1EA}"],
+        'da' => ['name' => 'Danish', 'native' => 'Dansk', 'flag' => "\u{1F1E9}\u{1F1F0}"],
+        'no' => ['name' => 'Norwegian', 'native' => 'Norsk', 'flag' => "\u{1F1F3}\u{1F1F4}"],
+        'fi' => ['name' => 'Finnish', 'native' => 'Suomi', 'flag' => "\u{1F1EB}\u{1F1EE}"],
+        'cs' => ['name' => 'Czech', 'native' => 'Czech', 'flag' => "\u{1F1E8}\u{1F1FF}"],
+        'th' => ['name' => 'Thai', 'native' => 'Thai', 'flag' => "\u{1F1F9}\u{1F1ED}"],
+        'vi' => ['name' => 'Vietnamese', 'native' => 'Vietnamese', 'flag' => "\u{1F1FB}\u{1F1F3}"],
+        'id' => ['name' => 'Indonesian', 'native' => 'Bahasa Indonesia', 'flag' => "\u{1F1EE}\u{1F1E9}"],
+        'ms' => ['name' => 'Malay', 'native' => 'Bahasa Melayu', 'flag' => "\u{1F1F2}\u{1F1FE}"],
+        'ro' => ['name' => 'Romanian', 'native' => 'Romanian', 'flag' => "\u{1F1F7}\u{1F1F4}"],
+        'uk' => ['name' => 'Ukrainian', 'native' => 'Ukrainian', 'flag' => "\u{1F1FA}\u{1F1E6}"],
+        'el' => ['name' => 'Greek', 'native' => 'Greek', 'flag' => "\u{1F1EC}\u{1F1F7}"],
+        'hu' => ['name' => 'Hungarian', 'native' => 'Magyar', 'flag' => "\u{1F1ED}\u{1F1FA}"],
+        'he' => ['name' => 'Hebrew', 'native' => 'Hebrew', 'flag' => "\u{1F1EE}\u{1F1F1}"],
+        'bg' => ['name' => 'Bulgarian', 'native' => 'Bulgarian', 'flag' => "\u{1F1E7}\u{1F1EC}"],
+        'hr' => ['name' => 'Croatian', 'native' => 'Hrvatski', 'flag' => "\u{1F1ED}\u{1F1F7}"],
+        'sk' => ['name' => 'Slovak', 'native' => 'Slovak', 'flag' => "\u{1F1F8}\u{1F1F0}"],
+        'sr' => ['name' => 'Serbian', 'native' => 'Serbian', 'flag' => "\u{1F1F7}\u{1F1F8}"],
+        'lt' => ['name' => 'Lithuanian', 'native' => 'Lithuanian', 'flag' => "\u{1F1F1}\u{1F1F9}"],
+        'lv' => ['name' => 'Latvian', 'native' => 'Latvian', 'flag' => "\u{1F1F1}\u{1F1FB}"],
+        'et' => ['name' => 'Estonian', 'native' => 'Eesti', 'flag' => "\u{1F1EA}\u{1F1EA}"],
+        'fil' => ['name' => 'Filipino', 'native' => 'Filipino', 'flag' => "\u{1F1F5}\u{1F1ED}"],
+    ];
 
     public ?array $data = [];
 
@@ -54,7 +94,7 @@ class LanguageSettings extends Page implements HasForms
     public function form(Form $form): Form
     {
         $languageOptions = [];
-        foreach (TranslationService::LANGUAGES as $code => $lang) {
+        foreach (self::LANGUAGES as $code => $lang) {
             $languageOptions[$code] = "{$lang['flag']} {$lang['native']} ({$lang['name']})";
         }
 
@@ -116,10 +156,24 @@ class LanguageSettings extends Page implements HasForms
 
     // --- Translation Overrides ---
 
+    protected function getEnabledLocalesList(): array
+    {
+        if (!(bool) Setting::get('translation_enabled', false)) {
+            return [Setting::get('default_language', 'en')];
+        }
+
+        $enabled = Setting::get('enabled_languages');
+        if (is_string($enabled)) {
+            $enabled = json_decode($enabled, true);
+        }
+
+        return is_array($enabled) && count($enabled) > 0 ? $enabled : [Setting::get('default_language', 'en')];
+    }
+
     public function getOverridesProperty()
     {
         try {
-            $query = TranslationOverride::orderBy('locale')->orderBy('original_text');
+            $query = DB::table('translation_overrides')->orderBy('locale')->orderBy('original_text');
 
             if ($this->overrideFilterLocale) {
                 $query->where('locale', $this->overrideFilterLocale);
@@ -134,8 +188,9 @@ class LanguageSettings extends Page implements HasForms
     public function getLocaleOptionsProperty(): array
     {
         $options = ['*' => '🌐 All Languages'];
-        foreach (TranslationService::getEnabledLocales() as $code) {
-            $lang = TranslationService::LANGUAGES[$code] ?? null;
+        $enabledLocales = $this->getEnabledLocalesList();
+        foreach ($enabledLocales as $code) {
+            $lang = self::LANGUAGES[$code] ?? null;
             if ($lang) {
                 $options[$code] = "{$lang['flag']} {$lang['native']}";
             }
@@ -164,12 +219,12 @@ class LanguageSettings extends Page implements HasForms
             ];
 
             if ($this->editingOverrideId) {
-                $override = TranslationOverride::find($this->editingOverrideId);
-                if ($override) {
-                    $override->update($data);
-                }
+                DB::table('translation_overrides')
+                    ->where('id', $this->editingOverrideId)
+                    ->update($data);
             } else {
-                $exists = TranslationOverride::where('locale', $data['locale'])
+                $exists = DB::table('translation_overrides')
+                    ->where('locale', $data['locale'])
                     ->where('original_text', $data['original_text'])
                     ->exists();
 
@@ -181,7 +236,7 @@ class LanguageSettings extends Page implements HasForms
                     return;
                 }
 
-                TranslationOverride::create($data);
+                DB::table('translation_overrides')->insert($data + ['created_at' => now(), 'updated_at' => now()]);
             }
 
             $this->resetOverrideForm();
@@ -202,20 +257,20 @@ class LanguageSettings extends Page implements HasForms
 
     public function editOverride(int $id): void
     {
-        $override = TranslationOverride::find($id);
+        $override = DB::table('translation_overrides')->find($id);
         if (!$override) return;
 
         $this->editingOverrideId = $id;
         $this->overrideLocale = $override->locale;
         $this->overrideOriginal = $override->original_text;
         $this->overrideReplacement = $override->replacement_text;
-        $this->overrideCaseSensitive = $override->case_sensitive;
+        $this->overrideCaseSensitive = (bool) $override->case_sensitive;
         $this->overrideNotes = $override->notes ?? '';
     }
 
     public function deleteOverride(int $id): void
     {
-        TranslationOverride::destroy($id);
+        DB::table('translation_overrides')->where('id', $id)->delete();
 
         Notification::make()
             ->title('Override deleted')
@@ -225,9 +280,11 @@ class LanguageSettings extends Page implements HasForms
 
     public function toggleOverride(int $id): void
     {
-        $override = TranslationOverride::find($id);
+        $override = DB::table('translation_overrides')->find($id);
         if ($override) {
-            $override->update(['is_active' => !$override->is_active]);
+            DB::table('translation_overrides')
+                ->where('id', $id)
+                ->update(['is_active' => !$override->is_active]);
         }
     }
 
@@ -244,8 +301,8 @@ class LanguageSettings extends Page implements HasForms
     public function clearTranslationCache(): void
     {
         try {
-            TranslationOverride::clearCache();
-            \App\Models\Translation::query()->delete();
+            Cache::flush();
+            DB::table('translations')->truncate();
         } catch (\Exception $e) {
             // Tables may not exist yet
         }

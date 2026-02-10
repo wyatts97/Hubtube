@@ -110,7 +110,7 @@
                                     @if($override->locale === '*')
                                         <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">🌐 All</span>
                                     @else
-                                        @php $lang = \App\Services\TranslationService::LANGUAGES[$override->locale] ?? null; @endphp
+                                        @php $lang = \App\Filament\Pages\LanguageSettings::LANGUAGES[$override->locale] ?? null; @endphp
                                         <span class="text-xs">{{ $lang ? $lang['flag'] . ' ' . $lang['native'] : $override->locale }}</span>
                                     @endif
                                 </td>
