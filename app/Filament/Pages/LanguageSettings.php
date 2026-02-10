@@ -118,13 +118,17 @@ class LanguageSettings extends Page implements HasForms
 
     public function getOverridesProperty()
     {
-        $query = TranslationOverride::orderBy('locale')->orderBy('original_text');
+        try {
+            $query = TranslationOverride::orderBy('locale')->orderBy('original_text');
 
-        if ($this->overrideFilterLocale) {
-            $query->where('locale', $this->overrideFilterLocale);
+            if ($this->overrideFilterLocale) {
+                $query->where('locale', $this->overrideFilterLocale);
+            }
+
+            return $query->get();
+        } catch (\Exception $e) {
+            return collect();
         }
-
-        return $query->get();
     }
 
     public function getLocaleOptionsProperty(): array
@@ -149,44 +153,51 @@ class LanguageSettings extends Page implements HasForms
             return;
         }
 
-        $data = [
-            'locale' => $this->overrideLocale,
-            'original_text' => trim($this->overrideOriginal),
-            'replacement_text' => trim($this->overrideReplacement),
-            'case_sensitive' => $this->overrideCaseSensitive,
-            'notes' => trim($this->overrideNotes) ?: null,
-            'is_active' => true,
-        ];
+        try {
+            $data = [
+                'locale' => $this->overrideLocale,
+                'original_text' => trim($this->overrideOriginal),
+                'replacement_text' => trim($this->overrideReplacement),
+                'case_sensitive' => $this->overrideCaseSensitive,
+                'notes' => trim($this->overrideNotes) ?: null,
+                'is_active' => true,
+            ];
 
-        if ($this->editingOverrideId) {
-            $override = TranslationOverride::find($this->editingOverrideId);
-            if ($override) {
-                $override->update($data);
+            if ($this->editingOverrideId) {
+                $override = TranslationOverride::find($this->editingOverrideId);
+                if ($override) {
+                    $override->update($data);
+                }
+            } else {
+                $exists = TranslationOverride::where('locale', $data['locale'])
+                    ->where('original_text', $data['original_text'])
+                    ->exists();
+
+                if ($exists) {
+                    Notification::make()
+                        ->title('An override for this word/phrase already exists for this language')
+                        ->warning()
+                        ->send();
+                    return;
+                }
+
+                TranslationOverride::create($data);
             }
-        } else {
-            // Check for duplicate
-            $exists = TranslationOverride::where('locale', $data['locale'])
-                ->where('original_text', $data['original_text'])
-                ->exists();
 
-            if ($exists) {
-                Notification::make()
-                    ->title('An override for this word/phrase already exists for this language')
-                    ->warning()
-                    ->send();
-                return;
-            }
+            $this->resetOverrideForm();
 
-            TranslationOverride::create($data);
+            Notification::make()
+                ->title('Translation override saved')
+                ->body('Re-run `php artisan translations:generate --force` to apply to static UI files.')
+                ->success()
+                ->send();
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Error saving override')
+                ->body('Run `php artisan migrate` first to create the translation tables.')
+                ->danger()
+                ->send();
         }
-
-        $this->resetOverrideForm();
-
-        Notification::make()
-            ->title('Translation override saved')
-            ->body('Re-run `php artisan translations:generate --force` to apply to static UI files.')
-            ->success()
-            ->send();
     }
 
     public function editOverride(int $id): void
@@ -232,8 +243,12 @@ class LanguageSettings extends Page implements HasForms
 
     public function clearTranslationCache(): void
     {
-        TranslationOverride::clearCache();
-        \App\Models\Translation::query()->delete();
+        try {
+            TranslationOverride::clearCache();
+            \App\Models\Translation::query()->delete();
+        } catch (\Exception $e) {
+            // Tables may not exist yet
+        }
 
         Notification::make()
             ->title('Translation cache cleared')
