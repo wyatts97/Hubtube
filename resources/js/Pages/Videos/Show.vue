@@ -11,7 +11,6 @@ import CommentSection from '@/Components/CommentSection.vue';
 import VideoPlayer from '@/Components/VideoPlayer.vue';
 import EmbeddedVideoPlayer from '@/Components/EmbeddedVideoPlayer.vue';
 import VideoAdPlayer from '@/Components/VideoAdPlayer.vue';
-import KeyboardShortcuts from '@/Components/KeyboardShortcuts.vue';
 import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff, Eye, ListVideo, Plus, Check, Loader2 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -504,9 +503,6 @@ const formattedViews = computed(() => {
                                 <span class="hidden sm:inline">Report</span>
                             </button>
 
-                            <div class="flex-shrink-0">
-                                <KeyboardShortcuts />
-                            </div>
                         </div>
                     </div>
 

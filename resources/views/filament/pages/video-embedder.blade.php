@@ -5,7 +5,7 @@
             <form wire:submit="search" class="space-y-4">
                 {{ $this->form }}
                 
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-4 flex-wrap">
                     <x-filament::button type="submit" wire:loading.attr="disabled">
                         <span wire:loading.remove wire:target="search">
                             <x-heroicon-m-magnifying-glass class="w-5 h-5 mr-2" />
@@ -16,10 +16,20 @@
                             Searching...
                         </span>
                     </x-filament::button>
+
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-medium text-gray-600 dark:text-gray-400">Pages to fetch:</label>
+                        <select wire:model="pagesToFetch" class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm py-1 w-20">
+                            <option value="1">1</option>
+                            <option value="3">3</option>
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
                     
                     @if(count($searchResults) > 0)
                         <span class="text-sm text-gray-500">
-                            Found {{ count($searchResults) }} videos on page {{ $currentPage }}
+                            Found {{ count($searchResults) }} videos
                         </span>
                     @endif
                 </div>

@@ -230,12 +230,88 @@ const destroyPlayer = () => {
     destroyHls();
 };
 
+const SEEK_SHORT = 5;
+const SEEK_LONG = 10;
+const VOLUME_STEP = 0.05;
+
+const handleKeydown = (e) => {
+    // Skip if user is typing in an input/textarea
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+    if (!player) return;
+
+    const video = videoRef.value;
+    if (!video) return;
+
+    switch (e.key) {
+        case ' ':
+        case 'k':
+        case 'K':
+            e.preventDefault();
+            player.togglePlay();
+            break;
+
+        case 'ArrowLeft':
+            e.preventDefault();
+            player.currentTime = Math.max(0, player.currentTime - SEEK_SHORT);
+            break;
+
+        case 'ArrowRight':
+            e.preventDefault();
+            player.currentTime = Math.min(player.duration || 0, player.currentTime + SEEK_SHORT);
+            break;
+
+        case 'j':
+        case 'J':
+            e.preventDefault();
+            player.currentTime = Math.max(0, player.currentTime - SEEK_LONG);
+            break;
+
+        case 'l':
+        case 'L':
+            e.preventDefault();
+            player.currentTime = Math.min(player.duration || 0, player.currentTime + SEEK_LONG);
+            break;
+
+        case 'ArrowUp':
+            e.preventDefault();
+            player.volume = Math.min(1, player.volume + VOLUME_STEP);
+            break;
+
+        case 'ArrowDown':
+            e.preventDefault();
+            player.volume = Math.max(0, player.volume - VOLUME_STEP);
+            break;
+
+        case 'm':
+        case 'M':
+            e.preventDefault();
+            player.muted = !player.muted;
+            break;
+
+        case 'f':
+        case 'F':
+            e.preventDefault();
+            player.fullscreen.toggle();
+            break;
+
+        case '0': case '1': case '2': case '3': case '4':
+        case '5': case '6': case '7': case '8': case '9':
+            e.preventDefault();
+            if (player.duration) {
+                player.currentTime = (player.duration * parseInt(e.key)) / 10;
+            }
+            break;
+    }
+};
+
 onMounted(() => {
     initPlayer();
+    document.addEventListener('keydown', handleKeydown);
 });
 
 onUnmounted(() => {
     destroyPlayer();
+    document.removeEventListener('keydown', handleKeydown);
 });
 
 watch(() => props.src, () => {

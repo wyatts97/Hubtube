@@ -23,12 +23,13 @@ class VideoEmbedder extends Page implements HasForms
     protected static string $view = 'filament.pages.video-embedder';
 
     #[Url]
-    public ?string $selectedSite = 'xvideos';
+    public ?string $selectedSite = 'eporner';
     
     #[Url]
     public ?string $searchQuery = '';
     
     public int $currentPage = 1;
+    public int $pagesToFetch = 1;
     public array $searchResults = [];
     public array $selectedVideos = [];
     public bool $isLoading = false;
@@ -58,14 +59,16 @@ class VideoEmbedder extends Page implements HasForms
                 Select::make('selectedSite')
                     ->label('Source Site')
                     ->options([
-                        'xvideos' => 'XVideos',
-                        'pornhub' => 'PornHub',
-                        'xhamster' => 'xHamster',
-                        'xnxx' => 'XNXX',
-                        'redtube' => 'RedTube',
-                        'youporn' => 'YouPorn',
+                        'eporner' => '⭐ Eporner (API - Recommended)',
+                        'redtube_api' => '⭐ RedTube (API)',
+                        'xvideos' => 'XVideos (Scraper)',
+                        'pornhub' => 'PornHub (Scraper)',
+                        'xhamster' => 'xHamster (Scraper)',
+                        'xnxx' => 'XNXX (Scraper)',
+                        'youporn' => 'YouPorn (Scraper)',
                     ])
-                    ->default('xvideos')
+                    ->default('eporner')
+                    ->helperText('⭐ API sites work directly — no Node.js scraper needed, no geo-blocking.')
                     ->live()
                     ->afterStateUpdated(fn () => $this->resetSearch()),
                 TextInput::make('searchQuery')
@@ -117,11 +120,21 @@ class VideoEmbedder extends Page implements HasForms
         $this->errorSuggestion = null;
         $this->isBlocked = false;
         
-        $results = $this->scraperService->search(
-            $this->selectedSite,
-            $this->searchQuery,
-            $this->currentPage
-        );
+        if ($this->pagesToFetch > 1) {
+            $toPage = $this->currentPage + $this->pagesToFetch - 1;
+            $results = $this->scraperService->searchMultiPage(
+                $this->selectedSite,
+                $this->searchQuery,
+                $this->currentPage,
+                $toPage
+            );
+        } else {
+            $results = $this->scraperService->search(
+                $this->selectedSite,
+                $this->searchQuery,
+                $this->currentPage
+            );
+        }
 
         $this->isLoading = false;
 
