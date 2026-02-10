@@ -1,5 +1,6 @@
 <script setup>
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
+import SeoHead from '@/Components/SeoHead.vue';
 import { ref, computed } from 'vue';
 import { useFetch } from '@/Composables/useFetch';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -11,6 +12,7 @@ const props = defineProps({
     videos: Object,
     isSubscribed: Boolean,
     subscriberCount: Number,
+    seo: { type: Object, default: () => ({}) },
 });
 
 const page = usePage();
@@ -50,7 +52,7 @@ const tabs = [
 </script>
 
 <template>
-    <Head :title="channel.username" />
+    <SeoHead :seo="seo" />
 
     <AppLayout>
         <!-- Channel Banner -->

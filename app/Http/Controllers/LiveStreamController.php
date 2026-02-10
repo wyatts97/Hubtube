@@ -6,6 +6,7 @@ use App\Events\LiveStreamStarted;
 use App\Models\LiveStream;
 use App\Models\Setting;
 use App\Services\AgoraService;
+use App\Services\SeoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -16,7 +17,8 @@ use Inertia\Response;
 class LiveStreamController extends Controller
 {
     public function __construct(
-        protected AgoraService $agoraService
+        protected AgoraService $agoraService,
+        protected SeoService $seoService,
     ) {}
 
     public function index(): Response
@@ -29,6 +31,7 @@ class LiveStreamController extends Controller
 
         return Inertia::render('Live/Index', [
             'streams' => $liveStreams,
+            'seo' => $this->seoService->forLive(),
         ]);
     }
 

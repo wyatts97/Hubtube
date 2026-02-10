@@ -43,8 +43,12 @@ Route::middleware('installed:block')->prefix('install')->group(function () {
 // ── App Routes (require installation) ──
 Route::middleware('installed:require')->group(function () {
 
-// Sitemap (outside age verification)
+// Sitemap & Robots (outside age verification)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/robots.txt', function () {
+    $content = \App\Models\Setting::get('seo_robots_txt', "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nSitemap: " . url('/sitemap.xml'));
+    return response($content, 200, ['Content-Type' => 'text/plain']);
+})->name('robots.txt');
 
 // Offline page for PWA
 Route::get('/offline', fn () => view('offline'))->name('offline');

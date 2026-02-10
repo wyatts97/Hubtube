@@ -4,12 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Video;
+use App\Services\SeoService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ChannelController extends Controller
 {
+    public function __construct(
+        protected SeoService $seoService,
+    ) {}
+
     public function show(User $user): Response
     {
         $user->load('channel');
@@ -31,6 +36,7 @@ class ChannelController extends Controller
             'videos' => $videos,
             'isSubscribed' => $isSubscribed,
             'subscriberCount' => $user->subscriber_count,
+            'seo' => $this->seoService->forChannel($user),
         ]);
     }
 

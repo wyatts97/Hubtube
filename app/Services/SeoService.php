@@ -1,0 +1,457 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Setting;
+use App\Models\Video;
+use App\Models\User;
+use App\Models\Category;
+
+class SeoService
+{
+    protected array $settings = [];
+
+    protected function s(string $key, mixed $default = null): mixed
+    {
+        if (empty($this->settings)) {
+            try {
+                $this->settings = Setting::getAll();
+            } catch (\Exception $e) {
+                $this->settings = [];
+            }
+        }
+        return $this->settings[$key] ?? $default;
+    }
+
+    protected function siteName(): string
+    {
+        return $this->s('site_name', config('app.name', 'HubTube'));
+    }
+
+    protected function separator(): string
+    {
+        return $this->s('seo_title_separator', '|');
+    }
+
+    /**
+     * Replace template variables with actual values.
+     */
+    protected function template(string $template, array $vars): string
+    {
+        foreach ($vars as $key => $value) {
+            $template = str_replace('{' . $key . '}', (string) $value, $template);
+        }
+        return $template;
+    }
+
+    /**
+     * Truncate text to a max length at word boundary.
+     */
+    protected function truncate(string $text, int $max = 160): string
+    {
+        $text = strip_tags($text);
+        $text = preg_replace('/\s+/', ' ', trim($text));
+        if (mb_strlen($text) <= $max) {
+            return $text;
+        }
+        return mb_substr($text, 0, $max - 3) . '...';
+    }
+
+    /**
+     * Build canonical URL for the current page.
+     */
+    public function canonical(string $path = null): ?string
+    {
+        if (!$this->s('seo_canonical_enabled', true)) {
+            return null;
+        }
+        $url = $path ? url($path) : url()->current();
+        // Strip query parameters for canonical
+        $url = strtok($url, '?');
+        if ($this->s('seo_force_trailing_slash', false) && !str_ends_with($url, '/')) {
+            $url .= '/';
+        }
+        return $url;
+    }
+
+    /**
+     * Generate SEO data for the homepage.
+     */
+    public function forHome(): array
+    {
+        $title = $this->s('seo_home_title') ?: $this->s('seo_site_title') ?: $this->siteName();
+        $description = $this->s('seo_home_description') ?: $this->s('seo_meta_description', '');
+
+        $seo = $this->baseMeta($title, $description, '/');
+        $seo['og']['type'] = 'website';
+
+        // Organization schema on homepage
+        if ($this->s('seo_schema_enabled', true)) {
+            $seo['schema'][] = $this->organizationSchema();
+            $seo['schema'][] = $this->websiteSchema();
+        }
+
+        return $seo;
+    }
+
+    /**
+     * Generate SEO data for a video page.
+     */
+    public function forVideo(Video $video): array
+    {
+        $vars = [
+            'title' => $video->title,
+            'description' => $video->description ?? '',
+            'site_name' => $this->siteName(),
+            'uploader' => $video->user?->username ?? 'Unknown',
+            'category' => $video->category?->name ?? '',
+            'duration' => $video->formatted_duration ?? '',
+            'views' => number_format($video->views_count),
+            'tags' => is_array($video->tags) ? implode(', ', $video->tags) : '',
+        ];
+
+        // Title
+        $titleTemplate = $this->s('seo_video_title_template', '{title} | {site_name}');
+        $title = $this->template($titleTemplate, $vars);
+
+        // Description
+        $description = $video->description;
+        if (empty($description) && $this->s('seo_video_auto_description', true)) {
+            $fallbackTemplate = $this->s('seo_video_description_fallback', 'Watch {title} on {site_name}.');
+            $description = $this->template($fallbackTemplate, $vars);
+        }
+        $descriptionTemplate = $this->s('seo_video_description_template', '{description}');
+        $metaDescription = $this->truncate($this->template($descriptionTemplate, array_merge($vars, ['description' => $description])));
+
+        $thumbnailUrl = $video->thumbnail_url;
+        $videoUrl = $video->video_url;
+        $canonicalPath = "/{$video->slug}";
+
+        $seo = $this->baseMeta($title, $metaDescription, $canonicalPath);
+
+        // Enhanced OG tags for video
+        $seo['og']['type'] = 'video.other';
+        $seo['og']['image'] = $thumbnailUrl;
+        $seo['og']['image:width'] = '1280';
+        $seo['og']['image:height'] = '720';
+        $seo['og']['video:duration'] = (string) ($video->duration ?? 0);
+        $seo['og']['video:release_date'] = $video->published_at?->toIso8601String() ?? $video->created_at->toIso8601String();
+        if (is_array($video->tags)) {
+            $seo['og']['video:tag'] = $video->tags;
+        }
+
+        // Twitter player card
+        $seo['twitter']['card'] = 'summary_large_image';
+        $seo['twitter']['image'] = $thumbnailUrl;
+
+        // Thumbnail alt text
+        $altTemplate = $this->s('seo_video_thumbnail_alt_template', '{title} - Video Thumbnail');
+        $seo['thumbnailAlt'] = $this->template($altTemplate, $vars);
+
+        // Robots
+        if ($video->privacy !== 'public' && $this->s('seo_noindex_private_videos', true)) {
+            $seo['robots'] = 'noindex, nofollow';
+        }
+
+        // JSON-LD VideoObject schema
+        if ($this->s('seo_video_schema_enabled', true)) {
+            $schema = [
+                '@context' => 'https://schema.org',
+                '@type' => 'VideoObject',
+                'name' => $video->title,
+                'description' => $this->truncate($description ?: $video->title, 300),
+                'thumbnailUrl' => [$thumbnailUrl],
+                'uploadDate' => $video->published_at?->toIso8601String() ?? $video->created_at->toIso8601String(),
+                'duration' => $this->isoDuration($video->duration ?? 0),
+                'contentUrl' => $videoUrl,
+                'interactionStatistic' => [
+                    '@type' => 'InteractionCounter',
+                    'interactionType' => ['@type' => 'WatchAction'],
+                    'userInteractionCount' => $video->views_count,
+                ],
+            ];
+
+            if ($this->s('seo_video_embed_enabled', true)) {
+                $schema['embedUrl'] = url("/{$video->slug}");
+            }
+
+            if ($video->user) {
+                $schema['author'] = [
+                    '@type' => 'Person',
+                    'name' => $video->user->username,
+                    'url' => url("/channel/{$video->user->username}"),
+                ];
+            }
+
+            if ($video->category) {
+                $schema['genre'] = $video->category->name;
+            }
+
+            if (is_array($video->tags) && count($video->tags) > 0) {
+                $schema['keywords'] = implode(', ', $video->tags);
+            }
+
+            if ($video->likes_count > 0 || $video->dislikes_count > 0) {
+                $total = $video->likes_count + $video->dislikes_count;
+                $rating = $total > 0 ? round(($video->likes_count / $total) * 5, 1) : 0;
+                $schema['aggregateRating'] = [
+                    '@type' => 'AggregateRating',
+                    'ratingValue' => (string) $rating,
+                    'bestRating' => '5',
+                    'worstRating' => '1',
+                    'ratingCount' => (string) $total,
+                ];
+            }
+
+            if ($video->comments_count > 0) {
+                $schema['commentCount'] = $video->comments_count;
+            }
+
+            $schema['isFamilyFriendly'] = !$video->age_restricted;
+
+            $seo['schema'][] = $schema;
+        }
+
+        return $seo;
+    }
+
+    /**
+     * Generate SEO data for a channel page.
+     */
+    public function forChannel(User $user): array
+    {
+        $vars = [
+            'channel_name' => $user->channel?->name ?? $user->username,
+            'site_name' => $this->siteName(),
+            'subscriber_count' => number_format($user->subscriber_count),
+            'video_count' => number_format($user->videos()->public()->approved()->count()),
+        ];
+
+        $titleTemplate = $this->s('seo_channel_title_template', '{channel_name} | {site_name}');
+        $title = $this->template($titleTemplate, $vars);
+
+        $descTemplate = $this->s('seo_channel_description_template', 'Watch videos from {channel_name} on {site_name}. {subscriber_count} subscribers.');
+        $description = $this->truncate($this->template($descTemplate, $vars));
+
+        $seo = $this->baseMeta($title, $description, "/channel/{$user->username}");
+        $seo['og']['type'] = 'profile';
+        if ($user->avatar) {
+            $seo['og']['image'] = $user->avatar;
+        }
+
+        // Person schema
+        $schema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'Person',
+            'name' => $user->channel?->name ?? $user->username,
+            'url' => url("/channel/{$user->username}"),
+            'interactionStatistic' => [
+                '@type' => 'InteractionCounter',
+                'interactionType' => ['@type' => 'SubscribeAction'],
+                'userInteractionCount' => $user->subscriber_count,
+            ],
+        ];
+        if ($user->avatar) {
+            $schema['image'] = $user->avatar;
+        }
+        if ($user->bio) {
+            $schema['description'] = $this->truncate($user->bio, 300);
+        }
+        $seo['schema'][] = $schema;
+
+        return $seo;
+    }
+
+    /**
+     * Generate SEO data for a category page.
+     */
+    public function forCategory(Category $category): array
+    {
+        $vars = [
+            'category_name' => $category->name,
+            'site_name' => $this->siteName(),
+        ];
+
+        $titleTemplate = $this->s('seo_category_title_template', '{category_name} Videos | {site_name}');
+        $title = $this->template($titleTemplate, $vars);
+
+        $descTemplate = $this->s('seo_category_description_template', 'Browse {category_name} videos on {site_name}.');
+        $description = $this->truncate($this->template($descTemplate, $vars));
+
+        $seo = $this->baseMeta($title, $description, "/category/{$category->slug}");
+
+        // CollectionPage schema
+        $seo['schema'][] = [
+            '@context' => 'https://schema.org',
+            '@type' => 'CollectionPage',
+            'name' => $category->name,
+            'description' => $description,
+            'url' => url("/category/{$category->slug}"),
+        ];
+
+        return $seo;
+    }
+
+    /**
+     * Generate SEO data for trending page.
+     */
+    public function forTrending(): array
+    {
+        $vars = ['site_name' => $this->siteName()];
+        $title = $this->template($this->s('seo_trending_title', 'Trending Videos | {site_name}'), $vars);
+        $description = $this->truncate($this->template($this->s('seo_trending_description', 'Watch the most popular trending videos on {site_name} right now.'), $vars));
+
+        return $this->baseMeta($title, $description, '/trending');
+    }
+
+    /**
+     * Generate SEO data for shorts page.
+     */
+    public function forShorts(): array
+    {
+        $vars = ['site_name' => $this->siteName()];
+        $title = $this->template($this->s('seo_shorts_title', 'Shorts | {site_name}'), $vars);
+        $description = $this->truncate($this->template($this->s('seo_shorts_description', 'Watch short-form videos on {site_name}.'), $vars));
+
+        return $this->baseMeta($title, $description, '/shorts');
+    }
+
+    /**
+     * Generate SEO data for live streams page.
+     */
+    public function forLive(): array
+    {
+        $vars = ['site_name' => $this->siteName()];
+        $title = $this->template($this->s('seo_live_title', 'Live Streams | {site_name}'), $vars);
+        $description = $this->truncate($this->template($this->s('seo_live_description', 'Watch live streams on {site_name}.'), $vars));
+
+        return $this->baseMeta($title, $description, '/live');
+    }
+
+    /**
+     * Generate SEO data for search results.
+     */
+    public function forSearch(string $query): array
+    {
+        $vars = ['query' => $query, 'site_name' => $this->siteName()];
+        $title = $this->template($this->s('seo_search_title', 'Search Results for "{query}" | {site_name}'), $vars);
+
+        $seo = $this->baseMeta($title, '', '/search');
+        $seo['robots'] = 'noindex, follow';
+
+        return $seo;
+    }
+
+    /**
+     * Generate SEO data for a tag page.
+     */
+    public function forTag(string $tag): array
+    {
+        $title = "#{$tag} Videos {$this->separator()} {$this->siteName()}";
+        $description = $this->truncate("Watch videos tagged with #{$tag} on {$this->siteName()}.");
+
+        return $this->baseMeta($title, $description, "/tag/{$tag}");
+    }
+
+    /**
+     * Build base meta array shared by all pages.
+     */
+    protected function baseMeta(string $title, string $description, string $canonicalPath = null): array
+    {
+        $canonical = $this->canonical($canonicalPath);
+
+        return [
+            'title' => $title,
+            'description' => $description,
+            'canonical' => $canonical,
+            'robots' => null,
+            'og' => [
+                'title' => $title,
+                'description' => $description,
+                'url' => $canonical ?? url()->current(),
+                'site_name' => $this->siteName(),
+                'locale' => $this->s('seo_locale', 'en_US'),
+                'type' => $this->s('seo_og_type', 'website'),
+                'image' => $this->s('seo_og_image', ''),
+            ],
+            'twitter' => [
+                'card' => $this->s('seo_twitter_card', 'summary_large_image'),
+                'site' => $this->s('seo_twitter_site', ''),
+                'title' => $title,
+                'description' => $description,
+            ],
+            'keywords' => $this->s('seo_meta_keywords', ''),
+            'schema' => [],
+            'thumbnailAlt' => '',
+        ];
+    }
+
+    /**
+     * Generate Organization JSON-LD schema.
+     */
+    protected function organizationSchema(): array
+    {
+        $schema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'Organization',
+            'name' => $this->s('seo_schema_org_name') ?: $this->siteName(),
+            'url' => $this->s('seo_schema_org_url') ?: url('/'),
+        ];
+
+        $logo = $this->s('seo_schema_org_logo');
+        if ($logo) {
+            $schema['logo'] = $logo;
+        }
+
+        $sameAs = $this->s('seo_schema_same_as', '');
+        if ($sameAs) {
+            $links = array_filter(array_map('trim', explode("\n", $sameAs)));
+            if (!empty($links)) {
+                $schema['sameAs'] = $links;
+            }
+        }
+
+        return $schema;
+    }
+
+    /**
+     * Generate WebSite JSON-LD schema with SearchAction.
+     */
+    protected function websiteSchema(): array
+    {
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'WebSite',
+            'name' => $this->siteName(),
+            'url' => url('/'),
+            'potentialAction' => [
+                '@type' => 'SearchAction',
+                'target' => [
+                    '@type' => 'EntryPoint',
+                    'urlTemplate' => url('/search') . '?q={search_term_string}',
+                ],
+                'query-input' => 'required name=search_term_string',
+            ],
+        ];
+    }
+
+    /**
+     * Convert seconds to ISO 8601 duration (PT#H#M#S).
+     */
+    protected function isoDuration(int $seconds): string
+    {
+        if ($seconds <= 0) {
+            return 'PT0S';
+        }
+        $hours = floor($seconds / 3600);
+        $minutes = floor(($seconds % 3600) / 60);
+        $secs = $seconds % 60;
+
+        $duration = 'PT';
+        if ($hours > 0) $duration .= "{$hours}H";
+        if ($minutes > 0) $duration .= "{$minutes}M";
+        if ($secs > 0 || $duration === 'PT') $duration .= "{$secs}S";
+
+        return $duration;
+    }
+}

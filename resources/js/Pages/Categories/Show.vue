@@ -1,13 +1,14 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
+import SeoHead from '@/Components/SeoHead.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
-import { router } from '@inertiajs/vue3';
 
 const props = defineProps({
     category: Object,
     videos: Object,
+    seo: { type: Object, default: () => ({}) },
 });
 
 const goToPage = (pageNum) => {
@@ -16,7 +17,7 @@ const goToPage = (pageNum) => {
 </script>
 
 <template>
-    <Head :title="category.name" />
+    <SeoHead :seo="seo" />
 
     <AppLayout>
         <div class="mb-6">

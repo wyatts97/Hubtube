@@ -2,15 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Hashtag;
 use App\Models\User;
 use App\Models\Video;
-use App\Models\Hashtag;
+use App\Services\SeoService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class SearchController extends Controller
 {
+    public function __construct(
+        protected SeoService $seoService,
+    ) {}
+
     public function index(Request $request): Response
     {
         $query = $request->get('q', '');
@@ -27,6 +32,7 @@ class SearchController extends Controller
             'query' => $query,
             'type' => $type,
             'results' => $results,
+            'seo' => $this->seoService->forSearch($query),
         ]);
     }
 
@@ -66,8 +72,10 @@ class SearchController extends Controller
 
         return User::query()
             ->with('channel')
-            ->where('username', 'like', "%{$query}%")
-            ->orWhereHas('channel', fn($q) => $q->where('name', 'like', "%{$query}%"))
+            ->where(function ($q) use ($query) {
+                $q->where('username', 'like', "%{$query}%")
+                  ->orWhereHas('channel', fn($sub) => $sub->where('name', 'like', "%{$query}%"));
+            })
             ->paginate(24);
     }
 

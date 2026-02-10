@@ -83,12 +83,21 @@ class WalletController extends Controller
             'payment_details' => 'required|array',
         ]);
 
-        WithdrawalRequest::create([
+        $withdrawal = WithdrawalRequest::create([
             'user_id' => $request->user()->id,
             'amount' => $validated['amount'],
             'payment_method' => $validated['payment_method'],
             'payment_details' => $validated['payment_details'],
         ]);
+
+        // Deduct balance immediately to prevent double-withdrawal
+        $this->walletService->debit(
+            $request->user(),
+            $validated['amount'],
+            'withdrawal_hold',
+            "Withdrawal request #{$withdrawal->id}",
+            $withdrawal
+        );
 
         return redirect()->route('wallet.index')
             ->with('success', 'Withdrawal request submitted. Processing takes 3-5 business days.');

@@ -22,6 +22,7 @@ class LikeController extends Controller
                 if ($existing->type === 'like') {
                     $existing->delete();
                     $video->decrement('likes_count');
+                    $video = $video->fresh();
                     return response()->json([
                         'liked' => false,
                         'disliked' => false,
@@ -63,6 +64,7 @@ class LikeController extends Controller
                 if ($existing->type === 'dislike') {
                     $existing->delete();
                     $video->decrement('dislikes_count');
+                    $video = $video->fresh();
                     return response()->json([
                         'liked' => false,
                         'disliked' => false,

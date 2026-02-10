@@ -119,7 +119,7 @@ class PlaylistController extends Controller
 
     private function canView(Playlist $playlist): bool
     {
-        if ($playlist->privacy === 'public') {
+        if ($playlist->privacy === 'public' || $playlist->privacy === 'unlisted') {
             return true;
         }
 

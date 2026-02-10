@@ -7,6 +7,34 @@
 
     <title inertia>{{ config('app.name', 'HubTube') }}</title>
 
+    {{-- Default SEO meta (overridden per-page by Inertia Head / SeoHead component) --}}
+    @php
+        $seoDesc = \App\Models\Setting::get('seo_meta_description', '');
+        $seoKeywords = \App\Models\Setting::get('seo_meta_keywords', '');
+        $googleVerify = \App\Models\Setting::get('seo_google_verification', '');
+        $bingVerify = \App\Models\Setting::get('seo_bing_verification', '');
+        $yandexVerify = \App\Models\Setting::get('seo_yandex_verification', '');
+        $pinterestVerify = \App\Models\Setting::get('seo_pinterest_verification', '');
+    @endphp
+    @if($seoDesc)
+    <meta name="description" content="{{ $seoDesc }}">
+    @endif
+    @if($seoKeywords)
+    <meta name="keywords" content="{{ $seoKeywords }}">
+    @endif
+    @if($googleVerify)
+    <meta name="google-site-verification" content="{{ $googleVerify }}">
+    @endif
+    @if($bingVerify)
+    <meta name="msvalidate.01" content="{{ $bingVerify }}">
+    @endif
+    @if($yandexVerify)
+    <meta name="yandex-verification" content="{{ $yandexVerify }}">
+    @endif
+    @if($pinterestVerify)
+    <meta name="p:domain_verify" content="{{ $pinterestVerify }}">
+    @endif
+
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#ef4444">

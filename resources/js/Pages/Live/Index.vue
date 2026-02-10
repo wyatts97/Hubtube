@@ -1,15 +1,17 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
+import SeoHead from '@/Components/SeoHead.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Radio, Users } from 'lucide-vue-next';
 
 defineProps({
     streams: Object,
+    seo: { type: Object, default: () => ({}) },
 });
 </script>
 
 <template>
-    <Head title="Live Streams" />
+    <SeoHead :seo="seo" />
 
     <AppLayout>
         <div class="mb-6">

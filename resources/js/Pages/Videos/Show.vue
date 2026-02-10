@@ -1,5 +1,6 @@
 <script setup>
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
+import SeoHead from '@/Components/SeoHead.vue';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useFetch } from '@/Composables/useFetch';
 import { sanitizeHtml } from '@/Composables/useSanitize';
@@ -22,6 +23,7 @@ const props = defineProps({
     bannerAbovePlayer: { type: Object, default: () => ({}) },
     bannerBelowPlayer: { type: Object, default: () => ({}) },
     userPlaylists: { type: Array, default: () => [] },
+    seo: { type: Object, default: () => ({}) },
 });
 
 const toast = useToast();
@@ -291,18 +293,7 @@ const formattedViews = computed(() => {
 </script>
 
 <template>
-    <Head :title="video.title">
-        <meta name="description" :content="video.description?.substring(0, 160) || video.title" />
-        <meta property="og:title" :content="video.title" />
-        <meta property="og:description" :content="video.description?.substring(0, 160) || video.title" />
-        <meta property="og:image" :content="video.thumbnail_url" />
-        <meta property="og:type" content="video.other" />
-        <meta property="og:video:duration" :content="String(video.duration || 0)" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" :content="video.title" />
-        <meta name="twitter:description" :content="video.description?.substring(0, 160) || video.title" />
-        <meta name="twitter:image" :content="video.thumbnail_url" />
-    </Head>
+    <SeoHead :seo="seo" />
 
     <AppLayout>
         <div class="flex flex-col lg:flex-row gap-6">

@@ -1,5 +1,6 @@
 <script setup>
-import { Head, usePage, router } from '@inertiajs/vue3';
+import { usePage, router } from '@inertiajs/vue3';
+import SeoHead from '@/Components/SeoHead.vue';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
@@ -8,6 +9,7 @@ import Pagination from '@/Components/Pagination.vue';
 
 const props = defineProps({
     videos: Object,
+    seo: { type: Object, default: () => ({}) },
 });
 
 const page = usePage();
@@ -78,7 +80,7 @@ const goToPage = (pageNum) => {
 </script>
 
 <template>
-    <Head title="Trending" />
+    <SeoHead :seo="seo" />
 
     <AppLayout>
         <div class="mb-6">

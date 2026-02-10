@@ -1,5 +1,6 @@
 <script setup>
-import { Head, usePage, router } from '@inertiajs/vue3';
+import { usePage, router } from '@inertiajs/vue3';
+import SeoHead from '@/Components/SeoHead.vue';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
@@ -28,6 +29,7 @@ const props = defineProps({
     adSettings: Object, // Ad settings from admin
     shortsCarousel: Array,
     shortsCarouselEnabled: Boolean,
+    seo: { type: Object, default: () => ({}) },
 });
 
 const page = usePage();
@@ -113,7 +115,7 @@ const shouldShowAd = (index, totalLength) => {
 </script>
 
 <template>
-    <Head title="Home" />
+    <SeoHead :seo="seo" />
 
     <AppLayout>
         <!-- Live Streams Section -->

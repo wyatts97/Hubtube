@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\LiveStream;
 use App\Models\Setting;
 use App\Models\Video;
+use App\Services\SeoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -14,6 +15,9 @@ use Inertia\Response;
 
 class HomeController extends Controller
 {
+    public function __construct(
+        protected SeoService $seoService,
+    ) {}
     public function index(Request $request): Response
     {
         $all = Setting::getAll();
@@ -104,6 +108,7 @@ class HomeController extends Controller
             'adSettings' => $adSettings,
             'shortsCarousel' => $shortsForCarousel,
             'shortsCarouselEnabled' => $shortsCarouselEnabled,
+            'seo' => $this->seoService->forHome(),
         ]);
     }
 
@@ -142,6 +147,7 @@ class HomeController extends Controller
 
         return Inertia::render('Trending', [
             'videos' => $videos,
+            'seo' => $this->seoService->forTrending(),
         ]);
     }
 
@@ -185,6 +191,7 @@ class HomeController extends Controller
                 'skipDelay' => (int) Setting::get('shorts_ad_skip_delay', 5),
                 'code' => Setting::get('shorts_ad_code', ''),
             ],
+            'seo' => $this->seoService->forShorts(),
         ]);
     }
 
@@ -237,6 +244,7 @@ class HomeController extends Controller
         return Inertia::render('Categories/Show', [
             'category' => $category,
             'videos' => $videos,
+            'seo' => $this->seoService->forCategory($category),
         ]);
     }
 
@@ -254,6 +262,7 @@ class HomeController extends Controller
         return Inertia::render('Tags/Show', [
             'tag' => $tag,
             'videos' => $videos,
+            'seo' => $this->seoService->forTag($tag),
         ]);
     }
 }

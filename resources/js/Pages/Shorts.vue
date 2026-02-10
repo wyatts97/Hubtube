@@ -1,5 +1,6 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
+import SeoHead from '@/Components/SeoHead.vue';
 import { computed } from 'vue';
 import ShortsViewer from '@/Components/ShortsViewer.vue';
 import { ArrowLeft } from 'lucide-vue-next';
@@ -10,6 +11,7 @@ const props = defineProps({
         type: Object,
         default: () => ({ enabled: false, frequency: 3, skipDelay: 5, code: '' }),
     },
+    seo: { type: Object, default: () => ({}) },
 });
 
 const shortsList = computed(() => props.shorts?.data || []);
@@ -21,7 +23,7 @@ const goBack = () => {
 </script>
 
 <template>
-    <Head title="Shorts" />
+    <SeoHead :seo="seo" />
 
     <!-- Back button overlay -->
     <button

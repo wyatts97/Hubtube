@@ -21,25 +21,29 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user() ? [
-                    'id' => $request->user()->id,
-                    'username' => $request->user()->username,
-                    'email' => $request->user()->email,
-                    'bio' => $request->user()->bio,
-                    'avatar' => $request->user()->avatar,
-                    'is_verified' => $request->user()->is_verified,
-                    'is_pro' => $request->user()->is_pro,
-                    'is_admin' => $request->user()->is_admin,
-                    'wallet_balance' => $request->user()->wallet_balance,
-                    'age_verified' => $request->user()->isAgeVerified(),
-                    'can_edit_video' => $request->user()->canEditVideo(),
-                    'settings' => $request->user()->settings ?? [],
-                    'channel' => $request->user()->channel ? [
-                        'id' => $request->user()->channel->id,
-                        'name' => $request->user()->channel->name,
-                        'banner_image' => $request->user()->channel->banner_image,
-                    ] : null,
-                ] : null,
+                'user' => $request->user() ? (function () use ($request) {
+                    $user = $request->user();
+                    $user->loadMissing('channel');
+                    return [
+                        'id' => $user->id,
+                        'username' => $user->username,
+                        'email' => $user->email,
+                        'bio' => $user->bio,
+                        'avatar' => $user->avatar,
+                        'is_verified' => $user->is_verified,
+                        'is_pro' => $user->is_pro,
+                        'is_admin' => $user->is_admin,
+                        'wallet_balance' => $user->wallet_balance,
+                        'age_verified' => $user->isAgeVerified(),
+                        'can_edit_video' => $user->canEditVideo(),
+                        'settings' => $user->settings ?? [],
+                        'channel' => $user->channel ? [
+                            'id' => $user->channel->id,
+                            'name' => $user->channel->name,
+                            'banner_image' => $user->channel->banner_image,
+                        ] : null,
+                    ];
+                })() : null,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

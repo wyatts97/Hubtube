@@ -28,7 +28,7 @@ class SubscriptionController extends Controller
 
         return response()->json([
             'subscribed' => true,
-            'subscriberCount' => $user->subscriber_count,
+            'subscriberCount' => $user->fresh()->subscriber_count,
         ]);
     }
 
@@ -45,7 +45,7 @@ class SubscriptionController extends Controller
 
         return response()->json([
             'subscribed' => false,
-            'subscriberCount' => $user->subscriber_count,
+            'subscriberCount' => $user->fresh()->subscriber_count,
         ]);
     }
 

@@ -1,5 +1,6 @@
 <script setup>
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
+import SeoHead from '@/Components/SeoHead.vue';
 import { ref, watch } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
@@ -10,6 +11,7 @@ const props = defineProps({
     query: String,
     type: String,
     results: Object,
+    seo: { type: Object, default: () => ({}) },
 });
 
 const searchQuery = ref(props.query || '');
@@ -47,7 +49,7 @@ const hasPages = () => {
 </script>
 
 <template>
-    <Head :title="query ? `Search: ${query}` : 'Search'" />
+    <SeoHead :seo="seo" />
 
     <AppLayout>
         <div class="mb-4 sm:mb-6">

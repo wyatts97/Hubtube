@@ -7,6 +7,7 @@ use App\Http\Requests\Video\UpdateVideoRequest;
 use App\Models\Video;
 use App\Models\Category;
 use App\Models\Setting;
+use App\Services\SeoService;
 use App\Services\StorageManager;
 use App\Services\VideoService;
 use Illuminate\Http\JsonResponse;
@@ -21,7 +22,8 @@ use Inertia\Response;
 class VideoController extends Controller
 {
     public function __construct(
-        protected VideoService $videoService
+        protected VideoService $videoService,
+        protected SeoService $seoService,
     ) {}
 
     public function index(Request $request): Response
@@ -55,6 +57,12 @@ class VideoController extends Controller
     {
         if (!$video->isAccessibleBy(auth()->user())) {
             abort(403);
+        }
+
+        // Non-owners can only see approved+processed videos
+        $isOwner = auth()->check() && (auth()->id() === $video->user_id || auth()->user()->is_admin);
+        if (!$isOwner && (!$video->is_approved || $video->status !== 'processed')) {
+            abort(404);
         }
 
         $video->load(['user.channel', 'category']);
@@ -131,6 +139,7 @@ class VideoController extends Controller
             'bannerAbovePlayer' => $bannerAbovePlayer,
             'bannerBelowPlayer' => $bannerBelowPlayer,
             'userPlaylists' => $userPlaylists,
+            'seo' => $this->seoService->forVideo($video),
         ]);
     }
 
@@ -172,12 +181,12 @@ class VideoController extends Controller
             'chunk' => 'required|file',
             'chunkIndex' => 'required|integer|min:0',
             'totalChunks' => 'required|integer|min:1',
-            'uploadId' => 'required|string|max:64',
+            'uploadId' => 'required|string|max:64|regex:/^[a-zA-Z0-9_-]+$/',
             'filename' => 'required|string|max:255',
             'fileSize' => 'required|integer|min:1',
         ]);
 
-        $uploadId = $request->input('uploadId');
+        $uploadId = preg_replace('/[^a-zA-Z0-9_-]/', '', $request->input('uploadId'));
         $chunkIndex = (int) $request->input('chunkIndex');
         $totalChunks = (int) $request->input('totalChunks');
         $chunkDir = storage_path("app/chunks/{$uploadId}");

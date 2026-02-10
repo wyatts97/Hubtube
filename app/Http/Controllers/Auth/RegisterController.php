@@ -29,10 +29,18 @@ class RegisterController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
+        $baseSlug = Str::slug($user->username) ?: 'channel';
+        $slug = $baseSlug . '-' . $user->id;
+        $suffix = 2;
+        while (Channel::where('slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . $user->id . '-' . $suffix;
+            $suffix++;
+        }
+
         Channel::create([
             'user_id' => $user->id,
             'name' => $user->username,
-            'slug' => Str::slug($user->username) . '-' . $user->id,
+            'slug' => $slug,
         ]);
 
         event(new Registered($user));

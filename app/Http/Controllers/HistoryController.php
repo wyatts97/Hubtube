@@ -21,7 +21,7 @@ class HistoryController extends Controller
 
         $transformedVideos = $videos->through(function ($history) {
             return $history->video;
-        })->filter();
+        });
 
         return Inertia::render('History', [
             'videos' => $transformedVideos,
