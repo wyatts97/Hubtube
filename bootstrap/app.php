@@ -49,6 +49,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'age.verified' => \App\Http\Middleware\AgeVerification::class,
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'installed' => \App\Http\Middleware\CheckInstalled::class,
+            'locale' => \App\Http\Middleware\SetLocale::class,
         ]);
 
         $middleware->statefulApi();

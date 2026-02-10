@@ -4,7 +4,9 @@ namespace App\Http\Middleware;
 
 use App\Models\MenuItem;
 use App\Models\Setting;
+use App\Services\TranslationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -55,6 +57,7 @@ class HandleInertiaRequests extends Middleware
             'app' => fn () => $this->getAppSettings(),
             'theme' => fn () => $this->getThemeSettings(),
             'menuItems' => fn () => $this->getMenuItems(),
+            'locale' => fn () => $this->getLocaleData(),
         ];
     }
 
@@ -173,6 +176,26 @@ class HandleInertiaRequests extends Middleware
                 'borderRadius' => (int) $this->s('video_card_border_radius', 12),
             ],
         ];
+    }
+
+    protected function getLocaleData(): array
+    {
+        try {
+            $enabledLanguages = TranslationService::getEnabledLanguages();
+            return [
+                'current' => App::getLocale(),
+                'default' => TranslationService::getDefaultLocale(),
+                'languages' => $enabledLanguages,
+                'enabled' => count($enabledLanguages) > 1,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'current' => 'en',
+                'default' => 'en',
+                'languages' => ['en' => ['name' => 'English', 'native' => 'English', 'flag' => '🇺🇸']],
+                'enabled' => false,
+            ];
+        }
     }
 
     protected function getMenuItems(): array

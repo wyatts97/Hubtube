@@ -25,6 +25,7 @@ use App\Http\Controllers\VideoController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\ThumbnailProxyController;
+use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\WalletController;
 use Illuminate\Support\Facades\Route;
 
@@ -193,8 +194,33 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
     });
 
+    // Translation API routes
+    Route::post('/api/translate', [TranslationController::class, 'translate'])->middleware('throttle:60,1')->name('translate');
+    Route::post('/api/translate/batch', [TranslationController::class, 'translateBatch'])->middleware('throttle:30,1')->name('translate.batch');
+    Route::get('/api/languages', [TranslationController::class, 'languages'])->name('languages');
+    Route::post('/api/locale', [TranslationController::class, 'setLocale'])->name('locale.set');
+
     // Video show route - must be last to avoid conflicts with other routes
     Route::get('/{video:slug}', [VideoController::class, 'show'])->where('video', '^(?!api|admin|livewire).*')->name('videos.show');
+
+    // ── Locale-prefixed routes for SEO (e.g. /es/trending, /fr/video-slug) ──
+    Route::prefix('{locale}')->where(['locale' => '[a-z]{2,3}'])->middleware('locale')->group(function () {
+        Route::get('/', [HomeController::class, 'index'])->name('locale.home');
+        Route::get('/trending', [HomeController::class, 'trending'])->name('locale.trending');
+        Route::get('/shorts', [HomeController::class, 'shorts'])->name('locale.shorts');
+        Route::get('/search', [SearchController::class, 'index'])->name('locale.search');
+        Route::get('/videos', [VideoController::class, 'index'])->name('locale.videos.index');
+        Route::get('/contact', [ContactController::class, 'show'])->name('locale.contact');
+        Route::get('/categories', [HomeController::class, 'categories'])->name('locale.categories.index');
+        Route::get('/category/{category:slug}', [HomeController::class, 'category'])->name('locale.categories.show');
+        Route::get('/tag/{tag}', [HomeController::class, 'tag'])->name('locale.tags.show');
+        Route::get('/channel/{user:username}', [ChannelController::class, 'show'])->name('locale.channel.show');
+        Route::get('/live', [LiveStreamController::class, 'index'])->name('locale.live.index');
+        Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('locale.pages.show');
+
+        // Locale-prefixed video show (translated slug or original slug)
+        Route::get('/{video:slug}', [VideoController::class, 'show'])->where('video', '^(?!api|admin|livewire).*')->name('locale.videos.show');
+    });
 });
 
 }); // end installed:require

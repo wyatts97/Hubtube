@@ -13,6 +13,7 @@ import { useToast } from '@/Composables/useToast';
 import { useFetch } from '@/Composables/useFetch';
 import ToastContainer from '@/Components/ToastContainer.vue';
 import AgeVerificationModal from '@/Components/AgeVerificationModal.vue';
+import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
 
 const toast = useToast();
 const { get, post } = useFetch();
@@ -532,6 +533,11 @@ const toggleSidebar = () => {
                         </ul>
                     </div>
                 </template>
+
+                <!-- Language Switcher -->
+                <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
+                    <LanguageSwitcher :compact="sidebarCollapsed" />
+                </div>
             </nav>
         </aside>
 
@@ -636,6 +642,11 @@ const toggleSidebar = () => {
                             </ul>
                         </div>
                     </template>
+
+                    <!-- Language Switcher (Mobile) -->
+                    <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
+                        <LanguageSwitcher direction="down" />
+                    </div>
                 </nav>
             </aside>
         </div>

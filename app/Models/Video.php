@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\StorageManager;
+use App\Traits\Translatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,7 +14,7 @@ use Laravel\Scout\Searchable;
 
 class Video extends Model
 {
-    use HasFactory, Searchable, SoftDeletes;
+    use HasFactory, Searchable, SoftDeletes, Translatable;
 
     protected $fillable = [
         'user_id',

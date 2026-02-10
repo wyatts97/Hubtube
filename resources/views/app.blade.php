@@ -67,6 +67,26 @@
         }
     </style>
 
+    {{-- hreflang tags for multi-language SEO --}}
+    @php
+        $enabledLangs = \App\Services\TranslationService::getEnabledLocales();
+        $defaultLang = \App\Services\TranslationService::getDefaultLocale();
+        $currentPath = request()->path();
+        // Strip locale prefix from current path if present
+        $cleanPath = preg_replace('#^[a-z]{2,3}(/|$)#', '', $currentPath);
+        $cleanPath = $cleanPath ?: '/';
+    @endphp
+    @if(count($enabledLangs) > 1)
+        <link rel="alternate" hreflang="x-default" href="{{ url($cleanPath) }}" />
+        @foreach($enabledLangs as $lang)
+            @if($lang === $defaultLang)
+                <link rel="alternate" hreflang="{{ $lang }}" href="{{ url($cleanPath) }}" />
+            @else
+                <link rel="alternate" hreflang="{{ $lang }}" href="{{ url($lang . '/' . $cleanPath) }}" />
+            @endif
+        @endforeach
+    @endif
+
     @routes
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @inertiaHead
