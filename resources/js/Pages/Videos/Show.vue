@@ -158,7 +158,7 @@ const handleDislike = async () => {
 const handleSubscribe = async () => {
     if (!user.value) { router.visit('/login'); return; }
     subscribing.value = true;
-    const fn = subscribed.value ? del : post;
+    const fn = subscribed.value ? (url) => del(url, null) : (url) => post(url, {});
     const { ok } = await fn(`/channel/${props.video.user.id}/subscribe`);
     if (ok) subscribed.value = !subscribed.value;
     subscribing.value = false;
@@ -175,7 +175,7 @@ const toggleVideoInPlaylist = async (playlist) => {
     if (savingPlaylist.value === playlist.id) return;
     savingPlaylist.value = playlist.id;
     if (playlist.has_video) {
-        const { ok } = await del(`/playlists/${playlist.id}/videos`, { body: JSON.stringify({ video_id: props.video.id }) });
+        const { ok } = await del(`/playlists/${playlist.id}/videos`, { video_id: props.video.id });
         if (ok) {
             playlist.has_video = false;
             toast.success(`Removed from "${playlist.title}"`);
@@ -416,7 +416,7 @@ const formattedViews = computed(() => {
                         </div>
 
                         <!-- Actions -->
-                        <div class="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto overflow-x-auto scrollbar-hide -mx-1 px-1">
+                        <div class="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto overflow-x-auto sm:overflow-visible scrollbar-hide -mx-1 px-1">
                             <div class="flex items-center rounded-full shrink-0" style="background-color: var(--color-bg-card);">
                                 <button
                                     @click="handleLike"

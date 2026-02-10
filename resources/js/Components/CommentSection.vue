@@ -89,7 +89,7 @@ const dislikeComment = async (comment) => {
 
 const deleteComment = async (comment) => {
     if (!confirm('Are you sure you want to delete this comment?')) return;
-    const { ok } = await del(`/comments/${comment.id}`);
+    const { ok } = await del(`/comments/${comment.id}`, null);
     if (ok) {
         comments.value = comments.value.filter(c => c.id !== comment.id);
     }

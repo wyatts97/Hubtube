@@ -35,8 +35,8 @@ const embedUrl = computed(() => {
 </script>
 
 <template>
-    <div class="embedded-video-player" :class="showInfo ? '' : 'h-full'">
-        <div class="relative bg-black overflow-hidden" :class="showInfo ? 'aspect-video rounded-lg' : 'h-full'">
+    <div class="embedded-video-player" :class="showInfo ? '' : 'absolute inset-0'">
+        <div class="relative bg-black overflow-hidden" :class="showInfo ? 'aspect-video rounded-lg' : 'w-full h-full'">
             <!-- Loading placeholder -->
             <div 
                 v-if="!iframeLoaded && !isDirectVideo" 

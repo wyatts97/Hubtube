@@ -41,7 +41,8 @@ export function useFetch() {
         jsonFetch(url, { method: 'POST', body: body ? JSON.stringify(body) : undefined, ...options });
     const put = (url, body, options = {}) =>
         jsonFetch(url, { method: 'PUT', body: body ? JSON.stringify(body) : undefined, ...options });
-    const del = (url, options = {}) => jsonFetch(url, { method: 'DELETE', ...options });
+    const del = (url, body, options = {}) =>
+        jsonFetch(url, { method: 'DELETE', body: body ? JSON.stringify(body) : undefined, ...options });
 
     return { getHeaders, jsonFetch, get, post, put, del };
 }

@@ -51,7 +51,9 @@ class EpornerApiAdapter
                     'embedCode' => '<iframe src="' . ($v['embed'] ?? "https://www.eporner.com/embed/{$v['id']}/") . '" frameborder="0" width="640" height="360" allowfullscreen></iframe>',
                     'views' => $v['views'] ?? 0,
                     'rating' => (float) ($v['rate'] ?? 0),
-                    'tags' => $v['keywords'] ?? [],
+                    'tags' => is_string($v['keywords'] ?? null)
+                        ? array_map('trim', explode(',', $v['keywords']))
+                        : ($v['keywords'] ?? []),
                     'actors' => [],
                     'uploadDate' => $v['added'] ?? null,
                 ];
@@ -108,7 +110,9 @@ class EpornerApiAdapter
                 'embedCode' => '<iframe src="' . ($v['embed'] ?? "https://www.eporner.com/embed/{$videoId}/") . '" frameborder="0" width="640" height="360" allowfullscreen></iframe>',
                 'views' => $v['views'] ?? 0,
                 'rating' => (float) ($v['rate'] ?? 0),
-                'tags' => $v['keywords'] ?? [],
+                'tags' => is_string($v['keywords'] ?? null)
+                    ? array_map('trim', explode(',', $v['keywords']))
+                    : ($v['keywords'] ?? []),
                 'actors' => [],
             ];
         } catch (\Exception $e) {

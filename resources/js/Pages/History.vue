@@ -14,7 +14,7 @@ const { del } = useFetch();
 const clearHistory = async () => {
     if (!confirm('Are you sure you want to clear your watch history?')) return;
     
-    const { ok } = await del('/history');
+    const { ok } = await del('/history', null);
     if (ok) {
         router.reload();
     }

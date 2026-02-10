@@ -31,14 +31,14 @@ class EmbedScraperService
      * Mapping of source site keys to display names and logo filenames.
      */
     protected const SITE_META = [
-        'eporner'    => ['name' => 'Eporner',  'logo' => 'eporner.svg'],
-        'redtube'    => ['name' => 'Redtube',  'logo' => 'redtube.svg'],
-        'redtube_api'=> ['name' => 'Redtube',  'logo' => 'redtube.svg'],
-        'xvideos'    => ['name' => 'Xvideos',  'logo' => 'xvideos.svg'],
-        'pornhub'    => ['name' => 'Pornhub',  'logo' => 'pornhub.svg'],
-        'xhamster'   => ['name' => 'xHamster', 'logo' => 'xhamster.svg'],
-        'xnxx'       => ['name' => 'XNXX',     'logo' => 'xnxx.svg'],
-        'youporn'    => ['name' => 'YouPorn',  'logo' => 'youporn.svg'],
+        'eporner'    => ['name' => 'Eporner',  'logo' => 'eporner.png'],
+        'redtube'    => ['name' => 'Redtube',  'logo' => 'redtube.png'],
+        'redtube_api'=> ['name' => 'Redtube',  'logo' => 'redtube.png'],
+        'xvideos'    => ['name' => 'Xvideos',  'logo' => 'xvideos.png'],
+        'pornhub'    => ['name' => 'Pornhub',  'logo' => 'pornhub.png'],
+        'xhamster'   => ['name' => 'xHamster', 'logo' => 'xhamster.png'],
+        'xnxx'       => ['name' => 'XNXX',     'logo' => 'xnxx.png'],
+        'youporn'    => ['name' => 'YouPorn',  'logo' => 'youporn.png'],
     ];
 
     public function __construct()

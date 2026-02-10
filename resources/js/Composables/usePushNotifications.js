@@ -67,7 +67,7 @@ export function usePushNotifications() {
 
             if (subscription) {
                 await subscription.unsubscribe();
-                await del('/api/push/unsubscribe', { endpoint: subscription.endpoint });
+                await del('/api/push/unsubscribe', { endpoint: subscription.endpoint }, {});
             }
 
             isSubscribed.value = false;
