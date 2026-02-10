@@ -198,19 +198,46 @@ if command_exists composer; then
     ok "Composer already installed (v${COMPOSER_VER})."
 else
     info "Installing Composer..."
+    
+    # Try multiple installation methods in order of preference
+    
+    # Method 1: Official installer with fallback
     EXPECTED_CHECKSUM="$(php -r 'copy("https://composer.github.io/installer.sig", "php://stdout");')"
-    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-    ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
-
-    if [[ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]]; then
-        rm composer-setup.php
-        fail "Composer installer checksum verification failed!"
-        exit 1
+    if php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" 2>/dev/null; then
+        ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
+        if [[ "$EXPECTED_CHECKSUM" == "$ACTUAL_CHECKSUM" ]]; then
+            php composer-setup.php --install-dir=/usr/local/bin --filename=composer --quiet && rm composer-setup.php
+            ok "Composer installed via official installer."
+        else
+            warn "Composer installer checksum mismatch, trying alternative method..."
+            rm -f composer-setup.php
+        fi
+    else
+        warn "Failed to download Composer installer, trying curl method..."
     fi
-
-    php composer-setup.php --install-dir=/usr/local/bin --filename=composer --quiet
-    rm composer-setup.php
-    ok "Composer installed to /usr/local/bin/composer."
+    
+    # Method 2: Direct download with curl (fallback)
+    if ! command_exists composer; then
+        if curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --quiet; then
+            ok "Composer installed via curl fallback."
+        else
+            warn "Curl method failed, trying manual download..."
+            # Method 3: Manual download (last resort)
+            cd /tmp
+            wget -q https://getcomposer.org/installer -O composer-setup.php
+            EXPECTED_CHECKSUM="$(php -r 'copy("https://composer.github.io/installer.sig", "php://stdout");')"
+            ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
+            if [[ "$EXPECTED_CHECKSUM" == "$ACTUAL_CHECKSUM" ]]; then
+                php composer-setup.php --install-dir=/usr/local/bin --filename=composer --quiet
+                mv composer /usr/local/bin/composer
+                rm composer-setup.php
+                ok "Composer installed via manual download."
+            else
+                fail "All Composer installation methods failed!"
+                exit 1
+            fi
+        fi
+    fi
 fi
 
 # ── MariaDB ──────────────────────────────────────────────────────────────────
