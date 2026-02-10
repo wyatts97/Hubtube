@@ -228,17 +228,35 @@ class InstallController extends Controller
 
         $steps = [];
 
+        // 0. Fix open_basedir if needed
+        $openBasedirResult = $this->fixOpenBasedir();
+        if ($openBasedirResult) {
+            $isFixed = str_starts_with($openBasedirResult, 'Fixed');
+            $steps[] = ['label' => 'Fix open_basedir', 'status' => $isFixed ? 'success' : 'warning', 'message' => $openBasedirResult];
+        }
+
+        // 1. Run migrations (with retry logic for "table already exists")
         try {
-            // 1. Run migrations
             Artisan::call('migrate', ['--force' => true]);
             $steps[] = ['label' => 'Database migrations', 'status' => 'success'];
         } catch (\Exception $e) {
-            $steps[] = ['label' => 'Database migrations', 'status' => 'error', 'message' => $e->getMessage()];
-            return view('install.finalize', ['adminData' => $adminData, 'steps' => $steps, 'failed' => true]);
+            // If table already exists, try migrate:fresh (only safe during installation)
+            if (str_contains($e->getMessage(), 'already exists')) {
+                try {
+                    Artisan::call('migrate:fresh', ['--force' => true]);
+                    $steps[] = ['label' => 'Database migrations', 'status' => 'success', 'message' => 'Ran fresh migration (previous tables were cleared)'];
+                } catch (\Exception $e2) {
+                    $steps[] = ['label' => 'Database migrations', 'status' => 'error', 'message' => $e2->getMessage()];
+                    return view('install.finalize', ['adminData' => $adminData, 'steps' => $steps, 'failed' => true]);
+                }
+            } else {
+                $steps[] = ['label' => 'Database migrations', 'status' => 'error', 'message' => $e->getMessage()];
+                return view('install.finalize', ['adminData' => $adminData, 'steps' => $steps, 'failed' => true]);
+            }
         }
 
+        // 2. Seed categories, gifts, settings
         try {
-            // 2. Seed categories, gifts, settings
             Artisan::call('db:seed', ['--class' => 'CategorySeeder', '--force' => true]);
             Artisan::call('db:seed', ['--class' => 'GiftSeeder', '--force' => true]);
             Artisan::call('db:seed', ['--class' => 'SettingsSeeder', '--force' => true]);
@@ -249,8 +267,8 @@ class InstallController extends Controller
             return view('install.finalize', ['adminData' => $adminData, 'steps' => $steps, 'failed' => true]);
         }
 
+        // 3. Create admin user
         try {
-            // 3. Create admin user
             $userModel = app(\App\Models\User::class);
             $admin = $userModel::firstOrCreate(
                 ['email' => $adminData['email']],
@@ -281,16 +299,29 @@ class InstallController extends Controller
             return view('install.finalize', ['adminData' => $adminData, 'steps' => $steps, 'failed' => true]);
         }
 
+        // 4. Create storage symlink
         try {
-            // 4. Create storage symlink
             Artisan::call('storage:link', ['--force' => true]);
             $steps[] = ['label' => 'Create storage link', 'status' => 'success'];
         } catch (\Exception $e) {
             $steps[] = ['label' => 'Create storage link', 'status' => 'warning', 'message' => $e->getMessage()];
         }
 
+        // 5. Publish Filament & Livewire assets (critical for admin panel)
         try {
-            // 5. Clear caches
+            $assetResults = $this->publishAssets();
+            $hasFilament = is_dir(public_path('vendor/filament'));
+            $steps[] = [
+                'label' => 'Publish admin panel assets',
+                'status' => $hasFilament ? 'success' : 'warning',
+                'message' => $hasFilament ? null : 'Filament assets may need manual publishing. Run: php artisan filament:assets',
+            ];
+        } catch (\Exception $e) {
+            $steps[] = ['label' => 'Publish admin panel assets', 'status' => 'warning', 'message' => $e->getMessage()];
+        }
+
+        // 6. Clear and optimize caches
+        try {
             Artisan::call('config:clear');
             Artisan::call('cache:clear');
             Artisan::call('view:clear');
@@ -300,14 +331,17 @@ class InstallController extends Controller
             $steps[] = ['label' => 'Clear caches', 'status' => 'warning', 'message' => $e->getMessage()];
         }
 
-        // 6. Mark as installed
+        // 7. Detect environment and show helpful info
+        $environment = $this->detectEnvironment();
+
+        // 8. Mark as installed
         File::put(storage_path('installed'), now()->toDateTimeString());
         $steps[] = ['label' => 'Mark installation complete', 'status' => 'success'];
 
         // Clear session
         $request->session()->forget('install_admin');
 
-        return view('install.complete', compact('steps', 'adminData'));
+        return view('install.complete', compact('steps', 'adminData', 'environment'));
     }
 
     /**
@@ -315,10 +349,21 @@ class InstallController extends Controller
      */
     protected function autoHeal(): void
     {
+        // Fix open_basedir restriction (aaPanel, cPanel, etc.)
+        $this->fixOpenBasedir();
+
         // Create .env from .env.example if missing
         if (!File::exists(base_path('.env')) && File::exists(base_path('.env.example'))) {
             File::copy(base_path('.env.example'), base_path('.env'));
-            // Generate APP_KEY immediately
+            try {
+                Artisan::call('key:generate', ['--force' => true]);
+            } catch (\Exception $e) {
+                // Will be generated later
+            }
+        }
+
+        // Generate APP_KEY if empty
+        if (File::exists(base_path('.env')) && empty(env('APP_KEY'))) {
             try {
                 Artisan::call('key:generate', ['--force' => true]);
             } catch (\Exception $e) {
@@ -334,6 +379,7 @@ class InstallController extends Controller
             storage_path('framework/views'),
             storage_path('logs'),
             base_path('bootstrap/cache'),
+            public_path('vendor'),
         ];
 
         foreach ($dirs as $dir) {
@@ -344,6 +390,16 @@ class InstallController extends Controller
 
         // Fix .env permissions
         $this->ensureEnvWritable();
+
+        // Auto-detect and fix Redis password
+        $redisPassword = env('REDIS_PASSWORD');
+        if (empty($redisPassword) || $redisPassword === 'null') {
+            $detected = $this->detectRedisPassword();
+            if ($detected) {
+                $this->ensureEnvWritable();
+                $this->updateEnv(['REDIS_PASSWORD' => $detected]);
+            }
+        }
     }
 
     /**
@@ -435,16 +491,42 @@ class InstallController extends Controller
             }
         }
 
-        // Check Redis connectivity
+        // Check Redis connectivity (with auth detection)
         $redisAvailable = false;
+        $redisNeedsAuth = false;
+        $redisPassword = env('REDIS_PASSWORD');
         try {
             $redis = new \Redis();
-            $redisAvailable = @$redis->connect(
+            $connected = @$redis->connect(
                 env('REDIS_HOST', '127.0.0.1'),
                 (int) env('REDIS_PORT', 6379),
-                1.0 // 1 second timeout
+                1.0
             );
-            if ($redisAvailable) {
+            if ($connected) {
+                // Try ping — if Redis has a password and we don't have it, this fails with NOAUTH
+                try {
+                    $redis->ping();
+                    $redisAvailable = true;
+                } catch (\Exception $authEx) {
+                    if (str_contains($authEx->getMessage(), 'NOAUTH') || str_contains($authEx->getMessage(), 'AUTH')) {
+                        $redisNeedsAuth = true;
+                        // Auto-detect Redis password from common config locations
+                        $detectedPassword = $this->detectRedisPassword();
+                        if ($detectedPassword) {
+                            try {
+                                $redis->auth($detectedPassword);
+                                $redis->ping();
+                                $redisAvailable = true;
+                                $redisPassword = $detectedPassword;
+                                // Auto-fix .env with detected password
+                                $this->ensureEnvWritable();
+                                $this->updateEnv(['REDIS_PASSWORD' => $detectedPassword]);
+                            } catch (\Exception $e2) {
+                                $redisAvailable = false;
+                            }
+                        }
+                    }
+                }
                 $redis->close();
             }
         } catch (\Exception $e) {
@@ -471,8 +553,239 @@ class InstallController extends Controller
             'mysql_available' => $mysqlAvailable,
             'mysql_version' => $mysqlVersion,
             'redis_available' => $redisAvailable,
+            'redis_needs_auth' => $redisNeedsAuth && !$redisAvailable,
             'can_proceed' => $canProceed,
         ];
+    }
+
+    /**
+     * Detect Redis password from common config file locations.
+     * Supports aaPanel, system redis, and other common setups.
+     */
+    protected function detectRedisPassword(): ?string
+    {
+        $configPaths = [
+            '/www/server/redis/redis.conf',       // aaPanel
+            '/etc/redis/redis.conf',              // Ubuntu/Debian default
+            '/etc/redis.conf',                    // CentOS/RHEL
+            '/usr/local/etc/redis/redis.conf',    // FreeBSD / Homebrew
+            '/www/server/redis/etc/redis.conf',   // aaPanel alternate
+        ];
+
+        foreach ($configPaths as $path) {
+            if (!is_readable($path)) {
+                continue;
+            }
+            $contents = @file_get_contents($path);
+            if (!$contents) {
+                continue;
+            }
+            // Match "requirepass <password>" (not commented out)
+            if (preg_match('/^\s*requirepass\s+(\S+)/m', $contents, $matches)) {
+                return $matches[1];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Detect the hosting environment (aaPanel, cPanel, Webmin, bare metal).
+     */
+    protected function detectEnvironment(): array
+    {
+        $env = [
+            'panel' => 'none',
+            'web_user' => 'www-data',
+            'php_socket' => null,
+            'open_basedir' => ini_get('open_basedir') ?: null,
+        ];
+
+        // aaPanel
+        if (is_dir('/www/server/panel')) {
+            $env['panel'] = 'aapanel';
+            $env['web_user'] = 'www';
+            // Detect PHP-FPM socket
+            $phpVer = PHP_MAJOR_VERSION . PHP_MINOR_VERSION;
+            $sock = "/tmp/php-cgi-{$phpVer}.sock";
+            if (file_exists($sock)) {
+                $env['php_socket'] = $sock;
+            }
+        }
+        // cPanel
+        elseif (is_dir('/usr/local/cpanel') || is_dir('/var/cpanel')) {
+            $env['panel'] = 'cpanel';
+            $env['web_user'] = 'nobody';
+        }
+        // Webmin/Virtualmin
+        elseif (is_dir('/etc/webmin')) {
+            $env['panel'] = 'webmin';
+        }
+        // Plesk
+        elseif (is_dir('/usr/local/psa') || is_dir('/opt/psa')) {
+            $env['panel'] = 'plesk';
+        }
+
+        return $env;
+    }
+
+    /**
+     * Publish Filament and Livewire assets to public/vendor/.
+     * This is critical for the admin panel to work.
+     */
+    protected function publishAssets(): array
+    {
+        $results = [];
+
+        // Ensure public/vendor directory exists
+        $vendorPath = public_path('vendor');
+        if (!is_dir($vendorPath)) {
+            @mkdir($vendorPath, 0775, true);
+        }
+
+        // Publish Filament assets via Artisan
+        try {
+            Artisan::call('filament:assets');
+            $results[] = 'Filament assets published';
+        } catch (\Exception $e) {
+            $results[] = 'Filament assets failed: ' . $e->getMessage();
+        }
+
+        // Publish Livewire assets
+        try {
+            Artisan::call('vendor:publish', ['--tag' => 'livewire:assets', '--force' => true]);
+            $results[] = 'Livewire assets published';
+        } catch (\Exception $e) {
+            // Livewire may serve assets via route instead of published files
+        }
+
+        // Publish Laravel assets
+        try {
+            Artisan::call('vendor:publish', ['--tag' => 'laravel-assets', '--force' => true]);
+        } catch (\Exception $e) {
+            // Non-critical
+        }
+
+        // Filament icons
+        try {
+            Artisan::call('icons:cache');
+        } catch (\Exception $e) {
+            // Non-critical
+        }
+
+        // If Filament assets still don't exist, try to manually copy from vendor
+        $filamentAssetPath = public_path('vendor/filament');
+        if (!is_dir($filamentAssetPath)) {
+            $this->copyFilamentAssetsManually();
+        }
+
+        return $results;
+    }
+
+    /**
+     * Manually copy Filament assets from vendor directory as a fallback.
+     */
+    protected function copyFilamentAssetsManually(): void
+    {
+        $sourceBase = base_path('vendor/filament');
+        $destBase = public_path('vendor/filament');
+
+        if (!is_dir($sourceBase)) {
+            return;
+        }
+
+        // Find all public asset directories in filament packages
+        $packages = ['filament', 'forms', 'tables', 'support', 'actions', 'infolists', 'notifications', 'widgets'];
+        foreach ($packages as $package) {
+            $publicDir = "{$sourceBase}/{$package}/resources/dist";
+            if (!is_dir($publicDir)) {
+                $publicDir = "{$sourceBase}/{$package}/dist";
+            }
+            if (is_dir($publicDir)) {
+                $dest = "{$destBase}/{$package}";
+                if (!is_dir($dest)) {
+                    @mkdir($dest, 0775, true);
+                }
+                $this->recursiveCopy($publicDir, $dest);
+            }
+        }
+
+        // Also handle Livewire
+        $livewireSrc = base_path('vendor/livewire/livewire/dist');
+        $livewireDest = public_path('vendor/livewire');
+        if (is_dir($livewireSrc) && !is_dir($livewireDest)) {
+            @mkdir($livewireDest, 0775, true);
+            $this->recursiveCopy($livewireSrc, $livewireDest);
+        }
+    }
+
+    /**
+     * Recursively copy a directory.
+     */
+    protected function recursiveCopy(string $src, string $dst): void
+    {
+        $dir = opendir($src);
+        if (!$dir) return;
+        @mkdir($dst, 0775, true);
+        while (($file = readdir($dir)) !== false) {
+            if ($file === '.' || $file === '..') continue;
+            $srcPath = $src . '/' . $file;
+            $dstPath = $dst . '/' . $file;
+            if (is_dir($srcPath)) {
+                $this->recursiveCopy($srcPath, $dstPath);
+            } else {
+                @copy($srcPath, $dstPath);
+            }
+        }
+        closedir($dir);
+    }
+
+    /**
+     * Fix open_basedir restriction for aaPanel and similar panels.
+     * Attempts to update .user.ini to include the full project root.
+     */
+    protected function fixOpenBasedir(): ?string
+    {
+        $openBasedir = ini_get('open_basedir');
+        if (empty($openBasedir)) {
+            return null; // No restriction
+        }
+
+        $projectRoot = base_path();
+        $publicRoot = public_path();
+
+        // Check if project root is already allowed
+        $paths = explode(PATH_SEPARATOR, $openBasedir);
+        foreach ($paths as $path) {
+            $path = rtrim($path, '/');
+            if ($path === $projectRoot || $path === rtrim($projectRoot, '/')) {
+                return null; // Already allowed
+            }
+        }
+
+        // If only public/ is allowed, we need to fix it
+        $userIniPath = public_path('.user.ini');
+        if (file_exists($userIniPath)) {
+            // Try to remove immutable flag (aaPanel sets this)
+            @exec('chattr -i ' . escapeshellarg($userIniPath) . ' 2>/dev/null');
+
+            $content = @file_get_contents($userIniPath);
+            if ($content !== false) {
+                // Replace the open_basedir line to include full project root
+                $newBasedir = $projectRoot . ':/tmp/:/proc/';
+                $newContent = preg_replace(
+                    '/^open_basedir\s*=.*/m',
+                    "open_basedir={$newBasedir}",
+                    $content
+                );
+                if ($newContent !== $content) {
+                    @file_put_contents($userIniPath, $newContent);
+                    return "Fixed open_basedir in .user.ini";
+                }
+            }
+        }
+
+        return "open_basedir restriction detected: {$openBasedir}. You may need to update your hosting panel to allow access to the full project directory.";
     }
 
     /**

@@ -47,8 +47,35 @@
     </div>
 
     <div style="margin-top: 1rem; padding: 0.75rem 1rem; background: #422006; border: 1px solid #713f12; border-radius: 0.5rem; font-size: 0.8rem; color: #fbbf24;">
-        <strong>Next steps:</strong> Build frontend assets with <code style="background: #0a0a0a; padding: 0.125rem 0.375rem; border-radius: 0.25rem;">npm install && npm run build</code>, then configure Redis, Reverb, and Horizon for full functionality. All other settings are in the Admin Panel.
+        <strong>Next steps:</strong> Start background services for full functionality. All other settings are in the Admin Panel.
     </div>
+
+    @if(isset($environment))
+        <div style="margin-top: 1rem; padding: 1rem; background: #0a0a0a; border-radius: 0.5rem; font-size: 0.8rem;">
+            <div style="color: #737373; margin-bottom: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
+                Background Services (SSH)
+            </div>
+            <div style="color: #a3a3a3; margin-bottom: 0.5rem;">
+                HubTube needs <strong style="color: #fff;">Horizon</strong> (queue worker) and <strong style="color: #fff;">Reverb</strong> (WebSockets) running. Install Supervisor:
+            </div>
+            <pre style="background: #171717; padding: 0.75rem; border-radius: 0.375rem; overflow-x: auto; color: #4ade80; font-size: 0.75rem; line-height: 1.6; margin-bottom: 0.5rem;">sudo apt-get install -y supervisor
+
+# Create /etc/supervisor/conf.d/hubtube-horizon.conf
+# Create /etc/supervisor/conf.d/hubtube-reverb.conf
+# See README.md for full config
+
+sudo supervisorctl reread
+sudo supervisorctl update</pre>
+            @if($environment['panel'] !== 'none')
+                <div style="color: #737373; margin-top: 0.5rem;">
+                    Detected: <strong style="color: #fbbf24;">{{ ucfirst($environment['panel']) }}</strong>
+                    @if($environment['open_basedir'])
+                        — open_basedir is active, ensure it includes the full project directory.
+                    @endif
+                </div>
+            @endif
+        </div>
+    @endif
 
     <div class="complete-links" style="margin-top: 1.5rem;">
         <a href="{{ url('/') }}" class="btn btn-secondary">Visit Site →</a>

@@ -241,6 +241,309 @@ sudo systemctl start hubtube-horizon
 
 Repeat for Reverb if you use live streaming features.
 
+---
+
+## Hosting Panel Setup (aaPanel / cPanel / Webmin)
+
+If you're using a hosting control panel instead of a bare-metal server, follow these panel-specific guides. The web installer handles database setup, admin account creation, and seeding — you just need to get the files in place and configure the web server.
+
+### Quick Setup Script
+
+After cloning, run the setup script — it auto-detects your panel, fixes permissions, detects Redis passwords, publishes assets, and tells you exactly what to do next:
+
+```bash
+cd /path/to/hubtube
+chmod +x setup.sh
+bash setup.sh
+```
+
+---
+
+### aaPanel Setup
+
+#### 1. Install Required Software (App Store)
+
+| Software | Notes |
+|----------|-------|
+| **PHP 8.4** | Install extensions: `redis`, `fileinfo`, `bcmath`, `intl`, `opcache`, `exif` |
+| **Nginx** | Should already be installed |
+| **MySQL/MariaDB** | Should already be installed |
+| **Redis** | Install from App Store |
+
+**PHP Disabled Functions** — Remove these from PHP 8.4 settings → Disabled Functions:
+`putenv`, `symlink`, `proc_open`, `proc_get_status`, `exec`, `shell_exec`, `pcntl_signal`, `pcntl_alarm`, `pcntl_async_signals`
+
+**PHP Settings** (PHP 8.4 → Configuration):
+```ini
+upload_max_filesize = 2G
+post_max_size = 2G
+memory_limit = 512M
+max_execution_time = 600
+```
+
+#### 2. Install CLI Tools (SSH)
+
+```bash
+# Node.js 20
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Composer
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+
+# FFmpeg
+sudo apt-get install -y ffmpeg
+```
+
+#### 3. Clone & Build
+
+```bash
+cd /www/wwwroot
+sudo git clone https://github.com/wyatts97/Hubtube.git hubtube
+cd hubtube
+bash setup.sh   # Auto-configures everything
+```
+
+#### 4. Create Site in aaPanel
+
+1. **Website** → **Add Site**
+2. **Domain**: `yourdomain.com` + `www.yourdomain.com`
+3. **Root Directory**: `/www/wwwroot/hubtube/public` ← **must point to /public**
+4. **PHP Version**: 8.4
+5. **Database**: Don't create (the web installer handles this)
+
+#### 5. Configure Nginx
+
+Go to **Website** → click your site → **Conf** tab. Replace with:
+
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com www.yourdomain.com;
+    root /www/wwwroot/hubtube/public;
+    index index.php;
+
+    client_max_body_size 2G;
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        try_files $uri =404;
+        fastcgi_pass unix:/tmp/php-cgi-84.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_read_timeout 600;
+    }
+
+    # Static files — MUST include try_files fallback so Filament/Livewire
+    # virtual asset routes (e.g. /livewire/livewire.js) reach PHP
+    location ~ .*\.(gif|jpg|jpeg|png|bmp|swf|webp|svg|ico)$ {
+        expires 30d;
+        access_log off;
+        try_files $uri /index.php?$query_string;
+    }
+
+    location ~ .*\.(js|css)$ {
+        expires 12h;
+        access_log off;
+        try_files $uri /index.php?$query_string;
+    }
+
+    location ~ /\.(?!well-known).* { deny all; }
+}
+```
+
+> **Check your PHP socket**: `ls /tmp/php-cgi-*.sock` — adjust `fastcgi_pass` if different.
+>
+> **Critical**: If you add static file caching blocks for `.js`/`.css`, you **must** include `try_files $uri /index.php?$query_string;` — otherwise Filament and Livewire asset routes will 404 and the admin panel will be blank.
+
+#### 6. Fix open_basedir
+
+aaPanel restricts PHP to only the `public/` directory. Fix it:
+
+1. **Website** → click site → **Site Directory** → uncheck **open_basedir**, OR:
+2. SSH: `sudo chattr -i /www/wwwroot/hubtube/public/.user.ini` then edit it to set `open_basedir=/www/wwwroot/hubtube/:/tmp/`
+
+#### 7. SSL Certificate
+
+1. **Website** → click site → **SSL** → **Let's Encrypt** → Apply
+2. Enable **Force HTTPS**
+3. Update `.env`: `APP_URL=https://yourdomain.com`
+
+#### 8. Run Web Installer
+
+Visit `https://yourdomain.com/install` and follow the wizard.
+
+---
+
+### cPanel Setup
+
+#### 1. Create Site in cPanel
+
+1. Log in to cPanel
+2. **Domains** → Add your domain
+3. **Document Root**: Set to `public_html/hubtube/public`
+
+#### 2. Create Database
+
+1. **MySQL Databases** → Create database `hubtube`
+2. Create user, grant all privileges
+
+#### 3. PHP Configuration
+
+1. **MultiPHP Manager** → Set domain to PHP 8.2+ (8.4 if available)
+2. **MultiPHP INI Editor** → Set `upload_max_filesize=2G`, `post_max_size=2G`, `memory_limit=512M`
+3. **Select PHP Version** → Enable extensions: `redis`, `fileinfo`, `bcmath`, `intl`, `gd`
+
+#### 4. Clone & Build (SSH / Terminal)
+
+```bash
+cd ~/public_html
+git clone https://github.com/wyatts97/Hubtube.git hubtube
+cd hubtube
+bash setup.sh
+```
+
+#### 5. Configure .htaccess
+
+cPanel uses Apache. Laravel's `public/.htaccess` handles routing automatically. If routes return 404, ensure `mod_rewrite` is enabled.
+
+#### 6. Run Web Installer
+
+Visit `https://yourdomain.com/install`.
+
+---
+
+### Webmin / Virtualmin Setup
+
+#### 1. Install Dependencies
+
+```bash
+# Use prerequisites.sh for system packages
+chmod +x prerequisites.sh
+sudo ./prerequisites.sh
+
+# Or install manually
+sudo apt install -y php8.4 php8.4-{fpm,mysql,mbstring,curl,gd,xml,bcmath,redis,zip,intl} \
+    nginx mariadb-server redis-server ffmpeg nodejs npm
+```
+
+#### 2. Clone & Build
+
+```bash
+cd /var/www
+sudo git clone https://github.com/wyatts97/Hubtube.git hubtube
+cd hubtube
+sudo bash setup.sh
+```
+
+#### 3. Create Virtual Server
+
+1. **Virtualmin** → **Create Virtual Server**
+2. Set document root to `/var/www/hubtube/public`
+3. Configure Nginx or Apache with Laravel rewrite rules (see Nginx config above)
+
+#### 4. Run Web Installer
+
+Visit `https://yourdomain.com/install`.
+
+---
+
+### Background Services (All Panels)
+
+After installation, HubTube needs **Horizon** (queue worker) and **Reverb** (WebSockets) running permanently via Supervisor:
+
+```bash
+sudo apt-get install -y supervisor
+```
+
+Create `/etc/supervisor/conf.d/hubtube-horizon.conf`:
+```ini
+[program:hubtube-horizon]
+process_name=%(program_name)s
+command=php /path/to/hubtube/artisan horizon
+autostart=true
+autorestart=true
+user=www
+redirect_stderr=true
+stdout_logfile=/path/to/hubtube/storage/logs/horizon.log
+stopwaitsecs=3600
+```
+
+Create `/etc/supervisor/conf.d/hubtube-reverb.conf`:
+```ini
+[program:hubtube-reverb]
+process_name=%(program_name)s
+command=php /path/to/hubtube/artisan reverb:start --host=0.0.0.0 --port=8080
+autostart=true
+autorestart=true
+user=www
+redirect_stderr=true
+stdout_logfile=/path/to/hubtube/storage/logs/reverb.log
+stopwaitsecs=3600
+```
+
+> Replace `/path/to/hubtube` with your actual path and `user=www` with your web server user (`www` for aaPanel, `www-data` for bare metal, `nobody` for cPanel).
+
+```bash
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl status   # Should show RUNNING
+```
+
+---
+
+### Panel-Specific Troubleshooting
+
+#### aaPanel: Blank admin panel / missing CSS / livewire.js 404
+**Most common cause**: Nginx static file caching blocks intercept `.js`/`.css` requests before they reach PHP. Filament and Livewire serve assets via Laravel routes, not physical files.
+
+Fix: Add `try_files` fallback to your static file blocks in Nginx:
+```nginx
+location ~ .*\.(js|css)$ {
+    expires 12h;
+    access_log off;
+    try_files $uri /index.php?$query_string;
+}
+```
+
+If that doesn't help, also try:
+```bash
+cd /www/wwwroot/hubtube
+php artisan filament:assets
+php artisan icons:cache
+sudo chown -R www:www public/vendor/
+```
+
+#### aaPanel: `open_basedir restriction in effect`
+```bash
+sudo chattr -i /www/wwwroot/hubtube/public/.user.ini
+# Edit .user.ini: set open_basedir=/www/wwwroot/hubtube/:/tmp/
+```
+
+#### aaPanel: Redis `NOAUTH` error
+The setup script auto-detects Redis passwords. If it missed it:
+```bash
+grep requirepass /www/server/redis/redis.conf
+# Add the password to .env: REDIS_PASSWORD=<password>
+```
+
+#### cPanel: Routes return 404
+Ensure `mod_rewrite` is enabled and `public/.htaccess` exists with Laravel rewrite rules.
+
+#### All panels: `Table already exists` on install
+The web installer now auto-retries with `migrate:fresh` if tables exist. If it still fails:
+```bash
+php artisan migrate:fresh --force
+```
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |

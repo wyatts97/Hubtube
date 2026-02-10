@@ -60,7 +60,7 @@ class SeoService
     /**
      * Build canonical URL for the current page.
      */
-    public function canonical(string $path = null): ?string
+    public function canonical(?string $path = null): ?string
     {
         if (!$this->s('seo_canonical_enabled', true)) {
             return null;
@@ -356,7 +356,7 @@ class SeoService
     /**
      * Build base meta array shared by all pages.
      */
-    protected function baseMeta(string $title, string $description, string $canonicalPath = null): array
+    protected function baseMeta(string $title, string $description, ?string $canonicalPath = null): array
     {
         $canonical = $this->canonical($canonicalPath);
 

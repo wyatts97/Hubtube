@@ -102,7 +102,15 @@
                 {{ $requirements['redis_available'] ? '✓' : '!' }}
             </span>
             <span class="check-label">Redis</span>
-            <span class="check-value">{{ $requirements['redis_available'] ? 'Connected' : 'Not reachable (needed for queues, cache, Horizon)' }}</span>
+            <span class="check-value">
+                @if($requirements['redis_available'])
+                    Connected
+                @elseif($requirements['redis_needs_auth'] ?? false)
+                    Requires authentication — add REDIS_PASSWORD to .env
+                @else
+                    Not reachable (needed for queues, cache, Horizon)
+                @endif
+            </span>
         </li>
     </ul>
 

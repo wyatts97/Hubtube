@@ -21,3 +21,5 @@ yarn-error.log
 node_modules
 /scraper/.cache
 wedgietu_wp*
+composer.lock
+package-lock.json
