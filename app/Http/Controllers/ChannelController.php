@@ -73,17 +73,28 @@ class ChannelController extends Controller
         ]);
     }
 
-    public function playlists(User $user): Response
+    public function playlists(User $user, Request $request): Response
     {
+        $tab = $request->query('tab', 'user');
+
         $playlists = $user->playlists()
             ->public()
             ->withCount('videos')
             ->latest()
-            ->paginate(24);
+            ->paginate(24, ['*'], 'page');
+
+        $favoritePlaylists = $user->favoritePlaylists()
+            ->public()
+            ->with('user')
+            ->withCount('videos')
+            ->latest('playlist_favorites.created_at')
+            ->paginate(24, ['*'], 'fav_page');
 
         return Inertia::render('Channel/Playlists', [
             'channel' => $user->load('channel'),
             'playlists' => $playlists,
+            'favoritePlaylists' => $favoritePlaylists,
+            'activeTab' => $tab,
         ]);
     }
 

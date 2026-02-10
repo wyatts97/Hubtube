@@ -40,7 +40,7 @@
         @if($errorMessage)
             <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
                 <div class="flex items-start gap-3">
-                    <x-heroicon-m-exclamation-circle class="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" />
+                    <x-heroicon-m-exclamation-circle class="w-6 h-6 text-red-500 shrink-0 mt-0.5" />
                     <div>
                         <p class="font-medium text-red-700 dark:text-red-400">{{ $errorMessage }}</p>
                         @if($errorSuggestion ?? false)

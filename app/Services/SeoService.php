@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Playlist;
 use App\Models\Setting;
 use App\Models\Video;
 use App\Models\User;
@@ -258,6 +259,86 @@ class SeoService
             $schema['description'] = $this->truncate($user->bio, 300);
         }
         $seo['schema'][] = $schema;
+
+        return $seo;
+    }
+
+    /**
+     * Generate SEO data for a playlist page.
+     */
+    public function forPlaylist(Playlist $playlist): array
+    {
+        $videoCount = $playlist->videos_count ?? $playlist->videos()->count();
+        $vars = [
+            'playlist_title' => $playlist->title,
+            'site_name' => $this->siteName(),
+            'video_count' => number_format($videoCount),
+            'creator' => $playlist->user?->username ?? 'Unknown',
+        ];
+
+        $title = $this->template('{playlist_title} - Playlist | {site_name}', $vars);
+
+        $description = $playlist->description;
+        if (empty($description)) {
+            $description = $this->template('Watch {video_count} videos in the "{playlist_title}" playlist by {creator} on {site_name}.', $vars);
+        }
+        $metaDescription = $this->truncate($description);
+
+        $canonicalPath = "/playlist/{$playlist->slug}";
+        $seo = $this->baseMeta($title, $metaDescription, $canonicalPath);
+
+        $seo['og']['type'] = 'website';
+
+        // Use first video's thumbnail as OG image if available
+        $firstVideo = $playlist->relationLoaded('videos') && $playlist->videos->isNotEmpty()
+            ? $playlist->videos->first()
+            : $playlist->videos()->first();
+        if ($firstVideo) {
+            $seo['og']['image'] = $firstVideo->thumbnail_url;
+            $seo['twitter']['image'] = $firstVideo->thumbnail_url;
+        }
+
+        $seo['twitter']['card'] = 'summary_large_image';
+
+        // Robots: noindex private playlists
+        if ($playlist->privacy !== 'public') {
+            $seo['robots'] = 'noindex, nofollow';
+        }
+
+        // JSON-LD ItemList schema
+        if ($this->s('seo_schema_enabled', true)) {
+            $schema = [
+                '@context' => 'https://schema.org',
+                '@type' => 'ItemList',
+                'name' => $playlist->title,
+                'description' => $this->truncate($description, 300),
+                'url' => url($canonicalPath),
+                'numberOfItems' => $videoCount,
+            ];
+
+            if ($playlist->user) {
+                $schema['author'] = [
+                    '@type' => 'Person',
+                    'name' => $playlist->user->username,
+                    'url' => url("/channel/{$playlist->user->username}"),
+                ];
+            }
+
+            // Add individual video items to the list
+            $videos = $playlist->relationLoaded('videos') ? $playlist->videos : $playlist->videos()->limit(50)->get();
+            if ($videos->isNotEmpty()) {
+                $schema['itemListElement'] = $videos->map(function ($video, $index) {
+                    return [
+                        '@type' => 'ListItem',
+                        'position' => $index + 1,
+                        'url' => url("/{$video->slug}"),
+                        'name' => $video->title,
+                    ];
+                })->toArray();
+            }
+
+            $seo['schema'][] = $schema;
+        }
 
         return $seo;
     }

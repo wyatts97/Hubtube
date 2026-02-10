@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Playlist;
 use App\Models\Video;
+use App\Services\SeoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,10 @@ use Inertia\Response;
 
 class PlaylistController extends Controller
 {
+    public function __construct(
+        protected SeoService $seoService,
+    ) {}
+
     public function index(Request $request): Response
     {
         $playlists = $request->user()
@@ -33,9 +38,12 @@ class PlaylistController extends Controller
         }
 
         $playlist->load(['user', 'videos.user']);
+        $playlist->loadCount(['videos', 'favoritedBy']);
 
         return Inertia::render('Playlists/Show', [
             'playlist' => $playlist,
+            'isFavorited' => auth()->check() ? $playlist->isFavoritedBy(auth()->user()) : false,
+            'seo' => $this->seoService->forPlaylist($playlist),
         ]);
     }
 
@@ -115,6 +123,32 @@ class PlaylistController extends Controller
         $playlist->removeVideo($video);
 
         return response()->json(['success' => true]);
+    }
+
+    public function toggleFavorite(Request $request, Playlist $playlist): JsonResponse
+    {
+        if (!$this->canView($playlist)) {
+            return response()->json(['error' => 'Playlist not accessible'], 403);
+        }
+
+        // Don't allow favoriting own playlists
+        if ($playlist->user_id === $request->user()->id) {
+            return response()->json(['error' => 'Cannot favorite your own playlist'], 422);
+        }
+
+        $user = $request->user();
+        $isFavorited = $playlist->isFavoritedBy($user);
+
+        if ($isFavorited) {
+            $user->favoritePlaylists()->detach($playlist->id);
+        } else {
+            $user->favoritePlaylists()->attach($playlist->id);
+        }
+
+        return response()->json([
+            'isFavorited' => !$isFavorited,
+            'favoritesCount' => $playlist->favoritedBy()->count(),
+        ]);
     }
 
     private function canView(Playlist $playlist): bool

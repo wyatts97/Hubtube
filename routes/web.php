@@ -146,6 +146,7 @@ Route::middleware('age.verified')->group(function () {
         Route::delete('/playlists/{playlist}', [PlaylistController::class, 'destroy'])->name('playlists.destroy');
         Route::post('/playlists/{playlist}/videos', [PlaylistController::class, 'addVideo'])->name('playlists.addVideo');
         Route::delete('/playlists/{playlist}/videos', [PlaylistController::class, 'removeVideo'])->name('playlists.removeVideo');
+        Route::post('/playlists/{playlist}/favorite', [PlaylistController::class, 'toggleFavorite'])->name('playlists.toggleFavorite');
 
         Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
         Route::delete('/history', [HistoryController::class, 'destroy'])->name('history.destroy');

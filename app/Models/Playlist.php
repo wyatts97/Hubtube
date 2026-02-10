@@ -42,6 +42,18 @@ class Playlist extends Model
             ->orderBy('playlist_videos.position');
     }
 
+    public function favoritedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'playlist_favorites')
+            ->withTimestamps();
+    }
+
+    public function isFavoritedBy(?User $user): bool
+    {
+        if (!$user) return false;
+        return $this->favoritedBy()->where('user_id', $user->id)->exists();
+    }
+
     public function scopePublic($query)
     {
         return $query->where('privacy', 'public');

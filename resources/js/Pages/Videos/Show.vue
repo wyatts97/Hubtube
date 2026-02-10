@@ -367,7 +367,7 @@ const formattedViews = computed(() => {
                 <div class="mt-4">
                     <div class="flex items-start justify-between gap-2 sm:gap-4">
                         <h1 class="text-base sm:text-xl font-bold flex-1 line-clamp-2 sm:line-clamp-none" style="color: var(--color-text-primary);">{{ video.title }}</h1>
-                        <span class="text-xs sm:text-sm font-medium whitespace-nowrap flex items-center gap-1 sm:gap-1.5 flex-shrink-0" style="color: var(--color-text-secondary);"><Eye class="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {{ formattedViews }} views</span>
+                        <span class="text-xs sm:text-sm font-medium whitespace-nowrap flex items-center gap-1 sm:gap-1.5 shrink-0" style="color: var(--color-text-secondary);"><Eye class="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {{ formattedViews }} views</span>
                     </div>
                     
                     <!-- Tags - Horizontally Scrollable -->
@@ -389,7 +389,7 @@ const formattedViews = computed(() => {
                         <!-- Channel Info -->
                         <div class="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
                             <Link :href="`/channel/${video.user.username}`" class="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                                <div class="w-9 h-9 sm:w-10 sm:h-10 avatar flex-shrink-0">
+                                <div class="w-9 h-9 sm:w-10 sm:h-10 avatar shrink-0">
                                     <img v-if="video.user.avatar" :src="video.user.avatar" :alt="video.user.username" class="w-full h-full object-cover" />
                                     <div v-else class="w-full h-full flex items-center justify-center text-white font-medium" style="background-color: var(--color-accent);">
                                         {{ video.user.username.charAt(0).toUpperCase() }}
@@ -417,7 +417,7 @@ const formattedViews = computed(() => {
 
                         <!-- Actions -->
                         <div class="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto overflow-x-auto scrollbar-hide -mx-1 px-1">
-                            <div class="flex items-center rounded-full flex-shrink-0" style="background-color: var(--color-bg-card);">
+                            <div class="flex items-center rounded-full shrink-0" style="background-color: var(--color-bg-card);">
                                 <button
                                     @click="handleLike"
                                     class="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-l-full hover:opacity-80"
@@ -433,16 +433,17 @@ const formattedViews = computed(() => {
                                     :style="{ color: disliked ? '#ef4444' : 'var(--color-text-secondary)' }"
                                 >
                                     <ThumbsDown class="w-4 h-4 sm:w-5 sm:h-5" :fill="disliked ? 'currentColor' : 'none'" />
+                                    <span class="text-sm">{{ dislikesCount }}</span>
                                 </button>
                             </div>
 
-                            <button @click="handleShare" class="btn btn-secondary gap-1.5 sm:gap-2 flex-shrink-0 text-sm">
+                            <button @click="handleShare" class="btn btn-secondary gap-1.5 sm:gap-2 shrink-0 text-sm">
                                 <Share2 class="w-4 h-4 sm:w-5 sm:h-5" />
                                 <span class="hidden sm:inline">Share</span>
                             </button>
 
                             <!-- Save to Playlist -->
-                            <div class="relative playlist-menu-area flex-shrink-0">
+                            <div class="relative playlist-menu-area shrink-0">
                                 <button @click.stop="user ? (showPlaylistMenu = !showPlaylistMenu) : router.visit('/login')" class="btn btn-secondary gap-1.5 sm:gap-2 text-sm">
                                     <ListVideo class="w-4 h-4 sm:w-5 sm:h-5" />
                                     <span class="hidden sm:inline">Save</span>
@@ -463,7 +464,7 @@ const formattedViews = computed(() => {
                                             style="color: var(--color-text-secondary);"
                                         >
                                             <div
-                                                class="w-5 h-5 rounded flex items-center justify-center flex-shrink-0"
+                                                class="w-5 h-5 rounded flex items-center justify-center shrink-0"
                                                 :style="pl.has_video
                                                     ? { backgroundColor: 'var(--color-accent)', color: 'white' }
                                                     : { border: '2px solid var(--color-border)' }"
@@ -471,8 +472,8 @@ const formattedViews = computed(() => {
                                                 <Check v-if="pl.has_video" class="w-3.5 h-3.5" />
                                             </div>
                                             <span class="truncate flex-1">{{ pl.title }}</span>
-                                            <Loader2 v-if="savingPlaylist === pl.id" class="w-4 h-4 animate-spin flex-shrink-0" />
-                                            <span v-else class="text-xs flex-shrink-0" style="color: var(--color-text-muted);">{{ pl.videos_count }} videos</span>
+                                            <Loader2 v-if="savingPlaylist === pl.id" class="w-4 h-4 animate-spin shrink-0" />
+                                            <span v-else class="text-xs shrink-0" style="color: var(--color-text-muted);">{{ pl.videos_count }} videos</span>
                                         </button>
                                         <div v-if="!playlists.length" class="px-3 py-4 text-center text-sm" style="color: var(--color-text-muted);">No playlists yet</div>
                                     </div>
@@ -498,7 +499,7 @@ const formattedViews = computed(() => {
                                 </div>
                             </div>
 
-                            <button @click="user ? (showReportModal = true) : router.visit('/login')" class="btn btn-secondary gap-1.5 sm:gap-2 flex-shrink-0 text-sm">
+                            <button @click="user ? (showReportModal = true) : router.visit('/login')" class="btn btn-secondary gap-1.5 sm:gap-2 shrink-0 text-sm">
                                 <Flag class="w-4 h-4 sm:w-5 sm:h-5" />
                                 <span class="hidden sm:inline">Report</span>
                             </button>
@@ -520,7 +521,7 @@ const formattedViews = computed(() => {
             </div>
 
             <!-- Sidebar -->
-            <div class="w-full lg:w-96 lg:flex-shrink-0">
+            <div class="w-full lg:w-96 lg:shrink-0">
                 <!-- Ad Space - Only show if enabled and has code -->
                 <div v-if="sidebarAd?.enabled && sidebarAd?.code" class="mb-6">
                     <div class="ad-container flex items-center justify-center">

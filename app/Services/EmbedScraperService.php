@@ -2,10 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\Channel;
 use App\Models\Setting;
+use App\Models\User;
 use App\Models\Video;
 use App\Services\Scrapers\EpornerApiAdapter;
 use App\Services\Scrapers\RedtubeApiAdapter;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -23,6 +26,20 @@ class EmbedScraperService
      * Sites that require the Node.js scraper (HTML scraping).
      */
     public const SCRAPER_SITES = ['xvideos', 'pornhub', 'xhamster', 'xnxx', 'youporn'];
+
+    /**
+     * Mapping of source site keys to display names and logo filenames.
+     */
+    protected const SITE_META = [
+        'eporner'    => ['name' => 'Eporner',  'logo' => 'eporner.svg'],
+        'redtube'    => ['name' => 'Redtube',  'logo' => 'redtube.svg'],
+        'redtube_api'=> ['name' => 'Redtube',  'logo' => 'redtube.svg'],
+        'xvideos'    => ['name' => 'Xvideos',  'logo' => 'xvideos.svg'],
+        'pornhub'    => ['name' => 'Pornhub',  'logo' => 'pornhub.svg'],
+        'xhamster'   => ['name' => 'xHamster', 'logo' => 'xhamster.svg'],
+        'xnxx'       => ['name' => 'XNXX',     'logo' => 'xnxx.svg'],
+        'youporn'    => ['name' => 'YouPorn',  'logo' => 'youporn.svg'],
+    ];
 
     public function __construct()
     {
@@ -244,6 +261,61 @@ class EmbedScraperService
             ->exists();
     }
 
+    /**
+     * Get or create a dedicated user account for a source site.
+     * Creates a pro + verified user with the site's logo as avatar.
+     */
+    protected function getOrCreateSiteUser(string $sourceSite): User
+    {
+        $siteKey = strtolower(str_replace(' ', '', $sourceSite));
+        $meta = self::SITE_META[$siteKey] ?? null;
+        $displayName = $meta['name'] ?? ucfirst($siteKey);
+        $logo = $meta['logo'] ?? null;
+
+        // Username: lowercase, no spaces (e.g. "eporner", "redtube", "xvideos")
+        $username = $siteKey;
+        // Normalize redtube_api to redtube
+        if ($username === 'redtube_api') {
+            $username = 'redtube';
+        }
+
+        $user = User::where('username', $username)->first();
+
+        if ($user) {
+            return $user;
+        }
+
+        // Create the user
+        $user = User::create([
+            'username' => $username,
+            'email' => "{$username}@import.local",
+            'password' => Hash::make(Str::random(32)),
+            'avatar' => $logo ? "/images/site-logos/{$logo}" : null,
+            'bio' => "Official {$displayName} video channel. Videos imported from {$displayName}.",
+            'email_verified_at' => now(),
+        ]);
+
+        // Set privileged fields via forceFill (not mass-assignable)
+        $user->forceFill([
+            'is_pro' => true,
+            'is_verified' => true,
+        ])->save();
+
+        // Create a channel for the user
+        Channel::firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'name' => $displayName,
+                'slug' => $username,
+                'description' => "Official {$displayName} video channel.",
+            ]
+        );
+
+        Log::info("Created site user '{$username}' (ID: {$user->id}) for source site '{$sourceSite}'");
+
+        return $user;
+    }
+
     public function importVideo(array $videoData): ?Video
     {
         // Check if already imported in the unified videos table
@@ -263,11 +335,11 @@ class EmbedScraperService
             $slug = $baseSlug . '-' . $counter++;
         }
 
-        $defaultUserId = Setting::get('import_user_id', 1);
+        $siteUser = $this->getOrCreateSiteUser($videoData['sourceSite']);
 
         $video = Video::create([
             'uuid' => (string) Str::uuid(),
-            'user_id' => $defaultUserId,
+            'user_id' => $siteUser->id,
             'title' => $title,
             'slug' => $slug,
             'description' => $videoData['description'] ?? null,

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="20" fill="#1a1a2e"/>
+  <text x="100" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="42" fill="#e94560">EP</text>
+  <text x="100" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#ffffff">EPORNER</text>
+</svg>

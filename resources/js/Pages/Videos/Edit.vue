@@ -169,7 +169,7 @@ const statusColors = {
                 <!-- Moderation Notice -->
                 <div v-if="requiresModeration && (videoStatus === 'pending' || videoStatus === 'processing')" class="card p-4">
                     <div class="flex items-center gap-3">
-                        <ShieldCheck class="w-5 h-5 flex-shrink-0" style="color: var(--color-text-secondary);" />
+                        <ShieldCheck class="w-5 h-5 shrink-0" style="color: var(--color-text-secondary);" />
                         <p class="text-sm" style="color: var(--color-text-secondary);">
                             Your video will be posted after moderation and approval.
                         </p>
@@ -179,7 +179,7 @@ const statusColors = {
                 <!-- Video Preview -->
                 <div class="card p-4">
                     <div class="flex flex-col sm:flex-row items-start gap-4">
-                        <div class="w-full sm:w-64 aspect-video rounded-lg overflow-hidden flex-shrink-0" style="background-color: var(--color-bg-secondary);">
+                        <div class="w-full sm:w-64 aspect-video rounded-lg overflow-hidden shrink-0" style="background-color: var(--color-bg-secondary);">
                             <img 
                                 v-if="thumbnailPreview" 
                                 :src="thumbnailPreview" 
@@ -208,15 +208,6 @@ const statusColors = {
                             <span :class="['mt-2 inline-block px-3 py-1 rounded-full text-xs font-medium', statusColors[videoStatus]]">
                                 {{ videoStatus.charAt(0).toUpperCase() + videoStatus.slice(1) }}
                             </span>
-                            <div v-if="video.video_url" class="mt-2">
-                                <a 
-                                    :href="video.video_url" 
-                                    target="_blank"
-                                    class="text-sm hover:opacity-80" style="color: var(--color-accent);"
-                                >
-                                    View Original File
-                                </a>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -261,7 +252,7 @@ const statusColors = {
                     <div class="pt-4" style="border-top: 1px solid var(--color-border);">
                         <p class="text-sm mb-3" style="color: var(--color-text-secondary);">Or upload your own image:</p>
                         <label class="flex items-center gap-4 cursor-pointer group">
-                            <div class="w-32 aspect-video rounded-lg overflow-hidden flex-shrink-0 group-hover:opacity-80 transition-opacity" style="background-color: var(--color-bg-secondary);">
+                            <div class="w-32 aspect-video rounded-lg overflow-hidden shrink-0 group-hover:opacity-80 transition-opacity" style="background-color: var(--color-bg-secondary);">
                                 <img 
                                     v-if="customThumbnailPreview" 
                                     :src="customThumbnailPreview" 

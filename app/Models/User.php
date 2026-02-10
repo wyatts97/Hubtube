@@ -6,6 +6,7 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -97,6 +98,12 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     public function playlists(): HasMany
     {
         return $this->hasMany(Playlist::class);
+    }
+
+    public function favoritePlaylists(): BelongsToMany
+    {
+        return $this->belongsToMany(Playlist::class, 'playlist_favorites')
+            ->withTimestamps();
     }
 
     public function watchHistory(): HasMany
