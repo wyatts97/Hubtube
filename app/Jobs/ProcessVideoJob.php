@@ -208,17 +208,17 @@ class ProcessVideoJob implements ShouldQueue
                 $enabledResolutions = json_decode($enabledResolutions, true) ?? ['360p', '480p', '720p'];
             }
             
+            // Build list of qualities to transcode
+            $targetQualities = [];
             foreach ($allQualities as $quality => $settings) {
-                // Only transcode if: resolution is enabled AND source video is large enough
                 if (in_array($quality, $enabledResolutions) && $videoInfo['height'] >= $settings['height']) {
-                    $this->transcodeToQuality($inputPath, $outputDir, $quality, $settings);
-                    $qualities[] = $quality;
+                    $targetQualities[$quality] = $settings;
                 }
             }
 
-            // Generate HLS playlist if enabled and we have qualities
-            if (!empty($qualities) && Setting::get('generate_hls', true)) {
-                $this->generateHlsPlaylist($outputDir, $qualities);
+            if (!empty($targetQualities)) {
+                $generateHls = (bool) Setting::get('generate_hls', true);
+                $qualities = $this->transcodeAllQualities($inputPath, $outputDir, $targetQualities, $generateHls);
             }
         }
         
@@ -427,11 +427,132 @@ class ProcessVideoJob implements ShouldQueue
         ]);
     }
 
-    protected function transcodeToQuality(string $inputPath, string $outputDir, string $quality, array $settings): void
+    /**
+     * Single-pass multi-output transcoding.
+     * Reads the input once and outputs all quality levels simultaneously.
+     * Uses -force_key_frames for HLS-compatible keyframe alignment.
+     */
+    protected function transcodeAllQualities(string $inputPath, string $outputDir, array $targetQualities, bool $generateHls): array
     {
         $ffmpeg = $this->getFFmpegPath();
-        $threads = (int) Setting::get('ffmpeg_threads', 4);
+        // Cap threads to leave headroom for web server + Redis + queue
+        $threads = min((int) Setting::get('ffmpeg_threads', 4), 4);
         $preset = $this->getQualityPreset();
+        $watermarkInput = $this->getWatermarkInputs();
+        $hasWatermark = !empty($watermarkInput);
+        $qualities = [];
+
+        // Check if all outputs already exist (job retry)
+        $allExist = true;
+        foreach ($targetQualities as $quality => $settings) {
+            $output = "{$outputDir}/{$quality}.mp4";
+            if (!file_exists($output) || filesize($output) < 10240) {
+                $allExist = false;
+                break;
+            }
+        }
+        if ($allExist) {
+            Log::info('All qualities already transcoded, skipping', ['qualities' => array_keys($targetQualities)]);
+            $qualities = array_keys($targetQualities);
+            if ($generateHls) {
+                $this->generateHlsPlaylist($outputDir, $qualities);
+            }
+            return $qualities;
+        }
+
+        // Build single FFmpeg command with multiple outputs
+        // This reads the input ONCE and encodes all qualities simultaneously
+        $cmd = sprintf('%s -y -i %s', $ffmpeg, escapeshellarg($inputPath));
+        
+        if ($hasWatermark) {
+            $cmd .= ' ' . $watermarkInput;
+        }
+
+        $outputArgs = [];
+        foreach ($targetQualities as $quality => $settings) {
+            $output = "{$outputDir}/{$quality}.mp4";
+            
+            if ($hasWatermark) {
+                $filterComplex = $this->buildWatermarkFilterComplex($settings['width'], $settings['height']);
+                // For multi-output with watermark, fall back to sequential
+                // (filter_complex can't easily split to multiple watermarked outputs)
+                $this->transcodeToQuality($inputPath, $outputDir, $quality, $settings, $threads, $preset);
+                if (file_exists($output) && filesize($output) > 10240) {
+                    $qualities[] = $quality;
+                }
+                continue;
+            }
+
+            // Force keyframes every 2 seconds for clean HLS segmentation
+            $keyframeExpr = $generateHls ? ',setpts=PTS-STARTPTS' : '';
+            $forceKeyframes = $generateHls ? sprintf(' -force_key_frames %s', escapeshellarg('expr:gte(t,n_forced*2)')) : '';
+            
+            $outputArgs[] = sprintf(
+                '-vf %s -c:v libx264 -preset %s -b:v %s -c:a aac -b:a 128k -threads %d%s -movflags +faststart %s',
+                escapeshellarg("scale=-2:{$settings['height']}"),
+                $preset,
+                $settings['bitrate'],
+                $threads,
+                $forceKeyframes,
+                escapeshellarg($output)
+            );
+        }
+
+        // If watermark was used, qualities were handled individually above
+        if ($hasWatermark) {
+            if ($generateHls && !empty($qualities)) {
+                $this->generateHlsPlaylist($outputDir, $qualities);
+            }
+            return $qualities;
+        }
+
+        if (!empty($outputArgs)) {
+            $cmd .= ' ' . implode(' ', $outputArgs) . ' 2>&1';
+
+            Log::info('Multi-output transcoding', [
+                'video_id' => $this->video->id,
+                'qualities' => array_keys($targetQualities),
+                'threads' => $threads,
+                'preset' => $preset,
+            ]);
+
+            [$exitCode, $result] = $this->runCommand($cmd);
+
+            // Verify each output
+            foreach ($targetQualities as $quality => $settings) {
+                $output = "{$outputDir}/{$quality}.mp4";
+                if (file_exists($output) && filesize($output) > 10240) {
+                    $qualities[] = $quality;
+                } else {
+                    Log::warning('Multi-output: quality file missing or too small, retrying individually', [
+                        'quality' => $quality,
+                        'exit_code' => $exitCode,
+                    ]);
+                    // Fallback: try this quality individually
+                    $this->transcodeToQuality($inputPath, $outputDir, $quality, $settings, $threads, $preset);
+                    if (file_exists($output) && filesize($output) > 10240) {
+                        $qualities[] = $quality;
+                    }
+                }
+            }
+        }
+
+        // Generate HLS from the properly-keyframed MP4s
+        if ($generateHls && !empty($qualities)) {
+            $this->generateHlsPlaylist($outputDir, $qualities);
+        }
+
+        return $qualities;
+    }
+
+    /**
+     * Single-quality transcode fallback (used for watermark mode or retry).
+     */
+    protected function transcodeToQuality(string $inputPath, string $outputDir, string $quality, array $settings, ?int $threads = null, ?string $preset = null): void
+    {
+        $ffmpeg = $this->getFFmpegPath();
+        $threads = $threads ?? min((int) Setting::get('ffmpeg_threads', 4), 4);
+        $preset = $preset ?? $this->getQualityPreset();
         
         $output = "{$outputDir}/{$quality}.mp4";
 
@@ -441,16 +562,14 @@ class ProcessVideoJob implements ShouldQueue
             return;
         }
         
-        // Check if watermark is enabled and valid
         $watermarkInput = $this->getWatermarkInputs();
         $hasWatermark = !empty($watermarkInput);
         
         if ($hasWatermark) {
-            // Use -filter_complex for watermark overlay (multiple inputs)
             $filterComplex = $this->buildWatermarkFilterComplex($settings['width'], $settings['height']);
             
             $cmd = sprintf(
-                '%s -y -i %s %s -filter_complex "%s" -map "[outv]" -map 0:a? -c:v libx264 -preset %s -b:v %s -c:a aac -b:a 128k -threads %d -movflags +faststart %s 2>&1',
+                '%s -y -i %s %s -filter_complex "%s" -map "[outv]" -map 0:a? -c:v libx264 -preset %s -b:v %s -c:a aac -b:a 128k -threads %d -force_key_frames %s -movflags +faststart %s 2>&1',
                 $ffmpeg,
                 escapeshellarg($inputPath),
                 $watermarkInput,
@@ -458,26 +577,26 @@ class ProcessVideoJob implements ShouldQueue
                 $preset,
                 $settings['bitrate'],
                 $threads,
+                escapeshellarg('expr:gte(t,n_forced*2)'),
                 escapeshellarg($output)
             );
         } else {
-            // Scale preserving aspect ratio: fit within target height, auto-calculate width (divisible by 2)
             $cmd = sprintf(
-                '%s -y -i %s -vf "scale=-2:%d" -c:v libx264 -preset %s -b:v %s -c:a aac -b:a 128k -threads %d -movflags +faststart %s 2>&1',
+                '%s -y -i %s -vf %s -c:v libx264 -preset %s -b:v %s -c:a aac -b:a 128k -threads %d -force_key_frames %s -movflags +faststart %s 2>&1',
                 $ffmpeg,
                 escapeshellarg($inputPath),
-                $settings['height'],
+                escapeshellarg("scale=-2:{$settings['height']}"),
                 $preset,
                 $settings['bitrate'],
                 $threads,
+                escapeshellarg('expr:gte(t,n_forced*2)'),
                 escapeshellarg($output)
             );
         }
 
-        Log::info('Transcoding video', ['quality' => $quality, 'command' => $cmd]);
+        Log::info('Transcoding video', ['quality' => $quality]);
         [$exitCode, $result] = $this->runCommand($cmd);
         
-        // Check if output file was created successfully
         if ($exitCode !== 0 || !file_exists($output) || filesize($output) === 0) {
             Log::error('Transcoding failed', [
                 'quality' => $quality,
