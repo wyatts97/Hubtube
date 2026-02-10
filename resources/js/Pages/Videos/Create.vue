@@ -254,7 +254,7 @@ onUnmounted(() => {
                 <div v-else class="card p-4">
                     <div class="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
                         <div class="w-full sm:w-48 aspect-video rounded-lg overflow-hidden flex-shrink-0 relative" style="background-color: var(--color-bg-secondary);">
-                            <video :src="videoPreview" class="w-full h-full object-cover"></video>
+                            <video :src="videoPreview" preload="metadata" class="w-full h-full object-cover"></video>
                             <div v-if="durationFormatted" class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-xs font-medium bg-black/80 text-white">
                                 {{ durationFormatted }}
                             </div>
