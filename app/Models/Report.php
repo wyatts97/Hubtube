@@ -62,7 +62,7 @@ class Report extends Model
         return $query->where('status', self::STATUS_PENDING);
     }
 
-    public function resolve(User $admin, string $notes = null): void
+    public function resolve(User $admin, ?string $notes = null): void
     {
         $this->update([
             'status' => self::STATUS_RESOLVED,
@@ -72,7 +72,7 @@ class Report extends Model
         ]);
     }
 
-    public function dismiss(User $admin, string $notes = null): void
+    public function dismiss(User $admin, ?string $notes = null): void
     {
         $this->update([
             'status' => self::STATUS_DISMISSED,

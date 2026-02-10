@@ -52,7 +52,7 @@ class WithdrawalRequest extends Model
         return $query->where('status', self::STATUS_PENDING);
     }
 
-    public function approve(User $admin, string $transactionId = null): void
+    public function approve(User $admin, ?string $transactionId = null): void
     {
         $this->update([
             'status' => self::STATUS_COMPLETED,
@@ -62,7 +62,7 @@ class WithdrawalRequest extends Model
         ]);
     }
 
-    public function reject(User $admin, string $notes = null): void
+    public function reject(User $admin, ?string $notes = null): void
     {
         $this->update([
             'status' => self::STATUS_REJECTED,
