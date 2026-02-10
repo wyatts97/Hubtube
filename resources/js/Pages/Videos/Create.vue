@@ -253,7 +253,7 @@ onUnmounted(() => {
                 <!-- Video Preview -->
                 <div v-else class="card p-4">
                     <div class="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-                        <div class="w-full sm:w-48 aspect-video rounded-lg overflow-hidden flex-shrink-0 relative" style="background-color: var(--color-bg-secondary);">
+                        <div class="w-full sm:w-48 aspect-video rounded-lg overflow-hidden shrink-0 relative" style="background-color: var(--color-bg-secondary);">
                             <video :src="videoPreview" preload="metadata" class="w-full h-full object-cover"></video>
                             <div v-if="durationFormatted" class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-xs font-medium bg-black/80 text-white">
                                 {{ durationFormatted }}
@@ -261,7 +261,7 @@ onUnmounted(() => {
                         </div>
                         <div class="flex-1 min-w-0 w-full">
                             <div class="flex items-center gap-2">
-                                <FileVideo class="w-5 h-5 flex-shrink-0" style="color: var(--color-accent);" />
+                                <FileVideo class="w-5 h-5 shrink-0" style="color: var(--color-accent);" />
                                 <p class="font-medium truncate" style="color: var(--color-text-primary);">{{ form.video_file.name }}</p>
                             </div>
                             <p class="text-sm mt-1" style="color: var(--color-text-muted);">

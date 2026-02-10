@@ -77,7 +77,7 @@ const hasPages = () => {
                 v-for="tab in tabs"
                 :key="tab.key"
                 @click="switchTab(tab.key)"
-                class="flex items-center gap-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap flex-shrink-0"
+                class="flex items-center gap-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap shrink-0"
                 :style="activeType === tab.key
                     ? { borderColor: 'var(--color-accent)', color: 'var(--color-accent)' }
                     : { borderColor: 'transparent', color: 'var(--color-text-secondary)' }"
@@ -114,7 +114,7 @@ const hasPages = () => {
                         :href="`/channel/${channel.username}`"
                         class="card p-4 flex items-center gap-4 hover:opacity-90 transition-opacity"
                     >
-                        <div class="w-14 h-14 rounded-full overflow-hidden flex-shrink-0" style="background-color: var(--color-bg-secondary);">
+                        <div class="w-14 h-14 rounded-full overflow-hidden shrink-0" style="background-color: var(--color-bg-secondary);">
                             <img v-if="channel.avatar" :src="channel.avatar" :alt="channel.username" class="w-full h-full object-cover" />
                             <div v-else class="w-full h-full flex items-center justify-center text-xl font-bold" style="color: var(--color-accent);">
                                 {{ channel.username?.charAt(0)?.toUpperCase() || '?' }}

@@ -56,7 +56,7 @@ const submit = () => {
                             <input
                                 v-model="form.name"
                                 type="text"
-                                class="input pl-10 w-full"
+                                class="input pl-14 w-full"
                                 placeholder="Your name"
                                 required
                             />
@@ -74,7 +74,7 @@ const submit = () => {
                             <input
                                 v-model="form.email"
                                 type="email"
-                                class="input pl-10 w-full"
+                                class="input pl-14 w-full"
                                 placeholder="your@email.com"
                                 required
                             />

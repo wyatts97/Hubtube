@@ -434,7 +434,7 @@ const toggleSidebar = () => {
                                             style="color: var(--color-text-secondary);"
                                             @click="closeMegaMenu"
                                         >
-                                            <component v-if="child.icon && getMenuIcon(child.icon)" :is="getMenuIcon(child.icon)" class="w-4 h-4 flex-shrink-0" />
+                                            <component v-if="child.icon && getMenuIcon(child.icon)" :is="getMenuIcon(child.icon)" class="w-4 h-4 shrink-0" />
                                             <span>{{ child.label }}</span>
                                             <ExternalLink v-if="child.target === '_blank'" class="w-3 h-3 ml-auto opacity-50" />
                                         </Link>
@@ -487,7 +487,7 @@ const toggleSidebar = () => {
                         >
                             <component 
                                 :is="item.icon" 
-                                class="w-5 h-5 flex-shrink-0" 
+                                class="w-5 h-5 shrink-0" 
                                 :style="{ color: getIconColor(item.key) }"
                             />
                             <span v-if="!sidebarCollapsed">{{ item.name }}</span>

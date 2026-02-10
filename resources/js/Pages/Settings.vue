@@ -136,13 +136,13 @@ const tabs = [
 
             <div class="flex flex-col md:flex-row gap-4 sm:gap-6">
                 <!-- Sidebar / Horizontal tabs on mobile -->
-                <div class="md:w-48 flex-shrink-0">
+                <div class="md:w-48 shrink-0">
                     <nav class="flex md:flex-col gap-1 overflow-x-auto scrollbar-hide -mx-1 px-1 md:mx-0 md:px-0 pb-2 md:pb-0">
                         <button
                             v-for="tab in tabs"
                             :key="tab.id"
                             @click="activeTab = tab.id"
-                            :class="['flex items-center gap-2 sm:gap-3 px-3 py-2 rounded-lg text-left transition-colors whitespace-nowrap flex-shrink-0 md:w-full text-sm sm:text-base']"
+                            :class="['flex items-center gap-2 sm:gap-3 px-3 py-2 rounded-lg text-left transition-colors whitespace-nowrap shrink-0 md:w-full text-sm sm:text-base']"
                             :style="activeTab === tab.id 
                                 ? { backgroundColor: 'var(--color-accent)', color: 'white' } 
                                 : { color: 'var(--color-text-secondary)' }"
@@ -197,7 +197,7 @@ const tabs = [
                             <div>
                                 <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">Avatar</label>
                                 <div class="flex items-center gap-4">
-                                    <div class="relative w-20 h-20 rounded-full overflow-hidden flex-shrink-0" style="background-color: var(--color-bg-secondary);">
+                                    <div class="relative w-20 h-20 rounded-full overflow-hidden shrink-0" style="background-color: var(--color-bg-secondary);">
                                         <img
                                             v-if="avatarPreview || user?.avatar"
                                             :src="avatarPreview || user.avatar"

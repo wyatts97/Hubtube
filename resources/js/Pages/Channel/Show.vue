@@ -67,7 +67,7 @@ const tabs = [
 
         <!-- Channel Info -->
         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-6 sm:mb-8">
-            <div class="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 avatar flex-shrink-0">
+            <div class="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 avatar shrink-0">
                 <img 
                     v-if="channel.avatar" 
                     :src="channel.avatar" 
@@ -118,7 +118,7 @@ const tabs = [
                     v-for="tab in tabs"
                     :key="tab.name"
                     :href="tab.href"
-                    class="pb-3 px-1 border-b-2 border-transparent transition-colors hover:opacity-80 whitespace-nowrap flex-shrink-0 text-sm sm:text-base"
+                    class="pb-3 px-1 border-b-2 border-transparent transition-colors hover:opacity-80 whitespace-nowrap shrink-0 text-sm sm:text-base"
                     style="color: var(--color-text-secondary);"
                 >
                     {{ tab.name }}

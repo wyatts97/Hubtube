@@ -47,7 +47,7 @@ defineProps({
                 </div>
                 <div class="p-3">
                     <div class="flex gap-3">
-                        <div class="w-9 h-9 avatar flex-shrink-0">
+                        <div class="w-9 h-9 avatar shrink-0">
                             <img 
                                 v-if="stream.user?.avatar" 
                                 :src="stream.user.avatar" 
