@@ -50,9 +50,15 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->renderHook(
                 PanelsRenderHook::TOPBAR_START,
-                fn (): string => view('filament.widgets.system-status-bar', [
-                    'metrics' => app(\App\Services\SystemStatusBar::class)->getMetrics(),
-                ])->render(),
+                function (): string {
+                    try {
+                        return view('filament.widgets.system-status-bar', [
+                            'metrics' => app(\App\Services\SystemStatusBar::class)->getMetrics(),
+                        ])->render();
+                    } catch (\Throwable $e) {
+                        return '';
+                    }
+                },
             )
             ->navigationGroups([
                 NavigationGroup::make('Content'),
