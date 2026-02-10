@@ -88,6 +88,37 @@ class Video extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Video $video) {
+            // Skip storage cleanup for embedded videos (no local files)
+            if ($video->is_embedded) {
+                return;
+            }
+
+            $disk = $video->storage_disk ?? 'public';
+
+            // Delete the video directory and all contents (original + processed/ + hls/ + sprites/)
+            $videoDir = "videos/{$video->slug}";
+            if ($video->slug && StorageManager::exists($videoDir, $disk)) {
+                StorageManager::deleteDirectory($videoDir, $disk);
+            }
+
+            // Legacy path cleanup (older uploads used user_id/uuid structure)
+            if ($video->uuid) {
+                $legacyDir = "videos/{$video->user_id}/{$video->uuid}";
+                if (StorageManager::exists($legacyDir, $disk)) {
+                    StorageManager::deleteDirectory($legacyDir, $disk);
+                }
+            }
+
+            // Delete thumbnail if stored outside video dir (legacy path)
+            if ($video->thumbnail && !str_starts_with($video->thumbnail, 'videos/')) {
+                StorageManager::delete($video->thumbnail, $disk);
+            }
+        });
+    }
+
     public function shouldBeSearchable(): bool
     {
         // Only index if using a real search driver (not database or null)

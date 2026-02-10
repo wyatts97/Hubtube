@@ -61,25 +61,7 @@ class VideoService
 
     public function delete(Video $video): void
     {
-        $disk = $video->storage_disk ?? 'public';
-
-        // All assets live in videos/{slug}/ — delete the entire directory
-        $videoDir = "videos/{$video->slug}";
-        if (StorageManager::exists($videoDir, $disk)) {
-            StorageManager::deleteDirectory($videoDir, $disk);
-        }
-
-        // Fallback: also try legacy uuid-based directory
-        $legacyDir = "videos/{$video->user_id}/{$video->uuid}";
-        if (StorageManager::exists($legacyDir, $disk)) {
-            StorageManager::deleteDirectory($legacyDir, $disk);
-        }
-
-        // Delete thumbnail if stored outside video dir (legacy path)
-        if ($video->thumbnail && !str_starts_with($video->thumbnail, 'videos/')) {
-            StorageManager::delete($video->thumbnail, $disk);
-        }
-
+        // Storage cleanup is handled by the Video model's deleting event
         $video->delete();
     }
 
