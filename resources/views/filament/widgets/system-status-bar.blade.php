@@ -55,11 +55,11 @@
     {{-- Failed Jobs --}}
     @if($metrics['queue']['failed'] > 0)
         <div class="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
-        <div class="flex items-center gap-1.5" title="{{ $metrics['queue']['failed'] }} failed jobs">
+        <a href="{{ url('/admin/failed-jobs') }}" class="flex items-center gap-1.5 hover:opacity-80 transition-opacity" title="{{ $metrics['queue']['failed'] }} failed jobs — click to view details">
             <x-heroicon-m-exclamation-triangle class="w-4 h-4 text-red-500" />
             <span class="px-1.5 py-0.5 rounded bg-red-500/20 text-red-600 dark:text-red-400 font-medium">
                 {{ $metrics['queue']['failed'] }} failed
             </span>
-        </div>
+        </a>
     @endif
 </div>

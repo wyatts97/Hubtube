@@ -21,7 +21,7 @@ class LanguageSettings extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-language';
     protected static ?string $navigationLabel = 'Languages';
-    protected static ?string $navigationGroup = 'Settings';
+    protected static ?string $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 8;
     protected static string $view = 'filament.pages.language-settings';
 
