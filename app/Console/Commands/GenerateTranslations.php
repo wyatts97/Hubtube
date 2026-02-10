@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\TranslationOverride;
 use App\Services\TranslationService;
 use Illuminate\Console\Command;
 use Stichoza\GoogleTranslate\GoogleTranslate;
@@ -62,7 +63,7 @@ class GenerateTranslations extends Command
             $this->info("Generating {$locale} ({$langName})...");
 
             $translator->setTarget($locale);
-            $translated = $this->translateArray($source, $translator);
+            $translated = $this->translateArray($source, $translator, $locale);
 
             $dir = dirname($targetPath);
             if (!is_dir($dir)) {
@@ -89,13 +90,13 @@ class GenerateTranslations extends Command
     /**
      * Recursively translate all string values in a nested array.
      */
-    protected function translateArray(array $source, GoogleTranslate $translator): array
+    protected function translateArray(array $source, GoogleTranslate $translator, string $locale): array
     {
         $result = [];
 
         foreach ($source as $key => $value) {
             if (is_array($value)) {
-                $result[$key] = $this->translateArray($value, $translator);
+                $result[$key] = $this->translateArray($value, $translator, $locale);
             } elseif (is_string($value)) {
                 // Preserve interpolation placeholders like {count}, {name}
                 $placeholders = [];
@@ -119,6 +120,9 @@ class GenerateTranslations extends Command
                 foreach ($placeholders as $token => $original) {
                     $translated = str_replace($token, $original, $translated);
                 }
+
+                // Apply admin-defined word/phrase overrides
+                $translated = TranslationOverride::applyOverrides($translated, $locale);
 
                 $result[$key] = $translated;
 

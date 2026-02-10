@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Setting;
 use App\Models\Translation;
+use App\Models\TranslationOverride;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -135,7 +136,12 @@ class TranslationService
             $translator = $this->getTranslator();
             $translator->setSource($source);
             $translator->setTarget($targetLocale);
-            return $translator->translate($text) ?? $text;
+            $translated = $translator->translate($text) ?? $text;
+
+            // Apply admin-defined overrides (word/phrase corrections)
+            $translated = TranslationOverride::applyOverrides($translated, $targetLocale);
+
+            return $translated;
         } catch (\Exception $e) {
             Log::warning("Translation failed: {$e->getMessage()}", [
                 'text' => Str::limit($text, 100),
