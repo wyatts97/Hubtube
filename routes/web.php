@@ -112,6 +112,7 @@ Route::middleware('age.verified')->group(function () {
             ->name('verification.send');
 
         Route::get('/upload', [VideoController::class, 'create'])->name('videos.create');
+        Route::get('/upload/success', [VideoController::class, 'uploadSuccess'])->name('videos.upload-success');
         Route::post('/upload', [VideoController::class, 'store'])->middleware('throttle:10,1')->name('videos.store');
         Route::post('/upload/chunk', [VideoController::class, 'uploadChunk'])->middleware('throttle:300,1')->name('videos.upload-chunk');
         Route::get('/videos/{video}/edit', [VideoController::class, 'edit'])->name('videos.edit');

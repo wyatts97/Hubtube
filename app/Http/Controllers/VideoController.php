@@ -152,6 +152,13 @@ class VideoController extends Controller
         ]);
     }
 
+    public function uploadSuccess(Request $request): Response
+    {
+        return Inertia::render('Videos/UploadSuccess', [
+            'videoTitle' => $request->query('title', ''),
+        ]);
+    }
+
     public function store(StoreVideoRequest $request): RedirectResponse
     {
         Gate::authorize('upload-video');
@@ -166,8 +173,7 @@ class VideoController extends Controller
         }
 
         return redirect()
-            ->route('videos.status', $video)
-            ->with('success', 'Video uploaded! It will be published after processing and moderation.');
+            ->route('videos.upload-success', ['title' => $video->title]);
     }
 
     /**

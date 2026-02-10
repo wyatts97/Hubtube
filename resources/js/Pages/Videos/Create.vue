@@ -19,8 +19,9 @@ const isShortMode = ref(urlParams.get('type') === 'short');
 const dragActive = ref(false);
 const videoPreview = ref(null);
 const uploadProgress = ref(0);
-const uploadStatus = ref('idle'); // idle, uploading, processing, success, error
+const uploadStatus = ref('idle'); // idle, uploading, success, error
 const uploadError = ref('');
+const uploadedTitle = ref('');
 const videoDuration = ref(null);
 const videoWidth = ref(null);
 const videoHeight = ref(null);
@@ -152,6 +153,8 @@ const submit = () => {
     uploadProgress.value = 0;
     uploadError.value = '';
     
+    uploadedTitle.value = form.title;
+    
     form.post('/upload', {
         forceFormData: true,
         onProgress: (progress) => {
@@ -163,11 +166,6 @@ const submit = () => {
         onError: (errors) => {
             uploadStatus.value = 'error';
             uploadError.value = Object.values(errors).flat().join(', ');
-        },
-        onFinish: () => {
-            if (uploadStatus.value === 'uploading') {
-                uploadStatus.value = 'processing';
-            }
         },
     });
 };

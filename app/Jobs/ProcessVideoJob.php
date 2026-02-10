@@ -67,7 +67,6 @@ class ProcessVideoJob implements ShouldQueue
             }
 
             $videoService->markAsProcessed($this->video, $qualities);
-            $videoService->publish($this->video);
 
             $this->notifyOnce();
 
@@ -95,8 +94,6 @@ class ProcessVideoJob implements ShouldQueue
             'status' => 'processed',
             'qualities_available' => ['original'],
             'processing_completed_at' => now(),
-            'published_at' => now(),
-            'is_approved' => true,
         ]);
 
         $this->notifyOnce();
@@ -437,6 +434,12 @@ class ProcessVideoJob implements ShouldQueue
         $preset = $this->getQualityPreset();
         
         $output = "{$outputDir}/{$quality}.mp4";
+
+        // Skip if already transcoded (e.g. on job retry)
+        if (file_exists($output) && filesize($output) > 10240) {
+            Log::info('Skipping already-transcoded quality', ['quality' => $quality, 'size' => filesize($output)]);
+            return;
+        }
         
         // Check if watermark is enabled and valid
         $watermarkInput = $this->getWatermarkInputs();
