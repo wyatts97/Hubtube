@@ -49,10 +49,14 @@ class SiteSettings extends Page implements HasForms
             'animated_previews_enabled' => Setting::get('animated_previews_enabled', true),
             'ffmpeg_path' => Setting::get('ffmpeg_path', ''),
             'ffprobe_path' => Setting::get('ffprobe_path', ''),
+            'ffmpeg_threads' => Setting::get('ffmpeg_threads', 4),
+            'thumbnail_count' => Setting::get('thumbnail_count', 4),
+            'audio_bitrate' => Setting::get('audio_bitrate', '128k'),
             'video_quality_preset' => Setting::get('video_quality_preset', 'medium'),
             'multi_resolution_enabled' => Setting::get('multi_resolution_enabled', true),
             'enabled_resolutions' => Setting::get('enabled_resolutions', ['360p', '480p', '720p']),
             'generate_hls' => Setting::get('generate_hls', true),
+            'hls_segment_duration' => Setting::get('hls_segment_duration', 10),
             'watermark_enabled' => Setting::get('watermark_enabled', false),
             'watermark_image' => Setting::get('watermark_image', ''),
             'watermark_position' => Setting::get('watermark_position', 'bottom-right'),
@@ -179,6 +183,26 @@ class SiteSettings extends Page implements HasForms
                                             ->label('FFprobe Binary Path')
                                             ->placeholder('/usr/bin/ffprobe')
                                             ->helperText('Leave empty to use system default'),
+                                        TextInput::make('ffmpeg_threads')
+                                            ->label('FFmpeg Threads')
+                                            ->numeric()
+                                            ->default(4)
+                                            ->helperText('Number of CPU threads for encoding. Leave headroom for web server.'),
+                                        TextInput::make('thumbnail_count')
+                                            ->label('Thumbnail Count')
+                                            ->numeric()
+                                            ->default(4)
+                                            ->helperText('Number of thumbnails to generate per video'),
+                                        Select::make('audio_bitrate')
+                                            ->label('Audio Bitrate')
+                                            ->options([
+                                                '64k' => '64 kbps (Low)',
+                                                '96k' => '96 kbps',
+                                                '128k' => '128 kbps (Default)',
+                                                '192k' => '192 kbps',
+                                                '256k' => '256 kbps (High)',
+                                            ])
+                                            ->default('128k'),
                                         Select::make('video_quality_preset')
                                             ->label('Quality Preset')
                                             ->options([
@@ -210,7 +234,14 @@ class SiteSettings extends Page implements HasForms
                                             ->label('Generate HLS Streaming')
                                             ->helperText('Create HLS playlists for adaptive bitrate streaming')
                                             ->default(true)
-                                            ->visible(fn ($get) => $get('multi_resolution_enabled')),
+                                            ->visible(fn ($get) => $get('multi_resolution_enabled'))
+                                            ->reactive(),
+                                        TextInput::make('hls_segment_duration')
+                                            ->label('HLS Segment Duration (seconds)')
+                                            ->numeric()
+                                            ->default(10)
+                                            ->helperText('Duration of each HLS segment. Lower = faster seeking, higher = fewer requests.')
+                                            ->visible(fn ($get) => $get('multi_resolution_enabled') && $get('generate_hls')),
                                     ])->columns(2),
                                 Section::make('Watermark')
                                     ->schema([

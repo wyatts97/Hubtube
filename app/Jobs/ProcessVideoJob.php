@@ -435,8 +435,7 @@ class ProcessVideoJob implements ShouldQueue
     protected function transcodeAllQualities(string $inputPath, string $outputDir, array $targetQualities, bool $generateHls): array
     {
         $ffmpeg = $this->getFFmpegPath();
-        // Cap threads to leave headroom for web server + Redis + queue
-        $threads = min((int) Setting::get('ffmpeg_threads', 4), 4);
+        $threads = (int) Setting::get('ffmpeg_threads', 4);
         $preset = $this->getQualityPreset();
         $watermarkInput = $this->getWatermarkInputs();
         $hasWatermark = !empty($watermarkInput);
@@ -487,11 +486,13 @@ class ProcessVideoJob implements ShouldQueue
             $keyframeExpr = $generateHls ? ',setpts=PTS-STARTPTS' : '';
             $forceKeyframes = $generateHls ? sprintf(' -force_key_frames %s', escapeshellarg('expr:gte(t,n_forced*2)')) : '';
             
+            $audioBitrate = Setting::get('audio_bitrate', '128k');
             $outputArgs[] = sprintf(
-                '-vf %s -c:v libx264 -preset %s -b:v %s -c:a aac -b:a 128k -threads %d%s -movflags +faststart %s',
+                '-vf %s -c:v libx264 -preset %s -b:v %s -c:a aac -b:a %s -threads %d%s -movflags +faststart %s',
                 escapeshellarg("scale=-2:{$settings['height']}"),
                 $preset,
                 $settings['bitrate'],
+                $audioBitrate,
                 $threads,
                 $forceKeyframes,
                 escapeshellarg($output)
@@ -551,7 +552,7 @@ class ProcessVideoJob implements ShouldQueue
     protected function transcodeToQuality(string $inputPath, string $outputDir, string $quality, array $settings, ?int $threads = null, ?string $preset = null): void
     {
         $ffmpeg = $this->getFFmpegPath();
-        $threads = $threads ?? min((int) Setting::get('ffmpeg_threads', 4), 4);
+        $threads = $threads ?? (int) Setting::get('ffmpeg_threads', 4);
         $preset = $preset ?? $this->getQualityPreset();
         
         $output = "{$outputDir}/{$quality}.mp4";
@@ -568,26 +569,30 @@ class ProcessVideoJob implements ShouldQueue
         if ($hasWatermark) {
             $filterComplex = $this->buildWatermarkFilterComplex($settings['width'], $settings['height']);
             
+            $audioBitrate = Setting::get('audio_bitrate', '128k');
             $cmd = sprintf(
-                '%s -y -i %s %s -filter_complex "%s" -map "[outv]" -map 0:a? -c:v libx264 -preset %s -b:v %s -c:a aac -b:a 128k -threads %d -force_key_frames %s -movflags +faststart %s 2>&1',
+                '%s -y -i %s %s -filter_complex "%s" -map "[outv]" -map 0:a? -c:v libx264 -preset %s -b:v %s -c:a aac -b:a %s -threads %d -force_key_frames %s -movflags +faststart %s 2>&1',
                 $ffmpeg,
                 escapeshellarg($inputPath),
                 $watermarkInput,
                 $filterComplex,
                 $preset,
                 $settings['bitrate'],
+                $audioBitrate,
                 $threads,
                 escapeshellarg('expr:gte(t,n_forced*2)'),
                 escapeshellarg($output)
             );
         } else {
+            $audioBitrate = Setting::get('audio_bitrate', '128k');
             $cmd = sprintf(
-                '%s -y -i %s -vf %s -c:v libx264 -preset %s -b:v %s -c:a aac -b:a 128k -threads %d -force_key_frames %s -movflags +faststart %s 2>&1',
+                '%s -y -i %s -vf %s -c:v libx264 -preset %s -b:v %s -c:a aac -b:a %s -threads %d -force_key_frames %s -movflags +faststart %s 2>&1',
                 $ffmpeg,
                 escapeshellarg($inputPath),
                 escapeshellarg("scale=-2:{$settings['height']}"),
                 $preset,
                 $settings['bitrate'],
+                $audioBitrate,
                 $threads,
                 escapeshellarg('expr:gte(t,n_forced*2)'),
                 escapeshellarg($output)
@@ -679,10 +684,12 @@ class ProcessVideoJob implements ShouldQueue
             $segmentPattern = "{$hlsDir}/segment_%03d.ts";
             $playlistPath = "{$hlsDir}/playlist.m3u8";
 
+            $hlsTime = (int) Setting::get('hls_segment_duration', 10);
             $cmd = sprintf(
-                '%s -y -i %s -c:v copy -c:a copy -hls_time 10 -hls_list_size 0 -hls_segment_filename %s %s 2>&1',
+                '%s -y -i %s -c:v copy -c:a copy -hls_time %d -hls_list_size 0 -hls_segment_filename %s %s 2>&1',
                 $ffmpeg,
                 escapeshellarg($input),
+                $hlsTime,
                 escapeshellarg($segmentPattern),
                 escapeshellarg($playlistPath)
             );
