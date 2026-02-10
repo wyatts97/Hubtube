@@ -16,7 +16,7 @@ class EpornerApiAdapter
      * Search videos via eporner's free public JSON API.
      * No scraping needed — returns structured JSON with pagination.
      */
-    public function search(string $query, int $page = 1, int $perPage = 30, string $order = 'top-weekly'): array
+    public function search(string $query, int $page = 1, int $perPage = 50, string $order = 'top-weekly'): array
     {
         try {
             $response = Http::timeout(15)->get(self::API_URL, [

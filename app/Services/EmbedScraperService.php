@@ -282,6 +282,11 @@ class EmbedScraperService
         $user = User::where('username', $username)->first();
 
         if ($user) {
+            // Update avatar if it changed (e.g. svg -> png migration)
+            $expectedAvatar = $logo ? "/images/site-logos/{$logo}" : null;
+            if ($expectedAvatar && $user->avatar !== $expectedAvatar) {
+                $user->update(['avatar' => $expectedAvatar]);
+            }
             return $user;
         }
 

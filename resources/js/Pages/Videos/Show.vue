@@ -297,7 +297,7 @@ const formattedViews = computed(() => {
     <AppLayout>
         <div class="flex flex-col lg:flex-row gap-6">
             <!-- Main Content -->
-            <div class="flex-1">
+            <div class="flex-1 min-w-0">
                 <!-- Banner Ad Above Player -->
                 <div v-if="bannerAbovePlayer?.enabled" class="flex justify-center mb-2">
                     <!-- Desktop banner (728x90) -->

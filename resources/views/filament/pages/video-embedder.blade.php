@@ -79,28 +79,9 @@
                     </div>
                     
                     <div class="flex items-center gap-4">
-                        <!-- Pagination -->
-                        <div class="flex items-center gap-2">
-                            <x-filament::button 
-                                size="sm" 
-                                color="gray" 
-                                wire:click="prevPage"
-                                :disabled="!$hasPrevPage"
-                            >
-                                <x-heroicon-m-chevron-left class="w-4 h-4" />
-                            </x-filament::button>
-                            <span class="text-sm text-gray-600 dark:text-gray-400">
-                                Page {{ $currentPage }}
-                            </span>
-                            <x-filament::button 
-                                size="sm" 
-                                color="gray" 
-                                wire:click="nextPage"
-                                :disabled="!$hasNextPage"
-                            >
-                                <x-heroicon-m-chevron-right class="w-4 h-4" />
-                            </x-filament::button>
-                        </div>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">
+                            {{ $totalLoaded }} videos loaded
+                        </span>
                         
                         <x-filament::button 
                             color="success" 
@@ -115,14 +96,14 @@
             </div>
         @endif
 
-        <!-- Loading State -->
-        <div wire:loading wire:target="search,nextPage,prevPage" class="flex justify-center py-12">
+        <!-- Loading State (initial search only) -->
+        <div wire:loading wire:target="search" class="flex justify-center py-12">
             <x-filament::loading-indicator class="w-10 h-10 text-primary-500" />
         </div>
 
         <!-- Video Grid -->
         @if(count($searchResults) > 0)
-            <div wire:loading.remove wire:target="search,nextPage,prevPage" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div wire:loading.remove wire:target="search" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 @foreach($searchResults as $index => $video)
                     <div 
                         wire:key="video-{{ $index }}-{{ $video['sourceId'] }}"
@@ -211,30 +192,37 @@
                 @endforeach
             </div>
             
-            <!-- Bottom Pagination -->
-            <div class="flex justify-center gap-4 pt-4">
-                <x-filament::button 
-                    size="sm" 
-                    color="gray" 
-                    wire:click="prevPage"
-                    :disabled="!$hasPrevPage"
-                >
-                    <x-heroicon-m-chevron-left class="w-4 h-4 mr-1" />
-                    Previous
-                </x-filament::button>
-                <span class="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                    Page {{ $currentPage }}
-                </span>
-                <x-filament::button 
-                    size="sm" 
-                    color="gray" 
-                    wire:click="nextPage"
-                    :disabled="!$hasNextPage"
-                >
-                    Next
-                    <x-heroicon-m-chevron-right class="w-4 h-4 ml-1" />
-                </x-filament::button>
-            </div>
+            <!-- Load More -->
+            @if($hasNextPage)
+                <div class="flex flex-col items-center gap-2 pt-6">
+                    <x-filament::button 
+                        size="lg" 
+                        color="gray" 
+                        wire:click="loadMore"
+                        wire:loading.attr="disabled"
+                        wire:target="loadMore"
+                        class="px-8"
+                    >
+                        <span wire:loading.remove wire:target="loadMore">
+                            <x-heroicon-m-arrow-down class="w-5 h-5 mr-2" />
+                            Load More Videos
+                        </span>
+                        <span wire:loading wire:target="loadMore">
+                            <x-filament::loading-indicator class="w-5 h-5 mr-2" />
+                            Loading...
+                        </span>
+                    </x-filament::button>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                        {{ $totalLoaded }} videos loaded so far
+                    </span>
+                </div>
+            @else
+                <div class="text-center pt-4">
+                    <span class="text-sm text-gray-500 dark:text-gray-400">
+                        All {{ $totalLoaded }} results loaded
+                    </span>
+                </div>
+            @endif
         @elseif(!$isLoading && $searchQuery && !$errorMessage)
             <div class="text-center py-12 text-gray-500 dark:text-gray-400">
                 <x-heroicon-o-film class="w-16 h-16 mx-auto mb-4 opacity-50" />

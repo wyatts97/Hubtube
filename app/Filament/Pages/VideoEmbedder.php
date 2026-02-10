@@ -33,8 +33,10 @@ class VideoEmbedder extends Page implements HasForms
     public array $searchResults = [];
     public array $selectedVideos = [];
     public bool $isLoading = false;
+    public bool $isLoadingMore = false;
     public bool $hasNextPage = false;
     public bool $hasPrevPage = false;
+    public int $totalLoaded = 0;
     public ?string $errorMessage = null;
     public ?string $errorSuggestion = null;
     public bool $isBlocked = false;
@@ -93,29 +95,25 @@ class VideoEmbedder extends Page implements HasForms
         $this->errorMessage = null;
         $this->currentPage = 1;
         $this->selectedVideos = [];
+        $this->searchResults = [];
+        $this->totalLoaded = 0;
         
-        $this->fetchResults();
+        $this->fetchResults(false);
     }
 
-    public function nextPage(): void
+    public function loadMore(): void
     {
-        if ($this->hasNextPage) {
-            $this->currentPage++;
-            $this->fetchResults();
+        if (!$this->hasNextPage) return;
+        $this->currentPage++;
+        $this->isLoadingMore = true;
+        $this->fetchResults(true);
+    }
+
+    protected function fetchResults(bool $append = false): void
+    {
+        if (!$append) {
+            $this->isLoading = true;
         }
-    }
-
-    public function prevPage(): void
-    {
-        if ($this->hasPrevPage && $this->currentPage > 1) {
-            $this->currentPage--;
-            $this->fetchResults();
-        }
-    }
-
-    protected function fetchResults(): void
-    {
-        $this->isLoading = true;
         $this->errorMessage = null;
         $this->errorSuggestion = null;
         $this->isBlocked = false;
@@ -128,6 +126,10 @@ class VideoEmbedder extends Page implements HasForms
                 $this->currentPage,
                 $toPage
             );
+            // Advance currentPage to the last fetched page
+            if (!isset($results['error'])) {
+                $this->currentPage = $results['lastPage'] ?? $this->currentPage;
+            }
         } else {
             $results = $this->scraperService->search(
                 $this->selectedSite,
@@ -137,18 +139,36 @@ class VideoEmbedder extends Page implements HasForms
         }
 
         $this->isLoading = false;
+        $this->isLoadingMore = false;
 
         if (isset($results['error'])) {
             $this->errorMessage = $results['message'] ?? $results['error'];
             $this->errorSuggestion = $results['suggestion'] ?? null;
             $this->isBlocked = $results['blocked'] ?? false;
-            $this->searchResults = [];
+            if (!$append) {
+                $this->searchResults = [];
+                $this->totalLoaded = 0;
+            }
             return;
         }
 
-        $this->searchResults = $results['videos'] ?? [];
+        $newVideos = $results['videos'] ?? [];
+
+        if ($append) {
+            // Deduplicate by sourceId
+            $existingIds = array_column($this->searchResults, 'sourceId');
+            foreach ($newVideos as $video) {
+                if (!in_array($video['sourceId'], $existingIds)) {
+                    $this->searchResults[] = $video;
+                }
+            }
+        } else {
+            $this->searchResults = $newVideos;
+        }
+
+        $this->totalLoaded = count($this->searchResults);
         $this->hasNextPage = $results['hasNextPage'] ?? false;
-        $this->hasPrevPage = $results['hasPrevPage'] ?? false;
+        $this->hasPrevPage = false; // Not used in load-more mode
     }
 
     protected function resetSearch(): void
