@@ -193,8 +193,24 @@ systemctl start "php${REQUIRED_PHP}-fpm" 2>/dev/null || true
 # ── Composer ─────────────────────────────────────────────────────────────────
 section "Composer"
 
+# Debug: Check Composer detection
+info "Checking for Composer..."
+if [[ -x "/usr/local/bin/composer" ]]; then
+    info "Found Composer at /usr/local/bin/composer"
+    /usr/local/bin/composer --version --no-interaction 2>/dev/null && ok "Composer is executable"
+elif command_exists composer; then
+    info "Found Composer in PATH"
+    composer --version --no-interaction 2>/dev/null && ok "Composer is executable"
+else
+    warn "Composer not found in PATH or /usr/local/bin"
+    info "Current PATH: $PATH"
+    info "Trying to add /usr/local/bin to PATH..."
+    export PATH="/usr/local/bin:$PATH"
+fi
+
 if command_exists composer; then
-    COMPOSER_VER=$(composer --version 2>/dev/null | grep -oP '[\d.]+' | head -1)
+    # Bypass Composer's root user warning with --no-interaction flag
+    COMPOSER_VER=$(composer --version --no-interaction 2>/dev/null | grep -oP '[\d.]+' | head -1)
     ok "Composer already installed (v${COMPOSER_VER})."
 else
     info "Installing Composer..."
