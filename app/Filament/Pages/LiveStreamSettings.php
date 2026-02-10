@@ -18,8 +18,8 @@ class LiveStreamSettings extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-video-camera';
     protected static ?string $navigationLabel = 'Live Streaming';
-    protected static ?string $navigationGroup = 'Settings';
-    protected static ?int $navigationSort = 4;
+    protected static ?string $navigationGroup = 'System';
+    protected static ?int $navigationSort = 3;
     protected static string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];

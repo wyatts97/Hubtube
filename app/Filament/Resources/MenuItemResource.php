@@ -16,8 +16,8 @@ class MenuItemResource extends Resource
     protected static ?string $model = MenuItem::class;
     protected static ?string $navigationIcon = 'heroicon-o-bars-3';
     protected static ?string $navigationLabel = 'Menu Builder';
-    protected static ?string $navigationGroup = 'Settings';
-    protected static ?int $navigationSort = 5;
+    protected static ?string $navigationGroup = 'Appearance';
+    protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
     {

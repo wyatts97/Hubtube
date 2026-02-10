@@ -16,7 +16,7 @@ class GiftResource extends Resource
     protected static ?string $model = Gift::class;
     protected static ?string $navigationIcon = 'heroicon-o-gift';
     protected static ?string $navigationGroup = 'Monetization';
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {

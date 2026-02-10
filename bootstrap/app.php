@@ -56,9 +56,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->throttleApi('60,1');
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        // Handle CSRF token mismatch for Inertia requests
         $exceptions->render(function (HttpException $e, Request $request) {
-            if ($e->getStatusCode() === 419 || str_contains($e->getMessage(), 'CSRF')) {
+            $status = $e->getStatusCode();
+
+            // Handle CSRF token mismatch
+            if ($status === 419 || str_contains($e->getMessage(), 'CSRF')) {
                 if ($request->inertia()) {
                     return Inertia::render('Error', [
                         'status' => 419,
@@ -66,10 +68,17 @@ return Application::configure(basePath: dirname(__DIR__))
                     ])->toResponse($request)->setStatusCode(419);
                 }
                 
-                // For non-Inertia requests, redirect back with error
                 return redirect()->back()->withErrors([
                     'session' => 'Your session has expired. Please try again.',
                 ]);
+            }
+
+            // Render 404, 403, 500, 503 via Inertia Error page (with AppLayout)
+            if (in_array($status, [404, 403, 500, 503])) {
+                return Inertia::render('Error', [
+                    'status' => $status,
+                    'message' => $e->getMessage() ?: null,
+                ])->toResponse($request)->setStatusCode($status);
             }
         });
     })->create();

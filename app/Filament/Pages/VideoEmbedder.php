@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\EmbeddedVideo;
 use App\Services\EmbedScraperService;
 use Filament\Pages\Page;
 use Filament\Forms\Components\Select;
@@ -20,7 +19,7 @@ class VideoEmbedder extends Page implements HasForms
     protected static ?string $navigationIcon = 'heroicon-o-film';
     protected static ?string $navigationLabel = 'Video Embedder';
     protected static ?string $navigationGroup = 'Content';
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 7;
     protected static string $view = 'filament.pages.video-embedder';
 
     #[Url]
@@ -190,12 +189,12 @@ class VideoEmbedder extends Page implements HasForms
         if ($result['imported'] > 0) {
             Notification::make()
                 ->title('Import Complete')
-                ->body("Imported: {$result['imported']}, Skipped: {$result['skipped']}. View imported videos in Embedded Videos section.")
+                ->body("Imported: {$result['imported']}, Skipped: {$result['skipped']}. Videos are now live on the site.")
                 ->success()
                 ->actions([
                     \Filament\Notifications\Actions\Action::make('view')
-                        ->label('View Embedded Videos')
-                        ->url(route('filament.admin.resources.embedded-videos.index'))
+                        ->label('View Videos')
+                        ->url(route('filament.admin.resources.videos.index'))
                 ])
                 ->send();
         } else {

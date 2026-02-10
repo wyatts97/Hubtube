@@ -1,10 +1,11 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import { timeAgo as timeAgoFn, formatViews } from '@/Composables/useFormatters';
 import { useOptimizedImage } from '@/Composables/useOptimizedImage';
 
 const { thumbnailProps, avatarProps } = useOptimizedImage();
+const page = usePage();
 
 const props = defineProps({
     video: {
@@ -13,12 +14,13 @@ const props = defineProps({
     },
 });
 
+const vc = computed(() => page.props.theme?.videoCard || {});
+
 const isHovering = ref(false);
 const previewLoaded = ref(false);
 
 const placeholderImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Crect fill='%23181818' width='640' height='360'/%3E%3Cpolygon fill='%23333' points='280,130 280,230 360,180'/%3E%3C/svg%3E";
 
-// Get the correct URL for the video
 const videoUrl = computed(() => {
     if (props.video.is_short) {
         return `/shorts/${props.video.id}`;
@@ -42,17 +44,35 @@ const formattedDuration = computed(() => {
 
 const timeAgo = computed(() => timeAgoFn(props.video.published_at || props.video.created_at));
 
-const handleMouseEnter = () => {
-    isHovering.value = true;
-};
+const showAvatar = computed(() => vc.value.showAvatar !== false);
+const showUploader = computed(() => vc.value.showUploader !== false);
+const showViews = computed(() => vc.value.showViews !== false);
+const showDuration = computed(() => vc.value.showDuration !== false);
+const showTimestamp = computed(() => vc.value.showTimestamp !== false);
 
-const handleMouseLeave = () => {
-    isHovering.value = false;
-};
+const titleStyle = computed(() => ({
+    color: vc.value.titleColor || 'var(--color-text-primary)',
+    fontFamily: vc.value.titleFont || undefined,
+    fontSize: vc.value.titleSize ? `${vc.value.titleSize}px` : undefined,
+    '-webkit-line-clamp': vc.value.titleLines || 2,
+}));
 
-const onPreviewLoad = () => {
-    previewLoaded.value = true;
-};
+const metaStyle = computed(() => ({
+    fontFamily: vc.value.metaFont || undefined,
+    fontSize: vc.value.metaSize ? `${vc.value.metaSize}px` : undefined,
+}));
+
+const metaColor = computed(() => vc.value.metaColor || 'var(--color-text-muted)');
+const uploaderColor = computed(() => vc.value.metaColor || 'var(--color-text-secondary)');
+
+const thumbRadius = computed(() => {
+    const r = vc.value.borderRadius;
+    return r !== undefined && r !== null ? `${r}px` : '12px';
+});
+
+const handleMouseEnter = () => { isHovering.value = true; };
+const handleMouseLeave = () => { isHovering.value = false; };
+const onPreviewLoad = () => { previewLoaded.value = true; };
 </script>
 
 <template>
@@ -62,7 +82,7 @@ const onPreviewLoad = () => {
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
     >
-        <div class="thumbnail relative overflow-hidden rounded-xl">
+        <div class="thumbnail relative overflow-hidden" :style="{ borderRadius: thumbRadius }">
             <!-- Static Thumbnail -->
             <img
                 v-bind="thumbnailProps(video.thumbnail_url || video.thumbnail || placeholderImg, video.title)"
@@ -82,13 +102,13 @@ const onPreviewLoad = () => {
             />
             
             <!-- Duration Badge -->
-            <span class="duration absolute bottom-2 right-2 bg-black/80 text-white text-xs font-medium px-1.5 py-0.5 rounded">
+            <span v-if="showDuration" class="duration absolute bottom-2 right-2 bg-black/80 text-white text-xs font-medium px-1.5 py-0.5 rounded">
                 {{ video.duration_formatted || video.formatted_duration || formattedDuration }}
             </span>
             
         </div>
         <div class="flex gap-3 mt-3">
-            <Link v-if="video.user" :href="`/channel/${video.user.username}`" class="flex-shrink-0">
+            <Link v-if="showAvatar && video.user" :href="`/channel/${video.user.username}`" class="shrink-0">
                 <div class="w-9 h-9 avatar">
                     <img v-if="video.user.avatar" v-bind="avatarProps(video.user.avatar, 36)" :alt="video.user.username || video.user.name" class="w-full h-full object-cover" />
                     <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-sm font-medium">
@@ -96,7 +116,7 @@ const onPreviewLoad = () => {
                     </div>
                 </div>
             </Link>
-            <div v-else class="flex-shrink-0">
+            <div v-else-if="showAvatar" class="shrink-0">
                 <div class="w-9 h-9 avatar">
                     <div class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-sm font-medium">
                         ?
@@ -104,13 +124,15 @@ const onPreviewLoad = () => {
                 </div>
             </div>
             <div class="flex-1 min-w-0">
-                <h3 class="font-medium line-clamp-2 leading-tight" style="color: var(--color-text-primary);">{{ video.title }}</h3>
-                <Link v-if="video.user" :href="`/channel/${video.user.username}`" class="text-sm mt-1 block" style="color: var(--color-text-secondary);">
+                <h3 class="font-medium leading-tight" :class="`line-clamp-${vc.titleLines || 2}`" :style="titleStyle">{{ video.title }}</h3>
+                <Link v-if="showUploader && video.user" :href="`/channel/${video.user.username}`" class="mt-1 block" :style="{ ...metaStyle, color: uploaderColor }">
                     {{ video.user.username }}
                     <span v-if="video.user.is_verified" class="inline-block ml-1">✓</span>
                 </Link>
-                <p class="text-sm" style="color: var(--color-text-muted);">
-                    {{ formattedViews }} views • {{ timeAgo }}
+                <p v-if="showViews || showTimestamp" :style="{ ...metaStyle, color: metaColor }">
+                    <template v-if="showViews">{{ formattedViews }} views</template>
+                    <template v-if="showViews && showTimestamp"> • </template>
+                    <template v-if="showTimestamp">{{ timeAgo }}</template>
                 </p>
             </div>
         </div>

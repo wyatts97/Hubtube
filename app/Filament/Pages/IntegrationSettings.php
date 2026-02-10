@@ -20,8 +20,8 @@ class IntegrationSettings extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-puzzle-piece';
     protected static ?string $navigationLabel = 'Integrations';
-    protected static ?string $navigationGroup = 'Settings';
-    protected static ?int $navigationSort = 5;
+    protected static ?string $navigationGroup = 'System';
+    protected static ?int $navigationSort = 4;
     protected static string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];

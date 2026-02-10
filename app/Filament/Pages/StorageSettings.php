@@ -24,8 +24,8 @@ class StorageSettings extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-cloud';
     protected static ?string $navigationLabel = 'Storage & CDN';
-    protected static ?string $navigationGroup = 'Settings';
-    protected static ?int $navigationSort = 3;
+    protected static ?string $navigationGroup = 'System';
+    protected static ?int $navigationSort = 2;
     protected static string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];

@@ -157,6 +157,21 @@ class HandleInertiaRequests extends Middleware
             'footer_logo_url' => $this->s('footer_logo_url', ''),
             'footer_ad_enabled' => (bool) $this->s('footer_ad_enabled', false),
             'footer_ad_code' => $this->s('footer_ad_code', ''),
+            'videoCard' => [
+                'showAvatar' => (bool) $this->s('video_card_show_avatar', true),
+                'showUploader' => (bool) $this->s('video_card_show_uploader', true),
+                'showViews' => (bool) $this->s('video_card_show_views', true),
+                'showDuration' => (bool) $this->s('video_card_show_duration', true),
+                'showTimestamp' => (bool) $this->s('video_card_show_timestamp', true),
+                'titleFont' => $this->s('video_card_title_font', ''),
+                'titleSize' => (int) $this->s('video_card_title_size', 14),
+                'titleColor' => $this->s('video_card_title_color', ''),
+                'titleLines' => (int) $this->s('video_card_title_lines', 2),
+                'metaFont' => $this->s('video_card_meta_font', ''),
+                'metaSize' => (int) $this->s('video_card_meta_size', 13),
+                'metaColor' => $this->s('video_card_meta_color', ''),
+                'borderRadius' => (int) $this->s('video_card_border_radius', 12),
+            ],
         ];
     }
 

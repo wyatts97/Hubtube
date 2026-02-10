@@ -23,8 +23,8 @@ class ThemeSettings extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-paint-brush';
     protected static ?string $navigationLabel = 'Theme & Appearance';
-    protected static ?string $navigationGroup = 'Settings';
-    protected static ?int $navigationSort = 2;
+    protected static ?string $navigationGroup = 'Appearance';
+    protected static ?int $navigationSort = 1;
     protected static string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
@@ -167,12 +167,21 @@ class ThemeSettings extends Page implements HasForms
 
             // Footer Settings
             'footer_logo_url' => Setting::get('footer_logo_url', ''),
-            'footer_ad_enabled' => Setting::get('footer_ad_enabled', false),
-            'footer_ad_code' => Setting::get('footer_ad_code', ''),
 
-            // Browse Page Banner Ad
-            'browse_banner_ad_enabled' => Setting::get('browse_banner_ad_enabled', false),
-            'browse_banner_ad_code' => Setting::get('browse_banner_ad_code', ''),
+            // Video Card Customization
+            'video_card_show_avatar' => Setting::get('video_card_show_avatar', true),
+            'video_card_show_uploader' => Setting::get('video_card_show_uploader', true),
+            'video_card_show_views' => Setting::get('video_card_show_views', true),
+            'video_card_show_duration' => Setting::get('video_card_show_duration', true),
+            'video_card_show_timestamp' => Setting::get('video_card_show_timestamp', true),
+            'video_card_title_font' => Setting::get('video_card_title_font', ''),
+            'video_card_title_size' => Setting::get('video_card_title_size', 14),
+            'video_card_title_color' => Setting::get('video_card_title_color', ''),
+            'video_card_title_lines' => Setting::get('video_card_title_lines', 2),
+            'video_card_meta_font' => Setting::get('video_card_meta_font', ''),
+            'video_card_meta_size' => Setting::get('video_card_meta_size', 13),
+            'video_card_meta_color' => Setting::get('video_card_meta_color', ''),
+            'video_card_border_radius' => Setting::get('video_card_border_radius', 12),
         ]);
     }
 
@@ -403,41 +412,101 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
                             ]),
 
-                        Tabs\Tab::make('Footer & Banners')
+                        Tabs\Tab::make('Video Cards')
+                            ->icon('heroicon-o-rectangle-stack')
+                            ->schema([
+                                Section::make('Visibility')
+                                    ->description('Choose which elements to show on video cards across the site')
+                                    ->schema([
+                                        Grid::make(3)->schema([
+                                            Toggle::make('video_card_show_avatar')
+                                                ->label('Show Avatar')
+                                                ->default(true),
+                                            Toggle::make('video_card_show_uploader')
+                                                ->label('Show Uploader Name')
+                                                ->default(true),
+                                            Toggle::make('video_card_show_views')
+                                                ->label('Show View Count')
+                                                ->default(true),
+                                            Toggle::make('video_card_show_duration')
+                                                ->label('Show Duration Badge')
+                                                ->default(true),
+                                            Toggle::make('video_card_show_timestamp')
+                                                ->label('Show Time Ago')
+                                                ->default(true),
+                                        ]),
+                                    ]),
+
+                                Section::make('Title Styling')
+                                    ->description('Customize the video title text on cards')
+                                    ->schema([
+                                        Grid::make(2)->schema([
+                                            TextInput::make('video_card_title_font')
+                                                ->label('Font Family')
+                                                ->placeholder('e.g. Inter, Roboto, Arial'),
+                                            TextInput::make('video_card_title_size')
+                                                ->label('Font Size (px)')
+                                                ->numeric()
+                                                ->default(14)
+                                                ->minValue(10)
+                                                ->maxValue(24)
+                                                ->suffix('px'),
+                                            TextInput::make('video_card_title_color')
+                                                ->label('Title Color')
+                                                ->placeholder('#ffffff or leave empty for theme default'),
+                                            TextInput::make('video_card_title_lines')
+                                                ->label('Max Lines')
+                                                ->numeric()
+                                                ->default(2)
+                                                ->minValue(1)
+                                                ->maxValue(4)
+                                                ->helperText('Number of lines before truncating'),
+                                        ]),
+                                    ]),
+
+                                Section::make('Meta Text Styling')
+                                    ->description('Customize the uploader name, views, and timestamp text')
+                                    ->schema([
+                                        Grid::make(2)->schema([
+                                            TextInput::make('video_card_meta_font')
+                                                ->label('Font Family')
+                                                ->placeholder('e.g. Inter, Roboto, Arial'),
+                                            TextInput::make('video_card_meta_size')
+                                                ->label('Font Size (px)')
+                                                ->numeric()
+                                                ->default(13)
+                                                ->minValue(10)
+                                                ->maxValue(20)
+                                                ->suffix('px'),
+                                            TextInput::make('video_card_meta_color')
+                                                ->label('Meta Color')
+                                                ->placeholder('#a3a3a3 or leave empty for theme default'),
+                                        ]),
+                                    ]),
+
+                                Section::make('Card Shape')
+                                    ->schema([
+                                        TextInput::make('video_card_border_radius')
+                                            ->label('Thumbnail Border Radius (px)')
+                                            ->numeric()
+                                            ->default(12)
+                                            ->minValue(0)
+                                            ->maxValue(24)
+                                            ->suffix('px')
+                                            ->helperText('0 = square corners, 12 = default rounded'),
+                                    ]),
+                            ]),
+
+                        Tabs\Tab::make('Footer Branding')
                             ->icon('heroicon-o-rectangle-group')
                             ->schema([
                                 Section::make('Footer Logo / Branding')
-                                    ->description('Display a logo or site title centered in the footer above the legal links')
+                                    ->description('Display a logo or site title centered in the footer above the legal links. Ad banners are configured in Ad Settings.')
                                     ->schema([
                                         TextInput::make('footer_logo_url')
                                             ->label('Footer Logo URL')
                                             ->placeholder('/images/logo.png or https://...')
                                             ->helperText('Leave empty to show the site title text instead'),
-                                    ]),
-
-                                Section::make('Footer Ad Banner')
-                                    ->description('728x90 desktop / 300x50 mobile ad banner displayed above the footer legal links')
-                                    ->schema([
-                                        Toggle::make('footer_ad_enabled')
-                                            ->label('Enable Footer Ad Banner'),
-                                        \Filament\Forms\Components\Textarea::make('footer_ad_code')
-                                            ->label('Ad Code (HTML)')
-                                            ->rows(4)
-                                            ->placeholder('<ins class="adsbygoogle" ...></ins>')
-                                            ->helperText('Paste your ad network code here (e.g. Google AdSense, ExoClick, etc.)')
-                                            ->visible(fn ($get) => $get('footer_ad_enabled')),
-                                    ]),
-
-                                Section::make('Browse Page Banner Ad')
-                                    ->description('728x90 desktop / 300x50 mobile ad banner displayed at the top of the Browse Videos page')
-                                    ->schema([
-                                        Toggle::make('browse_banner_ad_enabled')
-                                            ->label('Enable Browse Page Banner'),
-                                        \Filament\Forms\Components\Textarea::make('browse_banner_ad_code')
-                                            ->label('Ad Code (HTML)')
-                                            ->rows(4)
-                                            ->placeholder('<ins class="adsbygoogle" ...></ins>')
-                                            ->visible(fn ($get) => $get('browse_banner_ad_enabled')),
                                     ]),
                             ]),
 

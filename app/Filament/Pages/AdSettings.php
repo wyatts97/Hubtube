@@ -27,8 +27,8 @@ class AdSettings extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
     protected static ?string $navigationLabel = 'Ad Settings';
-    protected static ?string $navigationGroup = 'Settings';
-    protected static ?int $navigationSort = 3;
+    protected static ?string $navigationGroup = 'Appearance';
+    protected static ?int $navigationSort = 2;
     protected static string $view = 'filament.pages.ad-settings';
 
     public ?array $data = [];
@@ -86,6 +86,14 @@ class AdSettings extends Page implements HasForms
             'video_ad_mid_roll_interval' => Setting::get('video_ad_mid_roll_interval', 300),
             'video_ad_mid_roll_max_count' => Setting::get('video_ad_mid_roll_max_count', 3),
             'video_ad_shuffle' => Setting::get('video_ad_shuffle', true),
+
+            // Footer Ad Banner
+            'footer_ad_enabled' => Setting::get('footer_ad_enabled', false),
+            'footer_ad_code' => Setting::get('footer_ad_code', ''),
+
+            // Browse Page Banner Ad
+            'browse_banner_ad_enabled' => Setting::get('browse_banner_ad_enabled', false),
+            'browse_banner_ad_code' => Setting::get('browse_banner_ad_code', ''),
         ]);
 
         $this->resetAdForm();
@@ -293,6 +301,38 @@ class AdSettings extends Page implements HasForms
                         Textarea::make('shorts_ad_code')
                             ->label('Ad HTML Code')
                             ->rows(6)->columnSpanFull(),
+                    ]),
+
+                // ── Site-Wide Banner Ads ──
+                Section::make('Footer Ad Banner')
+                    ->description('728×90 desktop / 300×50 mobile ad banner displayed above the footer legal links on every page.')
+                    ->icon('heroicon-o-rectangle-group')
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        Toggle::make('footer_ad_enabled')
+                            ->label('Enable Footer Ad Banner'),
+                        Textarea::make('footer_ad_code')
+                            ->label('Ad Code (HTML)')
+                            ->rows(4)
+                            ->placeholder('<ins class="adsbygoogle" ...></ins>')
+                            ->helperText('Paste your ad network code here (e.g. Google AdSense, ExoClick, etc.)')
+                            ->visible(fn ($get) => $get('footer_ad_enabled')),
+                    ]),
+
+                Section::make('Browse Page Banner Ad')
+                    ->description('728×90 desktop / 300×50 mobile ad banner displayed at the top of the Browse Videos page.')
+                    ->icon('heroicon-o-rectangle-group')
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        Toggle::make('browse_banner_ad_enabled')
+                            ->label('Enable Browse Page Banner'),
+                        Textarea::make('browse_banner_ad_code')
+                            ->label('Ad Code (HTML)')
+                            ->rows(4)
+                            ->placeholder('<ins class="adsbygoogle" ...></ins>')
+                            ->visible(fn ($get) => $get('browse_banner_ad_enabled')),
                     ]),
             ])
             ->statePath('data');

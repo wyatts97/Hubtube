@@ -17,8 +17,8 @@ class ContactMessageResource extends Resource
     protected static ?string $model = ContactMessage::class;
     protected static ?string $navigationIcon = 'heroicon-o-envelope';
     protected static ?string $navigationLabel = 'Contact Messages';
-    protected static ?string $navigationGroup = 'Content Management';
-    protected static ?int $navigationSort = 10;
+    protected static ?string $navigationGroup = 'Users & Messages';
+    protected static ?int $navigationSort = 2;
 
     public static function getNavigationBadge(): ?string
     {

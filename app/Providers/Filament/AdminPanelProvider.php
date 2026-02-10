@@ -6,6 +6,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\MenuItem;
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -53,6 +54,16 @@ class AdminPanelProvider extends PanelProvider
                     'metrics' => app(\App\Services\SystemStatusBar::class)->getMetrics(),
                 ])->render(),
             )
+            ->navigationGroups([
+                NavigationGroup::make('Content'),
+                NavigationGroup::make('Users & Messages'),
+                NavigationGroup::make('Monetization'),
+                NavigationGroup::make('Appearance'),
+                NavigationGroup::make('System')
+                    ->collapsed(),
+                NavigationGroup::make('Tools')
+                    ->collapsed(),
+            ])
             ->sidebarCollapsibleOnDesktop()
             ->middleware([
                 EncryptCookies::class,

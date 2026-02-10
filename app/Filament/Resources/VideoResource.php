@@ -18,7 +18,7 @@ class VideoResource extends Resource
 {
     protected static ?string $model = Video::class;
     protected static ?string $navigationIcon = 'heroicon-o-video-camera';
-    protected static ?string $navigationGroup = 'Content Management';
+    protected static ?string $navigationGroup = 'Content';
     protected static ?int $navigationSort = 1;
 
     public static function getNavigationBadge(): ?string

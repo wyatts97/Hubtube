@@ -19,8 +19,8 @@ class PwaSettings extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-device-phone-mobile';
     protected static ?string $navigationLabel = 'PWA & Push';
-    protected static ?string $navigationGroup = 'Settings';
-    protected static ?int $navigationSort = 8;
+    protected static ?string $navigationGroup = 'System';
+    protected static ?int $navigationSort = 5;
     protected static string $view = 'filament.pages.pwa-settings';
 
     public ?array $data = [];

@@ -21,7 +21,7 @@ class SiteSettings extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
     protected static ?string $navigationLabel = 'Site Settings';
-    protected static ?string $navigationGroup = 'Settings';
+    protected static ?string $navigationGroup = 'System';
     protected static ?int $navigationSort = 1;
     protected static string $view = 'filament.pages.site-settings';
 

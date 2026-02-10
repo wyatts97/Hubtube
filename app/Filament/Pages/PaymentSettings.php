@@ -19,8 +19,8 @@ class PaymentSettings extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
     protected static ?string $navigationLabel = 'Payment Gateways';
-    protected static ?string $navigationGroup = 'Settings';
-    protected static ?int $navigationSort = 2;
+    protected static ?string $navigationGroup = 'Monetization';
+    protected static ?int $navigationSort = 3;
     protected static string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];

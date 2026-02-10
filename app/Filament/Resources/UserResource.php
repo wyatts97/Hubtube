@@ -15,7 +15,7 @@ class UserResource extends Resource
 {
     protected static ?string $model = User::class;
     protected static ?string $navigationIcon = 'heroicon-o-users';
-    protected static ?string $navigationGroup = 'User Management';
+    protected static ?string $navigationGroup = 'Users & Messages';
     protected static ?int $navigationSort = 1;
 
     public static function form(Form $form): Form
@@ -69,7 +69,20 @@ class UserResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\ImageColumn::make('avatar')
-                    ->circular(),
+                    ->circular()
+                    ->getStateUsing(function ($record) {
+                        $avatar = $record->avatar;
+                        if (!$avatar) {
+                            return null;
+                        }
+                        // If it's already a full URL, return as-is
+                        if (str_starts_with($avatar, 'http')) {
+                            return $avatar;
+                        }
+                        // If it's a relative path like /storage/..., make it absolute
+                        return url($avatar);
+                    })
+                    ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->username ?? '?') . '&background=6366f1&color=fff&size=80'),
                 Tables\Columns\TextColumn::make('username')
                     ->searchable()
                     ->sortable(),
