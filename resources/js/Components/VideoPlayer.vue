@@ -33,6 +33,8 @@ const props = defineProps({
 const videoRef = ref(null);
 let player = null;
 let hls = null;
+let hlsRetryCount = 0;
+const HLS_MAX_RETRIES = 3;
 
 const hasHls = computed(() => props.hlsPlaylist && Hls.isSupported());
 const hasMultipleQualities = computed(() => props.qualities.length > 1);
@@ -164,13 +166,24 @@ const initHls = (plyrOptions) => {
         if (data.fatal) {
             switch (data.type) {
                 case Hls.ErrorTypes.NETWORK_ERROR:
-                    hls.startLoad();
+                    hlsRetryCount++;
+                    if (hlsRetryCount <= HLS_MAX_RETRIES) {
+                        hls.startLoad();
+                    } else {
+                        destroyHls();
+                        initDirectPlayback(plyrOptions);
+                    }
                     break;
                 case Hls.ErrorTypes.MEDIA_ERROR:
-                    hls.recoverMediaError();
+                    hlsRetryCount++;
+                    if (hlsRetryCount <= HLS_MAX_RETRIES) {
+                        hls.recoverMediaError();
+                    } else {
+                        destroyHls();
+                        initDirectPlayback(plyrOptions);
+                    }
                     break;
                 default:
-                    // Fall back to direct playback
                     destroyHls();
                     initDirectPlayback(plyrOptions);
                     break;
