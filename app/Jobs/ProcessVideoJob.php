@@ -542,28 +542,65 @@ class ProcessVideoJob implements ShouldQueue
     protected function generateHlsPlaylist(string $outputDir, array $qualities): void
     {
         $ffmpeg = $this->getFFmpegPath();
+        $hlsQualities = [];
 
         foreach ($qualities as $quality) {
             $input = "{$outputDir}/{$quality}.mp4";
             $hlsDir = "{$outputDir}/hls/{$quality}";
             
+            if (!file_exists($input) || filesize($input) < 10240) {
+                Log::warning('HLS: skipping quality, MP4 file missing or too small', ['quality' => $quality]);
+                continue;
+            }
+
             if (!file_exists($hlsDir)) {
                 mkdir($hlsDir, 0755, true);
             }
 
-            $cmd = "{$ffmpeg} -y -i \"{$input}\" " .
-                "-c:v copy -c:a copy " .
-                "-hls_time 10 -hls_list_size 0 " .
-                "-hls_segment_filename \"{$hlsDir}/segment_%03d.ts\" " .
-                "\"{$hlsDir}/playlist.m3u8\"";
+            $segmentPattern = "{$hlsDir}/segment_%03d.ts";
+            $playlistPath = "{$hlsDir}/playlist.m3u8";
+
+            $cmd = sprintf(
+                '%s -y -i %s -c:v copy -c:a copy -hls_time 10 -hls_list_size 0 -hls_segment_filename %s %s 2>&1',
+                $ffmpeg,
+                escapeshellarg($input),
+                escapeshellarg($segmentPattern),
+                escapeshellarg($playlistPath)
+            );
 
             [$exitCode, $cmdOutput] = $this->runCommand($cmd);
-            if ($exitCode !== 0) {
-                Log::warning('HLS playlist generation failed', ['quality' => $quality, 'exit_code' => $exitCode]);
+            
+            // Verify HLS segments were actually created and are valid
+            $segments = glob("{$hlsDir}/segment_*.ts");
+            $validSegments = array_filter($segments, fn($s) => filesize($s) > 2048);
+            
+            if ($exitCode !== 0 || empty($validSegments)) {
+                Log::warning('HLS playlist generation failed or produced invalid segments', [
+                    'quality' => $quality,
+                    'exit_code' => $exitCode,
+                    'segment_count' => count($segments),
+                    'valid_segments' => count($validSegments),
+                    'output' => substr($cmdOutput, 0, 500),
+                ]);
+                // Clean up broken HLS files
+                array_map('unlink', $segments);
+                if (file_exists($playlistPath)) unlink($playlistPath);
+            } else {
+                $hlsQualities[] = $quality;
             }
         }
 
-        $this->generateMasterPlaylist($outputDir, $qualities);
+        // Only generate master playlist if we have valid HLS qualities
+        if (!empty($hlsQualities)) {
+            $this->generateMasterPlaylist($outputDir, $hlsQualities);
+        } else {
+            Log::warning('HLS: no valid qualities produced, skipping master playlist', [
+                'video_id' => $this->video->id,
+            ]);
+            // Remove the master playlist if it exists from a previous attempt
+            $masterPath = "{$outputDir}/master.m3u8";
+            if (file_exists($masterPath)) unlink($masterPath);
+        }
     }
 
     protected function generateMasterPlaylist(string $outputDir, array $qualities): void

@@ -193,6 +193,11 @@ const initHls = (plyrOptions) => {
 };
 
 const initDirectPlayback = (plyrOptions) => {
+    // Reset video element to MP4 source after HLS detach
+    if (videoRef.value) {
+        videoRef.value.src = props.src;
+        videoRef.value.load();
+    }
     player = new Plyr(videoRef.value, plyrOptions);
     if (props.autoplay) {
         player.play().catch(() => {});
@@ -253,7 +258,7 @@ watch(() => props.hlsPlaylist, () => {
             :poster="poster"
             :data-poster="poster"
         >
-            <source v-if="!hasHls" :src="src" type="video/mp4" />
+            <source :src="src" type="video/mp4" />
         </video>
     </div>
 </template>
