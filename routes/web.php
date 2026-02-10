@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
 // EmbeddedVideoController removed - imported videos now use the regular Video model and /<slug> route
 use App\Http\Controllers\FeedController;
@@ -66,6 +67,8 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/search', [SearchController::class, 'index'])->name('search');
 
     Route::get('/videos', [VideoController::class, 'index'])->name('videos.index');
+    Route::get('/contact', [ContactController::class, 'show'])->name('contact');
+    Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
     Route::get('/categories', [HomeController::class, 'categories'])->name('categories.index');
     Route::get('/category/{category:slug}', [HomeController::class, 'category'])->name('categories.show');
     Route::get('/tag/{tag}', [HomeController::class, 'tag'])->name('tags.show');

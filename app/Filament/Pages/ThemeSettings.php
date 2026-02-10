@@ -164,6 +164,15 @@ class ThemeSettings extends Page implements HasForms
             'category_title_size' => Setting::get('category_title_size', 18),
             'category_title_color' => Setting::get('category_title_color', '#ffffff'),
             'category_title_opacity' => Setting::get('category_title_opacity', 90),
+
+            // Footer Settings
+            'footer_logo_url' => Setting::get('footer_logo_url', ''),
+            'footer_ad_enabled' => Setting::get('footer_ad_enabled', false),
+            'footer_ad_code' => Setting::get('footer_ad_code', ''),
+
+            // Browse Page Banner Ad
+            'browse_banner_ad_enabled' => Setting::get('browse_banner_ad_enabled', false),
+            'browse_banner_ad_code' => Setting::get('browse_banner_ad_code', ''),
         ]);
     }
 
@@ -391,6 +400,44 @@ class ThemeSettings extends Page implements HasForms
                                                 ->maxValue(100)
                                                 ->suffix('%'),
                                         ]),
+                                    ]),
+                            ]),
+
+                        Tabs\Tab::make('Footer & Banners')
+                            ->icon('heroicon-o-rectangle-group')
+                            ->schema([
+                                Section::make('Footer Logo / Branding')
+                                    ->description('Display a logo or site title centered in the footer above the legal links')
+                                    ->schema([
+                                        TextInput::make('footer_logo_url')
+                                            ->label('Footer Logo URL')
+                                            ->placeholder('/images/logo.png or https://...')
+                                            ->helperText('Leave empty to show the site title text instead'),
+                                    ]),
+
+                                Section::make('Footer Ad Banner')
+                                    ->description('728x90 desktop / 300x50 mobile ad banner displayed above the footer legal links')
+                                    ->schema([
+                                        Toggle::make('footer_ad_enabled')
+                                            ->label('Enable Footer Ad Banner'),
+                                        \Filament\Forms\Components\Textarea::make('footer_ad_code')
+                                            ->label('Ad Code (HTML)')
+                                            ->rows(4)
+                                            ->placeholder('<ins class="adsbygoogle" ...></ins>')
+                                            ->helperText('Paste your ad network code here (e.g. Google AdSense, ExoClick, etc.)')
+                                            ->visible(fn ($get) => $get('footer_ad_enabled')),
+                                    ]),
+
+                                Section::make('Browse Page Banner Ad')
+                                    ->description('728x90 desktop / 300x50 mobile ad banner displayed at the top of the Browse Videos page')
+                                    ->schema([
+                                        Toggle::make('browse_banner_ad_enabled')
+                                            ->label('Enable Browse Page Banner'),
+                                        \Filament\Forms\Components\Textarea::make('browse_banner_ad_code')
+                                            ->label('Ad Code (HTML)')
+                                            ->rows(4)
+                                            ->placeholder('<ins class="adsbygoogle" ...></ins>')
+                                            ->visible(fn ($get) => $get('browse_banner_ad_enabled')),
                                     ]),
                             ]),
 

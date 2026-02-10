@@ -15,9 +15,10 @@ class EmbeddedVideoResource extends Resource
     protected static ?string $model = EmbeddedVideo::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-link';
-    protected static ?string $navigationLabel = 'Embedded Videos';
-    protected static ?string $navigationGroup = 'Content';
-    protected static ?int $navigationSort = 6;
+    protected static ?string $navigationLabel = 'Embedded Videos (Legacy)';
+    protected static ?string $navigationGroup = 'Content Management';
+    protected static ?int $navigationSort = 99;
+    protected static bool $shouldRegisterNavigation = false;
 
     public static function form(Form $form): Form
     {

@@ -49,7 +49,11 @@ class VideoController extends Controller
         return Inertia::render('Videos/Index', [
             'videos' => $videos,
             'categories' => Category::active()->get(),
-            'filters' => $request->only(['category', 'search']),
+            'filters' => $request->only(['category', 'sort']),
+            'bannerAd' => [
+                'enabled' => Setting::get('browse_banner_ad_enabled', false),
+                'code' => Setting::get('browse_banner_ad_code', ''),
+            ],
         ]);
     }
 

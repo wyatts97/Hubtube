@@ -676,12 +676,41 @@ const toggleSidebar = () => {
             :class="['transition-all duration-300 py-6 px-4 mt-8', sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-sidebar']"
             style="border-top: 1px solid var(--color-border);"
         >
-            <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs" style="color: var(--color-text-muted);">
-                <a href="/pages/terms-of-service" class="hover:opacity-80" style="color: var(--color-text-muted);">Terms of Service</a>
-                <a href="/pages/privacy-policy" class="hover:opacity-80" style="color: var(--color-text-muted);">Privacy Policy</a>
-                <a href="/pages/dmca" class="hover:opacity-80" style="color: var(--color-text-muted);">DMCA</a>
-                <a href="/pages/community-guidelines" class="hover:opacity-80" style="color: var(--color-text-muted);">Community Guidelines</a>
-                <a href="/pages/cookie-policy" class="hover:opacity-80" style="color: var(--color-text-muted);">Cookie Policy</a>
+            <div class="max-w-6xl mx-auto">
+                <!-- Footer Ad Banner -->
+                <div v-if="themeSettings.footer_ad_enabled && themeSettings.footer_ad_code" class="flex justify-center mb-6">
+                    <div v-html="themeSettings.footer_ad_code"></div>
+                </div>
+
+                <!-- Site Logo / Title -->
+                <div class="flex justify-center mb-4">
+                    <a href="/" class="inline-flex items-center gap-2 hover:opacity-80 transition-opacity">
+                        <img
+                            v-if="themeSettings.footer_logo_url"
+                            :src="themeSettings.footer_logo_url"
+                            alt="Site Logo"
+                            class="h-8 object-contain"
+                        />
+                        <span
+                            v-else
+                            class="text-lg font-bold"
+                            :style="{
+                                color: themeSettings.site_title_color || 'var(--color-text-primary)',
+                                fontFamily: themeSettings.site_title_font || 'inherit',
+                            }"
+                        >{{ themeSettings.site_title || 'HubTube' }}</span>
+                    </a>
+                </div>
+
+                <!-- Legal Links -->
+                <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs" style="color: var(--color-text-muted);">
+                    <a href="/pages/terms-of-service" class="hover:opacity-80" style="color: var(--color-text-muted);">Terms of Service</a>
+                    <a href="/pages/privacy-policy" class="hover:opacity-80" style="color: var(--color-text-muted);">Privacy Policy</a>
+                    <a href="/pages/dmca" class="hover:opacity-80" style="color: var(--color-text-muted);">DMCA</a>
+                    <a href="/pages/community-guidelines" class="hover:opacity-80" style="color: var(--color-text-muted);">Community Guidelines</a>
+                    <a href="/pages/cookie-policy" class="hover:opacity-80" style="color: var(--color-text-muted);">Cookie Policy</a>
+                    <a href="/contact" class="hover:opacity-80" style="color: var(--color-text-muted);">Contact</a>
+                </div>
             </div>
         </footer>
 

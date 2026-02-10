@@ -151,6 +151,12 @@ class HandleInertiaRequests extends Middleware
                 'color' => $this->s('category_title_color', '#ffffff'),
                 'opacity' => $this->s('category_title_opacity', 90),
             ],
+            'site_title' => $this->s('site_title', 'HubTube'),
+            'site_title_color' => $this->s('site_title_color', ''),
+            'site_title_font' => $this->s('site_title_font', ''),
+            'footer_logo_url' => $this->s('footer_logo_url', ''),
+            'footer_ad_enabled' => (bool) $this->s('footer_ad_enabled', false),
+            'footer_ad_code' => $this->s('footer_ad_code', ''),
         ];
     }
 
