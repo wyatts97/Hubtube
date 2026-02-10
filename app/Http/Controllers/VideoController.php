@@ -243,7 +243,6 @@ class VideoController extends Controller
 
         return response()->json([
             'status' => 'complete',
-            'tempPath' => $assembledPath,
             'uploadId' => $uploadId,
             'extension' => $extension,
         ]);

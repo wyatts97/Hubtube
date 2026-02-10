@@ -17,7 +17,15 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
-        return $request->user();
+        $user = $request->user();
+        return response()->json([
+            'id' => $user->id,
+            'username' => $user->username,
+            'email' => $user->email,
+            'avatar' => $user->avatar,
+            'is_verified' => $user->is_verified,
+            'is_pro' => $user->is_pro,
+        ]);
     });
 
     Route::get('/wallet/transactions', [WalletController::class, 'transactions']);

@@ -7,7 +7,7 @@ return [
     'path' => 'horizon',
     'use' => 'default',
     'prefix' => env('HORIZON_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_horizon:'),
-    'middleware' => ['web'],
+    'middleware' => ['web', 'auth'],
     'waits' => [
         'redis:default' => 60,
     ],

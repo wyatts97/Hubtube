@@ -68,7 +68,7 @@ Route::middleware('age.verified')->group(function () {
 
     Route::get('/videos', [VideoController::class, 'index'])->name('videos.index');
     Route::get('/contact', [ContactController::class, 'show'])->name('contact');
-    Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+    Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,1')->name('contact.store');
     Route::get('/categories', [HomeController::class, 'categories'])->name('categories.index');
     Route::get('/category/{category:slug}', [HomeController::class, 'category'])->name('categories.show');
     Route::get('/tag/{tag}', [HomeController::class, 'tag'])->name('tags.show');

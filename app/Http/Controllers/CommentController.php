@@ -31,11 +31,12 @@ class CommentController extends Controller
             'parent_id' => 'nullable|exists:comments,id',
         ]);
 
+        $requiresApproval = (bool) \App\Models\Setting::get('comments_require_approval', false);
         $comment = $video->comments()->create([
             'user_id' => $request->user()->id,
             'content' => $validated['content'],
             'parent_id' => $validated['parent_id'] ?? null,
-            'is_approved' => true,
+            'is_approved' => !$requiresApproval,
         ]);
 
         $video->increment('comments_count');

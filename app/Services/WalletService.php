@@ -20,7 +20,7 @@ class WalletService
             $user->lockForUpdate();
             
             $newBalance = $user->wallet_balance + $amount;
-            $user->update(['wallet_balance' => $newBalance]);
+            $user->forceFill(['wallet_balance' => $newBalance])->save();
 
             return WalletTransaction::create([
                 'user_id' => $user->id,
@@ -50,7 +50,7 @@ class WalletService
             }
 
             $newBalance = $user->wallet_balance - $amount;
-            $user->update(['wallet_balance' => $newBalance]);
+            $user->forceFill(['wallet_balance' => $newBalance])->save();
 
             return WalletTransaction::create([
                 'user_id' => $user->id,

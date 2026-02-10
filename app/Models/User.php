@@ -29,17 +29,18 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         'gender',
         'country',
         'website',
-        'wallet_balance',
-        'is_verified',
-        'is_pro',
-        'is_admin',
         'two_factor_enabled',
-        'two_factor_secret',
         'age_verified_at',
         'email_verified_at',
         'last_active_at',
         'settings',
     ];
+
+    /**
+     * Fields that must NEVER be mass-assignable.
+     * is_admin, is_pro, is_verified, wallet_balance, two_factor_secret
+     * must only be set via explicit $user->is_admin = true or admin panel.
+     */
 
     protected $hidden = [
         'password',

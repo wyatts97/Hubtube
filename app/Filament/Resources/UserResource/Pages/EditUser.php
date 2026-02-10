@@ -16,4 +16,18 @@ class EditUser extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        // Extract privileged fields that aren't mass-assignable
+        $privileged = ['is_admin', 'is_pro', 'is_verified'];
+        foreach ($privileged as $field) {
+            if (array_key_exists($field, $data)) {
+                $this->record->forceFill([$field => $data[$field]]);
+                unset($data[$field]);
+            }
+        }
+
+        return $data;
+    }
 }
