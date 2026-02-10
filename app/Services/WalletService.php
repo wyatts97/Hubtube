@@ -13,7 +13,7 @@ class WalletService
         User $user,
         float $amount,
         string $type,
-        string $description = null,
+        ?string $description = null,
         ?Model $reference = null
     ): WalletTransaction {
         return DB::transaction(function () use ($user, $amount, $type, $description, $reference) {
@@ -39,7 +39,7 @@ class WalletService
         User $user,
         float $amount,
         string $type,
-        string $description = null,
+        ?string $description = null,
         ?Model $reference = null
     ): WalletTransaction {
         return DB::transaction(function () use ($user, $amount, $type, $description, $reference) {
@@ -70,7 +70,7 @@ class WalletService
         User $to,
         float $amount,
         string $type,
-        string $description = null,
+        ?string $description = null,
         float $platformCut = 0
     ): array {
         return DB::transaction(function () use ($from, $to, $amount, $type, $description, $platformCut) {

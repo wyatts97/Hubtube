@@ -155,7 +155,7 @@ class VideoService
         ]);
     }
 
-    public function markAsFailed(Video $video, string $reason = null): void
+    public function markAsFailed(Video $video, ?string $reason = null): void
     {
         $video->update([
             'status' => 'failed',
