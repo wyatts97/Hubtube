@@ -362,7 +362,7 @@ const toggleSidebar = () => {
                                         <button 
                                             @click="setTheme('light')"
                                             :class="['flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm', currentTheme === 'light' ? 'bg-primary-600 text-white' : '']"
-                                            :style="currentTheme !== 'light' ? { color: 'var(--color-text-secondary)' } : {}"
+                                            :style="currentTheme === 'light' ? { color: '#f59e0b' } : { color: 'var(--color-text-secondary)' }"
                                         >
                                             <Sun class="w-4 h-4" />
                                         </button>

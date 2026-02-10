@@ -175,7 +175,7 @@ const toggleVideoInPlaylist = async (playlist) => {
     if (savingPlaylist.value === playlist.id) return;
     savingPlaylist.value = playlist.id;
     if (playlist.has_video) {
-        const { ok } = await del(`/playlists/${playlist.id}/videos`, { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ video_id: props.video.id }) });
+        const { ok } = await del(`/playlists/${playlist.id}/videos`, { body: JSON.stringify({ video_id: props.video.id }) });
         if (ok) {
             playlist.has_video = false;
             toast.success(`Removed from "${playlist.title}"`);

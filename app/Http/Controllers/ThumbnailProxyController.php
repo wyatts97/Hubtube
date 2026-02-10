@@ -28,6 +28,10 @@ class ThumbnailProxyController extends Controller
             'thumbs-cdn.redtube.com', 'thumb-cdn77.redtube.com',
             'fi1.ypncdn.com', 'fi2.ypncdn.com',
             'thumb-v', // generic thumb CDN patterns
+            // Eporner CDN
+            'static-ca-cdn.eporner.com', 'static-cdn.eporner.com', 'eporner.com',
+            // Redtube / PH shared CDN (rdtcdn)
+            'rdtcdn.com', 'ei-ph.rdtcdn.com',
         ];
 
         $host = parse_url($url, PHP_URL_HOST);
