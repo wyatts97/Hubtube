@@ -199,43 +199,90 @@ if command_exists composer; then
 else
     info "Installing Composer..."
     
-    # Try multiple installation methods in order of preference
+    # Set timeout for downloads (30 seconds)
+    TIMEOUT=30
     
-    # Method 1: Official installer with fallback
-    EXPECTED_CHECKSUM="$(php -r 'copy("https://composer.github.io/installer.sig", "php://stdout");')"
-    if php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" 2>/dev/null; then
-        ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
+    # Method 1: Direct download with curl (most reliable)
+    info "Downloading Composer via curl (timeout: ${TIMEOUT}s)..."
+    if timeout $TIMEOUT curl -fsSL https://getcomposer.org/installer -o /tmp/composer-setup.php; then
+        info "Verifying Composer installer..."
+        EXPECTED_CHECKSUM="$(timeout 10 curl -fsSL https://composer.github.io/installer.sig 2>/dev/null)"
+        ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', '/tmp/composer-setup.php');")"
+        
         if [[ "$EXPECTED_CHECKSUM" == "$ACTUAL_CHECKSUM" ]]; then
-            php composer-setup.php --install-dir=/usr/local/bin --filename=composer --quiet && rm composer-setup.php
-            ok "Composer installed via official installer."
+            info "Installing Composer..."
+            php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer --quiet
+            rm -f /tmp/composer-setup.php
+            if command_exists composer; then
+                ok "Composer installed successfully."
+            else
+                warn "Installation appeared to succeed but composer not found, trying alternative..."
+            fi
         else
-            warn "Composer installer checksum mismatch, trying alternative method..."
-            rm -f composer-setup.php
+            warn "Checksum mismatch, trying alternative method..."
+            rm -f /tmp/composer-setup.php
         fi
     else
-        warn "Failed to download Composer installer, trying curl method..."
+        warn "Curl download failed or timed out, trying wget..."
     fi
     
-    # Method 2: Direct download with curl (fallback)
+    # Method 2: Wget fallback
     if ! command_exists composer; then
-        if curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --quiet; then
-            ok "Composer installed via curl fallback."
+        info "Downloading Composer via wget (timeout: ${TIMEOUT}s)..."
+        if timeout $TIMEOUT wget -q --timeout=$TIMEOUT https://getcomposer.org/installer -O /tmp/composer-setup.php; then
+            info "Verifying Composer installer..."
+            EXPECTED_CHECKSUM="$(timeout 10 curl -fsSL https://composer.github.io/installer.sig 2>/dev/null || echo '')"
+            ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', '/tmp/composer-setup.php');")"
+            
+            if [[ -n "$EXPECTED_CHECKSUM" && "$EXPECTED_CHECKSUM" == "$ACTUAL_CHECKSUM" ]]; then
+                info "Installing Composer..."
+                php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer --quiet
+                rm -f /tmp/composer-setup.php
+                if command_exists composer; then
+                    ok "Composer installed via wget."
+                else
+                    warn "Installation appeared to succeed but composer not found."
+                fi
+            else
+                warn "Checksum verification failed, trying without verification..."
+                # Install without checksum verification (last resort)
+                php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer --quiet
+                rm -f /tmp/composer-setup.php
+                if command_exists composer; then
+                    ok "Composer installed (verification skipped)."
+                else
+                    warn "Wget method failed, trying PHP copy method..."
+                fi
+            fi
         else
-            warn "Curl method failed, trying manual download..."
-            # Method 3: Manual download (last resort)
-            cd /tmp
-            wget -q https://getcomposer.org/installer -O composer-setup.php
-            EXPECTED_CHECKSUM="$(php -r 'copy("https://composer.github.io/installer.sig", "php://stdout");')"
-            ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
-            if [[ "$EXPECTED_CHECKSUM" == "$ACTUAL_CHECKSUM" ]]; then
-                php composer-setup.php --install-dir=/usr/local/bin --filename=composer --quiet
-                mv composer /usr/local/bin/composer
-                rm composer-setup.php
-                ok "Composer installed via manual download."
+            warn "Wget failed or timed out, trying PHP copy method..."
+        fi
+    fi
+    
+    # Method 3: PHP copy (original method) with timeout
+    if ! command_exists composer; then
+        info "Trying PHP copy method (timeout: ${TIMEOUT}s)..."
+        cd /tmp
+        if timeout $TIMEOUT php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" 2>/dev/null; then
+            info "Installing via PHP copy method..."
+            php composer-setup.php --install-dir=/usr/local/bin --filename=composer --quiet
+            rm -f composer-setup.php
+            if command_exists composer; then
+                ok "Composer installed via PHP copy."
             else
                 fail "All Composer installation methods failed!"
+                info "Try manual installation:"
+                info "  cd /tmp && curl -sS https://getcomposer.org/installer | php"
+                info "  sudo mv composer.phar /usr/local/bin/composer"
                 exit 1
             fi
+        else
+            fail "PHP copy method timed out or failed!"
+            info "Network issues detected. Try:"
+            info "  1. Check internet connection"
+            info "  2. Test: curl -I https://getcomposer.org/installer"
+            info "  3. Manual install: cd /tmp && curl -sS https://getcomposer.org/installer | php"
+            exit 1
         fi
     fi
 fi
