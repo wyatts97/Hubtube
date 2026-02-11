@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ in_array(app()->getLocale(), ['ar', 'he']) ? 'rtl' : 'ltr' }}" class="dark">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -67,7 +67,7 @@
         }
     </style>
 
-    {{-- hreflang tags for multi-language SEO --}}
+    {{-- hreflang tags for multi-language SEO (with translated video slugs) --}}
     @php
         $enabledLangs = \App\Services\TranslationService::getEnabledLocales();
         $defaultLang = \App\Services\TranslationService::getDefaultLocale();
@@ -75,16 +75,48 @@
         // Strip locale prefix from current path if present
         $cleanPath = preg_replace('#^[a-z]{2,3}(/|$)#', '', $currentPath);
         $cleanPath = $cleanPath ?: '/';
+
+        // For video pages, look up translated slugs so each hreflang points to the correct translated URL
+        $videoAlternates = null;
+        if (count($enabledLangs) > 1) {
+            $route = request()->route();
+            $routeName = $route?->getName();
+            // Detect video show pages (both default and locale-prefixed)
+            if (in_array($routeName, ['videos.show', 'locale.videos.show'])) {
+                $video = $route->parameter('video') ?? null;
+                $slug = $route->parameter('slug') ?? null;
+                $videoModel = null;
+                if ($video instanceof \App\Models\Video) {
+                    $videoModel = $video;
+                } elseif ($slug) {
+                    $videoModel = \App\Models\Video::where('slug', $slug)->first()
+                        ?? \App\Models\Video::whereHas('translations', fn($q) => $q->where('translated_slug', $slug))->first();
+                }
+                if ($videoModel) {
+                    $translationService = app(\App\Services\TranslationService::class);
+                    $videoAlternates = $translationService->getAlternateUrls(\App\Models\Video::class, $videoModel->id, $videoModel->slug);
+                }
+            }
+        }
     @endphp
     @if(count($enabledLangs) > 1)
-        <link rel="alternate" hreflang="x-default" href="{{ url($cleanPath) }}" />
-        @foreach($enabledLangs as $lang)
-            @if($lang === $defaultLang)
-                <link rel="alternate" hreflang="{{ $lang }}" href="{{ url($cleanPath) }}" />
-            @else
-                <link rel="alternate" hreflang="{{ $lang }}" href="{{ url($lang . '/' . $cleanPath) }}" />
-            @endif
-        @endforeach
+        @if($videoAlternates)
+            {{-- Video page: use translated slugs for each language --}}
+            <link rel="alternate" hreflang="x-default" href="{{ $videoAlternates[$defaultLang] ?? url($cleanPath) }}" />
+            @foreach($enabledLangs as $lang)
+                <link rel="alternate" hreflang="{{ $lang }}" href="{{ $videoAlternates[$lang] ?? url($lang . '/' . $cleanPath) }}" />
+            @endforeach
+        @else
+            {{-- Non-video pages: same path structure across locales --}}
+            <link rel="alternate" hreflang="x-default" href="{{ url($cleanPath) }}" />
+            @foreach($enabledLangs as $lang)
+                @if($lang === $defaultLang)
+                    <link rel="alternate" hreflang="{{ $lang }}" href="{{ url($cleanPath) }}" />
+                @else
+                    <link rel="alternate" hreflang="{{ $lang }}" href="{{ url($lang . '/' . $cleanPath) }}" />
+                @endif
+            @endforeach
+        @endif
     @endif
 
     @routes

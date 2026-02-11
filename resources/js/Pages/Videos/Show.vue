@@ -13,7 +13,7 @@ import CommentSection from '@/Components/CommentSection.vue';
 import VideoPlayer from '@/Components/VideoPlayer.vue';
 import EmbeddedVideoPlayer from '@/Components/EmbeddedVideoPlayer.vue';
 import VideoAdPlayer from '@/Components/VideoAdPlayer.vue';
-import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff, Eye, ListVideo, Plus, Check, Loader2 } from 'lucide-vue-next';
+import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff, Eye, ListVideo, Plus, Check, Loader2, Folder, Hash } from 'lucide-vue-next';
 
 const props = defineProps({
     video: Object,
@@ -422,21 +422,6 @@ const getRelatedTitle = (video) => {
                         </div>
                     </div>
                     
-                    <!-- Tags - Horizontally Scrollable -->
-                    <div v-if="video.tags && video.tags.length" class="mt-3 -mx-1 px-1 overflow-x-auto scrollbar-hide">
-                        <div class="flex gap-2 pb-2" style="min-width: max-content;">
-                            <Link
-                                v-for="tag in video.tags"
-                                :key="tag"
-                                :href="`/tag/${encodeURIComponent(tag)}`"
-                                class="px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap cursor-pointer hover:opacity-80 transition-opacity"
-                                style="background-color: var(--color-bg-tertiary); color: var(--color-text-secondary);"
-                            >
-                                #{{ tag }}
-                            </Link>
-                        </div>
-                    </div>
-                    
                     <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-4 mt-3 sm:mt-4">
                         <!-- Channel Info -->
                         <div class="flex items-center gap-2 sm:gap-4 min-w-0">
@@ -559,6 +544,36 @@ const getRelatedTitle = (video) => {
                     <!-- Description -->
                     <div class="card p-4 mt-4">
                         <p class="whitespace-pre-wrap" style="color: var(--color-text-secondary);">{{ translatedDescription }}</p>
+                    </div>
+
+                    <!-- Category & Tags -->
+                    <div v-if="video.category || (video.tags && video.tags.length)" class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 px-1">
+                        <!-- Category -->
+                        <Link
+                            v-if="video.category"
+                            :href="`/?category=${video.category.id}`"
+                            class="inline-flex items-center gap-1.5 text-sm hover:opacity-80 transition-opacity"
+                            style="color: var(--color-text-secondary);"
+                        >
+                            <Folder class="w-3.5 h-3.5" style="color: var(--color-accent);" />
+                            <span>{{ video.category.name }}</span>
+                        </Link>
+
+                        <!-- Separator -->
+                        <span v-if="video.category && video.tags?.length" class="text-xs" style="color: var(--color-border);">|</span>
+
+                        <!-- Tags -->
+                        <div v-if="video.tags && video.tags.length" class="flex flex-wrap items-center gap-1.5">
+                            <Link
+                                v-for="tag in video.tags"
+                                :key="tag"
+                                :href="`/tag/${encodeURIComponent(tag)}`"
+                                class="inline-flex items-center gap-0.5 text-sm hover:opacity-80 transition-opacity"
+                                style="color: var(--color-text-muted);"
+                            >
+                                <Hash class="w-3 h-3" /><span>{{ tag }}</span>
+                            </Link>
+                        </div>
                     </div>
 
                     <!-- Comments Section -->

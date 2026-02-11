@@ -15,6 +15,15 @@ trait Translatable
     }
 
     /**
+     * Relationship to all translation records for this model.
+     */
+    public function translations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Translation::class, 'translatable_id')
+            ->where('translatable_type', static::class);
+    }
+
+    /**
      * Get all translations for this model in a given locale.
      */
     public function getTranslations(string $locale): array

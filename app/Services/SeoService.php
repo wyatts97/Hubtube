@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Models\Video;
 use App\Models\User;
 use App\Models\Category;
+use Illuminate\Support\Facades\App;
 
 class SeoService
 {
@@ -210,7 +211,32 @@ class SeoService
 
             $schema['isFamilyFriendly'] = !$video->age_restricted;
 
+            // Add language annotation
+            $schema['inLanguage'] = App::getLocale();
+
             $seo['schema'][] = $schema;
+        }
+
+        // Multi-language SEO: og:locale:alternate + alternateUrls for hreflang
+        $enabledLocales = TranslationService::getEnabledLocales();
+        if (count($enabledLocales) > 1) {
+            $defaultLocale = TranslationService::getDefaultLocale();
+            $currentLocale = App::getLocale();
+
+            // Set og:locale to current locale (e.g. es_ES)
+            $seo['og']['locale'] = $this->toOgLocale($currentLocale);
+
+            // Add og:locale:alternate for all other enabled languages
+            $seo['og']['locale:alternate'] = [];
+            foreach ($enabledLocales as $locale) {
+                if ($locale !== $currentLocale) {
+                    $seo['og']['locale:alternate'][] = $this->toOgLocale($locale);
+                }
+            }
+
+            // Build alternate URLs using translated slugs
+            $translationService = app(TranslationService::class);
+            $seo['alternateUrls'] = $translationService->getAlternateUrls(Video::class, $video->id, $video->slug);
         }
 
         return $seo;
@@ -437,8 +463,9 @@ class SeoService
     protected function baseMeta(string $title, string $description, ?string $canonicalPath = null): array
     {
         $canonical = $this->canonical($canonicalPath);
+        $currentLocale = App::getLocale();
 
-        return [
+        $meta = [
             'title' => $title,
             'description' => $description,
             'canonical' => $canonical,
@@ -448,7 +475,7 @@ class SeoService
                 'description' => $description,
                 'url' => $canonical ?? url()->current(),
                 'site_name' => $this->siteName(),
-                'locale' => $this->s('seo_locale', 'en_US'),
+                'locale' => $this->toOgLocale($currentLocale),
                 'type' => $this->s('seo_og_type', 'website'),
                 'image' => $this->s('seo_og_image', ''),
             ],
@@ -461,7 +488,21 @@ class SeoService
             'keywords' => $this->s('seo_meta_keywords', ''),
             'schema' => [],
             'thumbnailAlt' => '',
+            'alternateUrls' => [],
         ];
+
+        // Add og:locale:alternate for all other enabled languages
+        $enabledLocales = TranslationService::getEnabledLocales();
+        if (count($enabledLocales) > 1) {
+            $meta['og']['locale:alternate'] = [];
+            foreach ($enabledLocales as $locale) {
+                if ($locale !== $currentLocale) {
+                    $meta['og']['locale:alternate'][] = $this->toOgLocale($locale);
+                }
+            }
+        }
+
+        return $meta;
     }
 
     /**
@@ -511,6 +552,26 @@ class SeoService
                 'query-input' => 'required name=search_term_string',
             ],
         ];
+    }
+
+    /**
+     * Convert a locale code (e.g. 'en') to OG locale format (e.g. 'en_US').
+     */
+    protected function toOgLocale(string $locale): string
+    {
+        $map = [
+            'en' => 'en_US', 'es' => 'es_ES', 'fr' => 'fr_FR', 'de' => 'de_DE',
+            'pt' => 'pt_BR', 'it' => 'it_IT', 'nl' => 'nl_NL', 'ru' => 'ru_RU',
+            'ja' => 'ja_JP', 'ko' => 'ko_KR', 'zh' => 'zh_CN', 'ar' => 'ar_SA',
+            'hi' => 'hi_IN', 'tr' => 'tr_TR', 'pl' => 'pl_PL', 'sv' => 'sv_SE',
+            'da' => 'da_DK', 'no' => 'nb_NO', 'fi' => 'fi_FI', 'cs' => 'cs_CZ',
+            'th' => 'th_TH', 'vi' => 'vi_VN', 'id' => 'id_ID', 'ms' => 'ms_MY',
+            'ro' => 'ro_RO', 'uk' => 'uk_UA', 'el' => 'el_GR', 'hu' => 'hu_HU',
+            'he' => 'he_IL', 'bg' => 'bg_BG', 'hr' => 'hr_HR', 'sk' => 'sk_SK',
+            'sr' => 'sr_RS', 'lt' => 'lt_LT', 'lv' => 'lv_LV', 'et' => 'et_EE',
+            'fil' => 'fil_PH',
+        ];
+        return $map[$locale] ?? $locale;
     }
 
     /**

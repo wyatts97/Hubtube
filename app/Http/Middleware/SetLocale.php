@@ -48,6 +48,11 @@ class SetLocale
             URL::defaults(['locale' => $currentLocale]);
         }
 
-        return $next($request);
+        $response = $next($request);
+
+        // Set Content-Language header for search engine crawlers
+        $response->headers->set('Content-Language', App::getLocale());
+
+        return $response;
     }
 }
