@@ -1,4 +1,28 @@
 <x-filament-panels::page>
+    <style>
+        .ht-panel {
+            background: #1f2937;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 0.75rem;
+        }
+        .ht-panel-soft {
+            background: #1f2937;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 0.75rem;
+        }
+        .ht-table-head {
+            background: #374151;
+        }
+        .ht-table-body tr {
+            background: #1f2937;
+        }
+        .ht-table-body tr:hover {
+            background: #374151;
+        }
+        .ht-table-body tr + tr {
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+    </style>
     @if($this->regenerating)
         <div wire:poll.2s="processRegeneration"></div>
     @endif
@@ -15,19 +39,15 @@
     </form>
 
     {{-- Translation Overrides Section --}}
-    <div class="mt-10 rounded-xl border border-gray-700 bg-gray-800/50 p-6">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <h2 class="text-lg font-bold text-white">Translation Overrides</h2>
-                <p class="text-sm text-gray-400">
-                    Fix or replace words/phrases that Google Translate gets wrong. For example, set "wedgie" → the correct term in each language.
-                    Overrides apply to both dynamic content and static UI translations.
-                </p>
-            </div>
-        </div>
+    <x-filament::section
+        class="mt-10"
+        heading="Translation Overrides"
+        description="Fix or replace words/phrases that Google Translate gets wrong. Overrides apply to both dynamic content and static UI translations."
+    >
+        <div class="space-y-6">
 
         {{-- Add/Edit Override Form --}}
-        <div class="p-4 rounded-xl border border-gray-700 bg-gray-900 mb-6">
+        <div class="ht-panel-soft p-4">
             <h3 class="text-sm font-semibold text-white mb-3">
                 {{ $editingOverrideId ? '✏️ Edit Override' : '➕ Add New Override' }}
             </h3>
@@ -75,7 +95,7 @@
         </div>
 
         {{-- Filter + Actions --}}
-        <div class="flex items-center gap-3 mb-4">
+        <div class="flex items-center gap-3">
             <div class="flex items-center gap-2">
                 <label class="text-xs font-medium text-gray-400">Filter:</label>
                 <select wire:model.live="overrideFilterLocale" class="rounded-lg border-gray-600 bg-gray-700 text-white text-sm py-1">
@@ -94,9 +114,9 @@
 
         {{-- Overrides Table --}}
         @if($this->overrides->count() > 0)
-            <div class="overflow-x-auto rounded-xl border border-gray-700 bg-gray-900/80">
+            <div class="ht-panel overflow-x-auto">
                 <table class="w-full text-sm">
-                    <thead class="bg-gray-800">
+                    <thead class="ht-table-head">
                         <tr>
                             <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Language</th>
                             <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Wrong Text</th>
@@ -107,9 +127,9 @@
                             <th class="px-4 py-2.5 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-700">
+                    <tbody class="ht-table-body">
                         @foreach($this->overrides as $override)
-                            <tr class="{{ !$override->is_active ? 'opacity-50' : '' }} bg-gray-900 hover:bg-gray-800/50">
+                            <tr class="{{ !$override->is_active ? 'opacity-50' : '' }}">
                                 <td class="px-4 py-2.5 whitespace-nowrap">
                                     @if($override->locale === '*')
                                         <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-900/30 text-purple-300">🌐 All</span>
@@ -146,7 +166,8 @@
                 <p class="text-xs mt-1">Add overrides above to fix words that Google Translate gets wrong — like niche slang or brand terms.</p>
             </div>
         @endif
-    </div>
+        </div>
+    </x-filament::section>
 
     {{-- Regenerate Translations --}}
     <div class="mt-8 p-4 rounded-xl bg-gray-800/50 border border-gray-700">

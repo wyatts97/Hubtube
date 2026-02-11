@@ -1,4 +1,28 @@
 <x-filament-panels::page>
+    <style>
+        .ht-panel {
+            background: #111827;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 0.75rem;
+        }
+        .ht-panel-soft {
+            background: #1f2937;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 0.75rem;
+        }
+        .ht-table-head {
+            background: #1f2937;
+        }
+        .ht-table-body tr {
+            background: #111827;
+        }
+        .ht-table-body tr:hover {
+            background: #1f2937;
+        }
+        .ht-table-body tr + tr {
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+    </style>
     {{-- ── Global Ad Settings Form ── --}}
     <form wire:submit="save">
         {{ $this->form }}
@@ -11,22 +35,22 @@
     </form>
 
     {{-- ── Video Ad Creatives Management ── --}}
-    <div class="mt-10 rounded-xl border border-gray-700 bg-gray-800/50 p-6">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <h2 class="text-xl font-bold text-white">Video Ad Creatives</h2>
-                <p class="text-sm text-gray-400 mt-1">
-                    Manage individual ad creatives for pre-roll, mid-roll, and post-roll placements. Supports VAST/VPAID tags, direct MP4 URLs, and HTML ad scripts.
-                </p>
-            </div>
+    <x-filament::section
+        class="mt-10"
+        heading="Video Ad Creatives"
+        description="Manage individual ad creatives for pre-roll, mid-roll, and post-roll placements. Supports VAST/VPAID tags, direct MP4 URLs, and HTML ad scripts."
+    >
+        <x-slot name="headerEnd">
             <x-filament::button wire:click="openAdForm" icon="heroicon-o-plus">
                 Add Ad Creative
             </x-filament::button>
-        </div>
+        </x-slot>
+
+        <div class="space-y-6">
 
         {{-- Ad Form Modal --}}
         @if($showAdForm)
-        <div class="mb-6 p-6 rounded-xl border border-gray-700 bg-gray-900">
+        <div class="ht-panel-soft mb-6 p-6">
             <h3 class="text-lg font-semibold mb-4 text-white">
                 {{ $editingAdId ? 'Edit Ad Creative' : 'New Ad Creative' }}
             </h3>
@@ -152,9 +176,9 @@
         @endif
 
         {{-- Ads Table --}}
-        <div class="overflow-x-auto rounded-xl border border-gray-700 bg-gray-900/80">
+        <div class="ht-panel overflow-x-auto">
             <table class="w-full text-sm">
-                <thead class="bg-gray-800">
+                <thead class="ht-table-head">
                     <tr>
                         <th class="px-4 py-3 text-left font-medium text-gray-300">Name</th>
                         <th class="px-4 py-3 text-left font-medium text-gray-300">Type</th>
@@ -165,9 +189,9 @@
                         <th class="px-4 py-3 text-right font-medium text-gray-300">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-700">
+                <tbody class="ht-table-body">
                     @forelse($this->videoAds as $ad)
-                        <tr class="bg-gray-900 hover:bg-gray-800/50 {{ !$ad->is_active ? 'opacity-50' : '' }}">
+                        <tr class="{{ !$ad->is_active ? 'opacity-50' : '' }}">
                             <td class="px-4 py-3 text-white font-medium">{{ $ad->name }}</td>
                             <td class="px-4 py-3">
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
@@ -236,6 +260,7 @@
             </table>
         </div>
     </div>
+    </x-filament::section>
 
     {{-- Ad Size Guidelines --}}
     <div class="mt-8 p-4 rounded-lg bg-gray-800">
