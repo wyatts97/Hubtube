@@ -57,6 +57,33 @@ class VideoController extends Controller
         ]);
     }
 
+    /**
+     * Locale-prefixed video show — manually resolves by slug to avoid
+     * model binding conflict with the {locale} route prefix parameter.
+     * Also checks for translated slugs in the translations table.
+     */
+    public function localeShow(string $locale, string $slug): Response
+    {
+        // Try original slug first
+        $video = Video::where('slug', $slug)->first();
+
+        // If not found, try translated slug
+        if (!$video) {
+            $currentLocale = app()->getLocale();
+            $translationService = app(\App\Services\TranslationService::class);
+            $videoId = $translationService->findByTranslatedSlug(Video::class, $slug, $currentLocale);
+            if ($videoId) {
+                $video = Video::find($videoId);
+            }
+        }
+
+        if (!$video) {
+            abort(404);
+        }
+
+        return $this->show($video);
+    }
+
     public function show(Video $video): Response
     {
         if (!$video->isAccessibleBy(auth()->user())) {

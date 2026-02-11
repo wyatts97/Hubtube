@@ -5,7 +5,9 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { Filter, X, ArrowUpDown, Clock, Flame, CalendarDays } from 'lucide-vue-next';
 import { sanitizeHtml } from '@/Composables/useSanitize';
+import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 
+const { translateVideos, tr } = useAutoTranslate(['title']);
 const page = usePage();
 
 const props = defineProps({
@@ -57,8 +59,25 @@ const onClickOutside = (e) => {
         showFilters.value = false;
     }
 };
-onMounted(() => document.addEventListener('click', onClickOutside));
+onMounted(() => {
+    document.addEventListener('click', onClickOutside);
+    const allVideos = props.videos?.data || [];
+    if (allVideos.length) translateVideos(allVideos);
+});
 onUnmounted(() => document.removeEventListener('click', onClickOutside));
+
+const withTranslation = (video) => {
+    const title = tr(video, 'title');
+    const translatedSlug = tr(video, 'translated_slug');
+    if (title !== video.title || translatedSlug) {
+        const override = { ...video, title };
+        if (translatedSlug && translatedSlug !== video.slug) {
+            override.translated_slug = translatedSlug;
+        }
+        return override;
+    }
+    return video;
+};
 
 const bannerEnabled = computed(() => {
     const e = props.bannerAd?.enabled;
@@ -161,7 +180,7 @@ const bannerCode = computed(() => sanitizeHtml(props.bannerAd?.code || ''));
             <VideoCard
                 v-for="video in videos.data"
                 :key="video.id"
-                :video="video"
+                :video="withTranslation(video)"
             />
         </div>
 

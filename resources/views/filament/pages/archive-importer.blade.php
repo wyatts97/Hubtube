@@ -248,6 +248,24 @@
 
                         @if($alreadyImported > 0)
                             <x-filament::button
+                                wire:click="fixSeekability"
+                                wire:loading.attr="disabled"
+                                wire:target="fixSeekability"
+                                wire:confirm="This will run ffmpeg faststart on all {{ $alreadyImported }} imported videos to fix seeking. This may take a while. Continue?"
+                                color="warning"
+                                size="lg"
+                            >
+                                <span wire:loading.remove wire:target="fixSeekability">
+                                    <x-heroicon-m-forward class="w-4 h-4 mr-1" />
+                                    Fix Seekability ({{ $alreadyImported }})
+                                </span>
+                                <span wire:loading wire:target="fixSeekability" class="flex items-center gap-2">
+                                    <x-filament::loading-indicator class="w-4 h-4" />
+                                    Processing...
+                                </span>
+                            </x-filament::button>
+
+                            <x-filament::button
                                 wire:click="purgeImported"
                                 wire:loading.attr="disabled"
                                 wire:target="purgeImported"

@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Setting;
 use App\Services\TranslationService;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Filament\Forms\Components\CheckboxList;
@@ -36,6 +37,10 @@ class LanguageSettings extends Page implements HasForms
     public string $overrideNotes = '';
     public ?int $editingOverrideId = null;
     public string $overrideFilterLocale = '';
+    public string $generationOutput = '';
+    public bool $regenerating = false;
+    public string $regenerationStatus = '';
+    public string $regenerationStep = ''; // 'generate', 'build', 'done'
 
     public function mount(): void
     {
@@ -273,5 +278,100 @@ class LanguageSettings extends Page implements HasForms
             ->body('All cached translations have been purged. They will be re-translated on next request.')
             ->success()
             ->send();
+    }
+
+    /**
+     * Start the regeneration process (called by button click).
+     * Uses Livewire polling to step through generate → build → done.
+     */
+    public function regenerateTranslations(): void
+    {
+        $this->regenerating = true;
+        $this->regenerationStep = 'generate';
+        $this->regenerationStatus = 'Generating translation files…';
+        $this->generationOutput = '';
+    }
+
+    /**
+     * Called by Livewire polling to process the next step.
+     */
+    public function processRegeneration(): void
+    {
+        if (!$this->regenerating) {
+            return;
+        }
+
+        if ($this->regenerationStep === 'generate') {
+            try {
+                $exitCode = Artisan::call('translations:generate', ['--force' => true]);
+                $output = Artisan::output();
+                $this->generationOutput = trim($output);
+
+                if ($exitCode === 0) {
+                    $this->regenerationStep = 'build';
+                    $this->regenerationStatus = 'Rebuilding frontend assets…';
+                } else {
+                    $this->regenerating = false;
+                    $this->regenerationStep = '';
+                    $this->regenerationStatus = '';
+                    Notification::make()
+                        ->title('Translation generation failed')
+                        ->body('Check the output below for details.')
+                        ->danger()
+                        ->send();
+                }
+            } catch (\Exception $e) {
+                $this->generationOutput = "Error: {$e->getMessage()}";
+                $this->regenerating = false;
+                $this->regenerationStep = '';
+                $this->regenerationStatus = '';
+                Notification::make()
+                    ->title('Translation generation failed')
+                    ->body($e->getMessage())
+                    ->danger()
+                    ->send();
+            }
+        } elseif ($this->regenerationStep === 'build') {
+            try {
+                $projectRoot = base_path();
+                $npmPath = trim(shell_exec('which npm 2>/dev/null') ?? '');
+                if (empty($npmPath)) {
+                    $npmPath = '/usr/bin/npm';
+                }
+
+                $command = "cd {$projectRoot} && {$npmPath} run build 2>&1";
+                $output = shell_exec($command);
+                $buildOutput = trim($output ?? 'No output received.');
+                $this->generationOutput .= "\n\n--- Build Output ---\n" . $buildOutput;
+
+                $this->regenerating = false;
+                $this->regenerationStep = '';
+                $this->regenerationStatus = '';
+
+                if (str_contains($buildOutput, 'built in') || str_contains($buildOutput, 'vite')) {
+                    Notification::make()
+                        ->title('Translations regenerated successfully')
+                        ->body('All translation files have been generated and the frontend has been rebuilt.')
+                        ->success()
+                        ->send();
+                } else {
+                    Notification::make()
+                        ->title('Translations generated but build may have issues')
+                        ->body('Check the output below for details.')
+                        ->warning()
+                        ->send();
+                }
+            } catch (\Exception $e) {
+                $this->generationOutput .= "\n\nBuild Error: {$e->getMessage()}";
+                $this->regenerating = false;
+                $this->regenerationStep = '';
+                $this->regenerationStatus = '';
+                Notification::make()
+                    ->title('Frontend rebuild failed')
+                    ->body($e->getMessage())
+                    ->danger()
+                    ->send();
+            }
+        }
     }
 }

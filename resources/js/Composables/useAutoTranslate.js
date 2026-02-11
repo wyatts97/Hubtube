@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue';
+import { ref, onMounted } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 
 /**
@@ -6,29 +6,27 @@ import { usePage } from '@inertiajs/vue3';
  * the site in a non-default locale.
  *
  * Usage:
- *   const { translatedVideos } = useAutoTranslate(videos, ['title']);
- *   // translatedVideos.value contains the videos with translated fields
+ *   const { translated, translateVideos } = useAutoTranslate(['title']);
+ *   onMounted(() => translateVideos(props.featuredVideos));
+ *   // Use translated.value in template — falls back to originals instantly
  */
-export function useAutoTranslate(videosRef, fields = ['title']) {
+export function useAutoTranslate(fields = ['title']) {
     const page = usePage();
-    const translatedVideos = ref([]);
+    const translated = ref({});
     const isTranslating = ref(false);
 
-    const locale = () => page.props.locale?.current || 'en';
-    const defaultLocale = () => page.props.locale?.default || 'en';
+    const getLocale = () => page.props.locale?.current || 'en';
     const isEnabled = () => {
         const loc = page.props.locale;
         return loc?.enabled && loc?.current !== loc?.default;
     };
 
-    async function translateBatch(videos) {
-        if (!isEnabled() || !videos?.length) {
-            translatedVideos.value = videos || [];
-            return;
-        }
-
-        // Start with original videos immediately (no blank screen)
-        translatedVideos.value = videos;
+    /**
+     * Translate an array of videos. Results are stored in translated ref
+     * keyed by video ID, e.g. translated.value[22] = { title: 'Translated Title' }
+     */
+    async function translateVideos(videos) {
+        if (!isEnabled() || !videos?.length) return;
 
         const ids = videos.map(v => v.id).filter(Boolean);
         if (!ids.length) return;
@@ -46,28 +44,28 @@ export function useAutoTranslate(videosRef, fields = ['title']) {
                     type: 'video',
                     ids,
                     fields,
-                    locale: locale(),
+                    locale: getLocale(),
                 }),
             });
 
             if (response.ok) {
                 const data = await response.json();
                 if (data.translations?.length) {
-                    // Merge translated fields back into original video objects
-                    const translationMap = {};
+                    const map = { ...translated.value };
                     for (const t of data.translations) {
-                        translationMap[t.id] = t;
-                    }
-
-                    translatedVideos.value = videos.map(v => {
-                        const t = translationMap[v.id];
-                        if (!t) return v;
-                        const merged = { ...v };
+                        const overrides = {};
                         for (const field of fields) {
-                            if (t[field]) merged[field] = t[field];
+                            if (t[field]) overrides[field] = t[field];
                         }
-                        return merged;
-                    });
+                        // Store translated_slug for SEO-friendly locale URLs
+                        if (t.translated_slug) {
+                            overrides.translated_slug = t.translated_slug;
+                        }
+                        if (Object.keys(overrides).length) {
+                            map[t.id] = overrides;
+                        }
+                    }
+                    translated.value = map;
                 }
             }
         } catch (e) {
@@ -77,14 +75,18 @@ export function useAutoTranslate(videosRef, fields = ['title']) {
         }
     }
 
-    // Watch for changes in the videos ref
-    watch(videosRef, (newVideos) => {
-        const list = Array.isArray(newVideos) ? newVideos : (newVideos?.data || []);
-        translateBatch(list);
-    }, { immediate: true });
+    /**
+     * Get translated field for a video, falling back to original.
+     * Usage in template: vTitle(video) instead of video.title
+     */
+    function tr(video, field = 'title') {
+        return translated.value[video.id]?.[field] || video[field];
+    }
 
     return {
-        translatedVideos,
+        translated,
         isTranslating,
+        translateVideos,
+        tr,
     };
 }

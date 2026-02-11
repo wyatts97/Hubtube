@@ -6,7 +6,7 @@ import { useOptimizedImage } from '@/Composables/useOptimizedImage';
 import { useI18n } from '@/Composables/useI18n';
 
 const { thumbnailProps, avatarProps } = useOptimizedImage();
-const { localizedUrl } = useI18n();
+const { localizedUrl, locale, t, isTranslated } = useI18n();
 const page = usePage();
 
 const props = defineProps({
@@ -27,7 +27,9 @@ const videoUrl = computed(() => {
     if (props.video.is_short) {
         return `/shorts/${props.video.id}`;
     }
-    return localizedUrl(`/${props.video.slug}`);
+    // Use translated slug for locale-prefixed URLs (SEO: /pt/apertado instead of /pt/wedgied)
+    const slug = (isTranslated.value && props.video.translated_slug) ? props.video.translated_slug : props.video.slug;
+    return localizedUrl(`/${slug}`);
 });
 
 const formattedViews = computed(() => formatViews(props.video.views_count));
@@ -44,7 +46,7 @@ const formattedDuration = computed(() => {
     return `${minutes}:${String(seconds).padStart(2, '0')}`;
 });
 
-const timeAgo = computed(() => timeAgoFn(props.video.published_at || props.video.created_at));
+const timeAgo = computed(() => timeAgoFn(props.video.published_at || props.video.created_at, locale.value));
 
 const showAvatar = computed(() => vc.value.showAvatar !== false);
 const showUploader = computed(() => vc.value.showUploader !== false);
@@ -132,7 +134,7 @@ const onPreviewLoad = () => { previewLoaded.value = true; };
                     <span v-if="video.user.is_verified" class="inline-block ml-1">✓</span>
                 </Link>
                 <p v-if="showViews || showTimestamp" :style="{ ...metaStyle, color: metaColor }">
-                    <template v-if="showViews">{{ formattedViews }} views</template>
+                    <template v-if="showViews">{{ t('video.views', { count: formattedViews }) }}</template>
                     <template v-if="showViews && showTimestamp"> • </template>
                     <template v-if="showTimestamp">{{ timeAgo }}</template>
                 </p>

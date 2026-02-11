@@ -217,8 +217,8 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/live', [LiveStreamController::class, 'index'])->name('locale.live.index');
         Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('locale.pages.show');
 
-        // Locale-prefixed video show (translated slug or original slug)
-        Route::get('/{video:slug}', [VideoController::class, 'show'])->where('video', '^(?!api|admin|livewire).*')->name('locale.videos.show');
+        // Locale-prefixed video show — uses plain {slug} param to avoid model binding conflict with {locale}
+        Route::get('/{slug}', [VideoController::class, 'localeShow'])->name('locale.videos.show');
     });
 
     // Video show route - must be LAST to avoid conflicts with locale and other routes

@@ -6,6 +6,11 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { Loader2 } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
+import { useI18n } from '@/Composables/useI18n';
+import { useAutoTranslate } from '@/Composables/useAutoTranslate';
+
+const { t, localizedUrl } = useI18n();
+const { translateVideos, tr } = useAutoTranslate(['title']);
 
 const props = defineProps({
     videos: Object,
@@ -54,6 +59,24 @@ let observer = null;
 const loadMoreTrigger = ref(null);
 
 onMounted(() => {
+    const allVideos = props.videos?.data || [];
+    if (allVideos.length) translateVideos(allVideos);
+});
+
+const withTranslation = (video) => {
+    const title = tr(video, 'title');
+    const translatedSlug = tr(video, 'translated_slug');
+    if (title !== video.title || translatedSlug) {
+        const override = { ...video, title };
+        if (translatedSlug && translatedSlug !== video.slug) {
+            override.translated_slug = translatedSlug;
+        }
+        return override;
+    }
+    return video;
+};
+
+onMounted(() => {
     if (infiniteScrollEnabled.value && loadMoreTrigger.value) {
         observer = new IntersectionObserver(
             (entries) => {
@@ -84,14 +107,14 @@ const goToPage = (pageNum) => {
 
     <AppLayout>
         <div class="mb-6">
-            <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">Trending</h1>
-            <p class="mt-1" style="color: var(--color-text-secondary);">Popular videos from the past week</p>
+            <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('nav.trending') || 'Trending' }}</h1>
+            <p class="mt-1" style="color: var(--color-text-secondary);">{{ t('home.popular') || 'Popular videos from the past week' }}</p>
         </div>
 
         <!-- Infinite Scroll Mode -->
         <template v-if="infiniteScrollEnabled">
             <div v-if="videoList.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                <VideoCard v-for="video in videoList" :key="video.id" :video="video" />
+                <VideoCard v-for="video in videoList" :key="video.id" :video="withTranslation(video)" />
             </div>
             
             <div ref="loadMoreTrigger" class="flex justify-center py-8">
@@ -108,7 +131,7 @@ const goToPage = (pageNum) => {
         <!-- Pagination Mode -->
         <template v-else>
             <div v-if="videos.data?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                <VideoCard v-for="video in videos.data" :key="video.id" :video="video" />
+                <VideoCard v-for="video in videos.data" :key="video.id" :video="withTranslation(video)" />
             </div>
 
             <div v-else class="text-center py-12">

@@ -535,7 +535,10 @@ class ArchiveImportService
             File::ensureDirectoryExists(dirname($destPath));
             File::copy($videoSourcePath, $destPath);
 
-            $videoSize = filesize($videoSourcePath);
+            // Move moov atom to the beginning of the MP4 for browser seekability
+            $this->applyFaststart($destPath);
+
+            $videoSize = filesize($destPath);
 
             // Copy thumbnail if available
             $thumbnailStoragePath = null;
@@ -724,6 +727,39 @@ class ArchiveImportService
             ['name' => $name, 'usage_count' => 0]
         )->increment('usage_count');
         $this->hashtagCache[$slug] = true;
+    }
+
+    /**
+     * Move the moov atom to the beginning of an MP4 file so browsers can seek without
+     * downloading the entire file. Uses ffmpeg -movflags +faststart (copy, no re-encode).
+     */
+    private function applyFaststart(string $filePath): void
+    {
+        $ffmpegPath = \App\Models\Setting::get('ffmpeg_path', 'ffmpeg');
+
+        $tmpPath = $filePath . '.faststart.mp4';
+        $cmd = escapeshellarg($ffmpegPath)
+            . ' -i ' . escapeshellarg($filePath)
+            . ' -c copy -movflags +faststart'
+            . ' -y ' . escapeshellarg($tmpPath)
+            . ' 2>&1';
+
+        $output = shell_exec($cmd);
+
+        if (file_exists($tmpPath) && filesize($tmpPath) > 0) {
+            // Replace original with faststart version
+            unlink($filePath);
+            rename($tmpPath, $filePath);
+        } else {
+            // Faststart failed — keep original (still playable, just not seekable)
+            if (file_exists($tmpPath)) {
+                unlink($tmpPath);
+            }
+            Log::warning('Faststart failed for archive import', [
+                'file' => $filePath,
+                'output' => $output,
+            ]);
+        }
     }
 
     private function formatBytes(int $bytes): string

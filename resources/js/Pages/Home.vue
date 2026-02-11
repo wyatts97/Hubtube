@@ -11,8 +11,10 @@ import { Loader2 } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
 import { sanitizeHtml } from '@/Composables/useSanitize';
 import { useI18n } from '@/Composables/useI18n';
+import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 
 const { t, localizedUrl } = useI18n();
+const { translateVideos, tr } = useAutoTranslate(['title']);
 
 // Initial loading state for skeleton display
 const isInitialLoad = ref(true);
@@ -37,6 +39,30 @@ const props = defineProps({
 
 const page = usePage();
 const infiniteScrollEnabled = computed(() => page.props.app?.infinite_scroll_enabled ?? false);
+
+// Auto-translate video titles when viewing in a non-default locale
+onMounted(() => {
+    const allVideos = [
+        ...(props.featuredVideos || []),
+        ...(props.latestVideos?.data || []),
+        ...(props.popularVideos || []),
+    ];
+    if (allVideos.length) translateVideos(allVideos);
+});
+
+// Helper to create a video object with translated title + slug for VideoCard
+const withTranslation = (video) => {
+    const title = tr(video, 'title');
+    const translatedSlug = tr(video, 'translated_slug');
+    if (title !== video.title || translatedSlug) {
+        const override = { ...video, title };
+        if (translatedSlug && translatedSlug !== video.slug) {
+            override.translated_slug = translatedSlug;
+        }
+        return override;
+    }
+    return video;
+};
 
 // Infinite scroll state
 const videos = ref([...(props.latestVideos?.data || [])]);
@@ -148,7 +174,7 @@ const shouldShowAd = (index, totalLength) => {
                     <VideoCardSkeleton v-for="i in 4" :key="'skeleton-featured-' + i" />
                 </template>
                 <template v-else>
-                    <VideoCard v-for="video in featuredVideos" :key="video.id" :video="video" />
+                    <VideoCard v-for="video in featuredVideos" :key="video.id" :video="withTranslation(video)" />
                 </template>
             </div>
         </section>
@@ -169,7 +195,7 @@ const shouldShowAd = (index, totalLength) => {
             <template v-else-if="infiniteScrollEnabled">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     <template v-for="(video, index) in videos" :key="'scroll-' + video.id">
-                        <VideoCard :video="video" />
+                        <VideoCard :video="withTranslation(video)" />
                         <!-- Ad after every X videos -->
                         <div 
                             v-if="shouldShowAd(index, videos.length)"
@@ -196,7 +222,7 @@ const shouldShowAd = (index, totalLength) => {
             <template v-else>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     <template v-for="(video, index) in latestVideos.data" :key="'page-' + video.id">
-                        <VideoCard :video="video" />
+                        <VideoCard :video="withTranslation(video)" />
                         <!-- Ad after every X videos -->
                         <div 
                             v-if="shouldShowAd(index, latestVideos.data.length)"
@@ -226,7 +252,7 @@ const shouldShowAd = (index, totalLength) => {
                     <VideoCardSkeleton v-for="i in 4" :key="'skeleton-popular-' + i" />
                 </template>
                 <template v-else>
-                    <VideoCard v-for="video in popularVideos" :key="video.id" :video="video" />
+                    <VideoCard v-for="video in popularVideos" :key="video.id" :video="withTranslation(video)" />
                 </template>
             </div>
         </section>

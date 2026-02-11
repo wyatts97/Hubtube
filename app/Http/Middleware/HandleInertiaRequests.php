@@ -186,13 +186,11 @@ class HandleInertiaRequests extends Middleware
             $enabledLanguages = TranslationService::getEnabledLanguages();
             $isTranslated = $currentLocale !== $defaultLocale;
 
-            // Load UI translations from JSON file for current locale
+            // Load UI translations from JSON file for current locale (always, including default)
             $translations = [];
-            if ($isTranslated) {
-                $file = resource_path("js/i18n/{$currentLocale}.json");
-                if (file_exists($file)) {
-                    $translations = json_decode(file_get_contents($file), true) ?: [];
-                }
+            $file = resource_path("js/i18n/{$currentLocale}.json");
+            if (file_exists($file)) {
+                $translations = json_decode(file_get_contents($file), true) ?: [];
             }
 
             return [

@@ -1,4 +1,8 @@
 <x-filament-panels::page>
+    @if($this->regenerating)
+        <div wire:poll.2s="processRegeneration"></div>
+    @endif
+
     {{-- Language Settings Form --}}
     <form wire:submit="save">
         {{ $this->form }}
@@ -90,7 +94,7 @@
 
         {{-- Overrides Table --}}
         @if($this->overrides->count() > 0)
-            <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+            <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 dark:bg-gray-800">
                         <tr>
@@ -105,7 +109,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                         @foreach($this->overrides as $override)
-                            <tr class="{{ !$override->is_active ? 'opacity-50' : '' }} hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                            <tr class="{{ !$override->is_active ? 'opacity-50' : '' }} bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                 <td class="px-4 py-2.5 whitespace-nowrap">
                                     @if($override->locale === '*')
                                         <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">🌐 All</span>
@@ -117,7 +121,7 @@
                                 <td class="px-4 py-2.5">
                                     <code class="text-xs px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300">{{ $override->original_text }}</code>
                                 </td>
-                                <td class="px-4 py-2.5 text-gray-400">→</td>
+                                <td class="px-4 py-2.5 text-gray-400 dark:text-gray-500">→</td>
                                 <td class="px-4 py-2.5">
                                     <code class="text-xs px-1.5 py-0.5 rounded bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300">{{ $override->replacement_text }}</code>
                                 </td>
@@ -144,38 +148,49 @@
         @endif
     </div>
 
-    {{-- Info Boxes --}}
-    <div class="mt-8 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Generate UI Translation Files</h3>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-            After enabling new languages or adding overrides, run this command on the server to auto-generate the UI translation JSON files:
+    {{-- Regenerate Translations --}}
+    <div class="mt-8 p-4 rounded-xl bg-gray-800/50 border border-gray-700">
+        <h3 class="text-sm font-semibold text-white mb-2">Regenerate Translations</h3>
+        <p class="text-sm text-gray-400 mb-3">
+            After enabling new languages or adding overrides, regenerate translations and rebuild the site. This process runs in the background — you can leave this page safely.
         </p>
-        <code class="block p-3 rounded-lg bg-gray-900 text-green-400 text-sm font-mono">
-            php artisan translations:generate --force
-        </code>
-        <p class="text-xs text-gray-500 dark:text-gray-500 mt-2">
-            This uses Google Translate to translate all UI text, then applies your overrides on top.
-            Then run <code>npm run build</code> to include them in the frontend.
-        </p>
+        <div class="flex flex-wrap items-center gap-3">
+            @if($this->regenerating)
+                <div class="flex items-center gap-2">
+                    <x-filament::button disabled color="gray" size="sm">
+                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                        Regenerating…
+                    </x-filament::button>
+                    <span class="text-xs text-gray-400">{{ $this->regenerationStatus }}</span>
+                </div>
+            @else
+                <x-filament::button wire:click="regenerateTranslations" color="primary" size="sm">
+                    Regenerate Translations &amp; Rebuild
+                </x-filament::button>
+            @endif
+        </div>
+        @if($this->generationOutput)
+            <pre class="mt-3 p-3 rounded-lg bg-gray-900 text-green-400 text-xs font-mono max-h-48 overflow-y-auto">{{ $this->generationOutput }}</pre>
+        @endif
     </div>
 
-    <div class="mt-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-        <h3 class="text-sm font-semibold text-amber-900 dark:text-amber-200 mb-2">💡 Override Tips</h3>
-        <ul class="text-sm text-amber-800 dark:text-amber-300 space-y-1 list-disc list-inside">
+    <div class="mt-4 p-4 rounded-xl bg-amber-900/20 border border-amber-800">
+        <h3 class="text-sm font-semibold text-amber-200 mb-2">💡 Override Tips</h3>
+        <ul class="text-sm text-amber-300 space-y-1 list-disc list-inside">
             <li><strong>"All Languages"</strong> overrides apply everywhere — great for brand names or slang that should never be translated (e.g. "wedgie")</li>
             <li><strong>Language-specific</strong> overrides let you fix a bad translation in just one language</li>
             <li><strong>Dynamic content</strong> overrides apply immediately — clear the translation cache to re-translate existing cached content</li>
-            <li><strong>Static UI</strong> overrides require re-running <code>php artisan translations:generate --force</code> + <code>npm run build</code></li>
+            <li><strong>Static UI</strong> overrides require clicking "Regenerate Translations & Rebuild" above</li>
         </ul>
     </div>
 
-    <div class="mt-4 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-        <h3 class="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">How Translation Works</h3>
-        <ul class="text-sm text-blue-800 dark:text-blue-300 space-y-1 list-disc list-inside">
+    <div class="mt-4 p-4 rounded-xl bg-blue-900/20 border border-blue-800">
+        <h3 class="text-sm font-semibold text-blue-200 mb-2">How Translation Works</h3>
+        <ul class="text-sm text-blue-300 space-y-1 list-disc list-inside">
             <li><strong>Static UI</strong> — Buttons, labels, navigation translated via JSON files (generated once)</li>
             <li><strong>Dynamic Content</strong> — Video titles, descriptions auto-translated on-demand and cached in DB</li>
             <li><strong>Overrides</strong> — Your word/phrase corrections are applied after Google Translate runs</li>
-            <li><strong>SEO URLs</strong> — Each language gets its own URL prefix (e.g. <code>/es/trending</code>, <code>/fr/video-slug</code>)</li>
+            <li><strong>SEO URLs</strong> — Each language gets its own translated URL slug (e.g. <code class="text-blue-400">/pt/apertado</code> instead of <code class="text-blue-400">/pt/wedgied</code>)</li>
             <li><strong>hreflang Tags</strong> — Automatically added for search engine indexing of all language versions</li>
         </ul>
     </div>

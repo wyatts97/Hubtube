@@ -284,4 +284,55 @@ class ArchiveImporter extends Page
         if ($this->totalImportable === 0) return 0;
         return (int) round(($this->processedCount / $this->totalImportable) * 100);
     }
+
+    /**
+     * Apply faststart (moov atom at beginning) to all archive-imported videos
+     * so they become seekable in the browser video player.
+     */
+    public function fixSeekability(): void
+    {
+        $ffmpegPath = \App\Models\Setting::get('ffmpeg_path', 'ffmpeg');
+        $videos = \App\Models\Video::where('source_site', 'wedgietube_archive')
+            ->whereNotNull('video_path')
+            ->get();
+
+        $fixed = 0;
+        $failed = 0;
+
+        foreach ($videos as $video) {
+            $disk = $video->storage_disk ?? 'public';
+            $filePath = \Illuminate\Support\Facades\Storage::disk($disk)->path($video->video_path);
+
+            if (!file_exists($filePath)) {
+                $failed++;
+                continue;
+            }
+
+            $tmpPath = $filePath . '.faststart.mp4';
+            $cmd = escapeshellarg($ffmpegPath)
+                . ' -i ' . escapeshellarg($filePath)
+                . ' -c copy -movflags +faststart'
+                . ' -y ' . escapeshellarg($tmpPath)
+                . ' 2>&1';
+
+            shell_exec($cmd);
+
+            if (file_exists($tmpPath) && filesize($tmpPath) > 0) {
+                unlink($filePath);
+                rename($tmpPath, $filePath);
+                $fixed++;
+            } else {
+                if (file_exists($tmpPath)) {
+                    unlink($tmpPath);
+                }
+                $failed++;
+            }
+        }
+
+        Notification::make()
+            ->title('Seekability Fix Complete')
+            ->body("Fixed {$fixed} videos" . ($failed > 0 ? ", {$failed} failed" : '') . '. Videos should now be seekable in the player.')
+            ->success()
+            ->send();
+    }
 }

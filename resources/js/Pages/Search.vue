@@ -1,11 +1,14 @@
 <script setup>
 import { router, usePage } from '@inertiajs/vue3';
 import SeoHead from '@/Components/SeoHead.vue';
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { Search as SearchIcon, Users, Hash } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
+import { useAutoTranslate } from '@/Composables/useAutoTranslate';
+
+const { translateVideos, tr } = useAutoTranslate(['title']);
 
 const props = defineProps({
     query: String,
@@ -45,6 +48,26 @@ const resultsList = () => {
 
 const hasPages = () => {
     return props.results?.last_page && props.results.last_page > 1;
+};
+
+onMounted(() => {
+    if (props.type === 'videos') {
+        const allVideos = props.results?.data || props.results || [];
+        if (allVideos.length) translateVideos(allVideos);
+    }
+});
+
+const withTranslation = (video) => {
+    const title = tr(video, 'title');
+    const translatedSlug = tr(video, 'translated_slug');
+    if (title !== video.title || translatedSlug) {
+        const override = { ...video, title };
+        if (translatedSlug && translatedSlug !== video.slug) {
+            override.translated_slug = translatedSlug;
+        }
+        return override;
+    }
+    return video;
 };
 </script>
 
@@ -96,7 +119,7 @@ const hasPages = () => {
             <!-- Video Results -->
             <template v-if="activeType === 'videos'">
                 <div v-if="resultsList().length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    <VideoCard v-for="video in resultsList()" :key="video.id" :video="video" />
+                    <VideoCard v-for="video in resultsList()" :key="video.id" :video="withTranslation(video)" />
                 </div>
                 <div v-else class="text-center py-12">
                     <SearchIcon class="w-12 h-12 mx-auto mb-4" style="color: var(--color-text-muted);" />
