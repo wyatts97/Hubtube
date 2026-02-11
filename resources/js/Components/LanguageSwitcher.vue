@@ -48,13 +48,13 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
         <button
             v-else
             @click.stop="showDropdown = !showDropdown"
-            class="flex items-center gap-2 w-full px-3 py-2 rounded-lg hover:opacity-80 transition-opacity text-sm"
+            class="flex items-center gap-1.5 w-full px-2 py-1.5 rounded-lg hover:opacity-80 transition-opacity text-xs"
             style="color: var(--color-text-secondary);"
         >
-            <Globe class="w-5 h-5 shrink-0" />
-            <span class="truncate">{{ currentLocaleData().flag }} {{ currentLocaleData().label }}</span>
+            <Globe class="w-4 h-4 shrink-0" />
+            <span class="truncate min-w-0">{{ currentLocaleData().flag }} {{ currentLocaleData().label }}</span>
             <ChevronUp 
-                class="w-3.5 h-3.5 ml-auto shrink-0 transition-transform" 
+                class="w-3 h-3 ml-auto shrink-0 transition-transform" 
                 :class="{ 'rotate-180': showDropdown }" 
             />
         </button>

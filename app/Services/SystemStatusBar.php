@@ -14,7 +14,6 @@ class SystemStatusBar
             'storage' => $this->getStorageMetrics(),
             'ffmpeg' => $this->getFfmpegStatus(),
             'queue' => $this->getQueueStatus(),
-            'scraper' => $this->getScraperStatus(),
         ];
     }
 
@@ -80,23 +79,6 @@ class SystemStatusBar
 
         return [
             'failed' => $failedCount,
-        ];
-    }
-
-    protected function getScraperStatus(): array
-    {
-        $scraperUrl = Setting::get('scraper_url', 'http://localhost:3001');
-        $online = false;
-        try {
-            $ctx = stream_context_create(['http' => ['timeout' => 2]]);
-            $result = @file_get_contents("{$scraperUrl}/health", false, $ctx);
-            $online = $result !== false;
-        } catch (\Exception $e) {
-            // offline
-        }
-
-        return [
-            'online' => $online,
         ];
     }
 

@@ -39,19 +39,6 @@
         @endif
     </div>
 
-    <div class="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
-
-    {{-- Scraper --}}
-    <div class="flex items-center gap-1.5" title="Scraper service: {{ $metrics['scraper']['online'] ? 'Online' : 'Offline' }}">
-        <x-heroicon-m-globe-alt class="w-4 h-4 text-gray-400" />
-        <span class="text-gray-500 dark:text-gray-400">Scraper</span>
-        @if($metrics['scraper']['online'])
-            <span class="inline-block w-2 h-2 rounded-full bg-green-500" title="Online"></span>
-        @else
-            <span class="inline-block w-2 h-2 rounded-full bg-red-500" title="Offline"></span>
-        @endif
-    </div>
-
     {{-- Failed Jobs --}}
     @if($metrics['queue']['failed'] > 0)
         <div class="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>

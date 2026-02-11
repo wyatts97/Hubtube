@@ -34,8 +34,6 @@ class IntegrationSettings extends Page implements HasForms
             'bunny_stream_library_id' => Setting::get('bunny_stream_library_id', ''),
             'bunny_stream_cdn_host' => Setting::get('bunny_stream_cdn_host', ''),
             'bunny_stream_cdn_token_key' => Setting::get('bunny_stream_cdn_token_key', ''),
-            // Scraper
-            'scraper_url' => Setting::get('scraper_url', 'http://localhost:3001'),
             // Mail
             'mail_mailer' => Setting::get('mail_mailer', 'log'),
             'mail_host' => Setting::get('mail_host', ''),
@@ -74,17 +72,6 @@ class IntegrationSettings extends Page implements HasForms
                                             ->revealable()
                                             ->helperText('For signed URL authentication. Leave empty if not using token auth.'),
                                     ])->columns(2),
-                            ]),
-                        Tabs\Tab::make('Scraper')
-                            ->schema([
-                                Section::make('Embed Scraper')
-                                    ->description('Node.js scraper service for importing videos from external sites.')
-                                    ->schema([
-                                        TextInput::make('scraper_url')
-                                            ->label('Scraper URL')
-                                            ->placeholder('http://localhost:3001')
-                                            ->helperText('URL of the scraper microservice'),
-                                    ]),
                             ]),
                         Tabs\Tab::make('Email / SMTP')
                             ->schema([

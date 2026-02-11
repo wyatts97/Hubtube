@@ -201,11 +201,9 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/api/languages', [TranslationController::class, 'languages'])->name('languages');
     Route::post('/api/locale', [TranslationController::class, 'setLocale'])->name('locale.set');
 
-    // Video show route - must be last to avoid conflicts with other routes
-    Route::get('/{video:slug}', [VideoController::class, 'show'])->where('video', '^(?!api|admin|livewire).*')->name('videos.show');
-
     // ── Locale-prefixed routes for SEO (e.g. /es/trending, /fr/video-slug) ──
-    Route::prefix('{locale}')->where(['locale' => '[a-z]{2,3}'])->middleware('locale')->group(function () {
+    // MUST be before the catch-all /{video:slug} route so /es etc. aren't matched as video slugs
+    Route::prefix('{locale}')->where(['locale' => '[a-z]{2,3}'])->middleware(['locale', 'age.verified'])->group(function () {
         Route::get('/', [HomeController::class, 'index'])->name('locale.home');
         Route::get('/trending', [HomeController::class, 'trending'])->name('locale.trending');
         Route::get('/shorts', [HomeController::class, 'shorts'])->name('locale.shorts');
@@ -222,6 +220,9 @@ Route::middleware('age.verified')->group(function () {
         // Locale-prefixed video show (translated slug or original slug)
         Route::get('/{video:slug}', [VideoController::class, 'show'])->where('video', '^(?!api|admin|livewire).*')->name('locale.videos.show');
     });
+
+    // Video show route - must be LAST to avoid conflicts with locale and other routes
+    Route::get('/{video:slug}', [VideoController::class, 'show'])->where('video', '^(?!api|admin|livewire).*')->name('videos.show');
 });
 
 }); // end installed:require

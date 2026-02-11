@@ -10,7 +10,6 @@
 #   - Laravel Horizon queue worker (Redis)
 #   - phpredis extension (required)
 #   - Meilisearch (optional, falls back to database driver)
-#   - Node.js scraper microservice (optional, PHP-native adapters available)
 #   - Auto-translation via stichoza/google-translate-php
 #   - All settings managed via Admin Panel (DB-backed)
 
@@ -156,14 +155,6 @@ composer install --no-interaction --prefer-dist
 print_step "Installing Node dependencies..."
 npm install
 
-# Step 4b: Install Scraper dependencies (optional — PHP-native adapters handle most sites)
-if [ -d "scraper" ]; then
-    print_step "Installing Scraper microservice dependencies..."
-    cd scraper && npm install && cd ..
-else
-    print_warning "Scraper directory not found — PHP-native API adapters will be used"
-fi
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Step 5: Build frontend assets (Vite 6 + Tailwind CSS v4)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -239,7 +230,6 @@ print_step "Starting development services..."
 pkill -f "php artisan serve" 2>/dev/null || true
 pkill -f "php artisan reverb:start" 2>/dev/null || true
 pkill -f "php artisan horizon" 2>/dev/null || true
-pkill -f "node.*scraper" 2>/dev/null || true
 sleep 1
 
 # Read Reverb port from .env (default 8080)
@@ -261,17 +251,6 @@ print_status "Starting queue worker (Horizon)"
 php artisan horizon &
 HORIZON_PID=$!
 
-# Start Scraper microservice (optional — only if directory exists)
-SCRAPER_PID=""
-if [ -d "scraper" ] && [ -d "scraper/node_modules" ]; then
-    print_status "Starting Scraper microservice on http://localhost:3001"
-    cd scraper && node src/index.js &
-    SCRAPER_PID=$!
-    cd ..
-else
-    print_status "Scraper not started — PHP-native API adapters active (Eporner, RedTube)"
-fi
-
 # Wait a moment for services to start
 sleep 3
 
@@ -285,9 +264,6 @@ echo "📱 Access URLs:"
 echo "   Main App:     http://$SERVER_IP:8000"
 echo "   Admin Panel:  http://$SERVER_IP:8000/admin"
 echo "   WebSocket:    ws://$SERVER_IP:$REVERB_PORT"
-if [ -n "$SCRAPER_PID" ]; then
-echo "   Scraper API:  http://localhost:3001"
-fi
 echo ""
 echo "👤 Default Login:"
 echo "   Admin:        admin@hubtube.com / password"
@@ -297,12 +273,8 @@ echo "🔧 Services Running:"
 echo "   Laravel Server  (PID: $SERVER_PID)"
 echo "   Reverb WS       (PID: $REVERB_PID, port $REVERB_PORT)"
 echo "   Horizon Queue   (PID: $HORIZON_PID)"
-if [ -n "$SCRAPER_PID" ]; then
-echo "   Scraper Node.js (PID: $SCRAPER_PID)"
-fi
 echo ""
 echo "📋 Admin Panel Tools:"
-echo "   Video Embedder   — Import videos from tube sites"
 echo "   WP Import        — Import from WordPress SQL dump"
 echo "   Archive Import   — Import from local WP archive directory"
 echo "   Bunny Migrator   — Download Bunny Stream videos to local"
@@ -315,7 +287,7 @@ echo "   View logs:      tail -f storage/logs/laravel.log"
 echo "   Queue status:   php artisan horizon"
 echo "   Rebuild assets: npm run build"
 echo "   Re-seed:        php artisan db:seed --force"
-echo "   Stop all:       pkill -f 'php artisan' && pkill -f 'node.*scraper'"
+echo "   Stop all:       pkill -f 'php artisan'"
 echo ""
 echo "Press Ctrl+C to stop all services"
 
@@ -326,9 +298,6 @@ cleanup() {
     kill $SERVER_PID 2>/dev/null || true
     kill $REVERB_PID 2>/dev/null || true
     kill $HORIZON_PID 2>/dev/null || true
-    if [ -n "$SCRAPER_PID" ]; then
-        kill $SCRAPER_PID 2>/dev/null || true
-    fi
     # Give processes a moment to exit gracefully
     sleep 1
     print_status "All services stopped"
