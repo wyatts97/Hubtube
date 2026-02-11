@@ -15,7 +15,7 @@
     </form>
 
     {{-- Translation Overrides Section --}}
-    <div class="mt-10">
+    <div class="mt-10 bg-gray-800 border border-gray-700 rounded-xl p-6">
         <div class="flex items-center justify-between mb-4">
             <div>
                 <h2 class="text-lg font-bold text-white">Translation Overrides</h2>

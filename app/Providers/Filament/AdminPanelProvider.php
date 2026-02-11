@@ -33,6 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Rose,
             ])
+            ->darkMode(true)
             ->userMenuItems([
                 MenuItem::make()
                     ->label('View Site')
