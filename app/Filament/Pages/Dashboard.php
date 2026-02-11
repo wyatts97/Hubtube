@@ -78,7 +78,7 @@ class Dashboard extends BaseDashboard
 
         // ── Playlists ──
         $totalPlaylists = Playlist::count();
-        $publicPlaylists = Playlist::where('privacy', 'public')->count();
+        $playlists7d = Playlist::where('created_at', '>=', $now->copy()->subDays(7))->count();
 
         // ── Trending Videos (top 10 by views in last 30 days or overall) ──
         $trendingVideos = Video::with('user')
@@ -120,7 +120,7 @@ class Dashboard extends BaseDashboard
             'pendingCount' => $pendingCount,
             'failedCount' => $failedCount,
             'totalPlaylists' => $totalPlaylists,
-            'publicPlaylists' => $publicPlaylists,
+            'playlists7d' => $playlists7d,
             'trendingVideos' => $trendingVideos,
             'recentVideos' => $recentVideos,
             'recentUsers' => $recentUsers,

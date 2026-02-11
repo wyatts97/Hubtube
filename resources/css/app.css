@@ -277,38 +277,25 @@ html, body {
 /* Plyr player mobile touch improvements */
 .plyr {
     --plyr-control-spacing: 8px;
+    --plyr-control-icon-size: 18px;
 }
 
 @media (max-width: 640px) {
     .plyr {
-        --plyr-control-spacing: 2px;
+        --plyr-control-spacing: 4px;
+        --plyr-control-icon-size: 14px;
+        --plyr-font-size-time: 11px;
     }
 
-    .plyr__controls {
-        padding: 4px 4px !important;
-        flex-wrap: nowrap !important;
-    }
-
-    .plyr__control {
-        padding: 4px !important;
-    }
-
-    .plyr__control svg {
-        width: 16px !important;
-        height: 16px !important;
-    }
-
+    /* Hide volume slider on mobile — users have hardware volume */
     .plyr__volume {
-        max-width: 50px !important;
-        min-width: 0 !important;
+        display: none !important;
     }
 
-    .plyr__time {
-        font-size: 11px !important;
-    }
-
-    .plyr__controls__item {
-        flex-shrink: 0 !important;
+    /* Hide PiP and airplay on mobile — not useful */
+    .plyr__control[data-plyr="pip"],
+    .plyr__control[data-plyr="airplay"] {
+        display: none !important;
     }
 }
 

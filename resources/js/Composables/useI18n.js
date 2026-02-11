@@ -73,13 +73,14 @@ export function useI18n() {
      */
     const setLocale = async (code) => {
         try {
+            const currentPath = window.location.pathname;
             const response = await fetch('/api/locale', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': page.props.csrf_token,
                 },
-                body: JSON.stringify({ locale: code }),
+                body: JSON.stringify({ locale: code, current_path: currentPath }),
             });
             const data = await response.json();
             if (data.redirect) {
@@ -87,8 +88,10 @@ export function useI18n() {
                 window.location.href = data.redirect;
             }
         } catch (e) {
-            // Fallback: navigate to locale home
-            const target = code === defaultLocale.value ? '/' : `/${code}`;
+            // Fallback: stay on current page with locale prefix
+            const path = window.location.pathname;
+            const stripped = path.replace(/^\/[a-z]{2}(\/|$)/, '/');
+            const target = code === defaultLocale.value ? (stripped || '/') : `/${code}${stripped === '/' ? '' : stripped}`;
             window.location.href = target;
         }
     };

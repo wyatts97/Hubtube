@@ -148,6 +148,11 @@ class HomeController extends Controller
         return Inertia::render('Trending', [
             'videos' => $videos,
             'seo' => $this->seoService->forTrending(),
+            'adSettings' => [
+                'videoGridEnabled' => (bool) Setting::get('video_grid_ad_enabled', false),
+                'videoGridCode' => (string) Setting::get('video_grid_ad_code', ''),
+                'videoGridFrequency' => (int) Setting::get('video_grid_ad_frequency', 8),
+            ],
         ]);
     }
 

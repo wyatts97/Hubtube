@@ -139,6 +139,7 @@ class TranslationController extends Controller
     {
         $validated = $request->validate([
             'locale' => 'required|string|max:10',
+            'current_path' => 'nullable|string|max:2048',
         ]);
 
         $locale = $validated['locale'];
@@ -147,14 +148,24 @@ class TranslationController extends Controller
         }
 
         $defaultLocale = TranslationService::getDefaultLocale();
+        $currentPath = $validated['current_path'] ?? '/';
+
+        // Strip any existing locale prefix from the current path
+        $enabledLocales = array_keys(TranslationService::getEnabledLanguages());
+        foreach ($enabledLocales as $loc) {
+            if ($currentPath === "/{$loc}" || str_starts_with($currentPath, "/{$loc}/")) {
+                $currentPath = substr($currentPath, strlen("/{$loc}")) ?: '/';
+                break;
+            }
+        }
 
         if ($locale === $defaultLocale) {
             // Switching back to default — clear session so unprefixed URLs work
             session()->forget('locale');
-            $redirect = url('/');
+            $redirect = url($currentPath);
         } else {
             session(['locale' => $locale]);
-            $redirect = url("/{$locale}");
+            $redirect = url("/{$locale}" . ($currentPath === '/' ? '' : $currentPath));
         }
 
         return response()->json([

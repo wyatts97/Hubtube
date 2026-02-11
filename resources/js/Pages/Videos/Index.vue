@@ -15,6 +15,7 @@ const props = defineProps({
     categories: Array,
     filters: Object,
     bannerAd: { type: Object, default: () => ({}) },
+    adSettings: { type: Object, default: () => ({}) },
 });
 
 const category = ref(props.filters?.category || '');
@@ -84,6 +85,17 @@ const bannerEnabled = computed(() => {
     return e === true || e === 'true' || e === 1 || e === '1';
 });
 const bannerCode = computed(() => sanitizeHtml(props.bannerAd?.code || ''));
+
+const adsEnabled = computed(() => {
+    const enabled = props.adSettings?.videoGridEnabled;
+    return enabled === true || enabled === 'true' || enabled === 1 || enabled === '1';
+});
+const adCode = computed(() => sanitizeHtml(props.adSettings?.videoGridCode || ''));
+const adFrequency = computed(() => parseInt(props.adSettings?.videoGridFrequency) || 8);
+const shouldShowAd = (index, totalLength) => {
+    if (!adsEnabled.value || !adCode.value.trim()) return false;
+    return (index + 1) % adFrequency.value === 0 && index < totalLength - 1;
+};
 </script>
 
 <template>
@@ -177,11 +189,15 @@ const bannerCode = computed(() => sanitizeHtml(props.bannerAd?.code || ''));
         </div>
 
         <div v-if="videos.data.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <VideoCard
-                v-for="video in videos.data"
-                :key="video.id"
-                :video="withTranslation(video)"
-            />
+            <template v-for="(video, index) in videos.data" :key="video.id">
+                <VideoCard :video="withTranslation(video)" />
+                <div
+                    v-if="shouldShowAd(index, videos.data.length)"
+                    class="col-span-1 flex items-start justify-center rounded-xl p-2"
+                >
+                    <div v-html="adCode"></div>
+                </div>
+            </template>
         </div>
 
         <div v-else class="text-center py-16">

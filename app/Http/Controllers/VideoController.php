@@ -54,6 +54,11 @@ class VideoController extends Controller
                 'enabled' => Setting::get('browse_banner_ad_enabled', false),
                 'code' => Setting::get('browse_banner_ad_code', ''),
             ],
+            'adSettings' => [
+                'videoGridEnabled' => (bool) Setting::get('video_grid_ad_enabled', false),
+                'videoGridCode' => (string) Setting::get('video_grid_ad_code', ''),
+                'videoGridFrequency' => (int) Setting::get('video_grid_ad_frequency', 8),
+            ],
         ]);
     }
 

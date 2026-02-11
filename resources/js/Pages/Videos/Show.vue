@@ -437,25 +437,22 @@ const formattedViews = computed(() => {
 
                         <!-- Actions -->
                         <div class="flex items-center gap-1 sm:gap-2 overflow-x-auto sm:overflow-visible scrollbar-hide">
-                            <div class="flex items-center rounded-full shrink-0" style="background-color: var(--color-bg-card);">
-                                <button
-                                    @click="handleLike"
-                                    class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-l-full hover:opacity-80"
-                                    :style="{ color: liked ? '#22c55e' : 'var(--color-text-secondary)' }"
-                                >
-                                    <ThumbsUp class="w-3.5 h-3.5 sm:w-5 sm:h-5" :fill="liked ? 'currentColor' : 'none'" />
-                                    <span class="text-xs sm:text-sm">{{ likesCount }}</span>
-                                </button>
-                                <div class="w-px h-5 sm:h-6" style="background-color: var(--color-border);"></div>
-                                <button
-                                    @click="handleDislike"
-                                    class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-r-full hover:opacity-80"
-                                    :style="{ color: disliked ? '#ef4444' : 'var(--color-text-secondary)' }"
-                                >
-                                    <ThumbsDown class="w-3.5 h-3.5 sm:w-5 sm:h-5" :fill="disliked ? 'currentColor' : 'none'" />
-                                    <span class="text-xs sm:text-sm">{{ dislikesCount }}</span>
-                                </button>
-                            </div>
+                            <button
+                                @click="handleLike"
+                                class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
+                                :style="{ color: liked ? '#22c55e' : undefined }"
+                            >
+                                <ThumbsUp class="w-3.5 h-3.5 sm:w-5 sm:h-5" :fill="liked ? 'currentColor' : 'none'" />
+                                <span>{{ likesCount }}</span>
+                            </button>
+                            <button
+                                @click="handleDislike"
+                                class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
+                                :style="{ color: disliked ? '#ef4444' : undefined }"
+                            >
+                                <ThumbsDown class="w-3.5 h-3.5 sm:w-5 sm:h-5" :fill="disliked ? 'currentColor' : 'none'" />
+                                <span>{{ dislikesCount }}</span>
+                            </button>
 
                             <button @click="handleShare" class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
                                 <Share2 class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
