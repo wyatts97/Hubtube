@@ -9,11 +9,7 @@ class PlaylistPolicy
 {
     public function view(?User $user, Playlist $playlist): bool
     {
-        if ($playlist->privacy === 'public') {
-            return true;
-        }
-
-        return $user && $user->id === $playlist->user_id;
+        return true;
     }
 
     public function update(User $user, Playlist $playlist): bool

@@ -11,6 +11,16 @@ class NotifyVideoProcessed
     {
         $video = $event->video;
 
+        // Prevent duplicate notifications (e.g. from job retries or race conditions)
+        $exists = Notification::where('user_id', $video->user_id)
+            ->where('type', 'video_processed')
+            ->where('data->video_id', $video->id)
+            ->exists();
+
+        if ($exists) {
+            return;
+        }
+
         Notification::create([
             'user_id' => $video->user_id,
             'type' => 'video_processed',

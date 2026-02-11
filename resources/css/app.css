@@ -281,19 +281,34 @@ html, body {
 
 @media (max-width: 640px) {
     .plyr {
-        --plyr-control-spacing: 4px;
+        --plyr-control-spacing: 2px;
     }
 
     .plyr__controls {
-        padding: 4px 8px !important;
+        padding: 4px 4px !important;
+        flex-wrap: nowrap !important;
     }
 
     .plyr__control {
-        padding: 6px !important;
+        padding: 4px !important;
+    }
+
+    .plyr__control svg {
+        width: 16px !important;
+        height: 16px !important;
     }
 
     .plyr__volume {
-        max-width: 60px !important;
+        max-width: 50px !important;
+        min-width: 0 !important;
+    }
+
+    .plyr__time {
+        font-size: 11px !important;
+    }
+
+    .plyr__controls__item {
+        flex-shrink: 0 !important;
     }
 }
 

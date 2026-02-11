@@ -300,10 +300,7 @@ class SeoService
 
         $seo['twitter']['card'] = 'summary_large_image';
 
-        // Robots: noindex private playlists
-        if ($playlist->privacy !== 'public') {
-            $seo['robots'] = 'noindex, nofollow';
-        }
+        // All playlists are public now
 
         // JSON-LD ItemList schema
         if ($this->s('seo_schema_enabled', true)) {

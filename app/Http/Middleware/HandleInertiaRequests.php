@@ -175,6 +175,7 @@ class HandleInertiaRequests extends Middleware
                 'metaColor' => $this->s('video_card_meta_color', ''),
                 'borderRadius' => (int) $this->s('video_card_border_radius', 12),
             ],
+            'mobileVideoGrid' => $this->s('mobile_video_grid', '1'),
         ];
     }
 

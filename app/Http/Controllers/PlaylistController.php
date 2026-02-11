@@ -52,11 +52,11 @@ class PlaylistController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:150',
             'description' => 'nullable|string|max:5000',
-            'privacy' => 'required|in:public,private,unlisted',
         ]);
 
         $playlist = $request->user()->playlists()->create([
             ...$validated,
+            'privacy' => 'public',
             'slug' => Str::slug($validated['title']) . '-' . Str::random(8),
         ]);
 
@@ -70,7 +70,6 @@ class PlaylistController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:150',
             'description' => 'nullable|string|max:5000',
-            'privacy' => 'required|in:public,private,unlisted',
         ]);
 
         $playlist->update($validated);
@@ -153,14 +152,6 @@ class PlaylistController extends Controller
 
     private function canView(Playlist $playlist): bool
     {
-        if ($playlist->privacy === 'public' || $playlist->privacy === 'unlisted') {
-            return true;
-        }
-
-        if (!auth()->check()) {
-            return false;
-        }
-
-        return $playlist->user_id === auth()->id();
+        return true;
     }
 }

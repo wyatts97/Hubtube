@@ -15,7 +15,6 @@ const showCreateModal = ref(false);
 const form = useForm({
     title: '',
     description: '',
-    is_public: true,
 });
 
 const createPlaylist = () => {
@@ -63,9 +62,6 @@ const createPlaylist = () => {
                 <div class="p-3">
                     <h3 class="font-medium truncate" style="color: var(--color-text-primary);">{{ playlist.title }}</h3>
                     <p class="text-sm" style="color: var(--color-text-secondary);">{{ playlist.videos_count || 0 }} videos</p>
-                    <p class="text-xs mt-1" style="color: var(--color-text-muted);">
-                        {{ playlist.is_public ? 'Public' : 'Private' }}
-                    </p>
                 </div>
             </Link>
         </div>
@@ -99,10 +95,6 @@ const createPlaylist = () => {
                     <div>
                         <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Description</label>
                         <textarea v-model="form.description" rows="3" class="input resize-none"></textarea>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <input v-model="form.is_public" type="checkbox" id="is_public" class="w-4 h-4 rounded" />
-                        <label for="is_public" style="color: var(--color-text-secondary);">Make playlist public</label>
                     </div>
                     <div class="flex justify-end gap-2">
                         <button type="button" @click="showCreateModal = false" class="btn btn-ghost">Cancel</button>

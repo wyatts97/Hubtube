@@ -39,6 +39,11 @@ const props = defineProps({
 
 const page = usePage();
 const infiniteScrollEnabled = computed(() => page.props.app?.infinite_scroll_enabled ?? false);
+const mobileGrid = computed(() => page.props.theme?.mobileVideoGrid === '2' ? 2 : 1);
+const gridClass = computed(() => mobileGrid.value === 2
+    ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4'
+    : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
+);
 
 // Auto-translate video titles when viewing in a non-default locale
 onMounted(() => {
@@ -169,7 +174,7 @@ const shouldShowAd = (index, totalLength) => {
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ t('home.featured') || 'Featured' }}</h2>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div :class="gridClass">
                 <template v-if="isInitialLoad">
                     <VideoCardSkeleton v-for="i in 4" :key="'skeleton-featured-' + i" />
                 </template>
@@ -187,19 +192,20 @@ const shouldShowAd = (index, totalLength) => {
             </div>
             
             <!-- Skeleton Loading State -->
-            <div v-if="isInitialLoad" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div v-if="isInitialLoad" :class="gridClass">
                 <VideoCardSkeleton v-for="i in 8" :key="'skeleton-latest-' + i" />
             </div>
             
             <!-- Infinite Scroll Mode -->
             <template v-else-if="infiniteScrollEnabled">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div :class="gridClass">
                     <template v-for="(video, index) in videos" :key="'scroll-' + video.id">
                         <VideoCard :video="withTranslation(video)" />
                         <!-- Ad after every X videos -->
                         <div 
                             v-if="shouldShowAd(index, videos.length)"
-                            class="col-span-1 flex items-start justify-center rounded-xl p-2"
+                            class="flex items-start justify-center rounded-xl p-2"
+                            :class="mobileGrid === 2 ? 'col-span-2 sm:col-span-1' : 'col-span-1'"
                         >
                             <div v-html="adCode"></div>
                         </div>
@@ -220,13 +226,14 @@ const shouldShowAd = (index, totalLength) => {
             
             <!-- Pagination Mode -->
             <template v-else>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div :class="gridClass">
                     <template v-for="(video, index) in latestVideos.data" :key="'page-' + video.id">
                         <VideoCard :video="withTranslation(video)" />
                         <!-- Ad after every X videos -->
                         <div 
                             v-if="shouldShowAd(index, latestVideos.data.length)"
-                            class="col-span-1 flex items-start justify-center rounded-xl p-2"
+                            class="flex items-start justify-center rounded-xl p-2"
+                            :class="mobileGrid === 2 ? 'col-span-2 sm:col-span-1' : 'col-span-1'"
                         >
                             <div v-html="adCode"></div>
                         </div>
@@ -247,7 +254,7 @@ const shouldShowAd = (index, totalLength) => {
                 <h2 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ t('home.popular') || 'Popular' }}</h2>
                 <a :href="localizedUrl('/trending')" class="text-sm font-medium" style="color: var(--color-accent);">{{ t('common.view_all') || 'View All' }}</a>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div :class="gridClass">
                 <template v-if="isInitialLoad">
                     <VideoCardSkeleton v-for="i in 4" :key="'skeleton-popular-' + i" />
                 </template>

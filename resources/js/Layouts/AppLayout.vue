@@ -271,7 +271,7 @@ const toggleSidebar = () => {
                             </button>
 
                             <!-- Notification Dropdown -->
-                            <div v-if="showNotifications" class="notification-dropdown absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto card shadow-xl" style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);">
+                            <div v-if="showNotifications" class="notification-dropdown absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto scrollbar-hide card shadow-xl" style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);">
                                 <div class="flex items-center justify-between p-3 border-b" style="border-color: var(--color-border);">
                                     <h3 class="font-semibold text-sm" style="color: var(--color-text-primary);">Notifications</h3>
                                     <button v-if="unreadCount > 0" @click="markAllRead" class="text-xs hover:opacity-80" style="color: var(--color-accent);">
@@ -466,7 +466,7 @@ const toggleSidebar = () => {
         <!-- Sidebar -->
         <aside 
             :class="[
-                'fixed left-0 bottom-0 overflow-y-auto hidden lg:block transition-all duration-300',
+                'fixed left-0 bottom-0 overflow-y-auto scrollbar-hide hidden lg:block transition-all duration-300',
                 sidebarCollapsed ? 'w-16' : 'sidebar-expanded'
             ]"
             :style="{
@@ -550,7 +550,7 @@ const toggleSidebar = () => {
             @click="showMobileMenu = false"
         >
             <div class="absolute inset-0 bg-black/50"></div>
-            <aside class="absolute left-0 top-0 bottom-0 w-64 pt-14 overflow-y-auto" style="background-color: var(--color-bg-secondary);">
+            <aside class="absolute left-0 top-0 bottom-0 w-64 pt-14 overflow-y-auto scrollbar-hide" style="background-color: var(--color-bg-secondary);">
                 <nav class="p-4">
                     <ul class="space-y-1">
                         <li v-for="item in navigation" :key="item.name">

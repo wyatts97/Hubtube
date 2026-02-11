@@ -64,6 +64,11 @@ class Playlist extends Model
         $maxPosition = $this->videos()->max('position') ?? 0;
         $this->videos()->attach($video->id, ['position' => $maxPosition + 1]);
         $this->increment('video_count');
+
+        // Set playlist thumbnail from the first video added
+        if (!$this->thumbnail && $video->thumbnail_url) {
+            $this->update(['thumbnail' => $video->thumbnail_url]);
+        }
     }
 
     public function removeVideo(Video $video): void

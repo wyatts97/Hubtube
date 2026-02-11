@@ -46,12 +46,12 @@ const getStyles = (type) => {
 
 <template>
     <Teleport to="body">
-        <div class="fixed top-4 right-4 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+        <div class="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-3 pointer-events-none">
             <TransitionGroup name="toast">
                 <div
                     v-for="toast in toasts"
                     :key="toast.id"
-                    class="pointer-events-auto rounded-lg p-4 shadow-lg backdrop-blur-sm flex items-start gap-3"
+                    class="pointer-events-auto rounded-lg px-4 py-3 shadow-lg backdrop-blur-sm flex items-center gap-3 max-w-sm w-auto"
                     :style="{
                         backgroundColor: getStyles(toast.type).bg,
                         border: `1px solid ${getStyles(toast.type).border}`,
@@ -90,22 +90,22 @@ const getStyles = (type) => {
 @keyframes toast-in {
     from {
         opacity: 0;
-        transform: translateX(100%);
+        transform: translateY(-100%);
     }
     to {
         opacity: 1;
-        transform: translateX(0);
+        transform: translateY(0);
     }
 }
 
 @keyframes toast-out {
     from {
         opacity: 1;
-        transform: translateX(0);
+        transform: translateY(0);
     }
     to {
         opacity: 0;
-        transform: translateX(100%);
+        transform: translateY(-100%);
     }
 }
 </style>

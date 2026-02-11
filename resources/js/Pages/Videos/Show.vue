@@ -174,16 +174,21 @@ const creatingPlaylist = ref(false);
 const toggleVideoInPlaylist = async (playlist) => {
     if (savingPlaylist.value === playlist.id) return;
     savingPlaylist.value = playlist.id;
+    const idx = playlists.value.findIndex(p => p.id === playlist.id);
     if (playlist.has_video) {
         const { ok } = await del(`/playlists/${playlist.id}/videos`, { video_id: props.video.id });
         if (ok) {
-            playlist.has_video = false;
+            if (idx !== -1) {
+                playlists.value[idx] = { ...playlists.value[idx], has_video: false, videos_count: Math.max(0, (playlist.videos_count || 0) - 1) };
+            }
             toast.success(`Removed from "${playlist.title}"`);
         }
     } else {
         const { ok } = await post(`/playlists/${playlist.id}/videos`, { video_id: props.video.id });
         if (ok) {
-            playlist.has_video = true;
+            if (idx !== -1) {
+                playlists.value[idx] = { ...playlists.value[idx], has_video: true, videos_count: (playlist.videos_count || 0) + 1 };
+            }
             toast.success(`Added to "${playlist.title}"`);
         }
     }
@@ -196,7 +201,6 @@ const createAndAddPlaylist = async () => {
     const { ok, data } = await post('/playlists', {
         title: newPlaylistTitle.value.trim(),
         description: '',
-        privacy: 'private',
     });
     if (ok && data) {
         const newPl = { ...data, has_video: false, videos_count: 0 };
@@ -261,7 +265,18 @@ const handleShare = () => {
 
 const copyLink = async () => {
     try {
-        await navigator.clipboard.writeText(shareUrl.value);
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(shareUrl.value);
+        } else {
+            const textarea = document.createElement('textarea');
+            textarea.value = shareUrl.value;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
         linkCopied.value = true;
         toast.success('Link copied to clipboard');
         setTimeout(() => { linkCopied.value = false; }, 2000);
@@ -367,7 +382,12 @@ const formattedViews = computed(() => {
                 <div class="mt-4">
                     <div class="flex items-start justify-between gap-2 sm:gap-4">
                         <h1 class="text-base sm:text-xl font-bold flex-1 line-clamp-2 sm:line-clamp-none" style="color: var(--color-text-primary);">{{ video.title }}</h1>
-                        <span class="text-xs sm:text-sm font-medium whitespace-nowrap flex items-center gap-1 sm:gap-1.5 shrink-0" style="color: var(--color-text-secondary);"><Eye class="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {{ formattedViews }} views</span>
+                        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0 text-xs sm:text-sm font-medium whitespace-nowrap" style="color: var(--color-text-secondary);">
+                            <Eye class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            <span>{{ formattedViews }} views</span>
+                            <span style="color: var(--color-text-muted);">•</span>
+                            <span><span class="hidden landscape:inline sm:inline">Uploaded: </span>{{ new Date(video.published_at).toLocaleDateString() }}</span>
+                        </div>
                     </div>
                     
                     <!-- Tags - Horizontally Scrollable -->
@@ -385,19 +405,19 @@ const formattedViews = computed(() => {
                         </div>
                     </div>
                     
-                    <div class="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3 sm:gap-4 mt-3 sm:mt-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-4 mt-3 sm:mt-4">
                         <!-- Channel Info -->
-                        <div class="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-                            <Link :href="`/channel/${video.user.username}`" class="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                                <div class="w-9 h-9 sm:w-10 sm:h-10 avatar shrink-0">
+                        <div class="flex items-center gap-2 sm:gap-4 min-w-0">
+                            <Link :href="`/channel/${video.user.username}`" class="flex items-center gap-2 sm:gap-3 min-w-0">
+                                <div class="w-8 h-8 sm:w-10 sm:h-10 avatar shrink-0">
                                     <img v-if="video.user.avatar" :src="video.user.avatar" :alt="video.user.username" class="w-full h-full object-cover" />
                                     <div v-else class="w-full h-full flex items-center justify-center text-white font-medium" style="background-color: var(--color-accent);">
                                         {{ video.user.username.charAt(0).toUpperCase() }}
                                     </div>
                                 </div>
                                 <div class="min-w-0">
-                                    <p class="font-medium text-sm sm:text-base truncate" style="color: var(--color-text-primary);">{{ video.user.username }}</p>
-                                    <p class="text-xs sm:text-sm" style="color: var(--color-text-muted);">{{ video.user.subscriber_count }} subscribers</p>
+                                    <p class="font-medium text-xs sm:text-base truncate" style="color: var(--color-text-primary);">{{ video.user.username }}</p>
+                                    <p class="text-[10px] sm:text-sm hidden sm:block" style="color: var(--color-text-muted);">{{ video.user.subscriber_count }} subscribers</p>
                                 </div>
                             </Link>
                             
@@ -406,46 +426,46 @@ const formattedViews = computed(() => {
                                 @click="handleSubscribe"
                                 :disabled="subscribing"
                                 :class="[
-                                    'btn text-sm sm:text-base',
+                                    'btn text-xs sm:text-base px-2.5 py-1.5 sm:px-4 sm:py-2',
                                     subscribed ? 'btn-secondary' : 'btn-primary'
                                 ]"
                             >
-                                <Loader2 v-if="subscribing" class="w-4 h-4 animate-spin" />
+                                <Loader2 v-if="subscribing" class="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
                                 <template v-else>{{ subscribed ? 'Subscribed' : 'Subscribe' }}</template>
                             </button>
                         </div>
 
                         <!-- Actions -->
-                        <div class="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto overflow-x-auto sm:overflow-visible scrollbar-hide -mx-1 px-1">
+                        <div class="flex items-center gap-1 sm:gap-2 overflow-x-auto sm:overflow-visible scrollbar-hide">
                             <div class="flex items-center rounded-full shrink-0" style="background-color: var(--color-bg-card);">
                                 <button
                                     @click="handleLike"
-                                    class="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-l-full hover:opacity-80"
+                                    class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-l-full hover:opacity-80"
                                     :style="{ color: liked ? '#22c55e' : 'var(--color-text-secondary)' }"
                                 >
-                                    <ThumbsUp class="w-4 h-4 sm:w-5 sm:h-5" :fill="liked ? 'currentColor' : 'none'" />
-                                    <span class="text-sm">{{ likesCount }}</span>
+                                    <ThumbsUp class="w-3.5 h-3.5 sm:w-5 sm:h-5" :fill="liked ? 'currentColor' : 'none'" />
+                                    <span class="text-xs sm:text-sm">{{ likesCount }}</span>
                                 </button>
-                                <div class="w-px h-6" style="background-color: var(--color-border);"></div>
+                                <div class="w-px h-5 sm:h-6" style="background-color: var(--color-border);"></div>
                                 <button
                                     @click="handleDislike"
-                                    class="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-r-full hover:opacity-80"
+                                    class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-r-full hover:opacity-80"
                                     :style="{ color: disliked ? '#ef4444' : 'var(--color-text-secondary)' }"
                                 >
-                                    <ThumbsDown class="w-4 h-4 sm:w-5 sm:h-5" :fill="disliked ? 'currentColor' : 'none'" />
-                                    <span class="text-sm">{{ dislikesCount }}</span>
+                                    <ThumbsDown class="w-3.5 h-3.5 sm:w-5 sm:h-5" :fill="disliked ? 'currentColor' : 'none'" />
+                                    <span class="text-xs sm:text-sm">{{ dislikesCount }}</span>
                                 </button>
                             </div>
 
-                            <button @click="handleShare" class="btn btn-secondary gap-1.5 sm:gap-2 shrink-0 text-sm">
-                                <Share2 class="w-4 h-4 sm:w-5 sm:h-5" />
+                            <button @click="handleShare" class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
+                                <Share2 class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                                 <span class="hidden sm:inline">Share</span>
                             </button>
 
                             <!-- Save to Playlist -->
                             <div class="relative playlist-menu-area shrink-0">
-                                <button @click.stop="user ? (showPlaylistMenu = !showPlaylistMenu) : router.visit('/login')" class="btn btn-secondary gap-1.5 sm:gap-2 text-sm">
-                                    <ListVideo class="w-4 h-4 sm:w-5 sm:h-5" />
+                                <button @click.stop="user ? (showPlaylistMenu = !showPlaylistMenu) : router.visit('/login')" class="btn btn-secondary gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
+                                    <ListVideo class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                                     <span class="hidden sm:inline">Save</span>
                                 </button>
                                 <div
@@ -454,7 +474,7 @@ const formattedViews = computed(() => {
                                     style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);"
                                 >
                                     <div class="p-3 font-medium text-sm" style="border-bottom: 1px solid var(--color-border); color: var(--color-text-primary);">Save to playlist</div>
-                                    <div class="max-h-60 overflow-y-auto">
+                                    <div class="max-h-60 overflow-y-auto scrollbar-hide">
                                         <button
                                             v-for="pl in playlists"
                                             :key="pl.id"
@@ -499,8 +519,8 @@ const formattedViews = computed(() => {
                                 </div>
                             </div>
 
-                            <button @click="user ? (showReportModal = true) : router.visit('/login')" class="btn btn-secondary gap-1.5 sm:gap-2 shrink-0 text-sm">
-                                <Flag class="w-4 h-4 sm:w-5 sm:h-5" />
+                            <button @click="user ? (showReportModal = true) : router.visit('/login')" class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
+                                <Flag class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                                 <span class="hidden sm:inline">Report</span>
                             </button>
 
@@ -509,9 +529,6 @@ const formattedViews = computed(() => {
 
                     <!-- Description -->
                     <div class="card p-4 mt-4">
-                        <p class="text-sm mb-2" style="color: var(--color-text-muted);">
-                            {{ new Date(video.published_at).toLocaleDateString() }}
-                        </p>
                         <p class="whitespace-pre-wrap" style="color: var(--color-text-secondary);">{{ video.description }}</p>
                     </div>
 

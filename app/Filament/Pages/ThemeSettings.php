@@ -182,6 +182,7 @@ class ThemeSettings extends Page implements HasForms
             'video_card_meta_size' => Setting::get('video_card_meta_size', 13),
             'video_card_meta_color' => Setting::get('video_card_meta_color', ''),
             'video_card_border_radius' => Setting::get('video_card_border_radius', 12),
+            'mobile_video_grid' => Setting::get('mobile_video_grid', '1'),
         ]);
     }
 
@@ -494,6 +495,19 @@ class ThemeSettings extends Page implements HasForms
                                             ->maxValue(24)
                                             ->suffix('px')
                                             ->helperText('0 = square corners, 12 = default rounded'),
+                                    ]),
+
+                                Section::make('Mobile Grid Layout')
+                                    ->description('Control how video cards are displayed on mobile devices')
+                                    ->schema([
+                                        Select::make('mobile_video_grid')
+                                            ->label('Mobile Video Grid')
+                                            ->options([
+                                                '1' => 'Single column (1 per row)',
+                                                '2' => 'Two columns (2x2 grid)',
+                                            ])
+                                            ->default('1')
+                                            ->helperText('Ad spaces in the grid will remain full-width (300px) between rows regardless of this setting'),
                                     ]),
                             ]),
 
