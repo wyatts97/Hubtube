@@ -2,6 +2,17 @@
 
 # HubTube Development Server Setup for Ubuntu 22.04
 # This script sets up and runs the HubTube development server
+#
+# Features supported:
+#   - Laravel 11 + Filament 3 admin panel
+#   - Vite 6 + Tailwind CSS v4 frontend build
+#   - Laravel Reverb WebSockets (port 8080)
+#   - Laravel Horizon queue worker (Redis)
+#   - phpredis extension (required)
+#   - Meilisearch (optional, falls back to database driver)
+#   - Node.js scraper microservice (optional, PHP-native adapters available)
+#   - Auto-translation via stichoza/google-translate-php
+#   - All settings managed via Admin Panel (DB-backed)
 
 set -e
 
@@ -41,7 +52,9 @@ fi
 SERVER_IP=$(hostname -I | awk '{print $1}')
 print_status "Server IP: $SERVER_IP"
 
+# ─────────────────────────────────────────────────────────────────────────────
 # Step 1: Check dependencies
+# ─────────────────────────────────────────────────────────────────────────────
 print_step "Checking dependencies..."
 
 # Check PHP
@@ -58,6 +71,14 @@ if [[ $(echo "$PHP_VERSION < 8.2" | bc -l) -eq 1 ]]; then
     exit 1
 fi
 
+# Check phpredis extension (required — app uses REDIS_CLIENT=phpredis)
+if ! php -m 2>/dev/null | grep -qi "^redis$"; then
+    print_error "phpredis extension is not installed."
+    print_error "Install it: sudo apt install php${PHP_VERSION}-redis"
+    exit 1
+fi
+print_status "phpredis extension: installed"
+
 # Check Composer
 if ! command -v composer &> /dev/null; then
     print_error "Composer is not installed"
@@ -71,7 +92,7 @@ if ! command -v node &> /dev/null; then
 fi
 
 NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-print_status "Node.js version: v$(node -v)"
+print_status "Node.js version: $(node -v)"
 
 if [[ $NODE_VERSION -lt 18 ]]; then
     print_error "Node.js 18+ is required"
@@ -84,48 +105,33 @@ if ! command -v mysql &> /dev/null; then
 fi
 
 # Check Redis
-if ! command -v redis-server &> /dev/null; then
-    print_warning "Redis is not installed"
+if ! command -v redis-cli &> /dev/null; then
+    print_warning "Redis is not installed (required for cache, queue, sessions)"
+else
+    if redis-cli ping &>/dev/null; then
+        print_status "Redis: running"
+    else
+        print_warning "Redis is installed but not running. Start it: sudo systemctl start redis-server"
+    fi
 fi
 
 # Check FFmpeg
 if ! command -v ffmpeg &> /dev/null; then
     print_warning "FFmpeg is not installed (required for video processing)"
-fi
-
-# Step 2: Install PHP dependencies
-print_step "Installing PHP dependencies..."
-if [ ! -d "vendor" ]; then
-    composer install --no-interaction --prefer-dist --optimize-autoloader
 else
-    print_status "PHP dependencies already installed"
+    print_status "FFmpeg: $(ffmpeg -version 2>&1 | head -n1 | cut -d' ' -f3)"
 fi
 
-# Step 3: Install Node dependencies
-print_step "Installing Node dependencies..."
-if [ ! -d "node_modules" ]; then
-    npm install
+# Check Meilisearch (optional)
+if command -v meilisearch &> /dev/null || curl -s http://127.0.0.1:7700/health &>/dev/null; then
+    print_status "Meilisearch: available"
 else
-    print_status "Node dependencies already installed"
+    print_warning "Meilisearch not found — search will use database driver (slower but functional)"
 fi
 
-# Step 3b: Install Scraper dependencies
-print_step "Installing Scraper microservice dependencies..."
-if [ -d "scraper" ]; then
-    if [ ! -d "scraper/node_modules" ]; then
-        cd scraper && npm install && cd ..
-    else
-        print_status "Scraper dependencies already installed"
-    fi
-else
-    print_warning "Scraper directory not found - skipping"
-fi
-
-# Step 4: Build frontend assets
-print_step "Building frontend assets..."
-npm run build
-
-# Step 5: Check environment file
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 2: Environment file
+# ─────────────────────────────────────────────────────────────────────────────
 print_step "Checking environment configuration..."
 if [ ! -f ".env" ]; then
     print_status "Creating .env file from .env.example"
@@ -138,39 +144,107 @@ else
     print_status ".env file exists"
 fi
 
-# Step 6: Run migrations
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 3: Install PHP dependencies (always run to catch new packages)
+# ─────────────────────────────────────────────────────────────────────────────
+print_step "Installing PHP dependencies..."
+composer install --no-interaction --prefer-dist
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 4: Install Node dependencies (always run to catch new packages)
+# ─────────────────────────────────────────────────────────────────────────────
+print_step "Installing Node dependencies..."
+npm install
+
+# Step 4b: Install Scraper dependencies (optional — PHP-native adapters handle most sites)
+if [ -d "scraper" ]; then
+    print_step "Installing Scraper microservice dependencies..."
+    cd scraper && npm install && cd ..
+else
+    print_warning "Scraper directory not found — PHP-native API adapters will be used"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 5: Build frontend assets (Vite 6 + Tailwind CSS v4)
+# ─────────────────────────────────────────────────────────────────────────────
+print_step "Building frontend assets..."
+npm run build
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 6: Database migrations
+# ─────────────────────────────────────────────────────────────────────────────
 print_step "Running database migrations..."
 php artisan migrate --force
 
-# Step 7: Seed database
-print_step "Seeding database..."
-php artisan db:seed --force
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 7: Seed database (only if users table is empty — safe for re-runs)
+# ─────────────────────────────────────────────────────────────────────────────
+print_step "Checking database seeding..."
+USER_COUNT=$(php artisan tinker --execute="echo \App\Models\User::count();" 2>/dev/null | tail -1)
+if [ "$USER_COUNT" = "0" ] || [ -z "$USER_COUNT" ]; then
+    print_status "Seeding database (first run)..."
+    php artisan db:seed --force
+else
+    print_status "Database already seeded ($USER_COUNT users found) — skipping"
+fi
 
-# Step 8: Create storage link
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 8: Storage link + installation marker
+# ─────────────────────────────────────────────────────────────────────────────
 print_step "Creating storage link..."
-php artisan storage:link
+if [ ! -L "public/storage" ]; then
+    php artisan storage:link
+else
+    print_status "Storage link already exists"
+fi
 
-# Step 8b: Mark as installed (skip web installer on dev server)
+# Mark as installed (skip web installer on dev server)
 if [ ! -f "storage/installed" ]; then
     print_step "Marking app as installed (skipping web installer)..."
     date > storage/installed
 fi
 
-# Step 9: Clear caches
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 9: Publish Filament assets
+# ─────────────────────────────────────────────────────────────────────────────
+print_step "Publishing Filament assets..."
+php artisan filament:assets 2>/dev/null || true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 10: Generate translation files (if translation feature is enabled)
+# ─────────────────────────────────────────────────────────────────────────────
+if php artisan list 2>/dev/null | grep -q "translations:generate"; then
+    print_step "Generating translation files..."
+    php artisan translations:generate 2>/dev/null || print_warning "Translation generation skipped (configure in Admin → Languages)"
+else
+    print_status "Translation command not available — skipping"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 11: Clear caches
+# ─────────────────────────────────────────────────────────────────────────────
 print_step "Clearing caches..."
-php artisan cache:clear
 php artisan config:clear
 php artisan route:clear
 php artisan view:clear
+php artisan cache:clear
+php artisan event:clear
 
-# Step 10: Start services
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 12: Start services
+# ─────────────────────────────────────────────────────────────────────────────
 print_step "Starting development services..."
 
-# Kill any existing processes on ports 8000, 6001, 3001
+# Kill any existing processes
 pkill -f "php artisan serve" 2>/dev/null || true
 pkill -f "php artisan reverb:start" 2>/dev/null || true
 pkill -f "php artisan horizon" 2>/dev/null || true
 pkill -f "node.*scraper" 2>/dev/null || true
+sleep 1
+
+# Read Reverb port from .env (default 8080)
+REVERB_PORT=$(grep -E "^REVERB_PORT=" .env 2>/dev/null | cut -d'=' -f2 | tr -d '"' || echo "8080")
+REVERB_PORT=${REVERB_PORT:-8080}
 
 # Start Laravel development server
 print_status "Starting Laravel server on http://$SERVER_IP:8000"
@@ -178,7 +252,7 @@ php artisan serve --host=$SERVER_IP --port=8000 &
 SERVER_PID=$!
 
 # Start Reverb (WebSocket server)
-print_status "Starting WebSocket server on ws://$SERVER_IP:6001"
+print_status "Starting WebSocket server (Reverb) on port $REVERB_PORT"
 php artisan reverb:start &
 REVERB_PID=$!
 
@@ -187,15 +261,15 @@ print_status "Starting queue worker (Horizon)"
 php artisan horizon &
 HORIZON_PID=$!
 
-# Start Scraper microservice
-if [ -d "scraper" ]; then
-    print_status "Starting Scraper microservice on http://$SERVER_IP:3001"
-    cd scraper && npm start &
+# Start Scraper microservice (optional — only if directory exists)
+SCRAPER_PID=""
+if [ -d "scraper" ] && [ -d "scraper/node_modules" ]; then
+    print_status "Starting Scraper microservice on http://localhost:3001"
+    cd scraper && node src/index.js &
     SCRAPER_PID=$!
     cd ..
 else
-    print_warning "Scraper directory not found - skipping"
-    SCRAPER_PID=""
+    print_status "Scraper not started — PHP-native API adapters active (Eporner, RedTube)"
 fi
 
 # Wait a moment for services to start
@@ -203,38 +277,51 @@ sleep 3
 
 # Display access information
 echo ""
-echo "🎉 HubTube Development Server is running!"
+echo "============================================================"
+echo "  🎉 HubTube Development Server is running!"
+echo "============================================================"
 echo ""
 echo "📱 Access URLs:"
 echo "   Main App:     http://$SERVER_IP:8000"
 echo "   Admin Panel:  http://$SERVER_IP:8000/admin"
-echo "   WebSocket:    ws://$SERVER_IP:6001"
-echo "   Scraper API:  http://$SERVER_IP:3001"
+echo "   WebSocket:    ws://$SERVER_IP:$REVERB_PORT"
+if [ -n "$SCRAPER_PID" ]; then
+echo "   Scraper API:  http://localhost:3001"
+fi
 echo ""
 echo "👤 Default Login:"
 echo "   Admin:        admin@hubtube.com / password"
 echo "   Demo User:    demo@hubtube.com / password"
 echo ""
 echo "🔧 Services Running:"
-echo "   Laravel Server (PID: $SERVER_PID)"
-echo "   WebSocket Server (PID: $REVERB_PID)"
-echo "   Queue Worker (PID: $HORIZON_PID)"
+echo "   Laravel Server  (PID: $SERVER_PID)"
+echo "   Reverb WS       (PID: $REVERB_PID, port $REVERB_PORT)"
+echo "   Horizon Queue   (PID: $HORIZON_PID)"
 if [ -n "$SCRAPER_PID" ]; then
-    echo "   Scraper Service (PID: $SCRAPER_PID)"
+echo "   Scraper Node.js (PID: $SCRAPER_PID)"
 fi
 echo ""
-echo "📋 Useful Commands:"
-echo "   View logs:    tail -f storage/logs/laravel.log"
-echo "   Queue status: php artisan horizon"
-echo "   Stop all:     pkill -f 'php artisan' && pkill -f 'node.*scraper'"
+echo "📋 Admin Panel Tools:"
+echo "   Video Embedder   — Import videos from tube sites"
+echo "   WP Import        — Import from WordPress SQL dump"
+echo "   Archive Import   — Import from local WP archive directory"
+echo "   Bunny Migrator   — Download Bunny Stream videos to local"
+echo "   Language Settings — Configure auto-translation"
+echo "   SEO Settings     — Meta tags, schema, sitemap"
+echo "   Ad Settings      — Video ads + banner ads"
 echo ""
-echo "🎬 Video Embedder:"
-echo "   Import videos from adult tube sites at /admin -> Video Embedder"
+echo "📋 Useful Commands:"
+echo "   View logs:      tail -f storage/logs/laravel.log"
+echo "   Queue status:   php artisan horizon"
+echo "   Rebuild assets: npm run build"
+echo "   Re-seed:        php artisan db:seed --force"
+echo "   Stop all:       pkill -f 'php artisan' && pkill -f 'node.*scraper'"
 echo ""
 echo "Press Ctrl+C to stop all services"
 
 # Function to cleanup on exit
 cleanup() {
+    echo ""
     print_status "Stopping all services..."
     kill $SERVER_PID 2>/dev/null || true
     kill $REVERB_PID 2>/dev/null || true
@@ -242,12 +329,14 @@ cleanup() {
     if [ -n "$SCRAPER_PID" ]; then
         kill $SCRAPER_PID 2>/dev/null || true
     fi
+    # Give processes a moment to exit gracefully
+    sleep 1
     print_status "All services stopped"
     exit 0
 }
 
-# Set trap to cleanup on Ctrl+C
-trap cleanup INT
+# Set trap to cleanup on Ctrl+C and TERM
+trap cleanup INT TERM
 
 # Wait for user to stop
 wait
