@@ -2,6 +2,9 @@
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { ShieldAlert, Loader2 } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const page = usePage();
 const isSubmitting = ref(false);
@@ -39,7 +42,7 @@ const decline = () => {
                 <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style="background-color: color-mix(in srgb, var(--color-accent) 20%, transparent);">
                     <ShieldAlert class="w-10 h-10" style="color: var(--color-accent);" />
                 </div>
-                <h1 class="text-3xl font-bold mb-4" style="color: var(--color-text-primary);">Age Verification Required</h1>
+                <h1 class="text-3xl font-bold mb-4" style="color: var(--color-text-primary);">{{ t('age.title') || 'Age Verification Required' }}</h1>
                 <p class="text-lg" style="color: var(--color-text-muted);">
                     This website contains age-restricted content. You must be at least 18 years old to enter.
                 </p>
@@ -57,10 +60,10 @@ const decline = () => {
                         class="btn btn-primary flex-1 py-3 inline-flex items-center justify-center gap-2"
                     >
                         <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin" />
-                        {{ isSubmitting ? 'Entering...' : 'I am 18 or older' }}
+                        {{ isSubmitting ? (t('common.loading') || 'Entering...') : (t('age.confirm') || 'I am 18 or older') }}
                     </button>
                     <button type="button" @click="decline" :disabled="isSubmitting" class="btn btn-secondary flex-1 py-3">
-                        Exit
+                        {{ t('age.exit') || 'Exit' }}
                     </button>
                 </div>
 

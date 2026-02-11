@@ -4,6 +4,9 @@ import { Link } from '@inertiajs/vue3';
 import { Heart, MessageCircle, Share2, MoreVertical, Volume2, VolumeX, Play, Pause, ChevronUp, ChevronDown, X, Flag } from 'lucide-vue-next';
 import { useFetch } from '@/Composables/useFetch';
 import { sanitizeHtml } from '@/Composables/useSanitize';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     shorts: { type: Array, required: true },
@@ -433,7 +436,7 @@ watch(() => props.shorts, (newShorts) => {
 
                         <button @click.stop="handleShare(item.data)" class="shorts-action-btn">
                             <Share2 class="w-7 h-7 text-white" />
-                            <span class="text-white text-xs mt-1">Share</span>
+                            <span class="text-white text-xs mt-1">{{ t('common.share') || 'Share' }}</span>
                         </button>
 
                         <button @click.stop="toggleMute" class="shorts-action-btn">
@@ -448,7 +451,7 @@ watch(() => props.shorts, (newShorts) => {
             <template v-else-if="item.type === 'ad'">
                 <div class="shorts-ad-wrapper">
                     <div class="shorts-ad-label">
-                        <span class="text-xs font-medium uppercase tracking-wider" style="color: var(--color-text-muted);">Sponsored</span>
+                        <span class="text-xs font-medium uppercase tracking-wider" style="color: var(--color-text-muted);">{{ t('common.sponsored') || 'Sponsored' }}</span>
                     </div>
 
                     <div class="shorts-ad-content" v-html="sanitizeHtml(adSettings.code)"></div>
@@ -459,7 +462,7 @@ watch(() => props.shorts, (newShorts) => {
                             @click="skipAd"
                             class="shorts-skip-btn"
                         >
-                            <span>Skip</span>
+                            <span>{{ t('common.skip') || 'Skip' }}</span>
                             <ChevronDown class="w-4 h-4" />
                         </button>
                         <div v-else-if="adSkipCountdown > 0 && currentIndex === index" class="shorts-skip-countdown">
@@ -497,8 +500,8 @@ watch(() => props.shorts, (newShorts) => {
 
         <!-- Empty state -->
         <div v-if="feed.length === 0" class="shorts-empty">
-            <p class="text-lg font-medium" style="color: var(--color-text-primary);">No shorts yet</p>
-            <p class="text-sm mt-1" style="color: var(--color-text-muted);">Be the first to upload a short!</p>
+            <p class="text-lg font-medium" style="color: var(--color-text-primary);">{{ t('shorts.no_shorts') || 'No shorts yet' }}</p>
+            <p class="text-sm mt-1" style="color: var(--color-text-muted);">{{ t('shorts.upload_first') || 'Be the first to upload a short!' }}</p>
         </div>
     </div>
 </template>

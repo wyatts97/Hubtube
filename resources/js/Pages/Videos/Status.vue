@@ -4,6 +4,9 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useFetch } from '@/Composables/useFetch';
 import { Loader2, CheckCircle, ShieldCheck, Trash2, Clock, XCircle, Edit, Eye } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     video: Object,
@@ -107,7 +110,7 @@ const isPublished = computed(() => {
 
     <AppLayout>
         <div class="max-w-2xl mx-auto">
-            <h1 class="text-2xl font-bold mb-6" style="color: var(--color-text-primary);">Video Status</h1>
+            <h1 class="text-2xl font-bold mb-6" style="color: var(--color-text-primary);">{{ t('video.video_status') || 'Video Status' }}</h1>
 
             <!-- Video Info Card -->
             <div class="card p-4 mb-6">
@@ -211,7 +214,7 @@ const isPublished = computed(() => {
                     class="btn bg-red-600 hover:bg-red-700 text-white"
                 >
                     <Trash2 class="w-4 h-4 mr-2" />
-                    Delete Video
+                    {{ t('video.delete_video') || 'Delete Video' }}
                 </button>
 
                 <!-- If user gets upgraded to pro/admin later, show edit link -->
@@ -221,7 +224,7 @@ const isPublished = computed(() => {
                     class="btn btn-primary"
                 >
                     <Edit class="w-4 h-4 mr-2" />
-                    Edit Video
+                    {{ t('video.edit_video') || 'Edit Video' }}
                 </a>
             </div>
         </div>

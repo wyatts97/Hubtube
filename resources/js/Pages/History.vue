@@ -4,6 +4,9 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { History, Trash2 } from 'lucide-vue-next';
 import { useFetch } from '@/Composables/useFetch';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 defineProps({
     videos: Object,
@@ -12,7 +15,7 @@ defineProps({
 const { del } = useFetch();
 
 const clearHistory = async () => {
-    if (!confirm('Are you sure you want to clear your watch history?')) return;
+    if (!confirm(t('history.clear_confirm') || 'Are you sure you want to clear your watch history?')) return;
     
     const { ok } = await del('/history', null);
     if (ok) {
@@ -22,17 +25,17 @@ const clearHistory = async () => {
 </script>
 
 <template>
-    <Head title="Watch History" />
+    <Head :title="t('history.title') || 'Watch History'" />
 
     <AppLayout>
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">Watch History</h1>
-                <p class="mt-1" style="color: var(--color-text-secondary);">Videos you've watched recently</p>
+                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('history.title') || 'Watch History' }}</h1>
+                <p class="mt-1" style="color: var(--color-text-secondary);">{{ t('history.description') || 'Videos you\'ve watched recently' }}</p>
             </div>
             <button v-if="videos?.data?.length" @click="clearHistory" class="btn btn-ghost text-red-400 gap-2">
                 <Trash2 class="w-4 h-4" />
-                Clear History
+                {{ t('history.clear') || 'Clear History' }}
             </button>
         </div>
 
@@ -42,10 +45,10 @@ const clearHistory = async () => {
 
         <div v-else class="text-center py-12">
             <History class="w-16 h-16 mx-auto mb-4" style="color: var(--color-text-muted);" />
-            <p class="text-lg" style="color: var(--color-text-secondary);">No watch history yet</p>
-            <p class="mt-2" style="color: var(--color-text-muted);">Videos you watch will appear here</p>
+            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('history.empty') || 'No watch history yet' }}</p>
+            <p class="mt-2" style="color: var(--color-text-muted);">{{ t('history.empty_desc') || 'Videos you watch will appear here' }}</p>
             <Link href="/" class="btn btn-primary mt-4">
-                Browse Videos
+                {{ t('common.browse_videos') || 'Browse Videos' }}
             </Link>
         </div>
 

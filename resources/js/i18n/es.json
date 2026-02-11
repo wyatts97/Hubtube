@@ -20,7 +20,17 @@
         "wallet": "Billetera",
         "library": "Biblioteca",
         "create": "Crear",
-        "browse": "Explorar"
+        "browse": "Explorar",
+        "admin_panel": "Panel de Admin",
+        "your_channel": "Tu Canal",
+        "subscriptions": "Suscripciones",
+        "sign_in": "Iniciar Sesión",
+        "sign_up": "Registrarse",
+        "sign_out": "Cerrar Sesión",
+        "theme": "Tema",
+        "notifications": "Notificaciones",
+        "mark_all_read": "Marcar todo leído",
+        "no_notifications": "Sin notificaciones"
     },
     "common": {
         "save": "Guardar",
@@ -42,7 +52,25 @@
         "next": "Siguiente",
         "previous": "Anterior",
         "confirm": "Confirmar",
-        "language": "Idioma"
+        "language": "Idioma",
+        "search_placeholder": "Buscar videos...",
+        "manage": "Administrar",
+        "create": "Crear",
+        "title": "Título",
+        "description": "Descripción",
+        "videos": "videos",
+        "subscribers": "suscriptores",
+        "clear": "Limpiar",
+        "browse_videos": "Explorar Videos",
+        "results_for": "Resultados para",
+        "no_videos_found": "No se encontraron videos",
+        "try_different": "Intenta con palabras diferentes",
+        "no_channels_found": "No se encontraron canales",
+        "no_hashtags_found": "No se encontraron hashtags",
+        "search_prompt": "Busca videos, canales y más",
+        "sponsored": "Patrocinado",
+        "skip": "Saltar",
+        "try_again": "Intentar de Nuevo"
     },
     "video": {
         "views": "{count} vistas",
@@ -67,7 +95,16 @@
         "uploading": "Subiendo...",
         "save_to_playlist": "Guardar en lista",
         "shortcuts": "Atajos",
-        "keyboard_shortcuts": "Atajos de Teclado"
+        "keyboard_shortcuts": "Atajos de Teclado",
+        "edit_video": "Editar Video",
+        "delete_video": "Eliminar Video",
+        "thumbnail": "Miniatura",
+        "upload_thumbnail": "Subir Miniatura Personalizada",
+        "video_details": "Detalles del Video",
+        "monetization": "Monetización",
+        "video_status": "Estado del Video",
+        "upload_thanks": "¡Gracias por tu Subida!",
+        "upload_another": "Subir Otro"
     },
     "channel": {
         "videos": "Videos",
@@ -75,15 +112,36 @@
         "playlists": "Listas",
         "about": "Acerca de",
         "no_videos": "Aún no hay videos",
-        "no_videos_desc": "Este canal no ha subido ningún video"
+        "no_videos_desc": "Este canal no ha subido ningún video",
+        "no_shorts": "Aún no hay shorts",
+        "no_shorts_desc": "Este canal no ha subido ningún short",
+        "no_playlists": "Aún no hay listas",
+        "no_playlists_desc": "Este canal no ha creado ninguna lista",
+        "joined": "Se unió el {date}",
+        "total_views": "Vistas totales",
+        "video_count": "Videos subidos",
+        "stats": "Estadísticas del Canal",
+        "description": "Descripción"
     },
     "playlist": {
         "create": "Crear Lista",
         "new_name": "Nombre de la nueva lista...",
         "no_playlists": "Aún no hay listas",
+        "no_playlists_desc": "Crea una lista para organizar tus videos favoritos",
         "added": "Agregado a \"{name}\"",
         "removed": "Eliminado de \"{name}\"",
-        "videos_count": "{count} videos"
+        "videos_count": "{count} videos",
+        "your_playlists": "Tus Listas",
+        "organize_desc": "Organiza tus videos favoritos",
+        "new_playlist": "Nueva Lista",
+        "create_playlist": "Crear Lista",
+        "favorites": "Listas Favoritas",
+        "back_to_playlists": "Volver a Listas",
+        "favorited": "Favorito",
+        "favorite": "Favorito",
+        "play_all": "Reproducir Todo",
+        "empty": "Esta lista está vacía",
+        "add_videos": "Agrega videos para comenzar"
     },
     "settings": {
         "title": "Ajustes",
@@ -124,7 +182,14 @@
         "upgrade_pro": "Mejorar a Pro",
         "wallet_balance": "Saldo de Billetera",
         "deposit": "Depositar",
-        "withdraw": "Retirar"
+        "withdraw": "Retirar",
+        "email_notifications_desc": "Recibir notificaciones por correo",
+        "push_notifications_desc": "Recibir notificaciones push en el navegador",
+        "subscription_updates_desc": "Recibir notificaciones cuando los canales que sigues suban contenido",
+        "private_profile_desc": "Solo seguidores aprobados pueden ver tu contenido",
+        "show_watch_history_desc": "Permitir que otros vean lo que has visto",
+        "show_liked_videos_desc": "Permitir que otros vean los videos que te gustaron",
+        "allow_comments_desc": "Permitir que otros comenten en tus videos por defecto"
     },
     "upload": {
         "title": "Subir Video",
@@ -151,7 +216,21 @@
         "forgot_password": "¿Olvidaste tu contraseña?",
         "no_account": "¿No tienes cuenta?",
         "has_account": "¿Ya tienes cuenta?",
-        "sign_up": "Registrarse"
+        "sign_up": "Registrarse",
+        "welcome_back": "Bienvenido de nuevo",
+        "sign_in_desc": "Inicia sesión en tu cuenta",
+        "remember_me": "Recuérdame",
+        "signing_in": "Iniciando sesión...",
+        "create_account": "Crear tu cuenta",
+        "join_community": "Únete a la comunidad hoy",
+        "creating_account": "Creando cuenta...",
+        "forgot_password_desc": "Ingresa tu correo y te enviaremos un enlace para restablecer",
+        "send_reset_link": "Enviar Enlace",
+        "back_to_login": "Volver a Iniciar Sesión",
+        "reset_password": "Restablecer Contraseña",
+        "reset_password_desc": "Ingresa tu nueva contraseña",
+        "verify_email": "Verifica tu Correo",
+        "resend_verification": "Reenviar Correo de Verificación"
     },
     "home": {
         "live_now": "En Vivo Ahora",
@@ -160,6 +239,10 @@
         "popular": "Populares",
         "reached_end": "Has llegado al final",
         "loading_more": "Cargando más videos..."
+    },
+    "shorts": {
+        "no_shorts": "Aún no hay shorts",
+        "upload_first": "¡Sé el primero en subir un short!"
     },
     "report": {
         "title": "Reportar Video",
@@ -194,6 +277,109 @@
         "unauthorized": "No estás autorizado para realizar esta acción.",
         "component_error": "Algo salió mal",
         "component_error_desc": "Ocurrió un error al renderizar esta sección.",
-        "try_again": "Intentar de Nuevo"
+        "try_again": "Intentar de Nuevo",
+        "go_home": "Ir al Inicio",
+        "refresh": "Actualizar Página"
+    },
+    "history": {
+        "title": "Historial de Reproducción",
+        "description": "Videos que has visto recientemente",
+        "clear": "Limpiar Historial",
+        "clear_confirm": "¿Estás seguro de que quieres limpiar tu historial?",
+        "empty": "Aún no hay historial",
+        "empty_desc": "Los videos que veas aparecerán aquí"
+    },
+    "feed": {
+        "title": "Suscripciones",
+        "description": "Últimos videos de los canales que sigues",
+        "empty": "Aún no hay videos en tu feed",
+        "empty_desc": "Suscríbete a canales para ver sus últimos videos aquí"
+    },
+    "dashboard": {
+        "title": "Panel del Creador",
+        "overview": "Resumen del rendimiento de tu canal",
+        "upload_video": "Subir Video",
+        "total_videos": "Total de Videos",
+        "total_views": "Total de Vistas",
+        "total_likes": "Total de Me Gusta",
+        "subscribers": "Suscriptores",
+        "wallet_balance": "Saldo de Billetera",
+        "recent_videos": "Videos Recientes",
+        "top_performing": "Mejor Rendimiento",
+        "no_videos": "Aún no hay videos",
+        "upload_to_see": "Sube videos para ver analíticas"
+    },
+    "search": {
+        "title": "Buscar",
+        "placeholder": "Buscar videos, canales, hashtags...",
+        "videos": "Videos",
+        "channels": "Canales",
+        "hashtags": "Hashtags"
+    },
+    "trending": {
+        "description": "Videos populares de la última semana",
+        "no_videos": "Aún no hay videos en tendencia",
+        "check_back": "Vuelve más tarde para ver contenido popular"
+    },
+    "footer": {
+        "terms": "Términos de Servicio",
+        "privacy": "Política de Privacidad",
+        "dmca": "DMCA",
+        "guidelines": "Normas de la Comunidad",
+        "cookies": "Política de Cookies",
+        "contact": "Contacto"
+    },
+    "contact": {
+        "title": "Contacto",
+        "name": "Nombre",
+        "email": "Correo Electrónico",
+        "subject": "Asunto",
+        "message": "Mensaje",
+        "send": "Enviar Mensaje",
+        "success": "¡Mensaje enviado exitosamente!"
+    },
+    "categories": {
+        "title": "Categorías",
+        "all": "Todas las Categorías",
+        "no_videos": "No hay videos en esta categoría",
+        "browse": "Explorar videos por categoría",
+        "no_categories": "Aún no hay categorías"
+    },
+    "live": {
+        "title": "Transmisiones en Vivo",
+        "go_live": "Transmitir",
+        "viewers": "espectadores",
+        "no_streams": "No hay transmisiones en vivo ahora",
+        "check_back": "Vuelve más tarde para ver transmisiones en vivo",
+        "watch_now": "Mira a creadores transmitiendo en vivo ahora",
+        "you_are_live": "¡Estás en Vivo!",
+        "start_preview": "Iniciar Vista Previa",
+        "stream_title": "Título de la Transmisión",
+        "description_optional": "Descripción (opcional)",
+        "end_stream": "Finalizar Transmisión",
+        "live_chat": "Chat en Vivo",
+        "send_gift": "Enviar un Regalo"
+    },
+    "wallet": {
+        "transaction_history": "Historial de Transacciones",
+        "no_transactions": "Aún no hay transacciones",
+        "back_to_wallet": "Volver a Billetera",
+        "deposit_funds": "Depositar Fondos",
+        "withdraw_funds": "Retirar Fondos",
+        "amount": "Monto (USD)",
+        "payment_method": "Método de Pago",
+        "continue_payment": "Continuar al Pago",
+        "request_withdrawal": "Solicitar Retiro"
+    },
+    "age": {
+        "title": "Verificación de Edad Requerida",
+        "confirm": "Tengo 18 años o más",
+        "exit": "Salir"
+    },
+    "embedded": {
+        "title": "Videos Integrados",
+        "filter": "Filtrar",
+        "featured_desc": "Contenido destacado seleccionado",
+        "no_featured": "Aún no hay videos destacados"
     }
 }

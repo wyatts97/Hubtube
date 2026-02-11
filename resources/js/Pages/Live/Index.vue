@@ -3,6 +3,9 @@ import { Link } from '@inertiajs/vue3';
 import SeoHead from '@/Components/SeoHead.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Radio, Users } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 defineProps({
     streams: Object,
@@ -15,8 +18,8 @@ defineProps({
 
     <AppLayout>
         <div class="mb-6">
-            <h1 class="text-2xl font-bold text-white">Live Streams</h1>
-            <p class="text-dark-400 mt-1">Watch creators streaming live right now</p>
+            <h1 class="text-2xl font-bold text-white">{{ t('live.title') || 'Live Streams' }}</h1>
+            <p class="text-dark-400 mt-1">{{ t('live.watch_now') || 'Watch creators streaming live right now' }}</p>
         </div>
 
         <div v-if="streams.data?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -69,10 +72,10 @@ defineProps({
 
         <div v-else class="text-center py-12">
             <Radio class="w-16 h-16 text-dark-600 mx-auto mb-4" />
-            <p class="text-dark-400 text-lg">No live streams right now</p>
-            <p class="text-dark-500 mt-2">Check back later or start your own stream!</p>
+            <p class="text-dark-400 text-lg">{{ t('live.no_streams') || 'No live streams right now' }}</p>
+            <p class="text-dark-500 mt-2">{{ t('live.check_back') || 'Check back later or start your own stream!' }}</p>
             <Link href="/go-live" class="btn btn-primary mt-4">
-                Go Live
+                {{ t('nav.go_live') || 'Go Live' }}
             </Link>
         </div>
     </AppLayout>

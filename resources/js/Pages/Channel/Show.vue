@@ -3,6 +3,9 @@ import { Link, router, usePage } from '@inertiajs/vue3';
 import SeoHead from '@/Components/SeoHead.vue';
 import { ref, computed } from 'vue';
 import { useFetch } from '@/Composables/useFetch';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { Bell, BellOff, Share2, Flag, Loader2 } from 'lucide-vue-next';
@@ -43,12 +46,12 @@ const handleSubscribe = async () => {
     subscribing.value = false;
 };
 
-const tabs = [
-    { name: 'Videos', href: `/channel/${props.channel.username}` },
-    { name: 'Shorts', href: `/channel/${props.channel.username}/shorts` },
-    { name: 'Playlists', href: `/channel/${props.channel.username}/playlists` },
-    { name: 'About', href: `/channel/${props.channel.username}/about` },
-];
+const tabs = computed(() => [
+    { name: t('channel.videos') || 'Videos', href: `/channel/${props.channel.username}` },
+    { name: t('channel.shorts') || 'Shorts', href: `/channel/${props.channel.username}/shorts` },
+    { name: t('channel.playlists') || 'Playlists', href: `/channel/${props.channel.username}/playlists` },
+    { name: t('channel.about') || 'About', href: `/channel/${props.channel.username}/about` },
+]);
 </script>
 
 <template>
@@ -85,7 +88,7 @@ const tabs = [
                     <span v-if="channel.is_verified" class="ml-2" style="color: var(--color-accent);">✓</span>
                 </h1>
                 <p class="mt-1 text-sm sm:text-base" style="color: var(--color-text-secondary);">
-                    @{{ channel.username }} • {{ subCount.toLocaleString() }} subscribers • {{ videos.total }} videos
+                    @{{ channel.username }} • {{ subCount.toLocaleString() }} {{ t('common.subscribers') || 'subscribers' }} • {{ videos.total }} {{ t('common.videos') || 'videos' }}
                 </p>
                 <p v-if="channel.channel?.description" class="mt-2 line-clamp-2" style="color: var(--color-text-secondary);">
                     {{ channel.channel.description }}
@@ -103,7 +106,7 @@ const tabs = [
                     ]"
                 >
                     <Loader2 v-if="subscribing" class="w-4 h-4 animate-spin" />
-                    <template v-else>{{ subscribed ? 'Subscribed' : 'Subscribe' }}</template>
+                    <template v-else>{{ subscribed ? (t('common.subscribed') || 'Subscribed') : (t('common.subscribe') || 'Subscribe') }}</template>
                 </button>
                 <button class="btn btn-secondary">
                     <Share2 class="w-4 h-4" />
@@ -136,8 +139,8 @@ const tabs = [
         </div>
 
         <div v-else class="text-center py-12">
-            <p class="text-lg" style="color: var(--color-text-secondary);">No videos yet</p>
-            <p class="mt-2" style="color: var(--color-text-muted);">This channel hasn't uploaded any videos</p>
+            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('channel.no_videos') || 'No videos yet' }}</p>
+            <p class="mt-2" style="color: var(--color-text-muted);">{{ t('channel.no_videos_desc') || "This channel hasn't uploaded any videos" }}</p>
         </div>
 
         <!-- Pagination -->

@@ -139,10 +139,10 @@ const shouldShowAd = (index, totalLength) => {
             <div ref="loadMoreTrigger" class="flex justify-center py-8">
                 <div v-if="loading" class="flex items-center gap-2" style="color: var(--color-text-secondary);">
                     <Loader2 class="w-5 h-5 animate-spin" />
-                    <span>Loading more videos...</span>
+                    <span>{{ t('home.loading_more') || 'Loading more videos...' }}</span>
                 </div>
                 <p v-else-if="!hasMore && videoList.length > 0" class="text-sm" style="color: var(--color-text-muted);">
-                    You've reached the end
+                    {{ t('home.reached_end') || "You've reached the end" }}
                 </p>
             </div>
         </template>
@@ -159,8 +159,8 @@ const shouldShowAd = (index, totalLength) => {
             </div>
 
             <div v-else class="text-center py-12">
-                <p class="text-lg" style="color: var(--color-text-secondary);">No trending videos yet</p>
-                <p class="mt-2" style="color: var(--color-text-muted);">Check back later for popular content</p>
+                <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('trending.no_videos') || 'No trending videos yet' }}</p>
+                <p class="mt-2" style="color: var(--color-text-muted);">{{ t('trending.check_back') || 'Check back later for popular content' }}</p>
             </div>
 
             <Pagination

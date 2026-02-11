@@ -150,22 +150,25 @@
 
     {{-- Regenerate Translations --}}
     <div class="mt-8 p-4 rounded-xl bg-gray-800/50 border border-gray-700">
-        <h3 class="text-sm font-semibold text-white mb-2">Regenerate Translations</h3>
+        <h3 class="text-sm font-semibold text-white mb-2">Generate Translations</h3>
         <p class="text-sm text-gray-400 mb-3">
-            After enabling new languages or adding overrides, regenerate translations and rebuild the site. This process runs in the background — you can leave this page safely.
+            <strong>Sync New Keys</strong> — Only translates keys that were added to <code class="text-gray-300">en.json</code> since the last run. Preserves existing translations. Use this after adding new UI strings.<br>
+            <strong>Full Regenerate</strong> — Re-translates everything from scratch using Google Translate. Use after adding overrides or to fix bad translations.
         </p>
         <div class="flex flex-wrap items-center gap-3">
             @if($this->regenerating)
                 <div class="flex items-center gap-2">
                     <x-filament::button disabled color="gray" size="sm">
                         <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                        Regenerating…
+                        {{ $this->regenerationStatus }}
                     </x-filament::button>
-                    <span class="text-xs text-gray-400">{{ $this->regenerationStatus }}</span>
                 </div>
             @else
-                <x-filament::button wire:click="regenerateTranslations" color="primary" size="sm">
-                    Regenerate Translations &amp; Rebuild
+                <x-filament::button wire:click="syncTranslations" color="primary" size="sm">
+                    Sync New Keys &amp; Rebuild
+                </x-filament::button>
+                <x-filament::button wire:click="regenerateTranslations" color="warning" size="sm">
+                    Full Regenerate &amp; Rebuild
                 </x-filament::button>
             @endif
         </div>

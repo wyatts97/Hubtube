@@ -2,6 +2,9 @@
 import { ref, computed, onMounted } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import { ShieldAlert, Loader2 } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const page = usePage();
 const ageSettings = computed(() => page.props.theme?.ageVerification || {});
@@ -127,7 +130,7 @@ const buttonColor = computed(() => ageSettings.value.buttonColor || 'var(--color
                             :style="{ backgroundColor: buttonColor }"
                         >
                             <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin" />
-                            {{ isSubmitting ? 'Entering...' : confirmText }}
+                            {{ isSubmitting ? (t('common.loading') || 'Entering...') : confirmText }}
                         </button>
                         <button 
                             @click="decline" 

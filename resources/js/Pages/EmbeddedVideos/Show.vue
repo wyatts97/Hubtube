@@ -3,6 +3,9 @@ import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import EmbeddedVideoPlayer from '@/Components/EmbeddedVideoPlayer.vue';
 import { Film, ExternalLink } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     video: Object,
@@ -24,7 +27,7 @@ const props = defineProps({
                     <!-- Description -->
                     <div v-if="video.description" class="mt-6 card p-4">
                         <h3 class="font-semibold mb-2" style="color: var(--color-text-primary);">
-                            Description
+                            {{ t('common.description') || 'Description' }}
                         </h3>
                         <p class="text-sm whitespace-pre-wrap" style="color: var(--color-text-secondary);">
                             {{ video.description }}
@@ -74,7 +77,7 @@ const props = defineProps({
                 <!-- Sidebar - Related Videos -->
                 <div class="lg:col-span-1">
                     <h3 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">
-                        Related Videos
+                        {{ t('video.related') || 'Related Videos' }}
                     </h3>
                     
                     <div class="space-y-4">

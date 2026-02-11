@@ -6,6 +6,9 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { useFetch } from '@/Composables/useFetch';
 import { ArrowLeft, Play, Lock, Globe, EyeOff, Heart } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     playlist: Object,
@@ -59,7 +62,7 @@ const removeVideo = (videoId) => {
         <div class="max-w-6xl mx-auto">
             <Link href="/playlists" class="flex items-center gap-2 mb-6 text-sm hover:opacity-80" style="color: var(--color-text-secondary);">
                 <ArrowLeft class="w-4 h-4" />
-                Back to Playlists
+                {{ t('playlist.back_to_playlists') || 'Back to Playlists' }}
             </Link>
 
             <!-- Playlist Header -->
@@ -74,7 +77,7 @@ const removeVideo = (videoId) => {
                         <p v-if="playlist.description" class="mt-2" style="color: var(--color-text-secondary);">{{ playlist.description }}</p>
                         <div class="flex items-center gap-4 mt-3">
                             <span class="text-sm" style="color: var(--color-text-muted);">
-                                {{ playlist.videos?.length || playlist.videos_count || 0 }} videos
+                                {{ playlist.videos?.length || playlist.videos_count || 0 }} {{ t('common.videos') || 'videos' }}
                             </span>
                             <span v-if="playlist.user" class="text-sm" style="color: var(--color-text-muted);">
                                 by <Link :href="`/channel/${playlist.user.username}`" style="color: var(--color-accent);">{{ playlist.user.username }}</Link>
@@ -94,11 +97,11 @@ const removeVideo = (videoId) => {
                             :class="favorited ? 'btn-primary' : 'btn-secondary'"
                         >
                             <Heart class="w-4 h-4" :fill="favorited ? 'currentColor' : 'none'" />
-                            {{ favorited ? 'Favorited' : 'Favorite' }}
+                            {{ favorited ? (t('playlist.favorited') || 'Favorited') : (t('playlist.favorite') || 'Favorite') }}
                         </button>
                         <button v-if="playlist.videos?.length" class="btn btn-primary gap-2">
                             <Play class="w-4 h-4" />
-                            Play All
+                            {{ t('playlist.play_all') || 'Play All' }}
                         </button>
                     </div>
                 </div>
@@ -111,8 +114,8 @@ const removeVideo = (videoId) => {
 
             <div v-else class="text-center py-16">
                 <Play class="w-12 h-12 mx-auto mb-4" style="color: var(--color-text-muted);" />
-                <p class="text-lg" style="color: var(--color-text-secondary);">This playlist is empty</p>
-                <p class="mt-1" style="color: var(--color-text-muted);">Add videos to get started</p>
+                <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('playlist.empty') || 'This playlist is empty' }}</p>
+                <p class="mt-1" style="color: var(--color-text-muted);">{{ t('playlist.add_videos') || 'Add videos to get started' }}</p>
             </div>
         </div>
     </AppLayout>

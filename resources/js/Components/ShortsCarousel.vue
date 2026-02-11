@@ -2,6 +2,9 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { ChevronLeft, ChevronRight, Zap, Play } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     shorts: { type: Array, required: true },
@@ -62,9 +65,9 @@ const formattedDuration = (duration) => {
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-xl font-bold flex items-center gap-2" style="color: var(--color-text-primary);">
                 <Zap class="w-5 h-5" style="color: var(--color-accent);" />
-                Shorts
+                {{ t('channel.shorts') || 'Shorts' }}
             </h2>
-            <Link href="/shorts" class="text-sm font-medium" style="color: var(--color-accent);">View All</Link>
+            <Link href="/shorts" class="text-sm font-medium" style="color: var(--color-accent);">{{ t('common.view_all') || 'View All' }}</Link>
         </div>
 
         <div class="relative group">

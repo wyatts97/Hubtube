@@ -3,6 +3,9 @@ import { Head, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ref, computed } from 'vue';
 import { Send, CheckCircle, Mail, User, MessageSquare } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const page = usePage();
 const success = computed(() => page.props.flash?.success);
@@ -25,11 +28,11 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Contact Us" />
+    <Head :title="t('contact.title') || 'Contact Us'" />
 
     <AppLayout>
         <div class="max-w-2xl mx-auto py-8">
-            <h1 class="text-2xl font-bold mb-2" style="color: var(--color-text-primary);">Contact Us</h1>
+            <h1 class="text-2xl font-bold mb-2" style="color: var(--color-text-primary);">{{ t('contact.title') || 'Contact Us' }}</h1>
             <p class="mb-8" style="color: var(--color-text-secondary);">
                 Have a question, concern, or feedback? Send us a message and we'll get back to you.
             </p>
@@ -49,7 +52,7 @@ const submit = () => {
                     <!-- Name -->
                     <div>
                         <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">
-                            Name <span style="color: var(--color-accent);">*</span>
+                            {{ t('contact.name') || 'Name' }} <span style="color: var(--color-accent);">*</span>
                         </label>
                         <div class="relative">
                             <User class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style="color: var(--color-text-muted);" />
@@ -67,7 +70,7 @@ const submit = () => {
                     <!-- Email -->
                     <div>
                         <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">
-                            Email <span style="color: var(--color-accent);">*</span>
+                            {{ t('contact.email') || 'Email' }} <span style="color: var(--color-accent);">*</span>
                         </label>
                         <div class="relative">
                             <Mail class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style="color: var(--color-text-muted);" />
@@ -86,7 +89,7 @@ const submit = () => {
                 <!-- Subject -->
                 <div>
                     <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">
-                        Subject
+                        {{ t('contact.subject') || 'Subject' }}
                     </label>
                     <input
                         v-model="form.subject"
@@ -100,7 +103,7 @@ const submit = () => {
                 <!-- Message -->
                 <div>
                     <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">
-                        Message <span style="color: var(--color-accent);">*</span>
+                        {{ t('contact.message') || 'Message' }} <span style="color: var(--color-accent);">*</span>
                     </label>
                     <div class="relative">
                         <MessageSquare class="absolute left-3 top-3 w-4 h-4" style="color: var(--color-text-muted);" />
@@ -121,7 +124,7 @@ const submit = () => {
                     :disabled="form.processing"
                 >
                     <Send class="w-4 h-4" />
-                    {{ form.processing ? 'Sending...' : 'Send Message' }}
+                    {{ form.processing ? (t('common.loading') || 'Sending...') : (t('contact.send') || 'Send Message') }}
                 </button>
             </form>
         </div>

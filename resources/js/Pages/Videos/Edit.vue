@@ -4,6 +4,9 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useFetch } from '@/Composables/useFetch';
 import { X, Save, Trash2, Image, Loader2, CheckCircle, ShieldCheck } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     video: Object,
@@ -134,7 +137,7 @@ const statusColors = {
     <AppLayout>
         <div class="max-w-4xl mx-auto">
             <div class="flex items-center justify-between mb-6">
-                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">Edit Video</h1>
+                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('video.edit_video') || 'Edit Video' }}</h1>
                 <span :class="['px-3 py-1 rounded-full text-sm font-medium', statusColors[video.status]]">
                     {{ video.status.charAt(0).toUpperCase() + video.status.slice(1) }}
                 </span>
@@ -214,7 +217,7 @@ const statusColors = {
 
                 <!-- Thumbnail Selection -->
                 <div class="card p-6">
-                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">Thumbnail</h2>
+                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ t('video.thumbnail') || 'Thumbnail' }}</h2>
                     
                     <!-- Generated Thumbnails -->
                     <div v-if="generatedThumbnails.length" class="mb-6">
@@ -263,7 +266,7 @@ const statusColors = {
                                 </div>
                             </div>
                             <div>
-                                <span class="btn btn-secondary text-sm">Upload Custom Thumbnail</span>
+                                <span class="btn btn-secondary text-sm">{{ t('video.upload_thumbnail') || 'Upload Custom Thumbnail' }}</span>
                                 <p class="text-xs mt-1" style="color: var(--color-text-muted);">JPG, PNG or WebP, max 5MB</p>
                             </div>
                             <input
@@ -279,10 +282,10 @@ const statusColors = {
 
                 <!-- Video Details -->
                 <div class="card p-6 space-y-4">
-                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">Video Details</h2>
+                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ t('video.video_details') || 'Video Details' }}</h2>
                     
                     <div>
-                        <label for="title" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Title</label>
+                        <label for="title" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('upload.video_title') || 'Title' }}</label>
                         <input
                             id="title"
                             v-model="form.title"
@@ -295,7 +298,7 @@ const statusColors = {
                     </div>
 
                     <div>
-                        <label for="description" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Description</label>
+                        <label for="description" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('upload.video_description') || 'Description' }}</label>
                         <textarea
                             id="description"
                             v-model="form.description"
@@ -307,7 +310,7 @@ const statusColors = {
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="category" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Category</label>
+                            <label for="category" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('video.category') || 'Category' }}</label>
                             <select id="category" v-model="form.category_id" class="input">
                                 <option value="">Select category</option>
                                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">
@@ -317,7 +320,7 @@ const statusColors = {
                         </div>
 
                         <div>
-                            <label for="privacy" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Privacy</label>
+                            <label for="privacy" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('video.privacy') || 'Privacy' }}</label>
                             <select id="privacy" v-model="form.privacy" class="input">
                                 <option value="public">Public</option>
                                 <option value="unlisted">Unlisted</option>
@@ -327,7 +330,7 @@ const statusColors = {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Tags</label>
+                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('video.tags') || 'Tags' }}</label>
                         <div class="flex flex-wrap gap-2 mb-2">
                             <span
                                 v-for="(tag, index) in form.tags"
@@ -344,7 +347,7 @@ const statusColors = {
                             v-model="tagInput"
                             type="text"
                             class="input"
-                            placeholder="Add tag and press Enter"
+                            :placeholder="t('upload.add_tag') || 'Add tag and press Enter'"
                             @keydown.enter.prevent="addTag"
                         />
                     </div>
@@ -352,7 +355,7 @@ const statusColors = {
 
                 <!-- Monetization -->
                 <div class="card p-6 space-y-4">
-                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">Monetization</h2>
+                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ t('video.monetization') || 'Monetization' }}</h2>
                     
                     <div class="flex items-center gap-3">
                         <input
@@ -402,7 +405,7 @@ const statusColors = {
                         class="btn bg-red-600 hover:bg-red-700 text-white"
                     >
                         <Trash2 class="w-4 h-4 mr-2" />
-                        Delete Video
+                        {{ t('video.delete_video') || 'Delete Video' }}
                     </button>
                     
                     <button
@@ -411,8 +414,8 @@ const statusColors = {
                         class="btn btn-primary"
                     >
                         <Save class="w-4 h-4 mr-2" />
-                        <span v-if="form.processing">Saving...</span>
-                        <span v-else>Save Changes</span>
+                        <span v-if="form.processing">{{ t('common.loading') || 'Saving...' }}</span>
+                        <span v-else>{{ t('settings.save_changes') || 'Save Changes' }}</span>
                     </button>
                 </div>
             </form>

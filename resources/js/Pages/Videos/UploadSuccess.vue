@@ -2,6 +2,9 @@
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { CheckCircle, Upload, Home } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 defineProps({
     videoTitle: String,
@@ -21,7 +24,7 @@ defineProps({
             </div>
 
             <h1 class="text-2xl font-bold mb-3" style="color: var(--color-text-primary);">
-                Thank You for Your Upload!
+                {{ t('video.upload_thanks') || 'Thank You for Your Upload!' }}
             </h1>
 
             <p class="text-lg mb-2" style="color: var(--color-text-secondary);">
@@ -35,11 +38,11 @@ defineProps({
             <div class="flex items-center justify-center gap-4">
                 <Link href="/upload" class="btn btn-primary inline-flex items-center gap-2">
                     <Upload class="w-4 h-4" />
-                    Upload Another
+                    {{ t('video.upload_another') || 'Upload Another' }}
                 </Link>
                 <Link href="/" class="btn inline-flex items-center gap-2" style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);">
                     <Home class="w-4 h-4" />
-                    Go Home
+                    {{ t('errors.go_home') || 'Go Home' }}
                 </Link>
             </div>
         </div>

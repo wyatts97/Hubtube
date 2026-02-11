@@ -1,19 +1,23 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Calendar, Eye, Video } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     channel: Object,
     stats: Object,
 });
 
-const tabs = [
-    { name: 'Videos', href: `/channel/${props.channel.username}` },
-    { name: 'Shorts', href: `/channel/${props.channel.username}/shorts` },
-    { name: 'Playlists', href: `/channel/${props.channel.username}/playlists` },
-    { name: 'About', href: `/channel/${props.channel.username}/about`, active: true },
-];
+const tabs = computed(() => [
+    { name: t('channel.videos') || 'Videos', href: `/channel/${props.channel.username}` },
+    { name: t('channel.shorts') || 'Shorts', href: `/channel/${props.channel.username}/shorts` },
+    { name: t('channel.playlists') || 'Playlists', href: `/channel/${props.channel.username}/playlists` },
+    { name: t('channel.about') || 'About', href: `/channel/${props.channel.username}/about`, active: true },
+]);
 
 const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -38,7 +42,7 @@ const formatDate = (date) => {
             </div>
             <div>
                 <h1 class="text-xl font-bold text-white">{{ channel.username }}</h1>
-                <p class="text-dark-400">About</p>
+                <p class="text-dark-400">{{ t('channel.about') || 'About' }}</p>
             </div>
         </div>
 
@@ -65,37 +69,37 @@ const formatDate = (date) => {
             <!-- Description -->
             <div class="lg:col-span-2">
                 <div class="card p-6">
-                    <h2 class="text-lg font-semibold text-white mb-4">Description</h2>
+                    <h2 class="text-lg font-semibold text-white mb-4">{{ t('channel.description') || 'Description' }}</h2>
                     <p v-if="channel.channel?.description" class="text-dark-300 whitespace-pre-wrap">
                         {{ channel.channel.description }}
                     </p>
-                    <p v-else class="text-dark-500">No description provided</p>
+                    <p v-else class="text-dark-500">{{ t('channel.no_videos_desc') || 'No description provided' }}</p>
                 </div>
             </div>
 
             <!-- Stats -->
             <div class="space-y-4">
                 <div class="card p-6">
-                    <h2 class="text-lg font-semibold text-white mb-4">Stats</h2>
+                    <h2 class="text-lg font-semibold text-white mb-4">{{ t('channel.stats') || 'Stats' }}</h2>
                     <div class="space-y-4">
                         <div class="flex items-center gap-3">
                             <Calendar class="w-5 h-5 text-dark-400" />
                             <div>
-                                <p class="text-dark-400 text-sm">Joined</p>
+                                <p class="text-dark-400 text-sm">{{ t('channel.joined', { date: '' }).replace('{date}', '').trim() || 'Joined' }}</p>
                                 <p class="text-white">{{ formatDate(stats.joinedAt) }}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
                             <Eye class="w-5 h-5 text-dark-400" />
                             <div>
-                                <p class="text-dark-400 text-sm">Total Views</p>
+                                <p class="text-dark-400 text-sm">{{ t('channel.total_views') || 'Total Views' }}</p>
                                 <p class="text-white">{{ stats.totalViews?.toLocaleString() || 0 }}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
                             <Video class="w-5 h-5 text-dark-400" />
                             <div>
-                                <p class="text-dark-400 text-sm">Videos</p>
+                                <p class="text-dark-400 text-sm">{{ t('channel.video_count') || 'Videos' }}</p>
                                 <p class="text-white">{{ stats.videoCount }}</p>
                             </div>
                         </div>

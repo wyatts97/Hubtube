@@ -3,6 +3,9 @@ import { Head, router } from '@inertiajs/vue3';
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { AlertTriangle, RefreshCw, Home, Clock } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     status: Number,
@@ -74,11 +77,11 @@ const refresh = () => {
                 <div class="flex flex-col sm:flex-row gap-3 justify-center">
                     <a href="/" class="btn btn-primary inline-flex items-center gap-2">
                         <Home class="w-4 h-4" />
-                        Go Home
+                        {{ t('errors.go_home') || 'Go Home' }}
                     </a>
                     <button v-if="!is404" @click="refresh" class="btn btn-secondary inline-flex items-center gap-2">
                         <RefreshCw class="w-4 h-4" />
-                        Refresh Page
+                        {{ t('errors.refresh') || 'Refresh Page' }}
                     </button>
                 </div>
             </div>

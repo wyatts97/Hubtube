@@ -2,6 +2,9 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ArrowLeft, Banknote, Bitcoin, Building2 } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     balance: [String, Number],
@@ -54,10 +57,10 @@ const availableBalance = () => {
         <div class="max-w-lg mx-auto">
             <Link href="/wallet" class="flex items-center gap-2 mb-6 text-sm hover:opacity-80" style="color: var(--color-text-secondary);">
                 <ArrowLeft class="w-4 h-4" />
-                Back to Wallet
+                {{ t('wallet.back_to_wallet') || 'Back to Wallet' }}
             </Link>
 
-            <h1 class="text-2xl font-bold mb-2" style="color: var(--color-text-primary);">Withdraw Funds</h1>
+            <h1 class="text-2xl font-bold mb-2" style="color: var(--color-text-primary);">{{ t('wallet.withdraw_funds') || 'Withdraw Funds' }}</h1>
             <p class="mb-1" style="color: var(--color-text-secondary);">Available: {{ formatCurrency(availableBalance()) }}</p>
             <p v-if="parseFloat(pendingWithdrawals) > 0" class="text-sm mb-6" style="color: var(--color-text-muted);">
                 Pending withdrawals: {{ formatCurrency(pendingWithdrawals) }}
@@ -67,7 +70,7 @@ const availableBalance = () => {
             <div class="card p-6">
                 <form @submit.prevent="submit" class="space-y-5">
                     <div>
-                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Amount (USD)</label>
+                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('wallet.amount') || 'Amount (USD)' }}</label>
                         <input
                             v-model="form.amount"
                             type="number"
@@ -82,7 +85,7 @@ const availableBalance = () => {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">Payment Method</label>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ t('wallet.payment_method') || 'Payment Method' }}</label>
                         <div class="grid grid-cols-3 gap-3">
                             <button
                                 type="button"
@@ -151,8 +154,8 @@ const availableBalance = () => {
                     <p v-if="form.errors.payment_details" class="text-red-500 text-sm">{{ form.errors.payment_details }}</p>
 
                     <button type="submit" :disabled="form.processing" class="btn btn-primary w-full">
-                        <span v-if="form.processing">Submitting...</span>
-                        <span v-else>Request Withdrawal</span>
+                        <span v-if="form.processing">{{ t('common.loading') || 'Submitting...' }}</span>
+                        <span v-else>{{ t('wallet.request_withdrawal') || 'Request Withdrawal' }}</span>
                     </button>
 
                     <p class="text-xs text-center" style="color: var(--color-text-muted);">

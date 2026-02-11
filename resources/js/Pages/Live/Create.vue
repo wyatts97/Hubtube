@@ -3,6 +3,9 @@ import { Head, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Video, Mic, MicOff, VideoOff, Settings, Users, DollarSign } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
@@ -145,7 +148,7 @@ onUnmounted(() => {
     <AppLayout>
         <div class="max-w-6xl mx-auto">
             <h1 class="text-2xl font-bold text-white mb-6">
-                {{ isLive ? 'You are Live!' : 'Go Live' }}
+                {{ isLive ? (t('live.you_are_live') || 'You are Live!') : (t('nav.go_live') || 'Go Live') }}
             </h1>
 
             <div class="flex flex-col lg:flex-row gap-6">
@@ -157,7 +160,7 @@ onUnmounted(() => {
                         <div v-if="!isPreviewing" class="absolute inset-0 flex items-center justify-center">
                             <button @click="startPreview" class="btn btn-primary gap-2">
                                 <Video class="w-5 h-5" />
-                                Start Camera Preview
+                                {{ t('live.start_preview') || 'Start Camera Preview' }}
                             </button>
                         </div>
 
@@ -208,7 +211,7 @@ onUnmounted(() => {
                     <div class="card p-6 space-y-4">
                         <div>
                             <label for="title" class="block text-sm font-medium text-dark-300 mb-1">
-                                Stream Title
+                                {{ t('live.stream_title') || 'Stream Title' }}
                             </label>
                             <input
                                 id="title"
@@ -223,7 +226,7 @@ onUnmounted(() => {
 
                         <div>
                             <label for="description" class="block text-sm font-medium text-dark-300 mb-1">
-                                Description (optional)
+                                {{ t('live.description_optional') || 'Description (optional)' }}
                             </label>
                             <textarea
                                 id="description"
@@ -241,7 +244,7 @@ onUnmounted(() => {
                                 :disabled="!isPreviewing || !title.trim()"
                                 class="btn btn-primary w-full py-3"
                             >
-                                Go Live
+                                {{ t('nav.go_live') || 'Go Live' }}
                             </button>
                         </div>
 
@@ -250,7 +253,7 @@ onUnmounted(() => {
                                 @click="endStream"
                                 class="btn bg-red-600 hover:bg-red-700 text-white w-full py-3"
                             >
-                                End Stream
+                                {{ t('live.end_stream') || 'End Stream' }}
                             </button>
                         </div>
                     </div>

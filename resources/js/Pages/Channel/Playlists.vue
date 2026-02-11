@@ -1,8 +1,11 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ListVideo, Heart } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     channel: Object,
@@ -13,12 +16,12 @@ const props = defineProps({
 
 const currentTab = ref(props.activeTab);
 
-const channelTabs = [
-    { name: 'Videos', href: `/channel/${props.channel.username}` },
-    { name: 'Shorts', href: `/channel/${props.channel.username}/shorts` },
-    { name: 'Playlists', href: `/channel/${props.channel.username}/playlists`, active: true },
-    { name: 'About', href: `/channel/${props.channel.username}/about` },
-];
+const channelTabs = computed(() => [
+    { name: t('channel.videos') || 'Videos', href: `/channel/${props.channel.username}` },
+    { name: t('channel.shorts') || 'Shorts', href: `/channel/${props.channel.username}/shorts` },
+    { name: t('channel.playlists') || 'Playlists', href: `/channel/${props.channel.username}/playlists`, active: true },
+    { name: t('channel.about') || 'About', href: `/channel/${props.channel.username}/about` },
+]);
 
 const switchTab = (tab) => {
     currentTab.value = tab;
@@ -42,7 +45,7 @@ const activeList = ref(null);
             </div>
             <div>
                 <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ channel.username }}</h1>
-                <p style="color: var(--color-text-muted);">Playlists</p>
+                <p style="color: var(--color-text-muted);">{{ t('channel.playlists') || 'Playlists' }}</p>
             </div>
         </div>
 
@@ -77,7 +80,7 @@ const activeList = ref(null);
                 }"
             >
                 <ListVideo class="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
-                User Playlists
+                {{ t('playlist.your_playlists') || 'User Playlists' }}
             </button>
             <button
                 @click="switchTab('favorites')"
@@ -88,7 +91,7 @@ const activeList = ref(null);
                 }"
             >
                 <Heart class="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
-                Favorite Playlists
+                {{ t('playlist.favorites') || 'Favorite Playlists' }}
             </button>
         </div>
 
@@ -107,13 +110,13 @@ const activeList = ref(null);
                     </div>
                     <div class="p-3">
                         <h3 class="font-medium truncate" style="color: var(--color-text-primary);">{{ playlist.title }}</h3>
-                        <p class="text-sm" style="color: var(--color-text-muted);">{{ playlist.videos_count }} videos</p>
+                        <p class="text-sm" style="color: var(--color-text-muted);">{{ playlist.videos_count }} {{ t('common.videos') || 'videos' }}</p>
                     </div>
                 </Link>
             </div>
             <div v-else class="text-center py-12">
                 <ListVideo class="w-12 h-12 mx-auto mb-3" style="color: var(--color-text-muted);" />
-                <p style="color: var(--color-text-muted);">No playlists yet</p>
+                <p style="color: var(--color-text-muted);">{{ t('channel.no_playlists') || 'No playlists yet' }}</p>
             </div>
         </template>
 
@@ -133,7 +136,7 @@ const activeList = ref(null);
                     <div class="p-3">
                         <h3 class="font-medium truncate" style="color: var(--color-text-primary);">{{ playlist.title }}</h3>
                         <p class="text-sm" style="color: var(--color-text-muted);">
-                            {{ playlist.videos_count }} videos
+                            {{ playlist.videos_count }} {{ t('common.videos') || 'videos' }}
                             <span v-if="playlist.user"> • by {{ playlist.user.username }}</span>
                         </p>
                     </div>
@@ -141,7 +144,7 @@ const activeList = ref(null);
             </div>
             <div v-else class="text-center py-12">
                 <Heart class="w-12 h-12 mx-auto mb-3" style="color: var(--color-text-muted);" />
-                <p style="color: var(--color-text-muted);">No favorite playlists yet</p>
+                <p style="color: var(--color-text-muted);">{{ t('channel.no_playlists') || 'No favorite playlists yet' }}</p>
             </div>
         </template>
     </AppLayout>

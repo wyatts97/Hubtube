@@ -1,12 +1,15 @@
 <script setup>
 import { router, usePage } from '@inertiajs/vue3';
 import SeoHead from '@/Components/SeoHead.vue';
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { Search as SearchIcon, Users, Hash } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const { translateVideos, tr } = useAutoTranslate(['title']);
 
@@ -20,11 +23,11 @@ const props = defineProps({
 const searchQuery = ref(props.query || '');
 const activeType = ref(props.type || 'videos');
 
-const tabs = [
-    { key: 'videos', label: 'Videos', icon: SearchIcon },
-    { key: 'channels', label: 'Channels', icon: Users },
-    { key: 'hashtags', label: 'Hashtags', icon: Hash },
-];
+const tabs = computed(() => [
+    { key: 'videos', label: t('search.videos') || 'Videos', icon: SearchIcon },
+    { key: 'channels', label: t('search.channels') || 'Channels', icon: Users },
+    { key: 'hashtags', label: t('search.hashtags') || 'Hashtags', icon: Hash },
+]);
 
 const switchTab = (type) => {
     activeType.value = type;
@@ -76,7 +79,7 @@ const withTranslation = (video) => {
 
     <AppLayout>
         <div class="mb-4 sm:mb-6">
-            <h1 class="text-xl sm:text-2xl font-bold" style="color: var(--color-text-primary);">Search</h1>
+            <h1 class="text-xl sm:text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('search.title') || 'Search' }}</h1>
         </div>
 
         <!-- Search Bar -->
@@ -85,7 +88,7 @@ const withTranslation = (video) => {
                 <input
                     v-model="searchQuery"
                     type="text"
-                    placeholder="Search videos, channels, hashtags..."
+                    :placeholder="t('search.placeholder') || 'Search videos, channels, hashtags...'"
                     class="input pr-12"
                 />
                 <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80" style="color: var(--color-text-muted);">
@@ -113,7 +116,7 @@ const withTranslation = (video) => {
         <!-- Results -->
         <div v-if="query">
             <p class="text-sm mb-4" style="color: var(--color-text-secondary);">
-                Results for "<span class="font-medium" style="color: var(--color-text-primary);">{{ query }}</span>"
+                {{ t('common.results_for') || 'Results for' }} "<span class="font-medium" style="color: var(--color-text-primary);">{{ query }}</span>"
             </p>
 
             <!-- Video Results -->
@@ -123,8 +126,8 @@ const withTranslation = (video) => {
                 </div>
                 <div v-else class="text-center py-12">
                     <SearchIcon class="w-12 h-12 mx-auto mb-4" style="color: var(--color-text-muted);" />
-                    <p class="text-lg" style="color: var(--color-text-secondary);">No videos found</p>
-                    <p class="mt-1" style="color: var(--color-text-muted);">Try different keywords</p>
+                    <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('common.no_videos_found') || 'No videos found' }}</p>
+                    <p class="mt-1" style="color: var(--color-text-muted);">{{ t('common.try_different') || 'Try different keywords' }}</p>
                 </div>
             </template>
 
@@ -152,14 +155,14 @@ const withTranslation = (video) => {
                                 {{ channel.channel?.name || channel.username }}
                             </p>
                             <p class="text-sm" style="color: var(--color-text-muted);">
-                                {{ channel.subscriber_count || 0 }} subscribers
+                                {{ channel.subscriber_count || 0 }} {{ t('common.subscribers') || 'subscribers' }}
                             </p>
                         </div>
                     </a>
                 </div>
                 <div v-else class="text-center py-12">
                     <Users class="w-12 h-12 mx-auto mb-4" style="color: var(--color-text-muted);" />
-                    <p class="text-lg" style="color: var(--color-text-secondary);">No channels found</p>
+                    <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('common.no_channels_found') || 'No channels found' }}</p>
                 </div>
             </template>
 
@@ -172,12 +175,12 @@ const withTranslation = (video) => {
                         class="card p-4"
                     >
                         <h3 class="font-medium" style="color: var(--color-accent);">#{{ hashtag.name }}</h3>
-                        <p class="text-sm mt-1" style="color: var(--color-text-muted);">{{ hashtag.usage_count || 0 }} videos</p>
+                        <p class="text-sm mt-1" style="color: var(--color-text-muted);">{{ hashtag.usage_count || 0 }} {{ t('common.videos') || 'videos' }}</p>
                     </div>
                 </div>
                 <div v-else class="text-center py-12">
                     <Hash class="w-12 h-12 mx-auto mb-4" style="color: var(--color-text-muted);" />
-                    <p class="text-lg" style="color: var(--color-text-secondary);">No hashtags found</p>
+                    <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('common.no_hashtags_found') || 'No hashtags found' }}</p>
                 </div>
             </template>
 
@@ -192,7 +195,7 @@ const withTranslation = (video) => {
         <!-- No Query State -->
         <div v-else class="text-center py-16">
             <SearchIcon class="w-16 h-16 mx-auto mb-4" style="color: var(--color-text-muted);" />
-            <p class="text-lg" style="color: var(--color-text-secondary);">Search for videos, channels, and more</p>
+            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('common.search_prompt') || 'Search for videos, channels, and more' }}</p>
         </div>
     </AppLayout>
 </template>

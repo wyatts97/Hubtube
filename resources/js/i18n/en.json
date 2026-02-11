@@ -20,7 +20,17 @@
         "wallet": "Wallet",
         "library": "Library",
         "create": "Create",
-        "browse": "Browse"
+        "browse": "Browse",
+        "admin_panel": "Admin Panel",
+        "your_channel": "Your Channel",
+        "subscriptions": "Subscriptions",
+        "sign_in": "Sign In",
+        "sign_up": "Sign Up",
+        "sign_out": "Sign Out",
+        "theme": "Theme",
+        "notifications": "Notifications",
+        "mark_all_read": "Mark all read",
+        "no_notifications": "No notifications"
     },
     "common": {
         "save": "Save",
@@ -42,7 +52,25 @@
         "next": "Next",
         "previous": "Previous",
         "confirm": "Confirm",
-        "language": "Language"
+        "language": "Language",
+        "search_placeholder": "Search videos...",
+        "manage": "Manage",
+        "create": "Create",
+        "title": "Title",
+        "description": "Description",
+        "videos": "videos",
+        "subscribers": "subscribers",
+        "clear": "Clear",
+        "browse_videos": "Browse Videos",
+        "results_for": "Results for",
+        "no_videos_found": "No videos found",
+        "try_different": "Try adjusting your filters",
+        "no_channels_found": "No channels found",
+        "no_hashtags_found": "No hashtags found",
+        "search_prompt": "Search videos, channels and more",
+        "sponsored": "Sponsored",
+        "skip": "Skip",
+        "try_again": "Try Again"
     },
     "video": {
         "views": "{count} views",
@@ -67,7 +95,16 @@
         "uploading": "Uploading...",
         "save_to_playlist": "Save to playlist",
         "shortcuts": "Shortcuts",
-        "keyboard_shortcuts": "Keyboard Shortcuts"
+        "keyboard_shortcuts": "Keyboard Shortcuts",
+        "edit_video": "Edit Video",
+        "delete_video": "Delete Video",
+        "thumbnail": "Thumbnail",
+        "upload_thumbnail": "Upload Custom Thumbnail",
+        "video_details": "Video Details",
+        "monetization": "Monetization",
+        "video_status": "Video Status",
+        "upload_thanks": "Thank You for Your Upload!",
+        "upload_another": "Upload Another"
     },
     "channel": {
         "videos": "Videos",
@@ -75,15 +112,36 @@
         "playlists": "Playlists",
         "about": "About",
         "no_videos": "No videos yet",
-        "no_videos_desc": "This channel hasn't uploaded any videos"
+        "no_videos_desc": "This channel hasn't uploaded any videos",
+        "no_shorts": "No shorts yet",
+        "no_shorts_desc": "This channel hasn't uploaded any shorts",
+        "no_playlists": "No playlists yet",
+        "no_playlists_desc": "This channel hasn't created any playlists",
+        "joined": "Joined {date}",
+        "total_views": "Total views",
+        "video_count": "Videos uploaded",
+        "stats": "Channel Stats",
+        "description": "Description"
     },
     "playlist": {
         "create": "Create Playlist",
         "new_name": "New playlist name...",
         "no_playlists": "No playlists yet",
+        "no_playlists_desc": "Create a playlist to organize your favorite videos",
         "added": "Added to \"{name}\"",
         "removed": "Removed from \"{name}\"",
-        "videos_count": "{count} videos"
+        "videos_count": "{count} videos",
+        "your_playlists": "Your Playlists",
+        "organize_desc": "Organize your favorite videos",
+        "new_playlist": "New Playlist",
+        "create_playlist": "Create Playlist",
+        "favorites": "Favorite Playlists",
+        "back_to_playlists": "Back to Playlists",
+        "favorited": "Favorited",
+        "favorite": "Favorite",
+        "play_all": "Play All",
+        "empty": "This playlist is empty",
+        "add_videos": "Add videos to get started"
     },
     "settings": {
         "title": "Settings",
@@ -124,7 +182,14 @@
         "upgrade_pro": "Upgrade to Pro",
         "wallet_balance": "Wallet Balance",
         "deposit": "Deposit",
-        "withdraw": "Withdraw"
+        "withdraw": "Withdraw",
+        "email_notifications_desc": "Receive notifications via email",
+        "push_notifications_desc": "Receive push notifications in your browser",
+        "subscription_updates_desc": "Get notified when channels you follow upload content",
+        "private_profile_desc": "Only approved followers can see your content",
+        "show_watch_history_desc": "Allow others to see what you've watched",
+        "show_liked_videos_desc": "Allow others to see videos you've liked",
+        "allow_comments_desc": "Allow others to comment on your videos by default"
     },
     "upload": {
         "title": "Upload Video",
@@ -151,7 +216,21 @@
         "forgot_password": "Forgot Password?",
         "no_account": "Don't have an account?",
         "has_account": "Already have an account?",
-        "sign_up": "Sign Up"
+        "sign_up": "Sign Up",
+        "welcome_back": "Welcome back",
+        "sign_in_desc": "Sign in to your account",
+        "remember_me": "Remember me",
+        "signing_in": "Signing in...",
+        "create_account": "Create your account",
+        "join_community": "Join the community today",
+        "creating_account": "Creating account...",
+        "forgot_password_desc": "Enter your email and we'll send you a reset link",
+        "send_reset_link": "Send Reset Link",
+        "back_to_login": "Back to Sign In",
+        "reset_password": "Reset Password",
+        "reset_password_desc": "Enter your new password",
+        "verify_email": "Verify Your Email",
+        "resend_verification": "Resend Verification Email"
     },
     "home": {
         "live_now": "Live Now",
@@ -160,6 +239,10 @@
         "popular": "Popular",
         "reached_end": "You've reached the end",
         "loading_more": "Loading more videos..."
+    },
+    "shorts": {
+        "no_shorts": "No shorts yet",
+        "upload_first": "Be the first to upload a short!"
     },
     "report": {
         "title": "Report Video",
@@ -194,6 +277,109 @@
         "unauthorized": "You are not authorized to perform this action.",
         "component_error": "Something went wrong",
         "component_error_desc": "An error occurred while rendering this section.",
-        "try_again": "Try Again"
+        "try_again": "Try Again",
+        "go_home": "Go Home",
+        "refresh": "Refresh Page"
+    },
+    "history": {
+        "title": "Watch History",
+        "description": "Videos you've recently watched",
+        "clear": "Clear History",
+        "clear_confirm": "Are you sure you want to clear your history?",
+        "empty": "No history yet",
+        "empty_desc": "Videos you watch will appear here"
+    },
+    "feed": {
+        "title": "Subscriptions",
+        "description": "Latest videos from channels you follow",
+        "empty": "No videos in your feed yet",
+        "empty_desc": "Subscribe to channels to see their latest videos here"
+    },
+    "dashboard": {
+        "title": "Creator Dashboard",
+        "overview": "Overview of your channel performance",
+        "upload_video": "Upload Video",
+        "total_videos": "Total Videos",
+        "total_views": "Total Views",
+        "total_likes": "Total Likes",
+        "subscribers": "Subscribers",
+        "wallet_balance": "Wallet Balance",
+        "recent_videos": "Recent Videos",
+        "top_performing": "Top Performing",
+        "no_videos": "No videos yet",
+        "upload_to_see": "Upload videos to see analytics"
+    },
+    "search": {
+        "title": "Search",
+        "placeholder": "Search videos, channels, hashtags...",
+        "videos": "Videos",
+        "channels": "Channels",
+        "hashtags": "Hashtags"
+    },
+    "trending": {
+        "description": "Popular videos from the past week",
+        "no_videos": "No trending videos yet",
+        "check_back": "Check back later for popular content"
+    },
+    "footer": {
+        "terms": "Terms of Service",
+        "privacy": "Privacy Policy",
+        "dmca": "DMCA",
+        "guidelines": "Community Guidelines",
+        "cookies": "Cookie Policy",
+        "contact": "Contact"
+    },
+    "contact": {
+        "title": "Contact Us",
+        "name": "Name",
+        "email": "Email",
+        "subject": "Subject",
+        "message": "Message",
+        "send": "Send Message",
+        "success": "Message sent successfully!"
+    },
+    "categories": {
+        "title": "Categories",
+        "all": "All Categories",
+        "no_videos": "No videos in this category",
+        "browse": "Browse videos by category",
+        "no_categories": "No categories yet"
+    },
+    "live": {
+        "title": "Live Streams",
+        "go_live": "Go Live",
+        "viewers": "viewers",
+        "no_streams": "No live streams right now",
+        "check_back": "Check back later for live streams",
+        "watch_now": "Watch creators streaming live now",
+        "you_are_live": "You are Live!",
+        "start_preview": "Start Camera Preview",
+        "stream_title": "Stream Title",
+        "description_optional": "Description (optional)",
+        "end_stream": "End Stream",
+        "live_chat": "Live Chat",
+        "send_gift": "Send a Gift"
+    },
+    "wallet": {
+        "transaction_history": "Transaction History",
+        "no_transactions": "No transactions yet",
+        "back_to_wallet": "Back to Wallet",
+        "deposit_funds": "Deposit Funds",
+        "withdraw_funds": "Withdraw Funds",
+        "amount": "Amount (USD)",
+        "payment_method": "Payment Method",
+        "continue_payment": "Continue to Payment",
+        "request_withdrawal": "Request Withdrawal"
+    },
+    "age": {
+        "title": "Age Verification Required",
+        "confirm": "I am 18 or older",
+        "exit": "Exit"
+    },
+    "embedded": {
+        "title": "Embedded Videos",
+        "filter": "Filter",
+        "featured_desc": "Hand-picked featured content",
+        "no_featured": "No featured videos yet"
     }
 }

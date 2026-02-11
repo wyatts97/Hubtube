@@ -4,6 +4,9 @@ import { ref, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { Film, Filter, Search } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     videos: Object,
@@ -50,7 +53,7 @@ const clearFilters = () => {
                 <div class="flex items-center gap-3">
                     <Film class="w-8 h-8" style="color: var(--color-accent);" />
                     <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">
-                        Embedded Videos
+                        {{ t('embedded.title') || 'Embedded Videos' }}
                     </h1>
                 </div>
             </div>
@@ -88,7 +91,7 @@ const clearFilters = () => {
                         class="btn btn-primary px-6 py-2"
                     >
                         <Filter class="w-4 h-4 mr-2" />
-                        Filter
+                        {{ t('embedded.filter') || 'Filter' }}
                     </button>
                     
                     <button
@@ -96,7 +99,7 @@ const clearFilters = () => {
                         @click="clearFilters"
                         class="btn btn-secondary px-4 py-2"
                     >
-                        Clear
+                        {{ t('common.clear') || 'Clear' }}
                     </button>
                 </div>
             </div>
@@ -148,7 +151,7 @@ const clearFilters = () => {
             <!-- Empty State -->
             <div v-else class="text-center py-16">
                 <Film class="w-16 h-16 mx-auto mb-4 opacity-50" style="color: var(--color-text-muted);" />
-                <p style="color: var(--color-text-muted);">No embedded videos found.</p>
+                <p style="color: var(--color-text-muted);">{{ t('common.no_results') || 'No embedded videos found.' }}</p>
             </div>
 
             <!-- Pagination -->

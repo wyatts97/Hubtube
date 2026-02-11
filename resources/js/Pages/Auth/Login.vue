@@ -2,6 +2,9 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Eye, EyeOff } from 'lucide-vue-next';
 import { ref } from 'vue';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const showPassword = ref(false);
 
@@ -29,15 +32,15 @@ const submit = () => {
                         <span class="text-2xl font-bold text-white">H</span>
                     </div>
                 </Link>
-                <h1 class="text-2xl font-bold mt-4" style="color: var(--color-text-primary);">Welcome back</h1>
-                <p class="mt-2" style="color: var(--color-text-secondary);">Sign in to your account</p>
+                <h1 class="text-2xl font-bold mt-4" style="color: var(--color-text-primary);">{{ t('auth.welcome_back') || 'Welcome back' }}</h1>
+                <p class="mt-2" style="color: var(--color-text-secondary);">{{ t('auth.sign_in_desc') || 'Sign in to your account' }}</p>
             </div>
 
             <div class="card p-6">
                 <form @submit.prevent="submit" class="space-y-4">
                     <div>
                         <label for="login" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
-                            Email or Username
+                            {{ t('auth.email_or_username') || 'Email or Username' }}
                         </label>
                         <input
                             id="login"
@@ -52,7 +55,7 @@ const submit = () => {
 
                     <div>
                         <label for="password" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
-                            Password
+                            {{ t('auth.password') || 'Password' }}
                         </label>
                         <div class="relative">
                             <input
@@ -81,10 +84,10 @@ const submit = () => {
                                 type="checkbox"
                                 class="w-4 h-4 rounded border-dark-600 bg-dark-800 text-primary-600 focus:ring-primary-500"
                             />
-                            <span class="text-sm" style="color: var(--color-text-secondary);">Remember me</span>
+                            <span class="text-sm" style="color: var(--color-text-secondary);">{{ t('auth.remember_me') || 'Remember me' }}</span>
                         </label>
                         <Link href="/forgot-password" class="text-sm" style="color: var(--color-accent);">
-                            Forgot password?
+                            {{ t('auth.forgot_password') || 'Forgot password?' }}
                         </Link>
                     </div>
 
@@ -93,16 +96,16 @@ const submit = () => {
                         :disabled="form.processing"
                         class="btn btn-primary w-full"
                     >
-                        <span v-if="form.processing">Signing in...</span>
-                        <span v-else>Sign In</span>
+                        <span v-if="form.processing">{{ t('auth.signing_in') || 'Signing in...' }}</span>
+                        <span v-else>{{ t('auth.login') || 'Sign In' }}</span>
                     </button>
                 </form>
 
                 <div class="mt-6 text-center">
                     <p style="color: var(--color-text-secondary);">
-                        Don't have an account?
+                        {{ t('auth.no_account') || "Don't have an account?" }}
                         <Link href="/register" class="font-medium" style="color: var(--color-accent);">
-                            Sign up
+                            {{ t('auth.sign_up') || 'Sign up' }}
                         </Link>
                     </p>
                 </div>

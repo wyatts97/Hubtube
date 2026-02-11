@@ -221,7 +221,7 @@ const toggleSidebar = () => {
                         <input
                             v-model="searchQuery"
                             type="text"
-                            placeholder="Search videos..."
+                            :placeholder="t('common.search_placeholder') || 'Search videos...'"
                             class="input pr-12"
                         />
                         <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80" style="color: var(--color-text-muted);">
@@ -250,11 +250,11 @@ const toggleSidebar = () => {
                             <div v-if="showUploadMenu" class="upload-menu-dropdown absolute right-0 mt-2 w-44 card p-1 shadow-xl" style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);">
                                 <Link href="/upload" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showUploadMenu = false">
                                     <Film class="w-4 h-4" style="color: var(--color-text-secondary);" />
-                                    <span class="text-sm">Upload Video</span>
+                                    <span class="text-sm">{{ t('nav.upload_video') || 'Upload Video' }}</span>
                                 </Link>
                                 <Link href="/upload?type=short" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showUploadMenu = false">
                                     <Clapperboard class="w-4 h-4" style="color: var(--color-text-secondary);" />
-                                    <span class="text-sm">Upload Short</span>
+                                    <span class="text-sm">{{ t('nav.upload_short') || 'Upload Short' }}</span>
                                 </Link>
                             </div>
                         </div>
@@ -273,9 +273,9 @@ const toggleSidebar = () => {
                             <!-- Notification Dropdown -->
                             <div v-if="showNotifications" class="notification-dropdown absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto scrollbar-hide card shadow-xl" style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);">
                                 <div class="flex items-center justify-between p-3 border-b" style="border-color: var(--color-border);">
-                                    <h3 class="font-semibold text-sm" style="color: var(--color-text-primary);">Notifications</h3>
+                                    <h3 class="font-semibold text-sm" style="color: var(--color-text-primary);">{{ t('nav.notifications') || 'Notifications' }}</h3>
                                     <button v-if="unreadCount > 0" @click="markAllRead" class="text-xs hover:opacity-80" style="color: var(--color-accent);">
-                                        Mark all read
+                                        {{ t('nav.mark_all_read') || 'Mark all read' }}
                                     </button>
                                 </div>
                                 <div v-if="notifications.length">
@@ -305,7 +305,7 @@ const toggleSidebar = () => {
                                 </div>
                                 <div v-else class="p-6 text-center">
                                     <Bell class="w-8 h-8 mx-auto mb-2" style="color: var(--color-text-muted);" />
-                                    <p class="text-sm" style="color: var(--color-text-secondary);">No notifications</p>
+                                    <p class="text-sm" style="color: var(--color-text-secondary);">{{ t('nav.no_notifications') || 'No notifications' }}</p>
                                 </div>
                             </div>
                         </div>
@@ -334,32 +334,32 @@ const toggleSidebar = () => {
                                         style="color: var(--color-accent);"
                                     >
                                         <Shield class="w-4 h-4" />
-                                        <span>Admin Panel</span>
+                                        <span>{{ t('nav.admin_panel') || 'Admin Panel' }}</span>
                                     </a>
                                     <Link href="/dashboard" class="flex items-center gap-3 px-3 py-2 rounded-lg" style="color: var(--color-text-primary);">
                                         <LayoutDashboard class="w-4 h-4" />
-                                        <span>Dashboard</span>
+                                        <span>{{ t('nav.dashboard') || 'Dashboard' }}</span>
                                     </Link>
                                     <Link :href="`/channel/${user.username}`" class="flex items-center gap-3 px-3 py-2 rounded-lg" style="color: var(--color-text-primary);">
                                         <User class="w-4 h-4" />
-                                        <span>Your Channel</span>
+                                        <span>{{ t('nav.your_channel') || 'Your Channel' }}</span>
                                     </Link>
                                     <Link href="/feed" class="flex items-center gap-3 px-3 py-2 rounded-lg" style="color: var(--color-text-primary);">
                                         <Rss class="w-4 h-4" />
-                                        <span>Subscriptions</span>
+                                        <span>{{ t('nav.subscriptions') || 'Subscriptions' }}</span>
                                     </Link>
                                     <Link href="/wallet" class="flex items-center gap-3 px-3 py-2 rounded-lg" style="color: var(--color-text-primary);">
                                         <Wallet class="w-4 h-4" />
-                                        <span>Wallet: ${{ user.wallet_balance }}</span>
+                                        <span>{{ t('nav.wallet') || 'Wallet' }}: ${{ user.wallet_balance }}</span>
                                     </Link>
                                     <Link href="/settings" class="flex items-center gap-3 px-3 py-2 rounded-lg" style="color: var(--color-text-primary);">
                                         <Settings class="w-4 h-4" />
-                                        <span>Settings</span>
+                                        <span>{{ t('nav.settings') || 'Settings' }}</span>
                                     </Link>
                                 </div>
                                 <!-- Theme Toggle -->
                                 <div v-if="themeSettings.allowToggle" class="py-2" style="border-top: 1px solid var(--color-border);">
-                                    <p class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-secondary);">Theme</p>
+                                    <p class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-secondary);">{{ t('nav.theme') || 'Theme' }}</p>
                                     <div class="flex gap-1 px-2">
                                         <button 
                                             @click="setTheme('light')"
@@ -380,7 +380,7 @@ const toggleSidebar = () => {
                                 <div class="pt-2" style="border-top: 1px solid var(--color-border);">
                                     <Link href="/logout" method="post" as="button" class="flex items-center gap-3 px-3 py-2 rounded-lg w-full text-left text-red-400">
                                         <LogOut class="w-4 h-4" />
-                                        <span>Sign Out</span>
+                                        <span>{{ t('nav.sign_out') || 'Sign Out' }}</span>
                                     </Link>
                                 </div>
                             </div>
@@ -388,8 +388,8 @@ const toggleSidebar = () => {
                     </template>
 
                     <template v-else>
-                        <Link href="/login" class="btn btn-ghost">Sign In</Link>
-                        <Link href="/register" class="btn btn-primary hidden sm:flex">Sign Up</Link>
+                        <Link href="/login" class="btn btn-ghost">{{ t('nav.sign_in') || 'Sign In' }}</Link>
+                        <Link href="/register" class="btn btn-primary hidden sm:flex">{{ t('nav.sign_up') || 'Sign Up' }}</Link>
                     </template>
                 </div>
             </div>
@@ -568,24 +568,24 @@ const toggleSidebar = () => {
                     <template v-if="user">
                         <!-- Mobile Create Actions -->
                         <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
-                            <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">Create</h3>
+                            <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">{{ t('nav.create') || 'Create' }}</h3>
                             <ul class="space-y-1">
                                 <li>
                                     <Link href="/upload" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
                                         <Film class="w-5 h-5" style="color: var(--color-text-secondary);" />
-                                        <span>Upload Video</span>
+                                        <span>{{ t('nav.upload_video') || 'Upload Video' }}</span>
                                     </Link>
                                 </li>
                                 <li>
                                     <Link href="/upload?type=short" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
                                         <Clapperboard class="w-5 h-5" style="color: var(--color-text-secondary);" />
-                                        <span>Upload Short</span>
+                                        <span>{{ t('nav.upload_short') || 'Upload Short' }}</span>
                                     </Link>
                                 </li>
                                 <li>
                                     <Link href="/go-live" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
                                         <Radio class="w-5 h-5" style="color: var(--color-text-secondary);" />
-                                        <span>Go Live</span>
+                                        <span>{{ t('nav.go_live') || 'Go Live' }}</span>
                                     </Link>
                                 </li>
                             </ul>
@@ -593,7 +593,7 @@ const toggleSidebar = () => {
 
                         <!-- Mobile Custom Menu Items -->
                         <div v-if="mobileMenuItems.length" class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
-                            <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">Browse</h3>
+                            <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">{{ t('nav.browse') || 'Browse' }}</h3>
                             <ul class="space-y-1">
                                 <template v-for="item in mobileMenuItems" :key="item.id">
                                     <li v-if="item.type === 'divider'" class="my-2 mx-3 border-t" style="border-color: var(--color-border);"></li>
@@ -670,7 +670,7 @@ const toggleSidebar = () => {
                     <input
                         v-model="mobileSearchQuery"
                         type="text"
-                        placeholder="Search videos..."
+                        :placeholder="t('common.search_placeholder') || 'Search videos...'"
                         class="input flex-1"
                         autofocus
                     />
@@ -717,12 +717,12 @@ const toggleSidebar = () => {
 
                 <!-- Legal Links -->
                 <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs" style="color: var(--color-text-muted);">
-                    <a href="/pages/terms-of-service" class="hover:opacity-80" style="color: var(--color-text-muted);">Terms of Service</a>
-                    <a href="/pages/privacy-policy" class="hover:opacity-80" style="color: var(--color-text-muted);">Privacy Policy</a>
-                    <a href="/pages/dmca" class="hover:opacity-80" style="color: var(--color-text-muted);">DMCA</a>
-                    <a href="/pages/community-guidelines" class="hover:opacity-80" style="color: var(--color-text-muted);">Community Guidelines</a>
-                    <a href="/pages/cookie-policy" class="hover:opacity-80" style="color: var(--color-text-muted);">Cookie Policy</a>
-                    <a href="/contact" class="hover:opacity-80" style="color: var(--color-text-muted);">Contact</a>
+                    <a href="/pages/terms-of-service" class="hover:opacity-80" style="color: var(--color-text-muted);">{{ t('footer.terms') || 'Terms of Service' }}</a>
+                    <a href="/pages/privacy-policy" class="hover:opacity-80" style="color: var(--color-text-muted);">{{ t('footer.privacy') || 'Privacy Policy' }}</a>
+                    <a href="/pages/dmca" class="hover:opacity-80" style="color: var(--color-text-muted);">{{ t('footer.dmca') || 'DMCA' }}</a>
+                    <a href="/pages/community-guidelines" class="hover:opacity-80" style="color: var(--color-text-muted);">{{ t('footer.guidelines') || 'Community Guidelines' }}</a>
+                    <a href="/pages/cookie-policy" class="hover:opacity-80" style="color: var(--color-text-muted);">{{ t('footer.cookies') || 'Cookie Policy' }}</a>
+                    <a href="/contact" class="hover:opacity-80" style="color: var(--color-text-muted);">{{ t('footer.contact') || 'Contact' }}</a>
                 </div>
             </div>
         </footer>

@@ -41,6 +41,7 @@ class LanguageSettings extends Page implements HasForms
     public bool $regenerating = false;
     public string $regenerationStatus = '';
     public string $regenerationStep = ''; // 'generate', 'build', 'done'
+    public bool $useForceMode = true; // true = full regenerate, false = sync new keys only
 
     public function mount(): void
     {
@@ -281,14 +282,26 @@ class LanguageSettings extends Page implements HasForms
     }
 
     /**
-     * Start the regeneration process (called by button click).
-     * Uses Livewire polling to step through generate → build → done.
+     * Full regenerate: re-translates everything from scratch (--force).
      */
     public function regenerateTranslations(): void
     {
+        $this->useForceMode = true;
         $this->regenerating = true;
         $this->regenerationStep = 'generate';
-        $this->regenerationStatus = 'Generating translation files…';
+        $this->regenerationStatus = 'Regenerating all translation files…';
+        $this->generationOutput = '';
+    }
+
+    /**
+     * Sync only: merges new/missing keys into existing locale files without overwriting.
+     */
+    public function syncTranslations(): void
+    {
+        $this->useForceMode = false;
+        $this->regenerating = true;
+        $this->regenerationStep = 'generate';
+        $this->regenerationStatus = 'Syncing new translation keys…';
         $this->generationOutput = '';
     }
 
@@ -303,7 +316,7 @@ class LanguageSettings extends Page implements HasForms
 
         if ($this->regenerationStep === 'generate') {
             try {
-                $exitCode = Artisan::call('translations:generate', ['--force' => true]);
+                $exitCode = Artisan::call('translations:generate', ['--force' => $this->useForceMode]);
                 $output = Artisan::output();
                 $this->generationOutput = trim($output);
 

@@ -2,6 +2,9 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Eye, EyeOff } from 'lucide-vue-next';
 import { ref } from 'vue';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const showPassword = ref(false);
 
@@ -30,15 +33,15 @@ const submit = () => {
                         <span class="text-2xl font-bold text-white">H</span>
                     </div>
                 </Link>
-                <h1 class="text-2xl font-bold mt-4" style="color: var(--color-text-primary);">Create your account</h1>
-                <p class="mt-2" style="color: var(--color-text-secondary);">Join the community today</p>
+                <h1 class="text-2xl font-bold mt-4" style="color: var(--color-text-primary);">{{ t('auth.create_account') || 'Create your account' }}</h1>
+                <p class="mt-2" style="color: var(--color-text-secondary);">{{ t('auth.join_community') || 'Join the community today' }}</p>
             </div>
 
             <div class="card p-6">
                 <form @submit.prevent="submit" class="space-y-4">
                     <div>
                         <label for="username" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
-                            Username
+                            {{ t('settings.username') || 'Username' }}
                         </label>
                         <input
                             id="username"
@@ -53,7 +56,7 @@ const submit = () => {
 
                     <div>
                         <label for="email" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
-                            Email
+                            {{ t('settings.email') || 'Email' }}
                         </label>
                         <input
                             id="email"
@@ -67,7 +70,7 @@ const submit = () => {
 
                     <div>
                         <label for="password" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
-                            Password
+                            {{ t('auth.password') || 'Password' }}
                         </label>
                         <div class="relative">
                             <input
@@ -91,7 +94,7 @@ const submit = () => {
 
                     <div>
                         <label for="password_confirmation" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
-                            Confirm Password
+                            {{ t('settings.confirm_password') || 'Confirm Password' }}
                         </label>
                         <input
                             id="password_confirmation"
@@ -114,16 +117,16 @@ const submit = () => {
                         :disabled="form.processing"
                         class="btn btn-primary w-full"
                     >
-                        <span v-if="form.processing">Creating account...</span>
-                        <span v-else>Create Account</span>
+                        <span v-if="form.processing">{{ t('auth.creating_account') || 'Creating account...' }}</span>
+                        <span v-else>{{ t('auth.create_account') || 'Create Account' }}</span>
                     </button>
                 </form>
 
                 <div class="mt-6 text-center">
                     <p style="color: var(--color-text-secondary);">
-                        Already have an account?
+                        {{ t('auth.has_account') || 'Already have an account?' }}
                         <Link href="/login" class="font-medium" style="color: var(--color-accent);">
-                            Sign in
+                            {{ t('auth.login') || 'Sign in' }}
                         </Link>
                     </p>
                 </div>

@@ -1,19 +1,23 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     channel: Object,
     shorts: Object,
 });
 
-const tabs = [
-    { name: 'Videos', href: `/channel/${props.channel.username}` },
-    { name: 'Shorts', href: `/channel/${props.channel.username}/shorts`, active: true },
-    { name: 'Playlists', href: `/channel/${props.channel.username}/playlists` },
-    { name: 'About', href: `/channel/${props.channel.username}/about` },
-];
+const tabs = computed(() => [
+    { name: t('channel.videos') || 'Videos', href: `/channel/${props.channel.username}` },
+    { name: t('channel.shorts') || 'Shorts', href: `/channel/${props.channel.username}/shorts`, active: true },
+    { name: t('channel.playlists') || 'Playlists', href: `/channel/${props.channel.username}/playlists` },
+    { name: t('channel.about') || 'About', href: `/channel/${props.channel.username}/about` },
+]);
 </script>
 
 <template>
@@ -30,7 +34,7 @@ const tabs = [
             </div>
             <div>
                 <h1 class="text-xl font-bold text-white">{{ channel.username }}</h1>
-                <p class="text-dark-400">Shorts</p>
+                <p class="text-dark-400">{{ t('channel.shorts') || 'Shorts' }}</p>
             </div>
         </div>
 
@@ -59,7 +63,7 @@ const tabs = [
         </div>
 
         <div v-else class="text-center py-12">
-            <p class="text-dark-400">No shorts yet</p>
+            <p class="text-dark-400">{{ t('channel.no_shorts') || 'No shorts yet' }}</p>
         </div>
     </AppLayout>
 </template>

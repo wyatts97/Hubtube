@@ -3,6 +3,9 @@ import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Upload, X, Video, FileVideo, CheckCircle, AlertCircle, Smartphone, Calendar } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     categories: Array,
@@ -204,7 +207,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <Head :title="isShortMode ? 'Upload Short' : 'Upload Video'" />
+    <Head :title="isShortMode ? (t('upload.title_short') || 'Upload Short') : (t('upload.title') || 'Upload Video')" />
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">
@@ -213,8 +216,8 @@ onUnmounted(() => {
                     <Smartphone class="w-5 h-5 text-white" />
                 </div>
                 <div>
-                    <h1 class="text-xl sm:text-2xl font-bold" style="color: var(--color-text-primary);">{{ isShortMode ? 'Upload Short' : 'Upload Video' }}</h1>
-                    <p v-if="isShortMode" class="text-sm mt-0.5" style="color: var(--color-text-muted);">Vertical video, 60 seconds max</p>
+                    <h1 class="text-xl sm:text-2xl font-bold" style="color: var(--color-text-primary);">{{ isShortMode ? (t('upload.title_short') || 'Upload Short') : (t('upload.title') || 'Upload Video') }}</h1>
+                    <p v-if="isShortMode" class="text-sm mt-0.5" style="color: var(--color-text-muted);">{{ t('upload.short_constraints') || 'Vertical video, 60 seconds max' }}</p>
                 </div>
             </div>
 
@@ -231,10 +234,10 @@ onUnmounted(() => {
                     <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: var(--color-bg-secondary);">
                         <Upload class="w-8 h-8" style="color: var(--color-text-muted);" />
                     </div>
-                    <p class="text-lg font-medium mb-2" style="color: var(--color-text-primary);">{{ isShortMode ? 'Drag and drop your short' : 'Drag and drop video file' }}</p>
-                    <p class="mb-4" style="color: var(--color-text-muted);">or click to browse</p>
+                    <p class="text-lg font-medium mb-2" style="color: var(--color-text-primary);">{{ isShortMode ? (t('upload.drag_drop_short') || 'Drag and drop your short') : (t('upload.drag_drop') || 'Drag and drop video file') }}</p>
+                    <p class="mb-4" style="color: var(--color-text-muted);">{{ t('upload.or_browse') || 'or click to browse' }}</p>
                     <label class="btn btn-primary cursor-pointer">
-                        Select File
+                        {{ t('upload.select_file') || 'Select File' }}
                         <input
                             type="file"
                             accept="video/*"
@@ -243,10 +246,10 @@ onUnmounted(() => {
                         />
                     </label>
                     <p class="text-sm mt-4" style="color: var(--color-text-muted);">
-                        Supported formats: MP4, MOV, AVI, MKV, WebM
+                        {{ t('upload.supported_formats') || 'Supported formats: MP4, MOV, AVI, MKV, WebM' }}
                     </p>
                     <p v-if="isShortMode" class="text-sm mt-1" style="color: var(--color-accent);">
-                        Must be vertical (9:16) and 60 seconds or less
+                        {{ t('upload.short_constraints') || 'Must be vertical (9:16) and 60 seconds or less' }}
                     </p>
                 </div>
 
@@ -272,7 +275,7 @@ onUnmounted(() => {
                             <!-- Upload Progress Bar -->
                             <div v-if="uploadStatus === 'uploading'" class="mt-3">
                                 <div class="flex items-center justify-between text-sm mb-1">
-                                    <span style="color: var(--color-text-secondary);">Uploading...</span>
+                                    <span style="color: var(--color-text-secondary);">{{ t('video.uploading') || 'Uploading...' }}</span>
                                     <span style="color: var(--color-accent);">{{ uploadProgress }}%</span>
                                 </div>
                                 <div class="h-2 rounded-full overflow-hidden" style="background-color: var(--color-bg-secondary);">
@@ -292,13 +295,13 @@ onUnmounted(() => {
                             <!-- Success Status -->
                             <div v-else-if="uploadStatus === 'success'" class="mt-3 flex items-center gap-2 text-green-500">
                                 <CheckCircle class="w-4 h-4" />
-                                <span class="text-sm">Upload complete!</span>
+                                <span class="text-sm">{{ t('video.upload_complete') || 'Upload complete!' }}</span>
                             </div>
                             
                             <!-- Error Status -->
                             <div v-else-if="uploadStatus === 'error'" class="mt-3 flex items-center gap-2 text-red-500">
                                 <AlertCircle class="w-4 h-4" />
-                                <span class="text-sm">{{ uploadError || 'Upload failed' }}</span>
+                                <span class="text-sm">{{ uploadError || (t('video.upload_failed') || 'Upload failed') }}</span>
                             </div>
                         </div>
                         <button 
@@ -325,7 +328,7 @@ onUnmounted(() => {
                 <!-- Video Details -->
                 <div class="card p-6 space-y-4">
                     <div>
-                        <label for="title" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Title</label>
+                        <label for="title" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('upload.video_title') || 'Title' }}</label>
                         <input
                             id="title"
                             v-model="form.title"
@@ -338,7 +341,7 @@ onUnmounted(() => {
                     </div>
 
                     <div>
-                        <label for="description" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Description</label>
+                        <label for="description" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('upload.video_description') || 'Description' }}</label>
                         <textarea
                             id="description"
                             v-model="form.description"
@@ -350,7 +353,7 @@ onUnmounted(() => {
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="category" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Category</label>
+                            <label for="category" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('video.category') || 'Category' }}</label>
                             <select id="category" v-model="form.category_id" class="input">
                                 <option value="">Select category</option>
                                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">
@@ -360,7 +363,7 @@ onUnmounted(() => {
                         </div>
 
                         <div>
-                            <label for="privacy" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Privacy</label>
+                            <label for="privacy" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('video.privacy') || 'Privacy' }}</label>
                             <select id="privacy" v-model="form.privacy" class="input">
                                 <option value="public">Public</option>
                                 <option value="unlisted">Unlisted</option>
@@ -370,7 +373,7 @@ onUnmounted(() => {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Tags</label>
+                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('video.tags') || 'Tags' }}</label>
                         <div class="flex flex-wrap gap-2 mb-2">
                             <span
                                 v-for="(tag, index) in form.tags"
@@ -388,7 +391,7 @@ onUnmounted(() => {
                             v-model="tagInput"
                             type="text"
                             class="input"
-                            placeholder="Add tag and press Enter"
+                            :placeholder="t('upload.add_tag') || 'Add tag and press Enter'"
                             @keydown.enter.prevent="addTag"
                         />
                     </div>
@@ -400,8 +403,8 @@ onUnmounted(() => {
                         <div class="flex items-center gap-3">
                             <Calendar class="w-5 h-5" style="color: var(--color-accent);" />
                             <div>
-                                <p class="font-medium" style="color: var(--color-text-primary);">Schedule Upload</p>
-                                <p class="text-sm" style="color: var(--color-text-muted);">Set a future date and time to publish</p>
+                                <p class="font-medium" style="color: var(--color-text-primary);">{{ t('upload.schedule') || 'Schedule Upload' }}</p>
+                                <p class="text-sm" style="color: var(--color-text-muted);">{{ t('upload.schedule_desc') || 'Set a future date and time to publish' }}</p>
                             </div>
                         </div>
                         <input
@@ -412,7 +415,7 @@ onUnmounted(() => {
                         />
                     </div>
                     <div v-if="enableScheduling" class="mt-4">
-                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Publish Date & Time</label>
+                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('upload.publish_date') || 'Publish Date & Time' }}</label>
                         <input
                             v-model="form.scheduled_at"
                             type="datetime-local"
@@ -431,9 +434,9 @@ onUnmounted(() => {
                         :disabled="form.processing || !form.video_file"
                         class="btn btn-primary"
                     >
-                        <span v-if="form.processing">Uploading...</span>
-                        <span v-else-if="enableScheduling && form.scheduled_at">Schedule {{ isShortMode ? 'Short' : 'Video' }}</span>
-                        <span v-else>{{ isShortMode ? 'Upload Short' : 'Upload Video' }}</span>
+                        <span v-if="form.processing">{{ t('video.uploading') || 'Uploading...' }}</span>
+                        <span v-else-if="enableScheduling && form.scheduled_at">{{ t('upload.schedule') || 'Schedule' }}</span>
+                        <span v-else>{{ isShortMode ? (t('upload.title_short') || 'Upload Short') : (t('upload.title') || 'Upload Video') }}</span>
                     </button>
                 </div>
             </form>

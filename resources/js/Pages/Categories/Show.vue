@@ -4,6 +4,9 @@ import SeoHead from '@/Components/SeoHead.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     category: Object,
@@ -22,7 +25,7 @@ const goToPage = (pageNum) => {
     <AppLayout>
         <div class="mb-6">
             <div class="flex items-center gap-2 mb-1">
-                <Link href="/categories" class="text-sm hover:opacity-80" style="color: var(--color-accent);">Categories</Link>
+                <Link href="/categories" class="text-sm hover:opacity-80" style="color: var(--color-accent);">{{ t('categories.title') || 'Categories' }}</Link>
                 <span style="color: var(--color-text-muted);">/</span>
             </div>
             <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ category.name }}</h1>
@@ -34,7 +37,7 @@ const goToPage = (pageNum) => {
         </div>
 
         <div v-else class="text-center py-12">
-            <p class="text-lg" style="color: var(--color-text-secondary);">No videos in this category yet</p>
+            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('categories.no_videos') || 'No videos in this category yet' }}</p>
         </div>
 
         <!-- Pagination -->

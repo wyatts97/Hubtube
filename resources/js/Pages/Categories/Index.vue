@@ -3,6 +3,9 @@ import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Folder } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     categories: Array,
@@ -20,12 +23,12 @@ const titleStyle = computed(() => ({
 </script>
 
 <template>
-    <Head title="Categories" />
+    <Head :title="t('categories.title') || 'Categories'" />
 
     <AppLayout>
         <div class="mb-6">
-            <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">Categories</h1>
-            <p class="text-sm mt-1" style="color: var(--color-text-muted);">Browse videos by category</p>
+            <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('categories.title') || 'Categories' }}</h1>
+            <p class="text-sm mt-1" style="color: var(--color-text-muted);">{{ t('categories.browse') || 'Browse videos by category' }}</p>
         </div>
 
         <div v-if="categories.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -62,14 +65,14 @@ const titleStyle = computed(() => ({
                     >
                         {{ category.name }}
                     </span>
-                    <span class="text-xs mt-1 text-white/70">{{ category.videos_count }} videos</span>
+                    <span class="text-xs mt-1 text-white/70">{{ category.videos_count }} {{ t('common.videos') || 'videos' }}</span>
                 </div>
             </Link>
         </div>
 
         <div v-else class="text-center py-12">
             <Folder class="w-12 h-12 mx-auto mb-3" style="color: var(--color-text-muted);" />
-            <p class="text-lg" style="color: var(--color-text-secondary);">No categories yet</p>
+            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('categories.no_categories') || 'No categories yet' }}</p>
         </div>
     </AppLayout>
 </template>

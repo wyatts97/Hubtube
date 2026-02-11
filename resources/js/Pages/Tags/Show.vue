@@ -4,6 +4,9 @@ import SeoHead from '@/Components/SeoHead.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { ChevronLeft, ChevronRight, Hash } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     tag: String,
@@ -34,7 +37,7 @@ const goToPage = (pageNum) => {
 
         <div v-else class="text-center py-12">
             <Hash class="w-12 h-12 mx-auto mb-3" style="color: var(--color-text-muted);" />
-            <p class="text-lg" style="color: var(--color-text-secondary);">No videos with this tag yet</p>
+            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('common.no_videos_found') || 'No videos with this tag yet' }}</p>
         </div>
 
         <!-- Pagination -->

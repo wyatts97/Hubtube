@@ -1,6 +1,9 @@
 <script setup>
 import { ref, onErrorCaptured } from 'vue';
 import { AlertTriangle, RefreshCw } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     fallbackTitle: { type: String, default: 'Something went wrong' },
@@ -32,7 +35,7 @@ const retry = () => {
         <p class="text-sm mb-4" style="color: var(--color-text-muted);">{{ fallbackDescription }}</p>
         <button @click="retry" class="btn btn-secondary gap-2 text-sm mx-auto">
             <RefreshCw class="w-4 h-4" />
-            Try Again
+            {{ t('common.try_again') || 'Try Again' }}
         </button>
     </div>
     <slot v-else />

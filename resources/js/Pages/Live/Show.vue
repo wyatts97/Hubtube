@@ -3,6 +3,9 @@ import { Head, Link, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Users, Heart, Send, Gift } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     stream: Object,
@@ -211,7 +214,7 @@ const cleanup = async () => {
             <!-- Chat Panel -->
             <div class="w-full lg:w-96 flex flex-col card max-h-[60vh] lg:max-h-none">
                 <div class="p-3 sm:p-4" style="border-bottom: 1px solid var(--color-border);">
-                    <h3 class="font-medium" style="color: var(--color-text-primary);">Live Chat</h3>
+                    <h3 class="font-medium" style="color: var(--color-text-primary);">{{ t('live.live_chat') || 'Live Chat' }}</h3>
                 </div>
 
                 <!-- Messages -->
@@ -232,7 +235,7 @@ const cleanup = async () => {
                 <!-- Gift Panel -->
                 <div v-if="showGiftPanel" class="p-4" style="border-top: 1px solid var(--color-border); background-color: var(--color-bg-secondary);">
                     <div class="flex items-center justify-between mb-3">
-                        <h4 class="font-medium" style="color: var(--color-text-primary);">Send a Gift</h4>
+                        <h4 class="font-medium" style="color: var(--color-text-primary);">{{ t('live.send_gift') || 'Send a Gift' }}</h4>
                         <button @click="showGiftPanel = false" class="hover:opacity-80" style="color: var(--color-text-secondary);">×</button>
                     </div>
                     <div class="grid grid-cols-4 gap-2">

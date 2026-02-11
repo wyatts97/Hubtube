@@ -4,6 +4,9 @@ import SeoHead from '@/Components/SeoHead.vue';
 import { computed } from 'vue';
 import ShortsViewer from '@/Components/ShortsViewer.vue';
 import { ArrowLeft } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     shorts: Object,
@@ -43,8 +46,8 @@ const goBack = () => {
 
     <!-- Empty state (no shorts) -->
     <div v-else class="min-h-screen flex flex-col items-center justify-center" style="background-color: var(--color-bg-primary);">
-        <p class="text-lg font-medium" style="color: var(--color-text-primary);">No shorts yet</p>
-        <p class="text-sm mt-1 mb-4" style="color: var(--color-text-muted);">Be the first to upload a short video!</p>
-        <Link href="/upload?type=short" class="btn btn-primary">Upload Short</Link>
+        <p class="text-lg font-medium" style="color: var(--color-text-primary);">{{ t('channel.no_shorts') || 'No shorts yet' }}</p>
+        <p class="text-sm mt-1 mb-4" style="color: var(--color-text-muted);">{{ t('channel.no_shorts_desc') || 'Be the first to upload a short video!' }}</p>
+        <Link href="/upload?type=short" class="btn btn-primary">{{ t('nav.upload_short') || 'Upload Short' }}</Link>
     </div>
 </template>

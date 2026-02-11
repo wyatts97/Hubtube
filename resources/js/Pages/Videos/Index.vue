@@ -6,6 +6,9 @@ import VideoCard from '@/Components/VideoCard.vue';
 import { Filter, X, ArrowUpDown, Clock, Flame, CalendarDays } from 'lucide-vue-next';
 import { sanitizeHtml } from '@/Composables/useSanitize';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const { translateVideos, tr } = useAutoTranslate(['title']);
 const page = usePage();
@@ -110,7 +113,7 @@ const shouldShowAd = (index, totalLength) => {
 
         <div class="mb-5">
             <div class="flex items-center justify-between gap-3 flex-wrap">
-                <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">Browse Videos</h1>
+                <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ t('common.browse_videos') || 'Browse Videos' }}</h1>
 
                 <div class="flex items-center gap-2">
                     <!-- Sort Buttons -->
@@ -160,7 +163,7 @@ const shouldShowAd = (index, totalLength) => {
                                 class="w-full text-left px-4 py-2 text-sm transition-colors hover:opacity-80"
                                 :style="!category ? 'color: var(--color-accent); font-weight: 600;' : 'color: var(--color-text-primary);'"
                             >
-                                All Categories
+                                {{ t('categories.all') || 'All Categories' }}
                             </button>
                             <div style="border-top: 1px solid var(--color-border); margin: 2px 0;"></div>
                             <button
@@ -201,8 +204,8 @@ const shouldShowAd = (index, totalLength) => {
         </div>
 
         <div v-else class="text-center py-16">
-            <p class="text-lg" style="color: var(--color-text-secondary);">No videos found</p>
-            <p class="mt-2 text-sm" style="color: var(--color-text-muted);">Try adjusting your filters</p>
+            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('common.no_videos_found') || 'No videos found' }}</p>
+            <p class="mt-2 text-sm" style="color: var(--color-text-muted);">{{ t('common.try_different') || 'Try adjusting your filters' }}</p>
         </div>
 
         <!-- Pagination -->

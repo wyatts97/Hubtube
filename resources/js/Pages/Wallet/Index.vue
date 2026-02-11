@@ -2,6 +2,9 @@
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Wallet, ArrowUpRight, ArrowDownLeft, Plus, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     balance: [String, Number],
@@ -41,14 +44,14 @@ const formatType = (type) => {
     <AppLayout>
         <div class="max-w-4xl mx-auto">
             <div class="mb-4 sm:mb-6">
-                <h1 class="text-xl sm:text-2xl font-bold" style="color: var(--color-text-primary);">Wallet</h1>
+                <h1 class="text-xl sm:text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('nav.wallet') || 'Wallet' }}</h1>
             </div>
 
             <!-- Balance Card -->
             <div class="card p-4 sm:p-6 mb-4 sm:mb-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium" style="color: var(--color-text-secondary);">Available Balance</p>
+                        <p class="text-sm font-medium" style="color: var(--color-text-secondary);">{{ t('settings.wallet_balance') || 'Available Balance' }}</p>
                         <p class="text-2xl sm:text-3xl font-bold mt-1" style="color: var(--color-text-primary);">{{ formatCurrency(balance) }}</p>
                     </div>
                     <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: var(--color-accent); opacity: 0.15;">
@@ -58,11 +61,11 @@ const formatType = (type) => {
                 <div class="flex gap-2 sm:gap-3 mt-4 sm:mt-6">
                     <Link href="/wallet/deposit" class="btn btn-primary gap-2">
                         <Plus class="w-4 h-4" />
-                        Deposit
+                        {{ t('settings.deposit') || 'Deposit' }}
                     </Link>
                     <Link href="/wallet/withdraw" class="btn btn-secondary gap-2">
                         <ArrowDown class="w-4 h-4" />
-                        Withdraw
+                        {{ t('settings.withdraw') || 'Withdraw' }}
                     </Link>
                 </div>
             </div>
@@ -70,7 +73,7 @@ const formatType = (type) => {
             <!-- Transactions -->
             <div class="card">
                 <div class="p-4 border-b" style="border-color: var(--color-border);">
-                    <h2 class="font-semibold" style="color: var(--color-text-primary);">Transaction History</h2>
+                    <h2 class="font-semibold" style="color: var(--color-text-primary);">{{ t('wallet.transaction_history') || 'Transaction History' }}</h2>
                 </div>
 
                 <div v-if="transactions.data?.length">
@@ -107,7 +110,7 @@ const formatType = (type) => {
                 </div>
                 <div v-else class="p-8 text-center">
                     <Wallet class="w-12 h-12 mx-auto mb-3" style="color: var(--color-text-muted);" />
-                    <p style="color: var(--color-text-secondary);">No transactions yet</p>
+                    <p style="color: var(--color-text-secondary);">{{ t('wallet.no_transactions') || 'No transactions yet' }}</p>
                 </div>
 
                 <!-- Pagination -->

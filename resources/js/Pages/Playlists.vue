@@ -3,6 +3,9 @@ import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ListVideo, Plus, X } from 'lucide-vue-next';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     playlists: Object,
@@ -28,17 +31,17 @@ const createPlaylist = () => {
 </script>
 
 <template>
-    <Head title="Playlists" />
+    <Head :title="t('playlist.your_playlists') || 'Playlists'" />
 
     <AppLayout>
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">Your Playlists</h1>
-                <p class="mt-1" style="color: var(--color-text-secondary);">Organize your favorite videos</p>
+                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('playlist.your_playlists') || 'Your Playlists' }}</h1>
+                <p class="mt-1" style="color: var(--color-text-secondary);">{{ t('playlist.organize_desc') || 'Organize your favorite videos' }}</p>
             </div>
             <button @click="showCreateModal = true" class="btn btn-primary gap-2">
                 <Plus class="w-4 h-4" />
-                New Playlist
+                {{ t('playlist.new_playlist') || 'New Playlist' }}
             </button>
         </div>
 
@@ -61,18 +64,18 @@ const createPlaylist = () => {
                 </div>
                 <div class="p-3">
                     <h3 class="font-medium truncate" style="color: var(--color-text-primary);">{{ playlist.title }}</h3>
-                    <p class="text-sm" style="color: var(--color-text-secondary);">{{ playlist.videos_count || 0 }} videos</p>
+                    <p class="text-sm" style="color: var(--color-text-secondary);">{{ playlist.videos_count || 0 }} {{ t('common.videos') || 'videos' }}</p>
                 </div>
             </Link>
         </div>
 
         <div v-else class="text-center py-12">
             <ListVideo class="w-16 h-16 mx-auto mb-4" style="color: var(--color-text-muted);" />
-            <p class="text-lg" style="color: var(--color-text-secondary);">No playlists yet</p>
-            <p class="mt-2" style="color: var(--color-text-muted);">Create a playlist to organize your favorite videos</p>
+            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('playlist.no_playlists') || 'No playlists yet' }}</p>
+            <p class="mt-2" style="color: var(--color-text-muted);">{{ t('playlist.no_playlists_desc') || 'Create a playlist to organize your favorite videos' }}</p>
             <button @click="showCreateModal = true" class="btn btn-primary mt-4 gap-2">
                 <Plus class="w-4 h-4" />
-                Create Playlist
+                {{ t('playlist.create_playlist') || 'Create Playlist' }}
             </button>
         </div>
 
@@ -81,24 +84,24 @@ const createPlaylist = () => {
             <div class="absolute inset-0 bg-black/50" @click="showCreateModal = false"></div>
             <div class="card p-6 w-full max-w-md relative z-10">
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-lg font-semibold" style="color: var(--color-text-primary);">Create Playlist</h2>
+                    <h2 class="text-lg font-semibold" style="color: var(--color-text-primary);">{{ t('playlist.create_playlist') || 'Create Playlist' }}</h2>
                     <button @click="showCreateModal = false" class="p-1 rounded" style="color: var(--color-text-secondary);">
                         <X class="w-5 h-5" />
                     </button>
                 </div>
                 <form @submit.prevent="createPlaylist" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Title</label>
+                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('common.title') || 'Title' }}</label>
                         <input v-model="form.title" type="text" class="input" required />
                         <p v-if="form.errors.title" class="text-red-500 text-sm mt-1">{{ form.errors.title }}</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Description</label>
+                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('common.description') || 'Description' }}</label>
                         <textarea v-model="form.description" rows="3" class="input resize-none"></textarea>
                     </div>
                     <div class="flex justify-end gap-2">
-                        <button type="button" @click="showCreateModal = false" class="btn btn-ghost">Cancel</button>
-                        <button type="submit" :disabled="form.processing" class="btn btn-primary">Create</button>
+                        <button type="button" @click="showCreateModal = false" class="btn btn-ghost">{{ t('common.cancel') || 'Cancel' }}</button>
+                        <button type="submit" :disabled="form.processing" class="btn btn-primary">{{ t('common.create') || 'Create' }}</button>
                     </div>
                 </form>
             </div>
