@@ -15,6 +15,12 @@ class ChannelController extends Controller
         protected SeoService $seoService,
     ) {}
 
+    public function localeShow(string $locale, string $username): Response
+    {
+        $user = User::where('username', $username)->firstOrFail();
+        return $this->show($user);
+    }
+
     public function show(User $user): Response
     {
         $user->load('channel');

@@ -213,7 +213,7 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/categories', [HomeController::class, 'categories'])->name('locale.categories.index');
         Route::get('/category/{category:slug}', [HomeController::class, 'category'])->name('locale.categories.show');
         Route::get('/tag/{tag}', [HomeController::class, 'tag'])->name('locale.tags.show');
-        Route::get('/channel/{user:username}', [ChannelController::class, 'show'])->name('locale.channel.show');
+        Route::get('/channel/{username}', [ChannelController::class, 'localeShow'])->name('locale.channel.show');
         Route::get('/live', [LiveStreamController::class, 'index'])->name('locale.live.index');
         Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('locale.pages.show');
 
