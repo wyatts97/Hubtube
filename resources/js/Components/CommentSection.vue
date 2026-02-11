@@ -4,6 +4,9 @@ import { Link, usePage } from '@inertiajs/vue3';
 import { ThumbsUp, ThumbsDown, MoreVertical, Reply, Trash2, Edit2 } from 'lucide-vue-next';
 import { useFetch } from '@/Composables/useFetch';
 import { timeAgo } from '@/Composables/useFormatters';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
     videoId: {
@@ -102,7 +105,7 @@ fetchComments();
 <template>
     <div class="mt-6">
         <h3 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">
-            {{ comments.length }} Comments
+            {{ comments.length }} {{ t('video.comments') || 'Comments' }}
         </h3>
 
         <!-- Comment Input -->
@@ -116,7 +119,7 @@ fetchComments();
             <div class="flex-1">
                 <textarea
                     v-model="newComment"
-                    placeholder="Add a comment..."
+                    :placeholder="t('video.add_comment') || 'Add a comment...'"
                     rows="2"
                     class="input resize-none w-full"
                     @keydown.ctrl.enter="submitComment"
@@ -127,14 +130,14 @@ fetchComments();
                         class="btn btn-ghost"
                         :disabled="!newComment.trim()"
                     >
-                        Cancel
+                        {{ t('common.cancel') || 'Cancel' }}
                     </button>
                     <button 
                         @click="submitComment" 
                         class="btn btn-primary"
                         :disabled="!newComment.trim() || submitting"
                     >
-                        {{ submitting ? 'Posting...' : 'Comment' }}
+                        {{ submitting ? (t('common.loading') || 'Posting...') : (t('video.comments') || 'Comment') }}
                     </button>
                 </div>
             </div>
@@ -142,8 +145,7 @@ fetchComments();
 
         <div v-else class="card p-4 mb-6 text-center">
             <p style="color: var(--color-text-secondary);">
-                <Link href="/login" class="hover:underline" style="color: var(--color-accent);">Sign in</Link>
-                to leave a comment
+                <Link href="/login" class="hover:underline" style="color: var(--color-accent);">{{ t('auth.login') || 'Sign in' }}</Link>
             </p>
         </div>
 
@@ -195,7 +197,7 @@ fetchComments();
                             class="text-sm hover:opacity-80"
                             style="color: var(--color-text-muted);"
                         >
-                            Reply
+                            {{ t('video.reply') || 'Reply' }}
                         </button>
                         <button 
                             v-if="user && (user.id === comment.user_id || user.is_admin)"
@@ -216,18 +218,18 @@ fetchComments();
                         <div class="flex-1">
                             <textarea
                                 v-model="replyContent"
-                                placeholder="Add a reply..."
+                                :placeholder="t('video.reply') || 'Add a reply...'"
                                 rows="2"
                                 class="input resize-none w-full text-sm"
                             ></textarea>
                             <div class="flex justify-end gap-2 mt-2">
-                                <button @click="replyingTo = null" class="btn btn-ghost btn-sm">Cancel</button>
+                                <button @click="replyingTo = null" class="btn btn-ghost btn-sm">{{ t('common.cancel') || 'Cancel' }}</button>
                                 <button 
                                     @click="submitReply(comment.id)" 
                                     class="btn btn-primary btn-sm"
                                     :disabled="!replyContent.trim() || submitting"
                                 >
-                                    Reply
+                                    {{ t('video.reply') || 'Reply' }}
                                 </button>
                             </div>
                         </div>
@@ -255,7 +257,7 @@ fetchComments();
             </div>
 
             <div v-if="!loading && comments.length === 0" class="text-center py-8">
-                <p style="color: var(--color-text-muted);">No comments yet. Be the first to comment!</p>
+                <p style="color: var(--color-text-muted);">{{ t('video.no_comments') || 'No comments yet' }}</p>
             </div>
         </div>
     </div>

@@ -1,10 +1,12 @@
 <script setup>
 import { Link, router, usePage } from '@inertiajs/vue3';
 import SeoHead from '@/Components/SeoHead.vue';
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useFetch } from '@/Composables/useFetch';
 import { sanitizeHtml } from '@/Composables/useSanitize';
 import { useToast } from '@/Composables/useToast';
+import { useI18n } from '@/Composables/useI18n';
+import { useTranslation } from '@/Composables/useTranslation';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import CommentSection from '@/Components/CommentSection.vue';
@@ -304,6 +306,36 @@ const formattedViews = computed(() => {
     const views = props.video.views_count;
     return views.toLocaleString();
 });
+
+// ── Translation ──
+const { t } = useI18n();
+const { isTranslated, translateItem, translateBatch, getTranslated } = useTranslation();
+
+const translatedTitle = ref(props.video.title);
+const translatedDescription = ref(props.video.description);
+
+// Auto-translate video content when locale is non-default
+onMounted(async () => {
+    if (isTranslated.value) {
+        // Translate main video
+        const result = await translateItem('video', props.video.id, ['title', 'description']);
+        if (result) {
+            if (result.title) translatedTitle.value = result.title;
+            if (result.description) translatedDescription.value = result.description;
+        }
+
+        // Translate related video titles
+        if (props.relatedVideos?.length) {
+            const ids = props.relatedVideos.map(v => v.id);
+            await translateBatch('video', ids, ['title']);
+        }
+    }
+});
+
+const getRelatedTitle = (video) => {
+    if (!isTranslated.value) return video.title;
+    return getTranslated('video', video.id, 'title', video.title);
+};
 </script>
 
 <template>
@@ -381,12 +413,12 @@ const formattedViews = computed(() => {
                 <!-- Video Info -->
                 <div class="mt-4">
                     <div class="flex items-start justify-between gap-2 sm:gap-4">
-                        <h1 class="text-base sm:text-xl font-bold flex-1 line-clamp-2 sm:line-clamp-none" style="color: var(--color-text-primary);">{{ video.title }}</h1>
+                        <h1 class="text-base sm:text-xl font-bold flex-1 line-clamp-2 sm:line-clamp-none" style="color: var(--color-text-primary);">{{ translatedTitle }}</h1>
                         <div class="flex items-center gap-1.5 sm:gap-2 shrink-0 text-xs sm:text-sm font-medium whitespace-nowrap" style="color: var(--color-text-secondary);">
                             <Eye class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                            <span>{{ formattedViews }} views</span>
+                            <span>{{ formattedViews }} {{ t('video.views', { count: '' }).replace('{count}', '').trim() || 'views' }}</span>
                             <span style="color: var(--color-text-muted);">•</span>
-                            <span><span class="hidden landscape:inline sm:inline">Uploaded: </span>{{ new Date(video.published_at).toLocaleDateString() }}</span>
+                            <span>{{ new Date(video.published_at).toLocaleDateString() }}</span>
                         </div>
                     </div>
                     
@@ -417,7 +449,7 @@ const formattedViews = computed(() => {
                                 </div>
                                 <div class="min-w-0">
                                     <p class="font-medium text-xs sm:text-base truncate" style="color: var(--color-text-primary);">{{ video.user.username }}</p>
-                                    <p class="text-[10px] sm:text-sm hidden sm:block" style="color: var(--color-text-muted);">{{ video.user.subscriber_count }} subscribers</p>
+                                    <p class="text-[10px] sm:text-sm hidden sm:block" style="color: var(--color-text-muted);">{{ video.user.subscriber_count }} {{ t('common.subscribe') || 'subscribers' }}</p>
                                 </div>
                             </Link>
                             
@@ -431,7 +463,7 @@ const formattedViews = computed(() => {
                                 ]"
                             >
                                 <Loader2 v-if="subscribing" class="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
-                                <template v-else>{{ subscribed ? 'Subscribed' : 'Subscribe' }}</template>
+                                <template v-else>{{ subscribed ? (t('common.subscribed') || 'Subscribed') : (t('common.subscribe') || 'Subscribe') }}</template>
                             </button>
                         </div>
 
@@ -456,21 +488,21 @@ const formattedViews = computed(() => {
 
                             <button @click="handleShare" class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
                                 <Share2 class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                <span class="hidden sm:inline">Share</span>
+                                <span class="hidden sm:inline">{{ t('common.share') || 'Share' }}</span>
                             </button>
 
                             <!-- Save to Playlist -->
                             <div class="relative playlist-menu-area shrink-0">
                                 <button @click.stop="user ? (showPlaylistMenu = !showPlaylistMenu) : router.visit('/login')" class="btn btn-secondary gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
                                     <ListVideo class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                    <span class="hidden sm:inline">Save</span>
+                                    <span class="hidden sm:inline">{{ t('common.save') || 'Save' }}</span>
                                 </button>
                                 <div
                                     v-if="showPlaylistMenu"
                                     class="absolute right-0 sm:right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-72 max-w-72 rounded-xl shadow-xl z-50 overflow-hidden"
                                     style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);"
                                 >
-                                    <div class="p-3 font-medium text-sm" style="border-bottom: 1px solid var(--color-border); color: var(--color-text-primary);">Save to playlist</div>
+                                    <div class="p-3 font-medium text-sm" style="border-bottom: 1px solid var(--color-border); color: var(--color-text-primary);">{{ t('video.save_to_playlist') || 'Save to playlist' }}</div>
                                     <div class="max-h-60 overflow-y-auto scrollbar-hide">
                                         <button
                                             v-for="pl in playlists"
@@ -492,14 +524,14 @@ const formattedViews = computed(() => {
                                             <Loader2 v-if="savingPlaylist === pl.id" class="w-4 h-4 animate-spin shrink-0" />
                                             <span v-else class="text-xs shrink-0" style="color: var(--color-text-muted);">{{ pl.videos_count }} videos</span>
                                         </button>
-                                        <div v-if="!playlists.length" class="px-3 py-4 text-center text-sm" style="color: var(--color-text-muted);">No playlists yet</div>
+                                        <div v-if="!playlists.length" class="px-3 py-4 text-center text-sm" style="color: var(--color-text-muted);">{{ t('playlist.no_playlists') || 'No playlists yet' }}</div>
                                     </div>
                                     <div class="p-2" style="border-top: 1px solid var(--color-border);">
                                         <div class="flex items-center gap-2">
                                             <input
                                                 v-model="newPlaylistTitle"
                                                 type="text"
-                                                placeholder="New playlist name..."
+                                                :placeholder="t('playlist.new_name') || 'New playlist name...'"
                                                 class="input text-sm flex-1"
                                                 @keydown.enter.prevent="createAndAddPlaylist"
                                             />
@@ -518,7 +550,7 @@ const formattedViews = computed(() => {
 
                             <button @click="user ? (showReportModal = true) : router.visit('/login')" class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
                                 <Flag class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                <span class="hidden sm:inline">Report</span>
+                                <span class="hidden sm:inline">{{ t('common.report') || 'Report' }}</span>
                             </button>
 
                         </div>
@@ -526,7 +558,7 @@ const formattedViews = computed(() => {
 
                     <!-- Description -->
                     <div class="card p-4 mt-4">
-                        <p class="whitespace-pre-wrap" style="color: var(--color-text-secondary);">{{ video.description }}</p>
+                        <p class="whitespace-pre-wrap" style="color: var(--color-text-secondary);">{{ translatedDescription }}</p>
                     </div>
 
                     <!-- Comments Section -->
@@ -543,7 +575,7 @@ const formattedViews = computed(() => {
                     </div>
                 </div>
 
-                <h3 class="font-medium mb-4" style="color: var(--color-text-primary);">Related Videos</h3>
+                <h3 class="font-medium mb-4" style="color: var(--color-text-primary);">{{ t('video.related') || 'Related Videos' }}</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
                     <VideoCard
                         v-for="relatedVideo in relatedVideos"
@@ -559,33 +591,33 @@ const formattedViews = computed(() => {
     <Teleport to="body">
         <div v-if="showReportModal" class="fixed inset-0 z-50 flex items-center justify-center px-4" style="background-color: rgba(0,0,0,0.6);" @click.self="showReportModal = false">
             <div class="w-full max-w-md card p-6 shadow-xl" style="background-color: var(--color-bg-card);">
-                <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">Report Video</h3>
+                <h3 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">{{ t('report.title') || 'Report Video' }}</h3>
 
                 <div v-if="reportSuccess" class="text-center py-4">
-                    <p class="text-green-500 font-medium">Report submitted successfully!</p>
+                    <p class="text-green-500 font-medium">{{ t('report.success') || 'Report submitted successfully!' }}</p>
                 </div>
 
                 <form v-else @submit.prevent="submitReport" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">Reason</label>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ t('report.reason') || 'Reason' }}</label>
                         <select v-model="reportReason" class="input" required>
-                            <option value="" disabled>Select a reason</option>
-                            <option value="spam">Spam or misleading</option>
-                            <option value="harassment">Harassment or bullying</option>
-                            <option value="illegal">Illegal content</option>
-                            <option value="copyright">Copyright violation</option>
-                            <option value="underage">Underage content</option>
-                            <option value="other">Other</option>
+                            <option value="" disabled>{{ t('report.select_reason') || 'Select a reason' }}</option>
+                            <option value="spam">{{ t('report.spam') || 'Spam or misleading' }}</option>
+                            <option value="harassment">{{ t('report.harassment') || 'Harassment or bullying' }}</option>
+                            <option value="illegal">{{ t('report.illegal') || 'Illegal content' }}</option>
+                            <option value="copyright">{{ t('report.copyright') || 'Copyright violation' }}</option>
+                            <option value="underage">{{ t('report.underage') || 'Underage content' }}</option>
+                            <option value="other">{{ t('report.other') || 'Other' }}</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Details (optional)</label>
-                        <textarea v-model="reportDescription" class="input" rows="3" placeholder="Provide additional details..." maxlength="2000"></textarea>
+                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('report.details') || 'Details (optional)' }}</label>
+                        <textarea v-model="reportDescription" class="input" rows="3" :placeholder="t('report.details_placeholder') || 'Provide additional details...'" maxlength="2000"></textarea>
                     </div>
                     <div class="flex gap-3 justify-end">
-                        <button type="button" @click="showReportModal = false" class="btn btn-secondary">Cancel</button>
+                        <button type="button" @click="showReportModal = false" class="btn btn-secondary">{{ t('common.cancel') || 'Cancel' }}</button>
                         <button type="submit" :disabled="reportSubmitting || !reportReason" class="btn btn-primary">
-                            {{ reportSubmitting ? 'Submitting...' : 'Submit Report' }}
+                            {{ reportSubmitting ? (t('report.submitting') || 'Submitting...') : (t('report.submit') || 'Submit Report') }}
                         </button>
                     </div>
                 </form>
@@ -598,7 +630,7 @@ const formattedViews = computed(() => {
         <div v-if="showShareModal" class="fixed inset-0 z-50 flex items-center justify-center px-4" style="background-color: rgba(0,0,0,0.6);" @click.self="showShareModal = false">
             <div class="w-full max-w-md card p-6 shadow-xl" style="background-color: var(--color-bg-card);">
                 <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">Share Video</h3>
+                    <h3 class="text-lg font-bold" style="color: var(--color-text-primary);">{{ t('share.title') || 'Share Video' }}</h3>
                     <button @click="showShareModal = false" class="p-1 rounded hover:bg-white/10">
                         <svg class="w-5 h-5" style="color: var(--color-text-secondary);" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
@@ -648,7 +680,7 @@ const formattedViews = computed(() => {
                         @click="$event.target.select()"
                     />
                     <button @click="copyLink" class="btn btn-primary whitespace-nowrap text-sm px-4">
-                        {{ linkCopied ? 'Copied!' : 'Copy' }}
+                        {{ linkCopied ? (t('common.copied') || 'Copied!') : (t('common.copy') || 'Copy') }}
                     </button>
                 </div>
             </div>
