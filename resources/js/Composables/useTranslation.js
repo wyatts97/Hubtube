@@ -47,13 +47,14 @@ export function useTranslation() {
      */
     async function switchLanguage(locale) {
         try {
+            const currentPath = window.location.pathname;
             const response = await fetch('/api/locale', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': page.props.csrf_token,
                 },
-                body: JSON.stringify({ locale }),
+                body: JSON.stringify({ locale, current_path: currentPath }),
             });
             const data = await response.json();
             if (data.redirect) {

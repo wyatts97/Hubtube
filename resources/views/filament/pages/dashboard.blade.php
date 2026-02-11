@@ -1,116 +1,170 @@
 <x-filament-panels::page>
+    <style>
+        .ht-stat-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            transition: all 0.15s;
+        }
+        .ht-stat-card:hover {
+            border-color: rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.06);
+        }
+        .ht-list-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+        .ht-list-header {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .ht-list-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: opacity 0.15s;
+            text-decoration: none;
+        }
+        .ht-list-row:last-child { border-bottom: none; }
+        .ht-list-row:hover { opacity: 0.85; }
+        .ht-label { font-size: 0.75rem; color: rgba(255,255,255,0.45); }
+        .ht-value { font-size: 1.125rem; font-weight: 700; color: #fff; }
+        .ht-value-sm { font-size: 1rem; font-weight: 700; color: #fff; }
+        .ht-sub { font-size: 0.75rem; color: rgba(255,255,255,0.35); margin-top: 0.5rem; }
+        .ht-title { font-size: 0.875rem; font-weight: 500; color: rgba(255,255,255,0.9); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ht-meta { font-size: 0.75rem; color: rgba(255,255,255,0.4); display: flex; align-items: center; gap: 0.25rem; }
+        .ht-icon-box { width: 2.5rem; height: 2.5rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .ht-icon-box-sm { width: 2.25rem; height: 2.25rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .ht-thumb { width: 5rem; height: 3rem; border-radius: 0.5rem; overflow: hidden; flex-shrink: 0; background: rgba(255,255,255,0.05); }
+        .ht-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .ht-rank { font-size: 1.125rem; font-weight: 700; width: 1.5rem; text-align: center; color: rgba(255,255,255,0.25); }
+        .ht-badge { font-size: 0.75rem; padding: 0.125rem 0.375rem; border-radius: 0.25rem; }
+        .ht-section-title { font-weight: 600; color: #fff; display: flex; align-items: center; gap: 0.5rem; }
+        .ht-link { font-size: 0.875rem; color: rgb(var(--primary-400)); }
+        .ht-link:hover { color: rgb(var(--primary-300)); }
+        .ht-avatar { width: 2rem; height: 2rem; border-radius: 9999px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; }
+    </style>
+
     <div class="space-y-6">
 
-        {{-- Primary Stats Grid — Glassmorphism cards with colored accents --}}
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {{-- Primary Stats Grid --}}
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
             {{-- Total Users --}}
-            <a href="{{ route('filament.admin.resources.users.index') }}" class="group block rounded-xl p-4 shadow-sm border border-blue-500/20 bg-blue-500/5 dark:bg-blue-500/10 backdrop-blur-sm hover:border-blue-400 hover:bg-blue-500/10 dark:hover:bg-blue-500/15 transition-all">
+            <a href="{{ route('filament.admin.resources.users.index') }}" class="ht-stat-card block">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500/20">
-                        <x-heroicon-m-users class="w-5 h-5 text-blue-400" />
+                    <div class="ht-icon-box" style="background: rgba(59,130,246,0.15);">
+                        <x-heroicon-m-users class="w-5 h-5" style="color: #3b82f6;" />
                     </div>
                     <div class="min-w-0">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Total Users</p>
-                        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ number_format($totalUsers) }}</p>
+                        <p class="ht-label truncate">Total Users</p>
+                        <p class="ht-value">{{ number_format($totalUsers) }}</p>
                     </div>
                 </div>
-                <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">+{{ $users24h }} today &middot; +{{ $users7d }} this week</p>
+                <p class="ht-sub">+{{ $users24h }} today &middot; +{{ $users7d }} this week</p>
             </a>
 
             {{-- Total Videos --}}
-            <a href="{{ route('filament.admin.resources.videos.index') }}" class="group block rounded-xl p-4 shadow-sm border border-green-500/20 bg-green-500/5 dark:bg-green-500/10 backdrop-blur-sm hover:border-green-400 hover:bg-green-500/10 dark:hover:bg-green-500/15 transition-all">
+            <a href="{{ route('filament.admin.resources.videos.index') }}" class="ht-stat-card block">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-green-500/20">
-                        <x-heroicon-m-video-camera class="w-5 h-5 text-green-400" />
+                    <div class="ht-icon-box" style="background: rgba(34,197,94,0.15);">
+                        <x-heroicon-m-video-camera class="w-5 h-5" style="color: #22c55e;" />
                     </div>
                     <div class="min-w-0">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Total Videos</p>
-                        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ number_format($totalVideos) }}</p>
+                        <p class="ht-label truncate">Total Videos</p>
+                        <p class="ht-value">{{ number_format($totalVideos) }}</p>
                     </div>
                 </div>
-                <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">+{{ $videos24h }} today &middot; +{{ $videos7d }} this week</p>
+                <p class="ht-sub">+{{ $videos24h }} today &middot; +{{ $videos7d }} this week</p>
             </a>
 
             {{-- Total Views --}}
-            <div class="rounded-xl p-4 shadow-sm border border-purple-500/20 bg-purple-500/5 dark:bg-purple-500/10 backdrop-blur-sm">
+            <div class="ht-stat-card">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-purple-500/20">
-                        <x-heroicon-m-eye class="w-5 h-5 text-purple-400" />
+                    <div class="ht-icon-box" style="background: rgba(139,92,246,0.15);">
+                        <x-heroicon-m-eye class="w-5 h-5" style="color: #8b5cf6;" />
                     </div>
                     <div class="min-w-0">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Total Views</p>
-                        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ number_format($totalViews) }}</p>
+                        <p class="ht-label truncate">Total Views</p>
+                        <p class="ht-value">{{ number_format($totalViews) }}</p>
                     </div>
                 </div>
-                <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">{{ number_format($totalComments) }} comments &middot; +{{ $comments7d }} this week</p>
+                <p class="ht-sub">{{ number_format($totalComments) }} comments &middot; +{{ $comments7d }} this week</p>
             </div>
 
             {{-- Revenue --}}
-            <a href="{{ route('filament.admin.resources.wallet-transactions.index') }}" class="group block rounded-xl p-4 shadow-sm border border-amber-500/20 bg-amber-500/5 dark:bg-amber-500/10 backdrop-blur-sm hover:border-amber-400 hover:bg-amber-500/10 dark:hover:bg-amber-500/15 transition-all">
+            <a href="{{ route('filament.admin.resources.wallet-transactions.index') }}" class="ht-stat-card block">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-amber-500/20">
-                        <x-heroicon-m-banknotes class="w-5 h-5 text-amber-400" />
+                    <div class="ht-icon-box" style="background: rgba(245,158,11,0.15);">
+                        <x-heroicon-m-banknotes class="w-5 h-5" style="color: #f59e0b;" />
                     </div>
                     <div class="min-w-0">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Revenue</p>
-                        <p class="text-lg font-bold text-gray-900 dark:text-white">${{ number_format($totalRevenue, 2) }}</p>
+                        <p class="ht-label truncate">Revenue</p>
+                        <p class="ht-value">${{ number_format($totalRevenue, 2) }}</p>
                     </div>
                 </div>
-                <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">${{ number_format($revenue7d, 2) }} this week &middot; ${{ number_format($revenue30d, 2) }} this month</p>
+                <p class="ht-sub">${{ number_format($revenue7d, 2) }} this week &middot; ${{ number_format($revenue30d, 2) }} this month</p>
             </a>
 
             {{-- Playlists --}}
-            <div class="rounded-xl p-4 shadow-sm border border-pink-500/20 bg-pink-500/5 dark:bg-pink-500/10 backdrop-blur-sm">
+            <div class="ht-stat-card">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-pink-500/20">
-                        <x-heroicon-m-queue-list class="w-5 h-5 text-pink-400" />
+                    <div class="ht-icon-box" style="background: rgba(236,72,153,0.15);">
+                        <x-heroicon-m-queue-list class="w-5 h-5" style="color: #ec4899;" />
                     </div>
                     <div class="min-w-0">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Playlists</p>
-                        <p class="text-lg font-bold text-gray-900 dark:text-white">{{ number_format($totalPlaylists) }}</p>
+                        <p class="ht-label truncate">Playlists</p>
+                        <p class="ht-value">{{ number_format($totalPlaylists) }}</p>
                     </div>
                 </div>
-                <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">+{{ $playlists7d }} this week</p>
+                <p class="ht-sub">+{{ $playlists7d }} this week</p>
             </div>
         </div>
 
-        {{-- Secondary Stats Row — Card style matching primary widgets --}}
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {{-- Secondary Stats Row --}}
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             {{-- Live Now --}}
-            <a href="{{ route('filament.admin.resources.live-streams.index') }}" class="group block rounded-xl p-4 shadow-sm border border-red-500/20 bg-red-500/5 dark:bg-red-500/10 backdrop-blur-sm hover:border-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/15 transition-all">
+            <a href="{{ route('filament.admin.resources.live-streams.index') }}" class="ht-stat-card block">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-red-500/20">
-                        <x-heroicon-m-signal class="w-4 h-4 {{ $liveNow > 0 ? 'text-red-400 animate-pulse' : 'text-red-400/50' }}" />
+                    <div class="ht-icon-box-sm" style="background: rgba(239,68,68,0.15);">
+                        <x-heroicon-m-signal class="w-4 h-4" style="color: {{ $liveNow > 0 ? '#ef4444' : 'rgba(239,68,68,0.4)' }};" />
                     </div>
                     <div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Live Now</p>
-                        <p class="text-base font-bold text-gray-900 dark:text-white">{{ $liveNow }}</p>
+                        <p class="ht-label">Live Now</p>
+                        <p class="ht-value-sm">{{ $liveNow }}</p>
                     </div>
                 </div>
             </a>
 
             {{-- Storage --}}
-            <div class="rounded-xl p-4 shadow-sm border border-cyan-500/20 bg-cyan-500/5 dark:bg-cyan-500/10 backdrop-blur-sm">
+            <div class="ht-stat-card">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-cyan-500/20">
-                        <x-heroicon-m-server-stack class="w-4 h-4 text-cyan-400" />
+                    <div class="ht-icon-box-sm" style="background: rgba(6,182,212,0.15);">
+                        <x-heroicon-m-server-stack class="w-4 h-4" style="color: #06b6d4;" />
                     </div>
                     <div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Storage</p>
-                        <p class="text-base font-bold text-gray-900 dark:text-white">{{ \App\Filament\Pages\Dashboard::formatBytes($totalSize) }}</p>
+                        <p class="ht-label">Storage</p>
+                        <p class="ht-value-sm">{{ \App\Filament\Pages\Dashboard::formatBytes($totalSize) }}</p>
                     </div>
                 </div>
             </div>
 
             {{-- Processing --}}
-            <div class="rounded-xl p-4 shadow-sm border border-indigo-500/20 bg-indigo-500/5 dark:bg-indigo-500/10 backdrop-blur-sm">
+            <div class="ht-stat-card">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-indigo-500/20">
-                        <x-heroicon-m-cog-6-tooth class="w-4 h-4 {{ $processingCount > 0 ? 'text-indigo-400 animate-spin' : 'text-indigo-400/50' }}" />
+                    <div class="ht-icon-box-sm" style="background: rgba(99,102,241,0.15);">
+                        <x-heroicon-m-cog-6-tooth class="w-4 h-4 {{ $processingCount > 0 ? 'animate-spin' : '' }}" style="color: {{ $processingCount > 0 ? '#6366f1' : 'rgba(99,102,241,0.4)' }};" />
                     </div>
                     <div class="min-w-0">
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Processing</p>
-                        <p class="text-base font-bold text-gray-900 dark:text-white">
+                        <p class="ht-label">Processing</p>
+                        <p class="ht-value-sm">
                             @if($processingCount > 0)
                                 {{ $processingCount }} Encoding
                             @else
@@ -118,9 +172,9 @@
                             @endif
                         </p>
                         @if($pendingCount > 0 || $failedCount > 0)
-                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                            <p class="ht-sub" style="margin-top: 0.125rem;">
                                 @if($pendingCount > 0) {{ $pendingCount }} queued @endif
-                                @if($failedCount > 0) <span class="text-red-400">{{ $failedCount }} failed</span> @endif
+                                @if($failedCount > 0) <span style="color: #ef4444;">{{ $failedCount }} failed</span> @endif
                             </p>
                         @endif
                     </div>
@@ -128,14 +182,14 @@
             </div>
 
             {{-- Comments --}}
-            <a href="{{ route('filament.admin.resources.comments.index') }}" class="group block rounded-xl p-4 shadow-sm border border-yellow-500/20 bg-yellow-500/5 dark:bg-yellow-500/10 backdrop-blur-sm hover:border-yellow-400 hover:bg-yellow-500/10 dark:hover:bg-yellow-500/15 transition-all">
+            <a href="{{ route('filament.admin.resources.comments.index') }}" class="ht-stat-card block">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-yellow-500/20">
-                        <x-heroicon-m-chat-bubble-left-right class="w-4 h-4 text-yellow-400" />
+                    <div class="ht-icon-box-sm" style="background: rgba(234,179,8,0.15);">
+                        <x-heroicon-m-chat-bubble-left-right class="w-4 h-4" style="color: #eab308;" />
                     </div>
                     <div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Comments</p>
-                        <p class="text-base font-bold text-gray-900 dark:text-white">{{ number_format($totalComments) }}</p>
+                        <p class="ht-label">Comments</p>
+                        <p class="ht-value-sm">{{ number_format($totalComments) }}</p>
                     </div>
                 </div>
             </a>
@@ -145,112 +199,108 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
             {{-- Trending Videos --}}
-            <div class="rounded-xl shadow-sm border border-gray-200 dark:border-gray-700/50 bg-white dark:bg-gray-800/50 overflow-hidden">
-                <div class="p-4 border-b border-gray-200 dark:border-gray-700/50 flex items-center justify-between">
-                    <h2 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <x-heroicon-m-fire class="w-4 h-4 text-orange-500" />
+            <div class="ht-list-card">
+                <div class="ht-list-header">
+                    <h2 class="ht-section-title">
+                        <x-heroicon-m-fire class="w-4 h-4" style="color: #f97316;" />
                         Trending Videos
                     </h2>
-                    <a href="{{ route('filament.admin.resources.videos.index') }}" class="text-sm text-primary-500 hover:text-primary-400">View All</a>
+                    <a href="{{ route('filament.admin.resources.videos.index') }}" class="ht-link">View All</a>
                 </div>
                 @if($trendingVideos->count())
-                    <div class="divide-y divide-gray-100 dark:divide-gray-700/50">
-                        @foreach($trendingVideos as $index => $video)
-                            <a href="{{ route('filament.admin.resources.videos.edit', $video) }}" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                                <span class="text-lg font-bold w-6 text-center text-gray-300 dark:text-gray-600">{{ $index + 1 }}</span>
-                                <div class="w-20 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0">
-                                    @if($video->thumbnail_url)
-                                        <img src="{{ $video->thumbnail_url }}" alt="{{ $video->title }}" class="w-full h-full object-cover" />
+                    @foreach($trendingVideos as $index => $video)
+                        <a href="{{ route('filament.admin.resources.videos.edit', $video) }}" class="ht-list-row">
+                            <span class="ht-rank">{{ $index + 1 }}</span>
+                            <div class="ht-thumb">
+                                @if($video->thumbnail_url)
+                                    <img src="{{ $video->thumbnail_url }}" alt="{{ $video->title }}" />
+                                @endif
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="ht-title">{{ $video->title }}</p>
+                                <div class="flex items-center gap-3 mt-0.5">
+                                    <span class="ht-meta">
+                                        <x-heroicon-m-eye class="w-3 h-3" /> {{ number_format($video->views_count) }}
+                                    </span>
+                                    <span class="ht-meta">
+                                        <x-heroicon-m-hand-thumb-up class="w-3 h-3" /> {{ number_format($video->likes_count) }}
+                                    </span>
+                                    @if($video->user)
+                                        <span class="ht-meta">by {{ $video->user->username }}</span>
                                     @endif
                                 </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $video->title }}</p>
-                                    <div class="flex items-center gap-3 mt-0.5">
-                                        <span class="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
-                                            <x-heroicon-m-eye class="w-3 h-3" /> {{ number_format($video->views_count) }}
-                                        </span>
-                                        <span class="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
-                                            <x-heroicon-m-hand-thumb-up class="w-3 h-3" /> {{ number_format($video->likes_count) }}
-                                        </span>
-                                        @if($video->user)
-                                            <span class="text-xs text-gray-400 dark:text-gray-500">by {{ $video->user->username }}</span>
-                                        @endif
-                                    </div>
-                                </div>
-                            </a>
-                        @endforeach
-                    </div>
+                            </div>
+                        </a>
+                    @endforeach
                 @else
                     <div class="p-8 text-center">
-                        <x-heroicon-m-video-camera class="w-10 h-10 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
-                        <p class="text-sm text-gray-500 dark:text-gray-400">No videos yet</p>
+                        <x-heroicon-m-video-camera class="w-10 h-10 mx-auto mb-2" style="color: rgba(255,255,255,0.15);" />
+                        <p style="font-size: 0.875rem; color: rgba(255,255,255,0.4);">No videos yet</p>
                     </div>
                 @endif
             </div>
 
             {{-- Recent Uploads --}}
-            <div class="rounded-xl shadow-sm border border-gray-200 dark:border-gray-700/50 bg-white dark:bg-gray-800/50 overflow-hidden">
-                <div class="p-4 border-b border-gray-200 dark:border-gray-700/50 flex items-center justify-between">
-                    <h2 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <x-heroicon-m-clock class="w-4 h-4 text-blue-500" />
+            <div class="ht-list-card">
+                <div class="ht-list-header">
+                    <h2 class="ht-section-title">
+                        <x-heroicon-m-clock class="w-4 h-4" style="color: #3b82f6;" />
                         Recent Uploads
                     </h2>
-                    <a href="{{ route('filament.admin.resources.videos.index') }}" class="text-sm text-primary-500 hover:text-primary-400">Manage</a>
+                    <a href="{{ route('filament.admin.resources.videos.index') }}" class="ht-link">Manage</a>
                 </div>
                 @if($recentVideos->count())
-                    <div class="divide-y divide-gray-100 dark:divide-gray-700/50">
-                        @foreach($recentVideos as $video)
-                            <a href="{{ route('filament.admin.resources.videos.edit', $video) }}" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                                <div class="w-20 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0">
-                                    @if($video->thumbnail_url)
-                                        <img src="{{ $video->thumbnail_url }}" alt="{{ $video->title }}" class="w-full h-full object-cover" />
-                                    @endif
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ $video->title }}</p>
-                                    <div class="flex items-center gap-3 mt-0.5">
-                                        <span class="text-xs text-gray-400 dark:text-gray-500">{{ number_format($video->views_count) }} views</span>
-                                        <span class="text-xs text-gray-400 dark:text-gray-500">{{ $video->created_at->diffForHumans() }}</span>
-                                        <span class="text-xs px-1.5 py-0.5 rounded {{ $video->status === 'processed' ? 'bg-green-500/10 text-green-400' : ($video->status === 'failed' ? 'bg-red-500/10 text-red-400' : 'bg-yellow-500/10 text-yellow-400') }}">{{ $video->status }}</span>
-                                    </div>
-                                </div>
-                                @if($video->user)
-                                    <span class="text-xs text-gray-400 dark:text-gray-500 hidden sm:block">{{ $video->user->username }}</span>
+                    @foreach($recentVideos as $video)
+                        <a href="{{ route('filament.admin.resources.videos.edit', $video) }}" class="ht-list-row">
+                            <div class="ht-thumb">
+                                @if($video->thumbnail_url)
+                                    <img src="{{ $video->thumbnail_url }}" alt="{{ $video->title }}" />
                                 @endif
-                            </a>
-                        @endforeach
-                    </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="ht-title">{{ $video->title }}</p>
+                                <div class="flex items-center gap-3 mt-0.5">
+                                    <span class="ht-meta">{{ number_format($video->views_count) }} views</span>
+                                    <span class="ht-meta">{{ $video->created_at->diffForHumans() }}</span>
+                                    <span class="ht-badge" style="background: {{ $video->status === 'processed' ? 'rgba(34,197,94,0.1)' : ($video->status === 'failed' ? 'rgba(239,68,68,0.1)' : 'rgba(234,179,8,0.1)') }}; color: {{ $video->status === 'processed' ? '#22c55e' : ($video->status === 'failed' ? '#ef4444' : '#eab308') }};">{{ $video->status }}</span>
+                                </div>
+                            </div>
+                            @if($video->user)
+                                <span class="ht-meta hidden sm:block">{{ $video->user->username }}</span>
+                            @endif
+                        </a>
+                    @endforeach
                 @else
                     <div class="p-8 text-center">
-                        <x-heroicon-m-video-camera class="w-10 h-10 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
-                        <p class="text-sm text-gray-500 dark:text-gray-400">No videos uploaded yet</p>
+                        <x-heroicon-m-video-camera class="w-10 h-10 mx-auto mb-2" style="color: rgba(255,255,255,0.15);" />
+                        <p style="font-size: 0.875rem; color: rgba(255,255,255,0.4);">No videos uploaded yet</p>
                     </div>
                 @endif
             </div>
         </div>
 
         {{-- Recent Signups --}}
-        <div class="rounded-xl shadow-sm border border-gray-200 dark:border-gray-700/50 bg-white dark:bg-gray-800/50 overflow-hidden">
-            <div class="p-4 border-b border-gray-200 dark:border-gray-700/50 flex items-center justify-between">
-                <h2 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <x-heroicon-m-user-plus class="w-4 h-4 text-green-500" />
+        <div class="ht-list-card">
+            <div class="ht-list-header">
+                <h2 class="ht-section-title">
+                    <x-heroicon-m-user-plus class="w-4 h-4" style="color: #22c55e;" />
                     Recent Signups
                 </h2>
-                <a href="{{ route('filament.admin.resources.users.index') }}" class="text-sm text-primary-500 hover:text-primary-400">View All</a>
+                <a href="{{ route('filament.admin.resources.users.index') }}" class="ht-link">View All</a>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 dark:divide-gray-700/50">
+            <div class="grid grid-cols-1 sm:grid-cols-5" style="border-top: none;">
                 @foreach($recentUsers as $user)
-                    <a href="{{ route('filament.admin.resources.users.edit', $user) }}" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                        <div class="w-8 h-8 rounded-full bg-primary-500/10 flex items-center justify-center shrink-0">
+                    <a href="{{ route('filament.admin.resources.users.edit', $user) }}" class="ht-list-row" style="border-right: 1px solid rgba(255,255,255,0.05);">
+                        <div class="ht-avatar" style="background: rgba(var(--primary-400), 0.1);">
                             @if($user->avatar)
                                 <img src="{{ $user->avatar }}" class="w-8 h-8 rounded-full object-cover" />
                             @else
-                                <span class="text-xs font-bold text-primary-500">{{ strtoupper(substr($user->username, 0, 2)) }}</span>
+                                <span style="color: rgb(var(--primary-400));">{{ strtoupper(substr($user->username, 0, 2)) }}</span>
                             @endif
                         </div>
                         <div class="min-w-0">
-                            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ $user->username }}</p>
-                            <p class="text-xs text-gray-400 dark:text-gray-500">{{ $user->created_at->diffForHumans() }}</p>
+                            <p class="ht-title">{{ $user->username }}</p>
+                            <p class="ht-meta">{{ $user->created_at->diffForHumans() }}</p>
                         </div>
                     </a>
                 @endforeach

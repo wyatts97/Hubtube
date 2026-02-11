@@ -166,15 +166,15 @@ const getIconColor = (navKey) => {
 };
 
 const navigation = computed(() => [
-    { name: 'Home', href: localizedUrl('/'), icon: Home, key: 'home' },
-    { name: 'Trending', href: localizedUrl('/trending'), icon: TrendingUp, key: 'trending' },
-    { name: 'Shorts', href: localizedUrl('/shorts'), icon: Zap, key: 'shorts' },
-    { name: 'Live', href: localizedUrl('/live'), icon: Radio, key: 'live' },
+    { name: t('nav.home') || 'Home', href: localizedUrl('/'), icon: Home, key: 'home' },
+    { name: t('nav.trending') || 'Trending', href: localizedUrl('/trending'), icon: TrendingUp, key: 'trending' },
+    { name: t('nav.shorts') || 'Shorts', href: localizedUrl('/shorts'), icon: Zap, key: 'shorts' },
+    { name: t('nav.live') || 'Live', href: localizedUrl('/live'), icon: Radio, key: 'live' },
 ]);
 
 const libraryNav = computed(() => [
-    { name: 'Playlists', href: '/playlists', icon: ListVideo, key: 'playlists' },
-    { name: 'History', href: '/history', icon: History, key: 'history' },
+    { name: t('nav.playlists') || 'Playlists', href: '/playlists', icon: ListVideo, key: 'playlists' },
+    { name: t('nav.history') || 'History', href: '/history', icon: History, key: 'history' },
 ]);
 
 const handleSearch = () => {
@@ -499,7 +499,7 @@ const toggleSidebar = () => {
 
                 <template v-if="user && !sidebarCollapsed">
                     <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
-                        <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">Library</h3>
+                        <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">{{ t('nav.library') || 'Library' }}</h3>
                         <ul class="space-y-1">
                             <li v-for="item in libraryNav" :key="item.name">
                                 <Link :href="item.href" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
@@ -629,7 +629,7 @@ const toggleSidebar = () => {
                         </div>
 
                         <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
-                            <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">Library</h3>
+                            <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">{{ t('nav.library') || 'Library' }}</h3>
                             <ul class="space-y-1">
                                 <li v-for="item in libraryNav" :key="item.name">
                                     <Link :href="item.href" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
