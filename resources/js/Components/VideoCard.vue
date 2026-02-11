@@ -3,8 +3,10 @@ import { Link, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import { timeAgo as timeAgoFn, formatViews } from '@/Composables/useFormatters';
 import { useOptimizedImage } from '@/Composables/useOptimizedImage';
+import { useI18n } from '@/Composables/useI18n';
 
 const { thumbnailProps, avatarProps } = useOptimizedImage();
+const { localizedUrl } = useI18n();
 const page = usePage();
 
 const props = defineProps({
@@ -25,7 +27,7 @@ const videoUrl = computed(() => {
     if (props.video.is_short) {
         return `/shorts/${props.video.id}`;
     }
-    return `/${props.video.slug}`;
+    return localizedUrl(`/${props.video.slug}`);
 });
 
 const formattedViews = computed(() => formatViews(props.video.views_count));
@@ -108,7 +110,7 @@ const onPreviewLoad = () => { previewLoaded.value = true; };
             
         </div>
         <div class="flex gap-3 mt-3">
-            <Link v-if="showAvatar && video.user" :href="`/channel/${video.user.username}`" class="shrink-0">
+            <Link v-if="showAvatar && video.user" :href="localizedUrl(`/channel/${video.user.username}`)" class="shrink-0">
                 <div class="w-9 h-9 avatar">
                     <img v-if="video.user.avatar" v-bind="avatarProps(video.user.avatar, 36)" :alt="video.user.username || video.user.name" class="w-full h-full object-cover" />
                     <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-sm font-medium">
@@ -125,7 +127,7 @@ const onPreviewLoad = () => { previewLoaded.value = true; };
             </div>
             <div class="flex-1 min-w-0">
                 <h3 class="font-medium leading-tight" :class="`line-clamp-${vc.titleLines || 2}`" :style="titleStyle">{{ video.title }}</h3>
-                <Link v-if="showUploader && video.user" :href="`/channel/${video.user.username}`" class="mt-1 block" :style="{ ...metaStyle, color: uploaderColor }">
+                <Link v-if="showUploader && video.user" :href="localizedUrl(`/channel/${video.user.username}`)" class="mt-1 block" :style="{ ...metaStyle, color: uploaderColor }">
                     {{ video.user.username }}
                     <span v-if="video.user.is_verified" class="inline-block ml-1">✓</span>
                 </Link>

@@ -146,13 +146,20 @@ class TranslationController extends Controller
             return response()->json(['error' => 'Invalid locale'], 422);
         }
 
-        session(['locale' => $locale]);
+        $defaultLocale = TranslationService::getDefaultLocale();
+
+        if ($locale === $defaultLocale) {
+            // Switching back to default — clear session so unprefixed URLs work
+            session()->forget('locale');
+            $redirect = url('/');
+        } else {
+            session(['locale' => $locale]);
+            $redirect = url("/{$locale}");
+        }
 
         return response()->json([
             'locale' => $locale,
-            'redirect' => $locale === TranslationService::getDefaultLocale()
-                ? url('/')
-                : url("/{$locale}"),
+            'redirect' => $redirect,
         ]);
     }
 }

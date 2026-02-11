@@ -11,12 +11,14 @@ import {
 import { useTheme } from '@/Composables/useTheme';
 import { useToast } from '@/Composables/useToast';
 import { useFetch } from '@/Composables/useFetch';
+import { useI18n } from '@/Composables/useI18n';
 import ToastContainer from '@/Components/ToastContainer.vue';
 import AgeVerificationModal from '@/Components/AgeVerificationModal.vue';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
 
 const toast = useToast();
 const { get, post } = useFetch();
+const { localizedUrl, t, isTranslated } = useI18n();
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
@@ -89,7 +91,7 @@ const markAllRead = async () => {
 
 const handleMobileSearch = () => {
     if (mobileSearchQuery.value.trim()) {
-        window.location.href = `/search?q=${encodeURIComponent(mobileSearchQuery.value)}`;
+        window.location.href = `${localizedUrl('/search')}?q=${encodeURIComponent(mobileSearchQuery.value)}`;
         showMobileSearch.value = false;
     }
 };
@@ -163,21 +165,21 @@ const getIconColor = (navKey) => {
     return 'var(--color-text-secondary)';
 };
 
-const navigation = [
-    { name: 'Home', href: '/', icon: Home, key: 'home' },
-    { name: 'Trending', href: '/trending', icon: TrendingUp, key: 'trending' },
-    { name: 'Shorts', href: '/shorts', icon: Zap, key: 'shorts' },
-    { name: 'Live', href: '/live', icon: Radio, key: 'live' },
-];
+const navigation = computed(() => [
+    { name: 'Home', href: localizedUrl('/'), icon: Home, key: 'home' },
+    { name: 'Trending', href: localizedUrl('/trending'), icon: TrendingUp, key: 'trending' },
+    { name: 'Shorts', href: localizedUrl('/shorts'), icon: Zap, key: 'shorts' },
+    { name: 'Live', href: localizedUrl('/live'), icon: Radio, key: 'live' },
+]);
 
-const libraryNav = [
+const libraryNav = computed(() => [
     { name: 'Playlists', href: '/playlists', icon: ListVideo, key: 'playlists' },
     { name: 'History', href: '/history', icon: History, key: 'history' },
-];
+]);
 
 const handleSearch = () => {
     if (searchQuery.value.trim()) {
-        window.location.href = `/search?q=${encodeURIComponent(searchQuery.value)}`;
+        window.location.href = `${localizedUrl('/search')}?q=${encodeURIComponent(searchQuery.value)}`;
     }
 };
 
@@ -735,15 +737,12 @@ const toggleSidebar = () => {
 
 <style scoped>
 .sidebar-expanded {
-    width: fit-content;
-    min-width: 120px;
-    max-width: 180px;
-    padding-right: 0.75rem;
+    width: 160px;
 }
 
 @media (min-width: 1024px) {
     .lg\:pl-sidebar {
-        padding-left: 140px;
+        padding-left: 160px;
     }
 }
 </style>

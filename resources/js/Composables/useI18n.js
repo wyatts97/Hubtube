@@ -1,52 +1,33 @@
-import { ref, computed, watch } from 'vue';
-import { usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { usePage, router } from '@inertiajs/vue3';
 
 /**
  * Lightweight i18n composable for HubTube.
  *
- * Usage:
- *   const { t } = useI18n();
- *   t('nav.home')        // → "Home"
- *   t('video.views', { count: 5 })  // → "5 views"
+ * Translations are loaded server-side via Inertia shared props (page.props.locale.translations).
+ * This is the proven Laravel + Inertia pattern — no client-side JSON loading needed.
  *
- * Locale is synced with the server via Inertia props (page.props.locale).
- * Switching language navigates to /{locale}/ prefix URL for SEO.
+ * Usage:
+ *   const { t, localizedUrl } = useI18n();
+ *   t('nav.home')                    // → "Inicio" (if locale is es)
+ *   t('video.views', { count: 5 })   // → "5 vistas"
+ *   localizedUrl('/trending')         // → "/es/trending"
  */
 
 const RTL_LOCALES = ['ar', 'he'];
 
-const currentLocale = ref('en');
-const messages = ref({});
-const loaded = ref(false);
-
-// Cache loaded locale files
-const cache = {};
-
-async function loadLocale(code) {
-    if (cache[code]) {
-        messages.value = cache[code];
-        return;
-    }
-    try {
-        const mod = await import(`../i18n/${code}.json`);
-        cache[code] = mod.default || mod;
-        messages.value = cache[code];
-    } catch {
-        // Fallback to English if locale file not found
-        if (code !== 'en') {
-            await loadLocale('en');
-        }
-    }
-}
-
 export function useI18n() {
     const page = usePage();
 
-    // Sync locale from server-side Inertia props
-    const serverLocale = computed(() => page.props.locale?.current || 'en');
+    // All locale data comes from server-side Inertia shared props
+    const locale = computed(() => page.props.locale?.current || 'en');
     const defaultLocale = computed(() => page.props.locale?.default || 'en');
     const enabledLanguages = computed(() => page.props.locale?.languages || {});
     const isTranslationEnabled = computed(() => page.props.locale?.enabled || false);
+    const localePrefix = computed(() => page.props.locale?.prefix || '');
+    const translations = computed(() => page.props.locale?.translations || {});
+    const isTranslated = computed(() => locale.value !== defaultLocale.value);
+    const localeDir = computed(() => RTL_LOCALES.includes(locale.value) ? 'rtl' : 'ltr');
 
     // Build supportedLocales array from server data
     const supportedLocales = computed(() => {
@@ -58,30 +39,19 @@ export function useI18n() {
         }));
     });
 
-    // Sync with server locale on mount and changes
-    if (serverLocale.value !== currentLocale.value) {
-        currentLocale.value = serverLocale.value;
-        loadLocale(currentLocale.value).then(() => { loaded.value = true; });
-    } else if (!loaded.value) {
-        loadLocale(currentLocale.value).then(() => { loaded.value = true; });
+    // Set document lang/dir attributes reactively
+    if (typeof document !== 'undefined') {
+        document.documentElement.lang = locale.value;
+        document.documentElement.dir = localeDir.value;
     }
-
-    watch(serverLocale, (newLocale) => {
-        if (newLocale !== currentLocale.value) {
-            currentLocale.value = newLocale;
-            loadLocale(newLocale);
-            document.documentElement.lang = newLocale;
-            document.documentElement.dir = RTL_LOCALES.includes(newLocale) ? 'rtl' : 'ltr';
-        }
-    });
 
     /**
      * Translate a dot-notation key, with optional interpolation.
-     * Falls back to the key itself if not found.
+     * Falls back to the key itself if not found (which shows the English text in templates).
      */
     const t = (key, params = {}) => {
         const parts = key.split('.');
-        let value = messages.value;
+        let value = translations.value;
         for (const part of parts) {
             if (value && typeof value === 'object' && part in value) {
                 value = value[part];
@@ -96,7 +66,10 @@ export function useI18n() {
     };
 
     /**
-     * Switch language via server-side locale change (navigates to /{locale}/ URL).
+     * Switch language.
+     * Sets the locale in the session via POST, then navigates to the locale-prefixed
+     * version of the current page. Uses full page reload to ensure all server-side
+     * data (translations, locale prefix) is refreshed.
      */
     const setLocale = async (code) => {
         try {
@@ -110,30 +83,29 @@ export function useI18n() {
             });
             const data = await response.json();
             if (data.redirect) {
+                // Full reload to pick up new server-side translations
                 window.location.href = data.redirect;
             }
         } catch (e) {
-            // Fallback: client-side only switch
-            currentLocale.value = code;
-            document.documentElement.lang = code;
-            document.documentElement.dir = RTL_LOCALES.includes(code) ? 'rtl' : 'ltr';
-            await loadLocale(code);
+            // Fallback: navigate to locale home
+            const target = code === defaultLocale.value ? '/' : `/${code}`;
+            window.location.href = target;
         }
     };
 
-    const locale = computed(() => currentLocale.value);
-    const localeDir = computed(() => RTL_LOCALES.includes(currentLocale.value) ? 'rtl' : 'ltr');
-    const isTranslated = computed(() => currentLocale.value !== defaultLocale.value);
-
     /**
      * Build a localized URL path.
+     * Prepends the locale prefix (e.g. "/es") to internal paths.
+     * Skips API, admin, and livewire routes.
      */
     const localizedUrl = (path) => {
         if (!isTranslated.value) return path;
         if (path.startsWith('/api/') || path.startsWith('/admin') || path.startsWith('/livewire')) {
             return path;
         }
-        return `/${currentLocale.value}${path}`;
+        // For root path "/", just return the prefix (e.g. "/es" not "/es/")
+        if (path === '/') return localePrefix.value || '/';
+        return `${localePrefix.value}${path}`;
     };
 
     return {
@@ -144,8 +116,8 @@ export function useI18n() {
         isTranslated,
         isTranslationEnabled,
         setLocale,
-        loaded,
         localizedUrl,
+        localePrefix,
         supportedLocales,
         enabledLanguages,
     };

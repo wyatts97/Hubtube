@@ -10,6 +10,9 @@ import ShortsCarousel from '@/Components/ShortsCarousel.vue';
 import { Loader2 } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
 import { sanitizeHtml } from '@/Composables/useSanitize';
+import { useI18n } from '@/Composables/useI18n';
+
+const { t, localizedUrl } = useI18n();
 
 // Initial loading state for skeleton display
 const isInitialLoad = ref(true);
@@ -123,9 +126,9 @@ const shouldShowAd = (index, totalLength) => {
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold flex items-center gap-2" style="color: var(--color-text-primary);">
                     <span class="w-3 h-3 rounded-full animate-pulse" style="background-color: var(--color-accent);"></span>
-                    Live Now
+                    {{ t('home.live_now') || 'Live Now' }}
                 </h2>
-                <a href="/live" class="text-sm font-medium" style="color: var(--color-accent);">View All</a>
+                <a :href="localizedUrl('/live')" class="text-sm font-medium" style="color: var(--color-accent);">{{ t('common.view_all') || 'View All' }}</a>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 <LiveStreamCard v-for="stream in liveStreams" :key="stream.id" :stream="stream" />
@@ -138,7 +141,7 @@ const shouldShowAd = (index, totalLength) => {
         <!-- Featured Videos -->
         <section v-if="featuredVideos.length > 0 || isInitialLoad" class="mb-8">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold" style="color: var(--color-text-primary);">Featured</h2>
+                <h2 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ t('home.featured') || 'Featured' }}</h2>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 <template v-if="isInitialLoad">
@@ -153,8 +156,8 @@ const shouldShowAd = (index, totalLength) => {
         <!-- Latest Videos -->
         <section class="mb-8">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold" style="color: var(--color-text-primary);">Latest Videos</h2>
-                <a href="/videos" class="text-sm font-medium" style="color: var(--color-accent);">View All</a>
+                <h2 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ t('home.latest') || 'Latest Videos' }}</h2>
+                <a :href="localizedUrl('/videos')" class="text-sm font-medium" style="color: var(--color-accent);">{{ t('common.view_all') || 'View All' }}</a>
             </div>
             
             <!-- Skeleton Loading State -->
@@ -181,10 +184,10 @@ const shouldShowAd = (index, totalLength) => {
                 <div ref="loadMoreTrigger" class="flex justify-center py-8">
                     <div v-if="loading" class="flex items-center gap-2" style="color: var(--color-text-secondary);">
                         <Loader2 class="w-5 h-5 animate-spin" />
-                        <span>Loading more videos...</span>
+                        <span>{{ t('home.loading_more') || 'Loading more videos...' }}</span>
                     </div>
                     <p v-else-if="!hasMore && videos.length > 0" class="text-sm" style="color: var(--color-text-muted);">
-                        You've reached the end
+                        {{ t('home.reached_end') || "You've reached the end" }}
                     </p>
                 </div>
             </template>
@@ -215,8 +218,8 @@ const shouldShowAd = (index, totalLength) => {
         <!-- Popular Videos -->
         <section v-if="popularVideos.length > 0 || isInitialLoad" class="mb-8">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold" style="color: var(--color-text-primary);">Popular</h2>
-                <a href="/trending" class="text-sm font-medium" style="color: var(--color-accent);">View All</a>
+                <h2 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ t('home.popular') || 'Popular' }}</h2>
+                <a :href="localizedUrl('/trending')" class="text-sm font-medium" style="color: var(--color-accent);">{{ t('common.view_all') || 'View All' }}</a>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 <template v-if="isInitialLoad">

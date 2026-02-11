@@ -181,12 +181,27 @@ class HandleInertiaRequests extends Middleware
     protected function getLocaleData(): array
     {
         try {
+            $currentLocale = App::getLocale();
+            $defaultLocale = TranslationService::getDefaultLocale();
             $enabledLanguages = TranslationService::getEnabledLanguages();
+            $isTranslated = $currentLocale !== $defaultLocale;
+
+            // Load UI translations from JSON file for current locale
+            $translations = [];
+            if ($isTranslated) {
+                $file = resource_path("js/i18n/{$currentLocale}.json");
+                if (file_exists($file)) {
+                    $translations = json_decode(file_get_contents($file), true) ?: [];
+                }
+            }
+
             return [
-                'current' => App::getLocale(),
-                'default' => TranslationService::getDefaultLocale(),
+                'current' => $currentLocale,
+                'default' => $defaultLocale,
                 'languages' => $enabledLanguages,
                 'enabled' => count($enabledLanguages) > 1,
+                'prefix' => $isTranslated ? "/{$currentLocale}" : '',
+                'translations' => $translations,
             ];
         } catch (\Exception $e) {
             return [
@@ -194,6 +209,8 @@ class HandleInertiaRequests extends Middleware
                 'default' => 'en',
                 'languages' => ['en' => ['name' => 'English', 'native' => 'English', 'flag' => '🇺🇸']],
                 'enabled' => false,
+                'prefix' => '',
+                'translations' => [],
             ];
         }
     }

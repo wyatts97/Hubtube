@@ -13,24 +13,36 @@ class SetLocale
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $locale = $request->route('locale');
-        $defaultLocale = TranslationService::getDefaultLocale();
+        try {
+            $defaultLocale = TranslationService::getDefaultLocale();
+        } catch (\Exception $e) {
+            // DB may not be available yet (install, migrations)
+            return $next($request);
+        }
 
-        if ($locale && TranslationService::isValidLocale($locale) && $locale !== $defaultLocale) {
-            App::setLocale($locale);
-            // Store in session for persistence
-            session(['locale' => $locale]);
+        // 1. Check if this is a locale-prefixed route (e.g. /es/trending)
+        $routeLocale = $request->route('locale');
+
+        if ($routeLocale && TranslationService::isValidLocale($routeLocale) && $routeLocale !== $defaultLocale) {
+            // URL has an explicit locale prefix — use it and persist to session
+            App::setLocale($routeLocale);
+            session(['locale' => $routeLocale]);
         } else {
-            // Check session/cookie for returning users
-            $sessionLocale = session('locale', $defaultLocale);
-            if ($sessionLocale !== $defaultLocale && TranslationService::isValidLocale($sessionLocale)) {
+            // 2. No locale prefix in URL — check session for persisted locale
+            $sessionLocale = session('locale');
+
+            if ($sessionLocale && $sessionLocale !== $defaultLocale && TranslationService::isValidLocale($sessionLocale)) {
                 App::setLocale($sessionLocale);
             } else {
                 App::setLocale($defaultLocale);
+                // Clear stale session locale if it was set to default
+                if ($sessionLocale === $defaultLocale) {
+                    session()->forget('locale');
+                }
             }
         }
 
-        // Set URL defaults so route() helper includes locale prefix
+        // 3. Set URL defaults so route() helper includes locale prefix
         $currentLocale = App::getLocale();
         if ($currentLocale !== $defaultLocale) {
             URL::defaults(['locale' => $currentLocale]);
