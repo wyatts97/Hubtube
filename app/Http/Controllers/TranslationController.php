@@ -159,13 +159,45 @@ class TranslationController extends Controller
             }
         }
 
+        // Translate video slug if the current path is a video page
+        $translatedPath = $currentPath;
+        $knownRoutes = ['/', '/trending', '/shorts', '/search', '/videos', '/live', '/contact',
+            '/categories', '/playlists', '/history', '/settings', '/dashboard', '/upload',
+            '/login', '/register', '/feed', '/notifications'];
+        $pathSegments = explode('/', ltrim($currentPath, '/'));
+
+        if (count($pathSegments) === 1 && $pathSegments[0] !== '' && !in_array($currentPath, $knownRoutes)) {
+            // Single-segment path that isn't a known route — likely a video slug
+            $slug = $pathSegments[0];
+            $video = Video::where('slug', $slug)->first();
+
+            // If not found by original slug, try finding by translated slug (user might already be on a translated URL)
+            if (!$video) {
+                $videoId = $this->translationService->findByTranslatedSlug(Video::class, $slug, app()->getLocale());
+                if ($videoId) {
+                    $video = Video::find($videoId);
+                }
+            }
+
+            if ($video) {
+                if ($locale === $defaultLocale) {
+                    // Switching back to default — use original slug
+                    $translatedPath = "/{$video->slug}";
+                } else {
+                    // Get translated slug for target locale
+                    $translatedSlug = $this->translationService->getTranslatedSlug(Video::class, $video->id, $locale);
+                    $translatedPath = '/' . ($translatedSlug ?: $video->slug);
+                }
+            }
+        }
+
         if ($locale === $defaultLocale) {
             // Switching back to default — clear session so unprefixed URLs work
             session()->forget('locale');
-            $redirect = url($currentPath);
+            $redirect = url($translatedPath);
         } else {
             session(['locale' => $locale]);
-            $redirect = url("/{$locale}" . ($currentPath === '/' ? '' : $currentPath));
+            $redirect = url("/{$locale}" . ($translatedPath === '/' ? '' : $translatedPath));
         }
 
         return response()->json([
