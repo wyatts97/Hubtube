@@ -37,12 +37,10 @@
         .ht-list-row:hover { opacity: 0.85; }
         .ht-label { font-size: 0.75rem; color: rgba(255,255,255,0.45); }
         .ht-value { font-size: 1.125rem; font-weight: 700; color: #fff; }
-        .ht-value-sm { font-size: 1rem; font-weight: 700; color: #fff; }
         .ht-sub { font-size: 0.75rem; color: rgba(255,255,255,0.35); margin-top: 0.5rem; }
         .ht-title { font-size: 0.875rem; font-weight: 500; color: rgba(255,255,255,0.9); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .ht-meta { font-size: 0.75rem; color: rgba(255,255,255,0.4); display: flex; align-items: center; gap: 0.25rem; }
         .ht-icon-box { width: 2.5rem; height: 2.5rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .ht-icon-box-sm { width: 2.25rem; height: 2.25rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .ht-thumb { width: 5rem; height: 3rem; border-radius: 0.5rem; overflow: hidden; flex-shrink: 0; background: rgba(255,255,255,0.05); }
         .ht-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .ht-rank { font-size: 1.125rem; font-weight: 700; width: 1.5rem; text-align: center; color: rgba(255,255,255,0.25); }
@@ -51,12 +49,48 @@
         .ht-link { font-size: 0.875rem; color: rgb(var(--primary-400)); }
         .ht-link:hover { color: rgb(var(--primary-300)); }
         .ht-avatar { width: 2rem; height: 2rem; border-radius: 9999px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; }
+
+        /* Stats grid: 2 cols mobile, 3 cols desktop */
+        .ht-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+        @media (min-width: 640px) {
+            .ht-stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.75rem;
+            }
+        }
+
+        /* Signups grid: 1 col mobile, 5 cols desktop */
+        .ht-signups-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+        @media (min-width: 640px) {
+            .ht-signups-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+
+        /* List grid: stacked on mobile, side-by-side on desktop */
+        .ht-lists-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+        @media (min-width: 1024px) {
+            .ht-lists-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
     </style>
 
     <div class="space-y-6">
 
-        {{-- Primary Stats Grid --}}
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+        {{-- Stats Grid: 3x3 on desktop, 2x2 on mobile --}}
+        <div class="ht-stats-grid">
             {{-- Total Users --}}
             <a href="{{ route('filament.admin.resources.users.index') }}" class="ht-stat-card block">
                 <div class="flex items-center gap-3">
@@ -126,19 +160,16 @@
                 </div>
                 <p class="ht-sub">+{{ $playlists7d }} this week</p>
             </div>
-        </div>
 
-        {{-- Secondary Stats Row --}}
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             {{-- Live Now --}}
             <a href="{{ route('filament.admin.resources.live-streams.index') }}" class="ht-stat-card block">
                 <div class="flex items-center gap-3">
-                    <div class="ht-icon-box-sm" style="background: rgba(239,68,68,0.15);">
-                        <x-heroicon-m-signal class="w-4 h-4" style="color: {{ $liveNow > 0 ? '#ef4444' : 'rgba(239,68,68,0.4)' }};" />
+                    <div class="ht-icon-box" style="background: rgba(239,68,68,0.15);">
+                        <x-heroicon-m-signal class="w-5 h-5" style="color: {{ $liveNow > 0 ? '#ef4444' : 'rgba(239,68,68,0.4)' }};" />
                     </div>
-                    <div>
-                        <p class="ht-label">Live Now</p>
-                        <p class="ht-value-sm">{{ $liveNow }}</p>
+                    <div class="min-w-0">
+                        <p class="ht-label truncate">Live Now</p>
+                        <p class="ht-value">{{ $liveNow }}</p>
                     </div>
                 </div>
             </a>
@@ -146,12 +177,12 @@
             {{-- Storage --}}
             <div class="ht-stat-card">
                 <div class="flex items-center gap-3">
-                    <div class="ht-icon-box-sm" style="background: rgba(6,182,212,0.15);">
-                        <x-heroicon-m-server-stack class="w-4 h-4" style="color: #06b6d4;" />
+                    <div class="ht-icon-box" style="background: rgba(6,182,212,0.15);">
+                        <x-heroicon-m-server-stack class="w-5 h-5" style="color: #06b6d4;" />
                     </div>
-                    <div>
-                        <p class="ht-label">Storage</p>
-                        <p class="ht-value-sm">{{ \App\Filament\Pages\Dashboard::formatBytes($totalSize) }}</p>
+                    <div class="min-w-0">
+                        <p class="ht-label truncate">Storage</p>
+                        <p class="ht-value">{{ \App\Filament\Pages\Dashboard::formatBytes($totalSize) }}</p>
                     </div>
                 </div>
             </div>
@@ -159,12 +190,12 @@
             {{-- Processing --}}
             <div class="ht-stat-card">
                 <div class="flex items-center gap-3">
-                    <div class="ht-icon-box-sm" style="background: rgba(99,102,241,0.15);">
-                        <x-heroicon-m-cog-6-tooth class="w-4 h-4 {{ $processingCount > 0 ? 'animate-spin' : '' }}" style="color: {{ $processingCount > 0 ? '#6366f1' : 'rgba(99,102,241,0.4)' }};" />
+                    <div class="ht-icon-box" style="background: rgba(99,102,241,0.15);">
+                        <x-heroicon-m-cog-6-tooth class="w-5 h-5 {{ $processingCount > 0 ? 'animate-spin' : '' }}" style="color: {{ $processingCount > 0 ? '#6366f1' : 'rgba(99,102,241,0.4)' }};" />
                     </div>
                     <div class="min-w-0">
-                        <p class="ht-label">Processing</p>
-                        <p class="ht-value-sm">
+                        <p class="ht-label truncate">Processing</p>
+                        <p class="ht-value">
                             @if($processingCount > 0)
                                 {{ $processingCount }} Encoding
                             @else
@@ -184,19 +215,20 @@
             {{-- Comments --}}
             <a href="{{ route('filament.admin.resources.comments.index') }}" class="ht-stat-card block">
                 <div class="flex items-center gap-3">
-                    <div class="ht-icon-box-sm" style="background: rgba(234,179,8,0.15);">
-                        <x-heroicon-m-chat-bubble-left-right class="w-4 h-4" style="color: #eab308;" />
+                    <div class="ht-icon-box" style="background: rgba(234,179,8,0.15);">
+                        <x-heroicon-m-chat-bubble-left-right class="w-5 h-5" style="color: #eab308;" />
                     </div>
-                    <div>
-                        <p class="ht-label">Comments</p>
-                        <p class="ht-value-sm">{{ number_format($totalComments) }}</p>
+                    <div class="min-w-0">
+                        <p class="ht-label truncate">Comments</p>
+                        <p class="ht-value">{{ number_format($totalComments) }}</p>
                     </div>
                 </div>
+                <p class="ht-sub">+{{ $comments7d }} this week</p>
             </a>
         </div>
 
         {{-- Two Column Layout: Trending + Recent Uploads (side by side on desktop) --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="ht-lists-grid">
 
             {{-- Trending Videos --}}
             <div class="ht-list-card">
@@ -288,7 +320,7 @@
                 </h2>
                 <a href="{{ route('filament.admin.resources.users.index') }}" class="ht-link">View All</a>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-5" style="border-top: none;">
+            <div class="ht-signups-grid" style="border-top: none;">
                 @foreach($recentUsers as $user)
                     <a href="{{ route('filament.admin.resources.users.edit', $user) }}" class="ht-list-row" style="border-right: 1px solid rgba(255,255,255,0.05);">
                         <div class="ht-avatar" style="background: rgba(var(--primary-400), 0.1);">
