@@ -30,10 +30,10 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->darkMode(true, true)
             ->colors([
                 'primary' => Color::Rose,
             ])
-            ->darkMode(true)
             ->userMenuItems([
                 MenuItem::make()
                     ->label('View Site')

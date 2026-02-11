@@ -11,7 +11,7 @@
     </form>
 
     {{-- ── Video Ad Creatives Management ── --}}
-    <div class="mt-10 bg-gray-800 border border-gray-700 rounded-xl p-6">
+    <div class="mt-10 rounded-xl border border-gray-700 bg-gray-800/50 p-6">
         <div class="flex items-center justify-between mb-4">
             <div>
                 <h2 class="text-xl font-bold text-white">Video Ad Creatives</h2>
@@ -152,7 +152,7 @@
         @endif
 
         {{-- Ads Table --}}
-        <div class="overflow-x-auto rounded-xl border border-gray-700 bg-gray-900">
+        <div class="overflow-x-auto rounded-xl border border-gray-700 bg-gray-900/80">
             <table class="w-full text-sm">
                 <thead class="bg-gray-800">
                     <tr>

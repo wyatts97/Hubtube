@@ -15,7 +15,7 @@
     </form>
 
     {{-- Translation Overrides Section --}}
-    <div class="mt-10 bg-gray-800 border border-gray-700 rounded-xl p-6">
+    <div class="mt-10 rounded-xl border border-gray-700 bg-gray-800/50 p-6">
         <div class="flex items-center justify-between mb-4">
             <div>
                 <h2 class="text-lg font-bold text-white">Translation Overrides</h2>
@@ -27,7 +27,7 @@
         </div>
 
         {{-- Add/Edit Override Form --}}
-        <div class="p-4 rounded-xl border border-gray-700 bg-gray-800/50 mb-6">
+        <div class="p-4 rounded-xl border border-gray-700 bg-gray-900 mb-6">
             <h3 class="text-sm font-semibold text-white mb-3">
                 {{ $editingOverrideId ? '✏️ Edit Override' : '➕ Add New Override' }}
             </h3>
@@ -94,7 +94,7 @@
 
         {{-- Overrides Table --}}
         @if($this->overrides->count() > 0)
-            <div class="overflow-x-auto rounded-xl border border-gray-700 bg-gray-900">
+            <div class="overflow-x-auto rounded-xl border border-gray-700 bg-gray-900/80">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-800">
                         <tr>
