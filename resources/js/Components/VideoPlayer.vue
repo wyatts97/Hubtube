@@ -387,6 +387,11 @@ watch(() => props.hlsPlaylist, () => {
     background: var(--color-accent, #ef4444);
 }
 
+.video-player-wrapper .plyr__menu__container .plyr__control[role=menuitemradio]::after {
+    left: 12px;
+    transform: translateX(-50%) translateY(-50%);
+}
+
 .plyr-video {
     width: 100%;
     height: 100%;
