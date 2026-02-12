@@ -17,6 +17,7 @@ import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff, Eye, ListVideo, Plus
 
 const props = defineProps({
     video: Object,
+    translatedTags: { type: Array, default: null },
     relatedVideos: Array,
     userLike: String,
     isSubscribed: Boolean,
@@ -551,13 +552,13 @@ const getRelatedTitle = (video) => {
                         <!-- Tags -->
                         <div v-if="video.tags && video.tags.length" class="flex flex-wrap items-center gap-1.5">
                             <Link
-                                v-for="tag in video.tags"
+                                v-for="(tag, idx) in video.tags"
                                 :key="tag"
                                 :href="localizedUrl(`/tag/${encodeURIComponent(tag)}`)"
                                 class="inline-flex items-center gap-0.5 text-sm hover:opacity-80 transition-opacity"
                                 style="color: var(--color-text-muted);"
                             >
-                                <Hash class="w-3 h-3" /><span>{{ tag }}</span>
+                                <Hash class="w-3 h-3" /><span>{{ translatedTags?.[idx] || tag }}</span>
                             </Link>
                         </div>
                     </div>

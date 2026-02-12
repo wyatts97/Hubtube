@@ -7,8 +7,10 @@ use App\Models\LiveStream;
 use App\Models\Setting;
 use App\Models\Video;
 use App\Services\SeoService;
+use App\Services\TranslationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -230,6 +232,19 @@ class HomeController extends Controller
                 return $category;
             });
 
+        $locale = App::getLocale();
+        $defaultLocale = TranslationService::getDefaultLocale();
+
+        if ($locale !== $defaultLocale) {
+            $translationService = app(TranslationService::class);
+            $categories->transform(function ($category) use ($translationService, $locale) {
+                $category->name = $translationService->translateField(
+                    Category::class, $category->id, 'name', $category->name, $locale
+                );
+                return $category;
+            });
+        }
+
         return Inertia::render('Categories/Index', [
             'categories' => $categories,
         ]);
@@ -246,8 +261,27 @@ class HomeController extends Controller
             ->latest('published_at')
             ->paginate(24);
 
+        $locale = App::getLocale();
+        $defaultLocale = TranslationService::getDefaultLocale();
+        $translatedName = null;
+        $translatedDescription = null;
+
+        if ($locale !== $defaultLocale) {
+            $translationService = app(TranslationService::class);
+            $translatedName = $translationService->translateField(
+                Category::class, $category->id, 'name', $category->name, $locale
+            );
+            if ($category->description) {
+                $translatedDescription = $translationService->translateField(
+                    Category::class, $category->id, 'description', $category->description, $locale
+                );
+            }
+        }
+
         return Inertia::render('Categories/Show', [
             'category' => $category,
+            'translatedName' => $translatedName,
+            'translatedDescription' => $translatedDescription,
             'videos' => $videos,
             'seo' => $this->seoService->forCategory($category),
         ]);
@@ -276,8 +310,18 @@ class HomeController extends Controller
             ->latest('published_at')
             ->paginate(24);
 
+        $locale = App::getLocale();
+        $defaultLocale = TranslationService::getDefaultLocale();
+        $translatedTag = null;
+
+        if ($locale !== $defaultLocale) {
+            $translationService = app(TranslationService::class);
+            $translatedTag = $translationService->translateText($tag, $locale, $defaultLocale);
+        }
+
         return Inertia::render('Tags/Show', [
             'tag' => $tag,
+            'translatedTag' => $translatedTag,
             'videos' => $videos,
             'seo' => $this->seoService->forTag($tag),
         ]);

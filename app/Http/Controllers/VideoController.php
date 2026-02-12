@@ -9,10 +9,12 @@ use App\Models\Category;
 use App\Models\Setting;
 use App\Services\SeoService;
 use App\Services\StorageManager;
+use App\Services\TranslationService;
 use App\Services\VideoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -162,8 +164,22 @@ class VideoController extends Controller
                 ->each(fn ($p) => $p->has_video = (bool) $p->has_video);
         }
 
+        // Translate tags for non-default locales
+        $translatedTags = null;
+        $locale = App::getLocale();
+        $defaultLocale = TranslationService::getDefaultLocale();
+
+        if ($locale !== $defaultLocale && !empty($video->tags)) {
+            $translationService = app(TranslationService::class);
+            $translatedTags = array_map(
+                fn (string $tag) => $translationService->translateText($tag, $locale, $defaultLocale),
+                $video->tags
+            );
+        }
+
         return Inertia::render('Videos/Show', [
             'video' => $video,
+            'translatedTags' => $translatedTags,
             'relatedVideos' => $relatedVideos,
             'userLike' => auth()->check() 
                 ? $video->likes()->where('user_id', auth()->id())->first()?->type 

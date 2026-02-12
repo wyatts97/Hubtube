@@ -338,12 +338,18 @@
         "send": "Enviar Mensaje",
         "success": "¡Mensaje enviado exitosamente!"
     },
+    "tags": {
+        "title": "Etiquetas",
+        "no_videos": "No hay videos con esta etiqueta aún",
+        "video_count": "{count} videos"
+    },
     "categories": {
         "title": "Categorías",
         "all": "Todas las Categorías",
         "no_videos": "No hay videos en esta categoría",
         "browse": "Explorar videos por categoría",
-        "no_categories": "Aún no hay categorías"
+        "no_categories": "Aún no hay categorías",
+        "video_count": "{count} videos"
     },
     "live": {
         "title": "Transmisiones en Vivo",

@@ -6,16 +6,21 @@ import VideoCard from '@/Components/VideoCard.vue';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 
-const { t } = useI18n();
+const { t, localizedUrl } = useI18n();
 
 const props = defineProps({
     category: Object,
+    translatedName: { type: String, default: null },
+    translatedDescription: { type: String, default: null },
     videos: Object,
     seo: { type: Object, default: () => ({}) },
 });
 
+const displayName = props.translatedName || props.category.name;
+const displayDescription = props.translatedDescription || props.category.description;
+
 const goToPage = (pageNum) => {
-    router.get(`/category/${props.category.slug}`, { page: pageNum }, { preserveState: true, preserveScroll: false });
+    router.get(localizedUrl(`/category/${props.category.slug}`), { page: pageNum }, { preserveState: true, preserveScroll: false });
 };
 </script>
 
@@ -25,11 +30,15 @@ const goToPage = (pageNum) => {
     <AppLayout>
         <div class="mb-6">
             <div class="flex items-center gap-2 mb-1">
-                <Link href="/categories" class="text-sm hover:opacity-80" style="color: var(--color-accent);">{{ t('categories.title') || 'Categories' }}</Link>
+                <Link :href="localizedUrl('/categories')" class="text-sm hover:opacity-80" style="color: var(--color-accent);">{{ t('categories.title') || 'Categories' }}</Link>
                 <span style="color: var(--color-text-muted);">/</span>
             </div>
-            <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ category.name }}</h1>
-            <p v-if="category.description" class="text-sm mt-1" style="color: var(--color-text-muted);">{{ category.description }}</p>
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ displayName }}</h1>
+                <span class="text-sm" style="color: var(--color-text-muted);">•</span>
+                <span class="text-sm" style="color: var(--color-text-muted);">{{ t('categories.video_count', { count: videos.total || 0 }) || `${videos.total || 0} videos` }}</span>
+            </div>
+            <p v-if="displayDescription" class="text-sm mt-1" style="color: var(--color-text-muted);">{{ displayDescription }}</p>
         </div>
 
         <div v-if="videos.data?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

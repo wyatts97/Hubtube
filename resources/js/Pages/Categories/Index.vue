@@ -5,7 +5,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import { Folder } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 
-const { t } = useI18n();
+const { t, localizedUrl } = useI18n();
 
 const props = defineProps({
     categories: Array,
@@ -35,7 +35,7 @@ const titleStyle = computed(() => ({
             <Link
                 v-for="category in categories"
                 :key="category.id"
-                :href="`/category/${category.slug}`"
+                :href="localizedUrl(`/category/${category.slug}`)"
                 class="group relative rounded-xl overflow-hidden cursor-pointer"
                 style="aspect-ratio: 16/9;"
             >

@@ -6,16 +6,19 @@ import VideoCard from '@/Components/VideoCard.vue';
 import { ChevronLeft, ChevronRight, Hash } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 
-const { t } = useI18n();
+const { t, localizedUrl } = useI18n();
 
 const props = defineProps({
     tag: String,
+    translatedTag: { type: String, default: null },
     videos: Object,
     seo: { type: Object, default: () => ({}) },
 });
 
+const displayTag = props.translatedTag || props.tag;
+
 const goToPage = (pageNum) => {
-    router.get(`/tag/${props.tag}`, { page: pageNum }, { preserveState: true, preserveScroll: false });
+    router.get(localizedUrl(`/tag/${props.tag}`), { page: pageNum }, { preserveState: true, preserveScroll: false });
 };
 </script>
 
@@ -24,11 +27,15 @@ const goToPage = (pageNum) => {
 
     <AppLayout>
         <div class="mb-6">
-            <div class="flex items-center gap-2">
-                <Hash class="w-6 h-6" style="color: var(--color-accent);" />
-                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">#{{ tag }}</h1>
+            <div class="flex items-center gap-2 mb-1">
+                <Link :href="localizedUrl('/tags')" class="text-sm hover:opacity-80" style="color: var(--color-accent);">{{ t('tags.title') || 'Tags' }}</Link>
+                <span style="color: var(--color-text-muted);">/</span>
             </div>
-            <p class="text-sm mt-1" style="color: var(--color-text-muted);">{{ videos.total || 0 }} videos with this tag</p>
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ displayTag }}</h1>
+                <span class="text-sm" style="color: var(--color-text-muted);">•</span>
+                <span class="text-sm" style="color: var(--color-text-muted);">{{ t('tags.video_count', { count: videos.total || 0 }) || `${videos.total || 0} videos` }}</span>
+            </div>
         </div>
 
         <div v-if="videos.data?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -37,7 +44,7 @@ const goToPage = (pageNum) => {
 
         <div v-else class="text-center py-12">
             <Hash class="w-12 h-12 mx-auto mb-3" style="color: var(--color-text-muted);" />
-            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('common.no_videos_found') || 'No videos with this tag yet' }}</p>
+            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('tags.no_videos') || 'No videos with this tag yet' }}</p>
         </div>
 
         <!-- Pagination -->

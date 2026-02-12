@@ -338,12 +338,18 @@
         "send": "Send Message",
         "success": "Message sent successfully!"
     },
+    "tags": {
+        "title": "Tags",
+        "no_videos": "No videos with this tag yet",
+        "video_count": "{count} videos"
+    },
     "categories": {
         "title": "Categories",
         "all": "All Categories",
         "no_videos": "No videos in this category",
         "browse": "Browse videos by category",
-        "no_categories": "No categories yet"
+        "no_categories": "No categories yet",
+        "video_count": "{count} videos"
     },
     "live": {
         "title": "Live Streams",
