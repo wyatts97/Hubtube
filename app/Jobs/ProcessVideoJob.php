@@ -308,18 +308,33 @@ class ProcessVideoJob implements ShouldQueue
         $videoInfo = $this->getVideoInfo($inputPath);
         $this->video->update(['duration' => $videoInfo['duration']]);
 
-        // Ensure original file is browser-seekable (moov atom at start)
-        $this->applyFaststartToOriginal($inputPath);
-
-        $this->generateThumbnails($inputPath, $videoDir);
-        
-        // Generate animated preview if enabled
-        if (Setting::get('animated_previews_enabled', true)) {
-            $this->generateAnimatedPreview($inputPath, $videoDir, $videoInfo['duration']);
+        // Ensure original file is browser-seekable (moov atom at start).
+        // Skip on retry — faststart is idempotent but wastes time re-muxing.
+        $faststartMarker = "{$videoDir}/.faststart_done";
+        if (!file_exists($faststartMarker)) {
+            $this->applyFaststartToOriginal($inputPath);
+            file_put_contents($faststartMarker, now()->toIso8601String());
         }
 
-        // Generate scrubber preview sprite sheet + VTT for Plyr
-        $this->generateScrubberPreviews($inputPath, $videoDir, $videoInfo['duration']);
+        // Skip thumbnail generation on retry if thumbnails already exist
+        $slugTitle = $this->getSluggedTitle();
+        if (!file_exists("{$videoDir}/{$slugTitle}_thumb_0.jpg")) {
+            $this->generateThumbnails($inputPath, $videoDir);
+        }
+        
+        // Generate animated preview if enabled (skip if already exists)
+        if (Setting::get('animated_previews_enabled', true)) {
+            $previewFile = "{$videoDir}/{$slugTitle}_preview.webp";
+            if (!file_exists($previewFile) || filesize($previewFile) === 0) {
+                $this->generateAnimatedPreview($inputPath, $videoDir, $videoInfo['duration']);
+            }
+        }
+
+        // Generate scrubber preview sprite sheet + VTT for Plyr (skip if VTT exists)
+        $vttFile = "{$videoDir}/scrubber.vtt";
+        if (!file_exists($vttFile)) {
+            $this->generateScrubberPreviews($inputPath, $videoDir, $videoInfo['duration']);
+        }
 
         // If watermarking is enabled, apply watermark to the original file ONCE.
         // All lower-quality encodes will use this watermarked file as input,
@@ -347,12 +362,26 @@ class ProcessVideoJob implements ShouldQueue
                 $enabledResolutions = json_decode($enabledResolutions, true) ?? ['360p', '480p', '720p'];
             }
             
-            // Build list of qualities to transcode
+            // Build list of qualities to transcode — only encode to resolutions
+            // strictly LOWER than the source. Never upscale or side-scale to a
+            // quality that's essentially the same as the original.
             $targetQualities = [];
+            $skippedQualities = [];
             foreach ($allQualities as $quality => $settings) {
-                if (in_array($quality, $enabledResolutions) && $videoInfo['height'] >= $settings['height']) {
+                if (!in_array($quality, $enabledResolutions)) continue;
+                if ($videoInfo['height'] > $settings['height']) {
                     $targetQualities[$quality] = $settings;
+                } else {
+                    $skippedQualities[] = $quality;
                 }
+            }
+
+            if (!empty($skippedQualities)) {
+                Log::info('Skipped qualities (source height not greater than target)', [
+                    'video_id' => $this->video->id,
+                    'source_height' => $videoInfo['height'],
+                    'skipped' => $skippedQualities,
+                ]);
             }
 
             if (!empty($targetQualities)) {
