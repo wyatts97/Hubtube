@@ -85,17 +85,15 @@ class SiteSettings extends Page implements HasForms
             'watermark_text_enabled' => Setting::get('watermark_text_enabled', false),
             'watermark_text' => Setting::get('watermark_text', ''),
             'watermark_text_font' => Setting::get('watermark_text_font', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'),
-            'watermark_text_color' => Setting::get('watermark_text_color', '#ffffff'),
+            'watermark_text_color' => Setting::get('watermark_text_color', 'white'),
             'watermark_text_size' => Setting::get('watermark_text_size', 24),
             'watermark_text_opacity' => Setting::get('watermark_text_opacity', 70),
             'watermark_text_padding' => Setting::get('watermark_text_padding', 10),
-            'watermark_text_position' => Setting::get('watermark_text_position', 'bottom-right'),
-            'watermark_text_x' => Setting::get('watermark_text_x', ''),
-            'watermark_text_y' => Setting::get('watermark_text_y', ''),
+            'watermark_text_position' => Setting::get('watermark_text_position', 'top'),
             'watermark_text_scroll_enabled' => Setting::get('watermark_text_scroll_enabled', false),
             'watermark_text_scroll_speed' => Setting::get('watermark_text_scroll_speed', 5),
             'watermark_text_scroll_interval' => Setting::get('watermark_text_scroll_interval', 0),
-            'watermark_text_scroll_duration' => Setting::get('watermark_text_scroll_duration', 10),
+            'watermark_text_scroll_start_delay' => Setting::get('watermark_text_scroll_start_delay', 0),
             'watermark_test_video' => Setting::get('watermark_test_video', ''),
             'video_auto_approve' => Setting::get('video_auto_approve', false),
             'comments_enabled' => Setting::get('comments_enabled', true),
@@ -170,9 +168,8 @@ class SiteSettings extends Page implements HasForms
             'watermark_text_enabled', 'watermark_text', 'watermark_text_font',
             'watermark_text_color', 'watermark_text_size', 'watermark_text_opacity',
             'watermark_text_padding', 'watermark_text_position',
-            'watermark_text_x', 'watermark_text_y',
             'watermark_text_scroll_enabled', 'watermark_text_scroll_speed',
-            'watermark_text_scroll_interval', 'watermark_text_scroll_duration',
+            'watermark_text_scroll_interval', 'watermark_text_scroll_start_delay',
         ];
         foreach ($watermarkKeys as $key) {
             if (array_key_exists($key, $data)) {
@@ -634,74 +631,114 @@ class SiteSettings extends Page implements HasForms
                                             ->schema([
                                                 Textarea::make('watermark_text')
                                                     ->label('Watermark Text')
-                                                    ->rows(2),
-                                                TextInput::make('watermark_text_font')
-                                                    ->label('Font File Path')
-                                                    ->placeholder('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'),
-                                                TextInput::make('watermark_text_color')
+                                                    ->rows(2)
+                                                    ->columnSpanFull(),
+                                                Select::make('watermark_text_font')
+                                                    ->label('Font')
+                                                    ->options(fn () => WatermarkService::getSystemFonts())
+                                                    ->searchable()
+                                                    ->allowHtml()
+                                                    ->getOptionLabelUsing(fn ($value) => WatermarkService::getSystemFonts()[$value] ?? basename($value))
+                                                    ->helperText('Select a font installed on the server'),
+                                                Select::make('watermark_text_color')
                                                     ->label('Text Color')
-                                                    ->placeholder('#ffffff'),
+                                                    ->options(function () {
+                                                        $colors = WatermarkService::getColorOptions();
+                                                        $result = [];
+                                                        foreach ($colors as $value => $label) {
+                                                            $swatch = '<span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:' . $value . ';border:1px solid #555;vertical-align:middle;margin-right:6px"></span>';
+                                                            $result[$value] = $swatch . $label;
+                                                        }
+                                                        return $result;
+                                                    })
+                                                    ->allowHtml()
+                                                    ->default('white'),
                                                 TextInput::make('watermark_text_size')
-                                                    ->label('Text Size')
+                                                    ->label('Base Text Size')
                                                     ->numeric()
                                                     ->minValue(8)
-                                                    ->maxValue(128),
+                                                    ->maxValue(128)
+                                                    ->default(24)
+                                                    ->helperText('Base size at 720p. Automatically scales for other resolutions.'),
                                                 TextInput::make('watermark_text_opacity')
                                                     ->label('Text Opacity')
                                                     ->numeric()
                                                     ->minValue(0)
                                                     ->maxValue(100)
-                                                    ->suffix('%'),
+                                                    ->suffix('%')
+                                                    ->default(70)
+                                                    ->helperText('0 = invisible, 100 = fully opaque'),
                                                 TextInput::make('watermark_text_padding')
-                                                    ->label('Text Padding')
+                                                    ->label('Edge Padding')
                                                     ->numeric()
                                                     ->minValue(0)
-                                                    ->maxValue(100)
-                                                    ->suffix('px'),
+                                                    ->maxValue(200)
+                                                    ->suffix('px')
+                                                    ->default(10)
+                                                    ->helperText('Distance from the edge of the video'),
                                                 Select::make('watermark_text_position')
                                                     ->label('Text Position')
-                                                    ->options([
-                                                        'top-left' => 'Top Left',
-                                                        'top-center' => 'Top Center',
-                                                        'top-right' => 'Top Right',
-                                                        'center-left' => 'Center Left',
-                                                        'center' => 'Center',
-                                                        'center-right' => 'Center Right',
-                                                        'bottom-left' => 'Bottom Left',
-                                                        'bottom-center' => 'Bottom Center',
-                                                        'bottom-right' => 'Bottom Right',
-                                                    ]),
-                                                TextInput::make('watermark_text_x')
-                                                    ->label('Custom Text X')
-                                                    ->placeholder('Optional (e.g., 20 or w-text_w-20)'),
-                                                TextInput::make('watermark_text_y')
-                                                    ->label('Custom Text Y')
-                                                    ->placeholder('Optional (e.g., 20 or h-text_h-20)'),
+                                                    ->options(function ($get) {
+                                                        if ($get('watermark_text_scroll_enabled')) {
+                                                            return [
+                                                                'top' => 'Top',
+                                                                'middle' => 'Middle',
+                                                                'bottom' => 'Bottom',
+                                                            ];
+                                                        }
+                                                        return [
+                                                            'top-left' => 'Top Left',
+                                                            'top-center' => 'Top Center',
+                                                            'top-right' => 'Top Right',
+                                                            'center-left' => 'Center Left',
+                                                            'center' => 'Center',
+                                                            'center-right' => 'Center Right',
+                                                            'bottom-left' => 'Bottom Left',
+                                                            'bottom-center' => 'Bottom Center',
+                                                            'bottom-right' => 'Bottom Right',
+                                                        ];
+                                                    })
+                                                    ->reactive(),
                                                 Toggle::make('watermark_text_scroll_enabled')
                                                     ->label('Enable Scrolling Text')
-                                                    ->reactive(),
+                                                    ->helperText('Text scrolls horizontally across the video')
+                                                    ->reactive()
+                                                    ->afterStateUpdated(function ($state, $set, $get) {
+                                                        $pos = $get('watermark_text_position');
+                                                        if ($state) {
+                                                            $map = [
+                                                                'top-left' => 'top', 'top-center' => 'top', 'top-right' => 'top',
+                                                                'center-left' => 'middle', 'center' => 'middle', 'center-right' => 'middle',
+                                                                'bottom-left' => 'bottom', 'bottom-center' => 'bottom', 'bottom-right' => 'bottom',
+                                                            ];
+                                                            $set('watermark_text_position', $map[$pos] ?? 'top');
+                                                        } else {
+                                                            $map = ['top' => 'top-center', 'middle' => 'center', 'bottom' => 'bottom-center'];
+                                                            $set('watermark_text_position', $map[$pos] ?? $pos);
+                                                        }
+                                                    }),
                                                 TextInput::make('watermark_text_scroll_speed')
                                                     ->label('Scroll Speed (px/frame)')
                                                     ->numeric()
                                                     ->minValue(1)
                                                     ->maxValue(50)
                                                     ->default(5)
-                                                    ->helperText('Pixels the text moves per frame. Higher = faster scroll. Reference: 5 is a good default at 30fps.')
+                                                    ->helperText('Pixels the text moves per frame. 2-3 = slow, 5 = normal, 10+ = fast.')
                                                     ->visible(fn ($get) => $get('watermark_text_scroll_enabled')),
                                                 TextInput::make('watermark_text_scroll_interval')
                                                     ->label('Scroll Interval (sec)')
                                                     ->numeric()
                                                     ->minValue(0)
                                                     ->default(0)
-                                                    ->helperText('Show the text every N seconds. 0 = always visible (continuous scroll).')
+                                                    ->helperText('Repeat the scroll every N seconds. 0 = continuous (always scrolling).')
                                                     ->visible(fn ($get) => $get('watermark_text_scroll_enabled')),
-                                                TextInput::make('watermark_text_scroll_duration')
-                                                    ->label('Visible Duration (sec)')
+                                                TextInput::make('watermark_text_scroll_start_delay')
+                                                    ->label('Start Delay (sec)')
                                                     ->numeric()
-                                                    ->minValue(1)
-                                                    ->default(10)
-                                                    ->helperText('How many seconds the text stays visible each interval.')
-                                                    ->visible(fn ($get) => $get('watermark_text_scroll_enabled') && $get('watermark_text_scroll_interval') > 0),
+                                                    ->minValue(0)
+                                                    ->default(0)
+                                                    ->helperText('Seconds into the video before the watermark first appears. 0 = starts immediately.')
+                                                    ->visible(fn ($get) => $get('watermark_text_scroll_enabled')),
                                             ])
                                             ->columns(2)
                                             ->visible(fn ($get) => $get('watermark_text_enabled'))

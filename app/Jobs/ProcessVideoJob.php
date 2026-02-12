@@ -795,83 +795,62 @@ class ProcessVideoJob implements ShouldQueue
         $text = $this->escapeDrawtextValue((string) Setting::get('watermark_text', ''));
         $font = $this->escapeDrawtextValue((string) Setting::get('watermark_text_font', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'));
         $size = (int) Setting::get('watermark_text_size', 24);
-        $color = (string) Setting::get('watermark_text_color', '#ffffff');
+        $color = (string) Setting::get('watermark_text_color', 'white');
         $opacity = (int) Setting::get('watermark_text_opacity', 70) / 100;
         $padding = (int) Setting::get('watermark_text_padding', 10);
-        $position = (string) Setting::get('watermark_text_position', 'bottom-right');
-        $customX = trim((string) Setting::get('watermark_text_x', ''));
-        $customY = trim((string) Setting::get('watermark_text_y', ''));
+        $position = (string) Setting::get('watermark_text_position', 'top');
 
         $scrollEnabled = (bool) Setting::get('watermark_text_scroll_enabled', false);
         $scrollSpeed = (int) Setting::get('watermark_text_scroll_speed', 5);
         $scrollInterval = (int) Setting::get('watermark_text_scroll_interval', 0);
-        $scrollDuration = (int) Setting::get('watermark_text_scroll_duration', 10);
+        $scrollStartDelay = (int) Setting::get('watermark_text_scroll_start_delay', 0);
 
-        $positions = [
-            'top-left' => [
-                'x' => $padding,
-                'y' => $padding,
-            ],
-            'top-center' => [
-                'x' => '(w-text_w)/2',
-                'y' => $padding,
-            ],
-            'top-right' => [
-                'x' => "w-text_w-{$padding}",
-                'y' => $padding,
-            ],
-            'center-left' => [
-                'x' => $padding,
-                'y' => '(h-text_h)/2',
-            ],
-            'center' => [
-                'x' => '(w-text_w)/2',
-                'y' => '(h-text_h)/2',
-            ],
-            'center-right' => [
-                'x' => "w-text_w-{$padding}",
-                'y' => '(h-text_h)/2',
-            ],
-            'bottom-left' => [
-                'x' => $padding,
-                'y' => "h-text_h-{$padding}",
-            ],
-            'bottom-center' => [
-                'x' => '(w-text_w)/2',
-                'y' => "h-text_h-{$padding}",
-            ],
-            'bottom-right' => [
-                'x' => "w-text_w-{$padding}",
-                'y' => "h-text_h-{$padding}",
-            ],
-        ];
+        // Responsive font size: scale relative to video height (base = 720p)
+        $scaledSize = max(12, (int) round($size * $videoHeight / 720));
 
-        $pos = $positions[$position] ?? $positions['bottom-right'];
-        $x = $customX !== '' ? $customX : $pos['x'];
-        $y = $customY !== '' ? $customY : $pos['y'];
-
-        // Frame-based horizontal scroll: x=(mod(speed*n\,w+tw)-tw)
-        // Commas inside expressions must be backslash-escaped.
         if ($scrollEnabled) {
+            $yPositions = [
+                'top' => $padding,
+                'middle' => '(h-text_h)/2',
+                'bottom' => "h-text_h-{$padding}",
+            ];
+            $y = $yPositions[$position] ?? $yPositions['top'];
             $x = "(mod({$scrollSpeed}*n\\,w+tw)-tw)";
+        } else {
+            $positions = [
+                'top-left' => ['x' => $padding, 'y' => $padding],
+                'top-center' => ['x' => '(w-text_w)/2', 'y' => $padding],
+                'top-right' => ['x' => "w-text_w-{$padding}", 'y' => $padding],
+                'center-left' => ['x' => $padding, 'y' => '(h-text_h)/2'],
+                'center' => ['x' => '(w-text_w)/2', 'y' => '(h-text_h)/2'],
+                'center-right' => ['x' => "w-text_w-{$padding}", 'y' => '(h-text_h)/2'],
+                'bottom-left' => ['x' => $padding, 'y' => "h-text_h-{$padding}"],
+                'bottom-center' => ['x' => '(w-text_w)/2', 'y' => "h-text_h-{$padding}"],
+                'bottom-right' => ['x' => "w-text_w-{$padding}", 'y' => "h-text_h-{$padding}"],
+            ];
+            $pos = $positions[$position] ?? $positions['bottom-right'];
+            $x = $pos['x'];
+            $y = $pos['y'];
         }
 
-        // Convert hex color to FFmpeg named color or 0x format.
-        // # is unsafe in shell double-quoted strings, so use 0xRRGGBB instead.
-        $fontColor = $this->convertColor($color, $opacity);
+        // Color with opacity (e.g. white@0.8)
+        $fontColor = !str_contains($color, '@') ? $color . '@' . $opacity : $color;
 
-        // Interval timing: show for $scrollDuration seconds every $scrollInterval seconds.
-        // Commas inside expressions must be backslash-escaped.
+        // Enable expression for interval + start delay
         $enable = '';
-        if ($scrollEnabled && $scrollInterval > 0 && $scrollDuration > 0) {
-            $enable = ":enable=lt(mod(t\\,{$scrollInterval})\\,{$scrollDuration})";
+        if ($scrollEnabled && $scrollInterval > 0) {
+            if ($scrollStartDelay > 0) {
+                $enable = ":enable=gte(t\\,{$scrollStartDelay})*lt(mod(t-{$scrollStartDelay}\\,{$scrollInterval})\\,{$scrollInterval})";
+            }
+        } elseif ($scrollEnabled && $scrollStartDelay > 0) {
+            $enable = ":enable=gte(t\\,{$scrollStartDelay})";
         }
 
         $parts = [
             "drawtext=fontfile={$font}",
             "text={$text}",
             "expansion=normal",
-            "fontsize={$size}",
+            "fontsize={$scaledSize}",
             "fontcolor={$fontColor}",
             "shadowx=2",
             "shadowy=2",
@@ -880,37 +859,6 @@ class ProcessVideoJob implements ShouldQueue
         ];
 
         return implode(':', $parts) . $enable;
-    }
-
-    protected function convertColor(string $color, float $opacity): string
-    {
-        $colorMap = [
-            '#ffffff' => 'white',
-            '#000000' => 'black',
-            '#ff0000' => 'red',
-            '#00ff00' => 'green',
-            '#0000ff' => 'blue',
-            '#ffff00' => 'yellow',
-            '#ff00ff' => 'magenta',
-            '#00ffff' => 'cyan',
-            '#808080' => 'gray',
-        ];
-
-        $lower = strtolower($color);
-
-        if (isset($colorMap[$lower])) {
-            return $colorMap[$lower] . '@' . $opacity;
-        }
-
-        if (str_starts_with($lower, '#')) {
-            return '0x' . substr($lower, 1) . '@' . $opacity;
-        }
-
-        if (!str_contains($color, '@')) {
-            return $color . '@' . $opacity;
-        }
-
-        return $color;
     }
 
     protected function escapeDrawtextValue(string $value): string
