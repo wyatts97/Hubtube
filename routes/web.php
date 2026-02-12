@@ -55,6 +55,44 @@ Route::get('/robots.txt', function () {
 // Offline page for PWA
 Route::get('/offline', fn () => view('offline'))->name('offline');
 
+// Stream watermark preview/test videos with Range request support (php artisan serve doesn't support Range)
+Route::get('/admin/watermark-stream/{file}', function (string $file) {
+    $allowed = ['watermark_preview.mp4'];
+    // Also allow ULID-named uploaded test videos
+    if (!in_array($file, $allowed) && !preg_match('/^[0-9A-Z]{26}\.(mp4|webm|mov|avi|mkv)$/i', $file)) {
+        abort(404);
+    }
+    $path = storage_path('app/public/watermarks/' . $file);
+    if (!file_exists($path)) {
+        abort(404);
+    }
+    $size = filesize($path);
+    $mime = 'video/mp4';
+    $headers = [
+        'Content-Type' => $mime,
+        'Accept-Ranges' => 'bytes',
+        'Content-Length' => $size,
+    ];
+    $request = request();
+    if ($request->header('Range')) {
+        $range = $request->header('Range');
+        if (preg_match('/bytes=(\d+)-(\d*)/', $range, $m)) {
+            $start = (int) $m[1];
+            $end = $m[2] !== '' ? (int) $m[2] : $size - 1;
+            $end = min($end, $size - 1);
+            $length = $end - $start + 1;
+            $headers['Content-Range'] = "bytes {$start}-{$end}/{$size}";
+            $headers['Content-Length'] = $length;
+            $stream = fopen($path, 'rb');
+            fseek($stream, $start);
+            $data = fread($stream, $length);
+            fclose($stream);
+            return response($data, 206, $headers);
+        }
+    }
+    return response()->file($path, $headers);
+})->where('file', '.+')->name('admin.watermark-stream');
+
 // Thumbnail proxy for embedded video thumbnails
 Route::get('/api/thumb-proxy', [ThumbnailProxyController::class, 'proxy'])->name('thumb.proxy');
 
