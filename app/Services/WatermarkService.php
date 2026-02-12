@@ -56,6 +56,29 @@ class WatermarkService
         return $fonts;
     }
 
+    public static function getSpeedOptions(): array
+    {
+        return [
+            'very_slow' => 'Very Slow',
+            'slow' => 'Slow',
+            'medium' => 'Medium',
+            'fast' => 'Fast',
+            'very_fast' => 'Very Fast',
+        ];
+    }
+
+    public static function getSpeedPps(string $speed): int
+    {
+        return match ($speed) {
+            'very_slow' => 40,
+            'slow' => 80,
+            'medium' => 150,
+            'fast' => 300,
+            'very_fast' => 500,
+            default => 150,
+        };
+    }
+
     public static function getColorOptions(): array
     {
         return [
@@ -178,7 +201,7 @@ class WatermarkService
         $position = (string) Setting::get('watermark_text_position', 'top');
 
         $scrollEnabled = (bool) Setting::get('watermark_text_scroll_enabled', false);
-        $scrollSpeed = (int) Setting::get('watermark_text_scroll_speed', 5);
+        $scrollSpeed = (string) Setting::get('watermark_text_scroll_speed', 'medium');
         $scrollInterval = (int) Setting::get('watermark_text_scroll_interval', 0);
         $scrollStartDelay = (int) Setting::get('watermark_text_scroll_start_delay', 0);
 
@@ -200,9 +223,8 @@ class WatermarkService
             ];
             $y = $yPositions[$position] ?? $yPositions['top'];
 
-            // Time-based scrolling using t (seconds).
-            // speed setting = px/frame at 30fps, so pixels_per_second = speed * 30.
-            $pps = $scrollSpeed * 30;
+            // Convert speed name to pixels per second.
+            $pps = static::getSpeedPps($scrollSpeed);
 
             if ($scrollInterval > 0) {
                 // INTERVAL MODE: text enters from right edge every $interval seconds.

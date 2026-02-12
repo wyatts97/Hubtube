@@ -91,7 +91,7 @@ class SiteSettings extends Page implements HasForms
             'watermark_text_padding' => Setting::get('watermark_text_padding', 10),
             'watermark_text_position' => Setting::get('watermark_text_position', 'top'),
             'watermark_text_scroll_enabled' => Setting::get('watermark_text_scroll_enabled', false),
-            'watermark_text_scroll_speed' => Setting::get('watermark_text_scroll_speed', 5),
+            'watermark_text_scroll_speed' => Setting::get('watermark_text_scroll_speed', 'medium'),
             'watermark_text_scroll_interval' => Setting::get('watermark_text_scroll_interval', 0),
             'watermark_text_scroll_start_delay' => Setting::get('watermark_text_scroll_start_delay', 0),
             'watermark_test_video' => Setting::get('watermark_test_video', ''),
@@ -717,13 +717,11 @@ class SiteSettings extends Page implements HasForms
                                                             $set('watermark_text_position', $map[$pos] ?? $pos);
                                                         }
                                                     }),
-                                                TextInput::make('watermark_text_scroll_speed')
-                                                    ->label('Scroll Speed (px/frame)')
-                                                    ->numeric()
-                                                    ->minValue(1)
-                                                    ->maxValue(50)
-                                                    ->default(5)
-                                                    ->helperText('Pixels the text moves per frame. 2-3 = slow, 5 = normal, 10+ = fast.')
+                                                Select::make('watermark_text_scroll_speed')
+                                                    ->label('Scroll Speed')
+                                                    ->options(WatermarkService::getSpeedOptions())
+                                                    ->default('medium')
+                                                    ->helperText('How fast the text scrolls across the video.')
                                                     ->visible(fn ($get) => $get('watermark_text_scroll_enabled')),
                                                 TextInput::make('watermark_text_scroll_interval')
                                                     ->label('Scroll Interval (sec)')

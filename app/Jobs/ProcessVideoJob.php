@@ -8,6 +8,7 @@ use App\Models\Video;
 use App\Services\FfmpegService;
 use App\Services\StorageManager;
 use App\Services\VideoService;
+use App\Services\WatermarkService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -801,7 +802,7 @@ class ProcessVideoJob implements ShouldQueue
         $position = (string) Setting::get('watermark_text_position', 'top');
 
         $scrollEnabled = (bool) Setting::get('watermark_text_scroll_enabled', false);
-        $scrollSpeed = (int) Setting::get('watermark_text_scroll_speed', 5);
+        $scrollSpeed = (string) Setting::get('watermark_text_scroll_speed', 'medium');
         $scrollInterval = (int) Setting::get('watermark_text_scroll_interval', 0);
         $scrollStartDelay = (int) Setting::get('watermark_text_scroll_start_delay', 0);
 
@@ -816,9 +817,8 @@ class ProcessVideoJob implements ShouldQueue
             ];
             $y = $yPositions[$position] ?? $yPositions['top'];
 
-            // Time-based scrolling using t (seconds).
-            // speed setting = px/frame at 30fps, so pixels_per_second = speed * 30.
-            $pps = $scrollSpeed * 30;
+            // Convert speed name to pixels per second.
+            $pps = WatermarkService::getSpeedPps($scrollSpeed);
 
             if ($scrollInterval > 0) {
                 // INTERVAL MODE: text enters from right edge every $interval seconds.
