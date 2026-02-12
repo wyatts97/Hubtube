@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 
 class Setting extends Model
 {
@@ -68,6 +69,54 @@ class Setting extends Model
         // Clear all settings cache
         Cache::forget(static::$cachePrefix . 'all');
         Cache::forget(static::$cachePrefix . 'public');
+    }
+
+    /**
+     * Store a setting value encrypted at rest.
+     * Use for sensitive credentials (SMTP passwords, API keys, secret keys).
+     */
+    public static function setEncrypted(string $key, mixed $value, string $group = 'general'): void
+    {
+        $encrypted = (!empty($value) && is_string($value)) ? Crypt::encryptString($value) : $value;
+
+        static::updateOrCreate(
+            ['key' => $key],
+            [
+                'value' => $encrypted,
+                'group' => $group,
+                'type' => 'encrypted',
+            ]
+        );
+
+        Cache::forget(static::$cachePrefix . $key);
+        Cache::forget(static::$cachePrefix . 'group:' . $group);
+        Cache::forget(static::$cachePrefix . 'all');
+        Cache::forget(static::$cachePrefix . 'public');
+    }
+
+    /**
+     * Retrieve a setting that was stored encrypted.
+     * Transparently decrypts the value. Returns $default if key not found or decryption fails.
+     */
+    public static function getDecrypted(string $key, mixed $default = ''): string
+    {
+        $setting = static::where('key', $key)->first();
+
+        if (!$setting || empty($setting->value)) {
+            return $default;
+        }
+
+        if ($setting->type === 'encrypted') {
+            try {
+                return Crypt::decryptString($setting->value);
+            } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+                // Value may have been stored before encryption was added — return raw
+                return (string) $setting->value;
+            }
+        }
+
+        // Backwards-compatible: return raw value if not yet encrypted
+        return (string) $setting->value;
     }
 
     protected static function castValue(mixed $value, string $type): mixed

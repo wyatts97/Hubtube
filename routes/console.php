@@ -12,3 +12,5 @@ Schedule::command('horizon:snapshot')->everyFiveMinutes();
 Schedule::command('queue:prune-batches --hours=48')->daily();
 Schedule::command('sanctum:prune-expired --hours=24')->daily();
 Schedule::command('videos:prune-deleted --days=30')->daily();
+Schedule::command('storage:cleanup')->daily();
+Schedule::command('uploads:cleanup-chunks --hours=24')->daily();

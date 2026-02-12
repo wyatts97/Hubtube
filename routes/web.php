@@ -210,6 +210,7 @@ Route::middleware('age.verified')->group(function () {
         Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password');
         Route::put('/settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications');
         Route::put('/settings/privacy', [SettingsController::class, 'updatePrivacy'])->name('settings.privacy');
+        Route::delete('/settings/account', [SettingsController::class, 'deleteAccount'])->name('settings.delete-account');
 
         // Notifications
         Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

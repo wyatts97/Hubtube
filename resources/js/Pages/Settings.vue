@@ -2,7 +2,7 @@
 import { Head, useForm, usePage, router } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { User, Lock, Bell, Shield, CreditCard, ExternalLink, Loader2, Camera, ImageIcon } from 'lucide-vue-next';
+import { User, Lock, Bell, Shield, CreditCard, ExternalLink, Loader2, Camera, ImageIcon, Trash2, AlertTriangle } from 'lucide-vue-next';
 import { usePushNotifications } from '@/Composables/usePushNotifications';
 import { useI18n } from '@/Composables/useI18n';
 
@@ -121,12 +121,29 @@ const upgradeToPro = () => {
     });
 };
 
+const showDeleteConfirm = ref(false);
+const deleteForm = useForm({
+    password: '',
+});
+
+const confirmDeleteAccount = () => {
+    deleteForm.delete('/settings/account', {
+        onSuccess: () => {
+            showDeleteConfirm.value = false;
+        },
+        onError: () => {
+            // keep modal open so user sees the error
+        },
+    });
+};
+
 const tabs = computed(() => [
     { id: 'profile', name: t('settings.profile') || 'Profile', icon: User },
     { id: 'password', name: t('settings.password') || 'Password', icon: Lock },
     { id: 'notifications', name: t('settings.notifications') || 'Notifications', icon: Bell },
     { id: 'privacy', name: t('settings.privacy') || 'Privacy', icon: Shield },
     { id: 'billing', name: t('settings.billing') || 'Billing', icon: CreditCard },
+    { id: 'danger', name: t('settings.danger_zone') || 'Danger Zone', icon: AlertTriangle },
 ]);
 </script>
 
@@ -463,8 +480,94 @@ const tabs = computed(() => [
                             </div>
                         </div>
                     </div>
+
+                    <!-- Danger Zone Tab -->
+                    <div v-if="activeTab === 'danger'" class="space-y-6">
+                        <div class="card p-6 border border-red-500/30">
+                            <div class="flex items-center gap-3 mb-4">
+                                <AlertTriangle class="w-5 h-5 text-red-500" />
+                                <h2 class="text-lg font-semibold text-red-500">{{ t('settings.danger_zone') || 'Danger Zone' }}</h2>
+                            </div>
+
+                            <div class="p-4 rounded-lg" style="background-color: var(--color-bg-secondary);">
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                    <div>
+                                        <p class="font-medium" style="color: var(--color-text-primary);">{{ t('settings.delete_account') || 'Delete Account' }}</p>
+                                        <p class="text-sm mt-1" style="color: var(--color-text-secondary);">
+                                            {{ t('settings.delete_account_desc') || 'Permanently delete your account, all videos, comments, and data. This action cannot be undone.' }}
+                                        </p>
+                                    </div>
+                                    <button
+                                        @click="showDeleteConfirm = true"
+                                        class="shrink-0 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                                    >
+                                        <Trash2 class="w-4 h-4" />
+                                        {{ t('settings.delete_account_btn') || 'Delete My Account' }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- Delete Account Confirmation Modal -->
+        <Teleport to="body">
+            <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showDeleteConfirm = false">
+                <div class="fixed inset-0 bg-black/60" @click="showDeleteConfirm = false"></div>
+                <div class="relative w-full max-w-md rounded-xl p-6 shadow-2xl" style="background-color: var(--color-bg-card);">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                            <AlertTriangle class="w-5 h-5 text-red-500" />
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold" style="color: var(--color-text-primary);">Are you sure?</h3>
+                            <p class="text-sm" style="color: var(--color-text-secondary);">This action is permanent and cannot be undone.</p>
+                        </div>
+                    </div>
+
+                    <p class="text-sm mb-4" style="color: var(--color-text-secondary);">
+                        All your videos, comments, playlists, subscriptions, and wallet balance will be permanently deleted.
+                        Enter your password to confirm.
+                    </p>
+
+                    <form @submit.prevent="confirmDeleteAccount">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Password</label>
+                            <input
+                                v-model="deleteForm.password"
+                                type="password"
+                                class="w-full px-3 py-2 rounded-lg border text-sm"
+                                style="background-color: var(--color-bg-secondary); border-color: var(--color-border); color: var(--color-text-primary);"
+                                placeholder="Enter your password"
+                                required
+                            />
+                            <p v-if="deleteForm.errors.password" class="text-red-500 text-sm mt-1">{{ deleteForm.errors.password }}</p>
+                        </div>
+
+                        <div class="flex gap-3 justify-end">
+                            <button
+                                type="button"
+                                @click="showDeleteConfirm = false; deleteForm.reset();"
+                                class="px-4 py-2 rounded-lg text-sm font-medium"
+                                style="color: var(--color-text-secondary); background-color: var(--color-bg-secondary);"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                :disabled="deleteForm.processing || !deleteForm.password"
+                                class="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                            >
+                                <Loader2 v-if="deleteForm.processing" class="w-4 h-4 animate-spin" />
+                                <Trash2 v-else class="w-4 h-4" />
+                                Delete Permanently
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </Teleport>
     </AppLayout>
 </template>

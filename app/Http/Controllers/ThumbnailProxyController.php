@@ -8,6 +8,22 @@ use Illuminate\Support\Facades\Http;
 
 class ThumbnailProxyController extends Controller
 {
+    /**
+     * Allowed domain suffixes for proxied thumbnails.
+     * Matching uses strict suffix check: host must equal or end with "." + domain.
+     */
+    protected const ALLOWED_DOMAINS = [
+        'xvideos-cdn.com',
+        'phncdn.com',
+        'xhamster.com',
+        'xhcdn.com',
+        'xnxx-cdn.com',
+        'redtube.com',
+        'ypncdn.com',
+        'eporner.com',
+        'rdtcdn.com',
+    ];
+
     public function proxy(Request $request)
     {
         $url = $request->query('url');
@@ -16,28 +32,22 @@ class ThumbnailProxyController extends Controller
             abort(400, 'Invalid URL');
         }
 
-        // Only allow image proxying from known domains
-        $allowedDomains = [
-            'img-cf.xvideos-cdn.com', 'img-hw.xvideos-cdn.com', 'img-l3.xvideos-cdn.com',
-            'cdn77-pic.xvideos-cdn.com',
-            'ci.phncdn.com', 'di.phncdn.com', 'ei.phncdn.com',
-            'thumb-p', // xhamster CDN pattern
-            'img-egc.xnxx-cdn.com', 'img-l3.xnxx-cdn.com', 'img-hw.xnxx-cdn.com',
-            'cdn77-pic.xnxx-cdn.com', 'thumb-cdn77.xnxx-cdn.com',
-            'thumb-cdn77.xvideos-cdn.com',
-            'thumbs-cdn.redtube.com', 'thumb-cdn77.redtube.com',
-            'fi1.ypncdn.com', 'fi2.ypncdn.com',
-            'thumb-v', // generic thumb CDN patterns
-            // Eporner CDN
-            'static-ca-cdn.eporner.com', 'static-cdn.eporner.com', 'eporner.com',
-            // Redtube / PH shared CDN (rdtcdn)
-            'rdtcdn.com', 'ei-ph.rdtcdn.com',
-        ];
+        // Enforce HTTPS only
+        if (parse_url($url, PHP_URL_SCHEME) !== 'https') {
+            abort(403, 'Only HTTPS URLs are allowed');
+        }
 
-        $host = parse_url($url, PHP_URL_HOST);
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        // Block private / internal IP ranges (SSRF protection)
+        if ($this->isInternalHost($host)) {
+            abort(403, 'Internal addresses are not allowed');
+        }
+
+        // Strict domain suffix matching
         $allowed = false;
-        foreach ($allowedDomains as $domain) {
-            if (str_contains($host, $domain)) {
+        foreach (self::ALLOWED_DOMAINS as $domain) {
+            if ($host === $domain || str_ends_with($host, '.' . $domain)) {
                 $allowed = true;
                 break;
             }
@@ -82,5 +92,24 @@ class ThumbnailProxyController extends Controller
         return response(base64_decode($imageData['body']))
             ->header('Content-Type', $imageData['content_type'])
             ->header('Cache-Control', 'public, max-age=86400');
+    }
+
+    /**
+     * Check if a hostname resolves to a private/internal IP range.
+     */
+    protected function isInternalHost(string $host): bool
+    {
+        // Quick check for obvious internal hostnames
+        if (in_array($host, ['localhost', '127.0.0.1', '0.0.0.0', '::1', ''], true)) {
+            return true;
+        }
+
+        // Resolve hostname and check IP ranges
+        $ip = gethostbyname($host);
+        if ($ip === $host) {
+            return true; // DNS resolution failed — block
+        }
+
+        return !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
     }
 }

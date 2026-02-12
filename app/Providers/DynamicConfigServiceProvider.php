@@ -37,7 +37,7 @@ class DynamicConfigServiceProvider extends ServiceProvider
             'mail.mailers.smtp.host' => Setting::get('mail_host', config('mail.mailers.smtp.host')),
             'mail.mailers.smtp.port' => (int) Setting::get('mail_port', config('mail.mailers.smtp.port')),
             'mail.mailers.smtp.username' => Setting::get('mail_username', config('mail.mailers.smtp.username')),
-            'mail.mailers.smtp.password' => Setting::get('mail_password', config('mail.mailers.smtp.password')),
+            'mail.mailers.smtp.password' => Setting::getDecrypted('mail_password', config('mail.mailers.smtp.password')),
             'mail.mailers.smtp.encryption' => Setting::get('mail_encryption', config('mail.mailers.smtp.encryption')),
         ]);
 

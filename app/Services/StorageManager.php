@@ -74,8 +74,8 @@ class StorageManager
      */
     protected static function buildWasabiDisk(): Filesystem
     {
-        $key      = Setting::get('wasabi_key', '');
-        $secret   = Setting::get('wasabi_secret', '');
+        $key      = Setting::getDecrypted('wasabi_key', '');
+        $secret   = Setting::getDecrypted('wasabi_secret', '');
         $region   = Setting::get('wasabi_region', 'us-east-1');
         $bucket   = Setting::get('wasabi_bucket', '');
         $endpoint = Setting::get('wasabi_endpoint', '');

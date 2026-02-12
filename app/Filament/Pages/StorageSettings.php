@@ -42,22 +42,22 @@ class StorageSettings extends Page implements HasForms
             'storage_driver' => Setting::get('storage_driver', 'local'),
             // Wasabi
             'wasabi_enabled' => Setting::get('wasabi_enabled', false),
-            'wasabi_key' => Setting::get('wasabi_key', ''),
-            'wasabi_secret' => Setting::get('wasabi_secret', ''),
+            'wasabi_key' => Setting::getDecrypted('wasabi_key', ''),
+            'wasabi_secret' => Setting::getDecrypted('wasabi_secret', ''),
             'wasabi_region' => Setting::get('wasabi_region', 'us-east-1'),
             'wasabi_bucket' => Setting::get('wasabi_bucket', ''),
             'wasabi_endpoint' => Setting::get('wasabi_endpoint', 'https://s3.wasabisys.com'),
             // Backblaze B2
             'b2_enabled' => Setting::get('b2_enabled', false),
-            'b2_key_id' => Setting::get('b2_key_id', ''),
-            'b2_application_key' => Setting::get('b2_application_key', ''),
+            'b2_key_id' => Setting::getDecrypted('b2_key_id', ''),
+            'b2_application_key' => Setting::getDecrypted('b2_application_key', ''),
             'b2_bucket' => Setting::get('b2_bucket', ''),
             'b2_bucket_id' => Setting::get('b2_bucket_id', ''),
             'b2_endpoint' => Setting::get('b2_endpoint', ''),
             // AWS S3
             's3_enabled' => Setting::get('s3_enabled', false),
-            's3_key' => Setting::get('s3_key', ''),
-            's3_secret' => Setting::get('s3_secret', ''),
+            's3_key' => Setting::getDecrypted('s3_key', ''),
+            's3_secret' => Setting::getDecrypted('s3_secret', ''),
             's3_region' => Setting::get('s3_region', 'us-east-1'),
             's3_bucket' => Setting::get('s3_bucket', ''),
             // CDN
@@ -65,7 +65,7 @@ class StorageSettings extends Page implements HasForms
             'cdn_url' => Setting::get('cdn_url', ''),
             'bunnycdn_enabled' => Setting::get('bunnycdn_enabled', false),
             'bunnycdn_zone' => Setting::get('bunnycdn_zone', ''),
-            'bunnycdn_key' => Setting::get('bunnycdn_key', ''),
+            'bunnycdn_key' => Setting::getDecrypted('bunnycdn_key', ''),
             // FFmpeg
             'ffmpeg_enabled' => Setting::get('ffmpeg_enabled', true),
             'ffmpeg_path' => Setting::get('ffmpeg_path', '/usr/local/bin/ffmpeg'),
@@ -308,7 +308,19 @@ class StorageSettings extends Page implements HasForms
             }
         }
 
+        $encryptedKeys = [
+            'wasabi_key', 'wasabi_secret',
+            'b2_key_id', 'b2_application_key',
+            's3_key', 's3_secret',
+            'bunnycdn_key',
+        ];
+
         foreach ($data as $key => $value) {
+            if (in_array($key, $encryptedKeys, true)) {
+                Setting::setEncrypted($key, $value, 'storage');
+                continue;
+            }
+
             $type = match (true) {
                 is_bool($value) => 'boolean',
                 is_int($value) => 'integer',

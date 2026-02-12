@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -137,5 +140,64 @@ class SettingsController extends Controller
         ]);
 
         return redirect()->route('settings')->with('success', 'Privacy settings updated.');
+    }
+
+    public function deleteAccount(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'password' => ['required', 'current_password'],
+        ]);
+
+        $user = $request->user();
+
+        DB::beginTransaction();
+        try {
+            // Delete user's videos and their storage files
+            foreach ($user->videos as $video) {
+                $videoDir = "videos/{$video->slug}";
+                if (Storage::disk('public')->exists($videoDir)) {
+                    Storage::disk('public')->deleteDirectory($videoDir);
+                }
+                $video->forceDelete();
+            }
+
+            // Delete channel
+            if ($user->channel) {
+                $user->channel->delete();
+            }
+
+            // Delete avatar and banner files
+            if ($user->avatar) {
+                $avatarPath = str_replace('/storage/', '', $user->avatar);
+                Storage::disk('public')->delete($avatarPath);
+            }
+
+            // Clean up related records (comments, likes, subscriptions, etc.)
+            $user->comments()->delete();
+            $user->likes()->delete();
+            $user->subscriptions()->delete();
+            $user->playlists()->delete();
+            $user->notifications()->delete();
+            $user->walletTransactions()->delete();
+
+            // Log out before deleting
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            // Delete the user
+            $user->delete();
+
+            DB::commit();
+
+            Log::info('User account deleted', ['user_id' => $user->id, 'username' => $user->username]);
+
+            return redirect()->route('home')->with('success', 'Your account has been permanently deleted.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Account deletion failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+
+            return redirect()->route('settings')->with('error', 'Failed to delete account. Please try again or contact support.');
+        }
     }
 }
