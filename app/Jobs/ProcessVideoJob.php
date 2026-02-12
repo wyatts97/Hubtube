@@ -10,6 +10,7 @@ use App\Services\StorageManager;
 use App\Services\VideoService;
 use App\Services\WatermarkService;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -19,12 +20,25 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Models\Notification;
 
-class ProcessVideoJob implements ShouldQueue
+class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
     public int $timeout = 3600;
+
+    /**
+     * Unique ID for this job — prevents duplicate processing of the same video.
+     */
+    public function uniqueId(): string
+    {
+        return 'process-video-' . $this->video->id;
+    }
+
+    /**
+     * Keep the unique lock for the full timeout duration.
+     */
+    public int $uniqueFor = 3600;
 
     public function __construct(
         public Video $video
@@ -362,27 +376,45 @@ class ProcessVideoJob implements ShouldQueue
                 $enabledResolutions = json_decode($enabledResolutions, true) ?? ['360p', '480p', '720p'];
             }
             
-            // Build list of qualities to transcode — only encode to resolutions
-            // strictly LOWER than the source. Never upscale or side-scale to a
-            // quality that's essentially the same as the original.
+            // Build list of qualities to transcode.
+            // Rule: only encode to a quality if the source is tall enough to
+            // justify it. We require the source height to be >= the NEXT
+            // standard tier above the target. This prevents wasteful
+            // near-same-resolution encodes (e.g. 888p source → 720p target
+            // is only a 19% reduction and not worth the CPU time).
+            //
+            // Thresholds (source must be >= this height to produce the quality):
+            //   240p → source >= 360   (next tier: 360p)
+            //   360p → source >= 480   (next tier: 480p)
+            //   480p → source >= 720   (next tier: 720p)
+            //   720p → source >= 1080  (next tier: 1080p)
+            //  1080p → source >= 1440  (next tier: 1440p / 2K)
+            $minSourceHeight = [
+                '240p'  => 360,
+                '360p'  => 480,
+                '480p'  => 720,
+                '720p'  => 1080,
+                '1080p' => 1440,
+            ];
+
             $targetQualities = [];
             $skippedQualities = [];
             foreach ($allQualities as $quality => $settings) {
                 if (!in_array($quality, $enabledResolutions)) continue;
-                if ($videoInfo['height'] > $settings['height']) {
+                $threshold = $minSourceHeight[$quality] ?? $settings['height'];
+                if ($videoInfo['height'] >= $threshold) {
                     $targetQualities[$quality] = $settings;
                 } else {
-                    $skippedQualities[] = $quality;
+                    $skippedQualities[] = "{$quality} (need {$threshold}p, have {$videoInfo['height']}p)";
                 }
             }
 
-            if (!empty($skippedQualities)) {
-                Log::info('Skipped qualities (source height not greater than target)', [
-                    'video_id' => $this->video->id,
-                    'source_height' => $videoInfo['height'],
-                    'skipped' => $skippedQualities,
-                ]);
-            }
+            Log::info('Quality selection', [
+                'video_id' => $this->video->id,
+                'source_resolution' => "{$videoInfo['width']}x{$videoInfo['height']}",
+                'will_transcode' => array_keys($targetQualities),
+                'skipped' => $skippedQualities,
+            ]);
 
             if (!empty($targetQualities)) {
                 $generateHls = (bool) Setting::get('generate_hls', true);

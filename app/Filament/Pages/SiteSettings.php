@@ -482,7 +482,7 @@ class SiteSettings extends Page implements HasForms
                                                 '1080p' => '1080p (1920x1080) - Full HD',
                                             ])
                                             ->default(['360p', '480p', '720p'])
-                                            ->helperText('Select which resolutions to generate. Original quality is always preserved.')
+                                            ->helperText('Select which resolutions to make available. Videos are only transcoded to qualities significantly lower than the source — never upscaled. E.g. a 720p upload produces 480p + 360p; a 1080p upload produces 720p + 480p + 360p. The original quality is always preserved.')
                                             ->visible(fn ($get) => $get('multi_resolution_enabled'))
                                             ->columns(2),
                                         Toggle::make('generate_hls')
