@@ -121,17 +121,12 @@ const onPreviewLoad = () => { previewLoaded.value = true; };
         <div class="flex gap-3 mt-3">
             <Link v-if="showAvatar && video.user" :href="localizedUrl(`/channel/${video.user.username}`)" class="shrink-0">
                 <div class="w-9 h-9 avatar">
-                    <img v-if="video.user.avatar" v-bind="avatarProps(video.user.avatar, 36)" :alt="video.user.username || video.user.name" class="w-full h-full object-cover" />
-                    <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-sm font-medium">
-                        {{ (video.user.username || video.user.name)?.charAt(0)?.toUpperCase() || '?' }}
-                    </div>
+                    <img v-bind="avatarProps(video.user.avatar_url || video.user.avatar || '/images/default_avatar.webp', 36)" :alt="video.user.username || video.user.name" class="w-full h-full object-cover" />
                 </div>
             </Link>
             <div v-else-if="showAvatar" class="shrink-0">
                 <div class="w-9 h-9 avatar">
-                    <div class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-sm font-medium">
-                        ?
-                    </div>
+                    <img src="/images/default_avatar.webp" alt="User" class="w-full h-full object-cover" />
                 </div>
             </div>
             <div class="flex-1 min-w-0">

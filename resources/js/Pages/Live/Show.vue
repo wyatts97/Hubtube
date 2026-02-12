@@ -198,10 +198,7 @@ const cleanup = async () => {
                     <div class="flex items-center gap-4 mt-3">
                         <Link :href="`/channel/${stream.user.username}`" class="flex items-center gap-3">
                             <div class="w-10 h-10 avatar ring-2 ring-red-500">
-                                <img v-if="stream.user.avatar" :src="stream.user.avatar" :alt="stream.user.username" class="w-full h-full object-cover" />
-                                <div v-else class="w-full h-full flex items-center justify-center text-white font-medium" style="background-color: var(--color-accent);">
-                                    {{ stream.user.username.charAt(0).toUpperCase() }}
-                                </div>
+                                <img :src="stream.user.avatar_url || stream.user.avatar || '/images/default_avatar.webp'" :alt="stream.user.username" class="w-full h-full object-cover" />
                             </div>
                             <div>
                                 <p class="font-medium" style="color: var(--color-text-primary);">{{ stream.user.username }}</p>

@@ -219,14 +219,10 @@ const tabs = computed(() => [
                                 <div class="flex items-center gap-4">
                                     <div class="relative w-20 h-20 rounded-full overflow-hidden shrink-0" style="background-color: var(--color-bg-secondary);">
                                         <img
-                                            v-if="avatarPreview || user?.avatar"
-                                            :src="avatarPreview || user.avatar"
+                                            :src="avatarPreview || user?.avatar || '/images/default_avatar.webp'"
                                             alt="Avatar"
                                             class="w-full h-full object-cover"
                                         />
-                                        <div v-else class="w-full h-full flex items-center justify-center text-white text-2xl font-bold" style="background-color: var(--color-accent);">
-                                            {{ user?.username?.charAt(0)?.toUpperCase() }}
-                                        </div>
                                         <label class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity cursor-pointer rounded-full">
                                             <Camera class="w-5 h-5 text-white" />
                                             <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" @change="handleAvatarSelect" />

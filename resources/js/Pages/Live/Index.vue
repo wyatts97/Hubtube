@@ -52,14 +52,10 @@ defineProps({
                     <div class="flex gap-3">
                         <div class="w-9 h-9 avatar shrink-0">
                             <img 
-                                v-if="stream.user?.avatar" 
-                                :src="stream.user.avatar" 
-                                :alt="stream.user.username"
+                                :src="stream.user?.avatar_url || stream.user?.avatar || '/images/default_avatar.webp'" 
+                                :alt="stream.user?.username"
                                 class="w-full h-full object-cover"
                             />
-                            <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-sm font-medium">
-                                {{ stream.user?.username?.charAt(0)?.toUpperCase() || '?' }}
-                            </div>
                         </div>
                         <div class="flex-1 min-w-0">
                             <h3 class="font-medium text-white truncate">{{ stream.title }}</h3>

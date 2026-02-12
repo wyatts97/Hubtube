@@ -36,10 +36,7 @@ const formattedViewers = computed(() => {
         <div class="flex gap-3 mt-3">
             <Link :href="`/channel/${stream.user.username}`" class="flex-shrink-0">
                 <div class="w-9 h-9 avatar ring-2 ring-red-500">
-                    <img v-if="stream.user.avatar" :src="stream.user.avatar" :alt="stream.user.username" class="w-full h-full object-cover" />
-                    <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-sm font-medium">
-                        {{ stream.user.username.charAt(0).toUpperCase() }}
-                    </div>
+                    <img :src="stream.user.avatar_url || stream.user.avatar || '/images/default_avatar.webp'" :alt="stream.user.username" class="w-full h-full object-cover" />
                 </div>
             </Link>
             <div class="flex-1 min-w-0">

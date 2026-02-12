@@ -404,10 +404,7 @@ watch(() => props.shorts, (newShorts) => {
                     <div class="shorts-info">
                         <Link :href="`/channel/${item.data.user?.username}`" class="flex items-center gap-2 mb-2">
                             <div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0" style="background-color: var(--color-bg-card);">
-                                <img v-if="item.data.user?.avatar" :src="item.data.user.avatar" class="w-full h-full object-cover" />
-                                <div v-else class="w-full h-full flex items-center justify-center text-white text-xs font-bold" style="background-color: var(--color-accent);">
-                                    {{ item.data.user?.username?.charAt(0)?.toUpperCase() }}
-                                </div>
+                                <img :src="item.data.user?.avatar_url || item.data.user?.avatar || '/images/default_avatar.webp'" class="w-full h-full object-cover" />
                             </div>
                             <span class="text-white text-sm font-medium">@{{ item.data.user?.username }}</span>
                         </Link>

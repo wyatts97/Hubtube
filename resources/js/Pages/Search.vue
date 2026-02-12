@@ -158,10 +158,7 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
                         class="card p-4 flex items-center gap-4 hover:opacity-90 transition-opacity"
                     >
                         <div class="w-14 h-14 rounded-full overflow-hidden shrink-0" style="background-color: var(--color-bg-secondary);">
-                            <img v-if="channel.avatar" :src="channel.avatar" :alt="channel.username" class="w-full h-full object-cover" loading="lazy" decoding="async" />
-                            <div v-else class="w-full h-full flex items-center justify-center text-xl font-bold" style="color: var(--color-accent);">
-                                {{ channel.username?.charAt(0)?.toUpperCase() || '?' }}
-                            </div>
+                            <img :src="channel.avatar_url || channel.avatar || '/images/default_avatar.webp'" :alt="channel.username" class="w-full h-full object-cover" loading="lazy" decoding="async" />
                         </div>
                         <div class="min-w-0">
                             <h3 class="font-medium truncate" style="color: var(--color-text-primary);">

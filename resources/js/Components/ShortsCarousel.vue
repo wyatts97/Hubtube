@@ -148,10 +148,7 @@ const formattedDuration = (duration) => {
                     <!-- Channel info below -->
                     <div class="flex items-center gap-2 mt-2 px-0.5">
                         <div class="w-5 h-5 rounded-full overflow-hidden flex-shrink-0" style="background-color: var(--color-bg-card);">
-                            <img v-if="short.user?.avatar" :src="short.user.avatar" class="w-full h-full object-cover" />
-                            <div v-else class="w-full h-full flex items-center justify-center text-white text-[10px] font-bold" style="background-color: var(--color-accent);">
-                                {{ short.user?.username?.charAt(0)?.toUpperCase() }}
-                            </div>
+                            <img :src="short.user?.avatar_url || short.user?.avatar || '/images/default_avatar.webp'" class="w-full h-full object-cover" />
                         </div>
                         <span class="text-xs truncate" style="color: var(--color-text-secondary);">{{ short.user?.username }}</span>
                     </div>

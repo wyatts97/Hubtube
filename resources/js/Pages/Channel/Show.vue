@@ -72,14 +72,10 @@ const tabs = computed(() => [
         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-6 sm:mb-8">
             <div class="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 avatar shrink-0">
                 <img 
-                    v-if="channel.avatar" 
-                    :src="channel.avatar" 
+                    :src="channel.avatar_url || channel.avatar || '/images/default_avatar.webp'" 
                     :alt="channel.username"
                     class="w-full h-full object-cover"
                 />
-                <div v-else class="w-full h-full flex items-center justify-center text-white text-4xl font-bold" style="background-color: var(--color-accent);">
-                    {{ channel.username?.charAt(0)?.toUpperCase() }}
-                </div>
             </div>
             
             <div class="flex-1 min-w-0">

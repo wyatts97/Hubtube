@@ -31,7 +31,7 @@ class HandleInertiaRequests extends Middleware
                         'username' => $user->username,
                         'email' => $user->email,
                         'bio' => $user->bio,
-                        'avatar' => $user->avatar,
+                        'avatar' => $user->avatar_url,
                         'is_verified' => $user->is_verified,
                         'is_pro' => $user->is_pro,
                         'is_admin' => $user->is_admin,

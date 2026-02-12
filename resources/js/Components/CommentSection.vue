@@ -111,10 +111,7 @@ fetchComments();
         <!-- Comment Input -->
         <div v-if="user" class="flex gap-3 mb-6">
             <div class="w-10 h-10 avatar flex-shrink-0">
-                <img v-if="user.avatar" :src="user.avatar" :alt="user.username" class="w-full h-full object-cover" />
-                <div v-else class="w-full h-full flex items-center justify-center text-white font-medium" style="background-color: var(--color-accent);">
-                    {{ user.username?.charAt(0)?.toUpperCase() }}
-                </div>
+                <img :src="user.avatar || '/images/default_avatar.webp'" :alt="user.username" class="w-full h-full object-cover" />
             </div>
             <div class="flex-1">
                 <textarea
@@ -159,10 +156,7 @@ fetchComments();
             <div v-for="comment in comments" :key="comment.id" class="flex gap-3">
                 <Link :href="`/channel/${comment.user?.username}`" class="flex-shrink-0">
                     <div class="w-10 h-10 avatar">
-                        <img v-if="comment.user?.avatar" :src="comment.user.avatar" :alt="comment.user.username" class="w-full h-full object-cover" />
-                        <div v-else class="w-full h-full flex items-center justify-center text-white font-medium" style="background-color: var(--color-bg-card);">
-                            {{ comment.user?.username?.charAt(0)?.toUpperCase() || '?' }}
-                        </div>
+                        <img :src="comment.user?.avatar_url || comment.user?.avatar || '/images/default_avatar.webp'" :alt="comment.user?.username" class="w-full h-full object-cover" />
                     </div>
                 </Link>
                 <div class="flex-1">
@@ -239,10 +233,7 @@ fetchComments();
                     <div v-if="comment.replies?.length" class="mt-4 space-y-4 pl-4 border-l-2" style="border-color: var(--color-border);">
                         <div v-for="reply in comment.replies" :key="reply.id" class="flex gap-3">
                             <div class="w-8 h-8 avatar flex-shrink-0">
-                                <img v-if="reply.user?.avatar" :src="reply.user.avatar" class="w-full h-full object-cover" />
-                                <div v-else class="w-full h-full flex items-center justify-center text-white text-sm font-medium" style="background-color: var(--color-bg-card);">
-                                    {{ reply.user?.username?.charAt(0)?.toUpperCase() || '?' }}
-                                </div>
+                                <img :src="reply.user?.avatar_url || reply.user?.avatar || '/images/default_avatar.webp'" class="w-full h-full object-cover" />
                             </div>
                             <div class="flex-1">
                                 <div class="flex items-center gap-2">

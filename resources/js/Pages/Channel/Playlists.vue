@@ -38,10 +38,7 @@ const activeList = ref(null);
         <!-- Channel Header -->
         <div class="flex items-center gap-4 mb-6">
             <div class="w-16 h-16 avatar">
-                <img v-if="channel.avatar" :src="channel.avatar" :alt="channel.username" class="w-full h-full object-cover" />
-                <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white text-xl font-bold">
-                    {{ channel.username?.charAt(0)?.toUpperCase() }}
-                </div>
+                <img :src="channel.avatar_url || channel.avatar || '/images/default_avatar.webp'" :alt="channel.username" class="w-full h-full object-cover" />
             </div>
             <div>
                 <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ channel.username }}</h1>

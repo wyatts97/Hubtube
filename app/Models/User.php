@@ -49,6 +49,10 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         'two_factor_secret',
     ];
 
+    protected $appends = [
+        'avatar_url',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -203,6 +207,20 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     public function getFilamentName(): string
     {
         return $this->username ?? $this->email;
+    }
+
+    public function getFilamentAvatarUrl(): ?string
+    {
+        return $this->avatar_url;
+    }
+
+    public function getAvatarUrlAttribute(): string
+    {
+        $raw = $this->attributes['avatar'] ?? null;
+        if ($raw) {
+            return $raw;
+        }
+        return '/images/default_avatar.webp';
     }
 
     public function getNameAttribute(): string

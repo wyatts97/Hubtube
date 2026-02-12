@@ -313,10 +313,7 @@ const toggleSidebar = () => {
                         <div class="relative">
                             <button @click="showUserMenu = !showUserMenu; showNotifications = false" class="user-menu-trigger flex items-center gap-2">
                                 <div class="w-8 h-8 avatar">
-                                    <img v-if="user.avatar" :src="user.avatar" :alt="user.username" class="w-full h-full object-cover" />
-                                    <div v-else class="w-full h-full flex items-center justify-center bg-primary-600 text-white font-medium">
-                                        {{ user.username?.charAt(0)?.toUpperCase() }}
-                                    </div>
+                                    <img :src="user.avatar || '/images/default_avatar.webp'" :alt="user.username" class="w-full h-full object-cover" />
                                 </div>
                             </button>
 
@@ -466,7 +463,7 @@ const toggleSidebar = () => {
         <!-- Sidebar -->
         <aside 
             :class="[
-                'fixed left-0 bottom-0 overflow-y-auto scrollbar-hide hidden lg:block transition-all duration-300',
+                'fixed left-0 bottom-0 overflow-y-auto scrollbar-hide hidden lg:block transition-all duration-300 z-30',
                 sidebarCollapsed ? 'w-16' : 'sidebar-expanded'
             ]"
             :style="{

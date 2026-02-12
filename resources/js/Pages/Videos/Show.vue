@@ -297,7 +297,7 @@ const formattedViews = computed(() => {
 });
 
 // ── Translation ──
-const { t } = useI18n();
+const { t, localizedUrl } = useI18n();
 const { isTranslated, translateItem, translateBatch, getTranslated } = useTranslation();
 
 const translatedTitle = ref(props.video.title);
@@ -416,10 +416,7 @@ const getRelatedTitle = (video) => {
                         <div class="flex items-center gap-2 sm:gap-4 min-w-0">
                             <Link :href="`/channel/${video.user.username}`" class="flex items-center gap-2 sm:gap-3 min-w-0">
                                 <div class="w-8 h-8 sm:w-10 sm:h-10 avatar shrink-0">
-                                    <img v-if="video.user.avatar" :src="video.user.avatar" :alt="video.user.username" class="w-full h-full object-cover" loading="lazy" decoding="async" />
-                                    <div v-else class="w-full h-full flex items-center justify-center text-white font-medium" style="background-color: var(--color-accent);">
-                                        {{ video.user.username.charAt(0).toUpperCase() }}
-                                    </div>
+                                    <img :src="video.user.avatar_url || video.user.avatar || '/images/default_avatar.webp'" :alt="video.user.username" class="w-full h-full object-cover" loading="lazy" decoding="async" />
                                 </div>
                                 <div class="min-w-0">
                                     <p class="font-medium text-xs sm:text-base truncate" style="color: var(--color-text-primary);">{{ video.user.username }}</p>
@@ -540,7 +537,7 @@ const getRelatedTitle = (video) => {
                         <!-- Category -->
                         <Link
                             v-if="video.category"
-                            :href="`/?category=${video.category.id}`"
+                            :href="localizedUrl(`/category/${video.category.slug}`)"
                             class="inline-flex items-center gap-1.5 text-sm hover:opacity-80 transition-opacity"
                             style="color: var(--color-text-secondary);"
                         >
@@ -556,7 +553,7 @@ const getRelatedTitle = (video) => {
                             <Link
                                 v-for="tag in video.tags"
                                 :key="tag"
-                                :href="`/tag/${encodeURIComponent(tag)}`"
+                                :href="localizedUrl(`/tag/${encodeURIComponent(tag)}`)"
                                 class="inline-flex items-center gap-0.5 text-sm hover:opacity-80 transition-opacity"
                                 style="color: var(--color-text-muted);"
                             >
