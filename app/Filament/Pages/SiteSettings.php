@@ -563,9 +563,11 @@ class SiteSettings extends Page implements HasForms
                                                         }
 
                                                         return new HtmlString(
-                                                            '<video controls playsinline class="w-full max-w-lg rounded-lg" style="background:#111" src="' .
-                                                            e($this->watermarkPreviewUrl) .
-                                                            '"></video>'
+                                                            '<div wire:ignore>' .
+                                                            '<video controls playsinline preload="auto" class="w-full max-w-lg rounded-lg" style="background:#111">' .
+                                                            '<source src="' . e($this->watermarkPreviewUrl) . '" type="video/mp4">' .
+                                                            '</video>' .
+                                                            '</div>'
                                                         );
                                                     })
                                                     ->columnSpanFull(),
