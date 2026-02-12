@@ -54,7 +54,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                     <label class="block text-xs font-medium text-gray-300 mb-1">Language</label>
-                    <select wire:model="overrideLocale" class="w-full rounded-lg border-gray-600 bg-gray-700 text-white text-sm">
+                    <select wire:model="overrideLocale" class="w-full rounded-lg border-gray-600 bg-gray-700 text-gray-900 text-sm">
                         @foreach($this->localeOptions as $code => $label)
                             <option value="{{ $code }}">{{ $label }}</option>
                         @endforeach
