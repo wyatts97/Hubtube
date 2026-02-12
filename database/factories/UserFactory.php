@@ -20,6 +20,7 @@ class UserFactory extends Factory
             'password' => Hash::make('password'),
             'first_name' => fake()->firstName(),
             'last_name' => fake()->lastName(),
+            'avatar' => null,
             'bio' => fake()->sentence(),
             'is_admin' => false,
             'is_pro' => false,

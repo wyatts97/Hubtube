@@ -13,13 +13,13 @@ use App\Models\Video;
 test('sitemap.xml returns valid XML', function () {
     $response = $this->get('/sitemap.xml');
     $response->assertStatus(200);
-    $response->assertHeader('Content-Type', 'text/xml; charset=UTF-8');
+    $response->assertHeader('Content-Type', 'application/xml');
 });
 
 test('robots.txt returns plain text', function () {
     $response = $this->get('/robots.txt');
     $response->assertStatus(200);
-    $response->assertHeader('Content-Type', 'text/plain; charset=UTF-8');
+    $response->assertHeader('Content-Type', 'text/plain; charset=utf-8');
     expect($response->getContent())->toContain('User-agent');
 });
 

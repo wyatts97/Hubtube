@@ -61,7 +61,7 @@ test('user can login with valid credentials', function () {
     ]);
 
     $response = $this->post('/login', [
-        'email' => 'login@example.com',
+        'login' => 'login@example.com',
         'password' => 'Password123!',
     ]);
 
@@ -76,7 +76,7 @@ test('login fails with wrong password', function () {
     ]);
 
     $response = $this->post('/login', [
-        'email' => 'login@example.com',
+        'login' => 'login@example.com',
         'password' => 'WrongPassword!',
     ]);
 
