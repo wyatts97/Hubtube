@@ -12,6 +12,7 @@ import { useTheme } from '@/Composables/useTheme';
 import { useToast } from '@/Composables/useToast';
 import { useFetch } from '@/Composables/useFetch';
 import { useI18n } from '@/Composables/useI18n';
+import { useGlobalAutoTranslate } from '@/Composables/useGlobalAutoTranslate';
 import ToastContainer from '@/Components/ToastContainer.vue';
 import AgeVerificationModal from '@/Components/AgeVerificationModal.vue';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
@@ -19,6 +20,7 @@ import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
 const toast = useToast();
 const { get, post } = useFetch();
 const { localizedUrl, t, isTranslated } = useI18n();
+const { isTranslating } = useGlobalAutoTranslate();
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
@@ -741,6 +743,16 @@ const toggleSidebar = () => {
         
         <!-- Age Verification Modal -->
         <AgeVerificationModal />
+
+        <!-- Translation Loading Overlay -->
+        <Transition name="translate-fade">
+            <div v-if="isTranslating" class="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
+                <div class="flex flex-col items-center gap-3 p-6 rounded-2xl shadow-2xl pointer-events-auto" style="background-color: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);">
+                    <img src="/images/globe.svg" alt="" class="w-12 h-12 animate-spin-slow" style="filter: invert(1) opacity(0.9);" />
+                    <span class="text-sm font-medium text-white/90">{{ t('common.translating') || 'Translating...' }}</span>
+                </div>
+            </div>
+        </Transition>
     </div>
 </template>
 
@@ -753,5 +765,25 @@ const toggleSidebar = () => {
     .lg\:pl-sidebar {
         padding-left: 160px;
     }
+}
+
+/* Globe spin animation — slower than default for a smooth feel */
+.animate-spin-slow {
+    animation: spin 2.5s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Translate overlay fade transition */
+.translate-fade-enter-active,
+.translate-fade-leave-active {
+    transition: opacity 0.25s ease;
+}
+.translate-fade-enter-from,
+.translate-fade-leave-to {
+    opacity: 0;
 }
 </style>

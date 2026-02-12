@@ -4,6 +4,9 @@ import { useFetch } from '@/Composables/useFetch';
 
 const translationCache = reactive({});
 
+// Expose cache for useGlobalAutoTranslate to populate directly
+export { translationCache as _translationCache };
+
 export function useTranslation() {
     const page = usePage();
     const { post } = useFetch();

@@ -70,7 +70,8 @@
         "search_prompt": "Search videos, channels and more",
         "sponsored": "Sponsored",
         "skip": "Skip",
-        "try_again": "Try Again"
+        "try_again": "Try Again",
+        "translating": "Translating..."
     },
     "video": {
         "views": "{count} views",

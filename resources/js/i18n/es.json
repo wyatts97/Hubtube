@@ -70,7 +70,8 @@
         "search_prompt": "Busca videos, canales y más",
         "sponsored": "Patrocinado",
         "skip": "Saltar",
-        "try_again": "Intentar de Nuevo"
+        "try_again": "Intentar de Nuevo",
+        "translating": "Traduciendo..."
     },
     "video": {
         "views": "{count} vistas",
