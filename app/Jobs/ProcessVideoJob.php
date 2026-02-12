@@ -850,26 +850,27 @@ class ProcessVideoJob implements ShouldQueue
         $x = $customX !== '' ? $customX : $pos['x'];
         $y = $customY !== '' ? $customY : $pos['y'];
 
-        // Frame-based horizontal scroll matching reference:
-        //   x=(mod(speed*n, w+tw)-tw)
+        // Frame-based horizontal scroll: x=(mod(speed*n\,w+tw)-tw)
+        // Commas inside expressions must be backslash-escaped.
         if ($scrollEnabled) {
-            $x = "'mod({$scrollSpeed}*n,w+tw)-tw'";
+            $x = "(mod({$scrollSpeed}*n\\,w+tw)-tw)";
         }
 
-        $fontColor = $color;
-        if (!str_contains($fontColor, '@')) {
-            $fontColor .= '@' . $opacity;
-        }
+        // Convert hex color to FFmpeg named color or 0x format.
+        // # is unsafe in shell double-quoted strings, so use 0xRRGGBB instead.
+        $fontColor = $this->convertColor($color, $opacity);
 
         // Interval timing: show for $scrollDuration seconds every $scrollInterval seconds.
+        // Commas inside expressions must be backslash-escaped.
         $enable = '';
         if ($scrollEnabled && $scrollInterval > 0 && $scrollDuration > 0) {
-            $enable = ":enable='lt(mod(t,{$scrollInterval}),{$scrollDuration})'";
+            $enable = ":enable=lt(mod(t\\,{$scrollInterval})\\,{$scrollDuration})";
         }
 
         $parts = [
-            "drawtext=text='{$text}'",
-            "fontfile='{$font}'",
+            "drawtext=fontfile={$font}",
+            "text={$text}",
+            "expansion=normal",
             "fontsize={$size}",
             "fontcolor={$fontColor}",
             "shadowx=2",
@@ -879,6 +880,37 @@ class ProcessVideoJob implements ShouldQueue
         ];
 
         return implode(':', $parts) . $enable;
+    }
+
+    protected function convertColor(string $color, float $opacity): string
+    {
+        $colorMap = [
+            '#ffffff' => 'white',
+            '#000000' => 'black',
+            '#ff0000' => 'red',
+            '#00ff00' => 'green',
+            '#0000ff' => 'blue',
+            '#ffff00' => 'yellow',
+            '#ff00ff' => 'magenta',
+            '#00ffff' => 'cyan',
+            '#808080' => 'gray',
+        ];
+
+        $lower = strtolower($color);
+
+        if (isset($colorMap[$lower])) {
+            return $colorMap[$lower] . '@' . $opacity;
+        }
+
+        if (str_starts_with($lower, '#')) {
+            return '0x' . substr($lower, 1) . '@' . $opacity;
+        }
+
+        if (!str_contains($color, '@')) {
+            return $color . '@' . $opacity;
+        }
+
+        return $color;
     }
 
     protected function escapeDrawtextValue(string $value): string

@@ -119,7 +119,7 @@ class SiteSettings extends Page implements HasForms
             return null;
         }
 
-        return Storage::disk('public')->url($path);
+        return '/storage/' . $path;
     }
 
     protected function resolveWatermarkPreviewUrl(): ?string
@@ -129,7 +129,7 @@ class SiteSettings extends Page implements HasForms
             return null;
         }
 
-        return Storage::disk('public')->url($previewPath);
+        return '/storage/' . $previewPath;
     }
 
     public function generateWatermarkPreview(): void
@@ -253,7 +253,7 @@ class SiteSettings extends Page implements HasForms
         }
 
         Setting::set('watermark_preview_path', $relativePath, 'general', 'string');
-        $this->watermarkPreviewUrl = Storage::disk('public')->url($relativePath) . '?t=' . time();
+        $this->watermarkPreviewUrl = '/storage/' . $relativePath . '?t=' . time();
 
         Notification::make()
             ->title('Watermark preview generated')
@@ -526,7 +526,7 @@ class SiteSettings extends Page implements HasForms
                                                     ->afterStateUpdated(function ($state) {
                                                         if ($state) {
                                                             Setting::set('watermark_test_video', $state, 'general', 'string');
-                                                            $this->testVideoSourceUrl = Storage::disk('public')->url($state);
+                                                            $this->testVideoSourceUrl = '/storage/' . $state;
                                                         }
                                                     })
                                                     ->reactive(),

@@ -163,28 +163,27 @@ class WatermarkService
         $x = $customX !== '' ? $customX : $pos['x'];
         $y = $customY !== '' ? $customY : $pos['y'];
 
-        // Frame-based horizontal scroll matching reference:
-        //   x=(mod(speed*n, w+tw)-tw)
-        // Uses expansion=normal so FFmpeg evaluates the expression per frame.
-        // 'n' = frame number, 'tw' = text width, 'w' = video width.
+        // Frame-based horizontal scroll: x=(mod(speed*n\,w+tw)-tw)
+        // Commas inside expressions must be backslash-escaped.
         if ($scrollEnabled) {
-            $x = "'mod({$scrollSpeed}*n,w+tw)-tw'";
+            $x = "(mod({$scrollSpeed}*n\\,w+tw)-tw)";
         }
 
-        $fontColor = $color;
-        if (!str_contains($fontColor, '@')) {
-            $fontColor .= '@' . $opacity;
-        }
+        // Convert hex color to FFmpeg named color or 0x format.
+        // # is unsafe in shell double-quoted strings, so use 0xRRGGBB instead.
+        $fontColor = static::convertColor($color, $opacity);
 
         // Interval timing: show for $scrollDuration seconds every $scrollInterval seconds.
+        // Commas inside expressions must be backslash-escaped.
         $enable = '';
         if ($scrollEnabled && $scrollInterval > 0 && $scrollDuration > 0) {
-            $enable = ":enable='lt(mod(t,{$scrollInterval}),{$scrollDuration})'";
+            $enable = ":enable=lt(mod(t\\,{$scrollInterval})\\,{$scrollDuration})";
         }
 
         $parts = [
-            "drawtext=text='{$text}'",
-            "fontfile='{$font}'",
+            "drawtext=fontfile={$font}",
+            "text={$text}",
+            "expansion=normal",
             "fontsize={$size}",
             "fontcolor={$fontColor}",
             "shadowx=2",
@@ -194,6 +193,39 @@ class WatermarkService
         ];
 
         return implode(':', $parts) . $enable;
+    }
+
+    protected static function convertColor(string $color, float $opacity): string
+    {
+        $colorMap = [
+            '#ffffff' => 'white',
+            '#000000' => 'black',
+            '#ff0000' => 'red',
+            '#00ff00' => 'green',
+            '#0000ff' => 'blue',
+            '#ffff00' => 'yellow',
+            '#ff00ff' => 'magenta',
+            '#00ffff' => 'cyan',
+            '#808080' => 'gray',
+        ];
+
+        $lower = strtolower($color);
+
+        if (isset($colorMap[$lower])) {
+            return $colorMap[$lower] . '@' . $opacity;
+        }
+
+        // Convert #RRGGBB to 0xRRGGBB (shell-safe, no # character)
+        if (str_starts_with($lower, '#')) {
+            return '0x' . substr($lower, 1) . '@' . $opacity;
+        }
+
+        // Already a named color or other format
+        if (!str_contains($color, '@')) {
+            return $color . '@' . $opacity;
+        }
+
+        return $color;
     }
 
     protected static function escapeDrawtextValue(string $value): string
