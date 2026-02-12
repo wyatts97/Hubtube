@@ -142,7 +142,17 @@ class SiteSettings extends Page implements HasForms
             return;
         }
 
-        $sourcePath = Setting::get('watermark_test_video', '');
+        // Persist the current form settings to DB first so
+        // WatermarkService reads the values the admin just configured.
+        $data = $this->form->getState();
+
+        // Read test video from form state (FileUpload stores the relative path)
+        $sourcePath = $data['watermark_test_video'] ?? '';
+        Log::info('Watermark test video path from form', [
+            'sourcePath' => $sourcePath,
+            'exists' => $sourcePath ? Storage::disk('public')->exists($sourcePath) : false,
+            'full_path' => $sourcePath ? Storage::disk('public')->path($sourcePath) : null,
+        ]);
         if (!$sourcePath || !Storage::disk('public')->exists($sourcePath)) {
             Notification::make()
                 ->title('Upload a test video first')
@@ -152,9 +162,8 @@ class SiteSettings extends Page implements HasForms
             return;
         }
 
-        // Persist the current form watermark settings to DB first so
-        // WatermarkService reads the values the admin just configured.
-        $data = $this->form->getState();
+        // Persist test video path to DB
+        Setting::set('watermark_test_video', $sourcePath, 'general', 'string');
         $watermarkKeys = [
             'watermark_enabled', 'watermark_image', 'watermark_position',
             'watermark_opacity', 'watermark_scale', 'watermark_padding',
