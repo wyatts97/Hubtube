@@ -177,16 +177,16 @@ class WatermarkService
         }
 
         // Interval timing: show for $scrollDuration seconds every $scrollInterval seconds.
-        // enable='lt(mod(t,INTERVAL),DURATION)'
+        // enable=lt(mod(t\,INTERVAL)\,DURATION)  — commas escaped because value is unquoted
         $enable = '';
         if ($scrollEnabled && $scrollInterval > 0 && $scrollDuration > 0) {
-            $enable = ":enable='lt(mod(t,{$scrollInterval}),{$scrollDuration})'";
+            $enable = ":enable=lt(mod(t\\,{$scrollInterval})\\,{$scrollDuration})";
         }
 
         $parts = [
             "drawtext=expansion=normal",
-            "text='{$text}'",
-            "fontfile='{$font}'",
+            "text={$text}",
+            "fontfile={$font}",
             "fontsize={$size}",
             "fontcolor={$fontColor}",
             "shadowx=2",
@@ -201,6 +201,8 @@ class WatermarkService
     protected static function escapeDrawtextValue(string $value): string
     {
         $value = str_replace('\\', '\\\\', $value);
+        $value = str_replace(';', '\\;', $value);
+        $value = str_replace(',', '\\,', $value);
         $value = str_replace(':', '\\:', $value);
         $value = str_replace("'", "\\'", $value);
         $value = str_replace('%', '\\%', $value);

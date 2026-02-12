@@ -179,11 +179,11 @@ class SiteSettings extends Page implements HasForms
         $filterComplex = WatermarkService::buildFilterComplex($width, $height);
 
         $cmd = sprintf(
-            '%s -y %s %s -filter_complex %s -map "[outv]" -t %d -c:v libx264 -preset veryfast -crf 22 -pix_fmt yuv420p -an -movflags +faststart %s 2>&1',
+            '%s -y %s %s -filter_complex "%s" -map "[outv]" -t %d -c:v libx264 -preset veryfast -crf 22 -pix_fmt yuv420p -an -movflags +faststart %s 2>&1',
             $ffmpeg,
             $baseInput,
             $watermarkInput,
-            escapeshellarg($filterComplex),
+            $filterComplex,
             $duration,
             escapeshellarg($outputPath)
         );
