@@ -1,23 +1,23 @@
 <x-filament-panels::page>
     <style>
         .ht-panel {
-            background: #1f2937;
+            background: #18181b;
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 0.75rem;
         }
         .ht-panel-soft {
-            background: #1f2937;
+            background: #18181b;
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 0.75rem;
         }
         .ht-table-head {
-            background: #374151;
+            background: #18181b;
         }
         .ht-table-body tr {
-            background: #1f2937;
+            background: #18181b;
         }
         .ht-table-body tr:hover {
-            background: #374151;
+            background: #f43f5e;
         }
         .ht-table-body tr + tr {
             border-top: 1px solid rgba(255, 255, 255, 0.06);
@@ -176,7 +176,7 @@
             <strong>Sync New Keys</strong> — Only translates keys that were added to <code class="text-gray-300">en.json</code> since the last run. Preserves existing translations. Use this after adding new UI strings.<br>
             <strong>Full Regenerate</strong> — Re-translates everything from scratch using Google Translate. Use after adding overrides or to fix bad translations.
         </p>
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="flex flex-wrap items-center gap-5">
             @if($this->regenerating)
                 <div class="flex items-center gap-2">
                     <x-filament::button disabled color="gray" size="sm">

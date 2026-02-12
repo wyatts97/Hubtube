@@ -91,9 +91,9 @@ class SiteSettings extends Page implements HasForms
             'watermark_text_x' => Setting::get('watermark_text_x', ''),
             'watermark_text_y' => Setting::get('watermark_text_y', ''),
             'watermark_text_scroll_enabled' => Setting::get('watermark_text_scroll_enabled', false),
-            'watermark_text_scroll_speed' => Setting::get('watermark_text_scroll_speed', 60),
-            'watermark_text_scroll_start' => Setting::get('watermark_text_scroll_start', 0),
-            'watermark_text_scroll_end' => Setting::get('watermark_text_scroll_end', 0),
+            'watermark_text_scroll_speed' => Setting::get('watermark_text_scroll_speed', 5),
+            'watermark_text_scroll_interval' => Setting::get('watermark_text_scroll_interval', 0),
+            'watermark_text_scroll_duration' => Setting::get('watermark_text_scroll_duration', 10),
             'video_auto_approve' => Setting::get('video_auto_approve', false),
             'comments_enabled' => Setting::get('comments_enabled', true),
             'comments_require_approval' => Setting::get('comments_require_approval', false),
@@ -128,6 +128,31 @@ class SiteSettings extends Page implements HasForms
             return;
         }
 
+        // Persist the current form watermark settings to DB first so
+        // WatermarkService reads the values the admin just configured.
+        $data = $this->form->getState();
+        $watermarkKeys = [
+            'watermark_enabled', 'watermark_image', 'watermark_position',
+            'watermark_opacity', 'watermark_scale', 'watermark_padding',
+            'watermark_text_enabled', 'watermark_text', 'watermark_text_font',
+            'watermark_text_color', 'watermark_text_size', 'watermark_text_opacity',
+            'watermark_text_padding', 'watermark_text_position',
+            'watermark_text_x', 'watermark_text_y',
+            'watermark_text_scroll_enabled', 'watermark_text_scroll_speed',
+            'watermark_text_scroll_interval', 'watermark_text_scroll_duration',
+        ];
+        foreach ($watermarkKeys as $key) {
+            if (array_key_exists($key, $data)) {
+                $type = match (true) {
+                    is_bool($data[$key]) => 'boolean',
+                    is_int($data[$key]) => 'integer',
+                    is_array($data[$key]) => 'array',
+                    default => 'string',
+                };
+                Setting::set($key, $data[$key], 'general', $type);
+            }
+        }
+
         if (!WatermarkService::hasImageWatermark() && !WatermarkService::hasTextWatermark()) {
             Notification::make()
                 ->title('Enable an image or text watermark first')
@@ -154,32 +179,35 @@ class SiteSettings extends Page implements HasForms
         $filterComplex = WatermarkService::buildFilterComplex($width, $height);
 
         $cmd = sprintf(
-            '%s -y %s %s -filter_complex "%s" -map "[outv]" -t %d -c:v libx264 -preset veryfast -crf 22 -pix_fmt yuv420p -an -movflags +faststart %s 2>&1',
+            '%s -y %s %s -filter_complex %s -map "[outv]" -t %d -c:v libx264 -preset veryfast -crf 22 -pix_fmt yuv420p -an -movflags +faststart %s 2>&1',
             $ffmpeg,
             $baseInput,
             $watermarkInput,
-            $filterComplex,
+            escapeshellarg($filterComplex),
             $duration,
             escapeshellarg($outputPath)
         );
+
+        Log::info('Watermark preview command', ['cmd' => $cmd]);
 
         $result = Process::timeout(120)->run($cmd);
 
         if (!$result->successful() || !file_exists($outputPath) || filesize($outputPath) === 0) {
             Log::error('Watermark preview generation failed', [
                 'exit_code' => $result->exitCode(),
-                'output' => substr($result->output(), -1000),
+                'output' => substr($result->output(), -2000),
             ]);
 
             Notification::make()
                 ->title('Failed to generate preview')
+                ->body('Check storage/logs/laravel.log for details.')
                 ->danger()
                 ->send();
             return;
         }
 
         Setting::set('watermark_preview_path', $relativePath, 'general', 'string');
-        $this->watermarkPreviewUrl = Storage::disk('public')->url($relativePath);
+        $this->watermarkPreviewUrl = Storage::disk('public')->url($relativePath) . '?t=' . time();
 
         Notification::make()
             ->title('Watermark preview updated')
@@ -530,21 +558,27 @@ class SiteSettings extends Page implements HasForms
                                                     ->label('Enable Scrolling Text')
                                                     ->reactive(),
                                                 TextInput::make('watermark_text_scroll_speed')
-                                                    ->label('Scroll Speed (px/sec)')
+                                                    ->label('Scroll Speed (px/frame)')
                                                     ->numeric()
-                                                    ->minValue(10)
-                                                    ->maxValue(400)
+                                                    ->minValue(1)
+                                                    ->maxValue(50)
+                                                    ->default(5)
+                                                    ->helperText('Pixels the text moves per frame. Higher = faster scroll. Reference: 5 is a good default at 30fps.')
                                                     ->visible(fn ($get) => $get('watermark_text_scroll_enabled')),
-                                                TextInput::make('watermark_text_scroll_start')
-                                                    ->label('Scroll Start (sec)')
-                                                    ->numeric()
-                                                    ->minValue(0)
-                                                    ->visible(fn ($get) => $get('watermark_text_scroll_enabled')),
-                                                TextInput::make('watermark_text_scroll_end')
-                                                    ->label('Scroll End (sec)')
+                                                TextInput::make('watermark_text_scroll_interval')
+                                                    ->label('Scroll Interval (sec)')
                                                     ->numeric()
                                                     ->minValue(0)
+                                                    ->default(0)
+                                                    ->helperText('Show the text every N seconds. 0 = always visible (continuous scroll).')
                                                     ->visible(fn ($get) => $get('watermark_text_scroll_enabled')),
+                                                TextInput::make('watermark_text_scroll_duration')
+                                                    ->label('Visible Duration (sec)')
+                                                    ->numeric()
+                                                    ->minValue(1)
+                                                    ->default(10)
+                                                    ->helperText('How many seconds the text stays visible each interval.')
+                                                    ->visible(fn ($get) => $get('watermark_text_scroll_enabled') && $get('watermark_text_scroll_interval') > 0),
                                             ])
                                             ->columns(2)
                                             ->visible(fn ($get) => $get('watermark_text_enabled'))

@@ -241,6 +241,40 @@ class ProcessVideoJob implements ShouldQueue
         return trim((string) Setting::get('watermark_text', '')) !== '';
     }
 
+    /**
+     * Apply -movflags +faststart to the original uploaded file so it is
+     * seekable in browsers even when served without transcoding.
+     */
+    protected function applyFaststartToOriginal(string $inputPath): void
+    {
+        $ffmpeg = $this->getFFmpegPath();
+        $tempOutput = $inputPath . '.faststart.mp4';
+
+        $cmd = sprintf(
+            '%s -y -i %s -c copy -movflags +faststart %s 2>&1',
+            $ffmpeg,
+            escapeshellarg($inputPath),
+            escapeshellarg($tempOutput)
+        );
+
+        [$exitCode, $output] = $this->runCommand($cmd);
+
+        if ($exitCode === 0 && file_exists($tempOutput) && filesize($tempOutput) > 0) {
+            unlink($inputPath);
+            rename($tempOutput, $inputPath);
+            Log::info('Applied faststart to original video', ['video_id' => $this->video->id]);
+        } else {
+            if (file_exists($tempOutput)) {
+                unlink($tempOutput);
+            }
+            Log::warning('Failed to apply faststart to original video', [
+                'video_id' => $this->video->id,
+                'exit_code' => $exitCode,
+                'output' => substr($output, 0, 300),
+            ]);
+        }
+    }
+
     protected function getVideoDirectory(): string
     {
         return "videos/{$this->video->slug}";
@@ -272,6 +306,9 @@ class ProcessVideoJob implements ShouldQueue
 
         $videoInfo = $this->getVideoInfo($inputPath);
         $this->video->update(['duration' => $videoInfo['duration']]);
+
+        // Ensure original file is browser-seekable (moov atom at start)
+        $this->applyFaststartToOriginal($inputPath);
 
         $this->generateThumbnails($inputPath, $videoDir);
         
@@ -766,9 +803,9 @@ class ProcessVideoJob implements ShouldQueue
         $customY = trim((string) Setting::get('watermark_text_y', ''));
 
         $scrollEnabled = (bool) Setting::get('watermark_text_scroll_enabled', false);
-        $scrollSpeed = (int) Setting::get('watermark_text_scroll_speed', 60);
-        $scrollStart = (float) Setting::get('watermark_text_scroll_start', 0);
-        $scrollEnd = (float) Setting::get('watermark_text_scroll_end', 0);
+        $scrollSpeed = (int) Setting::get('watermark_text_scroll_speed', 5);
+        $scrollInterval = (int) Setting::get('watermark_text_scroll_interval', 0);
+        $scrollDuration = (int) Setting::get('watermark_text_scroll_duration', 10);
 
         $positions = [
             'top-left' => [
@@ -813,8 +850,10 @@ class ProcessVideoJob implements ShouldQueue
         $x = $customX !== '' ? $customX : $pos['x'];
         $y = $customY !== '' ? $customY : $pos['y'];
 
+        // Frame-based horizontal scroll matching reference:
+        //   x=(mod(speed*n, w+tw)-tw)
         if ($scrollEnabled) {
-            $x = "mod(t*{$scrollSpeed}, w+text_w)-text_w";
+            $x = "(mod({$scrollSpeed}*n\\,w+tw)-tw)";
         }
 
         $fontColor = $color;
@@ -822,14 +861,25 @@ class ProcessVideoJob implements ShouldQueue
             $fontColor .= '@' . $opacity;
         }
 
+        // Interval timing: show for $scrollDuration seconds every $scrollInterval seconds.
         $enable = '';
-        if ($scrollEnd > 0) {
-            $enable = ":enable='between(t,{$scrollStart},{$scrollEnd})'";
-        } elseif ($scrollStart > 0) {
-            $enable = ":enable='gte(t,{$scrollStart})'";
+        if ($scrollEnabled && $scrollInterval > 0 && $scrollDuration > 0) {
+            $enable = ":enable='lt(mod(t,{$scrollInterval}),{$scrollDuration})'";
         }
 
-        return "drawtext=text='{$text}':fontfile='{$font}':fontsize={$size}:fontcolor={$fontColor}:x={$x}:y={$y}{$enable}";
+        $parts = [
+            "drawtext=expansion=normal",
+            "text='{$text}'",
+            "fontfile='{$font}'",
+            "fontsize={$size}",
+            "fontcolor={$fontColor}",
+            "shadowx=2",
+            "shadowy=2",
+            "x={$x}",
+            "y={$y}",
+        ];
+
+        return implode(':', $parts) . $enable;
     }
 
     protected function escapeDrawtextValue(string $value): string

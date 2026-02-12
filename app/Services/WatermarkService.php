@@ -116,9 +116,9 @@ class WatermarkService
         $customY = trim((string) Setting::get('watermark_text_y', ''));
 
         $scrollEnabled = (bool) Setting::get('watermark_text_scroll_enabled', false);
-        $scrollSpeed = (int) Setting::get('watermark_text_scroll_speed', 60);
-        $scrollStart = (float) Setting::get('watermark_text_scroll_start', 0);
-        $scrollEnd = (float) Setting::get('watermark_text_scroll_end', 0);
+        $scrollSpeed = (int) Setting::get('watermark_text_scroll_speed', 5);
+        $scrollInterval = (int) Setting::get('watermark_text_scroll_interval', 0);
+        $scrollDuration = (int) Setting::get('watermark_text_scroll_duration', 10);
 
         $positions = [
             'top-left' => [
@@ -163,8 +163,12 @@ class WatermarkService
         $x = $customX !== '' ? $customX : $pos['x'];
         $y = $customY !== '' ? $customY : $pos['y'];
 
+        // Frame-based horizontal scroll matching reference:
+        //   x=(mod(speed*n, w+tw)-tw)
+        // Uses expansion=normal so FFmpeg evaluates the expression per frame.
+        // 'n' = frame number, 'tw' = text width, 'w' = video width.
         if ($scrollEnabled) {
-            $x = "mod(t*{$scrollSpeed}, w+text_w)-text_w";
+            $x = "(mod({$scrollSpeed}*n\\,w+tw)-tw)";
         }
 
         $fontColor = $color;
@@ -172,14 +176,26 @@ class WatermarkService
             $fontColor .= '@' . $opacity;
         }
 
+        // Interval timing: show for $scrollDuration seconds every $scrollInterval seconds.
+        // enable='lt(mod(t,INTERVAL),DURATION)'
         $enable = '';
-        if ($scrollEnd > 0) {
-            $enable = ":enable='between(t,{$scrollStart},{$scrollEnd})'";
-        } elseif ($scrollStart > 0) {
-            $enable = ":enable='gte(t,{$scrollStart})'";
+        if ($scrollEnabled && $scrollInterval > 0 && $scrollDuration > 0) {
+            $enable = ":enable='lt(mod(t,{$scrollInterval}),{$scrollDuration})'";
         }
 
-        return "drawtext=text='{$text}':fontfile='{$font}':fontsize={$size}:fontcolor={$fontColor}:x={$x}:y={$y}{$enable}";
+        $parts = [
+            "drawtext=expansion=normal",
+            "text='{$text}'",
+            "fontfile='{$font}'",
+            "fontsize={$size}",
+            "fontcolor={$fontColor}",
+            "shadowx=2",
+            "shadowy=2",
+            "x={$x}",
+            "y={$y}",
+        ];
+
+        return implode(':', $parts) . $enable;
     }
 
     protected static function escapeDrawtextValue(string $value): string

@@ -1,7 +1,7 @@
 <x-filament-panels::page>
     <style>
         .ht-panel {
-            background: #111827;
+            background: #18181b;
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 0.75rem;
         }
@@ -11,13 +11,13 @@
             border-radius: 0.75rem;
         }
         .ht-table-head {
-            background: #1f2937;
+            background: #18181b;
         }
         .ht-table-body tr {
-            background: #111827;
+            background: #18181b;
         }
         .ht-table-body tr:hover {
-            background: #1f2937;
+            background: #f43f5e;
         }
         .ht-table-body tr + tr {
             border-top: 1px solid rgba(255, 255, 255, 0.06);
