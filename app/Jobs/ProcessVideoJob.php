@@ -26,8 +26,6 @@ class ProcessVideoJob implements ShouldQueue
     public int $tries = 3;
     public int $timeout = 3600;
 
-    protected array $sourceVideoInfo = ['width' => 0, 'height' => 0, 'duration' => 0];
-
     public function __construct(
         public Video $video
     ) {}
@@ -308,7 +306,6 @@ class ProcessVideoJob implements ShouldQueue
         ];
 
         $videoInfo = $this->getVideoInfo($inputPath);
-        $this->sourceVideoInfo = $videoInfo;
         $this->video->update(['duration' => $videoInfo['duration']]);
 
         // Ensure original file is browser-seekable (moov atom at start)
@@ -323,6 +320,20 @@ class ProcessVideoJob implements ShouldQueue
 
         // Generate scrubber preview sprite sheet + VTT for Plyr
         $this->generateScrubberPreviews($inputPath, $videoDir, $videoInfo['duration']);
+
+        // If watermarking is enabled, apply watermark to the original file ONCE.
+        // All lower-quality encodes will use this watermarked file as input,
+        // so the watermark scales naturally with the video and FFmpeg only runs
+        // the watermark filter once instead of per-quality.
+        $hasWatermark = $this->hasImageWatermark() || $this->hasTextWatermark();
+        $transcodeInput = $inputPath;
+
+        if ($hasWatermark) {
+            $watermarkedPath = $this->watermarkOriginal($inputPath, $outputDir, $videoInfo);
+            if ($watermarkedPath) {
+                $transcodeInput = $watermarkedPath;
+            }
+        }
 
         // Check if multi-resolution transcoding is enabled
         $multiResolutionEnabled = Setting::get('multi_resolution_enabled', true);
@@ -346,10 +357,17 @@ class ProcessVideoJob implements ShouldQueue
 
             if (!empty($targetQualities)) {
                 $generateHls = (bool) Setting::get('generate_hls', true);
-                $qualities = $this->transcodeAllQualities($inputPath, $outputDir, $targetQualities, $generateHls);
+                $qualities = $this->transcodeAllQualities($transcodeInput, $outputDir, $targetQualities, $generateHls);
             }
         }
         
+        // Clean up the watermarked intermediate file — it's no longer needed
+        // since all quality encodes are done. Don't waste disk/cloud storage.
+        if ($hasWatermark && isset($watermarkedPath) && $watermarkedPath && file_exists($watermarkedPath)) {
+            unlink($watermarkedPath);
+            Log::info('Cleaned up watermarked intermediate file');
+        }
+
         // Always add 'original' to indicate the original file is available
         $qualities[] = 'original';
 
@@ -399,24 +417,6 @@ class ProcessVideoJob implements ShouldQueue
             'width' => $width,
             'height' => $height,
         ];
-    }
-
-    /**
-     * Calculate actual output dimensions for a given target height,
-     * accounting for portrait vs landscape source video.
-     * FFmpeg's scale=-2:{height} constrains height and calculates width
-     * from the source aspect ratio, rounding to nearest even number.
-     */
-    protected function getActualOutputDimensions(int $targetHeight): array
-    {
-        $srcW = $this->sourceVideoInfo['width'] ?: 1920;
-        $srcH = $this->sourceVideoInfo['height'] ?: 1080;
-
-        // scale=-2:{targetHeight} → width = srcW * targetHeight / srcH, rounded to even
-        $actualWidth = (int) (2 * round(($srcW * $targetHeight / $srcH) / 2));
-        $actualWidth = max(2, $actualWidth);
-
-        return [$actualWidth, $targetHeight];
     }
 
     protected function generateThumbnails(string $inputPath, string $videoDir): void
@@ -575,17 +575,73 @@ class ProcessVideoJob implements ShouldQueue
     }
 
     /**
+     * Apply watermark (image + text) to the original video at its native resolution.
+     * Returns the path to the watermarked intermediate file, or null on failure.
+     * This file is then used as input for all lower-quality encodes, so the
+     * watermark scales naturally with the video — no per-quality font sizing needed.
+     */
+    protected function watermarkOriginal(string $inputPath, string $outputDir, array $videoInfo): ?string
+    {
+        $ffmpeg = $this->getFFmpegPath();
+        $output = "{$outputDir}/watermarked_source.mp4";
+
+        // Skip if already done (job retry)
+        if (file_exists($output) && filesize($output) > 10240) {
+            Log::info('Watermarked source already exists, skipping', ['size' => filesize($output)]);
+            return $output;
+        }
+
+        $videoWidth = $videoInfo['width'] ?: 1920;
+        $videoHeight = $videoInfo['height'] ?: 1080;
+
+        $watermarkInput = $this->getWatermarkInputs();
+        $filterComplex = $this->buildWatermarkFilterComplex($videoWidth, $videoHeight);
+
+        // Encode at high quality (CRF 18) to preserve detail for downstream encodes.
+        // Using faststart so the intermediate is seekable if needed.
+        $cmd = sprintf(
+            '%s -y -i %s %s -filter_complex "%s" -map "[outv]" -map 0:a? -c:v libx264 -crf 18 -preset fast -c:a copy -movflags +faststart %s 2>&1',
+            $ffmpeg,
+            escapeshellarg($inputPath),
+            $watermarkInput,
+            $filterComplex,
+            escapeshellarg($output)
+        );
+
+        Log::info('Applying watermark to original', [
+            'video_id' => $this->video->id,
+            'resolution' => "{$videoWidth}x{$videoHeight}",
+        ]);
+
+        [$exitCode, $result] = $this->runCommand($cmd);
+
+        if ($exitCode !== 0 || !file_exists($output) || filesize($output) < 10240) {
+            Log::error('Watermarking original failed, will transcode without watermark', [
+                'exit_code' => $exitCode,
+                'output' => substr($result, 0, 500),
+            ]);
+            // Clean up partial file
+            if (file_exists($output)) {
+                unlink($output);
+            }
+            return null;
+        }
+
+        Log::info('Watermarked original created', ['size' => filesize($output)]);
+        return $output;
+    }
+
+    /**
      * Single-pass multi-output transcoding.
      * Reads the input once and outputs all quality levels simultaneously.
      * Uses -force_key_frames for HLS-compatible keyframe alignment.
+     * Input is either the original file or the watermarked intermediate.
      */
     protected function transcodeAllQualities(string $inputPath, string $outputDir, array $targetQualities, bool $generateHls): array
     {
         $ffmpeg = $this->getFFmpegPath();
         $threads = (int) Setting::get('ffmpeg_threads', 4);
         $preset = $this->getQualityPreset();
-        $watermarkInput = $this->getWatermarkInputs();
-        $hasWatermark = $this->hasImageWatermark() || $this->hasTextWatermark();
         $qualities = [];
 
         // Check if all outputs already exist (job retry)
@@ -606,27 +662,14 @@ class ProcessVideoJob implements ShouldQueue
             return $qualities;
         }
 
-        // Build single FFmpeg command with multiple outputs
-        // This reads the input ONCE and encodes all qualities simultaneously
+        // Build single FFmpeg command with multiple outputs.
+        // Input is either the original or the watermarked intermediate —
+        // either way, just scale down. No per-quality watermark logic needed.
         $cmd = sprintf('%s -y -i %s', $ffmpeg, escapeshellarg($inputPath));
-        
-        if ($hasWatermark) {
-            $cmd .= ' ' . $watermarkInput;
-        }
 
         $outputArgs = [];
         foreach ($targetQualities as $quality => $settings) {
             $output = "{$outputDir}/{$quality}.mp4";
-            
-            if ($hasWatermark) {
-                // For multi-output with watermark, fall back to sequential
-                // (filter_complex can't easily split to multiple watermarked outputs)
-                $this->transcodeToQuality($inputPath, $outputDir, $quality, $settings, $threads, $preset);
-                if (file_exists($output) && filesize($output) > 10240) {
-                    $qualities[] = $quality;
-                }
-                continue;
-            }
 
             // Force keyframes every 2 seconds for clean HLS segmentation
             $forceKeyframes = $generateHls ? sprintf(' -force_key_frames %s', escapeshellarg('expr:gte(t,n_forced*2)')) : '';
@@ -639,14 +682,6 @@ class ProcessVideoJob implements ShouldQueue
                 $forceKeyframes,
                 escapeshellarg($output)
             );
-        }
-
-        // If watermark was used, qualities were handled individually above
-        if ($hasWatermark) {
-            if ($generateHls && !empty($qualities)) {
-                $this->generateHlsPlaylist($outputDir, $qualities);
-            }
-            return $qualities;
         }
 
         if (!empty($outputArgs)) {
@@ -689,7 +724,8 @@ class ProcessVideoJob implements ShouldQueue
     }
 
     /**
-     * Single-quality transcode fallback (used for watermark mode or retry).
+     * Single-quality transcode fallback (used when multi-output fails for a quality).
+     * Input is either the original or the watermarked intermediate — just scale down.
      */
     protected function transcodeToQuality(string $inputPath, string $outputDir, string $quality, array $settings, ?int $threads = null, ?string $preset = null): void
     {
@@ -705,35 +741,17 @@ class ProcessVideoJob implements ShouldQueue
             return;
         }
         
-        $watermarkInput = $this->getWatermarkInputs();
-        $hasWatermark = $this->hasImageWatermark() || $this->hasTextWatermark();
-        
         $encodeArgs = $this->getMp4EncodeArgs($settings['bitrate']);
 
-        if ($hasWatermark) {
-            [$actualW, $actualH] = $this->getActualOutputDimensions($settings['height']);
-            $filterComplex = $this->buildWatermarkFilterComplex($actualW, $actualH);
-            $cmd = sprintf(
-                '%s -y -i %s %s -filter_complex "%s" -map "[outv]" -map 0:a? %s -force_key_frames %s %s 2>&1',
-                $ffmpeg,
-                escapeshellarg($inputPath),
-                $watermarkInput,
-                $filterComplex,
-                $encodeArgs,
-                escapeshellarg('expr:gte(t,n_forced*2)'),
-                escapeshellarg($output)
-            );
-        } else {
-            $cmd = sprintf(
-                '%s -y -i %s -vf %s %s -force_key_frames %s %s 2>&1',
-                $ffmpeg,
-                escapeshellarg($inputPath),
-                escapeshellarg("scale=-2:{$settings['height']}"),
-                $encodeArgs,
-                escapeshellarg('expr:gte(t,n_forced*2)'),
-                escapeshellarg($output)
-            );
-        }
+        $cmd = sprintf(
+            '%s -y -i %s -vf %s %s -force_key_frames %s %s 2>&1',
+            $ffmpeg,
+            escapeshellarg($inputPath),
+            escapeshellarg("scale=-2:{$settings['height']}"),
+            $encodeArgs,
+            escapeshellarg('expr:gte(t,n_forced*2)'),
+            escapeshellarg($output)
+        );
 
         Log::info('Transcoding video', ['quality' => $quality]);
         [$exitCode, $result] = $this->runCommand($cmd);
@@ -766,8 +784,7 @@ class ProcessVideoJob implements ShouldQueue
     protected function buildWatermarkFilterComplex(int $videoWidth, int $videoHeight): string
     {
         $filters = [];
-        $filters[] = "[0:v]scale=-2:{$videoHeight}[base]";
-        $currentLabel = 'base';
+        $currentLabel = '0:v';
 
         if ($this->hasImageWatermark()) {
             $position = Setting::get('watermark_position', 'bottom-right');
