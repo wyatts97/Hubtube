@@ -6,7 +6,6 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
 use Inertia\Inertia;
-use Sentry\Laravel\Integration;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 // Force file sessions during installation so CSRF works before Redis/DB is configured
@@ -17,9 +16,10 @@ if (!file_exists(dirname(__DIR__) . '/storage/installed')) {
 }
 
 return Application::configure(basePath: dirname(__DIR__))
-    ->withProviders([
+    ->withProviders(array_filter([
         \App\Providers\Filament\AdminPanelProvider::class,
-    ])
+        class_exists(\Sentry\Laravel\ServiceProvider::class) ? \Sentry\Laravel\ServiceProvider::class : null,
+    ]))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
@@ -61,7 +61,9 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // Report all unhandled exceptions to Sentry (if DSN is configured)
-        Integration::handles($exceptions);
+        if (class_exists(\Sentry\Laravel\Integration::class)) {
+            \Sentry\Laravel\Integration::handles($exceptions);
+        }
 
         $exceptions->render(function (HttpException $e, Request $request) {
             $status = $e->getStatusCode();
