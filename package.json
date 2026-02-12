@@ -15,6 +15,7 @@
         "@vueuse/core": "^10.7.2",
         "agora-rtc-sdk-ng": "^4.20.0",
         "agora-rtm-sdk": "^1.5.1",
+        "defu": "^6.1.4",
         "hls.js": "^1.6.15",
         "laravel-echo": "^1.15.3",
         "lucide-vue-next": "^0.323.0",

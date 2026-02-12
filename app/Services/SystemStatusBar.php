@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Setting;
+use App\Services\FfmpegService;
 use App\Models\Video;
 use Illuminate\Support\Facades\Storage;
 
@@ -46,16 +47,8 @@ class SystemStatusBar
     protected function getFfmpegStatus(): array
     {
         $enabled = Setting::get('ffmpeg_enabled', true);
-        $path = Setting::get('ffmpeg_path', '');
-        $ffmpeg = !empty($path) ? $path : 'ffmpeg';
-
-        $available = false;
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            $output = shell_exec("where {$ffmpeg} 2>NUL");
-        } else {
-            $output = shell_exec("which {$ffmpeg} 2>/dev/null");
-        }
-        $available = !empty(trim($output ?? ''));
+        $ffmpeg = FfmpegService::ffmpegPath();
+        $available = FfmpegService::isAvailable();
 
         $processingCount = Video::where('status', 'processing')->count();
         $pendingCount = Video::where('status', 'pending')->count();

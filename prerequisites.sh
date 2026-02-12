@@ -390,15 +390,45 @@ else
 fi
 
 # ── FFmpeg ───────────────────────────────────────────────────────────────────
-section "FFmpeg"
+section "FFmpeg (Static)"
 
-if command_exists ffmpeg; then
-    FFMPEG_VER=$(ffmpeg -version 2>/dev/null | head -1 | grep -oP '[\d.]+' | head -1)
-    ok "FFmpeg already installed (v${FFMPEG_VER})."
+FFMPEG_STATIC_URL="https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz"
+FFMPEG_BIN="/usr/local/bin/ffmpeg"
+FFPROBE_BIN="/usr/local/bin/ffprobe"
+
+install_static_ffmpeg() {
+    info "Downloading static FFmpeg..."
+    tmp_dir=$(mktemp -d)
+    curl -sSL "$FFMPEG_STATIC_URL" -o "$tmp_dir/ffmpeg-static.tar.xz"
+    tar -xf "$tmp_dir/ffmpeg-static.tar.xz" -C "$tmp_dir"
+    static_dir=$(find "$tmp_dir" -maxdepth 1 -type d -name "ffmpeg-*-static" | head -1)
+
+    if [[ -z "$static_dir" ]]; then
+        fail "Failed to extract static FFmpeg archive."
+        rm -rf "$tmp_dir"
+        return 1
+    fi
+
+    install -m 0755 "$static_dir/ffmpeg" "$FFMPEG_BIN"
+    install -m 0755 "$static_dir/ffprobe" "$FFPROBE_BIN"
+    rm -rf "$tmp_dir"
+
+    ok "Static FFmpeg installed to $FFMPEG_BIN"
+}
+
+if [[ -x "$FFMPEG_BIN" ]]; then
+    FFMPEG_VER=$($FFMPEG_BIN -version 2>/dev/null | head -1 | grep -oP '[\d.]+' | head -1)
+    ok "Static FFmpeg already installed (v${FFMPEG_VER})."
 else
-    info "Installing FFmpeg..."
-    apt-get install -y -qq ffmpeg
-    ok "FFmpeg installed ($(ffmpeg -version 2>/dev/null | head -1 | grep -oP '[\d.]+' | head -1))."
+    install_static_ffmpeg || {
+        warn "Static FFmpeg install failed; falling back to apt package."
+        apt-get install -y -qq ffmpeg
+    }
+fi
+
+# Ensure CLI calls to `ffmpeg` work (PATH typically includes /usr/local/bin)
+if [[ ! -x "/usr/bin/ffmpeg" && -x "$FFMPEG_BIN" ]]; then
+    ln -sf "$FFMPEG_BIN" /usr/bin/ffmpeg
 fi
 
 # ── Supervisor ───────────────────────────────────────────────────────────────

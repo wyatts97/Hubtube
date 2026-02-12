@@ -3,6 +3,11 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use App\Services\FfmpegService;
+use App\Services\WatermarkService;
+use Filament\Forms\Components\Actions;
+use Filament\Forms\Components\Actions\Action;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Tabs;
@@ -14,6 +19,10 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 
 class SiteSettings extends Page implements HasForms
 {
@@ -26,6 +35,7 @@ class SiteSettings extends Page implements HasForms
     protected static string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
+    public ?string $watermarkPreviewUrl = null;
 
     public function mount(): void
     {
@@ -52,17 +62,38 @@ class SiteSettings extends Page implements HasForms
             'ffmpeg_threads' => Setting::get('ffmpeg_threads', 4),
             'thumbnail_count' => Setting::get('thumbnail_count', 4),
             'audio_bitrate' => Setting::get('audio_bitrate', '128k'),
-            'video_quality_preset' => Setting::get('video_quality_preset', 'medium'),
+            'video_quality_preset' => Setting::get('video_quality_preset', 'veryfast'),
+            'ffmpeg_rate_control' => Setting::get('ffmpeg_rate_control', 'crf'),
+            'ffmpeg_crf' => Setting::get('ffmpeg_crf', 22),
+            'ffmpeg_pix_fmt' => Setting::get('ffmpeg_pix_fmt', 'yuv420p'),
+            'ffmpeg_mp4_extra_args' => Setting::get('ffmpeg_mp4_extra_args', ''),
+            'ffmpeg_hls_extra_args' => Setting::get('ffmpeg_hls_extra_args', ''),
+            'ffmpeg_hls_playlist_type' => Setting::get('ffmpeg_hls_playlist_type', 'vod'),
+            'ffmpeg_hls_flags' => Setting::get('ffmpeg_hls_flags', 'independent_segments'),
             'multi_resolution_enabled' => Setting::get('multi_resolution_enabled', true),
             'enabled_resolutions' => Setting::get('enabled_resolutions', ['360p', '480p', '720p']),
             'generate_hls' => Setting::get('generate_hls', true),
-            'hls_segment_duration' => Setting::get('hls_segment_duration', 10),
+            'hls_segment_duration' => Setting::get('hls_segment_duration', 6),
             'watermark_enabled' => Setting::get('watermark_enabled', false),
             'watermark_image' => Setting::get('watermark_image', ''),
             'watermark_position' => Setting::get('watermark_position', 'bottom-right'),
             'watermark_opacity' => Setting::get('watermark_opacity', 70),
             'watermark_scale' => Setting::get('watermark_scale', 15),
             'watermark_padding' => Setting::get('watermark_padding', 10),
+            'watermark_text_enabled' => Setting::get('watermark_text_enabled', false),
+            'watermark_text' => Setting::get('watermark_text', ''),
+            'watermark_text_font' => Setting::get('watermark_text_font', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'),
+            'watermark_text_color' => Setting::get('watermark_text_color', '#ffffff'),
+            'watermark_text_size' => Setting::get('watermark_text_size', 24),
+            'watermark_text_opacity' => Setting::get('watermark_text_opacity', 70),
+            'watermark_text_padding' => Setting::get('watermark_text_padding', 10),
+            'watermark_text_position' => Setting::get('watermark_text_position', 'bottom-right'),
+            'watermark_text_x' => Setting::get('watermark_text_x', ''),
+            'watermark_text_y' => Setting::get('watermark_text_y', ''),
+            'watermark_text_scroll_enabled' => Setting::get('watermark_text_scroll_enabled', false),
+            'watermark_text_scroll_speed' => Setting::get('watermark_text_scroll_speed', 60),
+            'watermark_text_scroll_start' => Setting::get('watermark_text_scroll_start', 0),
+            'watermark_text_scroll_end' => Setting::get('watermark_text_scroll_end', 0),
             'video_auto_approve' => Setting::get('video_auto_approve', false),
             'comments_enabled' => Setting::get('comments_enabled', true),
             'comments_require_approval' => Setting::get('comments_require_approval', false),
@@ -73,6 +104,87 @@ class SiteSettings extends Page implements HasForms
             'videos_per_page' => Setting::get('videos_per_page', 24),
             'homepage_shorts_carousel' => Setting::get('homepage_shorts_carousel', false),
         ]);
+
+        $this->watermarkPreviewUrl = $this->resolveWatermarkPreviewUrl();
+    }
+
+    protected function resolveWatermarkPreviewUrl(): ?string
+    {
+        $previewPath = Setting::get('watermark_preview_path', '');
+        if (!$previewPath || !Storage::disk('public')->exists($previewPath)) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($previewPath);
+    }
+
+    public function generateWatermarkPreview(): void
+    {
+        if (!FfmpegService::isAvailable()) {
+            Notification::make()
+                ->title('FFmpeg is not available')
+                ->danger()
+                ->send();
+            return;
+        }
+
+        if (!WatermarkService::hasImageWatermark() && !WatermarkService::hasTextWatermark()) {
+            Notification::make()
+                ->title('Enable an image or text watermark first')
+                ->warning()
+                ->send();
+            return;
+        }
+
+        $ffmpeg = FfmpegService::ffmpegPath();
+        $duration = 4;
+        $width = 1280;
+        $height = 720;
+        $fps = 30;
+
+        Storage::disk('public')->makeDirectory('watermarks');
+        $relativePath = 'watermarks/watermark_preview.mp4';
+        $outputPath = Storage::disk('public')->path($relativePath);
+
+        $baseInput = sprintf(
+            '-f lavfi -i %s',
+            escapeshellarg("testsrc=size={$width}x{$height}:rate={$fps}:duration={$duration}")
+        );
+        $watermarkInput = WatermarkService::getWatermarkInput();
+        $filterComplex = WatermarkService::buildFilterComplex($width, $height);
+
+        $cmd = sprintf(
+            '%s -y %s %s -filter_complex "%s" -map "[outv]" -t %d -c:v libx264 -preset veryfast -crf 22 -pix_fmt yuv420p -an -movflags +faststart %s 2>&1',
+            $ffmpeg,
+            $baseInput,
+            $watermarkInput,
+            $filterComplex,
+            $duration,
+            escapeshellarg($outputPath)
+        );
+
+        $result = Process::timeout(120)->run($cmd);
+
+        if (!$result->successful() || !file_exists($outputPath) || filesize($outputPath) === 0) {
+            Log::error('Watermark preview generation failed', [
+                'exit_code' => $result->exitCode(),
+                'output' => substr($result->output(), -1000),
+            ]);
+
+            Notification::make()
+                ->title('Failed to generate preview')
+                ->danger()
+                ->send();
+            return;
+        }
+
+        Setting::set('watermark_preview_path', $relativePath, 'general', 'string');
+        $this->watermarkPreviewUrl = Storage::disk('public')->url($relativePath);
+
+        Notification::make()
+            ->title('Watermark preview updated')
+            ->success()
+            ->send();
     }
 
     public function form(Form $form): Form
@@ -177,11 +289,11 @@ class SiteSettings extends Page implements HasForms
                                             ->default(true),
                                         TextInput::make('ffmpeg_path')
                                             ->label('FFmpeg Binary Path')
-                                            ->placeholder('/usr/bin/ffmpeg')
+                                            ->placeholder('/usr/local/bin/ffmpeg')
                                             ->helperText('Leave empty to use system default'),
                                         TextInput::make('ffprobe_path')
                                             ->label('FFprobe Binary Path')
-                                            ->placeholder('/usr/bin/ffprobe')
+                                            ->placeholder('/usr/local/bin/ffprobe')
                                             ->helperText('Leave empty to use system default'),
                                         TextInput::make('ffmpeg_threads')
                                             ->label('FFmpeg Threads')
@@ -207,11 +319,48 @@ class SiteSettings extends Page implements HasForms
                                             ->label('Quality Preset')
                                             ->options([
                                                 'ultrafast' => 'Ultra Fast (Lower Quality)',
+                                                'veryfast' => 'Very Fast (Recommended)',
                                                 'fast' => 'Fast',
                                                 'medium' => 'Medium (Balanced)',
                                                 'slow' => 'Slow (Higher Quality)',
                                             ])
-                                            ->default('medium'),
+                                            ->default('veryfast'),
+                                        Select::make('ffmpeg_rate_control')
+                                            ->label('Rate Control')
+                                            ->options([
+                                                'crf' => 'CRF (Recommended)',
+                                                'bitrate' => 'Bitrate',
+                                            ])
+                                            ->default('crf')
+                                            ->helperText('CRF keeps consistent quality; bitrate locks output size.'),
+                                        TextInput::make('ffmpeg_crf')
+                                            ->label('CRF (Quality)')
+                                            ->numeric()
+                                            ->minValue(16)
+                                            ->maxValue(30)
+                                            ->default(22)
+                                            ->visible(fn ($get) => $get('ffmpeg_rate_control') === 'crf'),
+                                        TextInput::make('ffmpeg_pix_fmt')
+                                            ->label('Pixel Format')
+                                            ->placeholder('yuv420p')
+                                            ->default('yuv420p'),
+                                        Textarea::make('ffmpeg_mp4_extra_args')
+                                            ->label('MP4 Extra FFmpeg Args')
+                                            ->rows(2)
+                                            ->placeholder('-profile:v high -level 4.1')
+                                            ->helperText('Advanced: appended to MP4 encoding command.'),
+                                        Textarea::make('ffmpeg_hls_extra_args')
+                                            ->label('HLS Extra FFmpeg Args')
+                                            ->rows(2)
+                                            ->placeholder('-max_muxing_queue_size 1024')
+                                            ->helperText('Advanced: appended to HLS encoding command.'),
+                                        TextInput::make('ffmpeg_hls_playlist_type')
+                                            ->label('HLS Playlist Type')
+                                            ->default('vod')
+                                            ->helperText('Common values: vod, event'),
+                                        TextInput::make('ffmpeg_hls_flags')
+                                            ->label('HLS Flags')
+                                            ->default('independent_segments'),
                                         Toggle::make('multi_resolution_enabled')
                                             ->label('Enable Multi-Resolution Transcoding')
                                             ->helperText('Create multiple resolution versions of uploaded videos')
@@ -239,62 +388,167 @@ class SiteSettings extends Page implements HasForms
                                         TextInput::make('hls_segment_duration')
                                             ->label('HLS Segment Duration (seconds)')
                                             ->numeric()
-                                            ->default(10)
+                                            ->default(6)
                                             ->helperText('Duration of each HLS segment. Lower = faster seeking, higher = fewer requests.')
                                             ->visible(fn ($get) => $get('multi_resolution_enabled') && $get('generate_hls')),
                                     ])->columns(2),
                                 Section::make('Watermark')
                                     ->schema([
                                         Toggle::make('watermark_enabled')
-                                            ->label('Enable Watermark')
-                                            ->helperText('Add a watermark to all processed videos')
+                                            ->label('Enable Image Watermark')
+                                            ->helperText('Add a PNG watermark to all processed videos')
                                             ->reactive(),
-                                        \Filament\Forms\Components\FileUpload::make('watermark_image')
-                                            ->label('Watermark Image')
-                                            ->image()
-                                            ->directory('watermarks')
-                                            ->visibility('public')
-                                            ->helperText('Upload a PNG image with transparency for best results')
-                                            ->visible(fn ($get) => $get('watermark_enabled')),
-                                        Select::make('watermark_position')
-                                            ->label('Watermark Position')
-                                            ->options([
-                                                'top-left' => 'Top Left',
-                                                'top-center' => 'Top Center',
-                                                'top-right' => 'Top Right',
-                                                'center-left' => 'Center Left',
-                                                'center' => 'Center',
-                                                'center-right' => 'Center Right',
-                                                'bottom-left' => 'Bottom Left',
-                                                'bottom-center' => 'Bottom Center',
-                                                'bottom-right' => 'Bottom Right',
+                                        Toggle::make('watermark_text_enabled')
+                                            ->label('Enable Text Watermark')
+                                            ->helperText('Draw text on top of video, supports scrolling')
+                                            ->reactive(),
+                                        Actions::make([
+                                            Action::make('generateWatermarkPreview')
+                                                ->label('Generate Watermark Preview')
+                                                ->icon('heroicon-o-film')
+                                                ->color('gray')
+                                                ->action(fn () => $this->generateWatermarkPreview()),
+                                        ])->columnSpanFull(),
+                                        Placeholder::make('watermark_preview')
+                                            ->label('Preview')
+                                            ->content(function () {
+                                                if (!$this->watermarkPreviewUrl) {
+                                                    return 'No preview generated yet.';
+                                                }
+
+                                                return new HtmlString(
+                                                    '<video controls playsinline class="w-full max-w-lg rounded-lg" style="background:#111" src="' .
+                                                    e($this->watermarkPreviewUrl) .
+                                                    '"></video>'
+                                                );
+                                            })
+                                            ->columnSpanFull(),
+                                        Section::make('Image Watermark Settings')
+                                            ->collapsible()
+                                            ->collapsed()
+                                            ->schema([
+                                                \Filament\Forms\Components\FileUpload::make('watermark_image')
+                                                    ->label('Watermark Image')
+                                                    ->image()
+                                                    ->directory('watermarks')
+                                                    ->visibility('public')
+                                                    ->helperText('Upload a PNG image with transparency for best results')
+                                                    ->visible(fn ($get) => $get('watermark_enabled')),
+                                                Select::make('watermark_position')
+                                                    ->label('Watermark Position')
+                                                    ->options([
+                                                        'top-left' => 'Top Left',
+                                                        'top-center' => 'Top Center',
+                                                        'top-right' => 'Top Right',
+                                                        'center-left' => 'Center Left',
+                                                        'center' => 'Center',
+                                                        'center-right' => 'Center Right',
+                                                        'bottom-left' => 'Bottom Left',
+                                                        'bottom-center' => 'Bottom Center',
+                                                        'bottom-right' => 'Bottom Right',
+                                                    ])
+                                                    ->default('bottom-right')
+                                                    ->visible(fn ($get) => $get('watermark_enabled')),
+                                                TextInput::make('watermark_opacity')
+                                                    ->label('Watermark Opacity')
+                                                    ->numeric()
+                                                    ->minValue(0)
+                                                    ->maxValue(100)
+                                                    ->suffix('%')
+                                                    ->default(70)
+                                                    ->visible(fn ($get) => $get('watermark_enabled')),
+                                                TextInput::make('watermark_scale')
+                                                    ->label('Watermark Scale')
+                                                    ->numeric()
+                                                    ->minValue(5)
+                                                    ->maxValue(50)
+                                                    ->suffix('% of video width')
+                                                    ->default(15)
+                                                    ->visible(fn ($get) => $get('watermark_enabled')),
+                                                TextInput::make('watermark_padding')
+                                                    ->label('Watermark Padding')
+                                                    ->numeric()
+                                                    ->minValue(0)
+                                                    ->maxValue(100)
+                                                    ->suffix('px')
+                                                    ->default(10)
+                                                    ->visible(fn ($get) => $get('watermark_enabled')),
                                             ])
-                                            ->default('bottom-right')
-                                            ->visible(fn ($get) => $get('watermark_enabled')),
-                                        TextInput::make('watermark_opacity')
-                                            ->label('Watermark Opacity')
-                                            ->numeric()
-                                            ->minValue(0)
-                                            ->maxValue(100)
-                                            ->suffix('%')
-                                            ->default(70)
-                                            ->visible(fn ($get) => $get('watermark_enabled')),
-                                        TextInput::make('watermark_scale')
-                                            ->label('Watermark Scale')
-                                            ->numeric()
-                                            ->minValue(5)
-                                            ->maxValue(50)
-                                            ->suffix('% of video width')
-                                            ->default(15)
-                                            ->visible(fn ($get) => $get('watermark_enabled')),
-                                        TextInput::make('watermark_padding')
-                                            ->label('Watermark Padding')
-                                            ->numeric()
-                                            ->minValue(0)
-                                            ->maxValue(100)
-                                            ->suffix('px')
-                                            ->default(10)
-                                            ->visible(fn ($get) => $get('watermark_enabled')),
+                                            ->columns(2)
+                                            ->visible(fn ($get) => $get('watermark_enabled'))
+                                            ->columnSpanFull(),
+                                        Section::make('Text Watermark Settings')
+                                            ->collapsible()
+                                            ->collapsed()
+                                            ->schema([
+                                                Textarea::make('watermark_text')
+                                                    ->label('Watermark Text')
+                                                    ->rows(2),
+                                                TextInput::make('watermark_text_font')
+                                                    ->label('Font File Path')
+                                                    ->placeholder('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'),
+                                                TextInput::make('watermark_text_color')
+                                                    ->label('Text Color')
+                                                    ->placeholder('#ffffff'),
+                                                TextInput::make('watermark_text_size')
+                                                    ->label('Text Size')
+                                                    ->numeric()
+                                                    ->minValue(8)
+                                                    ->maxValue(128),
+                                                TextInput::make('watermark_text_opacity')
+                                                    ->label('Text Opacity')
+                                                    ->numeric()
+                                                    ->minValue(0)
+                                                    ->maxValue(100)
+                                                    ->suffix('%'),
+                                                TextInput::make('watermark_text_padding')
+                                                    ->label('Text Padding')
+                                                    ->numeric()
+                                                    ->minValue(0)
+                                                    ->maxValue(100)
+                                                    ->suffix('px'),
+                                                Select::make('watermark_text_position')
+                                                    ->label('Text Position')
+                                                    ->options([
+                                                        'top-left' => 'Top Left',
+                                                        'top-center' => 'Top Center',
+                                                        'top-right' => 'Top Right',
+                                                        'center-left' => 'Center Left',
+                                                        'center' => 'Center',
+                                                        'center-right' => 'Center Right',
+                                                        'bottom-left' => 'Bottom Left',
+                                                        'bottom-center' => 'Bottom Center',
+                                                        'bottom-right' => 'Bottom Right',
+                                                    ]),
+                                                TextInput::make('watermark_text_x')
+                                                    ->label('Custom Text X')
+                                                    ->placeholder('Optional (e.g., 20 or w-text_w-20)'),
+                                                TextInput::make('watermark_text_y')
+                                                    ->label('Custom Text Y')
+                                                    ->placeholder('Optional (e.g., 20 or h-text_h-20)'),
+                                                Toggle::make('watermark_text_scroll_enabled')
+                                                    ->label('Enable Scrolling Text')
+                                                    ->reactive(),
+                                                TextInput::make('watermark_text_scroll_speed')
+                                                    ->label('Scroll Speed (px/sec)')
+                                                    ->numeric()
+                                                    ->minValue(10)
+                                                    ->maxValue(400)
+                                                    ->visible(fn ($get) => $get('watermark_text_scroll_enabled')),
+                                                TextInput::make('watermark_text_scroll_start')
+                                                    ->label('Scroll Start (sec)')
+                                                    ->numeric()
+                                                    ->minValue(0)
+                                                    ->visible(fn ($get) => $get('watermark_text_scroll_enabled')),
+                                                TextInput::make('watermark_text_scroll_end')
+                                                    ->label('Scroll End (sec)')
+                                                    ->numeric()
+                                                    ->minValue(0)
+                                                    ->visible(fn ($get) => $get('watermark_text_scroll_enabled')),
+                                            ])
+                                            ->columns(2)
+                                            ->visible(fn ($get) => $get('watermark_text_enabled'))
+                                            ->columnSpanFull(),
                                     ])->columns(2),
                                 Section::make('Moderation')
                                     ->schema([

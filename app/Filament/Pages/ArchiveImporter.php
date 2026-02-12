@@ -2,7 +2,8 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\User;
+use App\Models\Video;
+use App\Services\FfmpegService;
 use App\Services\ArchiveImportService;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -291,7 +292,7 @@ class ArchiveImporter extends Page
      */
     public function fixSeekability(): void
     {
-        $ffmpegPath = \App\Models\Setting::get('ffmpeg_path', 'ffmpeg');
+        $ffmpegPath = FfmpegService::ffmpegPath();
         $videos = \App\Models\Video::where('source_site', 'wedgietube_archive')
             ->whereNotNull('video_path')
             ->get();

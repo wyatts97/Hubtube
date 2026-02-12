@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Events\VideoProcessed;
 use App\Models\Setting;
 use App\Models\Video;
+use App\Services\FfmpegService;
 use App\Services\StorageManager;
 use App\Services\VideoService;
 use Illuminate\Bus\Queueable;
@@ -114,44 +115,130 @@ class ProcessVideoJob implements ShouldQueue
 
     protected function isFFmpegAvailable(): bool
     {
-        $ffmpegPath = Setting::get('ffmpeg_path', '');
-        $ffmpeg = !empty($ffmpegPath) ? $ffmpegPath : '/usr/bin/ffmpeg';
-        
-        // Check if FFmpeg binary exists and is executable
-        if (file_exists($ffmpeg) && is_executable($ffmpeg)) {
-            return true;
-        }
-        
-        // Try to find ffmpeg in PATH
-        $output = shell_exec('which ffmpeg 2>/dev/null');
-        return !empty(trim($output ?? ''));
+        return FfmpegService::isAvailable();
     }
 
     protected function getFFmpegPath(): string
     {
-        $ffmpegPath = Setting::get('ffmpeg_path', '');
-        if (!empty($ffmpegPath) && file_exists($ffmpegPath)) {
-            return $ffmpegPath;
-        }
-        
-        $output = trim(shell_exec('which ffmpeg 2>/dev/null') ?? '');
-        return !empty($output) ? $output : '/usr/bin/ffmpeg';
+        return FfmpegService::ffmpegPath();
     }
 
     protected function getFFprobePath(): string
     {
-        $ffprobePath = Setting::get('ffprobe_path', '');
-        if (!empty($ffprobePath) && file_exists($ffprobePath)) {
-            return $ffprobePath;
-        }
-        
-        $output = trim(shell_exec('which ffprobe 2>/dev/null') ?? '');
-        return !empty($output) ? $output : '/usr/bin/ffprobe';
+        return FfmpegService::ffprobePath();
     }
 
     protected function getQualityPreset(): string
     {
-        return Setting::get('video_quality_preset', 'medium');
+        return Setting::get('video_quality_preset', 'veryfast');
+    }
+
+    protected function getRateControl(): string
+    {
+        return Setting::get('ffmpeg_rate_control', 'crf');
+    }
+
+    protected function getCrf(): int
+    {
+        return (int) Setting::get('ffmpeg_crf', 22);
+    }
+
+    protected function getPixFmt(): string
+    {
+        return Setting::get('ffmpeg_pix_fmt', 'yuv420p');
+    }
+
+    protected function getMp4ExtraArgs(): string
+    {
+        return trim((string) Setting::get('ffmpeg_mp4_extra_args', ''));
+    }
+
+    protected function getHlsExtraArgs(): string
+    {
+        return trim((string) Setting::get('ffmpeg_hls_extra_args', ''));
+    }
+
+    protected function getHlsPlaylistType(): string
+    {
+        return trim((string) Setting::get('ffmpeg_hls_playlist_type', 'vod')) ?: 'vod';
+    }
+
+    protected function getHlsFlags(): string
+    {
+        return trim((string) Setting::get('ffmpeg_hls_flags', 'independent_segments')) ?: 'independent_segments';
+    }
+
+    protected function getMp4EncodeArgs(?string $bitrate = null): string
+    {
+        $preset = $this->getQualityPreset();
+        $rateControl = $this->getRateControl();
+        $crf = $this->getCrf();
+        $pixFmt = $this->getPixFmt();
+        $audioBitrate = Setting::get('audio_bitrate', '128k');
+        $threads = (int) Setting::get('ffmpeg_threads', 4);
+        $extraArgs = $this->getMp4ExtraArgs();
+
+        $videoRate = ($rateControl === 'bitrate' && $bitrate)
+            ? "-b:v {$bitrate}"
+            : "-crf {$crf}";
+
+        return trim(sprintf(
+            '-c:v libx264 -preset %s %s -pix_fmt %s -c:a aac -b:a %s -threads %d -movflags +faststart %s',
+            $preset,
+            $videoRate,
+            $pixFmt,
+            $audioBitrate,
+            $threads,
+            $extraArgs
+        ));
+    }
+
+    protected function getHlsEncodeArgs(): string
+    {
+        $preset = $this->getQualityPreset();
+        $crf = $this->getCrf();
+        $audioBitrate = Setting::get('audio_bitrate', '128k');
+        $threads = (int) Setting::get('ffmpeg_threads', 4);
+        $hlsTime = (int) Setting::get('hls_segment_duration', 6);
+        $playlistType = $this->getHlsPlaylistType();
+        $flags = $this->getHlsFlags();
+        $extraArgs = $this->getHlsExtraArgs();
+
+        return trim(sprintf(
+            '-c:v libx264 -preset %s -crf %d -c:a aac -b:a %s -threads %d -f hls -hls_time %d -hls_playlist_type %s -hls_flags %s %s',
+            $preset,
+            $crf,
+            $audioBitrate,
+            $threads,
+            $hlsTime,
+            $playlistType,
+            $flags,
+            $extraArgs
+        ));
+    }
+
+    protected function hasImageWatermark(): bool
+    {
+        if (!Setting::get('watermark_enabled', false)) {
+            return false;
+        }
+
+        $watermarkImage = Setting::get('watermark_image', '');
+        if (empty($watermarkImage)) {
+            return false;
+        }
+
+        $watermarkPath = Storage::disk('public')->path($watermarkImage);
+        return file_exists($watermarkPath);
+    }
+
+    protected function hasTextWatermark(): bool
+    {
+        if (!Setting::get('watermark_text_enabled', false)) {
+            return false;
+        }
+
+        return trim((string) Setting::get('watermark_text', '')) !== '';
     }
 
     protected function getVideoDirectory(): string
@@ -439,7 +526,7 @@ class ProcessVideoJob implements ShouldQueue
         $threads = (int) Setting::get('ffmpeg_threads', 4);
         $preset = $this->getQualityPreset();
         $watermarkInput = $this->getWatermarkInputs();
-        $hasWatermark = !empty($watermarkInput);
+        $hasWatermark = $this->hasImageWatermark() || $this->hasTextWatermark();
         $qualities = [];
 
         // Check if all outputs already exist (job retry)
@@ -484,17 +571,13 @@ class ProcessVideoJob implements ShouldQueue
             }
 
             // Force keyframes every 2 seconds for clean HLS segmentation
-            $keyframeExpr = $generateHls ? ',setpts=PTS-STARTPTS' : '';
             $forceKeyframes = $generateHls ? sprintf(' -force_key_frames %s', escapeshellarg('expr:gte(t,n_forced*2)')) : '';
-            
-            $audioBitrate = Setting::get('audio_bitrate', '128k');
+            $encodeArgs = $this->getMp4EncodeArgs($settings['bitrate']);
+
             $outputArgs[] = sprintf(
-                '-vf %s -c:v libx264 -preset %s -b:v %s -c:a aac -b:a %s -threads %d%s -movflags +faststart %s',
+                '-vf %s %s%s %s',
                 escapeshellarg("scale=-2:{$settings['height']}"),
-                $preset,
-                $settings['bitrate'],
-                $audioBitrate,
-                $threads,
+                $encodeArgs,
                 $forceKeyframes,
                 escapeshellarg($output)
             );
@@ -565,36 +648,29 @@ class ProcessVideoJob implements ShouldQueue
         }
         
         $watermarkInput = $this->getWatermarkInputs();
-        $hasWatermark = !empty($watermarkInput);
+        $hasWatermark = $this->hasImageWatermark() || $this->hasTextWatermark();
         
+        $encodeArgs = $this->getMp4EncodeArgs($settings['bitrate']);
+
         if ($hasWatermark) {
             $filterComplex = $this->buildWatermarkFilterComplex($settings['width'], $settings['height']);
-            
-            $audioBitrate = Setting::get('audio_bitrate', '128k');
             $cmd = sprintf(
-                '%s -y -i %s %s -filter_complex "%s" -map "[outv]" -map 0:a? -c:v libx264 -preset %s -b:v %s -c:a aac -b:a %s -threads %d -force_key_frames %s -movflags +faststart %s 2>&1',
+                '%s -y -i %s %s -filter_complex "%s" -map "[outv]" -map 0:a? %s -force_key_frames %s %s 2>&1',
                 $ffmpeg,
                 escapeshellarg($inputPath),
                 $watermarkInput,
                 $filterComplex,
-                $preset,
-                $settings['bitrate'],
-                $audioBitrate,
-                $threads,
+                $encodeArgs,
                 escapeshellarg('expr:gte(t,n_forced*2)'),
                 escapeshellarg($output)
             );
         } else {
-            $audioBitrate = Setting::get('audio_bitrate', '128k');
             $cmd = sprintf(
-                '%s -y -i %s -vf %s -c:v libx264 -preset %s -b:v %s -c:a aac -b:a %s -threads %d -force_key_frames %s -movflags +faststart %s 2>&1',
+                '%s -y -i %s -vf %s %s -force_key_frames %s %s 2>&1',
                 $ffmpeg,
                 escapeshellarg($inputPath),
                 escapeshellarg("scale=-2:{$settings['height']}"),
-                $preset,
-                $settings['bitrate'],
-                $audioBitrate,
-                $threads,
+                $encodeArgs,
                 escapeshellarg('expr:gte(t,n_forced*2)'),
                 escapeshellarg($output)
             );
@@ -615,53 +691,154 @@ class ProcessVideoJob implements ShouldQueue
 
     protected function getWatermarkInputs(): string
     {
-        if (!Setting::get('watermark_enabled', false)) {
+        if (!$this->hasImageWatermark()) {
             return '';
         }
-        
+
         $watermarkImage = Setting::get('watermark_image', '');
-        if (empty($watermarkImage)) {
-            return '';
-        }
-        
         $watermarkPath = Storage::disk('public')->path($watermarkImage);
         if (!file_exists($watermarkPath)) {
             return '';
         }
-        
+
         return '-i ' . escapeshellarg($watermarkPath);
     }
 
     protected function buildWatermarkFilterComplex(int $videoWidth, int $videoHeight): string
     {
-        $position = Setting::get('watermark_position', 'bottom-right');
-        $opacity = Setting::get('watermark_opacity', 70) / 100;
-        $scale = Setting::get('watermark_scale', 15) / 100;
-        $padding = Setting::get('watermark_padding', 10);
-        
-        // Calculate watermark width based on video width
-        $wmWidth = (int) ($videoWidth * $scale);
-        
-        // Position mapping for FFmpeg overlay filter
+        $filters = [];
+        $filters[] = "[0:v]scale=-2:{$videoHeight}[base]";
+        $currentLabel = 'base';
+
+        if ($this->hasImageWatermark()) {
+            $position = Setting::get('watermark_position', 'bottom-right');
+            $opacity = Setting::get('watermark_opacity', 70) / 100;
+            $scale = Setting::get('watermark_scale', 15) / 100;
+            $padding = Setting::get('watermark_padding', 10);
+
+            // Calculate watermark width based on video width
+            $wmWidth = (int) ($videoWidth * $scale);
+
+            // Position mapping for FFmpeg overlay filter
+            $positions = [
+                'top-left' => "x={$padding}:y={$padding}",
+                'top-center' => "x=(W-w)/2:y={$padding}",
+                'top-right' => "x=W-w-{$padding}:y={$padding}",
+                'center-left' => "x={$padding}:y=(H-h)/2",
+                'center' => "x=(W-w)/2:y=(H-h)/2",
+                'center-right' => "x=W-w-{$padding}:y=(H-h)/2",
+                'bottom-left' => "x={$padding}:y=H-h-{$padding}",
+                'bottom-center' => "x=(W-w)/2:y=H-h-{$padding}",
+                'bottom-right' => "x=W-w-{$padding}:y=H-h-{$padding}",
+            ];
+
+            $pos = $positions[$position] ?? $positions['bottom-right'];
+
+            $filters[] = "[1:v]scale={$wmWidth}:-1,format=rgba,colorchannelmixer=aa={$opacity}[wm]";
+            $filters[] = "[{$currentLabel}][wm]overlay={$pos}[wm_out]";
+            $currentLabel = 'wm_out';
+        }
+
+        $textFilter = $this->buildTextWatermarkFilter($videoWidth, $videoHeight);
+        if ($textFilter) {
+            $filters[] = "[{$currentLabel}]{$textFilter}[outv]";
+        } else {
+            $filters[] = "[{$currentLabel}]null[outv]";
+        }
+
+        return implode(';', $filters);
+    }
+
+    protected function buildTextWatermarkFilter(int $videoWidth, int $videoHeight): ?string
+    {
+        if (!$this->hasTextWatermark()) {
+            return null;
+        }
+
+        $text = $this->escapeDrawtextValue((string) Setting::get('watermark_text', ''));
+        $font = $this->escapeDrawtextValue((string) Setting::get('watermark_text_font', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'));
+        $size = (int) Setting::get('watermark_text_size', 24);
+        $color = (string) Setting::get('watermark_text_color', '#ffffff');
+        $opacity = (int) Setting::get('watermark_text_opacity', 70) / 100;
+        $padding = (int) Setting::get('watermark_text_padding', 10);
+        $position = (string) Setting::get('watermark_text_position', 'bottom-right');
+        $customX = trim((string) Setting::get('watermark_text_x', ''));
+        $customY = trim((string) Setting::get('watermark_text_y', ''));
+
+        $scrollEnabled = (bool) Setting::get('watermark_text_scroll_enabled', false);
+        $scrollSpeed = (int) Setting::get('watermark_text_scroll_speed', 60);
+        $scrollStart = (float) Setting::get('watermark_text_scroll_start', 0);
+        $scrollEnd = (float) Setting::get('watermark_text_scroll_end', 0);
+
         $positions = [
-            'top-left' => "x={$padding}:y={$padding}",
-            'top-center' => "x=(W-w)/2:y={$padding}",
-            'top-right' => "x=W-w-{$padding}:y={$padding}",
-            'center-left' => "x={$padding}:y=(H-h)/2",
-            'center' => "x=(W-w)/2:y=(H-h)/2",
-            'center-right' => "x=W-w-{$padding}:y=(H-h)/2",
-            'bottom-left' => "x={$padding}:y=H-h-{$padding}",
-            'bottom-center' => "x=(W-w)/2:y=H-h-{$padding}",
-            'bottom-right' => "x=W-w-{$padding}:y=H-h-{$padding}",
+            'top-left' => [
+                'x' => $padding,
+                'y' => $padding,
+            ],
+            'top-center' => [
+                'x' => '(w-text_w)/2',
+                'y' => $padding,
+            ],
+            'top-right' => [
+                'x' => "w-text_w-{$padding}",
+                'y' => $padding,
+            ],
+            'center-left' => [
+                'x' => $padding,
+                'y' => '(h-text_h)/2',
+            ],
+            'center' => [
+                'x' => '(w-text_w)/2',
+                'y' => '(h-text_h)/2',
+            ],
+            'center-right' => [
+                'x' => "w-text_w-{$padding}",
+                'y' => '(h-text_h)/2',
+            ],
+            'bottom-left' => [
+                'x' => $padding,
+                'y' => "h-text_h-{$padding}",
+            ],
+            'bottom-center' => [
+                'x' => '(w-text_w)/2',
+                'y' => "h-text_h-{$padding}",
+            ],
+            'bottom-right' => [
+                'x' => "w-text_w-{$padding}",
+                'y' => "h-text_h-{$padding}",
+            ],
         ];
-        
+
         $pos = $positions[$position] ?? $positions['bottom-right'];
-        
-        // Build the complex filter:
-        // 1. Scale the video to target resolution
-        // 2. Scale the watermark and apply opacity
-        // 3. Overlay watermark on video
-        return "[0:v]scale=-2:{$videoHeight}[scaled];[1:v]scale={$wmWidth}:-1,format=rgba,colorchannelmixer=aa={$opacity}[wm];[scaled][wm]overlay={$pos}[outv]";
+        $x = $customX !== '' ? $customX : $pos['x'];
+        $y = $customY !== '' ? $customY : $pos['y'];
+
+        if ($scrollEnabled) {
+            $x = "mod(t*{$scrollSpeed}, w+text_w)-text_w";
+        }
+
+        $fontColor = $color;
+        if (!str_contains($fontColor, '@')) {
+            $fontColor .= '@' . $opacity;
+        }
+
+        $enable = '';
+        if ($scrollEnd > 0) {
+            $enable = ":enable='between(t,{$scrollStart},{$scrollEnd})'";
+        } elseif ($scrollStart > 0) {
+            $enable = ":enable='gte(t,{$scrollStart})'";
+        }
+
+        return "drawtext=text='{$text}':fontfile='{$font}':fontsize={$size}:fontcolor={$fontColor}:x={$x}:y={$y}{$enable}";
+    }
+
+    protected function escapeDrawtextValue(string $value): string
+    {
+        $value = str_replace('\\', '\\\\', $value);
+        $value = str_replace(':', '\\:', $value);
+        $value = str_replace("'", "\\'", $value);
+        $value = str_replace('%', '\\%', $value);
+        return $value;
     }
 
     protected function generateHlsPlaylist(string $outputDir, array $qualities): void
@@ -685,12 +862,12 @@ class ProcessVideoJob implements ShouldQueue
             $segmentPattern = "{$hlsDir}/segment_%03d.ts";
             $playlistPath = "{$hlsDir}/playlist.m3u8";
 
-            $hlsTime = (int) Setting::get('hls_segment_duration', 10);
+            $encodeArgs = $this->getHlsEncodeArgs();
             $cmd = sprintf(
-                '%s -y -i %s -c:v copy -c:a copy -hls_time %d -hls_list_size 0 -hls_segment_filename %s %s 2>&1',
+                '%s -y -i %s %s -hls_list_size 0 -hls_segment_filename %s %s 2>&1',
                 $ffmpeg,
                 escapeshellarg($input),
-                $hlsTime,
+                $encodeArgs,
                 escapeshellarg($segmentPattern),
                 escapeshellarg($playlistPath)
             );
@@ -840,8 +1017,9 @@ class ProcessVideoJob implements ShouldQueue
             'video_id' => $this->video->id,
             'uploaded' => $uploadedCount,
             'failed' => $failedCount,
-            'disk' => $targetDisk,
         ]);
+
+        StorageManager::cleanupTemp();
 
         // Update the video's storage_disk to reflect where files now live
         if ($failedCount === 0) {

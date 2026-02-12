@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Setting;
 use App\Models\Video;
+use App\Services\FfmpegService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
@@ -338,8 +339,7 @@ class BunnyStreamService
             mkdir($tempDir, 0755, true);
         }
         $outputFile = "{$tempDir}/output.mp4";
-        $ffmpegBinary = Setting::get('ffmpeg_path', '/usr/bin/ffmpeg');
-        if (empty($ffmpegBinary)) $ffmpegBinary = '/usr/bin/ffmpeg';
+        $ffmpegBinary = FfmpegService::ffmpegPath();
 
         try {
             $cmd = "{$ffmpegBinary} -i " . escapeshellarg($playlistUrl)

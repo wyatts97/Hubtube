@@ -68,8 +68,8 @@ class StorageSettings extends Page implements HasForms
             'bunnycdn_key' => Setting::get('bunnycdn_key', ''),
             // FFmpeg
             'ffmpeg_enabled' => Setting::get('ffmpeg_enabled', true),
-            'ffmpeg_path' => Setting::get('ffmpeg_path', '/usr/bin/ffmpeg'),
-            'ffprobe_path' => Setting::get('ffprobe_path', '/usr/bin/ffprobe'),
+            'ffmpeg_path' => Setting::get('ffmpeg_path', '/usr/local/bin/ffmpeg'),
+            'ffprobe_path' => Setting::get('ffprobe_path', '/usr/local/bin/ffprobe'),
             'ffmpeg_threads' => Setting::get('ffmpeg_threads', 4),
         ]);
     }
@@ -264,10 +264,10 @@ class StorageSettings extends Page implements HasForms
                                             ->helperText('Disable if FFmpeg is not installed'),
                                         TextInput::make('ffmpeg_path')
                                             ->label('FFmpeg Binary Path')
-                                            ->placeholder('/usr/bin/ffmpeg'),
+                                            ->placeholder('/usr/local/bin/ffmpeg'),
                                         TextInput::make('ffprobe_path')
                                             ->label('FFprobe Binary Path')
-                                            ->placeholder('/usr/bin/ffprobe'),
+                                            ->placeholder('/usr/local/bin/ffprobe'),
                                         TextInput::make('ffmpeg_threads')
                                             ->label('Processing Threads')
                                             ->numeric()

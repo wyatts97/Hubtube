@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Category;
 use App\Models\Hashtag;
 use App\Models\Video;
+use App\Services\FfmpegService;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -735,7 +736,7 @@ class ArchiveImportService
      */
     private function applyFaststart(string $filePath): void
     {
-        $ffmpegPath = \App\Models\Setting::get('ffmpeg_path', 'ffmpeg');
+        $ffmpegPath = FfmpegService::ffmpegPath();
 
         $tmpPath = $filePath . '.faststart.mp4';
         $cmd = escapeshellarg($ffmpegPath)

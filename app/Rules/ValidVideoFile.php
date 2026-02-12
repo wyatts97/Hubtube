@@ -3,6 +3,7 @@
 namespace App\Rules;
 
 use App\Models\Setting;
+use App\Services\FfmpegService;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Http\UploadedFile;
@@ -27,7 +28,7 @@ class ValidVideoFile implements ValidationRule
             return; // Skip FFprobe validation if FFmpeg is disabled
         }
 
-        $ffprobePath = Setting::get('ffprobe_path', '') ?: $this->findFFprobe();
+        $ffprobePath = FfmpegService::ffprobePath();
         if (!$ffprobePath || !is_executable($ffprobePath)) {
             Log::warning('FFprobe not found or not executable, skipping video validation');
             return;
@@ -98,26 +99,4 @@ class ValidVideoFile implements ValidationRule
         }
     }
 
-    protected function findFFprobe(): ?string
-    {
-        $possiblePaths = [
-            '/usr/bin/ffprobe',
-            '/usr/local/bin/ffprobe',
-            '/opt/homebrew/bin/ffprobe',
-            'ffprobe', // System PATH
-        ];
-
-        foreach ($possiblePaths as $path) {
-            if ($path === 'ffprobe') {
-                $result = shell_exec('which ffprobe 2>/dev/null');
-                if ($result) {
-                    return trim($result);
-                }
-            } elseif (file_exists($path) && is_executable($path)) {
-                return $path;
-            }
-        }
-
-        return null;
-    }
 }

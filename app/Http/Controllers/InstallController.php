@@ -456,8 +456,10 @@ class InstallController extends Controller
         $envWritable = $envExists && is_writable(base_path('.env'));
 
         // Check for FFmpeg
-        $ffmpegPath = trim(shell_exec('which ffmpeg 2>/dev/null') ?? '');
-        $ffmpegInstalled = !empty($ffmpegPath);
+        $ffmpegPath = file_exists('/usr/local/bin/ffmpeg')
+            ? '/usr/local/bin/ffmpeg'
+            : trim(shell_exec('which ffmpeg 2>/dev/null') ?? '');
+        $ffmpegInstalled = !empty($ffmpegPath) && is_executable($ffmpegPath);
 
         // Check for Node.js
         $nodePath = trim(shell_exec('which node 2>/dev/null') ?? '');
