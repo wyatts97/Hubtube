@@ -178,24 +178,32 @@ class SiteSettings extends Page implements HasForms
         $watermarkInput = WatermarkService::getWatermarkInput();
         $filterComplex = WatermarkService::buildFilterComplex($width, $height);
 
+        // Write filter to a temp file so FFmpeg reads it directly —
+        // avoids all shell escaping issues with drawtext expressions.
+        $filterFile = tempnam(sys_get_temp_dir(), 'ffmpeg_wm_');
+        file_put_contents($filterFile, $filterComplex);
+
         $cmd = sprintf(
-            '%s -y %s %s -filter_complex "%s" -map "[outv]" -t %d -c:v libx264 -preset veryfast -crf 22 -pix_fmt yuv420p -an -movflags +faststart %s 2>&1',
+            '%s -y %s %s -filter_complex_script %s -map %s -t %d -c:v libx264 -preset veryfast -crf 22 -pix_fmt yuv420p -an -movflags +faststart %s 2>&1',
             $ffmpeg,
             $baseInput,
             $watermarkInput,
-            $filterComplex,
+            escapeshellarg($filterFile),
+            escapeshellarg('[outv]'),
             $duration,
             escapeshellarg($outputPath)
         );
 
-        Log::info('Watermark preview command', ['cmd' => $cmd]);
+        Log::info('Watermark preview command', ['cmd' => $cmd, 'filter' => $filterComplex]);
 
         $result = Process::timeout(120)->run($cmd);
+
+        @unlink($filterFile);
 
         if (!$result->successful() || !file_exists($outputPath) || filesize($outputPath) === 0) {
             Log::error('Watermark preview generation failed', [
                 'exit_code' => $result->exitCode(),
-                'output' => substr($result->output(), -2000),
+                'output' => substr($result->output() . "\n" . $result->errorOutput(), -2000),
             ]);
 
             Notification::make()

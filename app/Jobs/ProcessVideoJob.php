@@ -691,12 +691,17 @@ class ProcessVideoJob implements ShouldQueue
 
         if ($hasWatermark) {
             $filterComplex = $this->buildWatermarkFilterComplex($settings['width'], $settings['height']);
+            // Write filter to temp file so FFmpeg reads it directly —
+            // avoids shell escaping issues with drawtext expressions.
+            $filterFile = tempnam(sys_get_temp_dir(), 'ffmpeg_wm_');
+            file_put_contents($filterFile, $filterComplex);
             $cmd = sprintf(
-                '%s -y -i %s %s -filter_complex "%s" -map "[outv]" -map 0:a? %s -force_key_frames %s %s 2>&1',
+                '%s -y -i %s %s -filter_complex_script %s -map %s -map 0:a? %s -force_key_frames %s %s 2>&1',
                 $ffmpeg,
                 escapeshellarg($inputPath),
                 $watermarkInput,
-                $filterComplex,
+                escapeshellarg($filterFile),
+                escapeshellarg('[outv]'),
                 $encodeArgs,
                 escapeshellarg('expr:gte(t,n_forced*2)'),
                 escapeshellarg($output)
@@ -715,6 +720,10 @@ class ProcessVideoJob implements ShouldQueue
 
         Log::info('Transcoding video', ['quality' => $quality]);
         [$exitCode, $result] = $this->runCommand($cmd);
+
+        if (isset($filterFile)) {
+            @unlink($filterFile);
+        }
         
         if ($exitCode !== 0 || !file_exists($output) || filesize($output) === 0) {
             Log::error('Transcoding failed', [
