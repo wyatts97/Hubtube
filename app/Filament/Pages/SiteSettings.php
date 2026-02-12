@@ -36,6 +36,8 @@ class SiteSettings extends Page implements HasForms
 
     public ?array $data = [];
     public ?string $watermarkPreviewUrl = null;
+    public ?string $testVideoSourceUrl = null;
+    public bool $isGeneratingPreview = false;
 
     public function mount(): void
     {
@@ -94,6 +96,7 @@ class SiteSettings extends Page implements HasForms
             'watermark_text_scroll_speed' => Setting::get('watermark_text_scroll_speed', 5),
             'watermark_text_scroll_interval' => Setting::get('watermark_text_scroll_interval', 0),
             'watermark_text_scroll_duration' => Setting::get('watermark_text_scroll_duration', 10),
+            'watermark_test_video' => Setting::get('watermark_test_video', ''),
             'video_auto_approve' => Setting::get('video_auto_approve', false),
             'comments_enabled' => Setting::get('comments_enabled', true),
             'comments_require_approval' => Setting::get('comments_require_approval', false),
@@ -106,6 +109,17 @@ class SiteSettings extends Page implements HasForms
         ]);
 
         $this->watermarkPreviewUrl = $this->resolveWatermarkPreviewUrl();
+        $this->testVideoSourceUrl = $this->resolveTestVideoSourceUrl();
+    }
+
+    protected function resolveTestVideoSourceUrl(): ?string
+    {
+        $path = Setting::get('watermark_test_video', '');
+        if (!$path || !Storage::disk('public')->exists($path)) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($path);
     }
 
     protected function resolveWatermarkPreviewUrl(): ?string
@@ -124,6 +138,16 @@ class SiteSettings extends Page implements HasForms
             Notification::make()
                 ->title('FFmpeg is not available')
                 ->danger()
+                ->send();
+            return;
+        }
+
+        $sourcePath = Setting::get('watermark_test_video', '');
+        if (!$sourcePath || !Storage::disk('public')->exists($sourcePath)) {
+            Notification::make()
+                ->title('Upload a test video first')
+                ->body('Use the file upload above to provide a short video clip for watermark testing.')
+                ->warning()
                 ->send();
             return;
         }
@@ -161,36 +185,49 @@ class SiteSettings extends Page implements HasForms
             return;
         }
 
+        $this->isGeneratingPreview = true;
+
         $ffmpeg = FfmpegService::ffmpegPath();
-        $duration = 4;
-        $width = 1280;
-        $height = 720;
-        $fps = 30;
+        $ffprobe = FfmpegService::ffprobePath();
+        $inputPath = Storage::disk('public')->path($sourcePath);
+
+        // Probe video dimensions
+        $probeCmd = sprintf(
+            '%s -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0:s=x %s 2>&1',
+            $ffprobe,
+            escapeshellarg($inputPath)
+        );
+        $probeResult = Process::timeout(15)->run($probeCmd);
+        $dimensions = trim($probeResult->output());
+        if (preg_match('/^(\d+)x(\d+)/', $dimensions, $m)) {
+            $width = (int) $m[1];
+            $height = (int) $m[2];
+        } else {
+            $width = 1280;
+            $height = 720;
+        }
 
         Storage::disk('public')->makeDirectory('watermarks');
         $relativePath = 'watermarks/watermark_preview.mp4';
         $outputPath = Storage::disk('public')->path($relativePath);
 
-        $baseInput = sprintf(
-            '-f lavfi -i %s',
-            escapeshellarg("testsrc=size={$width}x{$height}:rate={$fps}:duration={$duration}")
-        );
         $watermarkInput = WatermarkService::getWatermarkInput();
         $filterComplex = WatermarkService::buildFilterComplex($width, $height);
 
         $cmd = sprintf(
-            '%s -y %s %s -filter_complex "%s" -map "[outv]" -t %d -c:v libx264 -preset veryfast -crf 22 -pix_fmt yuv420p -an -movflags +faststart %s 2>&1',
+            '%s -y -i %s %s -filter_complex "%s" -map "[outv]" -map 0:a? -c:v libx264 -preset veryfast -crf 22 -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart %s 2>&1',
             $ffmpeg,
-            $baseInput,
+            escapeshellarg($inputPath),
             $watermarkInput,
             $filterComplex,
-            $duration,
             escapeshellarg($outputPath)
         );
 
         Log::info('Watermark preview command', ['cmd' => $cmd]);
 
-        $result = Process::timeout(120)->run($cmd);
+        $result = Process::timeout(600)->run($cmd);
+
+        $this->isGeneratingPreview = false;
 
         if (!$result->successful() || !file_exists($outputPath) || filesize($outputPath) === 0) {
             Log::error('Watermark preview generation failed', [
@@ -210,7 +247,43 @@ class SiteSettings extends Page implements HasForms
         $this->watermarkPreviewUrl = Storage::disk('public')->url($relativePath) . '?t=' . time();
 
         Notification::make()
-            ->title('Watermark preview updated')
+            ->title('Watermark preview generated')
+            ->body('Your test video has been processed with the current watermark settings.')
+            ->success()
+            ->send();
+    }
+
+    public function deleteWatermarkTestFiles(): void
+    {
+        $deleted = [];
+
+        $testVideo = Setting::get('watermark_test_video', '');
+        if ($testVideo && Storage::disk('public')->exists($testVideo)) {
+            Storage::disk('public')->delete($testVideo);
+            Setting::set('watermark_test_video', '', 'general', 'string');
+            $this->testVideoSourceUrl = null;
+            $this->data['watermark_test_video'] = null;
+            $deleted[] = 'test video';
+        }
+
+        $previewPath = Setting::get('watermark_preview_path', '');
+        if ($previewPath && Storage::disk('public')->exists($previewPath)) {
+            Storage::disk('public')->delete($previewPath);
+            Setting::set('watermark_preview_path', '', 'general', 'string');
+            $this->watermarkPreviewUrl = null;
+            $deleted[] = 'preview';
+        }
+
+        if (empty($deleted)) {
+            Notification::make()
+                ->title('No test files to delete')
+                ->warning()
+                ->send();
+            return;
+        }
+
+        Notification::make()
+            ->title('Deleted: ' . implode(' & ', $deleted))
             ->success()
             ->send();
     }
@@ -430,26 +503,67 @@ class SiteSettings extends Page implements HasForms
                                             ->label('Enable Text Watermark')
                                             ->helperText('Draw text on top of video, supports scrolling')
                                             ->reactive(),
-                                        Actions::make([
-                                            Action::make('generateWatermarkPreview')
-                                                ->label('Generate Watermark Preview')
-                                                ->icon('heroicon-o-film')
-                                                ->color('gray')
-                                                ->action(fn () => $this->generateWatermarkPreview()),
-                                        ])->columnSpanFull(),
-                                        Placeholder::make('watermark_preview')
-                                            ->label('Preview')
-                                            ->content(function () {
-                                                if (!$this->watermarkPreviewUrl) {
-                                                    return 'No preview generated yet.';
-                                                }
+                                        Section::make('Watermark Preview Test')
+                                            ->description('Upload a video clip to preview how your watermark will look on real content. The entire video will be processed so you can test time interval settings.')
+                                            ->collapsible()
+                                            ->schema([
+                                                \Filament\Forms\Components\FileUpload::make('watermark_test_video')
+                                                    ->label('Test Video')
+                                                    ->acceptedFileTypes(['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'])
+                                                    ->directory('watermarks')
+                                                    ->visibility('public')
+                                                    ->maxSize(102400)
+                                                    ->helperText('Upload a short MP4/WebM/MOV clip (max 100 MB). Only used for preview testing.')
+                                                    ->afterStateUpdated(function ($state) {
+                                                        if ($state) {
+                                                            Setting::set('watermark_test_video', $state, 'general', 'string');
+                                                            $this->testVideoSourceUrl = Storage::disk('public')->url($state);
+                                                        }
+                                                    })
+                                                    ->reactive(),
+                                                Placeholder::make('test_video_info')
+                                                    ->label('')
+                                                    ->content(function () {
+                                                        if (!$this->testVideoSourceUrl) {
+                                                            return new HtmlString('<span class="text-sm text-gray-500 dark:text-gray-400">No test video uploaded.</span>');
+                                                        }
+                                                        return new HtmlString(
+                                                            '<div class="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">' .
+                                                            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' .
+                                                            'Test video ready</div>'
+                                                        );
+                                                    })
+                                                    ->columnSpanFull(),
+                                                Actions::make([
+                                                    Action::make('generateWatermarkPreview')
+                                                        ->label('Apply Watermark & Preview')
+                                                        ->icon('heroicon-o-play')
+                                                        ->color('primary')
+                                                        ->action(fn () => $this->generateWatermarkPreview()),
+                                                    Action::make('deleteWatermarkTestFiles')
+                                                        ->label('Delete Test Files')
+                                                        ->icon('heroicon-o-trash')
+                                                        ->color('danger')
+                                                        ->requiresConfirmation()
+                                                        ->modalHeading('Delete watermark test files?')
+                                                        ->modalDescription('This will remove the uploaded test video and the generated preview.')
+                                                        ->action(fn () => $this->deleteWatermarkTestFiles()),
+                                                ])->columnSpanFull(),
+                                                Placeholder::make('watermark_preview')
+                                                    ->label('Watermarked Preview')
+                                                    ->content(function () {
+                                                        if (!$this->watermarkPreviewUrl) {
+                                                            return new HtmlString('<span class="text-sm text-gray-500 dark:text-gray-400">Upload a test video and click "Apply Watermark & Preview" to see the result.</span>');
+                                                        }
 
-                                                return new HtmlString(
-                                                    '<video controls playsinline class="w-full max-w-lg rounded-lg" style="background:#111" src="' .
-                                                    e($this->watermarkPreviewUrl) .
-                                                    '"></video>'
-                                                );
-                                            })
+                                                        return new HtmlString(
+                                                            '<video controls playsinline class="w-full max-w-lg rounded-lg" style="background:#111" src="' .
+                                                            e($this->watermarkPreviewUrl) .
+                                                            '"></video>'
+                                                        );
+                                                    })
+                                                    ->columnSpanFull(),
+                                            ])
                                             ->columnSpanFull(),
                                         Section::make('Image Watermark Settings')
                                             ->collapsible()
