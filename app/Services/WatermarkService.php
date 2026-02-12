@@ -205,10 +205,11 @@ class WatermarkService
         $scrollInterval = (int) Setting::get('watermark_text_scroll_interval', 0);
         $scrollStartDelay = (int) Setting::get('watermark_text_scroll_start_delay', 0);
 
-        // Responsive font size: scale relative to video height.
-        // Base size is authored for 720p. Scale proportionally.
-        // Uses FFmpeg expression so it adapts per-video.
-        $scaledSize = max(12, (int) round($size * $videoHeight / 720));
+        // Responsive font size: scale relative to the shorter dimension of the
+        // output frame. For landscape the shorter dim is height; for portrait it's width.
+        // Base reference is 720p (shorter dim = 720).
+        $shorterDim = min($videoWidth, $videoHeight);
+        $scaledSize = max(12, (int) round($size * $shorterDim / 720));
 
         // Color with opacity (e.g. white@0.7)
         $fontColor = static::buildFontColor($color, $opacity);
@@ -223,8 +224,10 @@ class WatermarkService
             ];
             $y = $yPositions[$position] ?? $yPositions['top'];
 
-            // Convert speed name to pixels per second.
-            $pps = static::getSpeedPps($scrollSpeed);
+            // Convert speed name to pixels per second, scaled to actual frame width.
+            // Base pps is calibrated for 1280px-wide frames (720p landscape).
+            $basePps = static::getSpeedPps($scrollSpeed);
+            $pps = max(10, (int) round($basePps * $videoWidth / 1280));
 
             if ($scrollInterval > 0) {
                 // INTERVAL MODE: text enters from right edge every $interval seconds.

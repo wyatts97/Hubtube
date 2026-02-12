@@ -26,6 +26,8 @@ class ProcessVideoJob implements ShouldQueue
     public int $tries = 3;
     public int $timeout = 3600;
 
+    protected array $sourceVideoInfo = ['width' => 0, 'height' => 0, 'duration' => 0];
+
     public function __construct(
         public Video $video
     ) {}
@@ -306,6 +308,7 @@ class ProcessVideoJob implements ShouldQueue
         ];
 
         $videoInfo = $this->getVideoInfo($inputPath);
+        $this->sourceVideoInfo = $videoInfo;
         $this->video->update(['duration' => $videoInfo['duration']]);
 
         // Ensure original file is browser-seekable (moov atom at start)
@@ -396,6 +399,24 @@ class ProcessVideoJob implements ShouldQueue
             'width' => $width,
             'height' => $height,
         ];
+    }
+
+    /**
+     * Calculate actual output dimensions for a given target height,
+     * accounting for portrait vs landscape source video.
+     * FFmpeg's scale=-2:{height} constrains height and calculates width
+     * from the source aspect ratio, rounding to nearest even number.
+     */
+    protected function getActualOutputDimensions(int $targetHeight): array
+    {
+        $srcW = $this->sourceVideoInfo['width'] ?: 1920;
+        $srcH = $this->sourceVideoInfo['height'] ?: 1080;
+
+        // scale=-2:{targetHeight} → width = srcW * targetHeight / srcH, rounded to even
+        $actualWidth = (int) (2 * round(($srcW * $targetHeight / $srcH) / 2));
+        $actualWidth = max(2, $actualWidth);
+
+        return [$actualWidth, $targetHeight];
     }
 
     protected function generateThumbnails(string $inputPath, string $videoDir): void
@@ -598,7 +619,6 @@ class ProcessVideoJob implements ShouldQueue
             $output = "{$outputDir}/{$quality}.mp4";
             
             if ($hasWatermark) {
-                $filterComplex = $this->buildWatermarkFilterComplex($settings['width'], $settings['height']);
                 // For multi-output with watermark, fall back to sequential
                 // (filter_complex can't easily split to multiple watermarked outputs)
                 $this->transcodeToQuality($inputPath, $outputDir, $quality, $settings, $threads, $preset);
@@ -691,7 +711,8 @@ class ProcessVideoJob implements ShouldQueue
         $encodeArgs = $this->getMp4EncodeArgs($settings['bitrate']);
 
         if ($hasWatermark) {
-            $filterComplex = $this->buildWatermarkFilterComplex($settings['width'], $settings['height']);
+            [$actualW, $actualH] = $this->getActualOutputDimensions($settings['height']);
+            $filterComplex = $this->buildWatermarkFilterComplex($actualW, $actualH);
             $cmd = sprintf(
                 '%s -y -i %s %s -filter_complex "%s" -map "[outv]" -map 0:a? %s -force_key_frames %s %s 2>&1',
                 $ffmpeg,
@@ -806,8 +827,13 @@ class ProcessVideoJob implements ShouldQueue
         $scrollInterval = (int) Setting::get('watermark_text_scroll_interval', 0);
         $scrollStartDelay = (int) Setting::get('watermark_text_scroll_start_delay', 0);
 
-        // Responsive font size: scale relative to video height (base = 720p)
-        $scaledSize = max(12, (int) round($size * $videoHeight / 720));
+        // Responsive font size: scale relative to the shorter dimension of the
+        // actual output frame. For landscape video the shorter dim is height;
+        // for portrait video it's width. Base reference is 720p (shorter dim = 720).
+        // This prevents text from being disproportionately large on narrow portrait frames
+        // and keeps it visually consistent across quality levels during HLS ABR switches.
+        $shorterDim = min($videoWidth, $videoHeight);
+        $scaledSize = max(12, (int) round($size * $shorterDim / 720));
 
         if ($scrollEnabled) {
             $yPositions = [
@@ -817,8 +843,10 @@ class ProcessVideoJob implements ShouldQueue
             ];
             $y = $yPositions[$position] ?? $yPositions['top'];
 
-            // Convert speed name to pixels per second.
-            $pps = WatermarkService::getSpeedPps($scrollSpeed);
+            // Convert speed name to pixels per second, scaled to actual frame width.
+            // Base pps is calibrated for 1280px-wide frames (720p landscape).
+            $basePps = WatermarkService::getSpeedPps($scrollSpeed);
+            $pps = max(10, (int) round($basePps * $videoWidth / 1280));
 
             if ($scrollInterval > 0) {
                 // INTERVAL MODE: text enters from right edge every $interval seconds.
