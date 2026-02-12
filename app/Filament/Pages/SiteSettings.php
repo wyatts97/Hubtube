@@ -96,6 +96,7 @@ class SiteSettings extends Page implements HasForms
             'watermark_text_scroll_start_delay' => Setting::get('watermark_text_scroll_start_delay', 0),
             'watermark_test_video' => Setting::get('watermark_test_video', ''),
             'video_auto_approve' => Setting::get('video_auto_approve', false),
+            'video_auto_approve_usernames' => Setting::get('video_auto_approve_usernames', []),
             'comments_enabled' => Setting::get('comments_enabled', true),
             'comments_require_approval' => Setting::get('comments_require_approval', false),
             'google_analytics_id' => Setting::get('google_analytics_id', ''),
@@ -746,8 +747,14 @@ class SiteSettings extends Page implements HasForms
                                 Section::make('Moderation')
                                     ->schema([
                                         Toggle::make('video_auto_approve')
-                                            ->label('Auto-Approve Videos')
-                                            ->helperText('Automatically approve new video uploads'),
+                                            ->label('Auto-Approve All Videos')
+                                            ->helperText('When enabled, ALL uploaded videos are auto-approved. When disabled, only users listed below get auto-approval.')
+                                            ->reactive(),
+                                        \Filament\Forms\Components\TagsInput::make('video_auto_approve_usernames')
+                                            ->label('Auto-Approve Users')
+                                            ->helperText('Enter usernames of trusted users whose videos should be auto-approved. These users bypass moderation even when global auto-approve is off.')
+                                            ->placeholder('Add a username...')
+                                            ->visible(fn ($get) => !$get('video_auto_approve')),
                                         Toggle::make('comments_enabled')
                                             ->label('Enable Comments'),
                                         Toggle::make('comments_require_approval')

@@ -16,6 +16,10 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    qualityUrls: {
+        type: Object,
+        default: () => ({}),
+    },
     hlsPlaylist: {
         type: String,
         default: '',
@@ -204,15 +208,58 @@ const initDirectPlayback = (plyrOptions) => {
     }
 };
 
+let isSwitchingQuality = false;
+
 const updateQuality = (quality) => {
-    if (hls && quality !== 0) {
-        const levelIndex = hls.levels.findIndex(l => l.height === quality);
-        if (levelIndex !== -1) {
-            hls.currentLevel = levelIndex;
+    // HLS path — hls.js handles quality switching natively
+    if (hls) {
+        if (quality === 0 || quality === -1) {
+            hls.currentLevel = -1; // Auto
+        } else {
+            const levelIndex = hls.levels.findIndex(l => l.height === quality);
+            if (levelIndex !== -1) {
+                hls.currentLevel = levelIndex;
+            }
         }
-    } else if (hls) {
-        hls.currentLevel = -1; // Auto
+        return;
     }
+
+    // MP4 path — swap source, seek to current time, resume
+    if (isSwitchingQuality) return;
+
+    const qualityLabel = quality === 0 ? 'original' : `${quality}p`;
+    const newUrl = props.qualityUrls[qualityLabel];
+    if (!newUrl) return;
+
+    const video = videoRef.value;
+    if (!video) return;
+
+    // Don't switch if already on this source
+    if (video.src === newUrl || video.currentSrc === newUrl) return;
+
+    isSwitchingQuality = true;
+    const currentTime = video.currentTime;
+    const wasPlaying = !video.paused;
+
+    // Pause, swap source, seek, resume
+    video.pause();
+    video.src = newUrl;
+    video.load();
+
+    const onCanPlay = () => {
+        video.removeEventListener('canplay', onCanPlay);
+        video.currentTime = currentTime;
+
+        const onSeeked = () => {
+            video.removeEventListener('seeked', onSeeked);
+            if (wasPlaying) {
+                video.play().catch(() => {});
+            }
+            isSwitchingQuality = false;
+        };
+        video.addEventListener('seeked', onSeeked, { once: true });
+    };
+    video.addEventListener('canplay', onCanPlay, { once: true });
 };
 
 const destroyHls = () => {
@@ -383,13 +430,36 @@ watch(() => props.hlsPlaylist, () => {
     background: var(--color-bg-card, #1f1f1f);
 }
 
+/* Replace Plyr's radio dots with checkmarks — avoids centering issues */
 .video-player-wrapper .plyr__menu__container .plyr__control[role=menuitemradio]::before {
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    width: 16px;
+    height: 16px;
+}
+
+.video-player-wrapper .plyr__menu__container .plyr__control[role=menuitemradio][aria-checked=true]::before {
     background: var(--color-accent, #ef4444);
+    border-color: var(--color-accent, #ef4444);
 }
 
 .video-player-wrapper .plyr__menu__container .plyr__control[role=menuitemradio]::after {
+    /* Checkmark instead of dot — no centering issues */
+    background: none;
+    border-radius: 0;
+    width: 5px;
+    height: 9px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
     left: 12px;
-    transform: translateX(-50%) translateY(-50%);
+    top: 50%;
+    transform: translateY(-55%) rotate(45deg) scale(0);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.video-player-wrapper .plyr__menu__container .plyr__control[role=menuitemradio][aria-checked=true]::after {
+    opacity: 1;
+    transform: translateY(-55%) rotate(45deg) scale(1);
 }
 
 .plyr-video {

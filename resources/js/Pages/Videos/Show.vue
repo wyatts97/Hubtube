@@ -366,6 +366,7 @@ const getRelatedTitle = (video) => {
                         :src="video.video_url"
                         :poster="video.thumbnail_url"
                         :qualities="video.qualities_available || []"
+                        :quality-urls="video.quality_urls || {}"
                         :hls-playlist="hlsPlaylistUrl"
                         :autoplay="false"
                         :preview-thumbnails="video.preview_thumbnails_url || ''"

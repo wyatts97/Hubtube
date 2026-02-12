@@ -68,6 +68,7 @@ class Video extends Model
         'preview_thumbnails_url',
         'hls_playlist_url',
         'formatted_duration',
+        'quality_urls',
     ];
 
     protected function casts(): array
@@ -310,6 +311,30 @@ class Video extends Model
         }
 
         return StorageManager::url($masterPath, $disk);
+    }
+
+    public function getQualityUrlsAttribute(): array
+    {
+        if (!$this->video_path || !$this->qualities_available) {
+            return [];
+        }
+
+        $disk = $this->storage_disk ?? 'public';
+        $baseDir = dirname($this->video_path);
+        $urls = [];
+
+        foreach ($this->qualities_available as $quality) {
+            if ($quality === 'original') {
+                $urls['original'] = StorageManager::url($this->video_path, $disk);
+            } else {
+                $path = $baseDir . '/processed/' . $quality . '.mp4';
+                if (StorageManager::exists($path, $disk)) {
+                    $urls[$quality] = StorageManager::url($path, $disk);
+                }
+            }
+        }
+
+        return $urls;
     }
 
     public function getVideoUrlAttribute(): ?string

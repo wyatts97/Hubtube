@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Events\VideoUploaded;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
 use Illuminate\Http\UploadedFile;
@@ -130,11 +131,39 @@ class VideoService
 
     public function markAsProcessed(Video $video, array $qualities): void
     {
-        $video->update([
+        $updateData = [
             'status' => 'processed',
             'qualities_available' => $qualities,
             'processing_completed_at' => now(),
-        ]);
+        ];
+
+        // Auto-approve if global toggle is on, or if uploader is in the trusted list
+        if ($this->shouldAutoApprove($video)) {
+            $updateData['is_approved'] = true;
+            $updateData['published_at'] = $video->published_at ?? now();
+        }
+
+        $video->update($updateData);
+    }
+
+    protected function shouldAutoApprove(Video $video): bool
+    {
+        // Global auto-approve: all videos
+        if (Setting::get('video_auto_approve', false)) {
+            return true;
+        }
+
+        // Per-user auto-approve: check if uploader's username is in the trusted list
+        $trustedUsernames = Setting::get('video_auto_approve_usernames', []);
+        if (is_string($trustedUsernames)) {
+            $trustedUsernames = json_decode($trustedUsernames, true) ?? [];
+        }
+
+        if (!empty($trustedUsernames) && $video->user) {
+            return in_array($video->user->username, $trustedUsernames, true);
+        }
+
+        return false;
     }
 
     public function markAsFailed(Video $video, ?string $reason = null): void
