@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -49,7 +50,9 @@ return new class extends Migration
             $table->index('is_short');
             $table->index('is_featured');
             $table->index('published_at');
-            $table->fullText(['title', 'description']);
+            if (in_array(DB::getDriverName(), ['mysql', 'mariadb'])) {
+                $table->fullText(['title', 'description']);
+            }
         });
     }
 
