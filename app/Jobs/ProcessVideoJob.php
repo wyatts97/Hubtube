@@ -514,18 +514,16 @@ class ProcessVideoJob implements ShouldQueue
             mkdir($spriteDir, 0755, true);
         }
 
-        // Generate one thumbnail every 5 seconds, 160x90px
+        // Generate one thumbnail every 5 seconds, width=200 with aspect ratio preserved
         $interval = max(5, (int) ($duration / 100)); // At most ~100 frames
-        $thumbWidth = 160;
-        $thumbHeight = 90;
+        $thumbWidth = 200;
 
         $cmd = sprintf(
-            '%s -y -i %s -vf "fps=1/%d,scale=%d:%d" -q:v 5 %s/sprite_%%04d.jpg 2>&1',
+            '%s -y -i %s -vf "fps=1/%d,scale=%d:-2" -q:v 3 %s/sprite_%%04d.jpg 2>&1',
             $ffmpeg,
             escapeshellarg($inputPath),
             $interval,
             $thumbWidth,
-            $thumbHeight,
             escapeshellarg($spriteDir)
         );
 

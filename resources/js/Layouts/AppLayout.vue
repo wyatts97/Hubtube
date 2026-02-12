@@ -20,7 +20,7 @@ import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
 const toast = useToast();
 const { get, post } = useFetch();
 const { localizedUrl, t, isTranslated } = useI18n();
-const { isTranslating } = useGlobalAutoTranslate();
+const { showOverlay } = useGlobalAutoTranslate();
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
@@ -744,12 +744,12 @@ const toggleSidebar = () => {
         <!-- Age Verification Modal -->
         <AgeVerificationModal />
 
-        <!-- Translation Loading Overlay -->
+        <!-- Translation Loading Overlay — full-page blur with min 3s display -->
         <Transition name="translate-fade">
-            <div v-if="isTranslating" class="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
-                <div class="flex flex-col items-center gap-3 p-6 rounded-2xl shadow-2xl pointer-events-auto" style="background-color: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);">
-                    <img src="/images/globe.svg" alt="" class="w-12 h-12 animate-spin-slow" style="filter: invert(1) opacity(0.9);" />
-                    <span class="text-sm font-medium text-white/90">{{ t('common.translating') || 'Translating...' }}</span>
+            <div v-if="showOverlay" class="fixed inset-0 z-[9999] flex items-center justify-center" style="background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+                <div class="flex flex-col items-center gap-4">
+                    <img src="/images/globe.svg" alt="" class="w-16 h-16 animate-spin-slow" style="filter: invert(1) brightness(2);" />
+                    <span class="text-base font-semibold text-white tracking-wide">{{ t('common.translating') || 'Translating...' }}</span>
                 </div>
             </div>
         </Transition>
@@ -778,9 +778,11 @@ const toggleSidebar = () => {
 }
 
 /* Translate overlay fade transition */
-.translate-fade-enter-active,
+.translate-fade-enter-active {
+    transition: opacity 0.4s ease-out;
+}
 .translate-fade-leave-active {
-    transition: opacity 0.25s ease;
+    transition: opacity 0.6s ease-in;
 }
 .translate-fade-enter-from,
 .translate-fade-leave-to {

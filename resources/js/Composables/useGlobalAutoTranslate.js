@@ -17,6 +17,9 @@ import { usePage, router } from '@inertiajs/vue3';
 import { _translationCache } from '@/Composables/useTranslation';
 
 const isTranslating = ref(false);
+const showOverlay = ref(false);
+let overlayTimer = null;
+const MIN_OVERLAY_MS = 3000;
 
 /**
  * Recursively find all video-like objects in page props.
@@ -84,7 +87,12 @@ async function translatePageVideos(page) {
 
     if (!ids.length) return;
 
+    // Show overlay and track when it started
     isTranslating.value = true;
+    showOverlay.value = true;
+    if (overlayTimer) clearTimeout(overlayTimer);
+    const overlayStart = Date.now();
+
     try {
         const response = await fetch('/api/translate/batch', {
             method: 'POST',
@@ -119,6 +127,13 @@ async function translatePageVideos(page) {
         // Silently fail — show original content
     } finally {
         isTranslating.value = false;
+        // Keep overlay visible for at least MIN_OVERLAY_MS so the user
+        // sees the animation and the page behind fully loads
+        const elapsed = Date.now() - overlayStart;
+        const remaining = Math.max(0, MIN_OVERLAY_MS - elapsed);
+        overlayTimer = setTimeout(() => {
+            showOverlay.value = false;
+        }, remaining);
     }
 }
 
@@ -137,5 +152,5 @@ export function useGlobalAutoTranslate() {
         if (typeof removeListener === 'function') removeListener();
     });
 
-    return { isTranslating };
+    return { isTranslating, showOverlay };
 }
