@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Facades\Event;
 
 /*
 |--------------------------------------------------------------------------
@@ -9,11 +10,13 @@ use App\Models\User;
 */
 
 test('authenticated user can subscribe to a channel', function () {
+    Event::fake();
     $subscriber = asUser();
     $channel = User::factory()->create();
 
     $response = $this->post("/channel/{$channel->id}/subscribe");
-    $response->assertRedirect();
+    $response->assertOk();
+    $response->assertJson(['subscribed' => true]);
 
     $this->assertDatabaseHas('subscriptions', [
         'subscriber_id' => $subscriber->id,
@@ -22,6 +25,7 @@ test('authenticated user can subscribe to a channel', function () {
 });
 
 test('authenticated user can unsubscribe from a channel', function () {
+    Event::fake();
     $subscriber = asUser();
     $channel = User::factory()->create();
 
@@ -30,7 +34,8 @@ test('authenticated user can unsubscribe from a channel', function () {
 
     // Then unsubscribe
     $response = $this->delete("/channel/{$channel->id}/subscribe");
-    $response->assertRedirect();
+    $response->assertOk();
+    $response->assertJson(['subscribed' => false]);
 
     $this->assertDatabaseMissing('subscriptions', [
         'subscriber_id' => $subscriber->id,
@@ -47,6 +52,6 @@ test('user cannot subscribe to themselves', function () {
     $user = asUser();
 
     $response = $this->post("/channel/{$user->id}/subscribe");
-    // Should fail or redirect with error
-    $response->assertRedirect();
+    $response->assertStatus(422);
+    $response->assertJson(['error' => 'Cannot subscribe to yourself']);
 });

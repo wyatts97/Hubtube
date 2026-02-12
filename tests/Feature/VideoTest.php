@@ -41,7 +41,7 @@ test('private video is accessible by owner', function () {
 });
 
 test('video owner can access edit page', function () {
-    $user = asUser();
+    $user = asUser(User::factory()->pro()->create());
     $video = Video::factory()->create(['user_id' => $user->id]);
 
     $this->get("/videos/{$video->id}/edit")->assertStatus(200);
@@ -55,7 +55,7 @@ test('non-owner cannot access video edit page', function () {
 });
 
 test('video owner can update video', function () {
-    $user = asUser();
+    $user = asUser(User::factory()->pro()->create());
     $video = Video::factory()->create(['user_id' => $user->id]);
 
     $response = $this->put("/videos/{$video->id}", [
@@ -91,7 +91,8 @@ test('authenticated user can like a video', function () {
     $video = Video::factory()->create();
 
     $response = $this->post("/videos/{$video->id}/like");
-    $response->assertRedirect();
+    $response->assertOk();
+    $response->assertJsonStructure(['liked', 'disliked', 'likesCount', 'dislikesCount']);
 });
 
 test('authenticated user can dislike a video', function () {
@@ -99,7 +100,8 @@ test('authenticated user can dislike a video', function () {
     $video = Video::factory()->create();
 
     $response = $this->post("/videos/{$video->id}/dislike");
-    $response->assertRedirect();
+    $response->assertOk();
+    $response->assertJsonStructure(['liked', 'disliked', 'likesCount', 'dislikesCount']);
 });
 
 test('load more videos API returns JSON', function () {

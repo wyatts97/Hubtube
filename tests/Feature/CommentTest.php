@@ -56,7 +56,8 @@ test('comment owner can update their comment', function () {
         'content' => 'Updated comment text.',
     ]);
 
-    $response->assertRedirect();
+    $response->assertOk();
+    $response->assertJson(['comment' => ['id' => $comment->id]]);
     expect($comment->fresh()->content)->toBe('Updated comment text.');
 });
 
@@ -74,7 +75,8 @@ test('comment owner can delete their comment', function () {
     $comment = Comment::factory()->create(['user_id' => $user->id]);
 
     $response = $this->delete("/comments/{$comment->id}");
-    $response->assertRedirect();
+    $response->assertOk();
+    $response->assertJson(['success' => true]);
     $this->assertSoftDeleted('comments', ['id' => $comment->id]);
 });
 
@@ -83,5 +85,6 @@ test('authenticated user can like a comment', function () {
     $comment = Comment::factory()->create();
 
     $response = $this->post("/comments/{$comment->id}/like");
-    $response->assertRedirect();
+    $response->assertOk();
+    $response->assertJsonStructure(['liked', 'disliked', 'likesCount']);
 });

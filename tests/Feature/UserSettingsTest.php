@@ -22,14 +22,12 @@ test('user can update profile', function () {
 
     $response = $this->put('/settings/profile', [
         'username' => $user->username,
-        'first_name' => 'Updated',
-        'last_name' => 'Name',
+        'email' => $user->email,
         'bio' => 'Updated bio text',
     ]);
 
     $response->assertRedirect();
-    expect($user->fresh()->first_name)->toBe('Updated');
-    expect($user->fresh()->last_name)->toBe('Name');
+    expect($user->fresh()->bio)->toBe('Updated bio text');
 });
 
 test('user can update password', function () {

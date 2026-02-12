@@ -44,7 +44,7 @@ test('playlist owner can update playlist', function () {
         'privacy' => 'private',
     ]);
 
-    $response->assertRedirect();
+    $response->assertOk();
     expect($playlist->fresh()->title)->toBe('Updated Playlist');
 });
 
@@ -78,7 +78,8 @@ test('authenticated user can add video to playlist', function () {
         'video_id' => $video->id,
     ]);
 
-    $response->assertRedirect();
+    $response->assertOk();
+    $response->assertJson(['success' => true]);
 });
 
 test('authenticated user can remove video from playlist', function () {
@@ -91,5 +92,6 @@ test('authenticated user can remove video from playlist', function () {
         'video_id' => $video->id,
     ]);
 
-    $response->assertRedirect();
+    $response->assertOk();
+    $response->assertJson(['success' => true]);
 });
