@@ -1,16 +1,24 @@
 #!/bin/bash
 
-# HubTube Development Server Setup for Ubuntu 22.04
+# HubTube Development Server Setup for Ubuntu 22.04 / 24.04
 # This script sets up and runs the HubTube development server
 #
 # Features supported:
-#   - Laravel 11 + Filament 3 admin panel
-#   - Vite 6 + Tailwind CSS v4 frontend build
+#   - Laravel 11 + Filament 3 admin panel (15 settings pages, 11 resources)
+#   - Vite 6 + Vue 3 + Tailwind CSS v4 frontend build
 #   - Laravel Reverb WebSockets (port 8080)
 #   - Laravel Horizon queue worker (Redis)
 #   - phpredis extension (required)
 #   - Meilisearch (optional, falls back to database driver)
 #   - Auto-translation via stichoza/google-translate-php
+#   - SEO system (JSON-LD, OG tags, video sitemap, hreflang)
+#   - Video processing (FFmpeg multi-res transcoding, HLS, watermarks)
+#   - Cloud storage offloading (Wasabi, S3, B2)
+#   - PWA with push notifications
+#   - Video & banner ad system
+#   - Encrypted credential storage (SMTP, API keys)
+#   - Content Security Policy headers
+#   - Scheduled cleanup (temp files, abandoned chunks)
 #   - All settings managed via Admin Panel (DB-backed)
 
 set -e
@@ -278,16 +286,22 @@ echo "📋 Admin Panel Tools:"
 echo "   WP Import        — Import from WordPress SQL dump"
 echo "   Archive Import   — Import from local WP archive directory"
 echo "   Bunny Migrator   — Download Bunny Stream videos to local"
-echo "   Language Settings — Configure auto-translation"
-echo "   SEO Settings     — Meta tags, schema, sitemap"
-echo "   Ad Settings      — Video ads + banner ads"
+echo "   Language Settings — Configure auto-translation + i18n"
+echo "   SEO Settings     — Meta tags, JSON-LD schema, sitemap, hreflang"
+echo "   Ad Settings      — Video ads (pre/mid/post-roll) + banner ads"
+echo "   Storage & CDN    — Cloud offloading (Wasabi/S3/B2), CDN config"
+echo "   Integrations     — SMTP config with test email, Bunny Stream"
+echo "   Theme Settings   — Colors, dark/light mode, CSS variables"
+echo "   PWA Settings     — Push notifications, offline support"
 echo ""
 echo "📋 Useful Commands:"
-echo "   View logs:      tail -f storage/logs/laravel.log"
-echo "   Queue status:   php artisan horizon"
-echo "   Rebuild assets: npm run build"
-echo "   Re-seed:        php artisan db:seed --force"
-echo "   Stop all:       pkill -f 'php artisan'"
+echo "   View logs:       tail -f storage/logs/laravel.log"
+echo "   Queue status:    php artisan horizon"
+echo "   Rebuild assets:  npm run build"
+echo "   Re-seed:         php artisan db:seed --force"
+echo "   Cleanup temp:    php artisan storage:cleanup"
+echo "   Cleanup chunks:  php artisan uploads:cleanup-chunks"
+echo "   Stop all:        pkill -f 'php artisan'"
 echo ""
 echo "Press Ctrl+C to stop all services"
 

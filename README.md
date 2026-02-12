@@ -1,12 +1,14 @@
 # HubTube — Video Sharing & Streaming CMS
 
-A self-hosted, feature-rich video-sharing platform built with Laravel, Vue 3, and Inertia.js. Includes video upload/processing, live streaming, monetization, and a full admin panel.
+A self-hosted, feature-rich video-sharing platform built with Laravel 11, Vue 3, and Inertia.js. Includes video upload/processing, live streaming, monetization, multi-language support, SEO, and a comprehensive admin panel.
 
 ## Prerequisites (Check/install all server-side dependencies)
+```bash
 git clone https://github.com/wyatts97/Hubtube.git hubtube
 cd hubtube
 chmod +x prerequisites.sh
 sudo ./prerequisites.sh
+```
 
 ## Quick Start (Local Development)
 
@@ -24,7 +26,12 @@ Then visit **http://localhost:8000/install** — the wizard walks through requir
 ```bash
 ./dev.sh
 ```
-Handles everything: dependency install, build, migrations, seeding, and starts Laravel serve + Reverb + Horizon + Scraper.
+Handles everything: dependency install, build, migrations, seeding, and starts Laravel serve + Reverb + Horizon.
+
+### Deployment Guides
+- **[PANEL-DEPLOY.md](./PANEL-DEPLOY.md)** — Complete step-by-step aaPanel deployment guide
+- **[nginx.example.conf](./nginx.example.conf)** — Production Nginx config with SSL, gzip, WebSocket proxy
+- **[PRODUCTION-CHECKLIST.md](./PRODUCTION-CHECKLIST.md)** — Pre-launch checklist
 
 ---
 
@@ -243,216 +250,22 @@ Repeat for Reverb if you use live streaming features.
 
 ---
 
-## Hosting Panel Setup (aaPanel / cPanel / Webmin)
+## Hosting Panel Deployment
 
-If you're using a hosting control panel instead of a bare-metal server, follow these panel-specific guides. The web installer handles database setup, admin account creation, and seeding — you just need to get the files in place and configure the web server.
+For hosting panel deployments, see the dedicated guides:
 
-### Quick Setup Script
+- **[PANEL-DEPLOY.md](./PANEL-DEPLOY.md)** — Complete aaPanel deployment guide (step-by-step with screenshots-level detail)
+- **[nginx.example.conf](./nginx.example.conf)** — Production Nginx config with SSL, gzip, WebSocket proxy, video Range support
 
-After cloning, run the setup script — it auto-detects your panel, fixes permissions, detects Redis passwords, publishes assets, and tells you exactly what to do next:
+### Quick Setup Script (All Panels)
+
+After cloning, run the setup script — it auto-detects your panel (aaPanel, cPanel, Webmin), fixes permissions, detects Redis passwords, publishes assets, and tells you exactly what to do next:
 
 ```bash
 cd /path/to/hubtube
 chmod +x setup.sh
 bash setup.sh
 ```
-
----
-
-### aaPanel Setup
-
-#### 1. Install Required Software (App Store)
-
-| Software | Notes |
-|----------|-------|
-| **PHP 8.4** | Install extensions: `redis`, `fileinfo`, `bcmath`, `intl`, `opcache`, `exif` |
-| **Nginx** | Should already be installed |
-| **MySQL/MariaDB** | Should already be installed |
-| **Redis** | Install from App Store |
-
-**PHP Disabled Functions** — Remove these from PHP 8.4 settings → Disabled Functions:
-`putenv`, `symlink`, `proc_open`, `proc_get_status`, `exec`, `shell_exec`, `pcntl_signal`, `pcntl_alarm`, `pcntl_async_signals`
-
-**PHP Settings** (PHP 8.4 → Configuration):
-```ini
-upload_max_filesize = 2G
-post_max_size = 2G
-memory_limit = 512M
-max_execution_time = 600
-```
-
-#### 2. Install CLI Tools (SSH)
-
-```bash
-# Node.js 20
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Composer
-curl -sS https://getcomposer.org/installer | php
-sudo mv composer.phar /usr/local/bin/composer
-
-# FFmpeg
-sudo apt-get install -y ffmpeg
-```
-
-#### 3. Clone & Build
-
-```bash
-cd /www/wwwroot
-sudo git clone https://github.com/wyatts97/Hubtube.git hubtube
-cd hubtube
-bash setup.sh   # Auto-configures everything
-```
-
-#### 4. Create Site in aaPanel
-
-1. **Website** → **Add Site**
-2. **Domain**: `yourdomain.com` + `www.yourdomain.com`
-3. **Root Directory**: `/www/wwwroot/hubtube/public` ← **must point to /public**
-4. **PHP Version**: 8.4
-5. **Database**: Don't create (the web installer handles this)
-
-#### 5. Configure Nginx
-
-Go to **Website** → click your site → **Conf** tab. Replace with:
-
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com www.yourdomain.com;
-    root /www/wwwroot/hubtube/public;
-    index index.php;
-
-    client_max_body_size 2G;
-    add_header X-Frame-Options "SAMEORIGIN";
-    add_header X-Content-Type-Options "nosniff";
-
-    location / {
-        try_files $uri $uri/ /index.php?$query_string;
-    }
-
-    location ~ \.php$ {
-        try_files $uri =404;
-        fastcgi_pass unix:/tmp/php-cgi-84.sock;
-        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
-        include fastcgi_params;
-        fastcgi_read_timeout 600;
-    }
-
-    # Static files — MUST include try_files fallback so Filament/Livewire
-    # virtual asset routes (e.g. /livewire/livewire.js) reach PHP
-    location ~ .*\.(gif|jpg|jpeg|png|bmp|swf|webp|svg|ico)$ {
-        expires 30d;
-        access_log off;
-        try_files $uri /index.php?$query_string;
-    }
-
-    location ~ .*\.(js|css)$ {
-        expires 12h;
-        access_log off;
-        try_files $uri /index.php?$query_string;
-    }
-
-    location ~ /\.(?!well-known).* { deny all; }
-}
-```
-
-> **Check your PHP socket**: `ls /tmp/php-cgi-*.sock` — adjust `fastcgi_pass` if different.
->
-> **Critical**: If you add static file caching blocks for `.js`/`.css`, you **must** include `try_files $uri /index.php?$query_string;` — otherwise Filament and Livewire asset routes will 404 and the admin panel will be blank.
-
-#### 6. Fix open_basedir
-
-aaPanel restricts PHP to only the `public/` directory. Fix it:
-
-1. **Website** → click site → **Site Directory** → uncheck **open_basedir**, OR:
-2. SSH: `sudo chattr -i /www/wwwroot/hubtube/public/.user.ini` then edit it to set `open_basedir=/www/wwwroot/hubtube/:/tmp/`
-
-#### 7. SSL Certificate
-
-1. **Website** → click site → **SSL** → **Let's Encrypt** → Apply
-2. Enable **Force HTTPS**
-3. Update `.env`: `APP_URL=https://yourdomain.com`
-
-#### 8. Run Web Installer
-
-Visit `https://yourdomain.com/install` and follow the wizard.
-
----
-
-### cPanel Setup
-
-#### 1. Create Site in cPanel
-
-1. Log in to cPanel
-2. **Domains** → Add your domain
-3. **Document Root**: Set to `public_html/hubtube/public`
-
-#### 2. Create Database
-
-1. **MySQL Databases** → Create database `hubtube`
-2. Create user, grant all privileges
-
-#### 3. PHP Configuration
-
-1. **MultiPHP Manager** → Set domain to PHP 8.2+ (8.4 if available)
-2. **MultiPHP INI Editor** → Set `upload_max_filesize=2G`, `post_max_size=2G`, `memory_limit=512M`
-3. **Select PHP Version** → Enable extensions: `redis`, `fileinfo`, `bcmath`, `intl`, `gd`
-
-#### 4. Clone & Build (SSH / Terminal)
-
-```bash
-cd ~/public_html
-git clone https://github.com/wyatts97/Hubtube.git hubtube
-cd hubtube
-bash setup.sh
-```
-
-#### 5. Configure .htaccess
-
-cPanel uses Apache. Laravel's `public/.htaccess` handles routing automatically. If routes return 404, ensure `mod_rewrite` is enabled.
-
-#### 6. Run Web Installer
-
-Visit `https://yourdomain.com/install`.
-
----
-
-### Webmin / Virtualmin Setup
-
-#### 1. Install Dependencies
-
-```bash
-# Use prerequisites.sh for system packages
-chmod +x prerequisites.sh
-sudo ./prerequisites.sh
-
-# Or install manually
-sudo apt install -y php8.4 php8.4-{fpm,mysql,mbstring,curl,gd,xml,bcmath,redis,zip,intl} \
-    nginx mariadb-server redis-server ffmpeg nodejs npm
-```
-
-#### 2. Clone & Build
-
-```bash
-cd /var/www
-sudo git clone https://github.com/wyatts97/Hubtube.git hubtube
-cd hubtube
-sudo bash setup.sh
-```
-
-#### 3. Create Virtual Server
-
-1. **Virtualmin** → **Create Virtual Server**
-2. Set document root to `/var/www/hubtube/public`
-3. Configure Nginx or Apache with Laravel rewrite rules (see Nginx config above)
-
-#### 4. Run Web Installer
-
-Visit `https://yourdomain.com/install`.
-
----
 
 ### Background Services (All Panels)
 
@@ -496,51 +309,14 @@ sudo supervisorctl update
 sudo supervisorctl status   # Should show RUNNING
 ```
 
----
+### Laravel Scheduler (Cron)
 
-### Panel-Specific Troubleshooting
-
-#### aaPanel: Blank admin panel / missing CSS / livewire.js 404
-**Most common cause**: Nginx static file caching blocks intercept `.js`/`.css` requests before they reach PHP. Filament and Livewire serve assets via Laravel routes, not physical files.
-
-Fix: Add `try_files` fallback to your static file blocks in Nginx:
-```nginx
-location ~ .*\.(js|css)$ {
-    expires 12h;
-    access_log off;
-    try_files $uri /index.php?$query_string;
-}
+Add to crontab (`crontab -e -u www`):
+```
+* * * * * cd /path/to/hubtube && php artisan schedule:run >> /dev/null 2>&1
 ```
 
-If that doesn't help, also try:
-```bash
-cd /www/wwwroot/hubtube
-php artisan filament:assets
-php artisan icons:cache
-sudo chown -R www:www public/vendor/
-```
-
-#### aaPanel: `open_basedir restriction in effect`
-```bash
-sudo chattr -i /www/wwwroot/hubtube/public/.user.ini
-# Edit .user.ini: set open_basedir=/www/wwwroot/hubtube/:/tmp/
-```
-
-#### aaPanel: Redis `NOAUTH` error
-The setup script auto-detects Redis passwords. If it missed it:
-```bash
-grep requirepass /www/server/redis/redis.conf
-# Add the password to .env: REDIS_PASSWORD=<password>
-```
-
-#### cPanel: Routes return 404
-Ensure `mod_rewrite` is enabled and `public/.htaccess` exists with Laravel rewrite rules.
-
-#### All panels: `Table already exists` on install
-The web installer now auto-retries with `migrate:fresh` if tables exist. If it still fails:
-```bash
-php artisan migrate:fresh --force
-```
+The scheduler runs: Horizon snapshots, batch pruning, expired token cleanup, soft-deleted video pruning, temp file cleanup, and abandoned chunk cleanup.
 
 ---
 
@@ -548,16 +324,18 @@ php artisan migrate:fresh --force
 
 | Layer | Technology |
 |-------|-----------|
-| **Backend** | Laravel 11+ (PHP 8.2+), Filament 3 Admin |
-| **Frontend** | Vue 3 (Composition API), Inertia.js, Tailwind CSS |
+| **Backend** | Laravel 11 (PHP 8.2+), Filament 3 Admin |
+| **Frontend** | Vue 3 (Composition API), Inertia.js, Tailwind CSS v4 |
 | **Database** | MySQL 8+ / MariaDB 10.6+ |
 | **Queue** | Laravel Horizon + Redis |
 | **Real-time** | Laravel Reverb (WebSockets) |
 | **Search** | Laravel Scout (database driver or Meilisearch) |
-| **Video** | FFmpeg (transcode, HLS, thumbnails), HLS.js + Plyr |
+| **Video** | FFmpeg (multi-res transcode, HLS, watermarks, thumbnails), HLS.js + Plyr |
 | **Live Streaming** | Agora.io (RTC + RTM) |
-| **Storage** | Local, Wasabi S3, Backblaze B2 (configurable via admin) |
-| **Build** | Vite |
+| **Storage** | Local, Wasabi S3, Backblaze B2, AWS S3 (configurable via admin) |
+| **CDN** | BunnyCDN, custom CDN URL, or cloud bucket public URLs |
+| **Build** | Vite 6 |
+| **Security** | CSP headers, encrypted credentials, SSRF protection, rate limiting |
 
 ## Requirements
 
@@ -574,10 +352,11 @@ php artisan migrate:fresh --force
 - Upload, transcode to multiple qualities (240p–1080p), HLS adaptive streaming
 - Auto-generated thumbnails, animated WebP previews, scrubber sprite sheets
 - Shorts (vertical video) with TikTok-style swipe viewer
-- Video watermarking (configurable position, opacity, scale)
+- Video watermarking (text + image, scrolling text, configurable position/opacity/scale)
 - Embedded video support (Bunny Stream, external iframes)
 - Categories, tags, hashtags, playlists, watch history
-- Full-text search with category/tag filters
+- Full-text search with category/tag filters (database or Meilisearch)
+- Scheduled publishing for admin/pro users
 
 ### Live Streaming
 - Agora.io-powered interactive live streams
@@ -592,14 +371,15 @@ php artisan migrate:fresh --force
 - Video ad system: pre-roll, mid-roll, post-roll (MP4, VAST, VPAID, HTML)
 - Ad targeting by category and user role, weighted random selection
 - Click-through URLs on video ads
-- Banner ads (above/below player, sidebar, video grid)
+- Banner ads (above/below player, desktop + mobile variants)
 
 ### Admin Panel (`/admin`)
-- **Dashboard**: Stats overview, system status bar (Redis, Horizon, disk usage)
-- **Content**: Videos, embedded videos, categories, comments, reports
-- **Users**: User management, channels, gifts
-- **Settings**: Site settings, theme customization, storage & CDN, payments, live streaming, integrations, PWA, ads
-- **Tools**: WordPress importer, Bunny Stream migrator, video embedder, menu builder
+- **Dashboard**: Stats overview with clickable cards, trending videos, recent uploads, system status bar
+- **Content**: Videos, categories, comments, reports, pages, contact messages
+- **Users**: User management, channels, gifts, wallet transactions
+- **Settings** (15 pages): Site, theme, storage & CDN, integrations (SMTP with test email), payments, live streaming, ads, SEO, languages, PWA
+- **Tools**: WordPress importer, archive importer, Bunny Stream migrator, video embedder, menu builder, failed jobs viewer
+- **Security**: Sensitive credentials (SMTP password, API keys, cloud secrets) encrypted at rest
 
 ### User Features
 - Registration, login, email verification, password reset
@@ -608,14 +388,31 @@ php artisan migrate:fresh --force
 - Playlists, watch history, likes/dislikes, nested comments
 - Push notifications (Web Push API)
 - Creator dashboard with upload stats
+- Account deletion with password confirmation and cascade cleanup
+
+### SEO
+- JSON-LD VideoObject schema on every video page
+- Open Graph + Twitter Card meta tags
+- Video sitemap with hreflang for multi-language
+- Configurable robots.txt via admin
+- Per-page title templates, canonical URLs
+- Google/Bing/Yandex/Pinterest verification codes
+
+### Security
+- Content Security Policy (CSP) + security headers middleware
+- SSRF protection on thumbnail proxy (strict domain allowlist + internal IP blocking)
+- Encrypted credential storage for all sensitive admin settings
+- CSRF protection on all web routes
+- Rate limiting on login, API endpoints, and gift sending
 
 ### Modern Web
-- PWA: service worker, offline support, installable
+- PWA: service worker, offline support, installable, push notifications
 - Dark/light theme with full CSS variable customization via admin
-- Responsive mobile-first design
+- Responsive mobile-first design with touch-optimized interactions
 - Age verification gate (configurable text, styling, behavior)
 - Custom navigation menu builder
-- i18n framework with multi-language support
+- Multi-language with auto-translation (Google Translate), translated slugs, hreflang, RTL support
+- Custom 404/500 error pages for both Inertia and non-Inertia requests
 
 ## Environment Configuration
 
@@ -650,17 +447,17 @@ SCOUT_DRIVER=database          # or 'meilisearch'
 
 Storage is configured entirely via **Admin → Settings → Storage & CDN**. Supported providers:
 - **Local** (default)
-- **Wasabi** (S3-compatible, no egress fees)
+- **Wasabi** (S3-compatible, no egress fees — auto-resolves endpoint from region)
 - **Backblaze B2** (S3-compatible)
 - **AWS S3**
 
 Videos are always processed locally first (FFmpeg needs filesystem access), then automatically offloaded to cloud storage by `ProcessVideoJob`. Each video tracks its `storage_disk` for correct URL resolution.
 
-The `StorageManager` service handles all disk operations, URL generation (including pre-signed URLs for private buckets), and CDN URL overrides.
+The `StorageManager` service handles all disk operations, URL generation (including pre-signed URLs for private buckets), and CDN URL overrides. Cloud storage credentials are **encrypted at rest** in the database.
 
 ## Email Configuration
 
-HubTube sends transactional emails for signup verification, password resets, subscription notifications, payment receipts, and withdrawal confirmations. Configure email during installation (Step 3) or manually in `.env`.
+HubTube sends transactional emails for signup verification, password resets, subscription notifications, payment receipts, and withdrawal confirmations. Configure email during installation (Step 3) or via **Admin → Integrations** (SMTP settings with a **Send Test Email** button). SMTP passwords are encrypted at rest.
 
 ### Option A: Maddy Mail Server (Self-Hosted, Recommended)
 
@@ -711,31 +508,33 @@ MAIL_MAILER=log
 
 ```
 app/
-├── Console/Commands/       # Artisan commands (storage migration, Bunny download)
+├── Console/Commands/       # Artisan commands (cleanup, migration, Bunny download, translations)
 ├── Events/                 # VideoUploaded, VideoProcessed, GiftSent, etc.
-├── Filament/               # Admin panel (10 settings pages, 8 resources, widgets)
+├── Filament/               # Admin panel (15 settings pages, 11 resources)
 ├── Http/
-│   ├── Controllers/        # 20+ controllers (video, auth, channel, wallet, etc.)
-│   ├── Middleware/          # Age verification, admin check, install guard, Inertia
+│   ├── Controllers/        # 20+ controllers (video, auth, channel, wallet, SEO, etc.)
+│   ├── Middleware/          # Age verification, admin, install guard, Inertia, CSP headers, locale
 │   └── Requests/           # Form request validation
-├── Jobs/                   # ProcessVideoJob (FFmpeg + cloud offload)
-├── Models/                 # 26 Eloquent models
+├── Jobs/                   # ProcessVideoJob (FFmpeg + cloud offload), DownloadBunnyVideoJob
+├── Models/                 # 26+ Eloquent models (with encrypted settings support)
 ├── Policies/               # Video, comment, playlist, live stream authorization
-├── Services/               # VideoService, StorageManager, WalletService, AgoraService, etc.
+├── Services/               # VideoService, StorageManager, WalletService, SeoService, etc.
+├── Traits/                 # Translatable trait for multi-language models
 resources/
 ├── js/
-│   ├── Components/         # 15 Vue components (VideoPlayer, VideoAdPlayer, ShortsViewer, etc.)
-│   ├── Composables/        # 8 composables (useFetch, useToast, useTheme, etc.)
+│   ├── Components/         # 15+ Vue components (VideoPlayer, VideoAdPlayer, ShortsViewer, SeoHead, etc.)
+│   ├── Composables/        # 8+ composables (useFetch, useToast, useTheme, useI18n, usePushNotifications)
 │   ├── Layouts/            # AppLayout with responsive sidebar
 │   └── Pages/              # 30+ Inertia pages
-├── css/                    # Tailwind CSS with custom utilities
+├── css/                    # Tailwind CSS v4 with custom utilities
 └── views/
     ├── install/            # Web installer (6 step views)
+    ├── errors/             # Custom 404/500 Blade error pages
     └── filament/           # Admin panel Blade views
 database/
-├── migrations/             # 34 migrations
+├── migrations/             # 35+ migrations
 └── seeders/                # Categories, gifts, settings, demo users
-scraper/                    # Node.js content scraping microservice
+scraper/                    # Node.js content scraping microservice (optional)
 ```
 
 ## Key Models
@@ -947,21 +746,31 @@ After pulling new code:
 cd ~/hubtube
 git pull origin main
 composer install --no-dev --optimize-autoloader
-npm install && npm run build
+npm ci && npm run build
 php artisan migrate --force
+php artisan filament:assets
+php artisan icons:cache
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
+php artisan event:cache
 sudo systemctl restart php8.4-fpm
-sudo systemctl restart hubtube-horizon
+sudo supervisorctl restart hubtube-horizon
+sudo supervisorctl restart hubtube-reverb
 ```
 
 ## License
 
 Proprietary — All rights reserved.
 
+## Documentation
+
+- **[PANEL-DEPLOY.md](./PANEL-DEPLOY.md)** — Complete aaPanel deployment guide
+- **[PRODUCTION-CHECKLIST.md](./PRODUCTION-CHECKLIST.md)** — Pre-launch checklist with security, performance, and operational items
+- **[nginx.example.conf](./nginx.example.conf)** — Production Nginx config template
+- **[maddy-mail-setup/README.md](./maddy-mail-setup/README.md)** — Self-hosted email server setup
+- Admin panel at `/admin` — all settings are self-documented with helper text
+
 ## Support
 
-- [GUIDE.MD](./GUIDE.MD) — Detailed architecture and development guide
-- Admin panel documentation at `/admin`
 - Create an issue in the repository

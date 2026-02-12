@@ -20,8 +20,5 @@ yarn-error.log
 /.vscode
 node_modules
 /scraper/.cache
-wedgietu_wp*
 composer.lock
 package-lock.json
-E-COMMERCE.MD
-/WTARCHIVE

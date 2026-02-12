@@ -11,15 +11,20 @@
 #
 # What this script installs (if not already present):
 #   - Nginx
-#   - PHP 8.4 + required extensions
+#   - PHP 8.4 + required extensions (redis, fileinfo, bcmath, intl, etc.)
 #   - Composer (latest)
 #   - MariaDB 10.11+
-#   - Redis 7+
-#   - Node.js 20 LTS + npm
-#   - FFmpeg
-#   - Supervisor (for Horizon / queue workers)
+#   - Redis 7+ (required for cache, sessions, queues, Horizon)
+#   - Node.js 20 LTS + npm (required for Vite frontend build)
+#   - FFmpeg (static build for video transcoding, HLS, watermarks)
+#   - Supervisor (for Horizon queue worker + Reverb WebSocket server)
 #   - Certbot (Let's Encrypt SSL)
 #   - Unzip, curl, git (utilities)
+#
+# After running this script, see:
+#   - PANEL-DEPLOY.md  — Full aaPanel deployment guide
+#   - README.md        — General setup and configuration
+#   - nginx.example.conf — Production Nginx config template
 # =============================================================================
 
 set -euo pipefail
@@ -569,17 +574,22 @@ fi
 echo ""
 echo -e "${CYAN}Next steps:${NC}"
 echo "  1. Clone HubTube:       git clone <repo-url> /var/www/hubtube"
-echo "  2. Set permissions:     chown -R www-data:www-data /var/www/hubtube"
+echo "  2. Run setup script:    cd /var/www/hubtube && bash setup.sh"
+echo "     OR do it manually:"
 echo "  3. Copy env file:       cp .env.example .env"
 echo "  4. Install PHP deps:    composer install --no-dev --optimize-autoloader"
-echo "  5. Install JS deps:     npm ci"
-echo "  6. Build frontend:      npm run build"
-echo "  7. Generate app key:    php artisan key:generate"
-echo "  8. Run migrations:      php artisan migrate --seed"
-echo "  9. Configure Nginx:     See GUIDE.MD for vhost template"
-echo "  10. Get SSL cert:       sudo certbot --nginx -d yourdomain.com"
-echo "  11. Setup Supervisor:   Configure Horizon worker (see below)"
-echo "  12. Secure MariaDB:     sudo mysql_secure_installation"
+echo "  5. Install JS deps:     npm ci && npm run build"
+echo "  6. Generate app key:    php artisan key:generate"
+echo "  7. Create database:     See README.md Step 3"
+echo "  8. Configure Nginx:     cp nginx.example.conf /etc/nginx/sites-available/hubtube"
+echo "  9. Fix permissions:     chown -R www-data:www-data /var/www/hubtube"
+echo "  10. Run web installer:  Visit http://yourdomain.com/install"
+echo "  11. Get SSL cert:       sudo certbot --nginx -d yourdomain.com"
+echo "  12. Setup Supervisor:   Configure Horizon + Reverb workers (see below)"
+echo "  13. Setup cron:         * * * * * cd /var/www/hubtube && php artisan schedule:run"
+echo "  14. Secure MariaDB:     sudo mysql_secure_installation"
+echo ""
+echo -e "${CYAN}For aaPanel users, see PANEL-DEPLOY.md for a complete walkthrough.${NC}"
 echo ""
 echo -e "${CYAN}Supervisor config for Horizon (/etc/supervisor/conf.d/hubtube-horizon.conf):${NC}"
 cat <<'SUPERVISOR'
