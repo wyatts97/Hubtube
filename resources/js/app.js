@@ -10,6 +10,7 @@ import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import { MotionPlugin } from '@vueuse/motion';
 import VueVirtualScroller from 'vue-virtual-scroller';
 import { configure } from 'vee-validate';
+import * as Sentry from '@sentry/vue';
 
 const appName = import.meta.env.VITE_APP_NAME || 'HubTube';
 const pages = import.meta.glob('./Pages/**/*.vue');
@@ -41,7 +42,33 @@ createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, pages),
     setup({ el, App, props, plugin }) {
-        return createApp({ render: () => h(App, props) })
+        const app = createApp({ render: () => h(App, props) });
+
+        // Initialize Sentry for frontend error tracking (only if DSN is configured)
+        const sentryDsn = import.meta.env.VITE_SENTRY_DSN_PUBLIC;
+        if (sentryDsn) {
+            Sentry.init({
+                app,
+                dsn: sentryDsn,
+                environment: import.meta.env.VITE_APP_ENV || 'production',
+                integrations: [
+                    Sentry.browserTracingIntegration(),
+                    Sentry.replayIntegration({
+                        maskAllText: true,
+                        blockAllMedia: true,
+                    }),
+                ],
+                // Performance Monitoring — sample 10% of page loads
+                tracesSampleRate: parseFloat(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE || '0.1'),
+                // Session Replay — capture 0% normally, 100% on error
+                replaysSessionSampleRate: 0,
+                replaysOnErrorSampleRate: 1.0,
+                // Don't send PII by default
+                sendDefaultPii: false,
+            });
+        }
+
+        return app
             .use(plugin)
             .use(ZiggyVue)
             .use(MotionPlugin)

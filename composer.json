@@ -6,6 +6,7 @@
     "license": "proprietary",
     "require": {
         "php": "^8.2",
+        "ext-redis": "*",
         "filament/filament": "^3.2",
         "guzzlehttp/guzzle": "^7.8",
         "inertiajs/inertia-laravel": "^1.0",
@@ -16,11 +17,11 @@
         "laravel/scout": "^10.8",
         "laravel/socialite": "^5.12",
         "laravel/tinker": "^2.9",
+        "league/flysystem-aws-s3-v3": "^3.0",
         "meilisearch/meilisearch-php": "^1.6",
-        "ext-redis": "*",
+        "sentry/sentry-laravel": "^4.20",
         "spatie/laravel-medialibrary": "^11.4",
         "spatie/laravel-permission": "^6.4",
-        "league/flysystem-aws-s3-v3": "^3.0",
         "stichoza/google-translate-php": "^5.1",
         "tightenco/ziggy": "^2.0"
     },

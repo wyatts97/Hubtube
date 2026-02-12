@@ -6,6 +6,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
 use Inertia\Inertia;
+use Sentry\Laravel\Integration;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 // Force file sessions during installation so CSRF works before Redis/DB is configured
@@ -59,6 +60,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->throttleApi('60,1');
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        // Report all unhandled exceptions to Sentry (if DSN is configured)
+        Integration::handles($exceptions);
+
         $exceptions->render(function (HttpException $e, Request $request) {
             $status = $e->getStatusCode();
 

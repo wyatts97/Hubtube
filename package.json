@@ -9,10 +9,12 @@
     },
     "dependencies": {
         "@inertiajs/vue3": "^1.0.14",
+        "@sentry/vite-plugin": "^4.9.1",
+        "@sentry/vue": "^10.38.0",
         "@unpic/vue": "^0.0.50",
         "@vee-validate/zod": "^4.12.7",
-        "@vueuse/motion": "^2.0.0",
         "@vueuse/core": "^10.7.2",
+        "@vueuse/motion": "^2.0.0",
         "agora-rtc-sdk-ng": "^4.20.0",
         "agora-rtm-sdk": "^1.5.1",
         "defu": "^6.1.4",
@@ -22,8 +24,8 @@
         "plyr": "^3.8.4",
         "pusher-js": "^8.4.0-rc2",
         "vee-validate": "^4.12.7",
-        "vue-virtual-scroller": "^2.0.0-beta.8",
-        "vue": "^3.4.15"
+        "vue": "^3.4.15",
+        "vue-virtual-scroller": "^2.0.0-beta.8"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
