@@ -35,7 +35,7 @@ class NewSubscriber implements ShouldBroadcast
             'subscriber' => [
                 'id' => $this->subscription->subscriber->id,
                 'username' => $this->subscription->subscriber->username,
-                'avatar' => $this->subscription->subscriber->avatar,
+                'avatar' => $this->subscription->subscriber->avatar_url,
             ],
         ];
     }

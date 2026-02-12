@@ -420,7 +420,7 @@ const getRelatedTitle = (video) => {
                                 </div>
                                 <div class="min-w-0">
                                     <p class="font-medium text-xs sm:text-base truncate" style="color: var(--color-text-primary);">{{ video.user.username }}</p>
-                                    <p class="text-[10px] sm:text-sm hidden sm:block" style="color: var(--color-text-muted);">{{ video.user.subscriber_count }} {{ t('common.subscribe') || 'subscribers' }}</p>
+                                    <p class="text-[10px] sm:text-sm hidden sm:block" style="color: var(--color-text-muted);">{{ video.user.subscriber_count }} {{ t('common.subscribers') || 'subscribers' }}</p>
                                 </div>
                             </Link>
                             

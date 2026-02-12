@@ -253,6 +253,18 @@ class HomeController extends Controller
         ]);
     }
 
+    public function localeCategory(string $locale, string $slug): Response
+    {
+        $category = Category::where('slug', $slug)->firstOrFail();
+
+        return $this->category($category);
+    }
+
+    public function localeTag(string $locale, string $tag): Response
+    {
+        return $this->tag($tag);
+    }
+
     public function tag(string $tag): Response
     {
         $videos = Video::query()

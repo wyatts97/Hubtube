@@ -89,13 +89,13 @@ onUnmounted(() => {
 const addTag = () => {
     const tag = tagInput.value.trim().replace(/^#/, '');
     if (tag && !form.tags.includes(tag) && form.tags.length < 20) {
-        form.tags.push(tag);
+        form.tags = [...form.tags, tag];
         tagInput.value = '';
     }
 };
 
 const removeTag = (index) => {
-    form.tags.splice(index, 1);
+    form.tags = form.tags.filter((_, i) => i !== index);
 };
 
 const handleThumbnailSelect = (e) => {
