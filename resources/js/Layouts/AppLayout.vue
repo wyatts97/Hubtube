@@ -655,6 +655,10 @@ const toggleSidebar = () => {
 
         <!-- Main Content -->
         <main 
+            v-motion
+            :initial="{ opacity: 0, y: 8 }"
+            :enter="{ opacity: 1, y: 0, transition: { duration: 0.2 } }"
+            :leave="{ opacity: 0, y: -8, transition: { duration: 0.15 } }"
             :class="['transition-all duration-300', sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-sidebar']"
             :style="{ paddingTop: headerMenuItems.length ? '96px' : '56px' }"
         >
@@ -665,7 +669,14 @@ const toggleSidebar = () => {
 
         <!-- Mobile Search Overlay -->
         <div v-if="showMobileSearch" class="fixed inset-0 z-50 flex items-start justify-center pt-4 px-4" style="background-color: rgba(0,0,0,0.6);" @click.self="showMobileSearch = false">
-            <div class="w-full max-w-lg card p-4 shadow-xl" style="background-color: var(--color-bg-card);">
+            <div
+                v-motion
+                :initial="{ opacity: 0, y: -10 }"
+                :enter="{ opacity: 1, y: 0, transition: { duration: 0.18 } }"
+                :leave="{ opacity: 0, y: -10, transition: { duration: 0.12 } }"
+                class="w-full max-w-lg card p-4 shadow-xl"
+                style="background-color: var(--color-bg-card);"
+            >
                 <form @submit.prevent="handleMobileSearch" class="flex items-center gap-2">
                     <input
                         v-model="mobileSearchQuery"
@@ -703,6 +714,7 @@ const toggleSidebar = () => {
                             :src="themeSettings.footer_logo_url"
                             alt="Site Logo"
                             class="h-8 object-contain"
+                            loading="lazy"
                         />
                         <span
                             v-else

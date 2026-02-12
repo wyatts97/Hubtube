@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Setting;
 use Closure;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,10 +12,25 @@ class AgeVerification
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // Age verification is now handled by the frontend modal
-        // This middleware just ensures the cookie/session check is available
-        // The modal component checks the cookie client-side
+        try {
+            $required = (bool) Setting::get('age_verification_required', true);
+        } catch (\Throwable $e) {
+            return $next($request);
+        }
+
+        if ($required && $this->shouldEnforce($request) && !$this->isAgeVerified($request)) {
+            return response()->json([
+                'error' => 'Age verification required.',
+            ], 451);
+        }
+
+        // Age verification for web views is handled by the frontend modal
         return $next($request);
+    }
+
+    protected function shouldEnforce(Request $request): bool
+    {
+        return $request->is('api/*') || $request->expectsJson();
     }
 
     /**

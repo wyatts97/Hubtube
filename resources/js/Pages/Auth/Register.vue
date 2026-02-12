@@ -1,25 +1,43 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { Eye, EyeOff } from 'lucide-vue-next';
 import { ref } from 'vue';
+import { z } from 'zod';
 import { useI18n } from '@/Composables/useI18n';
+import { useFormValidation } from '@/Composables/useFormValidation';
 
 const { t } = useI18n();
 
 const showPassword = ref(false);
 
-const form = useForm({
+const schema = z.object({
+    username: z.string().min(3, 'Username must be at least 3 characters.').max(32, 'Username must be 32 characters or less.'),
+    email: z.string().email('Enter a valid email address.'),
+    password: z.string().min(8, 'Password must be at least 8 characters.'),
+    password_confirmation: z.string().min(8, 'Confirm your password.'),
+}).refine((data) => data.password === data.password_confirmation, {
+    message: 'Passwords do not match.',
+    path: ['password_confirmation'],
+});
+
+const { defineField, errors, submit, setFieldValue, isSubmitting } = useFormValidation(schema, {
     username: '',
     email: '',
     password: '',
     password_confirmation: '',
 });
 
-const submit = () => {
-    form.post('/register', {
-        onFinish: () => form.reset('password', 'password_confirmation'),
-    });
-};
+const [username, usernameAttrs] = defineField('username');
+const [email, emailAttrs] = defineField('email');
+const [password, passwordAttrs] = defineField('password');
+const [passwordConfirmation, passwordConfirmationAttrs] = defineField('password_confirmation');
+
+const onSubmit = submit('post', '/register', {
+    onFinish: () => {
+        setFieldValue('password', '');
+        setFieldValue('password_confirmation', '');
+    },
+});
 </script>
 
 <template>
@@ -38,20 +56,21 @@ const submit = () => {
             </div>
 
             <div class="card p-6">
-                <form @submit.prevent="submit" class="space-y-4">
+                <form @submit.prevent="onSubmit" class="space-y-4">
                     <div>
                         <label for="username" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
                             {{ t('settings.username') || 'Username' }}
                         </label>
                         <input
                             id="username"
-                            v-model="form.username"
+                            v-model="username"
+                            v-bind="usernameAttrs"
                             type="text"
                             class="input"
                             required
                             autofocus
                         />
-                        <p v-if="form.errors.username" class="text-red-500 text-sm mt-1">{{ form.errors.username }}</p>
+                        <p v-if="errors.username" class="text-red-500 text-sm mt-1">{{ errors.username }}</p>
                     </div>
 
                     <div>
@@ -60,12 +79,13 @@ const submit = () => {
                         </label>
                         <input
                             id="email"
-                            v-model="form.email"
+                            v-model="email"
+                            v-bind="emailAttrs"
                             type="email"
                             class="input"
                             required
                         />
-                        <p v-if="form.errors.email" class="text-red-500 text-sm mt-1">{{ form.errors.email }}</p>
+                        <p v-if="errors.email" class="text-red-500 text-sm mt-1">{{ errors.email }}</p>
                     </div>
 
                     <div>
@@ -75,7 +95,8 @@ const submit = () => {
                         <div class="relative">
                             <input
                                 id="password"
-                                v-model="form.password"
+                                v-model="password"
+                                v-bind="passwordAttrs"
                                 :type="showPassword ? 'text' : 'password'"
                                 class="input pr-10"
                                 required
@@ -89,7 +110,7 @@ const submit = () => {
                                 <Eye v-else class="w-5 h-5" />
                             </button>
                         </div>
-                        <p v-if="form.errors.password" class="text-red-500 text-sm mt-1">{{ form.errors.password }}</p>
+                        <p v-if="errors.password" class="text-red-500 text-sm mt-1">{{ errors.password }}</p>
                     </div>
 
                     <div>
@@ -98,11 +119,13 @@ const submit = () => {
                         </label>
                         <input
                             id="password_confirmation"
-                            v-model="form.password_confirmation"
+                            v-model="passwordConfirmation"
+                            v-bind="passwordConfirmationAttrs"
                             type="password"
                             class="input"
                             required
                         />
+                        <p v-if="errors.password_confirmation" class="text-red-500 text-sm mt-1">{{ errors.password_confirmation }}</p>
                     </div>
 
                     <div class="text-sm" style="color: var(--color-text-secondary);">
@@ -114,10 +137,10 @@ const submit = () => {
 
                     <button
                         type="submit"
-                        :disabled="form.processing"
+                        :disabled="isSubmitting"
                         class="btn btn-primary w-full"
                     >
-                        <span v-if="form.processing">{{ t('auth.creating_account') || 'Creating account...' }}</span>
+                        <span v-if="isSubmitting">{{ t('auth.creating_account') || 'Creating account...' }}</span>
                         <span v-else>{{ t('auth.create_account') || 'Create Account' }}</span>
                     </button>
                 </form>

@@ -331,6 +331,8 @@ watch(() => props.hlsPlaylist, () => {
             ref="videoRef"
             class="plyr-video"
             playsinline
+            loading="lazy"
+            preload="metadata"
             :poster="poster"
             :data-poster="poster"
         >

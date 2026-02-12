@@ -90,7 +90,7 @@ export function useI18n() {
         } catch (e) {
             // Fallback: stay on current page with locale prefix
             const path = window.location.pathname;
-            const stripped = path.replace(/^\/[a-z]{2}(\/|$)/, '/');
+            const stripped = path.replace(/^\/[a-z]{2,3}(\/|$)/, '/');
             const target = code === defaultLocale.value ? (stripped || '/') : `/${code}${stripped === '/' ? '' : stripped}`;
             window.location.href = target;
         }

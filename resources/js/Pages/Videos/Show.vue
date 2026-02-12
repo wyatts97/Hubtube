@@ -110,18 +110,7 @@ const waitForVideoAndSetupAds = () => {
     setTimeout(() => clearInterval(checkInterval), 10000);
 };
 
-const hlsPlaylistUrl = computed(() => {
-    if (props.video.qualities_available?.length > 1 && !props.video.qualities_available?.includes('original') || 
-        (props.video.qualities_available?.length > 1 && props.video.qualities_available?.some(q => q !== 'original'))) {
-        // Construct HLS master playlist URL
-        const videoPath = props.video.video_path;
-        if (videoPath) {
-            const basePath = videoPath.substring(0, videoPath.lastIndexOf('/'));
-            return `/storage/${basePath}/processed/master.m3u8`;
-        }
-    }
-    return '';
-});
+const hlsPlaylistUrl = computed(() => props.video.hls_playlist_url || '');
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
@@ -351,14 +340,14 @@ const getRelatedTitle = (video) => {
                     <div class="hidden md:block">
                         <div v-if="bannerAbovePlayer.type === 'html' && bannerAbovePlayer.html" v-html="sanitizeHtml(bannerAbovePlayer.html)"></div>
                         <a v-else-if="bannerAbovePlayer.type === 'image' && bannerAbovePlayer.image" :href="bannerAbovePlayer.link || '#'" target="_blank" rel="noopener noreferrer">
-                            <img :src="bannerAbovePlayer.image" alt="Advertisement" style="max-width: 728px; max-height: 90px;" class="rounded" />
+                            <img :src="bannerAbovePlayer.image" alt="Advertisement" style="max-width: 728px; max-height: 90px;" class="rounded" loading="lazy" decoding="async" />
                         </a>
                     </div>
                     <!-- Mobile banner (300x100 / 300x50) -->
                     <div class="md:hidden">
                         <div v-if="bannerAbovePlayer.mobile_type === 'html' && bannerAbovePlayer.mobile_html" v-html="sanitizeHtml(bannerAbovePlayer.mobile_html)"></div>
                         <a v-else-if="bannerAbovePlayer.mobile_type === 'image' && bannerAbovePlayer.mobile_image" :href="bannerAbovePlayer.mobile_link || '#'" target="_blank" rel="noopener noreferrer">
-                            <img :src="bannerAbovePlayer.mobile_image" alt="Advertisement" style="max-width: 300px; max-height: 100px;" class="rounded" />
+                            <img :src="bannerAbovePlayer.mobile_image" alt="Advertisement" style="max-width: 300px; max-height: 100px;" class="rounded" loading="lazy" decoding="async" />
                         </a>
                     </div>
                 </div>
@@ -398,14 +387,14 @@ const getRelatedTitle = (video) => {
                     <div class="hidden md:block">
                         <div v-if="bannerBelowPlayer.type === 'html' && bannerBelowPlayer.html" v-html="sanitizeHtml(bannerBelowPlayer.html)"></div>
                         <a v-else-if="bannerBelowPlayer.type === 'image' && bannerBelowPlayer.image" :href="bannerBelowPlayer.link || '#'" target="_blank" rel="noopener noreferrer">
-                            <img :src="bannerBelowPlayer.image" alt="Advertisement" style="max-width: 728px; max-height: 90px;" class="rounded" />
+                            <img :src="bannerBelowPlayer.image" alt="Advertisement" style="max-width: 728px; max-height: 90px;" class="rounded" loading="lazy" decoding="async" />
                         </a>
                     </div>
                     <!-- Mobile banner (300x100 / 300x50) -->
                     <div class="md:hidden">
                         <div v-if="bannerBelowPlayer.mobile_type === 'html' && bannerBelowPlayer.mobile_html" v-html="sanitizeHtml(bannerBelowPlayer.mobile_html)"></div>
                         <a v-else-if="bannerBelowPlayer.mobile_type === 'image' && bannerBelowPlayer.mobile_image" :href="bannerBelowPlayer.mobile_link || '#'" target="_blank" rel="noopener noreferrer">
-                            <img :src="bannerBelowPlayer.mobile_image" alt="Advertisement" style="max-width: 300px; max-height: 100px;" class="rounded" />
+                            <img :src="bannerBelowPlayer.mobile_image" alt="Advertisement" style="max-width: 300px; max-height: 100px;" class="rounded" loading="lazy" decoding="async" />
                         </a>
                     </div>
                 </div>
@@ -427,7 +416,7 @@ const getRelatedTitle = (video) => {
                         <div class="flex items-center gap-2 sm:gap-4 min-w-0">
                             <Link :href="`/channel/${video.user.username}`" class="flex items-center gap-2 sm:gap-3 min-w-0">
                                 <div class="w-8 h-8 sm:w-10 sm:h-10 avatar shrink-0">
-                                    <img v-if="video.user.avatar" :src="video.user.avatar" :alt="video.user.username" class="w-full h-full object-cover" />
+                                    <img v-if="video.user.avatar" :src="video.user.avatar" :alt="video.user.username" class="w-full h-full object-cover" loading="lazy" decoding="async" />
                                     <div v-else class="w-full h-full flex items-center justify-center text-white font-medium" style="background-color: var(--color-accent);">
                                         {{ video.user.username.charAt(0).toUpperCase() }}
                                     </div>

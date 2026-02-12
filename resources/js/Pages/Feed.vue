@@ -1,15 +1,23 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { Rss } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
 import { useI18n } from '@/Composables/useI18n';
+import { useVirtualGrid } from '@/Composables/useVirtualGrid';
 
 const { t } = useI18n();
 
 const props = defineProps({
     videos: Object,
+});
+
+const videoItems = computed(() => props.videos?.data || []);
+const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(videoItems, {
+    itemHeight: 320,
+    overscan: 6,
 });
 
 const goToPage = (pageNum) => {
@@ -26,8 +34,18 @@ const goToPage = (pageNum) => {
             <p class="mt-1" style="color: var(--color-text-secondary);">{{ t('feed.description') || 'Latest videos from channels you follow' }}</p>
         </div>
 
-        <div v-if="videos.data?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <VideoCard v-for="video in videos.data" :key="video.id" :video="video" />
+        <div
+            v-if="videoItems.length"
+            v-bind="containerProps"
+            :style="[containerProps.style, { height: '70vh' }]"
+            class="rounded-xl border overflow-auto"
+            style="border-color: var(--color-border);"
+        >
+            <div v-bind="wrapperProps">
+                <div v-for="row in virtualRows" :key="row.index" :style="gridStyle" class="px-2 pb-4">
+                    <VideoCard v-for="video in row.data" :key="video.id" :video="video" />
+                </div>
+            </div>
         </div>
 
         <div v-else class="text-center py-16">

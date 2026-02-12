@@ -1,13 +1,18 @@
 import './bootstrap';
 import '../css/app.css';
 import 'plyr/dist/plyr.css';
+import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 
 import { createApp, h } from 'vue';
 import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
+import { MotionPlugin } from '@vueuse/motion';
+import VueVirtualScroller from 'vue-virtual-scroller';
+import { configure } from 'vee-validate';
 
 const appName = import.meta.env.VITE_APP_NAME || 'HubTube';
+const pages = import.meta.glob('./Pages/**/*.vue');
 
 // Keep CSRF meta tag in sync after every Inertia navigation.
 // This prevents 419 errors after login (session regeneration invalidates the old token).
@@ -28,13 +33,19 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+configure({
+    validateOnInput: true,
+});
+
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
-    resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob('./Pages/**/*.vue')),
+    resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, pages),
     setup({ el, App, props, plugin }) {
         return createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(ZiggyVue)
+            .use(MotionPlugin)
+            .use(VueVirtualScroller)
             .mount(el);
     },
     progress: {

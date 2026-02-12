@@ -408,7 +408,8 @@ class ProcessVideoJob implements ShouldQueue
             $startTime = sprintf('%02d:%02d:%02d.000', intdiv($startSec, 3600), intdiv($startSec % 3600, 60), $startSec % 60);
             $endTime = sprintf('%02d:%02d:%02d.000', intdiv($endSec, 3600), intdiv($endSec % 3600, 60), $endSec % 60);
 
-            $relativePath = str_replace($storagePath, '/storage/', $frame);
+            // Use paths relative to the VTT file so cloud storage/CDN URLs resolve correctly.
+            $relativePath = 'sprites/' . basename($frame);
             $relativePath = str_replace('\\', '/', $relativePath);
 
             $vttContent .= "{$startTime} --> {$endTime}\n{$relativePath}\n\n";
@@ -871,8 +872,6 @@ class ProcessVideoJob implements ShouldQueue
                 'video_id' => $this->video->id,
                 'failed' => $failedCount,
             ]);
-            // Still update storage_disk so URLs resolve from cloud for files that did upload
-            $this->video->update(['storage_disk' => $targetDisk]);
         }
     }
 

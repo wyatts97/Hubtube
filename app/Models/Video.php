@@ -66,6 +66,7 @@ class Video extends Model
         'thumbnail_url',
         'preview_url',
         'preview_thumbnails_url',
+        'hls_playlist_url',
         'formatted_duration',
     ];
 
@@ -289,6 +290,26 @@ class Video extends Model
         }
 
         return StorageManager::url($this->scrubber_vtt_path, $this->storage_disk ?? 'public');
+    }
+
+    public function getHlsPlaylistUrlAttribute(): ?string
+    {
+        if (!$this->video_path) {
+            return null;
+        }
+
+        $disk = $this->storage_disk ?? 'public';
+        if ($disk !== 'public' && !Setting::get('cloud_storage_public_bucket', false)) {
+            return null;
+        }
+        $baseDir = dirname($this->video_path);
+        $masterPath = $baseDir . '/processed/master.m3u8';
+
+        if (!StorageManager::exists($masterPath, $disk)) {
+            return null;
+        }
+
+        return StorageManager::url($masterPath, $disk);
     }
 
     public function getVideoUrlAttribute(): ?string

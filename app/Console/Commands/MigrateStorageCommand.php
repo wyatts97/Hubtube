@@ -122,13 +122,28 @@ class MigrateStorageCommand extends Command
             $filesToUpload[] = $video->scrubber_vtt_path;
         }
 
-        // Upload processed directory files
-        $videoDir = "videos/{$video->user_id}/{$video->uuid}";
-        if ($localDisk->exists($videoDir)) {
-            $allFiles = $localDisk->allFiles($videoDir);
-            foreach ($allFiles as $file) {
-                if (!in_array($file, $filesToUpload)) {
-                    $filesToUpload[] = $file;
+        // Upload processed directory files (current slug-based path)
+        if (!empty($video->slug)) {
+            $videoDir = "videos/{$video->slug}";
+            if ($localDisk->exists($videoDir)) {
+                $allFiles = $localDisk->allFiles($videoDir);
+                foreach ($allFiles as $file) {
+                    if (!in_array($file, $filesToUpload)) {
+                        $filesToUpload[] = $file;
+                    }
+                }
+            }
+        }
+
+        // Legacy path cleanup (older uploads used user_id/uuid structure)
+        if (!empty($video->uuid)) {
+            $legacyDir = "videos/{$video->user_id}/{$video->uuid}";
+            if ($localDisk->exists($legacyDir)) {
+                $allFiles = $localDisk->allFiles($legacyDir);
+                foreach ($allFiles as $file) {
+                    if (!in_array($file, $filesToUpload)) {
+                        $filesToUpload[] = $file;
+                    }
                 }
             }
         }

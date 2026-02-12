@@ -8,6 +8,7 @@ import { Search as SearchIcon, Users, Hash } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 import { useI18n } from '@/Composables/useI18n';
+import { useVirtualGrid } from '@/Composables/useVirtualGrid';
 
 const { t } = useI18n();
 
@@ -72,6 +73,12 @@ const withTranslation = (video) => {
     }
     return video;
 };
+
+const videoItems = computed(() => resultsList().map(withTranslation));
+const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(videoItems, {
+    itemHeight: 320,
+    overscan: 6,
+});
 </script>
 
 <template>
@@ -121,8 +128,18 @@ const withTranslation = (video) => {
 
             <!-- Video Results -->
             <template v-if="activeType === 'videos'">
-                <div v-if="resultsList().length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    <VideoCard v-for="video in resultsList()" :key="video.id" :video="withTranslation(video)" />
+                <div
+                    v-if="videoItems.length"
+                    v-bind="containerProps"
+                    :style="[containerProps.style, { height: '70vh' }]"
+                    class="rounded-xl border overflow-auto"
+                    style="border-color: var(--color-border);"
+                >
+                    <div v-bind="wrapperProps">
+                        <div v-for="row in virtualRows" :key="row.index" :style="gridStyle" class="px-2 pb-4">
+                            <VideoCard v-for="video in row.data" :key="video.id" :video="video" />
+                        </div>
+                    </div>
                 </div>
                 <div v-else class="text-center py-12">
                     <SearchIcon class="w-12 h-12 mx-auto mb-4" style="color: var(--color-text-muted);" />
@@ -141,7 +158,7 @@ const withTranslation = (video) => {
                         class="card p-4 flex items-center gap-4 hover:opacity-90 transition-opacity"
                     >
                         <div class="w-14 h-14 rounded-full overflow-hidden shrink-0" style="background-color: var(--color-bg-secondary);">
-                            <img v-if="channel.avatar" :src="channel.avatar" :alt="channel.username" class="w-full h-full object-cover" />
+                            <img v-if="channel.avatar" :src="channel.avatar" :alt="channel.username" class="w-full h-full object-cover" loading="lazy" decoding="async" />
                             <div v-else class="w-full h-full flex items-center justify-center text-xl font-bold" style="color: var(--color-accent);">
                                 {{ channel.username?.charAt(0)?.toUpperCase() || '?' }}
                             </div>

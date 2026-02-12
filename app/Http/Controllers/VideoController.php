@@ -219,18 +219,36 @@ class VideoController extends Controller
      */
     public function uploadChunk(Request $request): JsonResponse
     {
+        Gate::authorize('upload-video');
+
         $request->validate([
             'chunk' => 'required|file',
-            'chunkIndex' => 'required|integer|min:0',
-            'totalChunks' => 'required|integer|min:1',
+            'chunkIndex' => 'required|integer|min:0|max:10000',
+            'totalChunks' => 'required|integer|min:1|max:10000',
             'uploadId' => 'required|string|max:64|regex:/^[a-zA-Z0-9_-]+$/',
             'filename' => 'required|string|max:255',
             'fileSize' => 'required|integer|min:1',
         ]);
 
+        $fileSize = (int) $request->input('fileSize');
+        $maxSize = (int) ($request->user()->max_video_size ?? 0);
+        if ($maxSize > 0 && $fileSize > $maxSize) {
+            return response()->json(['error' => 'Video file exceeds your maximum upload size.'], 422);
+        }
+
         $uploadId = preg_replace('/[^a-zA-Z0-9_-]/', '', $request->input('uploadId'));
         $chunkIndex = (int) $request->input('chunkIndex');
         $totalChunks = (int) $request->input('totalChunks');
+        if ($chunkIndex >= $totalChunks) {
+            return response()->json(['error' => 'Invalid chunk index.'], 422);
+        }
+
+        $filename = $request->input('filename');
+        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION) ?: '');
+        $allowedExtensions = config('hubtube.video.allowed_extensions', []);
+        if (empty($extension) || !in_array($extension, $allowedExtensions, true)) {
+            return response()->json(['error' => 'Invalid video file type.'], 422);
+        }
         $chunkDir = storage_path("app/chunks/{$uploadId}");
 
         if (!is_dir($chunkDir)) {

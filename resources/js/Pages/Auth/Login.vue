@@ -1,24 +1,34 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { Eye, EyeOff } from 'lucide-vue-next';
 import { ref } from 'vue';
+import { z } from 'zod';
 import { useI18n } from '@/Composables/useI18n';
+import { useFormValidation } from '@/Composables/useFormValidation';
 
 const { t } = useI18n();
 
 const showPassword = ref(false);
 
-const form = useForm({
+const schema = z.object({
+    login: z.string().min(1, 'Email or username is required.'),
+    password: z.string().min(6, 'Password must be at least 6 characters.'),
+    remember: z.boolean().optional(),
+});
+
+const { defineField, errors, submit, setFieldValue, isSubmitting } = useFormValidation(schema, {
     login: '',
     password: '',
     remember: false,
 });
 
-const submit = () => {
-    form.post('/login', {
-        onFinish: () => form.reset('password'),
-    });
-};
+const [login, loginAttrs] = defineField('login');
+const [password, passwordAttrs] = defineField('password');
+const [remember, rememberAttrs] = defineField('remember');
+
+const onSubmit = submit('post', '/login', {
+    onFinish: () => setFieldValue('password', ''),
+});
 </script>
 
 <template>
@@ -37,20 +47,21 @@ const submit = () => {
             </div>
 
             <div class="card p-6">
-                <form @submit.prevent="submit" class="space-y-4">
+                <form @submit.prevent="onSubmit" class="space-y-4">
                     <div>
                         <label for="login" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
                             {{ t('auth.email_or_username') || 'Email or Username' }}
                         </label>
                         <input
                             id="login"
-                            v-model="form.login"
+                            v-model="login"
+                            v-bind="loginAttrs"
                             type="text"
                             class="input"
                             required
                             autofocus
                         />
-                        <p v-if="form.errors.login" class="text-red-500 text-sm mt-1">{{ form.errors.login }}</p>
+                        <p v-if="errors.login" class="text-red-500 text-sm mt-1">{{ errors.login }}</p>
                     </div>
 
                     <div>
@@ -60,7 +71,8 @@ const submit = () => {
                         <div class="relative">
                             <input
                                 id="password"
-                                v-model="form.password"
+                                v-model="password"
+                                v-bind="passwordAttrs"
                                 :type="showPassword ? 'text' : 'password'"
                                 class="input pr-10"
                                 required
@@ -74,13 +86,14 @@ const submit = () => {
                                 <Eye v-else class="w-5 h-5" />
                             </button>
                         </div>
-                        <p v-if="form.errors.password" class="text-red-500 text-sm mt-1">{{ form.errors.password }}</p>
+                        <p v-if="errors.password" class="text-red-500 text-sm mt-1">{{ errors.password }}</p>
                     </div>
 
                     <div class="flex items-center justify-between">
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input
-                                v-model="form.remember"
+                                v-model="remember"
+                                v-bind="rememberAttrs"
                                 type="checkbox"
                                 class="w-4 h-4 rounded border-dark-600 bg-dark-800 text-primary-600 focus:ring-primary-500"
                             />
@@ -93,10 +106,10 @@ const submit = () => {
 
                     <button
                         type="submit"
-                        :disabled="form.processing"
+                        :disabled="isSubmitting"
                         class="btn btn-primary w-full"
                     >
-                        <span v-if="form.processing">{{ t('auth.signing_in') || 'Signing in...' }}</span>
+                        <span v-if="isSubmitting">{{ t('auth.signing_in') || 'Signing in...' }}</span>
                         <span v-else>{{ t('auth.login') || 'Sign In' }}</span>
                     </button>
                 </form>

@@ -83,6 +83,9 @@ const onPreviewLoad = () => { previewLoaded.value = true; };
 
 <template>
     <Link 
+        v-motion
+        :initial="{ opacity: 0, y: 8 }"
+        :enter="{ opacity: 1, y: 0, transition: { duration: 0.2 } }"
         :href="videoUrl" 
         class="video-card"
         @mouseenter="handleMouseEnter"
@@ -104,6 +107,8 @@ const onPreviewLoad = () => { previewLoaded.value = true; };
                 :alt="video.title"
                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-200"
                 :class="isHovering && previewLoaded ? 'opacity-100' : 'opacity-0'"
+                loading="lazy"
+                decoding="async"
                 @load="onPreviewLoad"
             />
             
