@@ -815,7 +815,34 @@ class ProcessVideoJob implements ShouldQueue
                 'bottom' => "h-text_h-{$padding}",
             ];
             $y = $yPositions[$position] ?? $yPositions['top'];
-            $x = "(mod({$scrollSpeed}*n\\,w+tw)-tw)";
+
+            // Time-based scrolling using t (seconds).
+            // speed setting = px/frame at 30fps, so pixels_per_second = speed * 30.
+            $pps = $scrollSpeed * 30;
+
+            if ($scrollInterval > 0) {
+                // INTERVAL MODE: text enters from right edge every $interval seconds.
+                // t_local = mod(t - delay, interval) resets to 0 at each cycle start.
+                // x = w - pps * t_local → starts at x=w (off-screen right), moves left.
+                // When x < -tw, text is off-screen left (naturally invisible).
+                // At next cycle, mod resets → x jumps back to w (re-enters from right).
+                $tLocal = $scrollStartDelay > 0
+                    ? "mod(t-{$scrollStartDelay}\\,{$scrollInterval})"
+                    : "mod(t\\,{$scrollInterval})";
+                $x = "w-{$pps}*{$tLocal}";
+            } else {
+                // CONTINUOUS MODE: text scrolls endlessly, wrapping around.
+                // x = w - mod(pps * (t-delay), w+tw) → wraps when text fully exits left.
+                $tExpr = $scrollStartDelay > 0 ? "t-{$scrollStartDelay}" : "t";
+                $x = "w-mod({$pps}*({$tExpr})\\,w+tw)";
+            }
+
+            // Enable expression: only needed for start delay (to hide text before delay).
+            // Interval timing is handled by the x expression itself.
+            $enable = '';
+            if ($scrollStartDelay > 0) {
+                $enable = ":enable=gte(t\\,{$scrollStartDelay})";
+            }
         } else {
             $positions = [
                 'top-left' => ['x' => $padding, 'y' => $padding],
@@ -831,20 +858,11 @@ class ProcessVideoJob implements ShouldQueue
             $pos = $positions[$position] ?? $positions['bottom-right'];
             $x = $pos['x'];
             $y = $pos['y'];
+            $enable = '';
         }
 
         // Color with opacity (e.g. white@0.8)
         $fontColor = !str_contains($color, '@') ? $color . '@' . $opacity : $color;
-
-        // Enable expression for interval + start delay
-        $enable = '';
-        if ($scrollEnabled && $scrollInterval > 0) {
-            if ($scrollStartDelay > 0) {
-                $enable = ":enable=gte(t\\,{$scrollStartDelay})*lt(mod(t-{$scrollStartDelay}\\,{$scrollInterval})\\,{$scrollInterval})";
-            }
-        } elseif ($scrollEnabled && $scrollStartDelay > 0) {
-            $enable = ":enable=gte(t\\,{$scrollStartDelay})";
-        }
 
         $parts = [
             "drawtext=fontfile={$font}",

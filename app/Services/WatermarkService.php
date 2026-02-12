@@ -187,6 +187,9 @@ class WatermarkService
         // Uses FFmpeg expression so it adapts per-video.
         $scaledSize = max(12, (int) round($size * $videoHeight / 720));
 
+        // Color with opacity (e.g. white@0.7)
+        $fontColor = static::buildFontColor($color, $opacity);
+
         // Y position based on simple top/middle/bottom (for scroll mode)
         // or full 9-position grid (for static mode)
         if ($scrollEnabled) {
@@ -196,8 +199,35 @@ class WatermarkService
                 'bottom' => "h-text_h-{$padding}",
             ];
             $y = $yPositions[$position] ?? $yPositions['top'];
-            // Scroll: x moves horizontally
-            $x = "(mod({$scrollSpeed}*n\\,w+tw)-tw)";
+
+            // Time-based scrolling using t (seconds).
+            // speed setting = px/frame at 30fps, so pixels_per_second = speed * 30.
+            $pps = $scrollSpeed * 30;
+
+            if ($scrollInterval > 0) {
+                // INTERVAL MODE: text enters from right edge every $interval seconds.
+                // t_local = mod(t - delay, interval) resets to 0 at each cycle start.
+                // x = w - pps * t_local → starts at x=w (off-screen right), moves left.
+                // When x < -tw, text is off-screen left (naturally invisible).
+                // At next cycle, mod resets → x jumps back to w (re-enters from right).
+                // The interval must be long enough for text to fully cross: (w+tw)/pps seconds.
+                $tLocal = $scrollStartDelay > 0
+                    ? "mod(t-{$scrollStartDelay}\\,{$scrollInterval})"
+                    : "mod(t\\,{$scrollInterval})";
+                $x = "w-{$pps}*{$tLocal}";
+            } else {
+                // CONTINUOUS MODE: text scrolls endlessly, wrapping around.
+                // x = w - mod(pps * (t-delay), w+tw) → wraps when text fully exits left.
+                $tExpr = $scrollStartDelay > 0 ? "t-{$scrollStartDelay}" : "t";
+                $x = "w-mod({$pps}*({$tExpr})\\,w+tw)";
+            }
+
+            // Enable expression: only needed for start delay (to hide text before delay).
+            // Interval timing is handled by the x expression itself.
+            $enable = '';
+            if ($scrollStartDelay > 0) {
+                $enable = ":enable=gte(t\\,{$scrollStartDelay})";
+            }
         } else {
             $positions = [
                 'top-left' => ['x' => $padding, 'y' => $padding],
@@ -213,29 +243,7 @@ class WatermarkService
             $pos = $positions[$position] ?? $positions['bottom-right'];
             $x = $pos['x'];
             $y = $pos['y'];
-        }
-
-        // Color with opacity (e.g. white@0.8)
-        $fontColor = static::buildFontColor($color, $opacity);
-
-        // Enable expression for interval + start delay
-        $enable = '';
-        if ($scrollEnabled && $scrollInterval > 0) {
-            if ($scrollStartDelay > 0) {
-                // After start delay, show every interval: gte(t,delay)*lt(mod(t-delay,interval),tw/speed*fps_guess)
-                // Simpler: enable when t >= delay AND mod(t-delay, interval) < (one scroll pass duration)
-                // One scroll pass ≈ (w+tw)/speed frames ÷ fps. We approximate with a generous window.
-                // Actually, just use the interval as the repeat cycle and let the scroll naturally
-                // disappear when text goes off-screen. The enable just gates when scrolling starts.
-                $enable = ":enable=gte(t\\,{$scrollStartDelay})*lt(mod(t-{$scrollStartDelay}\\,{$scrollInterval})\\,{$scrollInterval})";
-            } else {
-                // No start delay, just repeat every interval (always visible since scroll handles timing)
-                // With interval, the text appears, scrolls across, then hides until next interval
-                // We let it be always enabled since the mod() in x already creates the repeat pattern
-            }
-        } elseif ($scrollEnabled && $scrollStartDelay > 0) {
-            // Continuous scroll but with a start delay
-            $enable = ":enable=gte(t\\,{$scrollStartDelay})";
+            $enable = '';
         }
 
         $parts = [
