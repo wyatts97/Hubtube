@@ -168,7 +168,7 @@ class WatermarkService
         // Uses expansion=normal so FFmpeg evaluates the expression per frame.
         // 'n' = frame number, 'tw' = text width, 'w' = video width.
         if ($scrollEnabled) {
-            $x = "(mod({$scrollSpeed}*n\\,w+tw)-tw)";
+            $x = "'mod({$scrollSpeed}*n,w+tw)-tw'";
         }
 
         $fontColor = $color;
@@ -177,16 +177,14 @@ class WatermarkService
         }
 
         // Interval timing: show for $scrollDuration seconds every $scrollInterval seconds.
-        // enable=lt(mod(t\,INTERVAL)\,DURATION)  — commas escaped because value is unquoted
         $enable = '';
         if ($scrollEnabled && $scrollInterval > 0 && $scrollDuration > 0) {
-            $enable = ":enable=lt(mod(t\\,{$scrollInterval})\\,{$scrollDuration})";
+            $enable = ":enable='lt(mod(t,{$scrollInterval}),{$scrollDuration})'";
         }
 
         $parts = [
-            "drawtext=expansion=normal",
-            "text={$text}",
-            "fontfile={$font}",
+            "drawtext=text='{$text}'",
+            "fontfile='{$font}'",
             "fontsize={$size}",
             "fontcolor={$fontColor}",
             "shadowx=2",

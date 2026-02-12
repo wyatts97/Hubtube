@@ -691,17 +691,12 @@ class ProcessVideoJob implements ShouldQueue
 
         if ($hasWatermark) {
             $filterComplex = $this->buildWatermarkFilterComplex($settings['width'], $settings['height']);
-            // Write filter to temp file so FFmpeg reads it directly —
-            // avoids shell escaping issues with drawtext expressions.
-            $filterFile = tempnam(sys_get_temp_dir(), 'ffmpeg_wm_');
-            file_put_contents($filterFile, $filterComplex);
             $cmd = sprintf(
-                '%s -y -i %s %s -filter_complex_script %s -map %s -map 0:a? %s -force_key_frames %s %s 2>&1',
+                '%s -y -i %s %s -filter_complex "%s" -map "[outv]" -map 0:a? %s -force_key_frames %s %s 2>&1',
                 $ffmpeg,
                 escapeshellarg($inputPath),
                 $watermarkInput,
-                escapeshellarg($filterFile),
-                escapeshellarg('[outv]'),
+                $filterComplex,
                 $encodeArgs,
                 escapeshellarg('expr:gte(t,n_forced*2)'),
                 escapeshellarg($output)
@@ -720,10 +715,6 @@ class ProcessVideoJob implements ShouldQueue
 
         Log::info('Transcoding video', ['quality' => $quality]);
         [$exitCode, $result] = $this->runCommand($cmd);
-
-        if (isset($filterFile)) {
-            @unlink($filterFile);
-        }
         
         if ($exitCode !== 0 || !file_exists($output) || filesize($output) === 0) {
             Log::error('Transcoding failed', [
@@ -862,7 +853,7 @@ class ProcessVideoJob implements ShouldQueue
         // Frame-based horizontal scroll matching reference:
         //   x=(mod(speed*n, w+tw)-tw)
         if ($scrollEnabled) {
-            $x = "(mod({$scrollSpeed}*n\\,w+tw)-tw)";
+            $x = "'mod({$scrollSpeed}*n,w+tw)-tw'";
         }
 
         $fontColor = $color;
@@ -871,16 +862,14 @@ class ProcessVideoJob implements ShouldQueue
         }
 
         // Interval timing: show for $scrollDuration seconds every $scrollInterval seconds.
-        // enable=lt(mod(t\,INTERVAL)\,DURATION)  — commas escaped because value is unquoted
         $enable = '';
         if ($scrollEnabled && $scrollInterval > 0 && $scrollDuration > 0) {
-            $enable = ":enable=lt(mod(t\\,{$scrollInterval})\\,{$scrollDuration})";
+            $enable = ":enable='lt(mod(t,{$scrollInterval}),{$scrollDuration})'";
         }
 
         $parts = [
-            "drawtext=expansion=normal",
-            "text={$text}",
-            "fontfile={$font}",
+            "drawtext=text='{$text}'",
+            "fontfile='{$font}'",
             "fontsize={$size}",
             "fontcolor={$fontColor}",
             "shadowx=2",
