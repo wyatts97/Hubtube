@@ -41,9 +41,8 @@ class UserSeeder extends Seeder
                 'username' => 'demouser',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
-                'is_verified' => true,
+                'is_verified' => false,
                 'wallet_balance' => 100.00,
-                'age_verified_at' => now(),
             ]
         );
 

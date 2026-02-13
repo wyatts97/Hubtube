@@ -209,6 +209,7 @@ const initDirectPlayback = (plyrOptions) => {
 };
 
 let isSwitchingQuality = false;
+let currentQualityLabel = null;
 
 const updateQuality = (quality) => {
     // HLS path — hls.js handles quality switching natively
@@ -224,42 +225,84 @@ const updateQuality = (quality) => {
         return;
     }
 
-    // MP4 path — swap source, seek to current time, resume
+    // MP4 path — use Plyr's source setter to properly swap the
+    // underlying <video> source. This is the documented API and
+    // ensures Plyr's internal state (duration, buffered ranges,
+    // controls) stays in sync with the actual media element.
     if (isSwitchingQuality) return;
 
     const qualityLabel = quality === 0 ? 'original' : `${quality}p`;
     const newUrl = props.qualityUrls[qualityLabel];
     if (!newUrl) return;
 
-    const video = videoRef.value;
-    if (!video) return;
+    // Don't switch if already on this quality
+    if (qualityLabel === currentQualityLabel) return;
 
-    // Don't switch if already on this source
-    if (video.src === newUrl || video.currentSrc === newUrl) return;
+    const video = videoRef.value;
+    if (!video || !player) return;
 
     isSwitchingQuality = true;
     const currentTime = video.currentTime;
     const wasPlaying = !video.paused;
+    currentQualityLabel = qualityLabel;
 
-    // Pause, swap source, seek, resume
-    video.pause();
-    video.src = newUrl;
-    video.load();
-
-    const onCanPlay = () => {
-        video.removeEventListener('canplay', onCanPlay);
-        video.currentTime = currentTime;
-
-        const onSeeked = () => {
-            video.removeEventListener('seeked', onSeeked);
-            if (wasPlaying) {
-                video.play().catch(() => {});
-            }
-            isSwitchingQuality = false;
-        };
-        video.addEventListener('seeked', onSeeked, { once: true });
+    // Use Plyr's source setter — this properly tears down and
+    // reinitialises the media element so controls, progress bar,
+    // and duration all update correctly. It also works with
+    // cloud-hosted files (Wasabi/S3) because Plyr handles the
+    // load lifecycle internally.
+    player.source = {
+        type: 'video',
+        sources: [{
+            src: newUrl,
+            type: 'video/mp4',
+        }],
+        poster: props.poster,
     };
-    video.addEventListener('canplay', onCanPlay, { once: true });
+
+    // After Plyr reinitialises with the new source, seek back to
+    // where the user was and resume playback if they were playing.
+    const restorePosition = () => {
+        // Wait until the new source is loaded enough to seek
+        const onCanPlay = () => {
+            video.removeEventListener('canplay', onCanPlay);
+            video.removeEventListener('loadedmetadata', onCanPlay);
+
+            if (currentTime > 0 && isFinite(video.duration)) {
+                video.currentTime = Math.min(currentTime, video.duration);
+            }
+
+            const onSeeked = () => {
+                video.removeEventListener('seeked', onSeeked);
+                if (wasPlaying) {
+                    video.play().catch(() => {});
+                }
+                isSwitchingQuality = false;
+            };
+
+            if (currentTime > 0) {
+                video.addEventListener('seeked', onSeeked, { once: true });
+            } else {
+                if (wasPlaying) {
+                    video.play().catch(() => {});
+                }
+                isSwitchingQuality = false;
+            }
+        };
+
+        // loadedmetadata fires first, canplay fires when enough data
+        // is buffered. Use whichever fires first for responsiveness.
+        if (video.readyState >= 1) {
+            onCanPlay();
+        } else {
+            video.addEventListener('loadedmetadata', onCanPlay, { once: true });
+        }
+    };
+
+    // Small delay to let Plyr finish its source setter teardown/rebuild
+    requestAnimationFrame(() => {
+        restorePosition();
+    });
 };
 
 const destroyHls = () => {

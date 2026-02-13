@@ -111,6 +111,18 @@ class UserResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_admin'),
             ])
             ->actions([
+                Tables\Actions\Action::make('verify')
+                    ->icon('heroicon-o-check-badge')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->action(fn (User $record) => $record->forceFill(['is_verified' => true])->save())
+                    ->visible(fn (User $record) => !$record->is_verified),
+                Tables\Actions\Action::make('unverify')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->action(fn (User $record) => $record->forceFill(['is_verified' => false])->save())
+                    ->visible(fn (User $record) => $record->is_verified),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])

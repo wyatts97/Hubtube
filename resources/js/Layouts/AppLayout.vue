@@ -1,12 +1,12 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { Link, usePage } from '@inertiajs/vue3';
+import { Link, usePage, useForm, router } from '@inertiajs/vue3';
 import { 
     Menu, Search, Upload, Bell, User, LogOut, Settings, Wallet, 
     Video, Radio, Home, TrendingUp, Zap, ListVideo, History, 
     ChevronLeft, ChevronRight, Shield, Sun, Moon, Monitor,
     X, Check, CheckCheck, Rss, LayoutDashboard, ChevronDown, ChevronUp, Film, Clapperboard,
-    Tag, Folder, Star, ExternalLink
+    Tag, Folder, Star, ExternalLink, Eye, EyeOff
 } from 'lucide-vue-next';
 import { useTheme } from '@/Composables/useTheme';
 import { useToast } from '@/Composables/useToast';
@@ -32,6 +32,26 @@ const showUploadMenu = ref(false);
 const sidebarCollapsed = ref(false);
 const searchQuery = ref('');
 const showMobileSearch = ref(false);
+const showLoginModal = ref(false);
+const showLoginPassword = ref(false);
+
+const loginForm = useForm({
+    login: '',
+    password: '',
+    remember: false,
+});
+
+const submitLogin = () => {
+    loginForm.post('/login', {
+        onSuccess: () => {
+            showLoginModal.value = false;
+            loginForm.reset();
+        },
+        onFinish: () => {
+            loginForm.reset('password');
+        },
+    });
+};
 const mobileSearchQuery = ref('');
 const openMegaMenu = ref(null);
 
@@ -394,8 +414,7 @@ const toggleSidebar = () => {
                     </template>
 
                     <template v-else>
-                        <Link href="/login" class="btn btn-ghost">{{ t('nav.sign_in') || 'Sign In' }}</Link>
-                        <Link href="/register" class="btn btn-primary hidden sm:flex">{{ t('nav.sign_up') || 'Sign Up' }}</Link>
+                        <button @click="showLoginModal = true" class="btn btn-primary">{{ t('nav.login_register') || 'Login / Register' }}</button>
                     </template>
                 </div>
             </div>
@@ -744,6 +763,98 @@ const toggleSidebar = () => {
                 </div>
             </div>
         </footer>
+
+        <!-- Login Modal -->
+        <Teleport to="body">
+            <Transition name="login-modal">
+                <div v-if="showLoginModal && !user" class="fixed inset-0 z-[9998] flex items-center justify-center p-4" @click.self="showLoginModal = false">
+                    <div class="fixed inset-0 bg-black/60" style="backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);" @click="showLoginModal = false"></div>
+                    <div class="relative w-full max-w-md rounded-xl shadow-2xl" style="background-color: var(--color-bg-card);">
+                        <!-- Close button -->
+                        <button @click="showLoginModal = false" class="absolute top-3 right-3 p-1 rounded-full hover:opacity-80" style="color: var(--color-text-muted);">
+                            <X class="w-5 h-5" />
+                        </button>
+
+                        <div class="p-6">
+                            <div class="text-center mb-6">
+                                <div class="w-12 h-12 rounded-xl flex items-center justify-center mx-auto" style="background-color: var(--color-accent);">
+                                    <span class="text-2xl font-bold text-white">H</span>
+                                </div>
+                                <h2 class="text-xl font-bold mt-3" style="color: var(--color-text-primary);">{{ t('auth.welcome_back') || 'Welcome back' }}</h2>
+                                <p class="text-sm mt-1" style="color: var(--color-text-secondary);">{{ t('auth.sign_in_desc') || 'Sign in to your account' }}</p>
+                            </div>
+
+                            <form @submit.prevent="submitLogin" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
+                                        {{ t('auth.email_or_username') || 'Email or Username' }}
+                                    </label>
+                                    <input
+                                        v-model="loginForm.login"
+                                        type="text"
+                                        class="input"
+                                        required
+                                        autofocus
+                                    />
+                                    <p v-if="loginForm.errors.login" class="text-red-500 text-sm mt-1">{{ loginForm.errors.login }}</p>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
+                                        {{ t('auth.password') || 'Password' }}
+                                    </label>
+                                    <div class="relative">
+                                        <input
+                                            v-model="loginForm.password"
+                                            :type="showLoginPassword ? 'text' : 'password'"
+                                            class="input pr-10"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            @click="showLoginPassword = !showLoginPassword"
+                                            class="absolute right-3 top-1/2 -translate-y-1/2" style="color: var(--color-text-secondary);"
+                                        >
+                                            <EyeOff v-if="showLoginPassword" class="w-5 h-5" />
+                                            <Eye v-else class="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                    <p v-if="loginForm.errors.password" class="text-red-500 text-sm mt-1">{{ loginForm.errors.password }}</p>
+                                </div>
+
+                                <div class="flex items-center justify-between">
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input v-model="loginForm.remember" type="checkbox" class="w-4 h-4 rounded" />
+                                        <span class="text-sm" style="color: var(--color-text-secondary);">{{ t('auth.remember_me') || 'Remember me' }}</span>
+                                    </label>
+                                    <Link href="/forgot-password" class="text-sm" style="color: var(--color-accent);" @click="showLoginModal = false">
+                                        {{ t('auth.forgot_password') || 'Forgot password?' }}
+                                    </Link>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    :disabled="loginForm.processing"
+                                    class="btn btn-primary w-full"
+                                >
+                                    <span v-if="loginForm.processing">{{ t('auth.signing_in') || 'Signing in...' }}</span>
+                                    <span v-else>{{ t('auth.login') || 'Sign In' }}</span>
+                                </button>
+                            </form>
+
+                            <div class="mt-6 text-center">
+                                <p style="color: var(--color-text-secondary);">
+                                    {{ t('auth.no_account') || "Don't have an account?" }}
+                                    <Link href="/register" class="font-medium" style="color: var(--color-accent);" @click="showLoginModal = false">
+                                        {{ t('auth.sign_up') || 'Sign up' }}
+                                    </Link>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
 
         <!-- Toast Notifications -->
         <ToastContainer />
