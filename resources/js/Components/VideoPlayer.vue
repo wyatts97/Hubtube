@@ -53,8 +53,22 @@ const initPlayer = async () => {
             poster: props.poster,
             crossOrigin: true,
             playsinline: true,
-            layout: new VidstackPlayerLayout(layoutProps),
+            storage: 'hubtube-player',
+            layout: new VidstackPlayerLayout({
+                ...layoutProps,
+                colorScheme: 'dark',
+            }),
         });
+
+        // Remove Google Cast button using the documented WC slot override.
+        // Appending a child with slot="googleCastButton" replaces the default
+        // slot content with an empty (invisible) element.
+        const layout = player.querySelector('media-video-layout');
+        if (layout) {
+            const empty = document.createElement('div');
+            empty.slot = 'googleCastButton';
+            layout.append(empty);
+        }
 
         if (props.autoplay) {
             player.play().catch(() => {});

@@ -194,11 +194,20 @@ const endAd = () => {
     emit('request-play');
 };
 
-// Ensure ad video actually starts playing
+// Ensure ad video actually starts playing.
+// Start muted (browser autoplay policy), then unmute after playback begins.
 const tryPlayAd = () => {
-    if (adVideoRef.value) {
-        adVideoRef.value.play().catch(() => {});
-    }
+    if (!adVideoRef.value) return;
+    const video = adVideoRef.value;
+    video.muted = true;
+    video.play()
+        .then(() => {
+            // Unmute once playback has started
+            setTimeout(() => { video.muted = false; }, 100);
+        })
+        .catch((err) => {
+            console.warn('[VideoAdPlayer] Ad autoplay failed:', err.message);
+        });
 };
 
 // Handle click on ad — open click-through URL in new tab
@@ -312,9 +321,6 @@ onUnmounted(() => {
             <span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-500 text-black uppercase tracking-wide">
                 Ad
             </span>
-            <span class="text-xs text-white/70">
-                {{ adType === 'pre_roll' ? 'Pre-roll' : adType === 'mid_roll' ? 'Mid-roll' : 'Post-roll' }}
-            </span>
         </div>
 
         <!-- Skip Button -->
@@ -347,6 +353,7 @@ onUnmounted(() => {
                 :src="currentAd.content"
                 class="w-full h-full object-contain pointer-events-none"
                 autoplay
+                muted
                 playsinline
                 crossorigin="anonymous"
                 @ended="onAdVideoEnded"
@@ -362,6 +369,7 @@ onUnmounted(() => {
                     :src="vastMediaUrl"
                     class="w-full h-full object-contain pointer-events-none"
                     autoplay
+                    muted
                     playsinline
                     crossorigin="anonymous"
                     @ended="onAdVideoEnded"

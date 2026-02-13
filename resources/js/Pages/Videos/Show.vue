@@ -36,38 +36,44 @@ const videoWrapperRef = ref(null);
 const preRollDone = ref(false);
 const postRollDone = ref(false);
 
-// Get the underlying <video> element from the wrapper
+// Get the Vidstack media-player element from the wrapper
+const getPlayerElement = () => {
+    if (!videoWrapperRef.value) return null;
+    return videoWrapperRef.value.querySelector('media-player');
+};
+
+// Get the underlying <video> element (used for ad event listeners)
 const getVideoElement = () => {
     if (!videoWrapperRef.value) return null;
     return videoWrapperRef.value.querySelector('video');
 };
 
-// Ad event handlers
+// Ad event handlers — use media-player API for pause/play
 const onAdStarted = (placement) => {
-    const video = getVideoElement();
-    if (video && !video.paused) video.pause();
+    const player = getPlayerElement();
+    if (player && !player.paused) player.pause();
 };
 
 const onAdEnded = (placement) => {
     if (placement === 'pre_roll') {
         preRollDone.value = true;
-        const video = getVideoElement();
-        if (video) video.play().catch(() => {});
+        const player = getPlayerElement();
+        if (player) player.play().catch(() => {});
     } else if (placement === 'mid_roll') {
-        const video = getVideoElement();
-        if (video) video.play().catch(() => {});
+        const player = getPlayerElement();
+        if (player) player.play().catch(() => {});
     }
     // post_roll: video already ended, nothing to resume
 };
 
 const onAdRequestPause = () => {
-    const video = getVideoElement();
-    if (video && !video.paused) video.pause();
+    const player = getPlayerElement();
+    if (player && !player.paused) player.pause();
 };
 
 const onAdRequestPlay = () => {
-    const video = getVideoElement();
-    if (video) video.play().catch(() => {});
+    const player = getPlayerElement();
+    if (player) player.play().catch(() => {});
 };
 
 // Setup video event listeners for ad triggers
@@ -97,13 +103,13 @@ const setupAdTriggers = () => {
     });
 };
 
-// Wait for video element to be ready, then setup ad triggers
+// Wait for Vidstack player to be ready, then setup ad triggers
 const waitForVideoAndSetupAds = () => {
     const checkInterval = setInterval(() => {
-        const video = getVideoElement();
-        if (video) {
+        const player = getPlayerElement();
+        if (player) {
             clearInterval(checkInterval);
-            // Small delay to let Vidstack initialize
+            // Small delay to let Vidstack fully initialize
             setTimeout(setupAdTriggers, 500);
         }
     }, 200);
