@@ -230,7 +230,7 @@
 
         {{-- Progress Bar (during import) --}}
         @if($isImporting)
-            <div class="bg-gray-800 rounded-xl shadow p-6" wire:poll.1s="importNextBatch">
+            <div class="bg-gray-800 rounded-xl shadow p-6" wire:poll.3s="importNextBatch">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-white">Importing Users...</h3>
                     <x-filament::button wire:click="stopImport" color="danger" size="sm">

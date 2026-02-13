@@ -199,12 +199,17 @@ class WordPressUserImporter extends Page
 
     /**
      * Called by wire:poll — processes ONE batch per tick.
+     * Static flag prevents Livewire from processing multiple batches when it
+     * batches queued poll calls into a single HTTP request.
      */
+    private static bool $batchProcessedThisRequest = false;
+
     public function importNextBatch(): void
     {
-        if (!$this->isImporting) {
+        if (self::$batchProcessedThisRequest || !$this->isImporting) {
             return;
         }
+        self::$batchProcessedThisRequest = true;
 
         // All batches done?
         if ($this->currentBatchIndex >= $this->totalBatches) {

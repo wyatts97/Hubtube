@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Channel;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -254,9 +255,8 @@ class WordPressUserImportService
 
     /**
      * Import a batch of WP users into HubTube.
-     * WordPress password hashes are NOT compatible with Laravel's bcrypt,
-     * so imported users will need to use "Forgot Password" to set a new one.
-     * We store a random bcrypt hash and mark them for password reset.
+     * Uses DB::table() directly to bypass Eloquent's hashed cast and LogsActivity trait,
+     * storing the original WP password hash in a single INSERT (no bcrypt overhead).
      */
     public function importBatch(array $wpUsers, array &$usedUsernames): array
     {
@@ -265,12 +265,15 @@ class WordPressUserImportService
         $errors = [];
 
         // Pre-load existing emails for this batch to check duplicates
-        $batchEmails = array_map(fn($u) => strtolower($u['user_email'] ?? ''), $wpUsers);
-        $existingEmails = User::whereIn('email', $batchEmails)
+        $batchEmails = array_filter(array_map(fn($u) => strtolower(trim($u['user_email'] ?? '')), $wpUsers));
+        $existingEmails = DB::table('users')
+            ->whereIn('email', $batchEmails)
             ->pluck('email')
             ->map(fn($e) => strtolower($e))
             ->flip()
             ->all();
+
+        $now = now();
 
         foreach ($wpUsers as $wpUser) {
             try {
@@ -315,47 +318,39 @@ class WordPressUserImportService
                     }
                 }
 
-                // Create user with a temporary password first (hashed cast requires valid bcrypt)
-                $user = User::create([
+                // Store the WP password hash directly — no Hash::make() overhead
+                $wpHash = $wpUser['user_pass'] ?? '';
+
+                // Insert user directly via DB::table to bypass:
+                // - Eloquent's 'hashed' cast (avoids expensive Hash::make calls)
+                // - LogsActivity trait (avoids activity_log inserts per user)
+                $userId = DB::table('users')->insertGetId([
                     'username' => $username,
                     'email' => $email,
-                    'password' => Hash::make(Str::random(32)),
+                    'password' => !empty($wpHash) ? $wpHash : Hash::make(Str::random(16)),
                     'first_name' => $firstName ? substr($firstName, 0, 50) : null,
                     'last_name' => $lastName ? substr($lastName, 0, 50) : null,
-                    'email_verified_at' => $registeredAt ?? now(),
-                    'settings' => ['wp_imported' => true, 'wp_user_id' => (int) $wpUser['ID']],
+                    'email_verified_at' => $registeredAt ?? $now,
+                    'settings' => json_encode(['wp_imported' => true, 'wp_user_id' => (int) $wpUser['ID']]),
+                    'created_at' => $registeredAt ?? $now,
+                    'updated_at' => $now,
                 ]);
 
-                // Overwrite password with the original WP hash using DB::table
-                // to bypass Eloquent's 'hashed' cast. This preserves the WP hash
-                // so users can log in with their existing WP password.
-                $wpHash = $wpUser['user_pass'] ?? '';
-                if (!empty($wpHash)) {
-                    \Illuminate\Support\Facades\DB::table('users')
-                        ->where('id', $user->id)
-                        ->update(['password' => $wpHash]);
-                }
-
-                // Set timestamps manually to preserve original registration date
-                if ($registeredAt) {
-                    \Illuminate\Support\Facades\DB::table('users')
-                        ->where('id', $user->id)
-                        ->update(['created_at' => $registeredAt]);
-                }
-
-                // Create a channel for the user (same as RegisterController)
+                // Create a channel for the user
                 $baseSlug = Str::slug($username) ?: 'channel';
-                $channelSlug = $baseSlug . '-' . $user->id;
+                $channelSlug = $baseSlug . '-' . $userId;
                 $suffix = 2;
-                while (Channel::where('slug', $channelSlug)->exists()) {
-                    $channelSlug = $baseSlug . '-' . $user->id . '-' . $suffix;
+                while (DB::table('channels')->where('slug', $channelSlug)->exists()) {
+                    $channelSlug = $baseSlug . '-' . $userId . '-' . $suffix;
                     $suffix++;
                 }
 
-                Channel::create([
-                    'user_id' => $user->id,
+                DB::table('channels')->insert([
+                    'user_id' => $userId,
                     'name' => $displayName ?: $username,
                     'slug' => $channelSlug,
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ]);
 
                 // Track this email as imported to prevent duplicates within the same batch
