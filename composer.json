@@ -20,13 +20,13 @@
         "league/flysystem-aws-s3-v3": "^3.0",
         "meilisearch/meilisearch-php": "^1.6",
         "sentry/sentry-laravel": "^4.20",
+        "spatie/laravel-activitylog": "^4.8",
         "spatie/laravel-medialibrary": "^11.4",
         "spatie/laravel-permission": "^6.4",
         "stichoza/google-translate-php": "^5.1",
         "tightenco/ziggy": "^2.0"
     },
     "require-dev": {
-        "beyondcode/laravel-query-detector": "*",
         "fakerphp/faker": "^1.23",
         "larastan/larastan": "^2.9",
         "laravel/pint": "^1.14",
@@ -35,6 +35,7 @@
         "nunomaduro/collision": "^8.1",
         "pestphp/pest": "^2.34",
         "pestphp/pest-plugin-laravel": "^2.3",
+        "beyondcode/laravel-query-detector": "^1.7",
         "phpstan/phpstan": "^1.10"
     },
     "autoload": {
