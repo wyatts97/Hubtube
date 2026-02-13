@@ -65,6 +65,44 @@ return Application::configure(basePath: dirname(__DIR__))
             \Sentry\Laravel\Integration::handles($exceptions);
         }
 
+        // Log major errors to the activity log for admin visibility
+        $exceptions->report(function (\Throwable $e) {
+            // Only log server errors and critical exceptions, skip 4xx client errors
+            $skipClasses = [
+                \Illuminate\Auth\AuthenticationException::class,
+                \Illuminate\Validation\ValidationException::class,
+                \Illuminate\Session\TokenMismatchException::class,
+                \Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class,
+                \Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException::class,
+            ];
+
+            foreach ($skipClasses as $class) {
+                if ($e instanceof $class) {
+                    return false; // Let Laravel handle normally, don't double-log
+                }
+            }
+
+            // Skip 4xx HTTP exceptions
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException && $e->getStatusCode() < 500) {
+                return false;
+            }
+
+            try {
+                \App\Services\AdminLogger::error(
+                    class_basename($e) . ': ' . \Illuminate\Support\Str::limit($e->getMessage(), 200),
+                    [
+                        'exception' => get_class($e),
+                        'file' => $e->getFile() . ':' . $e->getLine(),
+                        'url' => request()->fullUrl(),
+                    ]
+                );
+            } catch (\Throwable) {
+                // Silently fail — don't let logging break the app
+            }
+
+            return false; // Don't stop other reporters (Sentry, log files)
+        });
+
         $exceptions->render(function (HttpException $e, Request $request) {
             $status = $e->getStatusCode();
 

@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use App\Services\AdminLogger;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Textarea;
@@ -415,6 +416,8 @@ class SeoSettings extends Page implements HasForms
 
             Setting::set($key, $value, 'seo', $type);
         }
+
+        AdminLogger::settingsSaved('SEO', array_keys($data));
 
         Notification::make()
             ->title('SEO settings saved successfully')

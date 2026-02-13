@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use App\Services\AdminLogger;
 use App\Services\StorageManager;
 use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\Actions\Action;
@@ -329,6 +330,8 @@ class StorageSettings extends Page implements HasForms
 
             Setting::set($key, $value, 'storage', $type);
         }
+
+        AdminLogger::settingsSaved('Storage', array_keys($data));
 
         Notification::make()
             ->title('Storage settings saved successfully')

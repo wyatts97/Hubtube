@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use App\Services\AdminLogger;
 use App\Services\TranslationService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -114,6 +115,8 @@ class LanguageSettings extends Page implements HasForms
         Setting::set('default_language', $default);
         Setting::set('enabled_languages', json_encode(array_values($enabled)));
         Setting::set('auto_translate_content', $data['auto_translate_content'] ?? true);
+
+        AdminLogger::settingsSaved('Language', array_keys($data));
 
         Notification::make()
             ->title('Language settings saved')

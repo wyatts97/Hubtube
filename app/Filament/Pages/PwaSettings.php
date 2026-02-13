@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use App\Services\AdminLogger;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -110,6 +111,8 @@ class PwaSettings extends Page implements HasForms
         Setting::set('vapid_public_key', $data['vapid_public_key'] ?? '', 'push');
         Setting::set('vapid_private_key', $data['vapid_private_key'] ?? '', 'push');
         Setting::set('push_subject', $data['push_subject'] ?? '', 'push');
+
+        AdminLogger::settingsSaved('PWA', array_keys($data));
 
         Notification::make()
             ->title('PWA & Push settings saved')

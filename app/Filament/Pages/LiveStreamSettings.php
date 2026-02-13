@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use App\Services\AdminLogger;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -101,6 +102,8 @@ class LiveStreamSettings extends Page implements HasForms
 
             Setting::set($key, $value, 'streaming', $type);
         }
+
+        AdminLogger::settingsSaved('Live Streaming', array_keys($data));
 
         Notification::make()
             ->title('Live streaming settings saved successfully')

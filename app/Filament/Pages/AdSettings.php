@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Category;
 use App\Models\Setting;
+use App\Services\AdminLogger;
 use App\Models\VideoAd;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Grid;
@@ -351,6 +352,8 @@ class AdSettings extends Page implements HasForms
 
             Setting::set($key, $value, 'ads', $type);
         }
+
+        AdminLogger::settingsSaved('Ad', array_keys($data));
 
         Notification::make()
             ->title('Ad settings saved successfully')

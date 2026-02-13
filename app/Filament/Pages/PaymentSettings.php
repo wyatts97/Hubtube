@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use App\Services\AdminLogger;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\TextInput;
@@ -170,6 +171,8 @@ class PaymentSettings extends Page implements HasForms
 
             Setting::set($key, $value, 'payments', $type);
         }
+
+        AdminLogger::settingsSaved('Payment', array_keys($data));
 
         Notification::make()
             ->title('Payment settings saved successfully')

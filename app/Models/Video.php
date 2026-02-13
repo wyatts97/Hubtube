@@ -11,10 +11,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Scout\Searchable;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Video extends Model
 {
-    use HasFactory, Searchable, SoftDeletes, Translatable;
+    use HasFactory, LogsActivity, Searchable, SoftDeletes, Translatable;
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['is_approved', 'is_featured', 'status', 'privacy', 'age_restricted'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->useLogName('admin');
+    }
 
     protected $fillable = [
         'user_id',

@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\User;
+use App\Services\AdminLogger;
 use App\Services\WordPressImportService;
 use Filament\Pages\Page;
 use Filament\Notifications\Notification;
@@ -183,6 +184,12 @@ class WordPressImporter extends Page
             // Clean up stored file
             Storage::disk('local')->delete($this->storedFilePath);
 
+            AdminLogger::log('WordPress video import completed', 'admin', [
+                'imported' => $this->importedCount,
+                'skipped' => $this->skippedCount,
+                'errors' => count($this->importErrors),
+            ]);
+
             Notification::make()
                 ->title('Import Complete')
                 ->body("Imported: {$this->importedCount}, Skipped: {$this->skippedCount}, Errors: " . count($this->importErrors))
@@ -206,6 +213,10 @@ class WordPressImporter extends Page
     {
         $service = new WordPressImportService();
         $deleted = $service->purgeImported();
+
+        AdminLogger::log('Purged WordPress imported videos', 'admin', [
+            'deleted_count' => $deleted,
+        ]);
 
         Notification::make()
             ->title('Purge Complete')

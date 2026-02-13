@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Models\User;
+use App\Services\AdminLogger;
 use App\Services\WordPressPasswordHasher;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
@@ -37,6 +38,11 @@ class LoginRequest extends FormRequest
         // Try standard Laravel auth first (works for native bcrypt hashes)
         if (Auth::attempt([$loginField => $this->login, 'password' => $this->password], $this->boolean('remember'))) {
             RateLimiter::clear($this->throttleKey());
+
+            if (Auth::user()->is_admin) {
+                AdminLogger::auth('Admin login', ['ip' => $this->ip()]);
+            }
+
             return;
         }
 
@@ -83,6 +89,12 @@ class LoginRequest extends FormRequest
         // Now log them in
         $user = User::find($row->id);
         Auth::login($user, $this->boolean('remember'));
+
+        AdminLogger::auth('WordPress password migrated to bcrypt', [
+            'user_id' => $user->id,
+            'username' => $user->username,
+            'ip' => $this->ip(),
+        ]);
 
         return true;
     }

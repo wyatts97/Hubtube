@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\User;
+use App\Services\AdminLogger;
 use App\Services\WordPressUserImportService;
 use Filament\Pages\Page;
 use Filament\Notifications\Notification;
@@ -179,6 +180,12 @@ class WordPressUserImporter extends Page
             // Clean up stored file
             Storage::disk('local')->delete($this->storedFilePath);
 
+            AdminLogger::log('WordPress user import completed', 'admin', [
+                'imported' => $this->importedCount,
+                'skipped' => $this->skippedCount,
+                'errors' => count($this->importErrors),
+            ]);
+
             Notification::make()
                 ->title('User Import Complete')
                 ->body("Imported: {$this->importedCount}, Skipped: {$this->skippedCount}, Errors: " . count($this->importErrors))
@@ -202,6 +209,10 @@ class WordPressUserImporter extends Page
     {
         $service = new WordPressUserImportService();
         $deleted = $service->purgeImported();
+
+        AdminLogger::log('Purged WordPress imported users', 'admin', [
+            'deleted_count' => $deleted,
+        ]);
 
         Notification::make()
             ->title('Purge Complete')

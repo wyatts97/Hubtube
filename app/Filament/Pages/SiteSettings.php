@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use App\Services\AdminLogger;
 use App\Services\FfmpegService;
 use App\Services\WatermarkService;
 use Filament\Forms\Components\Actions;
@@ -797,6 +798,8 @@ class SiteSettings extends Page implements HasForms
 
             Setting::set($key, $value, 'general', $type);
         }
+
+        AdminLogger::settingsSaved('Site', array_keys($data));
 
         Notification::make()
             ->title('Settings saved successfully')

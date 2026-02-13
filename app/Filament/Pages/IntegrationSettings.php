@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use App\Services\AdminLogger;
 use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Section;
@@ -172,6 +173,8 @@ class IntegrationSettings extends Page implements HasForms
         if (!empty($data['mail_mailer']) && $data['mail_mailer'] !== 'log') {
             $this->applyMailConfig($data);
         }
+
+        AdminLogger::settingsSaved('Integration', array_keys($data));
 
         Notification::make()
             ->title('Integration settings saved successfully')

@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use App\Services\AdminLogger;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Repeater;
@@ -629,6 +630,8 @@ class ThemeSettings extends Page implements HasForms
 
             Setting::set($key, $value, 'theme', $type);
         }
+
+        AdminLogger::settingsSaved('Theme', array_keys($data));
 
         Notification::make()
             ->title('Theme settings saved successfully')
