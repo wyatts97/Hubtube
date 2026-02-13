@@ -30,7 +30,6 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->logoutRedirectUrl('/')
             ->darkMode(true, true)
             ->colors([
                 'primary' => Color::Rose,
