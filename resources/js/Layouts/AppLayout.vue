@@ -167,12 +167,19 @@ const getIconColor = (navKey) => {
     return 'var(--color-text-secondary)';
 };
 
-const navigation = computed(() => [
-    { name: t('nav.home') || 'Home', href: localizedUrl('/'), icon: Home, key: 'home' },
-    { name: t('nav.trending') || 'Trending', href: localizedUrl('/trending'), icon: TrendingUp, key: 'trending' },
-    { name: t('nav.shorts') || 'Shorts', href: localizedUrl('/shorts'), icon: Zap, key: 'shorts' },
-    { name: t('nav.live') || 'Live', href: localizedUrl('/live'), icon: Radio, key: 'live' },
-]);
+const liveStreamingEnabled = computed(() => page.props.app?.live_streaming_enabled !== false);
+
+const navigation = computed(() => {
+    const items = [
+        { name: t('nav.home') || 'Home', href: localizedUrl('/'), icon: Home, key: 'home' },
+        { name: t('nav.trending') || 'Trending', href: localizedUrl('/trending'), icon: TrendingUp, key: 'trending' },
+        { name: t('nav.shorts') || 'Shorts', href: localizedUrl('/shorts'), icon: Zap, key: 'shorts' },
+    ];
+    if (liveStreamingEnabled.value) {
+        items.push({ name: t('nav.live') || 'Live', href: localizedUrl('/live'), icon: Radio, key: 'live' });
+    }
+    return items;
+});
 
 const libraryNav = computed(() => [
     { name: t('nav.playlists') || 'Playlists', href: '/playlists', icon: ListVideo, key: 'playlists' },
@@ -262,7 +269,7 @@ const toggleSidebar = () => {
                         </div>
 
                         <!-- Go Live Icon -->
-                        <Link href="/go-live" class="p-2 rounded-full hover:opacity-80 transition-opacity hidden sm:flex" style="color: var(--color-text-secondary);" title="Go Live">
+                        <Link v-if="liveStreamingEnabled" href="/go-live" class="p-2 rounded-full hover:opacity-80 transition-opacity hidden sm:flex" style="color: var(--color-text-secondary);" title="Go Live">
                             <Radio class="w-5 h-5" />
                         </Link>
 
@@ -581,7 +588,7 @@ const toggleSidebar = () => {
                                         <span>{{ t('nav.upload_short') || 'Upload Short' }}</span>
                                     </Link>
                                 </li>
-                                <li>
+                                <li v-if="liveStreamingEnabled">
                                     <Link href="/go-live" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
                                         <Radio class="w-5 h-5" style="color: var(--color-text-secondary);" />
                                         <span>{{ t('nav.go_live') || 'Go Live' }}</span>

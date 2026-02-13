@@ -106,11 +106,8 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
             }
         }
 
-        $this->video->update([
-            'status' => 'processed',
-            'qualities_available' => ['original'],
-            'processing_completed_at' => now(),
-        ]);
+        $videoService = app(VideoService::class);
+        $videoService->markAsProcessed($this->video, ['original']);
 
         $this->notifyOnce();
     }
@@ -356,6 +353,7 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
         // the watermark filter once instead of per-quality.
         $hasWatermark = $this->hasImageWatermark() || $this->hasTextWatermark();
         $transcodeInput = $inputPath;
+        $watermarkedPath = null;
 
         if ($hasWatermark) {
             $watermarkedPath = $this->watermarkOriginal($inputPath, $outputDir, $videoInfo);
@@ -376,36 +374,17 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
                 $enabledResolutions = json_decode($enabledResolutions, true) ?? ['360p', '480p', '720p'];
             }
             
-            // Build list of qualities to transcode.
-            // Rule: only encode to a quality if the source is tall enough to
-            // justify it. We require the source height to be >= the NEXT
-            // standard tier above the target. This prevents wasteful
-            // near-same-resolution encodes (e.g. 888p source → 720p target
-            // is only a 19% reduction and not worth the CPU time).
-            //
-            // Thresholds (source must be >= this height to produce the quality):
-            //   240p → source >= 360   (next tier: 360p)
-            //   360p → source >= 480   (next tier: 480p)
-            //   480p → source >= 720   (next tier: 720p)
-            //   720p → source >= 1080  (next tier: 1080p)
-            //  1080p → source >= 1440  (next tier: 1440p / 2K)
-            $minSourceHeight = [
-                '240p'  => 360,
-                '360p'  => 480,
-                '480p'  => 720,
-                '720p'  => 1080,
-                '1080p' => 1440,
-            ];
-
+            // Build list of qualities to transcode — only encode to resolutions
+            // strictly LOWER than the source. The original quality is always
+            // served via the watermarked/optimized original file itself.
             $targetQualities = [];
             $skippedQualities = [];
             foreach ($allQualities as $quality => $settings) {
                 if (!in_array($quality, $enabledResolutions)) continue;
-                $threshold = $minSourceHeight[$quality] ?? $settings['height'];
-                if ($videoInfo['height'] >= $threshold) {
+                if ($videoInfo['height'] > $settings['height']) {
                     $targetQualities[$quality] = $settings;
                 } else {
-                    $skippedQualities[] = "{$quality} (need {$threshold}p, have {$videoInfo['height']}p)";
+                    $skippedQualities[] = "{$quality} (source {$videoInfo['height']}p not above {$settings['height']}p)";
                 }
             }
 
@@ -422,14 +401,19 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
             }
         }
         
-        // Clean up the watermarked intermediate file — it's no longer needed
-        // since all quality encodes are done. Don't waste disk/cloud storage.
-        if ($hasWatermark && isset($watermarkedPath) && $watermarkedPath && file_exists($watermarkedPath)) {
-            unlink($watermarkedPath);
-            Log::info('Cleaned up watermarked intermediate file');
+        // Replace the raw uploaded file with the watermarked/optimized version.
+        // This way video_path always serves the best quality with watermark.
+        // The raw upload is no longer needed — only the watermarked version is served.
+        if ($hasWatermark && $watermarkedPath && file_exists($watermarkedPath)) {
+            if (file_exists($inputPath)) {
+                unlink($inputPath);
+                Log::info('Deleted raw uploaded file', ['path' => $inputPath]);
+            }
+            rename($watermarkedPath, $inputPath);
+            Log::info('Replaced original with watermarked version', ['path' => $inputPath]);
         }
 
-        // Always add 'original' to indicate the original file is available
+        // Always add 'original' to indicate the original (now watermarked) file is available
         $qualities[] = 'original';
 
         return $qualities;

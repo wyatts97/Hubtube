@@ -27,6 +27,7 @@ class VideoService
             'tags' => $data['tags'] ?? [],
             'is_short' => $data['is_short'] ?? false,
             'status' => 'pending',
+            'published_at' => now(),
         ]);
 
         if (isset($data['video_file'])) {

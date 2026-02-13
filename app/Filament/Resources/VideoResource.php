@@ -184,11 +184,17 @@ class VideoResource extends Resource
 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'pending' => 'warning',
-                        'processing' => 'info',
-                        'processed' => 'success',
-                        'failed' => 'danger',
+                    ->formatStateUsing(fn (string $state, Video $record): string => match (true) {
+                        $state === 'processed' && $record->is_approved => 'Published',
+                        $state === 'processed' && !$record->is_approved => 'Needs Moderation',
+                        default => ucfirst($state),
+                    })
+                    ->color(fn (string $state, Video $record): string => match (true) {
+                        $state === 'processed' && $record->is_approved => 'success',
+                        $state === 'processed' && !$record->is_approved => 'warning',
+                        $state === 'pending' => 'gray',
+                        $state === 'processing' => 'info',
+                        $state === 'failed' => 'danger',
                         default => 'gray',
                     }),
 

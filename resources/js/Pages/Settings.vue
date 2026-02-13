@@ -2,7 +2,7 @@
 import { Head, useForm, usePage, router } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { User, Lock, Bell, Shield, CreditCard, ExternalLink, Loader2, Camera, ImageIcon, Trash2, AlertTriangle } from 'lucide-vue-next';
+import { User, Lock, Bell, Shield, Wallet, ExternalLink, Loader2, Camera, ImageIcon, Trash2, AlertTriangle } from 'lucide-vue-next';
 import { usePushNotifications } from '@/Composables/usePushNotifications';
 import { useI18n } from '@/Composables/useI18n';
 
@@ -137,14 +137,20 @@ const confirmDeleteAccount = () => {
     });
 };
 
-const tabs = computed(() => [
-    { id: 'profile', name: t('settings.profile') || 'Profile', icon: User },
-    { id: 'password', name: t('settings.password') || 'Password', icon: Lock },
-    { id: 'notifications', name: t('settings.notifications') || 'Notifications', icon: Bell },
-    { id: 'privacy', name: t('settings.privacy') || 'Privacy', icon: Shield },
-    { id: 'billing', name: t('settings.billing') || 'Billing', icon: CreditCard },
-    { id: 'danger', name: t('settings.danger_zone') || 'Danger Zone', icon: AlertTriangle },
-]);
+const monetizationEnabled = computed(() => page.props.app?.monetization_enabled !== false);
+
+const tabs = computed(() => {
+    const items = [
+        { id: 'profile', name: t('settings.profile') || 'Profile', icon: User },
+        { id: 'password', name: t('settings.password') || 'Password', icon: Lock },
+        { id: 'notifications', name: t('settings.notifications') || 'Notifications', icon: Bell },
+        { id: 'privacy', name: t('settings.privacy') || 'Privacy', icon: Shield },
+    ];
+    if (monetizationEnabled.value) {
+        items.push({ id: 'billing', name: t('settings.billing') || 'Billing & Subscription', icon: Wallet });
+    }
+    return items;
+});
 </script>
 
 <template>
@@ -269,6 +275,24 @@ const tabs = computed(() => [
                                 {{ t('settings.save_changes') || 'Save Changes' }}
                             </button>
                         </form>
+                        </div>
+
+                        <!-- Delete Account -->
+                        <div class="card p-6 border border-red-500/20">
+                            <div class="flex items-center gap-3 mb-3">
+                                <AlertTriangle class="w-5 h-5 text-red-500" />
+                                <h2 class="text-lg font-semibold" style="color: var(--color-text-primary);">Delete Account</h2>
+                            </div>
+                            <p class="text-sm mb-4" style="color: var(--color-text-secondary);">
+                                This action is irreversible. All your data, videos, comments, playlists, and uploads will be permanently deleted.
+                            </p>
+                            <button
+                                @click="showDeleteConfirm = true"
+                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                            >
+                                <Trash2 class="w-4 h-4" />
+                                Delete My Account
+                            </button>
                         </div>
                     </div>
 
@@ -477,33 +501,6 @@ const tabs = computed(() => [
                         </div>
                     </div>
 
-                    <!-- Danger Zone Tab -->
-                    <div v-if="activeTab === 'danger'" class="space-y-6">
-                        <div class="card p-6 border border-red-500/30">
-                            <div class="flex items-center gap-3 mb-4">
-                                <AlertTriangle class="w-5 h-5 text-red-500" />
-                                <h2 class="text-lg font-semibold text-red-500">{{ t('settings.danger_zone') || 'Danger Zone' }}</h2>
-                            </div>
-
-                            <div class="p-4 rounded-lg" style="background-color: var(--color-bg-secondary);">
-                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                    <div>
-                                        <p class="font-medium" style="color: var(--color-text-primary);">{{ t('settings.delete_account') || 'Delete Account' }}</p>
-                                        <p class="text-sm mt-1" style="color: var(--color-text-secondary);">
-                                            {{ t('settings.delete_account_desc') || 'Permanently delete your account, all videos, comments, and data. This action cannot be undone.' }}
-                                        </p>
-                                    </div>
-                                    <button
-                                        @click="showDeleteConfirm = true"
-                                        class="shrink-0 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                                    >
-                                        <Trash2 class="w-4 h-4" />
-                                        {{ t('settings.delete_account_btn') || 'Delete My Account' }}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

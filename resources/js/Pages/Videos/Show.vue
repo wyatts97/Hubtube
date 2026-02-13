@@ -409,7 +409,7 @@ const getRelatedTitle = (video) => {
                             <Eye class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             <span>{{ formattedViews }} {{ t('video.views', { count: '' }).replace('{count}', '').trim() || 'views' }}</span>
                             <span style="color: var(--color-text-muted);">•</span>
-                            <span>{{ new Date(video.published_at).toLocaleDateString() }}</span>
+                            <span>{{ video.published_at ? new Date(video.published_at).toLocaleDateString() : new Date(video.created_at).toLocaleDateString() }}</span>
                         </div>
                     </div>
                     

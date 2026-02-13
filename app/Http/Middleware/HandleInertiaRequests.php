@@ -90,6 +90,8 @@ class HandleInertiaRequests extends Middleware
             'age_verification_required' => (bool) $this->s('age_verification_required', true),
             'infinite_scroll_enabled' => $this->s('infinite_scroll_enabled', false),
             'videos_per_page' => $this->s('videos_per_page', 24),
+            'monetization_enabled' => (bool) $this->s('monetization_enabled', true),
+            'live_streaming_enabled' => (bool) $this->s('live_streaming_enabled', true),
         ];
     }
 

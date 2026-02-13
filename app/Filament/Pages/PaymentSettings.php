@@ -28,6 +28,8 @@ class PaymentSettings extends Page implements HasForms
     public function mount(): void
     {
         $this->form->fill([
+            // Master toggle
+            'monetization_enabled' => Setting::get('monetization_enabled', true),
             // Stripe
             'stripe_enabled' => Setting::get('stripe_enabled', false),
             'stripe_key' => Setting::get('stripe_key', ''),
@@ -61,6 +63,12 @@ class PaymentSettings extends Page implements HasForms
                     ->tabs([
                         Tabs\Tab::make('General')
                             ->schema([
+                                Section::make('Monetization')
+                                    ->schema([
+                                        Toggle::make('monetization_enabled')
+                                            ->label('Enable Monetization')
+                                            ->helperText('When disabled, all billing, wallet, payment, and subscription features are hidden from the site. Only ad-based monetization remains active.'),
+                                    ]),
                                 Section::make('Currency & Fees')
                                     ->schema([
                                         TextInput::make('currency')

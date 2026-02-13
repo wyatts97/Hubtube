@@ -92,10 +92,10 @@ const statCards = computed(() => [
                                     <span
                                         class="text-xs px-1.5 py-0.5 rounded"
                                         :style="{
-                                            backgroundColor: video.status === 'processed' ? 'rgba(34,197,94,0.1)' : 'rgba(234,179,8,0.1)',
-                                            color: video.status === 'processed' ? '#22c55e' : '#eab308',
+                                            backgroundColor: video.status === 'processed' && video.is_approved ? 'rgba(34,197,94,0.1)' : video.status === 'processed' && !video.is_approved ? 'rgba(249,115,22,0.1)' : 'rgba(234,179,8,0.1)',
+                                            color: video.status === 'processed' && video.is_approved ? '#22c55e' : video.status === 'processed' && !video.is_approved ? '#f97316' : '#eab308',
                                         }"
-                                    >{{ video.status }}</span>
+                                    >{{ video.status === 'processed' && video.is_approved ? 'Published' : video.status === 'processed' && !video.is_approved ? 'Needs Moderation' : video.status }}</span>
                                 </div>
                             </div>
                             <Link v-if="canEdit" :href="`/videos/${video.id}/edit`" class="p-2 rounded-lg hover:opacity-80" style="color: var(--color-text-muted);" title="Edit video">
