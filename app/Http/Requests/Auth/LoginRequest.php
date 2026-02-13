@@ -2,9 +2,13 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
+use App\Services\WordPressPasswordHasher;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -30,15 +34,57 @@ class LoginRequest extends FormRequest
 
         $loginField = filter_var($this->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
-        if (!Auth::attempt([$loginField => $this->login, 'password' => $this->password], $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
-
-            throw ValidationException::withMessages([
-                'login' => trans('auth.failed'),
-            ]);
+        // Try standard Laravel auth first (works for native bcrypt hashes)
+        if (Auth::attempt([$loginField => $this->login, 'password' => $this->password], $this->boolean('remember'))) {
+            RateLimiter::clear($this->throttleKey());
+            return;
         }
 
-        RateLimiter::clear($this->throttleKey());
+        // If standard auth failed, check for WordPress password hashes
+        if ($this->attemptWordPressAuth($loginField)) {
+            RateLimiter::clear($this->throttleKey());
+            return;
+        }
+
+        RateLimiter::hit($this->throttleKey());
+
+        throw ValidationException::withMessages([
+            'login' => trans('auth.failed'),
+        ]);
+    }
+
+    /**
+     * Attempt authentication using WordPress password hashes.
+     * If successful, rehash the password to native Laravel bcrypt.
+     */
+    private function attemptWordPressAuth(string $loginField): bool
+    {
+        // Look up the user's raw password hash via DB::table to bypass Eloquent's hashed cast
+        $row = DB::table('users')
+            ->where($loginField, $this->login)
+            ->select(['id', 'password'])
+            ->first();
+
+        if (!$row || !WordPressPasswordHasher::isWordPressHash($row->password)) {
+            return false;
+        }
+
+        // Verify the plaintext password against the WP hash
+        $wpHasher = new WordPressPasswordHasher();
+        if (!$wpHasher->check($this->password, $row->password)) {
+            return false;
+        }
+
+        // Password verified! Rehash to native Laravel bcrypt
+        DB::table('users')
+            ->where('id', $row->id)
+            ->update(['password' => Hash::make($this->password)]);
+
+        // Now log them in
+        $user = User::find($row->id);
+        Auth::login($user, $this->boolean('remember'));
+
+        return true;
     }
 
     public function ensureIsNotRateLimited(): void
