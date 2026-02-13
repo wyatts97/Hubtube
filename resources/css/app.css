@@ -274,10 +274,10 @@ html, body {
     }
 }
 
-/* Vidstack player mobile touch improvements */
+/* Vidstack Plyr Layout: hide PiP/AirPlay on mobile */
 @media (max-width: 640px) {
-    .plyr-layout [data-plyr="pip"],
-    .plyr-layout [data-plyr="airplay"] {
+    media-pip-button,
+    media-airplay-button {
         display: none !important;
     }
 }

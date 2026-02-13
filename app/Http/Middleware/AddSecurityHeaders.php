@@ -21,6 +21,7 @@ class AddSecurityHeaders
             "img-src 'self' data: blob: https: http:",
             "media-src 'self' blob: https: http:",
             "font-src 'self' data: https://fonts.gstatic.com https://fonts.bunny.net https://cdn.jsdelivr.net",
+            "worker-src 'self' blob:",
             "connect-src 'self' wss: ws: https:",
             "frame-src 'self' https:",
             "object-src 'none'",
