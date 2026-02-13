@@ -93,6 +93,18 @@ class Video extends Model
 
     protected static function booted(): void
     {
+        // Flush homepage caches when a video is created, updated, or deleted
+        // so stale/phantom entries don't persist in cached sections.
+        $flushHomeCache = function () {
+            \Illuminate\Support\Facades\Cache::forget('home:featured');
+            \Illuminate\Support\Facades\Cache::forget('home:popular');
+            \Illuminate\Support\Facades\Cache::forget('home:shorts');
+        };
+
+        static::created($flushHomeCache);
+        static::updated($flushHomeCache);
+        static::deleted($flushHomeCache);
+
         static::deleting(function (Video $video) {
             // Skip storage cleanup for embedded videos (no local files)
             if ($video->is_embedded) {
