@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use Filament\Pages\Page;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ActivityLog extends Page
 {
@@ -17,18 +18,30 @@ class ActivityLog extends Page
     public string $filterLog = 'all';
     public string $filterSearch = '';
     public int $perPage = 50;
+    public int $page = 1;
+
+    // Causer name cache (persists across poll refreshes within same request)
+    protected array $causerCache = [];
+
+    public function getTitle(): string
+    {
+        return 'Activity Log';
+    }
+
+    public function getSubheading(): ?string
+    {
+        return 'Real-time log of admin actions, authentication events, and system errors.';
+    }
 
     public function getActivitiesProperty()
     {
         $query = DB::table('activity_log')
             ->orderByDesc('created_at');
 
-        // Filter by log name
         if ($this->filterLog !== 'all') {
             $query->where('log_name', $this->filterLog);
         }
 
-        // Search filter
         if (!empty($this->filterSearch)) {
             $search = '%' . $this->filterSearch . '%';
             $query->where(function ($q) use ($search) {
@@ -37,36 +50,45 @@ class ActivityLog extends Page
             });
         }
 
-        return $query->paginate($this->perPage);
+        return $query->paginate($this->perPage, ['*'], 'page', $this->page);
     }
 
     public function getLogCountsProperty(): array
     {
-        $counts = DB::table('activity_log')
-            ->select('log_name', DB::raw('count(*) as count'))
-            ->groupBy('log_name')
-            ->pluck('count', 'log_name')
-            ->toArray();
+        try {
+            $counts = DB::table('activity_log')
+                ->select('log_name', DB::raw('count(*) as count'))
+                ->groupBy('log_name')
+                ->pluck('count', 'log_name')
+                ->toArray();
 
-        $counts['all'] = array_sum($counts);
+            $counts['all'] = array_sum($counts);
 
-        return $counts;
+            return $counts;
+        } catch (\Throwable) {
+            return ['all' => 0];
+        }
     }
 
     public function setFilter(string $log): void
     {
         $this->filterLog = $log;
-        $this->resetPage();
-    }
-
-    public function resetPage(): void
-    {
-        // Reset pagination when filters change
+        $this->page = 1;
     }
 
     public function updatedFilterSearch(): void
     {
-        $this->resetPage();
+        $this->page = 1;
+    }
+
+    public function nextPage(): void
+    {
+        $this->page++;
+    }
+
+    public function previousPage(): void
+    {
+        $this->page = max(1, $this->page - 1);
     }
 
     public function clearLog(string $logName): void
@@ -76,6 +98,8 @@ class ActivityLog extends Page
         } else {
             DB::table('activity_log')->where('log_name', $logName)->delete();
         }
+
+        $this->page = 1;
 
         Notification::make()
             ->title($logName === 'all' ? 'All logs cleared' : ucfirst($logName) . ' logs cleared')
@@ -93,41 +117,32 @@ class ActivityLog extends Page
             ->send();
     }
 
-    /**
-     * Resolve causer name from the causer_id + causer_type stored in the activity log.
-     */
-    public function getCauserName(?int $causerId, ?string $causerType): string
+    public function resolveCauserName(?int $causerId, ?string $causerType): string
     {
         if (!$causerId || !$causerType) {
             return 'System';
         }
 
-        static $cache = [];
         $key = $causerType . ':' . $causerId;
 
-        if (!isset($cache[$key])) {
+        if (!isset($this->causerCache[$key])) {
             if ($causerType === 'App\\Models\\User') {
                 $user = DB::table('users')->where('id', $causerId)->select('username')->first();
-                $cache[$key] = $user ? $user->username : "User #{$causerId}";
+                $this->causerCache[$key] = $user ? $user->username : "User #{$causerId}";
             } else {
-                $cache[$key] = class_basename($causerType) . " #{$causerId}";
+                $this->causerCache[$key] = class_basename($causerType) . " #{$causerId}";
             }
         }
 
-        return $cache[$key];
+        return $this->causerCache[$key];
     }
 
-    /**
-     * Resolve subject name from the subject_id + subject_type stored in the activity log.
-     */
-    public function getSubjectLabel(?int $subjectId, ?string $subjectType): string
+    public function resolveSubjectLabel(?int $subjectId, ?string $subjectType): string
     {
         if (!$subjectId || !$subjectType) {
             return '';
         }
 
-        $type = class_basename($subjectType);
-
-        return "{$type} #{$subjectId}";
+        return class_basename($subjectType) . " #{$subjectId}";
     }
 }

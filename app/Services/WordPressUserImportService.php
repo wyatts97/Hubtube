@@ -70,7 +70,6 @@ class WordPressUserImportService
         return [
             'total_users' => count($this->users),
             'with_email' => count(array_filter($this->users, fn($u) => !empty($u['user_email']))),
-            'with_website' => count(array_filter($this->users, fn($u) => !empty($u['user_url']))),
             'date_range' => $this->getDateRange(),
         ];
     }
@@ -316,12 +315,6 @@ class WordPressUserImportService
                     }
                 }
 
-                // Website URL
-                $website = trim($wpUser['user_url'] ?? '');
-                if ($website === '' || $website === 'http://' || $website === 'https://') {
-                    $website = null;
-                }
-
                 // Create user with a temporary password first (hashed cast requires valid bcrypt)
                 $user = User::create([
                     'username' => $username,
@@ -329,7 +322,6 @@ class WordPressUserImportService
                     'password' => Hash::make(Str::random(32)),
                     'first_name' => $firstName ? substr($firstName, 0, 50) : null,
                     'last_name' => $lastName ? substr($lastName, 0, 50) : null,
-                    'website' => $website,
                     'email_verified_at' => $registeredAt ?? now(),
                     'settings' => ['wp_imported' => true, 'wp_user_id' => (int) $wpUser['ID']],
                 ]);

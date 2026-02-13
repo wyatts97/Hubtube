@@ -21,7 +21,7 @@ class WordPressUserImporter extends Page
     protected static string $view = 'filament.pages.wordpress-user-importer';
 
     public $sqlFile = null;
-    public int $batchSize = 50;
+    public int $batchSize = 25;
 
     // Parse state
     public bool $isParsing = false;
@@ -38,8 +38,16 @@ class WordPressUserImporter extends Page
     public array $importErrors = [];
     public array $previewUsers = [];
 
-    // Stored file path
+    // Stored file paths
     public ?string $storedFilePath = null;
+    public ?string $batchDataPath = null;
+
+    // Used usernames tracker path (persisted between poll ticks)
+    public ?string $usedUsernamesPath = null;
+
+    // Current batch index for incremental processing
+    public int $currentBatchIndex = 0;
+    public int $totalBatches = 0;
 
     public function getTitle(): string
     {
@@ -84,6 +92,8 @@ class WordPressUserImporter extends Page
         $this->skippedCount = 0;
         $this->importErrors = [];
         $this->previewUsers = [];
+        $this->currentBatchIndex = 0;
+        $this->totalBatches = 0;
     }
 
     /**
@@ -132,7 +142,7 @@ class WordPressUserImporter extends Page
     }
 
     /**
-     * Run the import in batches.
+     * Start the import — parses file, splits into batch files, then polling takes over.
      */
     public function runImport(): void
     {
@@ -141,13 +151,6 @@ class WordPressUserImporter extends Page
             return;
         }
 
-        $this->isImporting = true;
-        $this->importComplete = false;
-        $this->processedUsers = 0;
-        $this->importedCount = 0;
-        $this->skippedCount = 0;
-        $this->importErrors = [];
-
         try {
             $service = new WordPressUserImportService();
             $filePath = Storage::disk('local')->path($this->storedFilePath);
@@ -155,51 +158,156 @@ class WordPressUserImporter extends Page
             // Re-parse the file
             $service->parseSqlFile($filePath);
             $allUsers = array_values($service->getUsers());
+            $this->totalUsers = count($allUsers);
 
-            // Track used usernames across batches to prevent collisions
-            $usedUsernames = [];
-
-            // Process in batches
+            // Split into batch files on disk so each poll tick just reads one small file
             $batches = array_chunk($allUsers, $this->batchSize);
+            $this->totalBatches = count($batches);
 
-            foreach ($batches as $batch) {
-                $result = $service->importBatch($batch, $usedUsernames);
+            $batchDir = 'wp-imports/batches-' . uniqid();
+            Storage::disk('local')->makeDirectory($batchDir);
+            $this->batchDataPath = $batchDir;
 
-                $this->importedCount += $result['imported'];
-                $this->skippedCount += $result['skipped'];
-                $this->processedUsers += count($batch);
-
-                foreach ($result['errors'] as $error) {
-                    $this->importErrors[] = $error;
-                }
+            foreach ($batches as $i => $batch) {
+                Storage::disk('local')->put(
+                    "{$batchDir}/batch_{$i}.json",
+                    json_encode($batch, JSON_UNESCAPED_UNICODE)
+                );
             }
 
-            $this->isImporting = false;
-            $this->importComplete = true;
+            // Initialize used usernames tracker
+            $this->usedUsernamesPath = "{$batchDir}/used_usernames.json";
+            Storage::disk('local')->put($this->usedUsernamesPath, json_encode([]));
 
-            // Clean up stored file
-            Storage::disk('local')->delete($this->storedFilePath);
-
-            AdminLogger::log('WordPress user import completed', 'admin', [
-                'imported' => $this->importedCount,
-                'skipped' => $this->skippedCount,
-                'errors' => count($this->importErrors),
-            ]);
-
-            Notification::make()
-                ->title('User Import Complete')
-                ->body("Imported: {$this->importedCount}, Skipped: {$this->skippedCount}, Errors: " . count($this->importErrors))
-                ->success()
-                ->send();
+            // Reset counters and start
+            $this->currentBatchIndex = 0;
+            $this->processedUsers = 0;
+            $this->importedCount = 0;
+            $this->skippedCount = 0;
+            $this->importErrors = [];
+            $this->isImporting = true;
+            $this->importComplete = false;
 
         } catch (\Throwable $e) {
-            $this->isImporting = false;
             Notification::make()
                 ->title('Import Failed')
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
         }
+    }
+
+    /**
+     * Called by wire:poll — processes ONE batch per tick.
+     */
+    public function importNextBatch(): void
+    {
+        if (!$this->isImporting) {
+            return;
+        }
+
+        // All batches done?
+        if ($this->currentBatchIndex >= $this->totalBatches) {
+            $this->finishImport();
+            return;
+        }
+
+        try {
+            $batchFile = "{$this->batchDataPath}/batch_{$this->currentBatchIndex}.json";
+
+            if (!Storage::disk('local')->exists($batchFile)) {
+                $this->finishImport();
+                return;
+            }
+
+            $batch = json_decode(Storage::disk('local')->get($batchFile), true);
+
+            // Load used usernames tracker
+            $usedUsernames = [];
+            if ($this->usedUsernamesPath && Storage::disk('local')->exists($this->usedUsernamesPath)) {
+                $usedUsernames = json_decode(Storage::disk('local')->get($this->usedUsernamesPath), true) ?? [];
+            }
+
+            $service = new WordPressUserImportService();
+            $result = $service->importBatch($batch, $usedUsernames);
+
+            // Persist updated usernames tracker
+            Storage::disk('local')->put($this->usedUsernamesPath, json_encode($usedUsernames));
+
+            $this->importedCount += $result['imported'];
+            $this->skippedCount += $result['skipped'];
+            $this->processedUsers += count($batch);
+
+            foreach ($result['errors'] as $error) {
+                $this->importErrors[] = $error;
+            }
+
+            // Clean up processed batch file
+            Storage::disk('local')->delete($batchFile);
+
+            $this->currentBatchIndex++;
+
+            // Check if we just finished the last batch
+            if ($this->currentBatchIndex >= $this->totalBatches) {
+                $this->finishImport();
+            }
+
+        } catch (\Throwable $e) {
+            $this->isImporting = false;
+            Notification::make()
+                ->title('Batch Import Failed')
+                ->body("Batch {$this->currentBatchIndex}: " . $e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    /**
+     * Finalize the import — clean up temp files, log, notify.
+     */
+    private function finishImport(): void
+    {
+        $this->isImporting = false;
+        $this->importComplete = true;
+
+        // Clean up all temp files
+        if ($this->storedFilePath && Storage::disk('local')->exists($this->storedFilePath)) {
+            Storage::disk('local')->delete($this->storedFilePath);
+        }
+        if ($this->batchDataPath) {
+            Storage::disk('local')->deleteDirectory($this->batchDataPath);
+        }
+
+        AdminLogger::log('WordPress user import completed', 'admin', [
+            'imported' => $this->importedCount,
+            'skipped' => $this->skippedCount,
+            'errors' => count($this->importErrors),
+        ]);
+
+        Notification::make()
+            ->title('User Import Complete')
+            ->body("Imported: {$this->importedCount}, Skipped: {$this->skippedCount}, Errors: " . count($this->importErrors))
+            ->success()
+            ->send();
+    }
+
+    /**
+     * Stop a running import.
+     */
+    public function stopImport(): void
+    {
+        $this->isImporting = false;
+
+        // Clean up batch files
+        if ($this->batchDataPath) {
+            Storage::disk('local')->deleteDirectory($this->batchDataPath);
+        }
+
+        Notification::make()
+            ->title('Import Stopped')
+            ->body("Stopped after importing {$this->importedCount} users ({$this->processedUsers} processed).")
+            ->warning()
+            ->send();
     }
 
     /**
@@ -231,9 +339,14 @@ class WordPressUserImporter extends Page
         if ($this->storedFilePath && Storage::disk('local')->exists($this->storedFilePath)) {
             Storage::disk('local')->delete($this->storedFilePath);
         }
+        if ($this->batchDataPath) {
+            Storage::disk('local')->deleteDirectory($this->batchDataPath);
+        }
 
         $this->sqlFile = null;
         $this->storedFilePath = null;
+        $this->batchDataPath = null;
+        $this->usedUsernamesPath = null;
         $this->resetState();
     }
 

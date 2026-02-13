@@ -95,7 +95,7 @@
                 <h3 class="text-lg font-semibold text-white mb-4">Step 2: Analysis Results</h3>
 
                 {{-- Stats Grid --}}
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="grid grid-cols-3 gap-4 mb-6">
                     <div class="bg-gray-700/50 rounded-lg p-4 text-center">
                         <p class="text-2xl font-bold text-primary-400">{{ $totalUsers }}</p>
                         <p class="text-xs text-gray-400 mt-1">Total Users</p>
@@ -103,10 +103,6 @@
                     <div class="bg-gray-700/50 rounded-lg p-4 text-center">
                         <p class="text-2xl font-bold text-gray-300">{{ number_format($parseStats['with_email'] ?? 0) }}</p>
                         <p class="text-xs text-gray-400 mt-1">With Email</p>
-                    </div>
-                    <div class="bg-gray-700/50 rounded-lg p-4 text-center">
-                        <p class="text-2xl font-bold text-gray-300">{{ $parseStats['with_website'] ?? 0 }}</p>
-                        <p class="text-xs text-gray-400 mt-1">With Website</p>
                     </div>
                     <div class="bg-gray-700/50 rounded-lg p-4 text-center">
                         <p class="text-sm font-medium text-gray-300">
@@ -128,7 +124,6 @@
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-400">Display Name</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-400">Email</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-400">Registered</th>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-400">Website</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-400">Pass Hash</th>
                                 </tr>
                             </thead>
@@ -140,13 +135,6 @@
                                         <td class="px-3 py-2 text-gray-300">{{ $user['display_name'] ?: '-' }}</td>
                                         <td class="px-3 py-2 text-gray-400 text-xs">{{ $user['user_email'] }}</td>
                                         <td class="px-3 py-2 text-gray-400 text-xs">{{ $user['user_registered'] }}</td>
-                                        <td class="px-3 py-2 text-gray-400 text-xs max-w-[120px] truncate">
-                                            @if(!empty($user['user_url']))
-                                                {{ $user['user_url'] }}
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
                                         <td class="px-3 py-2 text-gray-500 font-mono text-xs">
                                             {{ Str::limit($user['user_pass'], 20) }}
                                         </td>
@@ -169,13 +157,12 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-300 mb-1">Batch Size</label>
                         <select wire:model="batchSize" class="w-full rounded-lg border-gray-600 bg-gray-700 text-white text-sm">
-                            <option value="10">10 users per batch (slowest, safest)</option>
-                            <option value="25">25 users per batch</option>
-                            <option value="50">50 users per batch (recommended)</option>
-                            <option value="100">100 users per batch</option>
-                            <option value="200">200 users per batch (fastest)</option>
+                            <option value="10">10 users per batch (safest)</option>
+                            <option value="25">25 users per batch (recommended)</option>
+                            <option value="50">50 users per batch</option>
+                            <option value="100">100 users per batch (fastest)</option>
                         </select>
-                        <p class="text-xs text-gray-500 mt-1">Smaller batches = less memory usage</p>
+                        <p class="text-xs text-gray-500 mt-1">Each batch runs in a separate request to avoid timeouts</p>
                     </div>
                 </div>
 
@@ -243,12 +230,18 @@
 
         {{-- Progress Bar (during import) --}}
         @if($isImporting)
-            <div class="bg-gray-800 rounded-xl shadow p-6">
-                <h3 class="text-lg font-semibold text-white mb-4">Importing Users...</h3>
+            <div class="bg-gray-800 rounded-xl shadow p-6" wire:poll.1s="importNextBatch">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-white">Importing Users...</h3>
+                    <x-filament::button wire:click="stopImport" color="danger" size="sm">
+                        <x-heroicon-m-stop class="w-4 h-4 mr-1" />
+                        Stop Import
+                    </x-filament::button>
+                </div>
 
                 <div class="mb-4">
                     <div class="flex justify-between text-sm text-gray-400 mb-2">
-                        <span>Progress: {{ $processedUsers }} / {{ $totalUsers }}</span>
+                        <span>Progress: {{ $processedUsers }} / {{ $totalUsers }} (Batch {{ $currentBatchIndex }} / {{ $totalBatches }})</span>
                         <span>{{ $this->getProgressPercent() }}%</span>
                     </div>
                     <div class="w-full bg-gray-700 rounded-full h-4 overflow-hidden">
@@ -380,7 +373,7 @@
                         </div>
                         <div>
                             <p class="text-sm font-medium text-gray-300">Analyze</p>
-                            <p class="text-xs text-gray-500">Parser extracts usernames, emails, display names, registration dates, and websites</p>
+                            <p class="text-xs text-gray-500">Parser extracts usernames, emails, display names, and registration dates</p>
                         </div>
                     </div>
                     <div class="flex items-start gap-3">
