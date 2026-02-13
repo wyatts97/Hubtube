@@ -414,7 +414,7 @@ const toggleSidebar = () => {
                     </template>
 
                     <template v-else>
-                        <button @click="showLoginModal = true" class="btn btn-primary">{{ t('nav.login_register') || 'Login / Register' }}</button>
+                        <button @click="showLoginModal = true" class="btn btn-primary">Login / Register</button>
                     </template>
                 </div>
             </div>
