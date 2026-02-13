@@ -225,84 +225,103 @@ const updateQuality = (quality) => {
         return;
     }
 
-    // MP4 path — use Plyr's source setter to properly swap the
-    // underlying <video> source. This is the documented API and
-    // ensures Plyr's internal state (duration, buffered ranges,
-    // controls) stays in sync with the actual media element.
+    // MP4 path — full destroy/rebuild cycle.
+    // Plyr's source setter and direct video.src swaps both cause
+    // frozen frames because Plyr creates internal blob URLs that
+    // go stale during the transition. The only reliable approach
+    // is: pause → save position → destroy Plyr → swap the raw
+    // <video> src → wait for load → rebuild Plyr → seek → resume.
     if (isSwitchingQuality) return;
 
     const qualityLabel = quality === 0 ? 'original' : `${quality}p`;
     const newUrl = props.qualityUrls[qualityLabel];
     if (!newUrl) return;
 
-    // Don't switch if already on this quality
     if (qualityLabel === currentQualityLabel) return;
 
     const video = videoRef.value;
     if (!video || !player) return;
 
     isSwitchingQuality = true;
-    const currentTime = video.currentTime;
+    const savedTime = video.currentTime;
     const wasPlaying = !video.paused;
+    const savedVolume = video.volume;
+    const savedMuted = video.muted;
     currentQualityLabel = qualityLabel;
 
-    // Use Plyr's source setter — this properly tears down and
-    // reinitialises the media element so controls, progress bar,
-    // and duration all update correctly. It also works with
-    // cloud-hosted files (Wasabi/S3) because Plyr handles the
-    // load lifecycle internally.
-    player.source = {
-        type: 'video',
-        sources: [{
-            src: newUrl,
-            type: 'video/mp4',
-        }],
-        poster: props.poster,
-    };
+    // 1. Pause and destroy Plyr completely
+    video.pause();
+    player.destroy();
+    player = null;
 
-    // After Plyr reinitialises with the new source, seek back to
-    // where the user was and resume playback if they were playing.
-    const restorePosition = () => {
-        // Wait until the new source is loaded enough to seek
-        const onCanPlay = () => {
-            video.removeEventListener('canplay', onCanPlay);
-            video.removeEventListener('loadedmetadata', onCanPlay);
+    // 2. Swap the raw <video> element's source
+    const sourceEl = video.querySelector('source');
+    if (sourceEl) {
+        sourceEl.setAttribute('src', newUrl);
+        sourceEl.setAttribute('type', 'video/mp4');
+    }
+    video.setAttribute('src', newUrl);
 
-            if (currentTime > 0 && isFinite(video.duration)) {
-                video.currentTime = Math.min(currentTime, video.duration);
-            }
+    // 3. Restore volume/mute before load
+    video.volume = savedVolume;
+    video.muted = savedMuted;
 
-            const onSeeked = () => {
-                video.removeEventListener('seeked', onSeeked);
-                if (wasPlaying) {
-                    video.play().catch(() => {});
-                }
-                isSwitchingQuality = false;
-            };
+    // 4. Wait for the new source to be ready, then rebuild Plyr
+    const onReady = () => {
+        video.removeEventListener('loadedmetadata', onReady);
 
-            if (currentTime > 0) {
-                video.addEventListener('seeked', onSeeked, { once: true });
-            } else {
-                if (wasPlaying) {
-                    video.play().catch(() => {});
-                }
-                isSwitchingQuality = false;
-            }
+        // Rebuild Plyr with the same options
+        const plyrOptions = {
+            controls: [
+                'play-large', 'play', 'progress', 'current-time',
+                'duration', 'mute', 'volume', 'settings',
+                'pip', 'airplay', 'fullscreen',
+            ],
+            settings: ['quality', 'speed'],
+            speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
+            autoplay: false,
+            quality: {
+                default: quality,
+                options: qualityOptions.value.map(q => q.value),
+                forced: true,
+                onChange: (q) => updateQuality(q),
+            },
+            i18n: { qualityLabel: { 0: 'Auto' } },
         };
 
-        // loadedmetadata fires first, canplay fires when enough data
-        // is buffered. Use whichever fires first for responsiveness.
-        if (video.readyState >= 1) {
-            onCanPlay();
+        if (props.previewThumbnails) {
+            plyrOptions.previewThumbnails = { enabled: true, src: props.previewThumbnails };
+        }
+
+        qualityOptions.value.forEach(q => {
+            if (q.value !== 0) {
+                plyrOptions.i18n.qualityLabel[q.value] = q.label;
+            }
+        });
+
+        player = new Plyr(video, plyrOptions);
+
+        // 5. Seek back to saved position and resume
+        if (savedTime > 0 && isFinite(video.duration)) {
+            video.currentTime = Math.min(savedTime, video.duration);
+        }
+
+        const finishSwitch = () => {
+            if (wasPlaying) {
+                video.play().catch(() => {});
+            }
+            isSwitchingQuality = false;
+        };
+
+        if (savedTime > 0) {
+            video.addEventListener('seeked', finishSwitch, { once: true });
         } else {
-            video.addEventListener('loadedmetadata', onCanPlay, { once: true });
+            finishSwitch();
         }
     };
 
-    // Small delay to let Plyr finish its source setter teardown/rebuild
-    requestAnimationFrame(() => {
-        restorePosition();
-    });
+    video.addEventListener('loadedmetadata', onReady, { once: true });
+    video.load();
 };
 
 const destroyHls = () => {

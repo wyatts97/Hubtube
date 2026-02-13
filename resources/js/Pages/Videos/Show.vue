@@ -332,7 +332,7 @@ const getRelatedTitle = (video) => {
     <SeoHead :seo="seo" />
 
     <AppLayout>
-        <div class="flex flex-col lg:flex-row gap-6">
+        <div class="flex flex-col xl:flex-row gap-6">
             <!-- Main Content -->
             <div class="flex-1 min-w-0">
                 <!-- Banner Ad Above Player -->
@@ -570,7 +570,7 @@ const getRelatedTitle = (video) => {
             </div>
 
             <!-- Sidebar -->
-            <div class="w-full lg:w-96 lg:shrink-0">
+            <div class="w-full xl:w-80 xl:shrink-0">
                 <!-- Ad Space - Only show if enabled and has code -->
                 <div v-if="sidebarAd?.enabled && sidebarAd?.code" class="mb-6">
                     <div class="ad-container flex items-center justify-center">
@@ -579,7 +579,7 @@ const getRelatedTitle = (video) => {
                 </div>
 
                 <h3 class="font-medium mb-4" style="color: var(--color-text-primary);">{{ t('video.related') || 'Related Videos' }}</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
                     <VideoCard
                         v-for="relatedVideo in relatedVideos"
                         :key="relatedVideo.id"
