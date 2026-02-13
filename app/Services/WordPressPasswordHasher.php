@@ -30,20 +30,19 @@ class WordPressPasswordHasher
      */
     public function check(string $password, string $hash): bool
     {
-        // WP-prefixed bcrypt: strip '$wp' prefix to get standard '$2y$...' hash.
-        // Two variants exist:
-        // 1. WordPress 6.8+ (April 2025): uses SHA-384 pre-hashing before bcrypt
-        // 2. Pre-6.8 plugins (e.g. roots/wp-password-bcrypt): standard bcrypt, no pre-hashing
-        // We try both: SHA-384 first, then plain bcrypt as fallback.
+        // WP-prefixed bcrypt (WordPress 6.8+):
+        // WP 6.8 uses HMAC-SHA384 pre-hashing with key 'wp-sha384', raw binary, base64 encoded.
+        // Source: WordPress/wp-includes/pluggable.php wp_hash_password()
         if (str_starts_with($hash, '$wp$')) {
             $bcryptHash = substr($hash, 3); // Remove '$wp' prefix → '$2y$12$...'
 
-            // Try WP 6.8 format (SHA-384 pre-hashing)
-            if (password_verify(hash('sha384', $password), $bcryptHash)) {
+            // WP 6.8 format: HMAC-SHA384 pre-hash with base64 encoding
+            $preHash = base64_encode(hash_hmac('sha384', trim($password), 'wp-sha384', true));
+            if (password_verify($preHash, $bcryptHash)) {
                 return true;
             }
 
-            // Fallback: pre-6.8 plugin format (plain bcrypt, no pre-hashing)
+            // Fallback: plain bcrypt (unlikely for $wp$ prefix, but just in case)
             return password_verify($password, $bcryptHash);
         }
 
