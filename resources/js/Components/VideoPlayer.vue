@@ -35,6 +35,7 @@ const props = defineProps({
 });
 
 const videoRef = ref(null);
+const isLoadingQuality = ref(false);
 let player = null;
 let hls = null;
 let hlsRetryCount = 0;
@@ -211,6 +212,39 @@ const initDirectPlayback = (plyrOptions) => {
 let isSwitchingQuality = false;
 let currentQualityLabel = null;
 
+// Build a consistent Plyr options object for (re)initialisation
+const buildPlyrOptions = (defaultQuality) => {
+    const opts = {
+        controls: [
+            'play-large', 'play', 'progress', 'current-time',
+            'duration', 'mute', 'volume', 'settings',
+            'pip', 'airplay', 'fullscreen',
+        ],
+        settings: ['quality', 'speed'],
+        speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
+        autoplay: false,
+        quality: {
+            default: defaultQuality ?? 720,
+            options: qualityOptions.value.map(q => q.value),
+            forced: true,
+            onChange: (q) => updateQuality(q),
+        },
+        i18n: { qualityLabel: { 0: 'Auto' } },
+    };
+
+    if (props.previewThumbnails) {
+        opts.previewThumbnails = { enabled: true, src: props.previewThumbnails };
+    }
+
+    qualityOptions.value.forEach(q => {
+        if (q.value !== 0) {
+            opts.i18n.qualityLabel[q.value] = q.label;
+        }
+    });
+
+    return opts;
+};
+
 const updateQuality = (quality) => {
     // HLS path — hls.js handles quality switching natively
     if (hls) {
@@ -225,12 +259,16 @@ const updateQuality = (quality) => {
         return;
     }
 
-    // MP4 path — full destroy/rebuild cycle.
-    // Plyr's source setter and direct video.src swaps both cause
-    // frozen frames because Plyr creates internal blob URLs that
-    // go stale during the transition. The only reliable approach
-    // is: pause → save position → destroy Plyr → swap the raw
-    // <video> src → wait for load → rebuild Plyr → seek → resume.
+    // MP4 path — full destroy → clear → reload → rebuild cycle.
+    //
+    // WHY THIS APPROACH:
+    // The <video> element keeps displaying its last decoded frame
+    // when you change sources. Neither Plyr's source setter nor
+    // direct video.src swaps clear that stale frame. The only way
+    // to clear it is: remove all sources → call load() → this puts
+    // the element in HAVE_NOTHING state and clears the rendered
+    // frame. The user then sees the poster (or black) during the
+    // brief loading period instead of a frozen old frame.
     if (isSwitchingQuality) return;
 
     const qualityLabel = quality === 0 ? 'original' : `${quality}p`;
@@ -243,6 +281,7 @@ const updateQuality = (quality) => {
     if (!video || !player) return;
 
     isSwitchingQuality = true;
+    isLoadingQuality.value = true;
     const savedTime = video.currentTime;
     const wasPlaying = !video.paused;
     const savedVolume = video.volume;
@@ -254,59 +293,42 @@ const updateQuality = (quality) => {
     player.destroy();
     player = null;
 
-    // 2. Swap the raw <video> element's source
-    const sourceEl = video.querySelector('source');
-    if (sourceEl) {
-        sourceEl.setAttribute('src', newUrl);
-        sourceEl.setAttribute('type', 'video/mp4');
+    // 2. CRITICAL: Clear the video element to remove stale frame.
+    //    Remove src attribute + all <source> children + call load().
+    //    This puts the element in HAVE_NOTHING / NETWORK_EMPTY state
+    //    and the browser clears the rendered video frame immediately.
+    video.removeAttribute('src');
+    while (video.firstChild) {
+        video.removeChild(video.firstChild);
     }
-    video.setAttribute('src', newUrl);
+    video.load();
 
-    // 3. Restore volume/mute before load
+    // 3. Restore poster so user sees it during loading
+    video.poster = props.poster || '';
     video.volume = savedVolume;
     video.muted = savedMuted;
 
-    // 4. Wait for the new source to be ready, then rebuild Plyr
+    // 4. Now set the new source via a fresh <source> element
+    const newSource = document.createElement('source');
+    newSource.src = newUrl;
+    newSource.type = 'video/mp4';
+    video.appendChild(newSource);
+
+    // 5. Wait for the new source to be ready, then rebuild Plyr
     const onReady = () => {
         video.removeEventListener('loadedmetadata', onReady);
 
-        // Rebuild Plyr with the same options
-        const plyrOptions = {
-            controls: [
-                'play-large', 'play', 'progress', 'current-time',
-                'duration', 'mute', 'volume', 'settings',
-                'pip', 'airplay', 'fullscreen',
-            ],
-            settings: ['quality', 'speed'],
-            speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
-            autoplay: false,
-            quality: {
-                default: quality,
-                options: qualityOptions.value.map(q => q.value),
-                forced: true,
-                onChange: (q) => updateQuality(q),
-            },
-            i18n: { qualityLabel: { 0: 'Auto' } },
-        };
+        // Rebuild Plyr with the same options, defaulting to the
+        // selected quality so Plyr's menu shows the right item
+        player = new Plyr(video, buildPlyrOptions(quality));
 
-        if (props.previewThumbnails) {
-            plyrOptions.previewThumbnails = { enabled: true, src: props.previewThumbnails };
-        }
-
-        qualityOptions.value.forEach(q => {
-            if (q.value !== 0) {
-                plyrOptions.i18n.qualityLabel[q.value] = q.label;
-            }
-        });
-
-        player = new Plyr(video, plyrOptions);
-
-        // 5. Seek back to saved position and resume
+        // 6. Seek back to saved position
         if (savedTime > 0 && isFinite(video.duration)) {
             video.currentTime = Math.min(savedTime, video.duration);
         }
 
         const finishSwitch = () => {
+            isLoadingQuality.value = false;
             if (wasPlaying) {
                 video.play().catch(() => {});
             }
@@ -447,6 +469,10 @@ watch(() => props.hlsPlaylist, () => {
         >
             <source :src="src" type="video/mp4" />
         </video>
+        <div v-if="isLoadingQuality" class="quality-loading-overlay">
+            <div class="quality-loading-spinner"></div>
+            <span class="quality-loading-text">Switching quality...</span>
+        </div>
     </div>
 </template>
 
@@ -454,9 +480,42 @@ watch(() => props.hlsPlaylist, () => {
 /* plyr.css is now imported globally in app.css */
 
 .video-player-wrapper {
+    position: relative;
     width: 100%;
     height: 100%;
     background: #000;
+}
+
+.quality-loading-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+}
+
+.quality-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: ql-spin 0.8s linear infinite;
+}
+
+.quality-loading-text {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+@keyframes ql-spin {
+    to { transform: rotate(360deg); }
 }
 
 .video-player-wrapper .plyr {

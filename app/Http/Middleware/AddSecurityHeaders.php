@@ -17,10 +17,10 @@ class AddSecurityHeaders
         $csp = implode('; ', [
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net https://cdn.jsdelivr.net",
             "img-src 'self' data: blob: https: http:",
             "media-src 'self' blob: https: http:",
-            "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net",
+            "font-src 'self' data: https://fonts.gstatic.com https://fonts.bunny.net https://cdn.jsdelivr.net",
             "connect-src 'self' wss: ws: https:",
             "frame-src 'self' https:",
             "object-src 'none'",
