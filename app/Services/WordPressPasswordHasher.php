@@ -2,16 +2,7 @@
 
 namespace App\Services;
 
-/**
- * Verifies WordPress password hashes against plaintext passwords.
- *
- * WordPress uses two hash formats:
- * 1. Phpass portable hashes: $P$B... (older accounts, MD5-based iterated)
- * 2. WP-prefixed bcrypt: $wp$2y$... (newer accounts, standard bcrypt with $wp prefix)
- *
- * After successful verification, the caller should rehash with Laravel's
- * native Hash::make() to upgrade the user to standard bcrypt.
- */
+
 class WordPressPasswordHasher
 {
     private string $itoa64 = './0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
