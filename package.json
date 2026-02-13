@@ -25,7 +25,8 @@
         "vee-validate": "^4.12.7",
         "vidstack": "^1.12.13",
         "vue": "^3.4.15",
-        "vue-virtual-scroller": "^2.0.0-beta.8"
+        "vue-virtual-scroller": "^2.0.0-beta.8",
+        "meilisearch/meilisearch-php": "^1.1.0"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
