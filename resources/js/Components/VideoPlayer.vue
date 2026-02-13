@@ -3,22 +3,7 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { VidstackPlayer, VidstackPlayerLayout } from 'vidstack/global/player';
 import 'vidstack/player/styles/default/theme.css';
 import 'vidstack/player/styles/default/layouts/video.css';
-
-// Custom MediaStorage: persists only volume/muted — never time.
-// Videos always start from the beginning on page load.
-const STORAGE_KEY = 'hubtube-player';
-const volumeStorage = {
-    getVolume:       async () => { try { const v = localStorage.getItem(`${STORAGE_KEY}-volume`); return v !== null ? Number(v) : null; } catch { return null; } },
-    setVolume:       async (v) => { try { localStorage.setItem(`${STORAGE_KEY}-volume`, String(v)); } catch {} },
-    getMuted:        async () => { try { const m = localStorage.getItem(`${STORAGE_KEY}-muted`); return m !== null ? m === 'true' : null; } catch { return null; } },
-    setMuted:        async (m) => { try { localStorage.setItem(`${STORAGE_KEY}-muted`, String(m)); } catch {} },
-    getTime:         async () => null,
-    getLang:         async () => null,
-    getCaptions:     async () => null,
-    getPlaybackRate: async () => null,
-    getVideoQuality: async () => null,
-    getAudioGain:    async () => null,
-};
+import HLS from 'hls.js';
 
 const props = defineProps({
     src: {
@@ -53,9 +38,6 @@ const initPlayer = async () => {
     containerRef.value.innerHTML = '';
 
     // Primary source: HLS playlist for adaptive bitrate streaming.
-    // Fallback: direct MP4 URL if HLS is unavailable.
-    // Use object format with type hint for HLS so Vidstack selects the
-    // HLS provider even if the URL lacks a .m3u8 extension (e.g. CDN rewrites).
     const source = props.hlsPlaylist
         ? { src: props.hlsPlaylist, type: 'application/x-mpegurl' }
         : props.src;
@@ -77,6 +59,14 @@ const initPlayer = async () => {
                 ...layoutProps,
                 colorScheme: 'dark',
             }),
+        });
+
+        // Use locally bundled hls.js instead of loading from CDN.
+        player.addEventListener('provider-setup', (event) => {
+            const provider = event.detail;
+            if (provider.type === 'hls') {
+                provider.library = HLS;
+            }
         });
 
         if (props.autoplay) {
