@@ -341,7 +341,7 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
             }
         }
 
-        // Generate scrubber preview sprite sheet + VTT for Plyr (skip if VTT exists)
+        // Generate scrubber preview sprite sheet + VTT for seekbar thumbnails (skip if VTT exists)
         $vttFile = "{$videoDir}/scrubber.vtt";
         if (!file_exists($vttFile)) {
             $this->generateScrubberPreviews($inputPath, $videoDir, $videoInfo['duration']);
@@ -981,6 +981,10 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
     protected function generateHlsPlaylist(string $outputDir, array $qualities): void
     {
         $ffmpeg = $this->getFFmpegPath();
+        $hlsTime = (int) Setting::get('hls_segment_duration', 6);
+        $playlistType = $this->getHlsPlaylistType();
+        $flags = $this->getHlsFlags();
+        $extraArgs = $this->getHlsExtraArgs();
         $hlsQualities = [];
 
         foreach ($qualities as $quality) {
@@ -999,12 +1003,16 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
             $segmentPattern = "{$hlsDir}/segment_%03d.ts";
             $playlistPath = "{$hlsDir}/playlist.m3u8";
 
-            $encodeArgs = $this->getHlsEncodeArgs();
+            // Remux only (-c copy) — the MP4s already have aligned keyframes
+            // from -force_key_frames during transcoding, so no re-encode needed.
             $cmd = sprintf(
-                '%s -y -i %s %s -hls_list_size 0 -hls_segment_filename %s %s 2>&1',
+                '%s -y -i %s -c copy -f hls -hls_time %d -hls_playlist_type %s -hls_flags %s -hls_list_size 0 %s -hls_segment_filename %s %s 2>&1',
                 $ffmpeg,
                 escapeshellarg($input),
-                $encodeArgs,
+                $hlsTime,
+                $playlistType,
+                $flags,
+                $extraArgs,
                 escapeshellarg($segmentPattern),
                 escapeshellarg($playlistPath)
             );

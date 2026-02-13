@@ -103,7 +103,7 @@ const waitForVideoAndSetupAds = () => {
         const video = getVideoElement();
         if (video) {
             clearInterval(checkInterval);
-            // Small delay to let Plyr initialize
+            // Small delay to let Vidstack initialize
             setTimeout(setupAdTriggers, 500);
         }
     }, 200);
@@ -365,8 +365,6 @@ const getRelatedTitle = (video) => {
                     <VideoPlayer
                         :src="video.video_url"
                         :poster="video.thumbnail_url"
-                        :qualities="video.qualities_available || []"
-                        :quality-urls="video.quality_urls || {}"
                         :hls-playlist="hlsPlaylistUrl"
                         :autoplay="false"
                         :preview-thumbnails="video.preview_thumbnails_url || ''"

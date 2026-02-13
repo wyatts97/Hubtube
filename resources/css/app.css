@@ -274,7 +274,7 @@ html, body {
     }
 }
 
-/* Vidstack Plyr Layout: hide PiP/AirPlay on mobile */
+/* Vidstack Default Layout: hide PiP/AirPlay on mobile */
 @media (max-width: 640px) {
     media-pip-button,
     media-airplay-button {
