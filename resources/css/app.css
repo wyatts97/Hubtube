@@ -274,27 +274,10 @@ html, body {
     }
 }
 
-/* Plyr player mobile touch improvements */
-.plyr {
-    --plyr-control-spacing: 8px;
-    --plyr-control-icon-size: 18px;
-}
-
+/* Vidstack player mobile touch improvements */
 @media (max-width: 640px) {
-    .plyr {
-        --plyr-control-spacing: 4px;
-        --plyr-control-icon-size: 14px;
-        --plyr-font-size-time: 11px;
-    }
-
-    /* Hide volume slider on mobile — users have hardware volume */
-    .plyr__volume {
-        display: none !important;
-    }
-
-    /* Hide PiP and airplay on mobile — not useful */
-    .plyr__control[data-plyr="pip"],
-    .plyr__control[data-plyr="airplay"] {
+    .plyr-layout [data-plyr="pip"],
+    .plyr-layout [data-plyr="airplay"] {
         display: none !important;
     }
 }

@@ -1,6 +1,6 @@
 import './bootstrap';
 import '../css/app.css';
-import 'plyr/dist/plyr.css';
+
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 
 import { createApp, h } from 'vue';
