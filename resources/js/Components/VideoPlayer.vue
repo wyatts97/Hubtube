@@ -4,30 +4,20 @@ import { VidstackPlayer, VidstackPlayerLayout } from 'vidstack/global/player';
 import 'vidstack/player/styles/default/theme.css';
 import 'vidstack/player/styles/default/layouts/video.css';
 
-// Custom MediaStorage that persists volume/muted only — never time.
-// This prevents the "resume from last position" behaviour while still
-// keeping the user's volume preference across quality switches and page loads.
+// Custom MediaStorage: persists only volume/muted — never time.
+// Videos always start from the beginning on page load.
 const STORAGE_KEY = 'hubtube-player';
 const volumeStorage = {
-    getVolume: async () => {
-        try { const v = localStorage.getItem(`${STORAGE_KEY}-volume`); return v !== null ? Number(v) : null; } catch { return null; }
-    },
-    setVolume: async (v) => {
-        try { localStorage.setItem(`${STORAGE_KEY}-volume`, String(v)); } catch {}
-    },
-    getMuted: async () => {
-        try { const m = localStorage.getItem(`${STORAGE_KEY}-muted`); return m !== null ? m === 'true' : null; } catch { return null; }
-    },
-    setMuted: async (m) => {
-        try { localStorage.setItem(`${STORAGE_KEY}-muted`, String(m)); } catch {}
-    },
-    // Return null for everything else so Vidstack never restores time, captions, etc.
-    getTime: async () => null,
-    getLang: async () => null,
-    getCaptions: async () => null,
+    getVolume:       async () => { try { const v = localStorage.getItem(`${STORAGE_KEY}-volume`); return v !== null ? Number(v) : null; } catch { return null; } },
+    setVolume:       async (v) => { try { localStorage.setItem(`${STORAGE_KEY}-volume`, String(v)); } catch {} },
+    getMuted:        async () => { try { const m = localStorage.getItem(`${STORAGE_KEY}-muted`); return m !== null ? m === 'true' : null; } catch { return null; } },
+    setMuted:        async (m) => { try { localStorage.setItem(`${STORAGE_KEY}-muted`, String(m)); } catch {} },
+    getTime:         async () => null,
+    getLang:         async () => null,
+    getCaptions:     async () => null,
     getPlaybackRate: async () => null,
     getVideoQuality: async () => null,
-    getAudioGain: async () => null,
+    getAudioGain:    async () => null,
 };
 
 const props = defineProps({
@@ -64,7 +54,11 @@ const initPlayer = async () => {
 
     // Primary source: HLS playlist for adaptive bitrate streaming.
     // Fallback: direct MP4 URL if HLS is unavailable.
-    const source = props.hlsPlaylist || props.src;
+    // Use object format with type hint for HLS so Vidstack selects the
+    // HLS provider even if the URL lacks a .m3u8 extension (e.g. CDN rewrites).
+    const source = props.hlsPlaylist
+        ? { src: props.hlsPlaylist, type: 'application/x-mpegurl' }
+        : props.src;
 
     const layoutProps = {};
 
@@ -77,20 +71,13 @@ const initPlayer = async () => {
             target: containerRef.value,
             src: source,
             poster: props.poster,
-            crossOrigin: true,
+            crossOrigin: 'anonymous',
             playsinline: true,
-            storage: volumeStorage,
-            googleCast: {},
             layout: new VidstackPlayerLayout({
                 ...layoutProps,
                 colorScheme: 'dark',
             }),
         });
-
-        // Remove Google Cast button from the rendered DOM.
-        // The Default Layout renders it as <media-google-cast-button>.
-        const castBtn = player.querySelector('media-google-cast-button');
-        if (castBtn) castBtn.remove();
 
         if (props.autoplay) {
             player.play().catch(() => {});
