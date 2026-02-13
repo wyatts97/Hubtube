@@ -126,21 +126,33 @@ watch(() => props.hlsPlaylist, async () => {
     object-fit: contain;
 }
 
-/* Constrain seekbar thumbnail preview on mobile so portrait videos
-   don't overflow past the player's top edge. */
+/* Hide Google Cast button globally */
+media-google-cast-button {
+    display: none !important;
+}
+
+/* Constrain seekbar thumbnail preview on mobile */
 @media (max-width: 640px) {
+    .video-player-wrapper {
+        --video-slider-thumbnail-min-width: 60px;
+        --video-slider-thumbnail-min-height: 60px;
+    }
+
     .video-player-wrapper .vds-slider-thumbnail {
-        max-height: 100px;
+        max-height: 120px;
         max-width: 80px;
+        min-height: auto;
+        min-width: auto;
+        overflow: hidden;
     }
-    .video-player-wrapper .vds-slider-thumbnail media-thumbnail {
-        max-height: 100px;
-        max-width: 80px;
-    }
+
+    .video-player-wrapper .vds-slider-thumbnail media-thumbnail,
     .video-player-wrapper .vds-slider-thumbnail img {
-        max-height: 100px;
-        max-width: 80px;
+        max-height: 120px !important;
+        max-width: 80px !important;
         object-fit: contain;
+        height: auto;
+        width: auto;
     }
 }
 </style>
