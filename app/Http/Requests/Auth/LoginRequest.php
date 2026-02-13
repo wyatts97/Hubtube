@@ -36,14 +36,20 @@ class LoginRequest extends FormRequest
         $loginField = filter_var($this->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
         // Try standard Laravel auth first (works for native bcrypt hashes)
-        if (Auth::attempt([$loginField => $this->login, 'password' => $this->password], $this->boolean('remember'))) {
-            RateLimiter::clear($this->throttleKey());
+        // Wrapped in try-catch because Laravel 11 + PHP 8.4 throws RuntimeException
+        // when Hash::check() encounters a non-bcrypt hash (e.g. WordPress phpass $P$B...)
+        try {
+            if (Auth::attempt([$loginField => $this->login, 'password' => $this->password], $this->boolean('remember'))) {
+                RateLimiter::clear($this->throttleKey());
 
-            if (Auth::user()->is_admin) {
-                AdminLogger::auth('Admin login', ['ip' => $this->ip()]);
+                if (Auth::user()->is_admin) {
+                    AdminLogger::auth('Admin login', ['ip' => $this->ip()]);
+                }
+
+                return;
             }
-
-            return;
+        } catch (\RuntimeException) {
+            // Non-bcrypt hash detected — fall through to WordPress auth
         }
 
         // If standard auth failed, check for WordPress password hashes
