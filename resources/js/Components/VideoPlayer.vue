@@ -4,6 +4,32 @@ import { VidstackPlayer, VidstackPlayerLayout } from 'vidstack/global/player';
 import 'vidstack/player/styles/default/theme.css';
 import 'vidstack/player/styles/default/layouts/video.css';
 
+// Custom MediaStorage that persists volume/muted only — never time.
+// This prevents the "resume from last position" behaviour while still
+// keeping the user's volume preference across quality switches and page loads.
+const STORAGE_KEY = 'hubtube-player';
+const volumeStorage = {
+    getVolume: async () => {
+        try { const v = localStorage.getItem(`${STORAGE_KEY}-volume`); return v !== null ? Number(v) : null; } catch { return null; }
+    },
+    setVolume: async (v) => {
+        try { localStorage.setItem(`${STORAGE_KEY}-volume`, String(v)); } catch {}
+    },
+    getMuted: async () => {
+        try { const m = localStorage.getItem(`${STORAGE_KEY}-muted`); return m !== null ? m === 'true' : null; } catch { return null; }
+    },
+    setMuted: async (m) => {
+        try { localStorage.setItem(`${STORAGE_KEY}-muted`, String(m)); } catch {}
+    },
+    // Return null for everything else so Vidstack never restores time, captions, etc.
+    getTime: async () => null,
+    getLang: async () => null,
+    getCaptions: async () => null,
+    getPlaybackRate: async () => null,
+    getVideoQuality: async () => null,
+    getAudioGain: async () => null,
+};
+
 const props = defineProps({
     src: {
         type: String,
@@ -53,22 +79,18 @@ const initPlayer = async () => {
             poster: props.poster,
             crossOrigin: true,
             playsinline: true,
-            storage: 'hubtube-player',
+            storage: volumeStorage,
+            googleCast: {},
             layout: new VidstackPlayerLayout({
                 ...layoutProps,
                 colorScheme: 'dark',
             }),
         });
 
-        // Remove Google Cast button using the documented WC slot override.
-        // Appending a child with slot="googleCastButton" replaces the default
-        // slot content with an empty (invisible) element.
-        const layout = player.querySelector('media-video-layout');
-        if (layout) {
-            const empty = document.createElement('div');
-            empty.slot = 'googleCastButton';
-            layout.append(empty);
-        }
+        // Remove Google Cast button from the rendered DOM.
+        // The Default Layout renders it as <media-google-cast-button>.
+        const castBtn = player.querySelector('media-google-cast-button');
+        if (castBtn) castBtn.remove();
 
         if (props.autoplay) {
             player.play().catch(() => {});
@@ -125,5 +147,23 @@ watch(() => props.hlsPlaylist, async () => {
 
 .video-player-wrapper media-player video {
     object-fit: contain;
+}
+
+/* Constrain seekbar thumbnail preview on mobile so portrait videos
+   don't overflow past the player's top edge. */
+@media (max-width: 640px) {
+    .video-player-wrapper .vds-slider-thumbnail {
+        max-height: 100px;
+        max-width: 80px;
+    }
+    .video-player-wrapper .vds-slider-thumbnail media-thumbnail {
+        max-height: 100px;
+        max-width: 80px;
+    }
+    .video-player-wrapper .vds-slider-thumbnail img {
+        max-height: 100px;
+        max-width: 80px;
+        object-fit: contain;
+    }
 }
 </style>
