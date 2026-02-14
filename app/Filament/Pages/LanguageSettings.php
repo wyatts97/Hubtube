@@ -5,22 +5,30 @@ namespace App\Filament\Pages;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use App\Services\TranslationService;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Tables;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 
-class LanguageSettings extends Page implements HasForms
+class LanguageSettings extends Page implements HasForms, HasTable
 {
     use InteractsWithForms;
+    use InteractsWithTable;
 
     protected static ?string $navigationIcon = 'heroicon-o-language';
     protected static ?string $navigationLabel = 'Languages';
@@ -30,19 +38,11 @@ class LanguageSettings extends Page implements HasForms
 
     public ?array $data = [];
 
-    // Override form fields
-    public string $overrideLocale = '*';
-    public string $overrideOriginal = '';
-    public string $overrideReplacement = '';
-    public bool $overrideCaseSensitive = false;
-    public string $overrideNotes = '';
-    public ?int $editingOverrideId = null;
-    public string $overrideFilterLocale = '';
     public string $generationOutput = '';
     public bool $regenerating = false;
     public string $regenerationStatus = '';
-    public string $regenerationStep = ''; // 'generate', 'build', 'done'
-    public bool $useForceMode = true; // true = full regenerate, false = sync new keys only
+    public string $regenerationStep = '';
+    public bool $useForceMode = true;
 
     public function mount(): void
     {
@@ -124,7 +124,20 @@ class LanguageSettings extends Page implements HasForms
             ->send();
     }
 
-    // --- Translation Overrides ---
+    // ── Translation Overrides Table ──
+
+    protected function getLocaleOptions(): array
+    {
+        $options = ['*' => 'All Languages'];
+        $enabledLocales = $this->getEnabledLocalesList();
+        foreach ($enabledLocales as $code) {
+            $lang = TranslationService::LANGUAGES[$code] ?? null;
+            if ($lang) {
+                $options[$code] = "{$lang['flag']} {$lang['native']}";
+            }
+        }
+        return $options;
+    }
 
     protected function getEnabledLocalesList(): array
     {
@@ -140,132 +153,139 @@ class LanguageSettings extends Page implements HasForms
         return is_array($enabled) && count($enabled) > 0 ? $enabled : [Setting::get('default_language', 'en')];
     }
 
-    public function getOverridesProperty()
+    public function table(Table $table): Table
     {
-        try {
-            $query = DB::table('translation_overrides')->orderBy('locale')->orderBy('original_text');
+        return $table
+            ->query(fn (): Builder => DB::table('translation_overrides'))
+            ->heading('Translation Overrides')
+            ->description('Fix or replace words/phrases that Google Translate gets wrong. Overrides apply to both dynamic content and static UI translations.')
+            ->defaultSort('locale')
+            ->columns([
+                Tables\Columns\TextColumn::make('locale')
+                    ->label('Language')
+                    ->formatStateUsing(function (string $state) {
+                        if ($state === '*') return 'All';
+                        $lang = TranslationService::LANGUAGES[$state] ?? null;
+                        return $lang ? "{$lang['flag']} {$lang['native']}" : $state;
+                    })
+                    ->badge()
+                    ->color(fn (string $state) => $state === '*' ? 'purple' : 'gray'),
 
-            if ($this->overrideFilterLocale) {
-                $query->where('locale', $this->overrideFilterLocale);
-            }
+                Tables\Columns\TextColumn::make('original_text')
+                    ->label('Wrong Text')
+                    ->color('danger')
+                    ->searchable()
+                    ->limit(50),
 
-            return $query->get();
-        } catch (\Exception $e) {
-            return collect();
-        }
+                Tables\Columns\TextColumn::make('replacement_text')
+                    ->label('Correct Text')
+                    ->color('success')
+                    ->searchable()
+                    ->limit(50),
+
+                Tables\Columns\TextColumn::make('notes')
+                    ->color('gray')
+                    ->limit(30)
+                    ->placeholder('—')
+                    ->toggleable(),
+
+                Tables\Columns\ToggleColumn::make('is_active')
+                    ->label('Active'),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('locale')
+                    ->label('Language')
+                    ->options(fn () => $this->getLocaleOptions()),
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make()
+                    ->form(fn () => $this->overrideFormSchema())
+                    ->mutateRecordDataUsing(function (array $data): array {
+                        $data['case_sensitive'] = (bool) ($data['case_sensitive'] ?? false);
+                        return $data;
+                    }),
+
+                Tables\Actions\DeleteAction::make(),
+            ])
+            ->headerActions([
+                Tables\Actions\CreateAction::make()
+                    ->label('Add Override')
+                    ->form(fn () => $this->overrideFormSchema())
+                    ->using(function (array $data): \stdClass {
+                        $exists = DB::table('translation_overrides')
+                            ->where('locale', $data['locale'])
+                            ->where('original_text', $data['original_text'])
+                            ->exists();
+
+                        if ($exists) {
+                            Notification::make()
+                                ->title('An override for this word/phrase already exists for this language')
+                                ->warning()
+                                ->send();
+                            return (object) ['id' => 0];
+                        }
+
+                        $id = DB::table('translation_overrides')->insertGetId($data + [
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+
+                        return DB::table('translation_overrides')->find($id);
+                    }),
+
+                Tables\Actions\Action::make('clearCache')
+                    ->label('Clear Translation Cache')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalDescription('This will delete ALL cached translations. They will be re-translated (with overrides applied) on next request.')
+                    ->action(function () {
+                        $this->clearTranslationCache();
+                    }),
+            ])
+            ->bulkActions([
+                Tables\Actions\DeleteBulkAction::make(),
+            ])
+            ->emptyStateHeading('No translation overrides')
+            ->emptyStateDescription('Add overrides to fix words that Google Translate gets wrong.')
+            ->emptyStateIcon('heroicon-o-language')
+            ->striped();
     }
 
-    public function getLocaleOptionsProperty(): array
+    protected function overrideFormSchema(): array
     {
-        $options = ['*' => '🌐 All Languages'];
-        $enabledLocales = $this->getEnabledLocalesList();
-        foreach ($enabledLocales as $code) {
-            $lang = TranslationService::LANGUAGES[$code] ?? null;
-            if ($lang) {
-                $options[$code] = "{$lang['flag']} {$lang['native']}";
-            }
-        }
-        return $options;
-    }
+        return [
+            Select::make('locale')
+                ->label('Language')
+                ->options(fn () => $this->getLocaleOptions())
+                ->default('*')
+                ->required()
+                ->helperText('"All Languages" applies to every locale'),
 
-    public function saveOverride(): void
-    {
-        if (empty(trim($this->overrideOriginal)) || empty(trim($this->overrideReplacement))) {
-            Notification::make()
-                ->title('Both original and replacement text are required')
-                ->danger()
-                ->send();
-            return;
-        }
+            TextInput::make('original_text')
+                ->label('Wrong Word/Phrase')
+                ->required()
+                ->placeholder('e.g. wrong translation')
+                ->helperText('The incorrect text that appears after translation'),
 
-        try {
-            $data = [
-                'locale' => $this->overrideLocale,
-                'original_text' => trim($this->overrideOriginal),
-                'replacement_text' => trim($this->overrideReplacement),
-                'case_sensitive' => $this->overrideCaseSensitive,
-                'notes' => trim($this->overrideNotes) ?: null,
-                'is_active' => true,
-            ];
+            TextInput::make('replacement_text')
+                ->label('Correct Replacement')
+                ->required()
+                ->placeholder('e.g. correct word')
+                ->helperText('What it should say instead'),
 
-            if ($this->editingOverrideId) {
-                DB::table('translation_overrides')
-                    ->where('id', $this->editingOverrideId)
-                    ->update($data);
-            } else {
-                $exists = DB::table('translation_overrides')
-                    ->where('locale', $data['locale'])
-                    ->where('original_text', $data['original_text'])
-                    ->exists();
+            TextInput::make('notes')
+                ->label('Notes')
+                ->placeholder('e.g. Slang term, keep in English')
+                ->helperText('Optional notes for your reference'),
 
-                if ($exists) {
-                    Notification::make()
-                        ->title('An override for this word/phrase already exists for this language')
-                        ->warning()
-                        ->send();
-                    return;
-                }
+            Checkbox::make('case_sensitive')
+                ->label('Case-sensitive match'),
 
-                DB::table('translation_overrides')->insert($data + ['created_at' => now(), 'updated_at' => now()]);
-            }
-
-            $this->resetOverrideForm();
-
-            Notification::make()
-                ->title('Translation override saved')
-                ->body('Re-run `php artisan translations:generate --force` to apply to static UI files.')
-                ->success()
-                ->send();
-        } catch (\Exception $e) {
-            Notification::make()
-                ->title('Error saving override')
-                ->body('Run `php artisan migrate` first to create the translation tables.')
-                ->danger()
-                ->send();
-        }
-    }
-
-    public function editOverride(int $id): void
-    {
-        $override = DB::table('translation_overrides')->find($id);
-        if (!$override) return;
-
-        $this->editingOverrideId = $id;
-        $this->overrideLocale = $override->locale;
-        $this->overrideOriginal = $override->original_text;
-        $this->overrideReplacement = $override->replacement_text;
-        $this->overrideCaseSensitive = (bool) $override->case_sensitive;
-        $this->overrideNotes = $override->notes ?? '';
-    }
-
-    public function deleteOverride(int $id): void
-    {
-        DB::table('translation_overrides')->where('id', $id)->delete();
-
-        Notification::make()
-            ->title('Override deleted')
-            ->success()
-            ->send();
-    }
-
-    public function toggleOverride(int $id): void
-    {
-        $override = DB::table('translation_overrides')->find($id);
-        if ($override) {
-            DB::table('translation_overrides')
-                ->where('id', $id)
-                ->update(['is_active' => !$override->is_active]);
-        }
-    }
-
-    public function resetOverrideForm(): void
-    {
-        $this->editingOverrideId = null;
-        $this->overrideLocale = '*';
-        $this->overrideOriginal = '';
-        $this->overrideReplacement = '';
-        $this->overrideCaseSensitive = false;
-        $this->overrideNotes = '';
+            Toggle::make('is_active')
+                ->label('Active')
+                ->default(true),
+        ];
     }
 
     public function clearTranslationCache(): void

@@ -160,11 +160,8 @@ Add a section in `SiteSettings.php` or a new `SocialPostingSettings.php` page:
 
 ### Tweet Composition Logic
 ```php
-// New video tweet template (configurable in admin):
-"🎬 {title} — Watch now: {url} #{category} #HubTube"
-
-// Older video tweet template:
-"🔥 Throwback: {title} by @{channel} — {url} #HubTube"
+// Default tweet template (configurable in admin):
+"{title} — Watch now: {url} #{category} #HubTube"
 
 // Truncate to 280 chars, URL counts as 23 chars (t.co)
 ```

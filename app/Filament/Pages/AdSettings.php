@@ -18,13 +18,16 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Livewire\WithFileUploads;
+use Filament\Tables;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 use Illuminate\Support\Facades\Storage;
 
-class AdSettings extends Page implements HasForms
+class AdSettings extends Page implements HasForms, HasTable
 {
     use InteractsWithForms;
-    use WithFileUploads;
+    use InteractsWithTable;
 
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
     protected static ?string $navigationLabel = 'Ad Settings';
@@ -33,10 +36,6 @@ class AdSettings extends Page implements HasForms
     protected static string $view = 'filament.pages.ad-settings';
 
     public ?array $data = [];
-    public ?array $adFormData = [];
-    public ?int $editingAdId = null;
-    public bool $showAdForm = false;
-    public $adVideoFile = null;
 
     public function mount(): void
     {
@@ -90,26 +89,6 @@ class AdSettings extends Page implements HasForms
             'browse_banner_ad_enabled' => Setting::get('browse_banner_ad_enabled', false),
             'browse_banner_ad_code' => Setting::get('browse_banner_ad_code', ''),
         ]);
-
-        $this->resetAdForm();
-    }
-
-    protected function resetAdForm(): void
-    {
-        $this->adFormData = [
-            'name' => '',
-            'type' => 'mp4',
-            'placement' => 'pre_roll',
-            'content' => '',
-            'click_url' => '',
-            'weight' => 1,
-            'is_active' => true,
-            'category_ids' => [],
-            'target_roles' => [],
-        ];
-        $this->editingAdId = null;
-        $this->showAdForm = false;
-        $this->adVideoFile = null;
     }
 
     public function form(Form $form): Form
@@ -335,118 +314,189 @@ class AdSettings extends Page implements HasForms
             ->send();
     }
 
-    // ── Ad Creative CRUD (Livewire methods) ──
+    // ── Video Ad Creatives Table ──
 
-    public function getVideoAdsProperty()
+    public function table(Table $table): Table
     {
-        return VideoAd::orderByDesc('is_active')
-            ->orderBy('placement')
-            ->orderByDesc('weight')
-            ->get();
+        return $table
+            ->query(VideoAd::query())
+            ->heading('Video Ad Creatives')
+            ->description('Manage individual ad creatives for pre-roll, mid-roll, and post-roll placements.')
+            ->defaultSort('is_active', 'desc')
+            ->columns([
+                Tables\Columns\TextColumn::make('name')
+                    ->weight('bold')
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('type')
+                    ->badge()
+                    ->formatStateUsing(fn (string $state) => strtoupper($state))
+                    ->color(fn (string $state): string => match ($state) {
+                        'mp4' => 'info',
+                        'vast' => 'purple' ,
+                        'vpaid' => 'indigo',
+                        'html' => 'warning',
+                        default => 'gray',
+                    }),
+
+                Tables\Columns\TextColumn::make('placement')
+                    ->badge()
+                    ->formatStateUsing(fn (string $state) => str_replace('_', '-', $state))
+                    ->color(fn (string $state): string => match ($state) {
+                        'pre_roll' => 'success',
+                        'mid_roll' => 'warning',
+                        'post_roll' => 'danger',
+                        default => 'gray',
+                    }),
+
+                Tables\Columns\TextColumn::make('weight')
+                    ->alignCenter()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('category_ids')
+                    ->label('Targeting')
+                    ->formatStateUsing(function ($state, VideoAd $record) {
+                        $cats = $record->category_ids && count($record->category_ids)
+                            ? count($record->category_ids) . ' categories'
+                            : 'All categories';
+                        $roles = $record->target_roles && count($record->target_roles)
+                            ? implode(', ', $record->target_roles)
+                            : 'All roles';
+                        return "{$cats} · {$roles}";
+                    })
+                    ->color('gray')
+                    ->size('sm'),
+
+                Tables\Columns\ToggleColumn::make('is_active')
+                    ->label('Active'),
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make()
+                    ->form(self::adCreativeFormSchema())
+                    ->mutateRecordDataUsing(function (array $data): array {
+                        $data['category_ids'] = $data['category_ids'] ?? [];
+                        $data['target_roles'] = $data['target_roles'] ?? [];
+                        return $data;
+                    })
+                    ->mutateFormDataUsing(function (array $data): array {
+                        $data['category_ids'] = !empty($data['category_ids']) ? array_map('intval', $data['category_ids']) : null;
+                        $data['target_roles'] = !empty($data['target_roles']) ? $data['target_roles'] : null;
+                        return $data;
+                    }),
+
+                Tables\Actions\DeleteAction::make()
+                    ->after(function (VideoAd $record) {
+                        if ($record->file_path && Storage::disk('public')->exists($record->file_path)) {
+                            Storage::disk('public')->delete($record->file_path);
+                        }
+                    }),
+            ])
+            ->headerActions([
+                Tables\Actions\CreateAction::make()
+                    ->model(VideoAd::class)
+                    ->form(self::adCreativeFormSchema())
+                    ->mutateFormDataUsing(function (array $data): array {
+                        $data['category_ids'] = !empty($data['category_ids']) ? array_map('intval', $data['category_ids']) : null;
+                        $data['target_roles'] = !empty($data['target_roles']) ? $data['target_roles'] : null;
+                        return $data;
+                    }),
+            ])
+            ->bulkActions([
+                Tables\Actions\DeleteBulkAction::make(),
+            ])
+            ->emptyStateHeading('No ad creatives')
+            ->emptyStateDescription('Click "New" to create your first video ad creative.')
+            ->emptyStateIcon('heroicon-o-film')
+            ->striped();
     }
 
-    public function getCategoriesProperty()
+    protected static function adCreativeFormSchema(): array
     {
-        return Category::active()->orderBy('name')->pluck('name', 'id')->toArray();
-    }
+        return [
+            Grid::make(2)->schema([
+                TextInput::make('name')
+                    ->required()
+                    ->maxLength(255)
+                    ->placeholder('e.g. Summer Sale Pre-Roll'),
 
-    public function openAdForm(?int $id = null): void
-    {
-        if ($id) {
-            $ad = VideoAd::findOrFail($id);
-            $this->adFormData = [
-                'name' => $ad->name,
-                'type' => $ad->type,
-                'placement' => $ad->placement,
-                'content' => $ad->content,
-                'click_url' => $ad->click_url ?? '',
-                'weight' => $ad->weight,
-                'is_active' => $ad->is_active,
-                'category_ids' => $ad->category_ids ?? [],
-                'target_roles' => $ad->target_roles ?? [],
-            ];
-            $this->editingAdId = $id;
-        } else {
-            $this->resetAdForm();
-        }
-        $this->showAdForm = true;
-    }
+                Select::make('placement')
+                    ->required()
+                    ->options([
+                        'pre_roll' => 'Pre-Roll (before video)',
+                        'mid_roll' => 'Mid-Roll (during video)',
+                        'post_roll' => 'Post-Roll (after video)',
+                    ])
+                    ->default('pre_roll'),
+            ]),
 
-    public function saveAd(): void
-    {
-        $isMp4 = ($this->adFormData['type'] ?? '') === 'mp4';
-        $hasFile = $this->adVideoFile !== null;
+            Grid::make(2)->schema([
+                Select::make('type')
+                    ->required()
+                    ->options([
+                        'mp4' => 'MP4 Video URL',
+                        'vast' => 'VAST Tag URL',
+                        'vpaid' => 'VPAID Tag URL',
+                        'html' => 'HTML Ad Script',
+                    ])
+                    ->default('mp4')
+                    ->live(),
 
-        $rules = [
-            'adFormData.name' => 'required|string|max:255',
-            'adFormData.type' => 'required|in:vast,vpaid,mp4,html',
-            'adFormData.placement' => 'required|in:pre_roll,mid_roll,post_roll',
-            'adFormData.content' => $isMp4 && $hasFile ? 'nullable|string' : 'required|string',
-            'adFormData.weight' => 'required|integer|min:1|max:100',
-            'adFormData.is_active' => 'boolean',
-            'adFormData.click_url' => 'nullable|url|max:2048',
-            'adFormData.category_ids' => 'nullable|array',
-            'adFormData.target_roles' => 'nullable|array',
+                TextInput::make('weight')
+                    ->numeric()
+                    ->default(1)
+                    ->minValue(1)
+                    ->maxValue(100)
+                    ->helperText('Higher weight = more likely when shuffling'),
+            ]),
+
+            Textarea::make('content')
+                ->label(fn ($get) => match ($get('type')) {
+                    'mp4' => 'MP4 Video URL',
+                    'vast' => 'VAST Tag URL',
+                    'vpaid' => 'VPAID Tag URL',
+                    'html' => 'HTML Ad Script',
+                    default => 'Content',
+                })
+                ->required()
+                ->rows(4)
+                ->columnSpanFull()
+                ->placeholder(fn ($get) => match ($get('type')) {
+                    'mp4' => 'https://example.com/ads/my-ad.mp4',
+                    'vast' => 'https://example.com/vast-tag.xml',
+                    'vpaid' => 'https://example.com/vpaid-tag.xml',
+                    'html' => '<script>...</script>',
+                    default => '',
+                }),
+
+            TextInput::make('click_url')
+                ->label('Click-Through URL')
+                ->url()
+                ->maxLength(2048)
+                ->placeholder('https://example.com/landing-page')
+                ->helperText('Optional. Clicking the ad opens this URL in a new tab.')
+                ->columnSpanFull(),
+
+            Grid::make(2)->schema([
+                CheckboxList::make('category_ids')
+                    ->label('Target Categories')
+                    ->options(fn () => Category::active()->orderBy('name')->pluck('name', 'id')->toArray())
+                    ->helperText('Leave empty to show on all categories')
+                    ->columns(2),
+
+                CheckboxList::make('target_roles')
+                    ->label('Target User Roles')
+                    ->options([
+                        'guest' => 'Guests (not logged in)',
+                        'default' => 'Default Users (free)',
+                        'pro' => 'Pro Users',
+                        'admin' => 'Admins',
+                    ])
+                    ->helperText('Leave empty to show to all users'),
+            ]),
+
+            Toggle::make('is_active')
+                ->label('Active')
+                ->default(true),
         ];
-
-        if ($hasFile) {
-            $rules['adVideoFile'] = 'file|mimes:mp4,webm|max:102400'; // 100MB max
-        }
-
-        $this->validate($rules);
-
-        $data = $this->adFormData;
-        $data['category_ids'] = !empty($data['category_ids']) ? array_map('intval', $data['category_ids']) : null;
-        $data['target_roles'] = !empty($data['target_roles']) ? $data['target_roles'] : null;
-
-        // Handle MP4 file upload — always store locally regardless of cloud offload settings
-        if ($isMp4 && $hasFile) {
-            // Delete old file if replacing
-            if ($this->editingAdId) {
-                $existing = VideoAd::find($this->editingAdId);
-                if ($existing?->file_path && Storage::disk('public')->exists($existing->file_path)) {
-                    Storage::disk('public')->delete($existing->file_path);
-                }
-            }
-
-            $path = $this->adVideoFile->store('ads', 'public');
-            $data['file_path'] = $path;
-            $data['content'] = $data['content'] ?: $this->adVideoFile->getClientOriginalName();
-        }
-
-        if ($this->editingAdId) {
-            VideoAd::where('id', $this->editingAdId)->update($data);
-            $message = 'Ad creative updated';
-        } else {
-            VideoAd::create($data);
-            $message = 'Ad creative created';
-        }
-
-        $this->resetAdForm();
-
-        Notification::make()->title($message)->success()->send();
-    }
-
-    public function toggleAdActive(int $id): void
-    {
-        $ad = VideoAd::findOrFail($id);
-        $ad->update(['is_active' => !$ad->is_active]);
-
-        Notification::make()
-            ->title($ad->is_active ? 'Ad activated' : 'Ad deactivated')
-            ->success()
-            ->send();
-    }
-
-    public function deleteAd(int $id): void
-    {
-        VideoAd::destroy($id);
-
-        Notification::make()->title('Ad deleted')->success()->send();
-    }
-
-    public function cancelAdForm(): void
-    {
-        $this->resetAdForm();
     }
 }

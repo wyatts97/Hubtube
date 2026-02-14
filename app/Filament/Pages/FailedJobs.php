@@ -2,13 +2,23 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Pages\Page;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+use Filament\Tables;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
-class FailedJobs extends Page
+class FailedJobs extends Page implements HasTable
 {
+    use InteractsWithTable;
+
     protected static ?string $navigationIcon = 'heroicon-o-exclamation-triangle';
     protected static ?string $navigationLabel = 'Failed Jobs';
     protected static ?string $navigationGroup = 'System';
@@ -24,78 +34,150 @@ class FailedJobs extends Page
         }
     }
 
-    public function getFailedJobsProperty(): \Illuminate\Support\Collection
+    public function table(Table $table): Table
     {
-        try {
-            return DB::table('failed_jobs')
-                ->orderByDesc('failed_at')
-                ->get()
-                ->map(function ($job) {
-                    $payload = json_decode($job->payload, true);
-                    try {
-                        $command = isset($payload['data']['command'])
-                            ? unserialize($payload['data']['command'])
-                            : null;
-                    } catch (\Throwable $e) {
-                        $command = null;
-                    }
+        return $table
+            ->query(fn (): Builder => DB::table('failed_jobs'))
+            ->defaultSort('failed_at', 'desc')
+            ->columns([
+                Tables\Columns\TextColumn::make('id')
+                    ->label('ID')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
-                    $jobClass = $payload['displayName'] ?? 'Unknown';
-                    $shortClass = class_basename($jobClass);
+                Tables\Columns\TextColumn::make('payload')
+                    ->label('Job')
+                    ->formatStateUsing(function ($state) {
+                        $payload = is_string($state) ? json_decode($state, true) : $state;
+                        return class_basename($payload['displayName'] ?? 'Unknown');
+                    })
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where('payload', 'like', "%{$search}%");
+                    })
+                    ->weight('bold'),
 
-                    return (object) [
-                        'id' => $job->id,
-                        'uuid' => $job->uuid,
-                        'queue' => $job->queue,
-                        'job_class' => $shortClass,
-                        'full_class' => $jobClass,
-                        'failed_at' => $job->failed_at,
-                        'exception' => $job->exception,
-                        'exception_short' => \Illuminate\Support\Str::limit($job->exception, 300),
-                    ];
-                });
-        } catch (\Exception $e) {
-            return collect();
-        }
-    }
+                Tables\Columns\TextColumn::make('queue')
+                    ->badge()
+                    ->color('gray')
+                    ->sortable(),
 
-    public function retryJob(string $uuid): void
-    {
-        Artisan::call('queue:retry', ['id' => [$uuid]]);
+                Tables\Columns\TextColumn::make('exception')
+                    ->label('Error')
+                    ->formatStateUsing(fn ($state) => Str::limit(Str::before($state, "\n"), 100))
+                    ->wrap()
+                    ->color('danger')
+                    ->tooltip(fn ($state) => Str::limit($state, 300)),
 
-        Notification::make()
-            ->title('Job queued for retry')
-            ->success()
-            ->send();
-    }
+                Tables\Columns\TextColumn::make('failed_at')
+                    ->label('Failed')
+                    ->dateTime('M d, Y H:i:s')
+                    ->sortable()
+                    ->since(),
+            ])
+            ->actions([
+                Tables\Actions\Action::make('view')
+                    ->icon('heroicon-o-eye')
+                    ->color('gray')
+                    ->modalHeading('Failed Job Details')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Close')
+                    ->form(fn ($record) => [
+                        TextInput::make('job_class')
+                            ->label('Job Class')
+                            ->default(function () use ($record) {
+                                $payload = json_decode($record->payload, true);
+                                return $payload['displayName'] ?? 'Unknown';
+                            })
+                            ->disabled(),
+                        TextInput::make('queue')
+                            ->label('Queue')
+                            ->default($record->queue)
+                            ->disabled(),
+                        TextInput::make('failed_at')
+                            ->label('Failed At')
+                            ->default($record->failed_at)
+                            ->disabled(),
+                        Textarea::make('exception')
+                            ->label('Exception')
+                            ->default($record->exception)
+                            ->rows(15)
+                            ->disabled()
+                            ->columnSpanFull()
+                            ->extraAttributes(['class' => 'font-mono text-xs']),
+                    ]),
 
-    public function deleteJob(int $id): void
-    {
-        DB::table('failed_jobs')->where('id', $id)->delete();
+                Tables\Actions\Action::make('retry')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Retry Job')
+                    ->modalDescription('This will re-queue the failed job for processing.')
+                    ->action(function ($record) {
+                        Artisan::call('queue:retry', ['id' => [$record->uuid]]);
+                        Notification::make()->title('Job queued for retry')->success()->send();
+                    }),
 
-        Notification::make()
-            ->title('Failed job deleted')
-            ->success()
-            ->send();
-    }
+                Tables\Actions\Action::make('delete')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->action(function ($record) {
+                        DB::table('failed_jobs')->where('id', $record->id)->delete();
+                        Notification::make()->title('Failed job deleted')->success()->send();
+                    }),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkAction::make('retrySelected')
+                    ->label('Retry Selected')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->deselectRecordsAfterCompletion()
+                    ->action(function ($records) {
+                        foreach ($records as $record) {
+                            Artisan::call('queue:retry', ['id' => [$record->uuid]]);
+                        }
+                        Notification::make()->title(count($records) . ' jobs queued for retry')->success()->send();
+                    }),
 
-    public function retryAll(): void
-    {
-        Artisan::call('queue:retry', ['id' => ['all']]);
+                Tables\Actions\BulkAction::make('deleteSelected')
+                    ->label('Delete Selected')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->deselectRecordsAfterCompletion()
+                    ->action(function ($records) {
+                        DB::table('failed_jobs')->whereIn('id', $records->pluck('id'))->delete();
+                        Notification::make()->title(count($records) . ' failed jobs deleted')->success()->send();
+                    }),
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('retryAll')
+                    ->label('Retry All')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalDescription('Retry all failed jobs? They will be re-queued for processing.')
+                    ->action(function () {
+                        Artisan::call('queue:retry', ['id' => ['all']]);
+                        Notification::make()->title('All failed jobs queued for retry')->success()->send();
+                    }),
 
-        Notification::make()
-            ->title('All failed jobs queued for retry')
-            ->success()
-            ->send();
-    }
-
-    public function flushAll(): void
-    {
-        Artisan::call('queue:flush');
-
-        Notification::make()
-            ->title('All failed jobs deleted')
-            ->success()
-            ->send();
+                Tables\Actions\Action::make('flushAll')
+                    ->label('Delete All')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalDescription('Delete ALL failed jobs? This cannot be undone.')
+                    ->action(function () {
+                        Artisan::call('queue:flush');
+                        Notification::make()->title('All failed jobs deleted')->success()->send();
+                    }),
+            ])
+            ->emptyStateHeading('No failed jobs')
+            ->emptyStateDescription('All queue jobs are running smoothly.')
+            ->emptyStateIcon('heroicon-o-check-circle')
+            ->striped()
+            ->paginated([10, 25, 50]);
     }
 }
