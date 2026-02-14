@@ -59,11 +59,19 @@ class VideoController extends Controller
             'filters' => $request->only(['category', 'sort']),
             'bannerAd' => [
                 'enabled' => Setting::get('browse_banner_ad_enabled', false),
+                'type' => Setting::get('browse_banner_ad_type', 'html'),
                 'code' => Setting::get('browse_banner_ad_code', ''),
+                'image' => Setting::get('browse_banner_ad_image', ''),
+                'link' => Setting::get('browse_banner_ad_link', ''),
+                'mobileType' => Setting::get('browse_banner_ad_mobile_type', 'html'),
+                'mobileCode' => Setting::get('browse_banner_ad_mobile_code', ''),
+                'mobileImage' => Setting::get('browse_banner_ad_mobile_image', ''),
+                'mobileLink' => Setting::get('browse_banner_ad_mobile_link', ''),
             ],
             'adSettings' => [
                 'videoGridEnabled' => (bool) Setting::get('video_grid_ad_enabled', false),
                 'videoGridCode' => (string) Setting::get('video_grid_ad_code', ''),
+                'videoGridMobileCode' => (string) Setting::get('video_grid_ad_mobile_code', ''),
                 'videoGridFrequency' => (int) Setting::get('video_grid_ad_frequency', 8),
             ],
             'sponsoredCards' => SponsoredCard::getForPage(
@@ -133,6 +141,7 @@ class VideoController extends Controller
         $sidebarAd = [
             'enabled' => $s('video_sidebar_ad_enabled', false),
             'code' => $s('video_sidebar_ad_code', ''),
+            'mobileCode' => $s('video_sidebar_ad_mobile_code', ''),
         ];
 
         $bannerAbovePlayer = [

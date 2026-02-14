@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class SponsoredCard extends Model
 {
@@ -86,6 +87,10 @@ class SponsoredCard extends Model
             foreach ($pool as $key => $card) {
                 $cumulative += $card['weight'];
                 if ($rand <= $cumulative) {
+                    // Resolve thumbnail_url to a full URL
+                    if (!empty($card['thumbnail_url']) && !str_starts_with($card['thumbnail_url'], 'http')) {
+                        $card['thumbnail_url'] = Storage::disk('public')->url($card['thumbnail_url']);
+                    }
                     $selected[] = $card;
                     unset($pool[$key]);
                     $pool = array_values($pool);

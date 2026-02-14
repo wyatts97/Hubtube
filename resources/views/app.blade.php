@@ -136,17 +136,45 @@
     @php
         $popunderEnabled = \App\Models\Setting::get('custom_popunder_enabled', false);
         $popunderCode = \App\Models\Setting::get('custom_popunder_code', '');
+        $popunderMobileCode = \App\Models\Setting::get('custom_popunder_mobile_code', '');
         $interstitialEnabled = \App\Models\Setting::get('custom_interstitial_enabled', false);
         $interstitialCode = \App\Models\Setting::get('custom_interstitial_code', '');
+        $interstitialMobileCode = \App\Models\Setting::get('custom_interstitial_mobile_code', '');
         $stickyEnabled = \App\Models\Setting::get('custom_sticky_banner_enabled', false);
         $stickyCode = \App\Models\Setting::get('custom_sticky_banner_code', '');
         $stickyMobileCode = \App\Models\Setting::get('custom_sticky_banner_mobile_code', '');
     @endphp
-    @if($popunderEnabled && $popunderCode)
-        {!! $popunderCode !!}
+    @if($popunderEnabled && ($popunderCode || $popunderMobileCode))
+        <div class="ht-popunder-desktop" style="display:none">{!! $popunderCode !!}</div>
+        <div class="ht-popunder-mobile" style="display:none">{!! $popunderMobileCode ?: $popunderCode !!}</div>
+        <script>
+            (function(){
+                var w = window.innerWidth;
+                if (w >= 768) {
+                    var el = document.querySelector('.ht-popunder-desktop');
+                    if (el) el.style.display = '';
+                } else {
+                    var el = document.querySelector('.ht-popunder-mobile');
+                    if (el) el.style.display = '';
+                }
+            })();
+        </script>
     @endif
-    @if($interstitialEnabled && $interstitialCode)
-        {!! $interstitialCode !!}
+    @if($interstitialEnabled && ($interstitialCode || $interstitialMobileCode))
+        <div class="ht-interstitial-desktop" style="display:none">{!! $interstitialCode !!}</div>
+        <div class="ht-interstitial-mobile" style="display:none">{!! $interstitialMobileCode ?: $interstitialCode !!}</div>
+        <script>
+            (function(){
+                var w = window.innerWidth;
+                if (w >= 768) {
+                    var el = document.querySelector('.ht-interstitial-desktop');
+                    if (el) el.style.display = '';
+                } else {
+                    var el = document.querySelector('.ht-interstitial-mobile');
+                    if (el) el.style.display = '';
+                }
+            })();
+        </script>
     @endif
     @if($stickyEnabled && ($stickyCode || $stickyMobileCode))
         <div class="ht-sticky-ad-desktop" style="display:none">{!! $stickyCode !!}</div>

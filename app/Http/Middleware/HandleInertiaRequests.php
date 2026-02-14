@@ -164,6 +164,7 @@ class HandleInertiaRequests extends Middleware
             'footer_logo_url' => $this->storageUrl($this->s('footer_logo_url', '')),
             'footer_ad_enabled' => (bool) $this->s('footer_ad_enabled', false),
             'footer_ad_code' => $this->s('footer_ad_code', ''),
+            'footer_ad_mobile_code' => $this->s('footer_ad_mobile_code', ''),
             'videoCard' => [
                 'showAvatar' => (bool) $this->s('video_card_show_avatar', true),
                 'showUploader' => (bool) $this->s('video_card_show_uploader', true),

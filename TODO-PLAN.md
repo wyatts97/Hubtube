@@ -170,53 +170,6 @@ Add a section in `SiteSettings.php` or a new `SocialPostingSettings.php` page:
 
 ---
 
-
-## 4. More Advertisement Types & Placements
-
-### Overview
-Expand the existing ad system with new placement zones and ad types. The current system already has a solid foundation (video roll ads, grid ads, sidebar ads, banner ads, footer ads). Focus on ExoClick ad types and script.
-
-### New Ad Placements to Add
-
-| Placement | Location | Recommended Size |
-|-----------|----------|-----------------|
-| **Search results banner** | Top of search results page | 728×90 / 300×50 mobile |
-| **Channel page banner** | Below channel header, above videos | 728×90 / 300×50 mobile |
-| **Category page banner** | Top of category listing | 728×90 / 300×50 mobile |
-| **Native in-feed ad** | Styled like a VideoCard but marked "Sponsored" | Same as VideoCard |
-| **Html input for ad codes** | Admin panel html input(s) for custom ad codes / for example admin can enter ExoClick popunder and full page intertials and sticky banner/video slider (mobile and desktop) ad codes.
-
-### Implementation Plan
-
-#### A. New Banner Placements (Low effort — pattern already exists)
-Replicate the existing `browse_banner_ad_*` pattern for Search, Channel, and Category pages:
-
-**Files to modify:**
-- `app/Filament/Pages/AdSettings.php` — Add new sections for each placement
-- `app/Http/Controllers/SearchController.php` — Pass banner ad settings to Search page
-- `app/Http/Controllers/ChannelController.php` — Pass banner ad settings to Channel pages
-- `app/Http/Controllers/HomeController.php` — Pass banner ad settings to Category page
-- Corresponding Vue pages — Add `<div v-if="bannerEnabled && bannerCode">` blocks
-
-#### B. Native Sponsored Cards (Medium effort)
-**New model: `SponsoredCard`** or extend `VideoAd` with a `native` type:
-```
-sponsored_cards (or add to video_ads with type='native')
-├── title, thumbnail_url, click_url, description
-├── target_pages (json: ['home', 'trending', 'search', 'category'])
-├── frequency (show 1 per N videos)
-├── weight, is_active, category_ids, target_roles
-```
-
-**New component:** `resources/js/Components/SponsoredVideoCard.vue` — looks like a VideoCard but with a "Sponsored" badge and external click URL.
-
-### Admin UI
-All new placements follow the existing pattern in `AdSettings.php`: a collapsible Section with Toggle + Textarea for HTML code + optional image/link fields.
-
-### Estimated Effort: **8–12 hours** (all placements combined)
-
----
-
 ## 5. Polish UI/UX Design
 
 ### Overview

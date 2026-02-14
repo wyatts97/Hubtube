@@ -723,8 +723,9 @@ const toggleSidebar = () => {
         >
             <div class="max-w-6xl mx-auto">
                 <!-- Footer Ad Banner -->
-                <div v-if="themeSettings.footer_ad_enabled && themeSettings.footer_ad_code" class="flex justify-center mb-6">
-                    <div v-html="themeSettings.footer_ad_code"></div>
+                <div v-if="themeSettings.footer_ad_enabled && (themeSettings.footer_ad_code || themeSettings.footer_ad_mobile_code)" class="flex justify-center mb-6">
+                    <div class="hidden sm:block" v-html="themeSettings.footer_ad_code"></div>
+                    <div class="sm:hidden" v-html="themeSettings.footer_ad_mobile_code || themeSettings.footer_ad_code"></div>
                 </div>
 
                 <!-- Site Logo / Title -->

@@ -107,6 +107,7 @@ class SponsoredCardResource extends Resource
             ->columns([
                 Tables\Columns\ImageColumn::make('thumbnail_url')
                     ->label('Thumb')
+                    ->disk('public')
                     ->width(80)
                     ->height(45),
                 Tables\Columns\TextColumn::make('title')
@@ -119,9 +120,10 @@ class SponsoredCardResource extends Resource
                     ->color('gray'),
                 Tables\Columns\TextColumn::make('target_pages')
                     ->label('Pages')
-                    ->formatStateUsing(function ($state) {
-                        if (!$state || empty($state)) return 'All';
-                        return implode(', ', array_map('ucfirst', $state));
+                    ->getStateUsing(function ($record) {
+                        $pages = $record->target_pages;
+                        if (!$pages || empty($pages)) return 'All';
+                        return implode(', ', array_map('ucfirst', $pages));
                     })
                     ->badge()
                     ->color('info'),

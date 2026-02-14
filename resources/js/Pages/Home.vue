@@ -138,6 +138,7 @@ const adsEnabled = computed(() => {
 });
 
 const adCode = computed(() => sanitizeHtml(props.adSettings?.videoGridCode || ''));
+const adMobileCode = computed(() => sanitizeHtml(props.adSettings?.videoGridMobileCode || props.adSettings?.videoGridCode || ''));
 const adFrequency = computed(() => parseInt(props.adSettings?.videoGridFrequency) || 8);
 
 // Helper to check if ad should show after index
@@ -212,7 +213,8 @@ const getSponsoredCard = (index) => {
                             class="flex items-start justify-center rounded-xl p-2"
                             :class="mobileGrid === 2 ? 'col-span-2 sm:col-span-1' : 'col-span-1'"
                         >
-                            <div v-html="adCode"></div>
+                            <div class="hidden sm:block" v-html="adCode"></div>
+                            <div class="sm:hidden" v-html="adMobileCode"></div>
                         </div>
                         <SponsoredVideoCard
                             v-if="getSponsoredCard(index)"
@@ -244,7 +246,8 @@ const getSponsoredCard = (index) => {
                             class="flex items-start justify-center rounded-xl p-2"
                             :class="mobileGrid === 2 ? 'col-span-2 sm:col-span-1' : 'col-span-1'"
                         >
-                            <div v-html="adCode"></div>
+                            <div class="hidden sm:block" v-html="adCode"></div>
+                            <div class="sm:hidden" v-html="adMobileCode"></div>
                         </div>
                         <SponsoredVideoCard
                             v-if="getSponsoredCard(index)"

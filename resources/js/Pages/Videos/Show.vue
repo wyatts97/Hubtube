@@ -576,9 +576,10 @@ const getRelatedTitle = (video) => {
             <!-- Sidebar -->
             <div class="w-full xl:w-80 xl:shrink-0">
                 <!-- Ad Space - Only show if enabled and has code -->
-                <div v-if="sidebarAd?.enabled && sidebarAd?.code" class="mb-6">
+                <div v-if="sidebarAd?.enabled && (sidebarAd?.code || sidebarAd?.mobileCode)" class="mb-6">
                     <div class="ad-container flex items-center justify-center">
-                        <div v-html="sanitizeHtml(sidebarAd.code)" class="flex items-center justify-center"></div>
+                        <div class="hidden sm:flex items-center justify-center" v-html="sanitizeHtml(sidebarAd.code)"></div>
+                        <div class="sm:hidden flex items-center justify-center" v-html="sanitizeHtml(sidebarAd.mobileCode || sidebarAd.code)"></div>
                     </div>
                 </div>
 

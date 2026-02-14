@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Http\Middleware\AuthenticateFilament;
+use App\Models\Setting;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\MenuItem;
@@ -19,20 +20,43 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        // Resolve site logo for admin panel branding
+        $brandLogo = null;
+        $brandName = 'HubTube';
+        try {
+            $siteLogo = Setting::get('site_logo', '');
+            if ($siteLogo) {
+                $brandLogo = Storage::disk('public')->url($siteLogo);
+            }
+            $brandName = Setting::get('site_title', 'HubTube') ?: 'HubTube';
+        } catch (\Throwable $e) {
+            // Database may not be available during boot
+        }
+
+        $builder = $panel
             ->default()
             ->id('admin')
             ->path('admin')
             ->darkMode(true, true)
+            ->brandName($brandName)
             ->colors([
                 'primary' => Color::Rose,
-            ])
+            ]);
+
+        if ($brandLogo) {
+            $builder = $builder
+                ->brandLogo($brandLogo)
+                ->brandLogoHeight('2rem');
+        }
+
+        return $builder
             ->userMenuItems([
                 MenuItem::make()
                     ->label('View Site')

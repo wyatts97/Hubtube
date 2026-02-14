@@ -38,7 +38,20 @@ const bannerEnabled = computed(() => {
     const e = props.bannerAd?.enabled;
     return e === true || e === 'true' || e === 1 || e === '1';
 });
-const bannerCode = computed(() => sanitizeHtml(props.bannerAd?.code || ''));
+const desktopBannerHtml = computed(() => {
+    if (props.bannerAd?.type === 'image' && props.bannerAd?.image) {
+        const img = `<img src="${props.bannerAd.image}" alt="Ad" style="max-width:728px;height:auto;">`;
+        return props.bannerAd.link ? `<a href="${props.bannerAd.link}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
+    }
+    return sanitizeHtml(props.bannerAd?.code || '');
+});
+const mobileBannerHtml = computed(() => {
+    if (props.bannerAd?.mobileType === 'image' && props.bannerAd?.mobileImage) {
+        const img = `<img src="${props.bannerAd.mobileImage}" alt="Ad" style="max-width:300px;height:auto;">`;
+        return props.bannerAd.mobileLink ? `<a href="${props.bannerAd.mobileLink}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
+    }
+    return sanitizeHtml(props.bannerAd?.mobileCode || props.bannerAd?.code || '');
+});
 
 const isInitialLoad = ref(true);
 onMounted(() => { setTimeout(() => { isInitialLoad.value = false; }, 100); });
@@ -108,8 +121,9 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
 
     <AppLayout>
         <!-- Top Ad Banner -->
-        <div v-if="bannerEnabled && bannerCode" class="mb-4 flex justify-center">
-            <div v-html="bannerCode"></div>
+        <div v-if="bannerEnabled && (desktopBannerHtml || mobileBannerHtml)" class="mb-4 flex justify-center">
+            <div class="hidden sm:block" v-html="desktopBannerHtml"></div>
+            <div class="sm:hidden" v-html="mobileBannerHtml"></div>
         </div>
 
         <div class="mb-4 sm:mb-6">

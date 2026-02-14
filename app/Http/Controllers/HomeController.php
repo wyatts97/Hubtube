@@ -83,6 +83,7 @@ class HomeController extends Controller
         $adSettings = [
             'videoGridEnabled' => (bool) $s('video_grid_ad_enabled', false),
             'videoGridCode' => (string) $s('video_grid_ad_code', ''),
+            'videoGridMobileCode' => (string) $s('video_grid_ad_mobile_code', ''),
             'videoGridFrequency' => (int) $s('video_grid_ad_frequency', 8),
         ];
 
@@ -137,6 +138,7 @@ class HomeController extends Controller
             'adSettings' => [
                 'videoGridEnabled' => (bool) Setting::get('video_grid_ad_enabled', false),
                 'videoGridCode' => (string) Setting::get('video_grid_ad_code', ''),
+                'videoGridMobileCode' => (string) Setting::get('video_grid_ad_mobile_code', ''),
                 'videoGridFrequency' => (int) Setting::get('video_grid_ad_frequency', 8),
             ],
             'sponsoredCards' => SponsoredCard::getForPage('trending', auth()->user()?->role ?? 'guest'),
@@ -213,7 +215,14 @@ class HomeController extends Controller
             'seo' => $this->seoService->forCategory($category),
             'bannerAd' => [
                 'enabled' => Setting::get('category_banner_ad_enabled', false),
+                'type' => Setting::get('category_banner_ad_type', 'html'),
                 'code' => Setting::get('category_banner_ad_code', ''),
+                'image' => Setting::get('category_banner_ad_image', ''),
+                'link' => Setting::get('category_banner_ad_link', ''),
+                'mobileType' => Setting::get('category_banner_ad_mobile_type', 'html'),
+                'mobileCode' => Setting::get('category_banner_ad_mobile_code', ''),
+                'mobileImage' => Setting::get('category_banner_ad_mobile_image', ''),
+                'mobileLink' => Setting::get('category_banner_ad_mobile_link', ''),
             ],
             'sponsoredCards' => SponsoredCard::getForPage(
                 'category',
