@@ -150,6 +150,7 @@ class ThemeSettings extends Page implements HasForms
             // Global Icon Settings
             'icon_color_mode' => Setting::get('icon_color_mode', 'inherit'),
             'icon_global_color' => Setting::get('icon_global_color', ''),
+            'icon_global_color_dark' => Setting::get('icon_global_color_dark', ''),
             
             // Age Verification Modal Settings
             'age_overlay_color' => Setting::get('age_overlay_color', 'rgba(0, 0, 0, 0.85)'),
@@ -391,9 +392,12 @@ class ThemeSettings extends Page implements HasForms
                                             ])
                                             ->reactive(),
                                         ColorPicker::make('icon_global_color')
-                                            ->label('Global Icon Color')
+                                            ->label('Global Icon Color (Light Mode)')
                                             ->visible(fn ($get) => $get('icon_color_mode') === 'global'),
-                                    ])->columns(2),
+                                        ColorPicker::make('icon_global_color_dark')
+                                            ->label('Global Icon Color (Dark Mode)')
+                                            ->visible(fn ($get) => $get('icon_color_mode') === 'global'),
+                                    ])->columns(3),
                                 
                                 Section::make('Main Navigation Icons')
                                     ->description('Customize icons for the main navigation menu')

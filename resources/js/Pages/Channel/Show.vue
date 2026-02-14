@@ -16,6 +16,8 @@ const props = defineProps({
     videos: Object,
     isSubscribed: Boolean,
     subscriberCount: Number,
+    showLikedVideos: { type: Boolean, default: false },
+    showWatchHistory: { type: Boolean, default: false },
     seo: { type: Object, default: () => ({}) },
     bannerAd: { type: Object, default: () => ({}) },
 });
@@ -67,12 +69,20 @@ const handleSubscribe = async () => {
     subscribing.value = false;
 };
 
-const tabs = computed(() => [
-    { name: t('channel.videos') || 'Videos', href: `/channel/${props.channel.username}` },
-    { name: t('channel.shorts') || 'Shorts', href: `/channel/${props.channel.username}/shorts` },
-    { name: t('channel.playlists') || 'Playlists', href: `/channel/${props.channel.username}/playlists` },
-    { name: t('channel.about') || 'About', href: `/channel/${props.channel.username}/about` },
-]);
+const tabs = computed(() => {
+    const items = [
+        { name: t('channel.videos') || 'Videos', href: `/channel/${props.channel.username}` },
+        { name: t('channel.playlists') || 'Playlists', href: `/channel/${props.channel.username}/playlists` },
+    ];
+    if (props.showLikedVideos) {
+        items.push({ name: t('channel.liked_videos') || 'Liked Videos', href: `/channel/${props.channel.username}/liked` });
+    }
+    if (props.showWatchHistory) {
+        items.push({ name: t('channel.recently_watched') || 'Recently Watched', href: `/channel/${props.channel.username}/history` });
+    }
+    items.push({ name: t('channel.about') || 'About', href: `/channel/${props.channel.username}/about` });
+    return items;
+});
 </script>
 
 <template>

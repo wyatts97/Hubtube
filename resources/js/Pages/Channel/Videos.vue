@@ -21,6 +21,7 @@ const tabs = computed(() => [
     { name: t('channel.playlists') || 'Playlists', href: `/channel/${props.channel.username}/playlists` },
     { name: t('channel.about') || 'About', href: `/channel/${props.channel.username}/about` },
 ]);
+// Note: Liked Videos and Recently Watched tabs are only shown on Channel/Show.vue
 </script>
 
 <template>

@@ -118,6 +118,8 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/channel/{user:username}', [ChannelController::class, 'show'])->name('channel.show');
     Route::get('/channel/{user:username}/videos', [ChannelController::class, 'videos'])->name('channel.videos');
     Route::get('/channel/{user:username}/playlists', [ChannelController::class, 'playlists'])->name('channel.playlists');
+    Route::get('/channel/{user:username}/liked', [ChannelController::class, 'likedVideos'])->name('channel.liked');
+    Route::get('/channel/{user:username}/history', [ChannelController::class, 'watchHistory'])->name('channel.history');
     Route::get('/channel/{user:username}/about', [ChannelController::class, 'about'])->name('channel.about');
 
     Route::get('/live', [LiveStreamController::class, 'index'])->name('live.index');

@@ -33,7 +33,12 @@ class AdminPanelProvider extends PanelProvider
         try {
             $siteLogo = Setting::get('site_logo', '');
             if ($siteLogo) {
-                $brandLogo = Storage::disk('public')->url($siteLogo);
+                // Use same URL resolution as frontend: /storage/ prefix for relative paths
+                if (str_starts_with($siteLogo, 'http://') || str_starts_with($siteLogo, 'https://') || str_starts_with($siteLogo, '/')) {
+                    $brandLogo = $siteLogo;
+                } else {
+                    $brandLogo = '/storage/' . $siteLogo;
+                }
             }
             $brandName = Setting::get('site_title', 'HubTube') ?: 'HubTube';
         } catch (\Throwable $e) {

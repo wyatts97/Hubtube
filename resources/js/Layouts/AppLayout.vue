@@ -180,9 +180,10 @@ const getIconColor = (navKey) => {
     const navItem = icons[navKey];
     if (navItem?.color) return navItem.color;
     
-    // Check for global icon color
-    if (icons.colorMode === 'custom' && icons.globalColor) {
-        return icons.globalColor;
+    // Check for global icon color (with dark mode variant)
+    if (icons.colorMode === 'global' || icons.colorMode === 'custom') {
+        const color = isDark.value ? (icons.globalColorDark || icons.globalColor) : icons.globalColor;
+        if (color) return color;
     }
     
     // Default to text secondary
@@ -190,6 +191,7 @@ const getIconColor = (navKey) => {
 };
 
 const liveStreamingEnabled = computed(() => page.props.app?.live_streaming_enabled !== false);
+const monetizationEnabled = computed(() => page.props.app?.monetization_enabled !== false);
 
 const navigation = computed(() => {
     const items = [
@@ -315,9 +317,7 @@ const handleMobileNavClick = (item) => {
 
                 <!-- Right: Actions -->
                 <div class="flex items-center gap-2">
-                    <button @click="showMobileSearch = true" class="p-2 rounded-full md:hidden" style="color: var(--color-text-secondary);" aria-label="Search">
-                        <Search class="w-5 h-5" />
-                    </button>
+                    <LanguageSwitcher mobile align="right" class="md:hidden" />
 
                     <template v-if="user">
                         <!-- Upload Dropdown -->
@@ -425,7 +425,7 @@ const handleMobileNavClick = (item) => {
                                         <Rss class="w-4 h-4" />
                                         <span>{{ t('nav.subscriptions') || 'Subscriptions' }}</span>
                                     </Link>
-                                    <Link href="/wallet" class="flex items-center gap-3 px-3 py-2 rounded-lg" style="color: var(--color-text-primary);">
+                                    <Link v-if="monetizationEnabled" href="/wallet" class="flex items-center gap-3 px-3 py-2 rounded-lg" style="color: var(--color-text-primary);">
                                         <Wallet class="w-4 h-4" />
                                         <span>{{ t('nav.wallet') || 'Wallet' }}: ${{ user.wallet_balance }}</span>
                                     </Link>
@@ -724,15 +724,16 @@ const handleMobileNavClick = (item) => {
                 >
                     <template v-for="item in mobileNavItems" :key="item.name">
                         <!-- Center Upload Button -->
-                        <Link
-                            v-if="item.isCenter"
-                            :href="item.href"
-                            class="flex flex-col items-center justify-center p-3 rounded-full shadow-lg -translate-y-2 active:scale-95 transition-all duration-200"
-                            :style="{ backgroundColor: 'var(--color-accent)' }"
-                            :aria-label="item.name"
-                        >
-                            <component :is="item.icon" class="w-6 h-6 text-white" />
-                        </Link>
+                        <div v-if="item.isCenter" class="flex items-center justify-center">
+                            <Link
+                                :href="item.href"
+                                class="flex items-center justify-center w-11 h-11 rounded-full shadow-lg active:scale-95 transition-all duration-200"
+                                :style="{ backgroundColor: 'var(--color-accent)' }"
+                                :aria-label="item.name"
+                            >
+                                <component :is="item.icon" class="w-6 h-6 text-white" />
+                            </Link>
+                        </div>
                         <!-- Regular Nav Button -->
                         <component
                             v-else

@@ -18,7 +18,6 @@ const currentTab = ref(props.activeTab);
 
 const channelTabs = computed(() => [
     { name: t('channel.videos') || 'Videos', href: `/channel/${props.channel.username}` },
-    { name: t('channel.shorts') || 'Shorts', href: `/channel/${props.channel.username}/shorts` },
     { name: t('channel.playlists') || 'Playlists', href: `/channel/${props.channel.username}/playlists`, active: true },
     { name: t('channel.about') || 'About', href: `/channel/${props.channel.username}/about` },
 ]);

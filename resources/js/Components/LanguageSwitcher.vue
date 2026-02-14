@@ -1,11 +1,13 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useI18n } from '@/Composables/useI18n';
-import { Globe, Check, ChevronDown } from 'lucide-vue-next';
+import { Globe, Check, ChevronDown, Languages } from 'lucide-vue-next';
 
 const props = defineProps({
     compact: { type: Boolean, default: false },
+    mobile: { type: Boolean, default: false },
     direction: { type: String, default: 'down' },
+    align: { type: String, default: 'left' },
 });
 
 const { locale, setLocale, supportedLocales, isTranslationEnabled } = useI18n();
@@ -49,9 +51,22 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
 <template>
     <div v-if="isTranslationEnabled" ref="dropdownRef" class="relative">
+        <!-- Mobile mode: Languages icon only (for mobile header) -->
+        <button
+            v-if="mobile"
+            @click.stop="showDropdown = !showDropdown"
+            class="p-2 rounded-full transition-all"
+            :class="showDropdown ? 'opacity-100' : 'opacity-70 hover:opacity-100'"
+            style="color: var(--color-text-secondary);"
+            :title="currentLocaleData.label"
+            aria-label="Change language"
+        >
+            <Languages class="w-5 h-5" />
+        </button>
+
         <!-- Compact mode: flag icon only (collapsed sidebar) -->
         <button
-            v-if="compact"
+            v-else-if="compact"
             @click.stop="showDropdown = !showDropdown"
             class="flex items-center justify-center w-full py-2 rounded-lg transition-all"
             :class="showDropdown ? 'opacity-100' : 'opacity-70 hover:opacity-100'"
@@ -90,7 +105,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
             class="absolute z-50 w-48 rounded-lg shadow-2xl overflow-hidden"
             :class="[
                 direction === 'up' ? 'bottom-full mb-1' : 'top-full mt-1',
-                compact ? 'left-full ml-2' : 'left-0'
+                compact ? 'left-full ml-2' : (align === 'right' ? 'right-0' : 'left-0')
             ]"
             style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);"
         >

@@ -82,7 +82,6 @@ const handlePushToggle = async () => {
 };
 
 const privacyForm = useForm({
-    private_profile: user.value?.settings?.private_profile ?? false,
     show_watch_history: user.value?.settings?.show_watch_history ?? true,
     show_liked_videos: user.value?.settings?.show_liked_videos ?? true,
     allow_comments: user.value?.settings?.allow_comments ?? true,
@@ -389,17 +388,6 @@ const tabs = computed(() => {
                     <div v-if="activeTab === 'privacy'" class="card p-6">
                         <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ t('settings.privacy_settings') || 'Privacy Settings' }}</h2>
                         <form @submit.prevent="updatePrivacy" class="space-y-4">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p style="color: var(--color-text-primary);">{{ t('settings.private_profile') || 'Private Profile' }}</p>
-                                    <p class="text-sm" style="color: var(--color-text-secondary);">{{ t('settings.private_profile_desc') || 'Only approved followers can see your content' }}</p>
-                                </div>
-                                <input 
-                                    v-model="privacyForm.private_profile"
-                                    type="checkbox" 
-                                    class="w-5 h-5 rounded bg-dark-700 border-dark-600" 
-                                />
-                            </div>
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p style="color: var(--color-text-primary);">{{ t('settings.show_watch_history') || 'Show Watch History' }}</p>

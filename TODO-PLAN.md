@@ -166,36 +166,7 @@ Add a section in `SiteSettings.php` or a new `SocialPostingSettings.php` page:
 // Truncate to 280 chars, URL counts as 23 chars (t.co)
 ```
 
-### Estimated Effort: **6–8 hours**
-
----
-
-## 5. Polish UI/UX Design
-
-### Overview
-Systematic UI/UX improvements across the platform. This is broad, so here's a prioritized breakdown.
-
-### Recommended Packages/Tools
-- **`@vueuse/core`** — Vue composition utilities (useIntersectionObserver, useMediaQuery, useDark, etc.)
-- **`nprogress`** — Top loading bar for Inertia page transitions (already may exist)
-
-### Priority Improvements
-
-#### A. Page Transitions & Loading States (High Impact)
-- Add Inertia progress bar (`@inertiajs/progress` or NProgress) for all page navigations
-- Already added skeleton loaders — ensure they're consistent across all pages
-
-#### B. Navigation & Discovery
-- **"Watch Later" quick-add** — clock icon on video card hover, saves to a special playlist
-
-#### C. Visual Polish
-- **Avatar loading** — blurhash or gradient placeholder while avatars load
-- **Toast notifications** — consistent styling for success/error/info across the app
-
-#### E. Accessibility
-- **ARIA labels** — on icon-only buttons, video cards, navigation
-
-### Estimated Effort: **15–25 hours** (incremental, can be done over multiple sprints)
+### Estimated Effort: **6–8 hours*
 
 ---
 

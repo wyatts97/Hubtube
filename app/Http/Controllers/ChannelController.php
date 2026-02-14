@@ -38,11 +38,16 @@ class ChannelController extends Controller
             ? auth()->user()->isSubscribedTo($user) 
             : false;
 
+        $isOwner = auth()->id() === $user->id;
+        $settings = $user->settings ?? [];
+
         return Inertia::render('Channel/Show', [
             'channel' => $user,
             'videos' => $videos,
             'isSubscribed' => $isSubscribed,
             'subscriberCount' => $user->subscriber_count,
+            'showLikedVideos' => $isOwner || !empty($settings['show_liked_videos']),
+            'showWatchHistory' => $isOwner || !empty($settings['show_watch_history']),
             'seo' => $this->seoService->forChannel($user),
             'bannerAd' => [
                 'enabled' => Setting::get('channel_banner_ad_enabled', false),
@@ -55,6 +60,58 @@ class ChannelController extends Controller
                 'mobileImage' => Setting::get('channel_banner_ad_mobile_image', ''),
                 'mobileLink' => Setting::get('channel_banner_ad_mobile_link', ''),
             ],
+        ]);
+    }
+
+    public function likedVideos(User $user): Response
+    {
+        $isOwner = auth()->id() === $user->id;
+        $settings = $user->settings ?? [];
+
+        if (!$isOwner && empty($settings['show_liked_videos'])) {
+            abort(404);
+        }
+
+        $videos = Video::query()
+            ->whereIn('id', $user->likes()->likes()->pluck('video_id'))
+            ->public()
+            ->approved()
+            ->processed()
+            ->latest('published_at')
+            ->paginate(24);
+
+        return Inertia::render('Channel/LikedVideos', [
+            'channel' => $user->load('channel'),
+            'videos' => $videos,
+            'isOwner' => $isOwner,
+        ]);
+    }
+
+    public function watchHistory(User $user): Response
+    {
+        $isOwner = auth()->id() === $user->id;
+        $settings = $user->settings ?? [];
+
+        if (!$isOwner && empty($settings['show_watch_history'])) {
+            abort(404);
+        }
+
+        $videoIds = $user->watchHistory()
+            ->latest()
+            ->pluck('video_id')
+            ->unique();
+
+        $videos = Video::query()
+            ->whereIn('id', $videoIds)
+            ->public()
+            ->approved()
+            ->processed()
+            ->paginate(24);
+
+        return Inertia::render('Channel/WatchHistory', [
+            'channel' => $user->load('channel'),
+            'videos' => $videos,
+            'isOwner' => $isOwner,
         ]);
     }
 

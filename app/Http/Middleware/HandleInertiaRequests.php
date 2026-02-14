@@ -126,6 +126,7 @@ class HandleInertiaRequests extends Middleware
             'icons' => [
                 'colorMode' => $this->s('icon_color_mode', 'inherit'),
                 'globalColor' => $this->s('icon_global_color', ''),
+                'globalColorDark' => $this->s('icon_global_color_dark', ''),
                 'home' => ['icon' => $this->s('nav_home_icon', 'home'), 'color' => $this->s('nav_home_color', '')],
                 'trending' => ['icon' => $this->s('nav_trending_icon', 'trending-up'), 'color' => $this->s('nav_trending_color', '')],
                 'shorts' => ['icon' => $this->s('nav_shorts_icon', 'zap'), 'color' => $this->s('nav_shorts_color', '')],
