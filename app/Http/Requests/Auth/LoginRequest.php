@@ -10,7 +10,6 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -78,32 +77,13 @@ class LoginRequest extends FormRequest
             ->select(['id', 'password'])
             ->first();
 
-        // DEBUG: trace the full WP auth flow (remove after confirming login works)
-        Log::info('WP Auth Debug', [
-            'login_field' => $loginField,
-            'login_value' => $this->login,
-            'user_found' => (bool) $row,
-            'stored_hash_prefix' => $row ? substr($row->password, 0, 10) : null,
-            'stored_hash_length' => $row ? strlen($row->password) : null,
-            'is_wp_hash' => $row ? WordPressPasswordHasher::isWordPressHash($row->password) : false,
-        ]);
-
         if (!$row || !WordPressPasswordHasher::isWordPressHash($row->password)) {
             return false;
         }
 
         // Verify the plaintext password against the WP hash
         $wpHasher = new WordPressPasswordHasher();
-        $checkResult = $wpHasher->check($this->password, $row->password);
-
-        Log::info('WP Auth Hash Check', [
-            'user_id' => $row->id,
-            'check_result' => $checkResult,
-            'hash_type' => str_starts_with($row->password, '$wp$') ? 'wp_bcrypt' : 'phpass',
-            'sha384_preview' => substr(hash('sha384', $this->password), 0, 20) . '...',
-        ]);
-
-        if (!$checkResult) {
+        if (!$wpHasher->check($this->password, $row->password)) {
             return false;
         }
 

@@ -8,6 +8,10 @@ const { t } = useI18n();
 
 const props = defineProps({
     balance: [String, Number],
+    depositEnabled: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const form = useForm({
@@ -16,6 +20,10 @@ const form = useForm({
 });
 
 const submit = () => {
+    if (!props.depositEnabled) {
+        return;
+    }
+
     form.post('/wallet/deposit');
 };
 
@@ -38,6 +46,10 @@ const formatCurrency = (amount) => {
             <p class="mb-6" style="color: var(--color-text-secondary);">Current balance: {{ formatCurrency(balance) }}</p>
 
             <div class="card p-6">
+                <div v-if="!depositEnabled" class="mb-4 rounded-lg border p-3 text-sm" style="border-color: var(--color-border); color: var(--color-text-secondary);">
+                    Deposits are temporarily unavailable.
+                </div>
+
                 <form @submit.prevent="submit" class="space-y-5">
                     <div>
                         <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('wallet.amount') || 'Amount (USD)' }}</label>
@@ -49,6 +61,7 @@ const formatCurrency = (amount) => {
                             step="0.01"
                             placeholder="Enter amount (min $5)"
                             class="input"
+                            :disabled="!depositEnabled"
                             required
                         />
                         <p v-if="form.errors.amount" class="text-red-500 text-sm mt-1">{{ form.errors.amount }}</p>
@@ -61,6 +74,7 @@ const formatCurrency = (amount) => {
                                 type="button"
                                 @click="form.payment_method = 'ccbill'"
                                 class="p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-colors"
+                                :disabled="!depositEnabled"
                                 :style="{
                                     borderColor: form.payment_method === 'ccbill' ? 'var(--color-accent)' : 'var(--color-border)',
                                     backgroundColor: form.payment_method === 'ccbill' ? 'rgba(var(--color-accent-rgb, 220, 38, 38), 0.05)' : 'transparent',
@@ -73,6 +87,7 @@ const formatCurrency = (amount) => {
                                 type="button"
                                 @click="form.payment_method = 'crypto'"
                                 class="p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-colors"
+                                :disabled="!depositEnabled"
                                 :style="{
                                     borderColor: form.payment_method === 'crypto' ? 'var(--color-accent)' : 'var(--color-border)',
                                     backgroundColor: form.payment_method === 'crypto' ? 'rgba(var(--color-accent-rgb, 220, 38, 38), 0.05)' : 'transparent',
@@ -85,9 +100,10 @@ const formatCurrency = (amount) => {
                         <p v-if="form.errors.payment_method" class="text-red-500 text-sm mt-1">{{ form.errors.payment_method }}</p>
                     </div>
 
-                    <button type="submit" :disabled="form.processing" class="btn btn-primary w-full">
+                    <button type="submit" :disabled="form.processing || !depositEnabled" class="btn btn-primary w-full">
                         <span v-if="form.processing">{{ t('common.loading') || 'Processing...' }}</span>
-                        <span v-else>{{ t('wallet.continue_payment') || 'Continue to Payment' }}</span>
+                        <span v-else-if="depositEnabled">{{ t('wallet.continue_payment') || 'Continue to Payment' }}</span>
+                        <span v-else>Deposits Unavailable</span>
                     </button>
                 </form>
             </div>

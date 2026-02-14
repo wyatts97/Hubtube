@@ -42,6 +42,8 @@ class SearchController extends Controller
             return collect();
         }
 
+        $escapedQuery = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $query);
+
         // Use Scout search if a real driver is configured, otherwise fallback to LIKE
         $driver = config('scout.driver');
         if ($driver && !in_array($driver, ['database', 'null', 'collection'])) {
@@ -55,9 +57,9 @@ class SearchController extends Controller
             ->public()
             ->approved()
             ->processed()
-            ->where(function ($q) use ($query) {
-                $q->where('title', 'like', "%{$query}%")
-                  ->orWhere('description', 'like', "%{$query}%")
+            ->where(function ($q) use ($escapedQuery, $query) {
+                $q->where('title', 'like', "%{$escapedQuery}%")
+                  ->orWhere('description', 'like', "%{$escapedQuery}%")
                   ->orWhereJsonContains('tags', $query);
             })
             ->latest('published_at')
@@ -70,11 +72,13 @@ class SearchController extends Controller
             return collect();
         }
 
+        $escapedQuery = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $query);
+
         return User::query()
             ->with('channel')
-            ->where(function ($q) use ($query) {
-                $q->where('username', 'like', "%{$query}%")
-                  ->orWhereHas('channel', fn($sub) => $sub->where('name', 'like', "%{$query}%"));
+            ->where(function ($q) use ($escapedQuery) {
+                $q->where('username', 'like', "%{$escapedQuery}%")
+                  ->orWhereHas('channel', fn($sub) => $sub->where('name', 'like', "%{$escapedQuery}%"));
             })
             ->paginate(24);
     }
@@ -85,8 +89,10 @@ class SearchController extends Controller
             return collect();
         }
 
+        $escapedQuery = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $query);
+
         return Hashtag::query()
-            ->where('name', 'like', "%{$query}%")
+            ->where('name', 'like', "%{$escapedQuery}%")
             ->orderByDesc('usage_count')
             ->paginate(24);
     }

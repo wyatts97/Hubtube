@@ -30,13 +30,17 @@ class VideoController extends Controller
 
     public function index(Request $request): Response
     {
+        $escapedSearch = $request->search
+            ? str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $request->search)
+            : null;
+
         $videos = Video::query()
             ->with(['user', 'category'])
             ->public()
             ->approved()
             ->processed()
             ->when($request->category, fn($q, $cat) => $q->where('category_id', $cat))
-            ->when($request->search, fn($q, $search) => $q->where('title', 'like', "%{$search}%"))
+            ->when($escapedSearch, fn($q, $search) => $q->where('title', 'like', "%{$search}%"))
             ->when(
                 $request->sort === 'popular',
                 fn($q) => $q->orderByDesc('views_count'),

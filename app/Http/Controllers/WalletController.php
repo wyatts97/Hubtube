@@ -31,6 +31,7 @@ class WalletController extends Controller
             'balance' => $request->user()->wallet_balance,
             'transactions' => $transactions,
             'minWithdrawal' => (int) Setting::get('min_withdrawal', 50),
+            'depositEnabled' => false,
         ]);
     }
 
@@ -38,18 +39,14 @@ class WalletController extends Controller
     {
         return Inertia::render('Wallet/Deposit', [
             'balance' => $request->user()->wallet_balance,
+            'depositEnabled' => false,
         ]);
     }
 
     public function processDeposit(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'amount' => 'required|numeric|min:5|max:10000',
-            'payment_method' => 'required|in:ccbill,crypto',
-        ]);
-
         return redirect()->route('wallet.index')
-            ->with('info', 'Deposit processing. You will be redirected to payment gateway.');
+            ->with('error', 'Deposits are temporarily unavailable. Please try again later.');
     }
 
     public function withdraw(Request $request): Response

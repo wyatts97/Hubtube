@@ -10,6 +10,10 @@ const props = defineProps({
     balance: [String, Number],
     transactions: Object,
     minWithdrawal: [String, Number],
+    depositEnabled: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const formatCurrency = (amount) => {
@@ -54,20 +58,36 @@ const formatType = (type) => {
                         <p class="text-sm font-medium" style="color: var(--color-text-secondary);">{{ t('settings.wallet_balance') || 'Available Balance' }}</p>
                         <p class="text-2xl sm:text-3xl font-bold mt-1" style="color: var(--color-text-primary);">{{ formatCurrency(balance) }}</p>
                     </div>
-                    <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: var(--color-accent); opacity: 0.15;">
+                    <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shrink-0" style="background-color: var(--color-accent); opacity: 0.15;">
                         <Wallet class="w-6 h-6 sm:w-7 sm:h-7" style="color: var(--color-accent);" />
                     </div>
                 </div>
                 <div class="flex gap-2 sm:gap-3 mt-4 sm:mt-6">
-                    <Link href="/wallet/deposit" class="btn btn-primary gap-2">
+                    <Link
+                        v-if="depositEnabled"
+                        href="/wallet/deposit"
+                        class="btn btn-primary gap-2"
+                    >
                         <Plus class="w-4 h-4" />
                         {{ t('settings.deposit') || 'Deposit' }}
                     </Link>
+                    <button
+                        v-else
+                        type="button"
+                        class="btn btn-secondary gap-2 opacity-70 cursor-not-allowed"
+                        disabled
+                    >
+                        <Plus class="w-4 h-4" />
+                        {{ t('settings.deposit') || 'Deposit' }}
+                    </button>
                     <Link href="/wallet/withdraw" class="btn btn-secondary gap-2">
                         <ArrowDown class="w-4 h-4" />
                         {{ t('settings.withdraw') || 'Withdraw' }}
                     </Link>
                 </div>
+                <p v-if="!depositEnabled" class="text-xs mt-3" style="color: var(--color-text-muted);">
+                    Deposits are temporarily unavailable.
+                </p>
             </div>
 
             <!-- Transactions -->
@@ -85,7 +105,7 @@ const formatType = (type) => {
                     >
                         <div class="flex items-center gap-2 sm:gap-3 min-w-0">
                             <div
-                                class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                                class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shrink-0"
                                 :style="{ backgroundColor: isCredit(tx.type) ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)' }"
                             >
                                 <component

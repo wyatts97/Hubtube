@@ -1,6 +1,6 @@
 # HubTube — Production Readiness Checklist
 
-> Use this file to track all issues that must be resolved before going live.
+> Full audit performed 2026-02-13. Covers security, bugs, missing features, dead code, and infrastructure.
 > Mark items `[x]` as they are completed.
 
 ---
@@ -14,69 +14,100 @@
 - [ ] **Set correct `APP_URL`** — Currently `http://localhost`. Must match the actual domain (e.g. `https://yourdomain.com`). Affects emails, SEO canonical URLs, asset URLs, and CORS.
 - [ ] **Set `DB_PASSWORD`** — Currently `password`. Use a strong, unique password in production.
 - [ ] **Set `SESSION_SECURE_COOKIE=true`** — Currently `false`. Session cookies must only be sent over HTTPS to prevent session hijacking.
-- [ ] **Switch `SCOUT_DRIVER=meilisearch`** — Currently `database` which uses `LIKE %query%` with no relevance ranking or typo tolerance. Meilisearch is already configured in `.env` — just switch the driver.
 
-### 2. Sensitive Credential Encryption
-- [x] **Encrypt secrets in the `settings` DB table** — SMTP password, Wasabi keys, B2 keys, S3 keys, Bunny API keys, and BunnyCDN keys are stored as plaintext strings. Now uses Laravel's `encrypt()`/`decrypt()` for all sensitive settings via `Setting::setEncrypted()` / `Setting::getDecrypted()`.
-- [x] **Admin pages updated** — `IntegrationSettings`, `StorageSettings`, and `DynamicConfigServiceProvider` now use encrypted read/write for all secret fields.
+### 2. WP Imported User: "Change Password" Broken for Non-Bcrypt Hashes
+- [x] **`current_password` validation fails for WP users** — `SettingsController::updatePassword()` uses Laravel's `current_password` validation rule, which internally calls `Hash::check()`. For users with `$wp$2y$` or `$P$B` hashes, this throws a `RuntimeException` (same issue we fixed in login). Either: (a) wrap in try-catch and verify via `WordPressPasswordHasher`. Same issue affects `deleteAccount()` which also uses `current_password`. DO NOT FORCE FORGOT PASSWORD FLOW ON IMPORTED WP USERS.
 
-### 3. Content Security Policy (CSP)
-- [x] **Add CSP headers middleware** — No Content Security Policy headers were configured. Added `AddSecurityHeaders` middleware that sets `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Referrer-Policy`, and `Permissions-Policy`. Registered globally in `bootstrap/app.php`.
+### 3. Installer Routes Not Locked Down Post-Install
+- [x] **Verify `installed` middleware blocks install routes** — The `CheckInstalled` middleware with `block` mode should prevent access to `/install/*` after `storage/installed` exists. Verify this works and that the installer cannot be re-run to overwrite the admin account or DB credentials. Add "You should now delete the /install directory from your server" message on install success page after installation success.
 
-### 4. SMTP / Email
-- [x] **Add "Send Test Email" button** — Admin had no way to verify SMTP configuration works. Added a `sendTestEmail()` action to the Integration Settings page that sends a test email to the logged-in admin and reports success/failure.
-
-### 5. Web Server Configuration
-- [x] **Create Nginx config** — The app runs on `php artisan serve` which lacks HTTP Range support, gzip, and proper static file serving. Created `nginx.example.conf` with SSL, gzip, static caching, security headers, and PHP-FPM proxy.
+### 4. `VITE_PUBLIC_BUILDER_KEY` Leaked in `.env`
+- [x] **Remove unused Builder.io key** — `.env` contains `VITE_PUBLIC_BUILDER_KEY=1ecd0197e63a4365a880d4476bcd25dc`. No code references it. This is a leaked API key committed to the repo. Remove it from `.env` and `.env.example`.
 
 ---
 
 ## 🟡 HIGH — Should Fix Before Launch
 
-### 6. ThumbnailProxyController SSRF Hardening
-- [x] **Tighten URL allowlisting** — The proxy already has a domain allowlist, but uses `str_contains()` which could match substrings. Hardened to use exact domain matching or strict suffix matching. Also added private/internal IP blocking to prevent SSRF to internal services.
+### 6. Search SQL Injection via LIKE
+- [x] **Unsanitized `$query` in LIKE clauses** — `SearchController::searchVideos()` passes user input directly into `->where('title', 'like', "%{$query}%")`. While Laravel's query builder parameterizes values, the `%` wildcards in the search term itself are not escaped. A user searching for `%` gets all results. Use `str_replace(['%', '_'], ['\%', '\_'], $query)` to escape LIKE wildcards.
+- [x] **Same issue in `VideoController::index()`** — `->when($request->search, fn($q, $search) => $q->where('title', 'like', "%{$search}%"))`.
 
-### 7. Scheduled Cleanup Commands
-- [x] **Temp file cleanup** — `StorageManager::cleanupTemp()` exists but was never called on a schedule. Added `storage:cleanup` artisan command and scheduled it daily.
-- [x] **Abandoned chunk cleanup** — Chunk upload directory (`storage/app/chunks/`) accumulates orphaned files from abandoned uploads. Added `uploads:cleanup-chunks` artisan command and scheduled it daily.
+### 7. Missing `config/logging.php`
+- [x] **No logging config file** — The `config/logging.php` file does not exist. Laravel falls back to defaults (`stack` → `single`), meaning one ever-growing `laravel.log` file. Create the config with `daily` driver and a 14-day retention policy.
 
-### 8. Account Deletion
-- [x] **Allow users to delete their account** — No account deletion flow existed. Added `deleteAccount()` method to `SettingsController`, a confirmation UI section in the Settings page, and proper cascade cleanup (videos, channel, comments, etc.).
+### 8. Meilisearch Not Configured
+- [ ] **Switch `SCOUT_DRIVER=meilisearch`** — Currently `database` which uses `LIKE %query%` with no relevance ranking, typo tolerance, or faceted search. Meilisearch host/key are in `.env` but the driver isn't switched. For production, install Meilisearch and switch the driver.
 
-### 9. Custom Error Pages for Non-Inertia Requests
-- [x] **Add `404.blade.php` and `500.blade.php`** — `Error.vue` handles Inertia errors, but direct browser requests (e.g. missing static files, API errors) got generic Laravel error pages. Added styled Blade error pages.
+### 9. Broadcast Channel Auth Too Permissive
+- [x] **`live-stream.{liveStreamId}` allows any user** — `channels.php` returns `true` for all users on `live-stream.*` and `live-streams` channels. Any authenticated user can listen to any stream's private events. Should at minimum check that the stream is live and optionally that the user hasn't been banned.
 
-### 10. Rate Limiting
-- [ ] **Add rate limiting to video view increment** — Currently every page load increments `views_count` with no deduplication. Add IP/session-based throttle or deduplication window.
-- [ ] **Add rate limiting to public API endpoints** — The `/api/video-ads` and search endpoints have no per-IP throttle beyond the global 60/min.
+### 10. Sensitive Credential Encryption
+- [x] **Encrypt secrets in the `settings` DB table** — Uses `Setting::setEncrypted()` / `Setting::getDecrypted()` for SMTP, Wasabi, B2, S3, Bunny API keys.
+
+### 11. Rate Limiting Gaps
+- [x] **`/api/video-ads` has no dedicated throttle** — Accessible by guests, only protected by global 60/min API throttle. Should have its own rate limit.
+- [x] **`/api/thumb-proxy` has no rate limit** — Public endpoint that makes outbound HTTP requests. Could be abused for SSRF amplification. Add `throttle:30,1` middleware.
+- [x] **Comment `GET` `/videos/{video}/comments` has no throttle** — Under `auth` middleware group but no rate limit. Could be hammered for data scraping.
+
+### 12. Content Security Policy Tightening
+- [x] **CSP middleware exists** — `AddSecurityHeaders` is registered globally.
+- [ ] **`unsafe-inline` and `unsafe-eval` in CSP** — `script-src` allows `'unsafe-inline' 'unsafe-eval'` which significantly weakens XSS protection. Audit inline scripts and migrate to nonces or hashes. This is an ongoing effort but should be tracked.
+
+---
+
+## 🟠 MEDIUM-HIGH — Should Fix Soon After Launch
+
+### 13. Dead Code Cleanup
+- [ ] **Remove `EmbeddedVideos/` Vue pages** — `Index.vue`, `Show.vue`, `Featured.vue` in `resources/js/Pages/EmbeddedVideos/` are orphaned (no routes point to them). Embedded videos now use the unified `videos` table.
+- [ ] **Remove `FeatureTestOutput` from repo root** — 69KB test output file.
+- [ ] **Remove `PANEL-DEPLOY.md` if outdated** — 25KB deployment guide; verify it's still accurate or remove.
+
+### 14. Wallet Withdrawal Has No Admin Approval UI
+- [x] **WithdrawalRequests created but no admin page to process them** — `processWithdraw()` creates a `WithdrawalRequest` and debits the user's wallet, but there's no Filament admin page for reviewing/approving/rejecting withdrawals. Add a `WithdrawalRequestResource` or admin page.
+
+### 15. 2FA Fields Unused
+- [ ] **`two_factor_enabled` / `two_factor_secret` exist but are dead** — User model has these fields in fillable/casts/hidden but no controller, middleware, or UI implements 2FA. Either implement TOTP-based 2FA or remove the fields to avoid confusion.
 
 ---
 
 ## 🟢 MEDIUM — Polish Before Launch
 
-### 11. Skeleton Loading Components
-- [ ] **Add skeleton loaders for paginated views** — `VideoCardSkeleton` exists but channel pages, playlists, search results, and history have no skeleton loading states. Add skeleton components for consistent UX.
+### 16. Dead Code Cleanup
+- [ ] **Remove `EmbeddedVideos/` Vue pages** — `Index.vue`, `Show.vue`, `Featured.vue` in `resources/js/Pages/EmbeddedVideos/` are orphaned (no routes point to them). Embedded videos now use the unified `videos` table.
+- [ ] **Remove `FeatureTestOutput` from repo root** — 69KB test output file.
+- [ ] **Remove `PANEL-DEPLOY.md` if outdated** — 25KB deployment guide; verify it's still accurate or remove.
 
-### 12. Mobile Shorts Carousel
-- [ ] **Test and polish touch interactions** — `mobileVideoGrid` setting exists but the Shorts carousel may not be optimized for all screen sizes. Test swipe gestures, snap scrolling, and touch targets on various devices.
+### 17. Account Deletion Doesn't Clean Cloud Storage
+- [x] **`deleteAccount()` only deletes from local `public` disk** — If user's videos were offloaded to Wasabi/B2/S3, the cloud files are not deleted. Should use `StorageManager` to delete from the correct disk based on each video's `storage_disk` field.
 
-### 13. Dead Code Cleanup
-- [ ] **Remove `EmbeddedVideo` model** — Embedded videos were migrated to the unified `videos` table. The old model file is dead code.
-- [ ] **Remove `EmbeddedVideos/` Vue pages** — `Index.vue`, `Show.vue`, `Featured.vue` in `resources/js/Pages/EmbeddedVideos/` are likely dead routes after migration.
-- [ ] **Remove `wedgietu_wp_nnfpq.sql`** — 117MB SQL dump committed to repo root. Remove from git history with `git filter-branch` or BFG Repo-Cleaner.
+### 18. Wallet Withdrawal Has No Admin Approval UI
+- [x] **WithdrawalRequests created but no admin page to process them** — `processWithdraw()` creates a `WithdrawalRequest` and debits the user's wallet, but there's no Filament admin page for reviewing/approving/rejecting withdrawals. Add a `WithdrawalRequestResource` or admin page.
 
-### 14. Wallet / Payments
-- [ ] **Complete deposit flow** — `processDeposit()` in `WalletController` validates input but does nothing (no payment gateway integration). Either integrate Stripe/PayPal/CCBill or hide the deposit UI until ready.
-- [ ] **Implement 2FA** — `two_factor_enabled` / `two_factor_secret` fields exist on User model but no implementation. Either implement or remove the fields.
+### 19. Password Reset for WP Users
+- [x] **Password reset works but doesn't log migration** — When a WP user resets their password via "Forgot Password", `PasswordResetController::reset()` sets a bcrypt hash via `Hash::make()`. This works correctly but doesn't log the WP→bcrypt migration like the login flow does. Minor, but good for tracking.
 
-### 15. Error Monitoring & Backups
-- [ ] **Set up error monitoring** — No Sentry/Bugsnag/Flare configured. Add an error tracking service for production visibility.
-- [ ] **Configure automated backups** — No backup strategy. Use `spatie/laravel-backup` or similar for DB + storage backups.
-- [ ] **Configure log rotation** — Default Laravel single-file logging. Switch to `daily` driver with retention in `config/logging.php`.
+### 20. Skeleton Loading Components
+- [ ] **Add skeleton loaders for paginated views** — `VideoCardSkeleton` exists but channel pages, playlists, search results, and history have no skeleton loading states.
 
-### 16. SSL / HTTPS
-- [ ] **Obtain SSL certificate** — Use Let's Encrypt / Certbot or Cloudflare for free SSL.
+### 21. Shorts Not Fully Implemented
+- [ ] **`is_short` never set during upload** — `VideoService::create()` doesn't check for `?type=short` query param. Shorts page shows a grid but there's no TikTok-style vertical viewer. Upload flow doesn't distinguish shorts from regular videos.
+
+---
+
+## 🔵 LOW — Nice to Have
+
+### 22. Error Monitoring
+- [ ] **Set up Sentry** — `config/sentry.php` exists and `bootstrap/app.php` has Sentry integration hooks, but no `SENTRY_DSN` is configured. Add DSN for production error tracking.
+
+### 23. Automated Backups
+- [ ] **Configure `spatie/laravel-backup`** — No backup strategy exists. Set up daily DB + storage backups with S3/Wasabi destination.
+
+### 24. SSL / HTTPS
+- [ ] **Obtain SSL certificate** — Use Let's Encrypt / Certbot or Cloudflare.
 - [ ] **Force HTTPS** — Add `URL::forceScheme('https')` in `AppServiceProvider` or handle via Nginx redirect.
+
+### 25. Test Coverage
+- [ ] **19 test files exist but coverage is unknown** — Feature tests cover auth, comments, playlists, security headers, SEO, subscriptions, settings, videos, and production readiness. Run `php artisan test --coverage` to verify coverage percentage and add tests for wallet, live streaming, and WP password migration.
 
 ---
 
@@ -84,15 +115,32 @@
 
 - **Video processing pipeline** — Multi-resolution transcoding, HLS, watermarks, scrubber sprites, faststart — production-grade.
 - **Storage abstraction** — `StorageManager` with runtime disk config, Wasabi/B2/S3, CDN URL override, pre-signed URLs.
-- **SEO system** — JSON-LD schema, OG tags, video sitemap, hreflang, configurable robots.txt.
-- **i18n** — Auto-translation, translated slugs, hreflang, RTL support.
-- **Admin panel** — Comprehensive Filament admin with 14 settings pages, CRUD resources, import tools.
-- **Auth flow** — Registration, login, email verification, password reset, session management, rate limiting on login.
-- **Wallet service** — Proper DB transactions with `lockForUpdate()` for credits/debits.
-- **Autoloader optimization** — `optimize-autoloader` set to `true` in `composer.json`.
+- **SEO system** — JSON-LD VideoObject schema, OG tags, video sitemap with hreflang, configurable robots.txt, translated slugs.
+- **i18n** — Google Translate auto-translation, translated slugs, hreflang, RTL support, per-locale JSON UI files.
+- **Admin panel** — 17 Filament pages (settings, importers, dashboard, activity log), CRUD resources for users/videos/categories/etc.
+- **Auth flow** — Registration, login (including WP password migration with HMAC-SHA384 + phpass support), email verification, password reset, rate limiting.
+- **Wallet service** — Proper DB transactions with `lockForUpdate()` for credits/debits. Gift system with platform cut.
+- **Security headers** — CSP, X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy.
+- **SSRF protection** — ThumbnailProxy has strict domain suffix matching + private IP blocking.
+- **File upload security** — Chunk upload with extension allowlist, size validation, ULID filenames, directory isolation.
+- **Authorization** — Policies for Video, Comment, Playlist, LiveStream. Gate checks on upload, withdraw.
+- **Scheduled jobs** — Horizon snapshots, batch pruning, Sanctum token pruning, deleted video cleanup, storage cleanup, chunk cleanup.
+- **Activity logging** — Spatie activity log on User/Video models, AdminLogger service for admin actions, error logging in exception handler.
+- **WordPress migration** — Full import pipeline for videos (Bunny Stream) and users (with HMAC-SHA384 bcrypt + phpass password verification and transparent bcrypt upgrade on first login).
 
 ---
 
-## Current Score: 6.0 / 10
+## Current Score: 6.5 / 10
 
-**Target after completing this checklist: 8.5+ / 10**
+### Score Breakdown:
+| Area | Score | Notes |
+|------|-------|-------|
+| **Security** | 7/10 | CSP, SSRF, auth policies solid. `unsafe-inline` in CSP, WP password change bug, broadcast auth too permissive. |
+| **Functionality** | 7/10 | Core features complete. Deposit stub, withdrawal admin missing, shorts incomplete. |
+| **Infrastructure** | 5/10 | No logging config, no backups, no SSL, no Meilisearch, no Sentry. |
+| **Code Quality** | 7/10 | Clean architecture, services pattern, proper policies. Some dead code (EmbeddedVideos). |
+| **Data Hygiene** | 4/10 | SQL dump with real passwords in repo, test output committed, unused API key in .env. |
+| **Testing** | 6/10 | 19 test files covering core flows. No WP auth tests, no wallet tests. |
+
+**Target after completing CRITICAL + HIGH items: 8.0 / 10**
+**Target after completing all items: 9.0+ / 10**

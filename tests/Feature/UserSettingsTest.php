@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,6 +56,44 @@ test('password update fails with wrong current password', function () {
     ]);
 
     $response->assertSessionHasErrors();
+});
+
+test('wordpress-hash user can update password from settings', function () {
+    $plainPassword = 'OldPassword123!';
+    $newPassword = 'NewPassword456!';
+    $wpPreHash = base64_encode(hash_hmac('sha384', trim($plainPassword), 'wp-sha384', true));
+    $wpHash = '$wp$' . password_hash($wpPreHash, PASSWORD_BCRYPT);
+
+    $user = User::factory()->create(['password' => bcrypt('TempPassword123!')]);
+    DB::table('users')->where('id', $user->id)->update(['password' => $wpHash]);
+    $this->actingAs($user->fresh());
+
+    $response = $this->put('/settings/password', [
+        'current_password' => $plainPassword,
+        'password' => $newPassword,
+        'password_confirmation' => $newPassword,
+    ]);
+
+    $response->assertRedirect();
+    expect(Hash::check($newPassword, $user->fresh()->password))->toBeTrue();
+});
+
+test('wordpress-hash user can delete account from settings', function () {
+    $plainPassword = 'OldPassword123!';
+    $wpPreHash = base64_encode(hash_hmac('sha384', trim($plainPassword), 'wp-sha384', true));
+    $wpHash = '$wp$' . password_hash($wpPreHash, PASSWORD_BCRYPT);
+
+    $user = User::factory()->create(['password' => bcrypt('TempPassword123!')]);
+    DB::table('users')->where('id', $user->id)->update(['password' => $wpHash]);
+    $this->actingAs($user->fresh());
+
+    $response = $this->delete('/settings/account', [
+        'password' => $plainPassword,
+    ]);
+
+    $response->assertRedirect('/');
+    $this->assertDatabaseMissing('users', ['id' => $user->id]);
+    $this->assertGuest();
 });
 
 test('guest cannot access dashboard', function () {

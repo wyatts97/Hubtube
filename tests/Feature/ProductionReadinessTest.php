@@ -319,6 +319,11 @@ test('check installed middleware is registered', function () {
     expect(class_exists(\App\Http\Middleware\CheckInstalled::class))->toBeTrue();
 });
 
+test('installer routes are blocked after installation', function () {
+    $this->get('/install')->assertRedirect('/');
+    $this->get('/install/database')->assertRedirect('/');
+});
+
 // ── Services ────────────────────────────────────────────────────────────
 
 test('SeoService class exists', function () {

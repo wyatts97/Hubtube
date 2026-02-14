@@ -50,6 +50,10 @@
         <strong>Next steps:</strong> Start background services for full functionality. All other settings are in the Admin Panel.
     </div>
 
+    <div style="margin-top: 1rem; padding: 0.75rem 1rem; background: #3f1d1d; border: 1px solid #7f1d1d; border-radius: 0.5rem; font-size: 0.8rem; color: #fca5a5;">
+        <strong>Security notice:</strong> You should now delete or restrict access to the <code>/install</code> directory/routes on your server.
+    </div>
+
     @if(isset($environment))
         <div style="margin-top: 1rem; padding: 1rem; background: #0a0a0a; border-radius: 0.5rem; font-size: 0.8rem;">
             <div style="color: #737373; margin-bottom: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">

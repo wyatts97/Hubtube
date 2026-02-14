@@ -94,7 +94,9 @@ Route::get('/admin/watermark-stream/{file}', function (string $file) {
 })->where('file', '.+')->name('admin.watermark-stream');
 
 // Thumbnail proxy for embedded video thumbnails
-Route::get('/api/thumb-proxy', [ThumbnailProxyController::class, 'proxy'])->name('thumb.proxy');
+Route::get('/api/thumb-proxy', [ThumbnailProxyController::class, 'proxy'])
+    ->middleware('throttle:30,1')
+    ->name('thumb.proxy');
 
 Route::middleware('age.verified')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -127,7 +129,9 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('pages.show');
 
     // Video Ads API (accessible by all users including guests)
-    Route::get('/api/video-ads', [\App\Http\Controllers\VideoAdController::class, 'getAds'])->name('video-ads.get');
+    Route::get('/api/video-ads', [\App\Http\Controllers\VideoAdController::class, 'getAds'])
+        ->middleware('throttle:30,1')
+        ->name('video-ads.get');
 
     Route::middleware('guest')->group(function () {
         Route::get('/register', [RegisterController::class, 'create'])->name('register');
@@ -167,7 +171,7 @@ Route::middleware('age.verified')->group(function () {
         Route::post('/videos/{video}/like', [LikeController::class, 'like'])->middleware('throttle:30,1')->name('videos.like');
         Route::post('/videos/{video}/dislike', [LikeController::class, 'dislike'])->middleware('throttle:30,1')->name('videos.dislike');
 
-        Route::get('/videos/{video}/comments', [CommentController::class, 'index'])->name('comments.index');
+        Route::get('/videos/{video}/comments', [CommentController::class, 'index'])->middleware('throttle:30,1')->name('comments.index');
         Route::post('/videos/{video}/comments', [CommentController::class, 'store'])->middleware('throttle:10,1')->name('comments.store');
         Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
         Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');

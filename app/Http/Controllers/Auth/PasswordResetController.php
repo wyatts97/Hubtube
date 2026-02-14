@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\AdminLogger;
+use App\Services\WordPressPasswordHasher;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,10 +56,20 @@ class PasswordResetController extends Controller
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user) use ($request) {
+                $oldHash = $user->getRawOriginal('password');
+                $wasWordPressHash = $oldHash && WordPressPasswordHasher::isWordPressHash($oldHash);
+
                 $user->forceFill([
                     'password' => Hash::make($request->password),
                     'remember_token' => Str::random(60),
                 ])->save();
+
+                if ($wasWordPressHash) {
+                    AdminLogger::auth('WordPress password migrated to bcrypt via password reset', [
+                        'user_id' => $user->id,
+                        'username' => $user->username,
+                    ]);
+                }
 
                 event(new PasswordReset($user));
             }

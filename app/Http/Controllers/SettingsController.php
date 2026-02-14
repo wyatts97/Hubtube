@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\WordPressPasswordHasher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -9,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -90,9 +92,15 @@ class SettingsController extends Controller
     public function updatePassword(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'current_password' => ['required', 'current_password'],
+            'current_password' => ['required', 'string'],
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
+
+        if (!$this->isValidCurrentPassword($request->user(), $validated['current_password'])) {
+            throw ValidationException::withMessages([
+                'current_password' => __('The provided password does not match your current password.'),
+            ]);
+        }
 
         $request->user()->update([
             'password' => Hash::make($validated['password']),
@@ -144,20 +152,22 @@ class SettingsController extends Controller
 
     public function deleteAccount(Request $request): RedirectResponse
     {
-        $request->validate([
-            'password' => ['required', 'current_password'],
+        $validated = $request->validate([
+            'password' => ['required', 'string'],
         ]);
+
+        if (!$this->isValidCurrentPassword($request->user(), $validated['password'])) {
+            throw ValidationException::withMessages([
+                'password' => __('The provided password does not match your current password.'),
+            ]);
+        }
 
         $user = $request->user();
 
         DB::beginTransaction();
         try {
-            // Delete user's videos and their storage files
+            // Delete user's videos (model hooks clean up files on the correct storage disk)
             foreach ($user->videos as $video) {
-                $videoDir = "videos/{$video->slug}";
-                if (Storage::disk('public')->exists($videoDir)) {
-                    Storage::disk('public')->deleteDirectory($videoDir);
-                }
                 $video->forceDelete();
             }
 
@@ -199,5 +209,22 @@ class SettingsController extends Controller
 
             return redirect()->route('settings')->with('error', 'Failed to delete account. Please try again or contact support.');
         }
+    }
+
+    private function isValidCurrentPassword($user, string $plainPassword): bool
+    {
+        try {
+            if (Hash::check($plainPassword, $user->password)) {
+                return true;
+            }
+        } catch (\RuntimeException) {
+            // Non-bcrypt hash, fall through to WP hasher check.
+        }
+
+        if (!WordPressPasswordHasher::isWordPressHash($user->password)) {
+            return false;
+        }
+
+        return (new WordPressPasswordHasher())->check($plainPassword, $user->password);
     }
 }
