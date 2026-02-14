@@ -45,6 +45,9 @@ Route::middleware('installed:block')->prefix('install')->group(function () {
 // ── App Routes (require installation) ──
 Route::middleware('installed:require')->group(function () {
 
+// Admin auth is handled by main site login modal/page
+Route::get('/admin/login', fn () => redirect()->route('login'))->name('admin.login.redirect');
+
 // Sitemap & Robots (outside age verification)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/robots.txt', function () {

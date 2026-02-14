@@ -155,8 +155,7 @@ class ActivityLogResource extends Resource
                             ->disabled()
                             ->columnSpanFull()
                             ->extraAttributes(['class' => 'font-mono']),
-                    ])
-                    ->columns(2),
+                    ]),
 
                 Tables\Actions\DeleteAction::make(),
             ])
