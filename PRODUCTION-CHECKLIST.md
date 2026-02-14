@@ -28,29 +28,10 @@
 
 ## 🟡 HIGH — Should Fix Before Launch
 
-### 6. Search SQL Injection via LIKE
-- [x] **Unsanitized `$query` in LIKE clauses** — `SearchController::searchVideos()` passes user input directly into `->where('title', 'like', "%{$query}%")`. While Laravel's query builder parameterizes values, the `%` wildcards in the search term itself are not escaped. A user searching for `%` gets all results. Use `str_replace(['%', '_'], ['\%', '\_'], $query)` to escape LIKE wildcards.
-- [x] **Same issue in `VideoController::index()`** — `->when($request->search, fn($q, $search) => $q->where('title', 'like', "%{$search}%"))`.
-
-### 7. Missing `config/logging.php`
-- [x] **No logging config file** — The `config/logging.php` file does not exist. Laravel falls back to defaults (`stack` → `single`), meaning one ever-growing `laravel.log` file. Create the config with `daily` driver and a 14-day retention policy.
-
 ### 8. Meilisearch Not Configured
 - [ ] **Switch `SCOUT_DRIVER=meilisearch`** — Currently `database` which uses `LIKE %query%` with no relevance ranking, typo tolerance, or faceted search. Meilisearch host/key are in `.env` but the driver isn't switched. For production, install Meilisearch and switch the driver.
 
-### 9. Broadcast Channel Auth Too Permissive
-- [x] **`live-stream.{liveStreamId}` allows any user** — `channels.php` returns `true` for all users on `live-stream.*` and `live-streams` channels. Any authenticated user can listen to any stream's private events. Should at minimum check that the stream is live and optionally that the user hasn't been banned.
-
-### 10. Sensitive Credential Encryption
-- [x] **Encrypt secrets in the `settings` DB table** — Uses `Setting::setEncrypted()` / `Setting::getDecrypted()` for SMTP, Wasabi, B2, S3, Bunny API keys.
-
-### 11. Rate Limiting Gaps
-- [x] **`/api/video-ads` has no dedicated throttle** — Accessible by guests, only protected by global 60/min API throttle. Should have its own rate limit.
-- [x] **`/api/thumb-proxy` has no rate limit** — Public endpoint that makes outbound HTTP requests. Could be abused for SSRF amplification. Add `throttle:30,1` middleware.
-- [x] **Comment `GET` `/videos/{video}/comments` has no throttle** — Under `auth` middleware group but no rate limit. Could be hammered for data scraping.
-
 ### 12. Content Security Policy Tightening
-- [x] **CSP middleware exists** — `AddSecurityHeaders` is registered globally.
 - [ ] **`unsafe-inline` and `unsafe-eval` in CSP** — `script-src` allows `'unsafe-inline' 'unsafe-eval'` which significantly weakens XSS protection. Audit inline scripts and migrate to nonces or hashes. This is an ongoing effort but should be tracked.
 
 ---
@@ -59,11 +40,7 @@
 
 ### 13. Dead Code Cleanup
 - [ ] **Remove `EmbeddedVideos/` Vue pages** — `Index.vue`, `Show.vue`, `Featured.vue` in `resources/js/Pages/EmbeddedVideos/` are orphaned (no routes point to them). Embedded videos now use the unified `videos` table.
-- [ ] **Remove `FeatureTestOutput` from repo root** — 69KB test output file.
-- [ ] **Remove `PANEL-DEPLOY.md` if outdated** — 25KB deployment guide; verify it's still accurate or remove.
-
-### 14. Wallet Withdrawal Has No Admin Approval UI
-- [x] **WithdrawalRequests created but no admin page to process them** — `processWithdraw()` creates a `WithdrawalRequest` and debits the user's wallet, but there's no Filament admin page for reviewing/approving/rejecting withdrawals. Add a `WithdrawalRequestResource` or admin page.
+- [ ] **Remove `two_factor_enabled` / `two_factor_secret`** — User model has these fields in fillable/casts/hidden but no controller, middleware, or UI implements 2FA. Remove the fields to avoid confusion.
 
 ### 15. 2FA Fields Unused
 - [ ] **`two_factor_enabled` / `two_factor_secret` exist but are dead** — User model has these fields in fillable/casts/hidden but no controller, middleware, or UI implements 2FA. Either implement TOTP-based 2FA or remove the fields to avoid confusion.

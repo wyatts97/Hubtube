@@ -22,3 +22,4 @@ node_modules
 /scraper/.cache
 composer.lock
 package-lock.json
+/tests
