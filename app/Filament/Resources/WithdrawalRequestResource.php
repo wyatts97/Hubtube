@@ -96,13 +96,15 @@ class WithdrawalRequestResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('payment_method')
                     ->badge(),
-                Tables\Columns\BadgeColumn::make('status')
-                    ->colors([
-                        'warning' => WithdrawalRequest::STATUS_PENDING,
-                        'info' => WithdrawalRequest::STATUS_PROCESSING,
-                        'success' => WithdrawalRequest::STATUS_COMPLETED,
-                        'danger' => WithdrawalRequest::STATUS_REJECTED,
-                    ]),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        WithdrawalRequest::STATUS_PENDING => 'warning',
+                        WithdrawalRequest::STATUS_PROCESSING => 'info',
+                        WithdrawalRequest::STATUS_COMPLETED => 'success',
+                        WithdrawalRequest::STATUS_REJECTED => 'danger',
+                        default => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('processedBy.username')
                     ->label('Processed By')
                     ->placeholder('-'),

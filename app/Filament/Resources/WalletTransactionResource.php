@@ -72,24 +72,28 @@ class WalletTransactionResource extends Resource
                 Tables\Columns\TextColumn::make('user.username')
                     ->label('User')
                     ->searchable(),
-                Tables\Columns\BadgeColumn::make('type')
-                    ->colors([
-                        'success' => fn ($state) => in_array($state, ['deposit', 'gift_received', 'video_sale']),
-                        'danger' => fn ($state) => in_array($state, ['withdrawal', 'gift_sent', 'video_purchase']),
-                        'warning' => 'refund',
-                    ]),
+                Tables\Columns\TextColumn::make('type')
+                    ->badge()
+                    ->color(fn (string $state): string => match (true) {
+                        in_array($state, ['deposit', 'gift_received', 'video_sale']) => 'success',
+                        in_array($state, ['withdrawal', 'gift_sent', 'video_purchase']) => 'danger',
+                        $state === 'refund' => 'warning',
+                        default => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('amount')
                     ->money('USD')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('balance_after')
                     ->money('USD'),
-                Tables\Columns\BadgeColumn::make('status')
-                    ->colors([
-                        'warning' => 'pending',
-                        'success' => 'completed',
-                        'danger' => 'failed',
-                        'gray' => 'cancelled',
-                    ]),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'pending' => 'warning',
+                        'completed' => 'success',
+                        'failed' => 'danger',
+                        'cancelled' => 'gray',
+                        default => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable(),

@@ -73,12 +73,14 @@ class LiveStreamResource extends Resource
                 Tables\Columns\TextColumn::make('user.username')
                     ->label('Streamer')
                     ->searchable(),
-                Tables\Columns\BadgeColumn::make('status')
-                    ->colors([
-                        'warning' => 'pending',
-                        'success' => 'live',
-                        'gray' => 'ended',
-                    ]),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'pending' => 'warning',
+                        'live' => 'success',
+                        'ended' => 'gray',
+                        default => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('viewer_count')
                     ->numeric()
                     ->sortable(),

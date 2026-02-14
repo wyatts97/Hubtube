@@ -32,9 +32,13 @@ class FailedJobs extends Page
                 ->get()
                 ->map(function ($job) {
                     $payload = json_decode($job->payload, true);
-                    $command = isset($payload['data']['command'])
-                        ? unserialize($payload['data']['command'])
-                        : null;
+                    try {
+                        $command = isset($payload['data']['command'])
+                            ? unserialize($payload['data']['command'])
+                            : null;
+                    } catch (\Throwable $e) {
+                        $command = null;
+                    }
 
                     $jobClass = $payload['displayName'] ?? 'Unknown';
                     $shortClass = class_basename($jobClass);

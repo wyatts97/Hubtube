@@ -66,6 +66,7 @@ class ActivityLogResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with(['causer', 'subject']))
             ->defaultSort('created_at', 'desc')
             ->poll('10s')
             ->columns([
@@ -77,12 +78,13 @@ class ActivityLogResource extends Resource
                 Tables\Columns\TextColumn::make('log_name')
                     ->label('Level')
                     ->badge()
-                    ->colors([
-                        'danger' => 'error',
-                        'warning' => 'auth',
-                        'info' => 'admin',
-                        'gray' => 'system',
-                    ])
+                    ->color(fn (string $state): string => match ($state) {
+                        'error' => 'danger',
+                        'auth' => 'warning',
+                        'admin' => 'info',
+                        'system' => 'gray',
+                        default => 'gray',
+                    })
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('description')
