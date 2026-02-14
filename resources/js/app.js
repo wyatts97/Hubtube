@@ -2,6 +2,7 @@ import './bootstrap';
 import '../css/app.css';
 
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
+import NProgress from 'nprogress';
 
 import { createApp, h } from 'vue';
 import { createInertiaApp, router } from '@inertiajs/vue3';
@@ -15,6 +16,23 @@ import * as Sentry from '@sentry/vue';
 const appName = import.meta.env.VITE_APP_NAME || 'HubTube';
 const pages = import.meta.glob('./Pages/**/*.vue');
 
+// Configure NProgress — thin bar, no spinner
+NProgress.configure({ showSpinner: false, trickleSpeed: 200 });
+
+// Wire NProgress to Inertia router events
+let progressTimeout = null;
+router.on('start', () => {
+    progressTimeout = setTimeout(() => NProgress.start(), 100);
+});
+router.on('finish', (event) => {
+    clearTimeout(progressTimeout);
+    if (event.detail.visit.completed || event.detail.visit.cancelled) {
+        NProgress.done();
+    } else if (event.detail.visit.interrupted) {
+        NProgress.set(0);
+    }
+});
+
 // Keep CSRF meta tag in sync after every Inertia navigation.
 // This prevents 419 errors after login (session regeneration invalidates the old token).
 router.on('navigate', (event) => {
@@ -24,6 +42,15 @@ router.on('navigate', (event) => {
         if (meta) {
             meta.setAttribute('content', newToken);
         }
+    }
+
+    // Dynamically update progress bar color from theme settings
+    const theme = event.detail.page.props?.theme;
+    if (theme) {
+        const isDark = document.documentElement.classList.contains('dark');
+        const accent = isDark ? theme.dark?.accent : theme.light?.accent;
+        const color = theme.progressBarColor || accent || '#ef4444';
+        document.documentElement.style.setProperty('--nprogress-color', color);
     }
 });
 
@@ -75,7 +102,5 @@ createInertiaApp({
             .use(VueVirtualScroller)
             .mount(el);
     },
-    progress: {
-        color: '#dc2626',
-    },
+    progress: false,
 });

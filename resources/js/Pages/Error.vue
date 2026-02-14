@@ -77,11 +77,11 @@ const refresh = () => {
                 <div class="flex flex-col sm:flex-row gap-3 justify-center">
                     <a href="/" class="btn btn-primary inline-flex items-center gap-2">
                         <Home class="w-4 h-4" />
-                        {{ t('errors.go_home') || 'Go Home' }}
+                        {{ t('errors.go_home') !== 'errors.go_home' ? t('errors.go_home') : 'Go Home' }}
                     </a>
                     <button v-if="!is404" @click="refresh" class="btn btn-secondary inline-flex items-center gap-2">
                         <RefreshCw class="w-4 h-4" />
-                        {{ t('errors.refresh') || 'Refresh Page' }}
+                        {{ t('errors.refresh') !== 'errors.refresh' ? t('errors.refresh') : 'Refresh Page' }}
                     </button>
                 </div>
             </div>

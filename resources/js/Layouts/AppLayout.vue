@@ -6,7 +6,7 @@ import {
     Video, Radio, Home, TrendingUp, Zap, ListVideo, History, 
     ChevronLeft, ChevronRight, Shield, Sun, Moon, Monitor,
     X, Check, CheckCheck, Rss, LayoutDashboard, ChevronDown, ChevronUp, Film,
-    Tag, Folder, Star, ExternalLink, Eye, EyeOff
+    Tag, Folder, Star, ExternalLink, Eye, EyeOff, LayoutGrid, Plus
 } from 'lucide-vue-next';
 import { useTheme } from '@/Composables/useTheme';
 import { useToast } from '@/Composables/useToast';
@@ -27,7 +27,6 @@ const user = computed(() => page.props.auth?.user);
 const themeSettings = computed(() => page.props.theme || {});
 const iconSettings = computed(() => themeSettings.value?.icons || {});
 const showUserMenu = ref(false);
-const showMobileMenu = ref(false);
 const showUploadMenu = ref(false);
 const sidebarCollapsed = ref(false);
 const searchQuery = ref('');
@@ -136,6 +135,7 @@ const closeDropdowns = (e) => {
 
 onMounted(() => {
     document.addEventListener('click', closeDropdowns);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     if (user.value) {
         // Fetch unread count on mount
         fetch('/notifications/unread-count', {
@@ -149,6 +149,7 @@ onMounted(() => {
 
 onUnmounted(() => {
     document.removeEventListener('click', closeDropdowns);
+    window.removeEventListener('scroll', handleScroll);
 });
 
 const { currentTheme, isDark, setTheme, toggleTheme } = useTheme();
@@ -214,6 +215,49 @@ const handleSearch = () => {
 const toggleSidebar = () => {
     sidebarCollapsed.value = !sidebarCollapsed.value;
 };
+
+// Mobile bottom navbar — scroll-aware show/hide
+const showMobileNav = ref(true);
+const lastScrollY = ref(0);
+const footerRef = ref(null);
+
+const handleScroll = () => {
+    const currentY = window.scrollY;
+    const scrollingDown = currentY > lastScrollY.value;
+
+    // Hide when near footer
+    if (footerRef.value) {
+        const footerRect = footerRef.value.getBoundingClientRect();
+        if (footerRect.top < window.innerHeight + 20) {
+            showMobileNav.value = false;
+            lastScrollY.value = currentY;
+            return;
+        }
+    }
+
+    // Hide on scroll down, show on scroll up (with 10px threshold)
+    if (scrollingDown && currentY > 80) {
+        showMobileNav.value = false;
+    } else if (!scrollingDown) {
+        showMobileNav.value = true;
+    }
+
+    lastScrollY.value = currentY;
+};
+
+const mobileNavItems = computed(() => [
+    { name: t('nav.home') || 'Home', href: localizedUrl('/'), icon: Home },
+    { name: t('common.search') || 'Search', href: null, action: 'search', icon: Search },
+    { name: t('nav.upload') || 'Upload', href: '/upload', icon: Plus, isCenter: true },
+    { name: t('nav.trending') || 'Trending', href: localizedUrl('/trending'), icon: TrendingUp },
+    { name: t('nav.categories') || 'Categories', href: localizedUrl('/categories'), icon: LayoutGrid },
+]);
+
+const handleMobileNavClick = (item) => {
+    if (item.action === 'search') {
+        showMobileSearch.value = true;
+    }
+};
 </script>
 
 <template>
@@ -223,10 +267,7 @@ const toggleSidebar = () => {
             <div class="flex items-center justify-between h-14 px-4 w-full">
                 <!-- Left: Logo & Menu -->
                 <div class="flex items-center gap-4">
-                    <button @click="toggleSidebar" class="p-2 rounded-full hidden lg:flex" style="color: var(--color-text-primary);" :style="{ ':hover': { backgroundColor: 'var(--color-bg-card)' } }">
-                        <Menu class="w-5 h-5" />
-                    </button>
-                    <button @click="showMobileMenu = !showMobileMenu" class="p-2 rounded-full lg:hidden" style="color: var(--color-text-primary);">
+                    <button @click="toggleSidebar" class="p-2 rounded-full hidden lg:flex" style="color: var(--color-text-primary);" :style="{ ':hover': { backgroundColor: 'var(--color-bg-card)' } }" aria-label="Toggle sidebar">
                         <Menu class="w-5 h-5" />
                     </button>
                     <Link href="/" class="flex items-center">
@@ -252,14 +293,15 @@ const toggleSidebar = () => {
 
                 <!-- Center: Search -->
                 <div class="flex-1 max-w-2xl mx-4 hidden md:block">
-                    <form @submit.prevent="handleSearch" class="relative">
+                    <form @submit.prevent="handleSearch" class="relative" role="search">
                         <input
                             v-model="searchQuery"
                             type="text"
                             :placeholder="t('common.search_placeholder') || 'Search videos...'"
                             class="input pr-12"
+                            aria-label="Search videos"
                         />
-                        <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80" style="color: var(--color-text-muted);">
+                        <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80" style="color: var(--color-text-muted);" aria-label="Search">
                             <Search class="w-5 h-5" />
                         </button>
                     </form>
@@ -267,7 +309,7 @@ const toggleSidebar = () => {
 
                 <!-- Right: Actions -->
                 <div class="flex items-center gap-2">
-                    <button @click="showMobileSearch = true" class="p-2 rounded-full md:hidden" style="color: var(--color-text-secondary);">
+                    <button @click="showMobileSearch = true" class="p-2 rounded-full md:hidden" style="color: var(--color-text-secondary);" aria-label="Search">
                         <Search class="w-5 h-5" />
                     </button>
 
@@ -279,6 +321,7 @@ const toggleSidebar = () => {
                                 class="upload-menu-trigger p-2 rounded-full hover:opacity-80 transition-opacity"
                                 style="color: var(--color-text-secondary);"
                                 title="Upload"
+                                aria-label="Upload"
                             >
                                 <Upload class="w-5 h-5" />
                             </button>
@@ -291,12 +334,12 @@ const toggleSidebar = () => {
                         </div>
 
                         <!-- Go Live Icon -->
-                        <Link v-if="liveStreamingEnabled" href="/go-live" class="p-2 rounded-full hover:opacity-80 transition-opacity hidden sm:flex" style="color: var(--color-text-secondary);" title="Go Live">
+                        <Link v-if="liveStreamingEnabled" href="/go-live" class="p-2 rounded-full hover:opacity-80 transition-opacity hidden sm:flex" style="color: var(--color-text-secondary);" title="Go Live" aria-label="Go Live">
                             <Radio class="w-5 h-5" />
                         </Link>
 
                         <div class="relative">
-                            <button @click="toggleNotifications" class="notification-trigger p-2 rounded-full relative" style="color: var(--color-text-secondary);">
+                            <button @click="toggleNotifications" class="notification-trigger p-2 rounded-full relative" style="color: var(--color-text-secondary);" aria-label="Notifications">
                                 <Bell class="w-5 h-5" />
                                 <span v-if="unreadCount > 0" class="absolute top-1 right-1 w-2 h-2 rounded-full" style="background-color: var(--color-accent);"></span>
                             </button>
@@ -342,7 +385,7 @@ const toggleSidebar = () => {
                         </div>
 
                         <div class="relative">
-                            <button @click="showUserMenu = !showUserMenu; showNotifications = false" class="user-menu-trigger flex items-center gap-2">
+                            <button @click="showUserMenu = !showUserMenu; showNotifications = false" class="user-menu-trigger flex items-center gap-2" aria-label="User menu">
                                 <div class="w-8 h-8 avatar">
                                     <img :src="user.avatar || '/images/default_avatar.webp'" :alt="user.username" class="w-full h-full object-cover" />
                                 </div>
@@ -393,6 +436,7 @@ const toggleSidebar = () => {
                                             @click="setTheme('light')"
                                             :class="['flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm', currentTheme === 'light' ? 'bg-primary-600 text-white' : '']"
                                             :style="currentTheme === 'light' ? { color: '#f59e0b' } : { color: 'var(--color-text-secondary)' }"
+                                            aria-label="Light mode"
                                         >
                                             <Sun class="w-4 h-4" />
                                         </button>
@@ -400,6 +444,7 @@ const toggleSidebar = () => {
                                             @click="setTheme('dark')"
                                             :class="['flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm', currentTheme === 'dark' ? 'bg-primary-600 text-white' : '']"
                                             :style="currentTheme !== 'dark' ? { color: 'var(--color-text-secondary)' } : {}"
+                                            aria-label="Dark mode"
                                         >
                                             <Moon class="w-4 h-4" />
                                         </button>
@@ -502,7 +547,7 @@ const toggleSidebar = () => {
                 borderRight: '1px solid var(--color-border)',
             }"
         >
-            <nav class="p-2">
+            <nav class="p-2" aria-label="Main navigation">
                 <ul class="space-y-1">
                     <li v-for="item in navigation" :key="item.name">
                         <Link 
@@ -512,6 +557,7 @@ const toggleSidebar = () => {
                                 sidebarCollapsed ? 'justify-center' : ''
                             ]"
                             :title="sidebarCollapsed ? item.name : ''"
+                            :aria-label="item.name"
                             style="color: var(--color-text-secondary);"
                         >
                             <component 
@@ -570,110 +616,6 @@ const toggleSidebar = () => {
             </nav>
         </aside>
 
-        <!-- Mobile Sidebar -->
-        <div 
-            v-if="showMobileMenu" 
-            class="fixed inset-0 z-40 lg:hidden"
-            @click="showMobileMenu = false"
-        >
-            <div class="absolute inset-0 bg-black/50"></div>
-            <aside class="absolute left-0 top-0 bottom-0 w-64 pt-14 overflow-y-auto scrollbar-hide" style="background-color: var(--color-bg-secondary);">
-                <nav class="p-4">
-                    <ul class="space-y-1">
-                        <li v-for="item in navigation" :key="item.name">
-                            <Link :href="item.href" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
-                                <component 
-                                    :is="item.icon" 
-                                    class="w-5 h-5" 
-                                    :style="{ color: getIconColor(item.key) }"
-                                />
-                                <span>{{ item.name }}</span>
-                            </Link>
-                        </li>
-                    </ul>
-                    
-                    <template v-if="user">
-                        <!-- Mobile Create Actions -->
-                        <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
-                            <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">{{ t('nav.create') || 'Create' }}</h3>
-                            <ul class="space-y-1">
-                                <li>
-                                    <Link href="/upload" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
-                                        <Film class="w-5 h-5" style="color: var(--color-text-secondary);" />
-                                        <span>{{ t('nav.upload_video') || 'Upload Video' }}</span>
-                                    </Link>
-                                </li>
-                                <li v-if="liveStreamingEnabled">
-                                    <Link href="/go-live" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
-                                        <Radio class="w-5 h-5" style="color: var(--color-text-secondary);" />
-                                        <span>{{ t('nav.go_live') || 'Go Live' }}</span>
-                                    </Link>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <!-- Mobile Custom Menu Items -->
-                        <div v-if="mobileMenuItems.length" class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
-                            <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">{{ t('nav.browse') || 'Browse' }}</h3>
-                            <ul class="space-y-1">
-                                <template v-for="item in mobileMenuItems" :key="item.id">
-                                    <li v-if="item.type === 'divider'" class="my-2 mx-3 border-t" style="border-color: var(--color-border);"></li>
-                                    <li v-else-if="item.children?.length">
-                                        <p class="px-3 py-1 text-xs font-semibold uppercase tracking-wider" style="color: var(--color-text-muted);">{{ item.label }}</p>
-                                        <ul class="space-y-0.5 pl-2">
-                                            <li v-for="child in item.children" :key="child.id">
-                                                <Link
-                                                    :href="child.url || '#'"
-                                                    :target="child.target || '_self'"
-                                                    class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80"
-                                                    style="color: var(--color-text-secondary);"
-                                                >
-                                                    <component v-if="child.icon && getMenuIcon(child.icon)" :is="getMenuIcon(child.icon)" class="w-4 h-4" />
-                                                    <span class="text-sm">{{ child.label }}</span>
-                                                </Link>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                    <li v-else>
-                                        <Link
-                                            :href="item.url || '#'"
-                                            :target="item.target || '_self'"
-                                            class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80"
-                                            style="color: var(--color-text-secondary);"
-                                        >
-                                            <component v-if="item.icon && getMenuIcon(item.icon)" :is="getMenuIcon(item.icon)" class="w-5 h-5" />
-                                            <span>{{ item.label }}</span>
-                                        </Link>
-                                    </li>
-                                </template>
-                            </ul>
-                        </div>
-
-                        <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
-                            <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">{{ t('nav.library') || 'Library' }}</h3>
-                            <ul class="space-y-1">
-                                <li v-for="item in libraryNav" :key="item.name">
-                                    <Link :href="item.href" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
-                                        <component 
-                                            :is="item.icon" 
-                                            class="w-5 h-5" 
-                                            :style="{ color: getIconColor(item.key) }"
-                                        />
-                                        <span>{{ item.name }}</span>
-                                    </Link>
-                                </li>
-                            </ul>
-                        </div>
-                    </template>
-
-                    <!-- Language Switcher (Mobile) -->
-                    <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
-                        <LanguageSwitcher direction="down" />
-                    </div>
-                </nav>
-            </aside>
-        </div>
-
         <!-- Main Content -->
         <main 
             v-motion
@@ -683,7 +625,7 @@ const toggleSidebar = () => {
             :class="['transition-all duration-300', sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-sidebar']"
             :style="{ paddingTop: headerMenuItems.length ? '96px' : '56px' }"
         >
-            <div class="px-3 py-4 sm:p-4 lg:p-6">
+            <div class="px-3 py-4 pb-20 lg:pb-4 sm:p-4 sm:pb-20 lg:p-6">
                 <slot />
             </div>
         </main>
@@ -698,18 +640,19 @@ const toggleSidebar = () => {
                 class="w-full max-w-lg card p-4 shadow-xl"
                 style="background-color: var(--color-bg-card);"
             >
-                <form @submit.prevent="handleMobileSearch" class="flex items-center gap-2">
+                <form @submit.prevent="handleMobileSearch" class="flex items-center gap-2" role="search">
                     <input
                         v-model="mobileSearchQuery"
                         type="text"
                         :placeholder="t('common.search_placeholder') || 'Search videos...'"
                         class="input flex-1"
+                        aria-label="Search videos"
                         autofocus
                     />
-                    <button type="submit" class="btn btn-primary p-2">
+                    <button type="submit" class="btn btn-primary p-2" aria-label="Search">
                         <Search class="w-5 h-5" />
                     </button>
-                    <button type="button" @click="showMobileSearch = false" class="p-2 rounded-full" style="color: var(--color-text-secondary);">
+                    <button type="button" @click="showMobileSearch = false" class="p-2 rounded-full" style="color: var(--color-text-secondary);" aria-label="Close search">
                         <X class="w-5 h-5" />
                     </button>
                 </form>
@@ -718,6 +661,7 @@ const toggleSidebar = () => {
 
         <!-- Footer -->
         <footer
+            ref="footerRef"
             :class="['transition-all duration-300 py-6 px-4 mt-8', sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-sidebar']"
             style="border-top: 1px solid var(--color-border);"
         >
@@ -761,14 +705,64 @@ const toggleSidebar = () => {
             </div>
         </footer>
 
+        <!-- Mobile Bottom Navbar Dock -->
+        <Transition name="mobile-nav">
+            <nav
+                v-if="showMobileNav"
+                class="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-32px)] max-w-lg lg:hidden"
+                aria-label="Mobile navigation"
+            >
+                <div
+                    class="flex justify-between items-center px-3 py-2 rounded-2xl shadow-lg backdrop-blur-lg"
+                    :style="{
+                        backgroundColor: isDark ? 'rgba(31, 41, 55, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+                        border: isDark ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(255, 255, 255, 0.3)',
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                    }"
+                >
+                    <template v-for="item in mobileNavItems" :key="item.name">
+                        <!-- Center Upload Button -->
+                        <Link
+                            v-if="item.isCenter"
+                            :href="item.href"
+                            class="flex flex-col items-center justify-center p-3 rounded-full shadow-lg -translate-y-2 active:scale-95 transition-all duration-200"
+                            :style="{ backgroundColor: 'var(--color-accent)' }"
+                            :aria-label="item.name"
+                        >
+                            <component :is="item.icon" class="w-6 h-6 text-white" />
+                        </Link>
+                        <!-- Regular Nav Button -->
+                        <component
+                            v-else
+                            :is="item.href ? Link : 'button'"
+                            :href="item.href || undefined"
+                            class="flex flex-col items-center justify-center p-2 group"
+                            :aria-label="item.name"
+                            @click="!item.href ? handleMobileNavClick(item) : null"
+                        >
+                            <component
+                                :is="item.icon"
+                                class="w-5 h-5 transition-colors"
+                                :style="{ color: 'var(--color-text-secondary)' }"
+                            />
+                            <span
+                                class="text-[10px] mt-0.5 transition-colors"
+                                style="color: var(--color-text-muted);"
+                            >{{ item.name }}</span>
+                        </component>
+                    </template>
+                </div>
+            </nav>
+        </Transition>
+
         <!-- Login Modal -->
         <Teleport to="body">
             <Transition name="login-modal">
-                <div v-if="showLoginModal && !user" class="fixed inset-0 z-[9998] flex items-center justify-center p-4" @click.self="showLoginModal = false">
+                <div v-if="showLoginModal && !user" class="fixed inset-0 z-[9998] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Sign in" @click.self="showLoginModal = false">
                     <div class="fixed inset-0 bg-black/60" style="backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);" @click="showLoginModal = false"></div>
                     <div class="relative w-full max-w-md rounded-xl shadow-2xl" style="background-color: var(--color-bg-card);">
                         <!-- Close button -->
-                        <button @click="showLoginModal = false" class="absolute top-3 right-3 p-1 rounded-full hover:opacity-80" style="color: var(--color-text-muted);">
+                        <button @click="showLoginModal = false" class="absolute top-3 right-3 p-1 rounded-full hover:opacity-80" style="color: var(--color-text-muted);" aria-label="Close login">
                             <X class="w-5 h-5" />
                         </button>
 
@@ -811,6 +805,7 @@ const toggleSidebar = () => {
                                             type="button"
                                             @click="showLoginPassword = !showLoginPassword"
                                             class="absolute right-3 top-1/2 -translate-y-1/2" style="color: var(--color-text-secondary);"
+                                            :aria-label="showLoginPassword ? 'Hide password' : 'Show password'"
                                         >
                                             <EyeOff v-if="showLoginPassword" class="w-5 h-5" />
                                             <Eye v-else class="w-5 h-5" />
@@ -902,5 +897,23 @@ const toggleSidebar = () => {
 .translate-fade-enter-from,
 .translate-fade-leave-to {
     opacity: 0;
+}
+
+/* Mobile bottom navbar slide transition */
+.mobile-nav-enter-active {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease-out;
+}
+.mobile-nav-leave-active {
+    transition: transform 0.25s ease-in, opacity 0.25s ease-in;
+}
+.mobile-nav-enter-from,
+.mobile-nav-leave-to {
+    transform: translateX(-50%) translateY(100%);
+    opacity: 0;
+}
+.mobile-nav-enter-to,
+.mobile-nav-leave-from {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
 }
 </style>

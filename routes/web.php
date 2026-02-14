@@ -112,6 +112,7 @@ Route::middleware('age.verified')->group(function () {
     Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,1')->name('contact.store');
     Route::get('/categories', [HomeController::class, 'categories'])->name('categories.index');
     Route::get('/category/{category:slug}', [HomeController::class, 'category'])->name('categories.show');
+    Route::get('/tags', [HomeController::class, 'tags'])->name('tags.index');
     Route::get('/tag/{tag}', [HomeController::class, 'tag'])->name('tags.show');
 
     Route::get('/channel/{user:username}', [ChannelController::class, 'show'])->name('channel.show');
@@ -253,6 +254,7 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/contact', [ContactController::class, 'show'])->name('locale.contact');
         Route::get('/categories', [HomeController::class, 'categories'])->name('locale.categories.index');
         Route::get('/category/{slug}', [HomeController::class, 'localeCategory'])->name('locale.categories.show');
+        Route::get('/tags', [HomeController::class, 'localeTags'])->name('locale.tags.index');
         Route::get('/tag/{tag}', [HomeController::class, 'localeTag'])->name('locale.tags.show');
         Route::get('/channel/{username}', [ChannelController::class, 'localeShow'])->name('locale.channel.show');
         Route::get('/live', [LiveStreamController::class, 'index'])->name('locale.live.index');

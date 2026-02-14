@@ -162,6 +162,7 @@ class HandleInertiaRequests extends Middleware
             'site_logo' => $this->storageUrl($this->s('site_logo', '')),
             'site_favicon' => $this->storageUrl($this->s('site_favicon', '')),
             'footer_logo_url' => $this->storageUrl($this->s('footer_logo_url', '')),
+            'progressBarColor' => $this->s('progress_bar_color', ''),
             'footer_ad_enabled' => (bool) $this->s('footer_ad_enabled', false),
             'footer_ad_code' => $this->s('footer_ad_code', ''),
             'footer_ad_mobile_code' => $this->s('footer_ad_mobile_code', ''),

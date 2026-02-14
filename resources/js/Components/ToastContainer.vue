@@ -69,6 +69,7 @@ const getStyles = (type) => {
                         @click="remove(toast.id)"
                         class="flex-shrink-0 p-1 rounded hover:opacity-70 transition-opacity"
                         style="color: var(--color-text-secondary);"
+                        aria-label="Dismiss notification"
                     >
                         <X class="w-4 h-4" />
                     </button>

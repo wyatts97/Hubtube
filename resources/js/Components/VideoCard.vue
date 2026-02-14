@@ -88,6 +88,7 @@ const onPreviewLoad = () => { previewLoaded.value = true; };
         :enter="{ opacity: 1, y: 0, transition: { duration: 0.2 } }"
         :href="videoUrl" 
         class="video-card"
+        :aria-label="`${video.title} — ${video.user?.username || 'Unknown'} — ${formattedViews} views`"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
     >

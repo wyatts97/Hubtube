@@ -42,6 +42,7 @@ const thumbRadius = computed(() => {
         target="_blank"
         rel="noopener noreferrer sponsored"
         class="video-card"
+        :aria-label="`Sponsored: ${card.title}`"
     >
         <div class="thumbnail relative overflow-hidden" :style="{ borderRadius: thumbRadius }">
             <img

@@ -239,6 +239,51 @@ class HomeController extends Controller
         return $this->category($category);
     }
 
+    public function tags(): Response
+    {
+        // Get all unique tags from public, approved, processed videos
+        $videos = Video::query()
+            ->public()
+            ->approved()
+            ->processed()
+            ->whereNotNull('tags')
+            ->select('tags', 'thumbnail_url', 'thumbnail', 'published_at')
+            ->latest('published_at')
+            ->get();
+
+        $tagMap = [];
+        foreach ($videos as $video) {
+            if (!is_array($video->tags)) continue;
+            foreach ($video->tags as $tag) {
+                $tag = trim($tag);
+                if (empty($tag)) continue;
+                if (!isset($tagMap[$tag])) {
+                    $tagMap[$tag] = [
+                        'name' => $tag,
+                        'count' => 0,
+                        'thumbnail' => null,
+                    ];
+                }
+                $tagMap[$tag]['count']++;
+                if (!$tagMap[$tag]['thumbnail']) {
+                    $tagMap[$tag]['thumbnail'] = $video->thumbnail_url ?? $video->thumbnail;
+                }
+            }
+        }
+
+        // Sort by count descending
+        $tags = collect(array_values($tagMap))->sortByDesc('count')->values()->all();
+
+        return Inertia::render('Tags/Index', [
+            'tags' => $tags,
+        ]);
+    }
+
+    public function localeTags(string $locale): Response
+    {
+        return $this->tags();
+    }
+
     public function localeTag(string $locale, string $tag): Response
     {
         return $this->tag($tag);

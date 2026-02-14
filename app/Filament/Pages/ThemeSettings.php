@@ -193,6 +193,9 @@ class ThemeSettings extends Page implements HasForms
             'video_card_meta_color' => Setting::get('video_card_meta_color', ''),
             'video_card_border_radius' => Setting::get('video_card_border_radius', 12),
             'mobile_video_grid' => Setting::get('mobile_video_grid', '1'),
+
+            // Progress Bar
+            'progress_bar_color' => Setting::get('progress_bar_color', ''),
         ]);
     }
 
@@ -290,6 +293,13 @@ class ThemeSettings extends Page implements HasForms
                                             ->schema([
                                                 \Filament\Forms\Components\View::make('filament.components.site-title-preview'),
                                             ]),
+                                    ]),
+
+                                Section::make('Page Loading Bar')
+                                    ->description('A thin progress bar shown at the top of the page during navigation. Leave empty to use the accent color.')
+                                    ->schema([
+                                        ColorPicker::make('progress_bar_color')
+                                            ->label('Progress Bar Color'),
                                     ]),
                             ]),
                         
