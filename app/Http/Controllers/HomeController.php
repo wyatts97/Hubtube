@@ -247,7 +247,7 @@ class HomeController extends Controller
             ->approved()
             ->processed()
             ->whereNotNull('tags')
-            ->select('tags', 'thumbnail_url', 'thumbnail', 'published_at')
+            ->select('tags', 'thumbnail', 'external_thumbnail_url', 'storage_disk', 'published_at')
             ->latest('published_at')
             ->get();
 

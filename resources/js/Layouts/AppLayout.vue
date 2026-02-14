@@ -45,6 +45,7 @@ const submitLogin = () => {
         onSuccess: () => {
             showLoginModal.value = false;
             loginForm.reset();
+            window.location.reload();
         },
         onFinish: () => {
             loginForm.reset('password');
@@ -245,12 +246,17 @@ const handleScroll = () => {
     lastScrollY.value = currentY;
 };
 
+const tSafe = (key, fallback) => {
+    const val = t(key);
+    return val !== key ? val : fallback;
+};
+
 const mobileNavItems = computed(() => [
-    { name: t('nav.home') || 'Home', href: localizedUrl('/'), icon: Home },
-    { name: t('common.search') || 'Search', href: null, action: 'search', icon: Search },
-    { name: t('nav.upload') || 'Upload', href: '/upload', icon: Plus, isCenter: true },
-    { name: t('nav.trending') || 'Trending', href: localizedUrl('/trending'), icon: TrendingUp },
-    { name: t('nav.categories') || 'Categories', href: localizedUrl('/categories'), icon: LayoutGrid },
+    { name: tSafe('nav.home', 'Home'), href: localizedUrl('/'), icon: Home },
+    { name: tSafe('common.search', 'Search'), href: null, action: 'search', icon: Search },
+    { name: tSafe('nav.upload', 'Upload'), href: '/upload', icon: Plus, isCenter: true },
+    { name: tSafe('nav.trending', 'Trending'), href: localizedUrl('/trending'), icon: TrendingUp },
+    { name: tSafe('nav.categories', 'Categories'), href: localizedUrl('/categories'), icon: LayoutGrid },
 ]);
 
 const handleMobileNavClick = (item) => {
@@ -709,16 +715,12 @@ const handleMobileNavClick = (item) => {
         <Transition name="mobile-nav">
             <nav
                 v-if="showMobileNav"
-                class="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-32px)] max-w-lg lg:hidden"
+                class="fixed bottom-4 left-0 right-0 z-40 mx-auto w-[calc(100%-32px)] max-w-lg lg:hidden"
                 aria-label="Mobile navigation"
             >
                 <div
-                    class="flex justify-between items-center px-3 py-2 rounded-2xl shadow-lg backdrop-blur-lg"
-                    :style="{
-                        backgroundColor: isDark ? 'rgba(31, 41, 55, 0.85)' : 'rgba(255, 255, 255, 0.85)',
-                        border: isDark ? '1px solid rgba(75, 85, 99, 0.5)' : '1px solid rgba(255, 255, 255, 0.3)',
-                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-                    }"
+                    class="flex justify-between items-center px-3 py-2 rounded-2xl shadow-lg"
+                    style="background-color: var(--color-bg-secondary); border: 1px solid var(--color-border);"
                 >
                     <template v-for="item in mobileNavItems" :key="item.name">
                         <!-- Center Upload Button -->
@@ -908,12 +910,12 @@ const handleMobileNavClick = (item) => {
 }
 .mobile-nav-enter-from,
 .mobile-nav-leave-to {
-    transform: translateX(-50%) translateY(100%);
+    transform: translateY(100%);
     opacity: 0;
 }
 .mobile-nav-enter-to,
 .mobile-nav-leave-from {
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
     opacity: 1;
 }
 </style>

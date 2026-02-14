@@ -108,8 +108,8 @@ class SponsoredCardResource extends Resource
                 Tables\Columns\ImageColumn::make('thumbnail_url')
                     ->label('Thumb')
                     ->disk('public')
-                    ->width(80)
-                    ->height(45),
+                    ->square()
+                    ->size(60),
                 Tables\Columns\TextColumn::make('title')
                     ->searchable()
                     ->weight('bold')
@@ -118,15 +118,13 @@ class SponsoredCardResource extends Resource
                     ->label('URL')
                     ->limit(30)
                     ->color('gray'),
-                Tables\Columns\TextColumn::make('target_pages')
+                Tables\Columns\TextColumn::make('target_pages_display')
                     ->label('Pages')
                     ->getStateUsing(function ($record) {
                         $pages = $record->target_pages;
-                        if (!$pages || empty($pages)) return 'All';
+                        if (!$pages || !is_array($pages) || empty($pages)) return 'All';
                         return implode(', ', array_map('ucfirst', $pages));
-                    })
-                    ->badge()
-                    ->color('info'),
+                    }),
                 Tables\Columns\TextColumn::make('frequency')
                     ->label('Every N')
                     ->alignCenter(),
