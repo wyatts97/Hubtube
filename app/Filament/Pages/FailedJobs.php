@@ -10,7 +10,8 @@ use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
-use Illuminate\Database\Query\Builder;
+use App\Models\FailedJob;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -37,7 +38,7 @@ class FailedJobs extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn (): Builder => DB::table('failed_jobs'))
+            ->query(FailedJob::query())
             ->defaultSort('failed_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('id')
@@ -122,7 +123,7 @@ class FailedJobs extends Page implements HasTable
                     ->color('danger')
                     ->requiresConfirmation()
                     ->action(function ($record) {
-                        DB::table('failed_jobs')->where('id', $record->id)->delete();
+                        FailedJob::where('id', $record->id)->delete();
                         Notification::make()->title('Failed job deleted')->success()->send();
                     }),
             ])
@@ -147,7 +148,7 @@ class FailedJobs extends Page implements HasTable
                     ->requiresConfirmation()
                     ->deselectRecordsAfterCompletion()
                     ->action(function ($records) {
-                        DB::table('failed_jobs')->whereIn('id', $records->pluck('id'))->delete();
+                        FailedJob::whereIn('id', $records->pluck('id'))->delete();
                         Notification::make()->title(count($records) . ' failed jobs deleted')->success()->send();
                     }),
             ])
