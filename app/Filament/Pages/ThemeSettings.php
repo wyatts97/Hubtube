@@ -5,11 +5,13 @@ namespace App\Filament\Pages;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use Filament\Forms\Components\ColorPicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -97,6 +99,14 @@ class ThemeSettings extends Page implements HasForms
     public function mount(): void
     {
         $this->form->fill([
+            // Site Information (moved from SiteSettings)
+            'site_name' => Setting::get('site_name', config('app.name')),
+            'site_description' => Setting::get('site_description', ''),
+            'site_keywords' => Setting::get('site_keywords', ''),
+            'site_logo' => Setting::get('site_logo', ''),
+            'site_favicon' => Setting::get('site_favicon', ''),
+            'primary_color' => Setting::get('primary_color', '#ef4444'),
+
             // Site Title Settings
             'site_title' => Setting::get('site_title', 'HubTube'),
             'site_title_font' => Setting::get('site_title_font', ''),
@@ -165,6 +175,7 @@ class ThemeSettings extends Page implements HasForms
             'category_title_opacity' => Setting::get('category_title_opacity', 90),
 
             // Footer Settings
+            'footer_logo_match_site' => Setting::get('footer_logo_match_site', false),
             'footer_logo_url' => Setting::get('footer_logo_url', ''),
 
             // Video Card Customization
@@ -191,9 +202,63 @@ class ThemeSettings extends Page implements HasForms
             ->schema([
                 Tabs::make('Theme Settings')
                     ->tabs([
-                        Tabs\Tab::make('Site Title')
-                            ->icon('heroicon-o-pencil')
+                        Tabs\Tab::make('Identity & Appearance')
+                            ->icon('heroicon-o-identification')
                             ->schema([
+                                Section::make('Site Information')
+                                    ->schema([
+                                        TextInput::make('site_name')
+                                            ->label('Site Name')
+                                            ->required()
+                                            ->maxLength(100),
+                                        Textarea::make('site_description')
+                                            ->label('Site Description')
+                                            ->rows(3)
+                                            ->maxLength(500),
+                                        TextInput::make('site_keywords')
+                                            ->label('SEO Keywords')
+                                            ->placeholder('comma, separated, keywords'),
+                                        TextInput::make('primary_color')
+                                            ->label('Primary Color')
+                                            ->type('color'),
+                                    ])->columns(2),
+
+                                Section::make('Site Logo')
+                                    ->description('Upload your site logo and favicon. These are displayed in the header, browser tab, and PWA icon.')
+                                    ->schema([
+                                        FileUpload::make('site_logo')
+                                            ->label('Site Logo')
+                                            ->image()
+                                            ->directory('logos')
+                                            ->visibility('public')
+                                            ->imageResizeMode('contain')
+                                            ->imageCropAspectRatio(null)
+                                            ->helperText('Recommended: PNG with transparency, max height 40px display size'),
+                                        FileUpload::make('site_favicon')
+                                            ->label('Favicon')
+                                            ->acceptedFileTypes(['image/x-icon', 'image/png', 'image/svg+xml', 'image/vnd.microsoft.icon'])
+                                            ->directory('logos')
+                                            ->visibility('public')
+                                            ->helperText('Upload a .ico, .png, or .svg favicon (recommended: 32x32 or 64x64)'),
+                                    ])->columns(2),
+
+                                Section::make('Footer Logo')
+                                    ->description('Display a logo in the footer above the legal links. Leave empty to show the site title text instead.')
+                                    ->schema([
+                                        Toggle::make('footer_logo_match_site')
+                                            ->label('Use Site Logo for Footer')
+                                            ->helperText('When enabled, the footer will use the same logo as the site header')
+                                            ->reactive()
+                                            ->columnSpanFull(),
+                                        FileUpload::make('footer_logo_url')
+                                            ->label('Footer Logo')
+                                            ->image()
+                                            ->directory('logos')
+                                            ->visibility('public')
+                                            ->helperText('Upload a separate footer logo, or leave empty to show the site title')
+                                            ->visible(fn ($get) => !$get('footer_logo_match_site')),
+                                    ]),
+
                                 Section::make('Site Title Customization')
                                     ->description('Customize your site title appearance with Google Fonts')
                                     ->schema([
@@ -502,19 +567,6 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
                             ]),
 
-                        Tabs\Tab::make('Footer Branding')
-                            ->icon('heroicon-o-rectangle-group')
-                            ->schema([
-                                Section::make('Footer Logo / Branding')
-                                    ->description('Display a logo or site title centered in the footer above the legal links. Ad banners are configured in Ad Settings.')
-                                    ->schema([
-                                        TextInput::make('footer_logo_url')
-                                            ->label('Footer Logo URL')
-                                            ->placeholder('/images/logo.png or https://...')
-                                            ->helperText('Leave empty to show the site title text instead'),
-                                    ]),
-                            ]),
-
                         Tabs\Tab::make('Age Verification')
                             ->icon('heroicon-o-shield-check')
                             ->schema([
@@ -610,6 +662,14 @@ class ThemeSettings extends Page implements HasForms
     {
         $data = $this->form->getState();
 
+        // If footer_logo_match_site is on, copy site_logo path to footer_logo_url
+        if (!empty($data['footer_logo_match_site'])) {
+            $data['footer_logo_url'] = $data['site_logo'] ?? '';
+        }
+
+        // These keys originated from SiteSettings and must stay in the 'general' group
+        $generalKeys = ['site_name', 'site_description', 'site_keywords', 'site_logo', 'site_favicon', 'primary_color'];
+
         foreach ($data as $key => $value) {
             $type = match (true) {
                 is_bool($value) => 'boolean',
@@ -618,7 +678,8 @@ class ThemeSettings extends Page implements HasForms
                 default => 'string',
             };
 
-            Setting::set($key, $value, 'theme', $type);
+            $group = in_array($key, $generalKeys) ? 'general' : 'theme';
+            Setting::set($key, $value, $group, $type);
         }
 
         AdminLogger::settingsSaved('Theme', array_keys($data));

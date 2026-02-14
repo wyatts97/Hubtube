@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\LiveStream;
 use App\Models\Setting;
+use App\Models\SponsoredCard;
 use App\Models\Video;
 use App\Services\SeoService;
 use App\Services\TranslationService;
@@ -93,6 +94,7 @@ class HomeController extends Controller
             'categories' => $categories,
             'adSettings' => $adSettings,
             'seo' => $this->seoService->forHome(),
+            'sponsoredCards' => SponsoredCard::getForPage('home', auth()->user()?->role ?? 'guest'),
         ]);
     }
 
@@ -137,6 +139,7 @@ class HomeController extends Controller
                 'videoGridCode' => (string) Setting::get('video_grid_ad_code', ''),
                 'videoGridFrequency' => (int) Setting::get('video_grid_ad_frequency', 8),
             ],
+            'sponsoredCards' => SponsoredCard::getForPage('trending', auth()->user()?->role ?? 'guest'),
         ]);
     }
 
@@ -208,6 +211,15 @@ class HomeController extends Controller
             'translatedDescription' => $translatedDescription,
             'videos' => $videos,
             'seo' => $this->seoService->forCategory($category),
+            'bannerAd' => [
+                'enabled' => Setting::get('category_banner_ad_enabled', false),
+                'code' => Setting::get('category_banner_ad_code', ''),
+            ],
+            'sponsoredCards' => SponsoredCard::getForPage(
+                'category',
+                auth()->user()?->role ?? 'guest',
+                $category->id,
+            ),
         ]);
     }
 

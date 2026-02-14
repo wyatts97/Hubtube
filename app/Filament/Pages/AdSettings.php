@@ -88,6 +88,27 @@ class AdSettings extends Page implements HasForms, HasTable
             // Browse Page Banner Ad
             'browse_banner_ad_enabled' => Setting::get('browse_banner_ad_enabled', false),
             'browse_banner_ad_code' => Setting::get('browse_banner_ad_code', ''),
+
+            // Search Results Banner Ad
+            'search_banner_ad_enabled' => Setting::get('search_banner_ad_enabled', false),
+            'search_banner_ad_code' => Setting::get('search_banner_ad_code', ''),
+
+            // Channel Page Banner Ad
+            'channel_banner_ad_enabled' => Setting::get('channel_banner_ad_enabled', false),
+            'channel_banner_ad_code' => Setting::get('channel_banner_ad_code', ''),
+
+            // Category Page Banner Ad
+            'category_banner_ad_enabled' => Setting::get('category_banner_ad_enabled', false),
+            'category_banner_ad_code' => Setting::get('category_banner_ad_code', ''),
+
+            // Custom Ad Scripts (ExoClick, etc.)
+            'custom_popunder_enabled' => Setting::get('custom_popunder_enabled', false),
+            'custom_popunder_code' => Setting::get('custom_popunder_code', ''),
+            'custom_interstitial_enabled' => Setting::get('custom_interstitial_enabled', false),
+            'custom_interstitial_code' => Setting::get('custom_interstitial_code', ''),
+            'custom_sticky_banner_enabled' => Setting::get('custom_sticky_banner_enabled', false),
+            'custom_sticky_banner_code' => Setting::get('custom_sticky_banner_code', ''),
+            'custom_sticky_banner_mobile_code' => Setting::get('custom_sticky_banner_mobile_code', ''),
         ]);
     }
 
@@ -287,6 +308,106 @@ class AdSettings extends Page implements HasForms, HasTable
                             ->rows(4)
                             ->placeholder('<ins class="adsbygoogle" ...></ins>')
                             ->visible(fn ($get) => $get('browse_banner_ad_enabled')),
+                    ]),
+
+                Section::make('Search Results Banner Ad')
+                    ->description('728×90 desktop / 300×50 mobile ad banner displayed at the top of search results.')
+                    ->icon('heroicon-o-magnifying-glass')
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        Toggle::make('search_banner_ad_enabled')
+                            ->label('Enable Search Results Banner'),
+                        Textarea::make('search_banner_ad_code')
+                            ->label('Ad Code (HTML)')
+                            ->rows(4)
+                            ->placeholder('<ins class="adsbygoogle" ...></ins>')
+                            ->visible(fn ($get) => $get('search_banner_ad_enabled')),
+                    ]),
+
+                Section::make('Channel Page Banner Ad')
+                    ->description('728×90 desktop / 300×50 mobile ad banner displayed below the channel header, above videos.')
+                    ->icon('heroicon-o-user')
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        Toggle::make('channel_banner_ad_enabled')
+                            ->label('Enable Channel Page Banner'),
+                        Textarea::make('channel_banner_ad_code')
+                            ->label('Ad Code (HTML)')
+                            ->rows(4)
+                            ->placeholder('<ins class="adsbygoogle" ...></ins>')
+                            ->visible(fn ($get) => $get('channel_banner_ad_enabled')),
+                    ]),
+
+                Section::make('Category Page Banner Ad')
+                    ->description('728×90 desktop / 300×50 mobile ad banner displayed at the top of category listing pages.')
+                    ->icon('heroicon-o-tag')
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        Toggle::make('category_banner_ad_enabled')
+                            ->label('Enable Category Page Banner'),
+                        Textarea::make('category_banner_ad_code')
+                            ->label('Ad Code (HTML)')
+                            ->rows(4)
+                            ->placeholder('<ins class="adsbygoogle" ...></ins>')
+                            ->visible(fn ($get) => $get('category_banner_ad_enabled')),
+                    ]),
+
+                // ── Custom Ad Scripts (ExoClick, etc.) ──
+                Section::make('Popunder Ad')
+                    ->description('Full-page popunder ad that opens in a new tab/window. Commonly used with ExoClick, JuicyAds, etc. The script is injected site-wide on every page load.')
+                    ->icon('heroicon-o-window')
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        Toggle::make('custom_popunder_enabled')
+                            ->label('Enable Popunder Ad'),
+                        Textarea::make('custom_popunder_code')
+                            ->label('Popunder Script Code')
+                            ->rows(6)
+                            ->placeholder('<script src="https://a.magsrv.com/ad-provider.js"></script>...')
+                            ->helperText('Paste the full ad network script tag. This will be injected before </body> on every page.')
+                            ->visible(fn ($get) => $get('custom_popunder_enabled')),
+                    ]),
+
+                Section::make('Interstitial / Full-Page Ad')
+                    ->description('Full-screen interstitial ad overlay. Typically shown on page transitions or after a set interval. Used by ExoClick, Adsterra, etc.')
+                    ->icon('heroicon-o-arrows-pointing-out')
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        Toggle::make('custom_interstitial_enabled')
+                            ->label('Enable Interstitial Ad'),
+                        Textarea::make('custom_interstitial_code')
+                            ->label('Interstitial Script Code')
+                            ->rows(6)
+                            ->placeholder('<script src="https://a.magsrv.com/ad-provider.js"></script>...')
+                            ->helperText('Paste the full ad network script tag. This will be injected before </body> on every page.')
+                            ->visible(fn ($get) => $get('custom_interstitial_enabled')),
+                    ]),
+
+                Section::make('Sticky Banner / Video Slider Ad')
+                    ->description('Sticky banner or video slider ad that stays fixed at the bottom of the viewport. Separate codes for desktop and mobile. Used by ExoClick, TrafficStars, etc.')
+                    ->icon('heroicon-o-bars-arrow-down')
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        Toggle::make('custom_sticky_banner_enabled')
+                            ->label('Enable Sticky Banner Ad'),
+                        Textarea::make('custom_sticky_banner_code')
+                            ->label('Desktop Sticky Banner Code')
+                            ->rows(6)
+                            ->placeholder('<script src="https://a.magsrv.com/ad-provider.js"></script>...')
+                            ->helperText('Shown on screens ≥768px wide.')
+                            ->visible(fn ($get) => $get('custom_sticky_banner_enabled')),
+                        Textarea::make('custom_sticky_banner_mobile_code')
+                            ->label('Mobile Sticky Banner Code')
+                            ->rows(6)
+                            ->placeholder('<script src="https://a.magsrv.com/ad-provider.js"></script>...')
+                            ->helperText('Shown on screens <768px wide. Leave empty to use the desktop code on all devices.')
+                            ->visible(fn ($get) => $get('custom_sticky_banner_enabled')),
                     ]),
             ])
             ->statePath('data');

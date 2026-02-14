@@ -1,10 +1,13 @@
 <script setup>
 import { Link, router } from '@inertiajs/vue3';
 import SeoHead from '@/Components/SeoHead.vue';
+import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
+import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import { sanitizeHtml } from '@/Composables/useSanitize';
 
 const { t, localizedUrl } = useI18n();
 
@@ -14,7 +17,23 @@ const props = defineProps({
     translatedDescription: { type: String, default: null },
     videos: Object,
     seo: { type: Object, default: () => ({}) },
+    bannerAd: { type: Object, default: () => ({}) },
+    sponsoredCards: { type: Array, default: () => [] },
 });
+
+const bannerEnabled = computed(() => {
+    const e = props.bannerAd?.enabled;
+    return e === true || e === 'true' || e === 1 || e === '1';
+});
+const bannerCode = computed(() => sanitizeHtml(props.bannerAd?.code || ''));
+
+const sponsoredFrequency = computed(() => props.sponsoredCards?.[0]?.frequency || 8);
+const getSponsoredCard = (index) => {
+    if (!props.sponsoredCards?.length) return null;
+    if ((index + 1) % sponsoredFrequency.value !== 0) return null;
+    const cardIndex = Math.floor((index + 1) / sponsoredFrequency.value) - 1;
+    return props.sponsoredCards[cardIndex % props.sponsoredCards.length] || null;
+};
 
 const displayName = props.translatedName || props.category.name;
 const displayDescription = props.translatedDescription || props.category.description;
@@ -28,6 +47,11 @@ const goToPage = (pageNum) => {
     <SeoHead :seo="seo" />
 
     <AppLayout>
+        <!-- Top Ad Banner -->
+        <div v-if="bannerEnabled && bannerCode" class="mb-4 flex justify-center">
+            <div v-html="bannerCode"></div>
+        </div>
+
         <div class="mb-6">
             <div class="flex items-center gap-2 mb-1">
                 <Link :href="localizedUrl('/categories')" class="text-sm hover:opacity-80" style="color: var(--color-accent);">{{ t('categories.title') || 'Categories' }}</Link>
@@ -42,7 +66,13 @@ const goToPage = (pageNum) => {
         </div>
 
         <div v-if="videos.data?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <VideoCard v-for="video in videos.data" :key="video.id" :video="video" />
+            <template v-for="(video, index) in videos.data" :key="video.id">
+                <VideoCard :video="video" />
+                <SponsoredVideoCard
+                    v-if="getSponsoredCard(index)"
+                    :card="getSponsoredCard(index)"
+                />
+            </template>
         </div>
 
         <div v-else class="text-center py-12">

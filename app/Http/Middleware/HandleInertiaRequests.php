@@ -159,7 +159,9 @@ class HandleInertiaRequests extends Middleware
             'site_title' => $this->s('site_title', 'HubTube'),
             'site_title_color' => $this->s('site_title_color', ''),
             'site_title_font' => $this->s('site_title_font', ''),
-            'footer_logo_url' => $this->s('footer_logo_url', ''),
+            'site_logo' => $this->storageUrl($this->s('site_logo', '')),
+            'site_favicon' => $this->storageUrl($this->s('site_favicon', '')),
+            'footer_logo_url' => $this->storageUrl($this->s('footer_logo_url', '')),
             'footer_ad_enabled' => (bool) $this->s('footer_ad_enabled', false),
             'footer_ad_code' => $this->s('footer_ad_code', ''),
             'videoCard' => [
@@ -214,6 +216,24 @@ class HandleInertiaRequests extends Middleware
                 'translations' => [],
             ];
         }
+    }
+
+    /**
+     * Resolve a storage-relative path to a public URL.
+     * Passes through absolute URLs and empty strings unchanged.
+     */
+    protected function storageUrl(?string $path): string
+    {
+        if (!$path) {
+            return '';
+        }
+
+        // Already a full URL or absolute path starting with /
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, '/')) {
+            return $path;
+        }
+
+        return '/storage/' . $path;
     }
 
     protected function getMenuItems(): array

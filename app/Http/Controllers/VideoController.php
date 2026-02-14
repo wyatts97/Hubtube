@@ -7,6 +7,7 @@ use App\Http\Requests\Video\UpdateVideoRequest;
 use App\Models\Video;
 use App\Models\Category;
 use App\Models\Setting;
+use App\Models\SponsoredCard;
 use App\Services\SeoService;
 use App\Services\StorageManager;
 use App\Services\TranslationService;
@@ -65,6 +66,11 @@ class VideoController extends Controller
                 'videoGridCode' => (string) Setting::get('video_grid_ad_code', ''),
                 'videoGridFrequency' => (int) Setting::get('video_grid_ad_frequency', 8),
             ],
+            'sponsoredCards' => SponsoredCard::getForPage(
+                'browse',
+                auth()->user()?->role ?? 'guest',
+                $request->category ? (int) $request->category : null,
+            ),
         ]);
     }
 

@@ -43,12 +43,6 @@ class SiteSettings extends Page implements HasForms
     public function mount(): void
     {
         $this->form->fill([
-            'site_name' => Setting::get('site_name', config('app.name')),
-            'site_description' => Setting::get('site_description', ''),
-            'site_keywords' => Setting::get('site_keywords', ''),
-            'site_logo' => Setting::get('site_logo', ''),
-            'site_favicon' => Setting::get('site_favicon', ''),
-            'primary_color' => Setting::get('primary_color', '#ef4444'),
             'maintenance_mode' => Setting::get('maintenance_mode', false),
             'registration_enabled' => Setting::get('registration_enabled', true),
             'email_verification_required' => Setting::get('email_verification_required', true),
@@ -302,29 +296,6 @@ class SiteSettings extends Page implements HasForms
                     ->tabs([
                         Tabs\Tab::make('General')
                             ->schema([
-                                Section::make('Site Information')
-                                    ->schema([
-                                        TextInput::make('site_name')
-                                            ->label('Site Name')
-                                            ->required()
-                                            ->maxLength(100),
-                                        Textarea::make('site_description')
-                                            ->label('Site Description')
-                                            ->rows(3)
-                                            ->maxLength(500),
-                                        TextInput::make('site_keywords')
-                                            ->label('SEO Keywords')
-                                            ->placeholder('comma, separated, keywords'),
-                                        TextInput::make('site_logo')
-                                            ->label('Logo URL')
-                                            ->url(),
-                                        TextInput::make('site_favicon')
-                                            ->label('Favicon URL')
-                                            ->url(),
-                                        TextInput::make('primary_color')
-                                            ->label('Primary Color')
-                                            ->type('color'),
-                                    ])->columns(2),
                                 Section::make('Site Status')
                                     ->schema([
                                         Toggle::make('maintenance_mode')

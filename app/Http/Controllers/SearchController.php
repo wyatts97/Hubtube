@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Hashtag;
+use App\Models\Setting;
+use App\Models\SponsoredCard;
 use App\Models\User;
 use App\Models\Video;
 use App\Services\SeoService;
@@ -33,6 +35,11 @@ class SearchController extends Controller
             'type' => $type,
             'results' => $results,
             'seo' => $this->seoService->forSearch($query),
+            'bannerAd' => [
+                'enabled' => Setting::get('search_banner_ad_enabled', false),
+                'code' => Setting::get('search_banner_ad_code', ''),
+            ],
+            'sponsoredCards' => SponsoredCard::getForPage('search', auth()->user()?->role ?? 'guest'),
         ]);
     }
 

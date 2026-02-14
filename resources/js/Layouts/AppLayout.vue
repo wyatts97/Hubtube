@@ -230,7 +230,14 @@ const toggleSidebar = () => {
                         <Menu class="w-5 h-5" />
                     </button>
                     <Link href="/" class="flex items-center">
+                        <img
+                            v-if="themeSettings.site_logo"
+                            :src="themeSettings.site_logo"
+                            :alt="themeSettings.siteTitle || 'HubTube'"
+                            class="h-8 object-contain"
+                        />
                         <span 
+                            v-else
                             class="font-bold truncate max-w-[120px] sm:max-w-none"
                             :style="{
                                 color: themeSettings.siteTitleColor || 'var(--color-text-primary)',

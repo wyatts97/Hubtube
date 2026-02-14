@@ -5,6 +5,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
+import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { Loader2 } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
 import { sanitizeHtml } from '@/Composables/useSanitize';
@@ -21,6 +22,7 @@ const props = defineProps({
     videos: Object,
     seo: { type: Object, default: () => ({}) },
     adSettings: { type: Object, default: () => ({}) },
+    sponsoredCards: { type: Array, default: () => [] },
 });
 
 const page = usePage();
@@ -118,6 +120,14 @@ const shouldShowAd = (index, totalLength) => {
     if (!adsEnabled.value || !adCode.value.trim()) return false;
     return (index + 1) % adFrequency.value === 0 && index < totalLength - 1;
 };
+
+const sponsoredFrequency = computed(() => props.sponsoredCards?.[0]?.frequency || 8);
+const getSponsoredCard = (index) => {
+    if (!props.sponsoredCards?.length) return null;
+    if ((index + 1) % sponsoredFrequency.value !== 0) return null;
+    const cardIndex = Math.floor((index + 1) / sponsoredFrequency.value) - 1;
+    return props.sponsoredCards[cardIndex % props.sponsoredCards.length] || null;
+};
 </script>
 
 <template>
@@ -142,6 +152,7 @@ const shouldShowAd = (index, totalLength) => {
                     <div v-if="shouldShowAd(index, videoList.length)" class="col-span-1 flex items-start justify-center rounded-xl p-2">
                         <div v-html="adCode"></div>
                     </div>
+                    <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" />
                 </template>
             </div>
             
@@ -164,6 +175,7 @@ const shouldShowAd = (index, totalLength) => {
                     <div v-if="shouldShowAd(index, videos.data.length)" class="col-span-1 flex items-start justify-center rounded-xl p-2">
                         <div v-html="adCode"></div>
                     </div>
+                    <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" />
                 </template>
             </div>
 

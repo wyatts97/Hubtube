@@ -4,6 +4,7 @@ import SeoHead from '@/Components/SeoHead.vue';
 import { ref, computed } from 'vue';
 import { useFetch } from '@/Composables/useFetch';
 import { useI18n } from '@/Composables/useI18n';
+import { sanitizeHtml } from '@/Composables/useSanitize';
 
 const { t } = useI18n();
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -16,7 +17,14 @@ const props = defineProps({
     isSubscribed: Boolean,
     subscriberCount: Number,
     seo: { type: Object, default: () => ({}) },
+    bannerAd: { type: Object, default: () => ({}) },
 });
+
+const bannerEnabled = computed(() => {
+    const e = props.bannerAd?.enabled;
+    return e === true || e === 'true' || e === 1 || e === '1';
+});
+const bannerCode = computed(() => sanitizeHtml(props.bannerAd?.code || ''));
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
@@ -123,6 +131,11 @@ const tabs = computed(() => [
                     {{ tab.name }}
                 </Link>
             </nav>
+        </div>
+
+        <!-- Banner Ad -->
+        <div v-if="bannerEnabled && bannerCode" class="mb-4 flex justify-center">
+            <div v-html="bannerCode"></div>
         </div>
 
         <!-- Videos Grid -->

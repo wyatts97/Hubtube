@@ -5,11 +5,13 @@ import { ref, watch, onMounted, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
+import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { Search as SearchIcon, Users, Hash } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 import { useI18n } from '@/Composables/useI18n';
 import { useVirtualGrid } from '@/Composables/useVirtualGrid';
+import { sanitizeHtml } from '@/Composables/useSanitize';
 
 const { t } = useI18n();
 
@@ -20,7 +22,23 @@ const props = defineProps({
     type: String,
     results: Object,
     seo: { type: Object, default: () => ({}) },
+    bannerAd: { type: Object, default: () => ({}) },
+    sponsoredCards: { type: Array, default: () => [] },
 });
+
+const sponsoredFrequency = computed(() => props.sponsoredCards?.[0]?.frequency || 8);
+const getSponsoredCard = (index) => {
+    if (!props.sponsoredCards?.length) return null;
+    if ((index + 1) % sponsoredFrequency.value !== 0) return null;
+    const cardIndex = Math.floor((index + 1) / sponsoredFrequency.value) - 1;
+    return props.sponsoredCards[cardIndex % props.sponsoredCards.length] || null;
+};
+
+const bannerEnabled = computed(() => {
+    const e = props.bannerAd?.enabled;
+    return e === true || e === 'true' || e === 1 || e === '1';
+});
+const bannerCode = computed(() => sanitizeHtml(props.bannerAd?.code || ''));
 
 const isInitialLoad = ref(true);
 onMounted(() => { setTimeout(() => { isInitialLoad.value = false; }, 100); });
@@ -89,6 +107,11 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
     <SeoHead :seo="seo" />
 
     <AppLayout>
+        <!-- Top Ad Banner -->
+        <div v-if="bannerEnabled && bannerCode" class="mb-4 flex justify-center">
+            <div v-html="bannerCode"></div>
+        </div>
+
         <div class="mb-4 sm:mb-6">
             <h1 class="text-xl sm:text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('search.title') || 'Search' }}</h1>
         </div>
@@ -136,7 +159,11 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
             </div>
 
             <!-- Video Results -->
-            <template v-else-if="activeType === 'videos'">
+            <template v-if="!isInitialLoad && activeType === 'videos'">
+                <!-- Sponsored Cards (above video results) -->
+                <div v-if="sponsoredCards.length && videoItems.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
+                    <SponsoredVideoCard v-for="card in sponsoredCards.slice(0, 2)" :key="'sp-' + card.id" :card="card" />
+                </div>
                 <div
                     v-if="videoItems.length"
                     v-bind="containerProps"
@@ -158,7 +185,7 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
             </template>
 
             <!-- Channel Results -->
-            <template v-else-if="activeType === 'channels'">
+            <template v-if="activeType === 'channels'">
                 <div v-if="resultsList().length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <a
                         v-for="channel in resultsList()"
@@ -190,7 +217,7 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
             </template>
 
             <!-- Hashtag Results -->
-            <template v-else-if="activeType === 'hashtags'">
+            <template v-if="activeType === 'hashtags'">
                 <div v-if="resultsList().length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div
                         v-for="hashtag in resultsList()"

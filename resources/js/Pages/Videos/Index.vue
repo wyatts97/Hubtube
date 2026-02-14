@@ -3,6 +3,7 @@ import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
+import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { Filter, X, ArrowUpDown, Clock, Flame, CalendarDays } from 'lucide-vue-next';
 import { sanitizeHtml } from '@/Composables/useSanitize';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
@@ -19,6 +20,7 @@ const props = defineProps({
     filters: Object,
     bannerAd: { type: Object, default: () => ({}) },
     adSettings: { type: Object, default: () => ({}) },
+    sponsoredCards: { type: Array, default: () => [] },
 });
 
 const category = ref(props.filters?.category || '');
@@ -98,6 +100,15 @@ const adFrequency = computed(() => parseInt(props.adSettings?.videoGridFrequency
 const shouldShowAd = (index, totalLength) => {
     if (!adsEnabled.value || !adCode.value.trim()) return false;
     return (index + 1) % adFrequency.value === 0 && index < totalLength - 1;
+};
+
+// Sponsored cards: insert at frequency intervals, cycling through available cards
+const sponsoredFrequency = computed(() => props.sponsoredCards?.[0]?.frequency || 8);
+const getSponsoredCard = (index) => {
+    if (!props.sponsoredCards?.length) return null;
+    if ((index + 1) % sponsoredFrequency.value !== 0) return null;
+    const cardIndex = Math.floor((index + 1) / sponsoredFrequency.value) - 1;
+    return props.sponsoredCards[cardIndex % props.sponsoredCards.length] || null;
 };
 </script>
 
@@ -200,6 +211,10 @@ const shouldShowAd = (index, totalLength) => {
                 >
                     <div v-html="adCode"></div>
                 </div>
+                <SponsoredVideoCard
+                    v-if="getSponsoredCard(index)"
+                    :card="getSponsoredCard(index)"
+                />
             </template>
         </div>
 

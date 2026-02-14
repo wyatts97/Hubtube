@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
 use App\Services\SeoService;
@@ -43,6 +44,10 @@ class ChannelController extends Controller
             'isSubscribed' => $isSubscribed,
             'subscriberCount' => $user->subscriber_count,
             'seo' => $this->seoService->forChannel($user),
+            'bannerAd' => [
+                'enabled' => Setting::get('channel_banner_ad_enabled', false),
+                'code' => Setting::get('channel_banner_ad_code', ''),
+            ],
         ]);
     }
 

@@ -35,6 +35,12 @@
     <meta name="p:domain_verify" content="{{ $pinterestVerify }}">
     @endif
 
+    {{-- Favicon --}}
+    @php $siteFavicon = \App\Models\Setting::get('site_favicon', ''); @endphp
+    @if($siteFavicon)
+    <link rel="icon" href="{{ str_starts_with($siteFavicon, 'http') || str_starts_with($siteFavicon, '/') ? $siteFavicon : '/storage/' . $siteFavicon }}">
+    @endif
+
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#ef4444">
@@ -125,5 +131,38 @@
 </head>
 <body class="font-sans antialiased" style="background-color: var(--color-bg-primary); color: var(--color-text-primary);">
     @inertia
+
+    {{-- Custom Ad Scripts (ExoClick, etc.) --}}
+    @php
+        $popunderEnabled = \App\Models\Setting::get('custom_popunder_enabled', false);
+        $popunderCode = \App\Models\Setting::get('custom_popunder_code', '');
+        $interstitialEnabled = \App\Models\Setting::get('custom_interstitial_enabled', false);
+        $interstitialCode = \App\Models\Setting::get('custom_interstitial_code', '');
+        $stickyEnabled = \App\Models\Setting::get('custom_sticky_banner_enabled', false);
+        $stickyCode = \App\Models\Setting::get('custom_sticky_banner_code', '');
+        $stickyMobileCode = \App\Models\Setting::get('custom_sticky_banner_mobile_code', '');
+    @endphp
+    @if($popunderEnabled && $popunderCode)
+        {!! $popunderCode !!}
+    @endif
+    @if($interstitialEnabled && $interstitialCode)
+        {!! $interstitialCode !!}
+    @endif
+    @if($stickyEnabled && ($stickyCode || $stickyMobileCode))
+        <div class="ht-sticky-ad-desktop" style="display:none">{!! $stickyCode !!}</div>
+        <div class="ht-sticky-ad-mobile" style="display:none">{!! $stickyMobileCode ?: $stickyCode !!}</div>
+        <script>
+            (function(){
+                var w = window.innerWidth;
+                if (w >= 768) {
+                    var el = document.querySelector('.ht-sticky-ad-desktop');
+                    if (el) el.style.display = '';
+                } else {
+                    var el = document.querySelector('.ht-sticky-ad-mobile');
+                    if (el) el.style.display = '';
+                }
+            })();
+        </script>
+    @endif
 </body>
 </html>
