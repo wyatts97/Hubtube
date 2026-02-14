@@ -5,7 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use App\Services\TranslationService;
-use Illuminate\Database\Query\Builder;
+use App\Models\TranslationOverride;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -156,7 +156,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn (): Builder => DB::table('translation_overrides'))
+            ->query(TranslationOverride::query())
             ->heading('Translation Overrides')
             ->description('Fix or replace words/phrases that Google Translate gets wrong. Overrides apply to both dynamic content and static UI translations.')
             ->defaultSort('locale')
@@ -210,10 +210,10 @@ class LanguageSettings extends Page implements HasForms, HasTable
             ->headerActions([
                 Tables\Actions\CreateAction::make()
                     ->label('Add Override')
+                    ->model(TranslationOverride::class)
                     ->form(fn () => $this->overrideFormSchema())
-                    ->using(function (array $data): \stdClass {
-                        $exists = DB::table('translation_overrides')
-                            ->where('locale', $data['locale'])
+                    ->using(function (array $data): TranslationOverride {
+                        $exists = TranslationOverride::where('locale', $data['locale'])
                             ->where('original_text', $data['original_text'])
                             ->exists();
 
@@ -222,15 +222,10 @@ class LanguageSettings extends Page implements HasForms, HasTable
                                 ->title('An override for this word/phrase already exists for this language')
                                 ->warning()
                                 ->send();
-                            return (object) ['id' => 0];
+                            return new TranslationOverride();
                         }
 
-                        $id = DB::table('translation_overrides')->insertGetId($data + [
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-
-                        return DB::table('translation_overrides')->find($id);
+                        return TranslationOverride::create($data);
                     }),
 
                 Tables\Actions\Action::make('clearCache')
