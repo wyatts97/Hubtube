@@ -354,7 +354,7 @@ const statusColors = {
                 </div>
 
                 <!-- Monetization -->
-                <div class="card p-6 space-y-4">
+                <div v-if="page.props.app?.monetization_enabled !== false" class="card p-6 space-y-4">
                     <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ t('video.monetization') || 'Monetization' }}</h2>
                     
                     <div class="flex items-center gap-3">

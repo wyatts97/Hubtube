@@ -11,6 +11,8 @@ class EditVideo extends EditRecord
 {
     protected static string $resource = VideoResource::class;
 
+    protected static string $view = 'filament.resources.video-resource.pages.edit-video';
+
     protected function getHeaderActions(): array
     {
         return [

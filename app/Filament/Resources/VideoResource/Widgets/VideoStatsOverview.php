@@ -18,7 +18,7 @@ class VideoStatsOverview extends BaseWidget
             Stat::make('Awaiting Moderation', Video::where('is_approved', false)->where('status', 'processed')->count())
                 ->icon('heroicon-o-shield-check')
                 ->color('warning')
-                ->description('Processed but not approved'),
+                ->description('Published but not yet approved'),
 
             Stat::make('Processing', Video::whereIn('status', ['pending', 'processing'])->count())
                 ->icon('heroicon-o-arrow-path')

@@ -365,6 +365,48 @@ class Video extends Model
         return StorageManager::url($this->video_path, $this->storage_disk ?? 'public');
     }
 
+    /**
+     * Get all available thumbnail URLs for this video (generated during processing).
+     */
+    public function getAvailableThumbnails(): array
+    {
+        if (!$this->slug) {
+            return [];
+        }
+
+        $disk = $this->storage_disk ?? 'public';
+        $videoDir = "videos/{$this->slug}";
+        $slugTitle = \Illuminate\Support\Str::slug($this->title, '_') ?: 'video';
+        $thumbnails = [];
+
+        // Check for numbered thumbnails (_thumb_0, _thumb_1, etc.)
+        for ($i = 0; $i < 10; $i++) {
+            $path = "{$videoDir}/{$slugTitle}_thumb_{$i}.jpg";
+            if (StorageManager::exists($path, $disk)) {
+                $thumbnails[] = [
+                    'path' => $path,
+                    'url' => StorageManager::url($path, $disk),
+                    'is_active' => $this->thumbnail === $path,
+                ];
+            } else {
+                break;
+            }
+        }
+
+        // Include custom thumbnail if it exists and isn't already in the list
+        if ($this->thumbnail && !collect($thumbnails)->pluck('path')->contains($this->thumbnail)) {
+            if (StorageManager::exists($this->thumbnail, $disk)) {
+                array_unshift($thumbnails, [
+                    'path' => $this->thumbnail,
+                    'url' => StorageManager::url($this->thumbnail, $disk),
+                    'is_active' => true,
+                ]);
+            }
+        }
+
+        return $thumbnails;
+    }
+
     public function hasPurchasedBy(?User $user): bool
     {
         if (!$user) {

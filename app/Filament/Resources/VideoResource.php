@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\VideoResource\Pages;
 use App\Models\Category;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
 use Filament\Forms;
@@ -82,7 +83,7 @@ class VideoResource extends Resource
                             ->options([
                                 'pending' => 'Pending',
                                 'processing' => 'Processing',
-                                'processed' => 'Processed',
+                                'processed' => 'Published',
                                 'failed' => 'Failed',
                             ])
                             ->default('pending')
@@ -105,7 +106,8 @@ class VideoResource extends Resource
                             ->label('Age Restricted')
                             ->default(true),
                         Forms\Components\Toggle::make('monetization_enabled')
-                            ->label('Monetization'),
+                            ->label('Monetization')
+                            ->visible(fn () => (bool) Setting::get('monetization_enabled', true)),
                     ])->columns(3),
 
                 Forms\Components\Section::make('Pricing')
@@ -119,7 +121,8 @@ class VideoResource extends Resource
                             ->prefix('$')
                             ->default(0),
                     ])->columns(2)
-                    ->collapsed(),
+                    ->collapsed()
+                    ->visible(fn () => (bool) Setting::get('monetization_enabled', true)),
 
                 Forms\Components\Section::make('Technical Info')
                     ->schema([
@@ -256,7 +259,7 @@ class VideoResource extends Resource
                     ->options([
                         'pending' => 'Pending',
                         'processing' => 'Processing',
-                        'processed' => 'Processed',
+                        'processed' => 'Published',
                         'failed' => 'Failed',
                     ]),
 

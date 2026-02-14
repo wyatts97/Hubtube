@@ -30,10 +30,19 @@ class TrendingVideosTable extends BaseWidget
                     ->limit(10)
             )
             ->columns([
+                Tables\Columns\ImageColumn::make('thumbnail_preview')
+                    ->label('')
+                    ->getStateUsing(fn (Video $record): ?string => $record->thumbnail_url)
+                    ->height(32)
+                    ->width(56)
+                    ->extraImgAttributes(['class' => 'rounded object-cover']),
+
                 Tables\Columns\TextColumn::make('title')
-                    ->limit(40)
+                    ->limit(30)
                     ->weight('bold')
-                    ->url(fn (Video $record) => route('filament.admin.resources.videos.edit', $record)),
+                    ->url(fn (Video $record) => '/' . $record->slug)
+                    ->openUrlInNewTab()
+                    ->tooltip(fn (Video $record): string => $record->title),
 
                 Tables\Columns\TextColumn::make('user.username')
                     ->label('By')
