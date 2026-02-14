@@ -53,12 +53,6 @@ const thumbRadius = computed(() => {
                 decoding="async"
                 @error="(e) => e.target.src = placeholderImg"
             />
-
-            <!-- Sponsored Badge -->
-            <span class="absolute top-2 left-2 bg-black/70 text-white text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded flex items-center gap-1">
-                <ExternalLink class="w-3 h-3" />
-                Sponsored
-            </span>
         </div>
         <div class="flex gap-3 mt-3">
             <div class="flex-1 min-w-0">
