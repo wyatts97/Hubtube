@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 class SponsoredCard extends Model
 {
@@ -38,6 +37,8 @@ class SponsoredCard extends Model
     {
         return $query->where(function ($q) use ($page) {
             $q->whereNull('target_pages')
+              ->orWhere('target_pages', '[]')
+              ->orWhere('target_pages', 'null')
               ->orWhereJsonContains('target_pages', $page);
         });
     }
@@ -46,6 +47,8 @@ class SponsoredCard extends Model
     {
         return $query->where(function ($q) use ($role) {
             $q->whereNull('target_roles')
+              ->orWhere('target_roles', '[]')
+              ->orWhere('target_roles', 'null')
               ->orWhereJsonContains('target_roles', $role ?? 'guest');
         });
     }
@@ -53,11 +56,25 @@ class SponsoredCard extends Model
     public function scopeForCategory($query, ?int $categoryId)
     {
         return $query->where(function ($q) use ($categoryId) {
-            $q->whereNull('category_ids');
+            $q->whereNull('category_ids')
+              ->orWhere('category_ids', '[]')
+              ->orWhere('category_ids', 'null');
             if ($categoryId) {
                 $q->orWhereJsonContains('category_ids', $categoryId);
             }
         });
+    }
+
+    /**
+     * Resolve a storage-relative path to a public URL.
+     */
+    protected static function resolveThumbUrl(?string $path): string
+    {
+        if (!$path) return '';
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, '/')) {
+            return $path;
+        }
+        return '/storage/' . $path;
     }
 
     /**
@@ -87,10 +104,7 @@ class SponsoredCard extends Model
             foreach ($pool as $key => $card) {
                 $cumulative += $card['weight'];
                 if ($rand <= $cumulative) {
-                    // Resolve thumbnail_url to a full URL
-                    if (!empty($card['thumbnail_url']) && !str_starts_with($card['thumbnail_url'], 'http')) {
-                        $card['thumbnail_url'] = Storage::disk('public')->url($card['thumbnail_url']);
-                    }
+                    $card['thumbnail_url'] = static::resolveThumbUrl($card['thumbnail_url'] ?? '');
                     $selected[] = $card;
                     unset($pool[$key]);
                     $pool = array_values($pool);

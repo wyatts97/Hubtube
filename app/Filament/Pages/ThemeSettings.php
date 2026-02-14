@@ -233,6 +233,7 @@ class ThemeSettings extends Page implements HasForms
                                         FileUpload::make('site_logo')
                                             ->label('Site Logo')
                                             ->image()
+                                            ->disk('public')
                                             ->directory('logos')
                                             ->visibility('public')
                                             ->imageResizeMode('contain')
@@ -241,6 +242,7 @@ class ThemeSettings extends Page implements HasForms
                                         FileUpload::make('site_favicon')
                                             ->label('Favicon')
                                             ->acceptedFileTypes(['image/x-icon', 'image/png', 'image/svg+xml', 'image/vnd.microsoft.icon'])
+                                            ->disk('public')
                                             ->directory('logos')
                                             ->visibility('public')
                                             ->helperText('Upload a .ico, .png, or .svg favicon (recommended: 32x32 or 64x64)'),
@@ -257,6 +259,7 @@ class ThemeSettings extends Page implements HasForms
                                         FileUpload::make('footer_logo_url')
                                             ->label('Footer Logo')
                                             ->image()
+                                            ->disk('public')
                                             ->directory('logos')
                                             ->visibility('public')
                                             ->helperText('Upload a separate footer logo, or leave empty to show the site title')

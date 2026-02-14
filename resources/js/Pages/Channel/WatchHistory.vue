@@ -8,18 +8,33 @@ import { useI18n } from '@/Composables/useI18n';
 
 const { t } = useI18n();
 
+const tSafe = (key, fallback) => {
+    const val = t(key);
+    return val === key ? fallback : val;
+};
+
 const props = defineProps({
     channel: Object,
     videos: Object,
     isOwner: Boolean,
+    showLikedVideos: { type: Boolean, default: false },
+    showWatchHistory: { type: Boolean, default: true },
 });
 
-const tabs = computed(() => [
-    { name: t('channel.videos') || 'Videos', href: `/channel/${props.channel.username}` },
-    { name: t('channel.playlists') || 'Playlists', href: `/channel/${props.channel.username}/playlists` },
-    { name: t('channel.recently_watched') || 'Recently Watched', href: `/channel/${props.channel.username}/history`, active: true },
-    { name: t('channel.about') || 'About', href: `/channel/${props.channel.username}/about` },
-]);
+const tabs = computed(() => {
+    const items = [
+        { name: tSafe('channel.videos', 'Videos'), href: `/channel/${props.channel.username}` },
+        { name: tSafe('channel.playlists', 'Playlists'), href: `/channel/${props.channel.username}/playlists` },
+    ];
+    if (props.showLikedVideos) {
+        items.push({ name: tSafe('channel.liked_videos', 'Liked Videos'), href: `/channel/${props.channel.username}/liked` });
+    }
+    if (props.showWatchHistory) {
+        items.push({ name: tSafe('channel.recently_watched', 'Recently Watched'), href: `/channel/${props.channel.username}/history`, active: true });
+    }
+    items.push({ name: tSafe('channel.about', 'About'), href: `/channel/${props.channel.username}/about` });
+    return items;
+});
 </script>
 
 <template>
@@ -33,7 +48,7 @@ const tabs = computed(() => [
             </div>
             <div>
                 <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ channel.username }}</h1>
-                <p style="color: var(--color-text-muted);">{{ t('channel.recently_watched') || 'Recently Watched' }}</p>
+                <p style="color: var(--color-text-muted);">{{ tSafe('channel.recently_watched', 'Recently Watched') }}</p>
             </div>
         </div>
 

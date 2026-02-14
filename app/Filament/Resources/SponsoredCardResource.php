@@ -39,6 +39,7 @@ class SponsoredCardResource extends Resource
                             ->label('Thumbnail Image')
                             ->image()
                             ->required()
+                            ->disk('public')
                             ->directory('sponsored')
                             ->visibility('public')
                             ->helperText('Recommended: 640×360 (16:9 aspect ratio) to match video cards'),
@@ -107,7 +108,14 @@ class SponsoredCardResource extends Resource
             ->columns([
                 Tables\Columns\ImageColumn::make('thumbnail_url')
                     ->label('Thumb')
-                    ->disk('public')
+                    ->getStateUsing(function ($record) {
+                        $thumb = $record->thumbnail_url;
+                        if (!$thumb) return null;
+                        if (str_starts_with($thumb, 'http://') || str_starts_with($thumb, 'https://') || str_starts_with($thumb, '/')) {
+                            return $thumb;
+                        }
+                        return '/storage/' . $thumb;
+                    })
                     ->square()
                     ->size(60),
                 Tables\Columns\TextColumn::make('title')
@@ -118,26 +126,27 @@ class SponsoredCardResource extends Resource
                     ->label('URL')
                     ->limit(30)
                     ->color('gray'),
-                Tables\Columns\TextColumn::make('target_pages_display')
+                Tables\Columns\TextColumn::make('target_pages')
                     ->label('Pages')
-                    ->getStateUsing(function ($record) {
-                        $pages = $record->target_pages;
-                        if (!$pages || !is_array($pages) || empty($pages)) return 'All';
-                        return implode(', ', array_map('ucfirst', $pages));
+                    ->formatStateUsing(function ($state) {
+                        if (!$state || (is_array($state) && empty($state))) return 'All';
+                        if (is_array($state)) return implode(', ', array_map('ucfirst', $state));
+                        return 'All';
                     }),
                 Tables\Columns\TextColumn::make('frequency')
                     ->label('Every N')
                     ->alignCenter(),
                 Tables\Columns\TextColumn::make('weight')
                     ->alignCenter(),
-                Tables\Columns\ToggleColumn::make('is_active')
-                    ->label('Active'),
+                Tables\Columns\IconColumn::make('is_active')
+                    ->label('Active')
+                    ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime('M j, Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->defaultSort('is_active', 'desc')
+            ->defaultSort('created_at', 'desc')
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

@@ -84,6 +84,8 @@ class ChannelController extends Controller
             'channel' => $user->load('channel'),
             'videos' => $videos,
             'isOwner' => $isOwner,
+            'showLikedVideos' => true,
+            'showWatchHistory' => $isOwner || !empty($settings['show_watch_history']),
         ]);
     }
 
@@ -112,6 +114,8 @@ class ChannelController extends Controller
             'channel' => $user->load('channel'),
             'videos' => $videos,
             'isOwner' => $isOwner,
+            'showLikedVideos' => $isOwner || !empty($settings['show_liked_videos']),
+            'showWatchHistory' => true,
         ]);
     }
 

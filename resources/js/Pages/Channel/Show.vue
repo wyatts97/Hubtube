@@ -69,18 +69,23 @@ const handleSubscribe = async () => {
     subscribing.value = false;
 };
 
+const tSafe = (key, fallback) => {
+    const val = t(key);
+    return val === key ? fallback : val;
+};
+
 const tabs = computed(() => {
     const items = [
-        { name: t('channel.videos') || 'Videos', href: `/channel/${props.channel.username}` },
-        { name: t('channel.playlists') || 'Playlists', href: `/channel/${props.channel.username}/playlists` },
+        { name: tSafe('channel.videos', 'Videos'), href: `/channel/${props.channel.username}` },
+        { name: tSafe('channel.playlists', 'Playlists'), href: `/channel/${props.channel.username}/playlists` },
     ];
     if (props.showLikedVideos) {
-        items.push({ name: t('channel.liked_videos') || 'Liked Videos', href: `/channel/${props.channel.username}/liked` });
+        items.push({ name: tSafe('channel.liked_videos', 'Liked Videos'), href: `/channel/${props.channel.username}/liked` });
     }
     if (props.showWatchHistory) {
-        items.push({ name: t('channel.recently_watched') || 'Recently Watched', href: `/channel/${props.channel.username}/history` });
+        items.push({ name: tSafe('channel.recently_watched', 'Recently Watched'), href: `/channel/${props.channel.username}/history` });
     }
-    items.push({ name: t('channel.about') || 'About', href: `/channel/${props.channel.username}/about` });
+    items.push({ name: tSafe('channel.about', 'About'), href: `/channel/${props.channel.username}/about` });
     return items;
 });
 </script>

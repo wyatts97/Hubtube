@@ -21,18 +21,26 @@ const props = defineProps({
 
 const page = usePage();
 const canEdit = computed(() => page.props.auth?.user?.can_edit_video);
+const monetizationEnabled = computed(() => page.props.app?.monetization_enabled !== false);
 
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(parseFloat(amount));
 };
 
-const statCards = computed(() => [
-    { label: t('dashboard.total_videos') || 'Total Videos', value: () => formatViews(props.stats.totalVideos), icon: Video, color: '#3b82f6' },
-    { label: t('dashboard.total_views') || 'Total Views', value: () => formatViews(props.stats.totalViews), icon: Eye, color: '#8b5cf6' },
-    { label: t('dashboard.total_likes') || 'Total Likes', value: () => formatViews(props.stats.totalLikes), icon: ThumbsUp, color: '#ef4444' },
-    { label: t('dashboard.subscribers') || 'Subscribers', value: () => formatViews(props.stats.subscriberCount), icon: Users, color: '#22c55e' },
-    { label: t('dashboard.wallet_balance') || 'Wallet Balance', value: () => formatCurrency(props.stats.walletBalance), icon: Wallet, color: '#f59e0b' },
-]);
+const statCards = computed(() => {
+    const cards = [
+        { label: t('dashboard.total_videos') || 'Total Videos', value: () => formatViews(props.stats.totalVideos), icon: Video, color: '#3b82f6' },
+        { label: t('dashboard.total_views') || 'Total Views', value: () => formatViews(props.stats.totalViews), icon: Eye, color: '#8b5cf6' },
+        { label: t('dashboard.total_likes') || 'Total Likes', value: () => formatViews(props.stats.totalLikes), icon: ThumbsUp, color: '#ef4444' },
+        { label: t('dashboard.subscribers') || 'Subscribers', value: () => formatViews(props.stats.subscriberCount), icon: Users, color: '#22c55e' },
+    ];
+    if (monetizationEnabled.value) {
+        cards.push({ label: t('dashboard.wallet_balance') || 'Wallet Balance', value: () => formatCurrency(props.stats.walletBalance), icon: Wallet, color: '#f59e0b' });
+    }
+    return cards;
+});
+
+const statsGridCols = computed(() => monetizationEnabled.value ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4');
 </script>
 
 <template>
@@ -53,7 +61,7 @@ const statCards = computed(() => [
             </div>
 
             <!-- Stats Grid -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 mb-6 sm:mb-8">
+            <div class="grid gap-2 sm:gap-4 mb-6 sm:mb-8" :class="statsGridCols">
                 <div v-for="stat in statCards" :key="stat.label" class="card p-3 sm:p-4">
                     <div class="flex items-center gap-2 sm:gap-3">
                         <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0" :style="{ backgroundColor: stat.color + '15' }">
