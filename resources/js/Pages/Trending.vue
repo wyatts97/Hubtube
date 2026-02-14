@@ -4,6 +4,7 @@ import SeoHead from '@/Components/SeoHead.vue';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
+import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
 import { Loader2 } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
 import { sanitizeHtml } from '@/Composables/useSanitize';
@@ -12,6 +13,9 @@ import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 
 const { t, localizedUrl } = useI18n();
 const { translateVideos, tr } = useAutoTranslate(['title']);
+
+const isInitialLoad = ref(true);
+onMounted(() => { setTimeout(() => { isInitialLoad.value = false; }, 100); });
 
 const props = defineProps({
     videos: Object,
@@ -125,8 +129,13 @@ const shouldShowAd = (index, totalLength) => {
             <p class="mt-1" style="color: var(--color-text-secondary);">{{ t('home.popular') || 'Popular videos from the past week' }}</p>
         </div>
 
+        <!-- Skeleton Loading -->
+        <div v-if="isInitialLoad" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <VideoCardSkeleton v-for="i in 8" :key="'skeleton-' + i" />
+        </div>
+
         <!-- Infinite Scroll Mode -->
-        <template v-if="infiniteScrollEnabled">
+        <template v-else-if="infiniteScrollEnabled">
             <div v-if="videoList.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 <template v-for="(video, index) in videoList" :key="video.id">
                     <VideoCard :video="withTranslation(video)" />

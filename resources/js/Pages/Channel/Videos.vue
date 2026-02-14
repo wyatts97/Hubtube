@@ -1,11 +1,15 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
+import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
 import { useI18n } from '@/Composables/useI18n';
 
 const { t } = useI18n();
+
+const isInitialLoad = ref(true);
+onMounted(() => { setTimeout(() => { isInitialLoad.value = false; }, 100); });
 
 const props = defineProps({
     channel: Object,
@@ -14,7 +18,6 @@ const props = defineProps({
 
 const tabs = computed(() => [
     { name: t('channel.videos') || 'Videos', href: `/channel/${props.channel.username}`, active: true },
-    { name: t('channel.shorts') || 'Shorts', href: `/channel/${props.channel.username}/shorts` },
     { name: t('channel.playlists') || 'Playlists', href: `/channel/${props.channel.username}/playlists` },
     { name: t('channel.about') || 'About', href: `/channel/${props.channel.username}/about` },
 ]);
@@ -54,8 +57,13 @@ const tabs = computed(() => [
             </nav>
         </div>
 
+        <!-- Skeleton Loading -->
+        <div v-if="isInitialLoad" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <VideoCardSkeleton v-for="i in 8" :key="'skeleton-' + i" />
+        </div>
+
         <!-- Videos Grid -->
-        <div v-if="videos.data.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div v-else-if="videos.data.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <VideoCard v-for="video in videos.data" :key="video.id" :video="video" />
         </div>
 

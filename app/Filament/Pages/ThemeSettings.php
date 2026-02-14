@@ -130,8 +130,6 @@ class ThemeSettings extends Page implements HasForms
             'nav_home_color' => Setting::get('nav_home_color', ''),
             'nav_trending_icon' => Setting::get('nav_trending_icon', 'trending-up'),
             'nav_trending_color' => Setting::get('nav_trending_color', ''),
-            'nav_shorts_icon' => Setting::get('nav_shorts_icon', 'zap'),
-            'nav_shorts_color' => Setting::get('nav_shorts_color', ''),
             'nav_live_icon' => Setting::get('nav_live_icon', 'radio'),
             'nav_live_color' => Setting::get('nav_live_color', ''),
             'nav_playlists_icon' => Setting::get('nav_playlists_icon', 'list-video'),
@@ -339,14 +337,6 @@ class ThemeSettings extends Page implements HasForms
                                                 ->options(self::$availableIcons),
                                             ColorPicker::make('nav_trending_color')
                                                 ->label('Trending Icon Color')
-                                                ->visible(fn ($get) => $get('icon_color_mode') === 'individual'),
-                                        ]),
-                                        Grid::make(2)->schema([
-                                            Select::make('nav_shorts_icon')
-                                                ->label('Shorts Icon')
-                                                ->options(self::$availableIcons),
-                                            ColorPicker::make('nav_shorts_color')
-                                                ->label('Shorts Icon Color')
                                                 ->visible(fn ($get) => $get('icon_color_mode') === 'individual'),
                                         ]),
                                         Grid::make(2)->schema([

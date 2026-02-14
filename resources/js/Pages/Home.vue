@@ -6,7 +6,6 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
 import LiveStreamCard from '@/Components/LiveStreamCard.vue';
-import ShortsCarousel from '@/Components/ShortsCarousel.vue';
 import { Loader2 } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
 import { sanitizeHtml } from '@/Composables/useSanitize';
@@ -32,8 +31,6 @@ const props = defineProps({
     liveStreams: Array,
     categories: Array,
     adSettings: Object, // Ad settings from admin
-    shortsCarousel: Array,
-    shortsCarouselEnabled: Boolean,
     seo: { type: Object, default: () => ({}) },
 });
 
@@ -165,9 +162,6 @@ const shouldShowAd = (index, totalLength) => {
                 <LiveStreamCard v-for="stream in liveStreams" :key="stream.id" :stream="stream" />
             </div>
         </section>
-
-        <!-- Shorts Carousel -->
-        <ShortsCarousel v-if="shortsCarouselEnabled && shortsCarousel?.length" :shorts="shortsCarousel" />
 
         <!-- Featured Videos -->
         <section v-if="featuredVideos.length > 0 || isInitialLoad" class="mb-8">

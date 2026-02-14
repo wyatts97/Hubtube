@@ -85,22 +85,6 @@ class HomeController extends Controller
             'videoGridFrequency' => (int) $s('video_grid_ad_frequency', 8),
         ];
 
-        $shortsCarouselEnabled = (bool) $s('homepage_shorts_carousel', false);
-        $shortsForCarousel = [];
-        if ($shortsCarouselEnabled) {
-            $shortsForCarousel = Cache::remember('home:shorts', 120, fn () =>
-                Video::query()
-                    ->with('user')
-                    ->shorts()
-                    ->public()
-                    ->approved()
-                    ->processed()
-                    ->latest('published_at')
-                    ->limit(20)
-                    ->get()
-            );
-        }
-
         return Inertia::render('Home', [
             'featuredVideos' => $featuredVideos,
             'latestVideos' => $latestVideos,
@@ -108,8 +92,6 @@ class HomeController extends Controller
             'liveStreams' => $liveStreams,
             'categories' => $categories,
             'adSettings' => $adSettings,
-            'shortsCarousel' => $shortsForCarousel,
-            'shortsCarouselEnabled' => $shortsCarouselEnabled,
             'seo' => $this->seoService->forHome(),
         ]);
     }
@@ -156,64 +138,6 @@ class HomeController extends Controller
                 'videoGridFrequency' => (int) Setting::get('video_grid_ad_frequency', 8),
             ],
         ]);
-    }
-
-    public function shorts(?Video $video = null): Response
-    {
-        $query = Video::query()
-            ->with('user')
-            ->shorts()
-            ->public()
-            ->approved()
-            ->processed()
-            ->latest('published_at');
-
-        // If a specific short was requested, put it first
-        $startingShort = null;
-        if ($video && $video->is_short) {
-            $startingShort = $video->load('user');
-            $query->where('id', '!=', $video->id);
-        }
-
-        $shorts = $query->paginate(12);
-
-        // Prepend the starting short to the first page
-        if ($startingShort && $shorts->currentPage() === 1) {
-            $items = collect([$startingShort])->merge($shorts->items());
-            $shorts = new \Illuminate\Pagination\LengthAwarePaginator(
-                $items,
-                $shorts->total() + 1,
-                $shorts->perPage(),
-                $shorts->currentPage(),
-                ['path' => route('shorts')]
-            );
-        }
-
-        return Inertia::render('Shorts', [
-            'shorts' => $shorts,
-            'startingShortId' => $startingShort?->id,
-            'adSettings' => [
-                'enabled' => (bool) Setting::get('shorts_ads_enabled', false),
-                'frequency' => (int) Setting::get('shorts_ad_frequency', 3),
-                'skipDelay' => (int) Setting::get('shorts_ad_skip_delay', 5),
-                'code' => Setting::get('shorts_ad_code', ''),
-            ],
-            'seo' => $this->seoService->forShorts(),
-        ]);
-    }
-
-    public function loadMoreShorts(Request $request): \Illuminate\Http\JsonResponse
-    {
-        $shorts = Video::query()
-            ->with('user')
-            ->shorts()
-            ->public()
-            ->approved()
-            ->processed()
-            ->latest('published_at')
-            ->paginate(12);
-
-        return response()->json($shorts);
     }
 
     public function categories(): Response

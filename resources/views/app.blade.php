@@ -119,7 +119,7 @@
         @endif
     @endif
 
-    @routes
+    @routes(nonce: \Illuminate\Support\Facades\Vite::cspNonce())
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @inertiaHead
 </head>

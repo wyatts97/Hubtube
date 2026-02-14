@@ -4,19 +4,27 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Vite;
 use Symfony\Component\HttpFoundation\Response;
 
 class AddSecurityHeaders
 {
     public function handle(Request $request, Closure $next): Response
     {
+        // Generate a CSP nonce and register it with Vite so that @vite
+        // tags include nonce="..." attributes automatically.
+        $nonce = Vite::useCspNonce();
+
         $response = $next($request);
 
-        // Content Security Policy — permissive enough for video platform + admin panel
-        // Tighten script-src and style-src once all inline scripts/styles are audited
+        // Content Security Policy
+        // - script-src: nonce replaces 'unsafe-inline'. 'unsafe-eval' kept
+        //   because Vue's runtime compiler and some ad scripts require it.
+        // - style-src: 'unsafe-inline' kept because Filament/Livewire and
+        //   Vue transitions inject inline styles dynamically.
         $csp = implode('; ', [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com",
+            "script-src 'self' 'nonce-{$nonce}' 'unsafe-eval' https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google-analytics.com",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net https://cdn.jsdelivr.net",
             "img-src 'self' data: blob: https: http:",
             "media-src 'self' blob: https: http:",

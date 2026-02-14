@@ -5,7 +5,7 @@ import {
     Menu, Search, Upload, Bell, User, LogOut, Settings, Wallet, 
     Video, Radio, Home, TrendingUp, Zap, ListVideo, History, 
     ChevronLeft, ChevronRight, Shield, Sun, Moon, Monitor,
-    X, Check, CheckCheck, Rss, LayoutDashboard, ChevronDown, ChevronUp, Film, Clapperboard,
+    X, Check, CheckCheck, Rss, LayoutDashboard, ChevronDown, ChevronUp, Film,
     Tag, Folder, Star, ExternalLink, Eye, EyeOff
 } from 'lucide-vue-next';
 import { useTheme } from '@/Composables/useTheme';
@@ -193,7 +193,6 @@ const navigation = computed(() => {
     const items = [
         { name: t('nav.home') || 'Home', href: localizedUrl('/'), icon: Home, key: 'home' },
         { name: t('nav.trending') || 'Trending', href: localizedUrl('/trending'), icon: TrendingUp, key: 'trending' },
-        { name: t('nav.shorts') || 'Shorts', href: localizedUrl('/shorts'), icon: Zap, key: 'shorts' },
     ];
     if (liveStreamingEnabled.value) {
         items.push({ name: t('nav.live') || 'Live', href: localizedUrl('/live'), icon: Radio, key: 'live' });
@@ -280,10 +279,6 @@ const toggleSidebar = () => {
                                 <Link href="/upload" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showUploadMenu = false">
                                     <Film class="w-4 h-4" style="color: var(--color-text-secondary);" />
                                     <span class="text-sm">{{ t('nav.upload_video') || 'Upload Video' }}</span>
-                                </Link>
-                                <Link href="/upload?type=short" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showUploadMenu = false">
-                                    <Clapperboard class="w-4 h-4" style="color: var(--color-text-secondary);" />
-                                    <span class="text-sm">{{ t('nav.upload_short') || 'Upload Short' }}</span>
                                 </Link>
                             </div>
                         </div>
@@ -599,12 +594,6 @@ const toggleSidebar = () => {
                                     <Link href="/upload" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
                                         <Film class="w-5 h-5" style="color: var(--color-text-secondary);" />
                                         <span>{{ t('nav.upload_video') || 'Upload Video' }}</span>
-                                    </Link>
-                                </li>
-                                <li>
-                                    <Link href="/upload?type=short" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
-                                        <Clapperboard class="w-5 h-5" style="color: var(--color-text-secondary);" />
-                                        <span>{{ t('nav.upload_short') || 'Upload Short' }}</span>
                                     </Link>
                                 </li>
                                 <li v-if="liveStreamingEnabled">

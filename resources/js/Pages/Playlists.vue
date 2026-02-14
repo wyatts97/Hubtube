@@ -1,6 +1,6 @@
 <script setup>
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { z } from 'zod';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ListVideo, Plus, X } from 'lucide-vue-next';
@@ -15,6 +15,9 @@ const props = defineProps({
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
+
+const isInitialLoad = ref(true);
+onMounted(() => { setTimeout(() => { isInitialLoad.value = false; }, 100); });
 
 const showCreateModal = ref(false);
 
@@ -54,7 +57,18 @@ const createPlaylist = submit('post', '/playlists', {
             </button>
         </div>
 
-        <div v-if="playlists?.data?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <!-- Skeleton Loading -->
+        <div v-if="isInitialLoad" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div v-for="i in 8" :key="'skeleton-' + i" class="card overflow-hidden">
+                <div class="aspect-video skeleton" style="background-color: var(--color-bg-secondary);"></div>
+                <div class="p-3 space-y-2">
+                    <div class="skeleton skeleton-text w-3/4"></div>
+                    <div class="skeleton skeleton-text-sm w-1/2"></div>
+                </div>
+            </div>
+        </div>
+
+        <div v-else-if="playlists?.data?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <Link
                 v-for="playlist in playlists.data"
                 :key="playlist.id"

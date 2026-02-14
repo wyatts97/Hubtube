@@ -50,12 +50,6 @@ class AdSettings extends Page implements HasForms
             'video_sidebar_ad_enabled' => Setting::get('video_sidebar_ad_enabled', false),
             'video_sidebar_ad_code' => Setting::get('video_sidebar_ad_code', ''),
 
-            // Shorts Ad Interstitials
-            'shorts_ads_enabled' => Setting::get('shorts_ads_enabled', false),
-            'shorts_ad_frequency' => Setting::get('shorts_ad_frequency', 3),
-            'shorts_ad_skip_delay' => Setting::get('shorts_ad_skip_delay', 5),
-            'shorts_ad_code' => Setting::get('shorts_ad_code', ''),
-
             // Video Player Banner Ads
             'banner_above_player_enabled' => Setting::get('banner_above_player_enabled', false),
             'banner_above_player_type' => Setting::get('banner_above_player_type', 'html'),
@@ -280,26 +274,6 @@ class AdSettings extends Page implements HasForms
                         Toggle::make('video_sidebar_ad_enabled')
                             ->label('Enable Sidebar Ad'),
                         Textarea::make('video_sidebar_ad_code')
-                            ->label('Ad HTML Code')
-                            ->rows(6)->columnSpanFull(),
-                    ]),
-
-                Section::make('Shorts Ad Interstitials')
-                    ->description('Full-screen ads between shorts in the vertical viewer.')
-                    ->collapsible()
-                    ->collapsed()
-                    ->schema([
-                        Toggle::make('shorts_ads_enabled')
-                            ->label('Enable Shorts Ads'),
-                        Grid::make(2)->schema([
-                            TextInput::make('shorts_ad_frequency')
-                                ->label('Ad Frequency')
-                                ->numeric()->default(3)->minValue(1)->maxValue(20),
-                            TextInput::make('shorts_ad_skip_delay')
-                                ->label('Skip Delay (seconds)')
-                                ->numeric()->default(5)->minValue(0)->maxValue(30),
-                        ]),
-                        Textarea::make('shorts_ad_code')
                             ->label('Ad HTML Code')
                             ->rows(6)->columnSpanFull(),
                     ]),

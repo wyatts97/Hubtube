@@ -104,9 +104,6 @@ class VideoResource extends Resource
                         Forms\Components\Toggle::make('age_restricted')
                             ->label('Age Restricted')
                             ->default(true),
-                        Forms\Components\Toggle::make('is_short')
-                            ->label('Short')
-                            ->helperText('Vertical short-form video'),
                         Forms\Components\Toggle::make('monetization_enabled')
                             ->label('Monetization'),
                     ])->columns(3),
@@ -268,9 +265,6 @@ class VideoResource extends Resource
 
                 Tables\Filters\TernaryFilter::make('is_featured')
                     ->label('Featured'),
-
-                Tables\Filters\TernaryFilter::make('is_short')
-                    ->label('Short'),
 
                 Tables\Filters\SelectFilter::make('category_id')
                     ->label('Category')

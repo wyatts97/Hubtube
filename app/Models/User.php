@@ -41,7 +41,6 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         'gender',
         'country',
         'website',
-        'two_factor_enabled',
         'age_verified_at',
         'email_verified_at',
         'last_active_at',
@@ -50,14 +49,13 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
 
     /**
      * Fields that must NEVER be mass-assignable.
-     * is_admin, is_pro, is_verified, wallet_balance, two_factor_secret
+     * is_admin, is_pro, is_verified, wallet_balance
      * must only be set via explicit $user->is_admin = true or admin panel.
      */
 
     protected $hidden = [
         'password',
         'remember_token',
-        'two_factor_secret',
     ];
 
     protected $appends = [
@@ -75,7 +73,6 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
             'is_verified' => 'boolean',
             'is_pro' => 'boolean',
             'is_admin' => 'boolean',
-            'two_factor_enabled' => 'boolean',
             'settings' => 'array',
         ];
     }

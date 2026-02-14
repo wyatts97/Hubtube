@@ -84,8 +84,6 @@ class SeoSettings extends Page implements HasForms
             'seo_home_description' => Setting::get('seo_home_description', ''),
             'seo_trending_title' => Setting::get('seo_trending_title', 'Trending Videos | {site_name}'),
             'seo_trending_description' => Setting::get('seo_trending_description', 'Watch the most popular trending videos on {site_name} right now.'),
-            'seo_shorts_title' => Setting::get('seo_shorts_title', 'Shorts | {site_name}'),
-            'seo_shorts_description' => Setting::get('seo_shorts_description', 'Watch short-form videos on {site_name}.'),
             'seo_search_title' => Setting::get('seo_search_title', 'Search Results for "{query}" | {site_name}'),
             'seo_live_title' => Setting::get('seo_live_title', 'Live Streams | {site_name}'),
             'seo_live_description' => Setting::get('seo_live_description', 'Watch live streams on {site_name}.'),
@@ -319,11 +317,6 @@ class SeoSettings extends Page implements HasForms
                                             ->label('Trending Page Title'),
                                         Textarea::make('seo_trending_description')
                                             ->label('Trending Page Description')
-                                            ->rows(2),
-                                        TextInput::make('seo_shorts_title')
-                                            ->label('Shorts Page Title'),
-                                        Textarea::make('seo_shorts_description')
-                                            ->label('Shorts Page Description')
                                             ->rows(2),
                                         TextInput::make('seo_live_title')
                                             ->label('Live Streams Page Title'),

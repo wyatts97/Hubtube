@@ -43,7 +43,6 @@ class Video extends Model
         'privacy',
         'status',
         'failure_reason',
-        'is_short',
         'is_featured',
         'is_approved',
         'age_restricted',
@@ -85,7 +84,6 @@ class Video extends Model
     protected function casts(): array
     {
         return [
-            'is_short' => 'boolean',
             'is_embedded' => 'boolean',
             'is_featured' => 'boolean',
             'is_approved' => 'boolean',
@@ -109,7 +107,6 @@ class Video extends Model
         $flushHomeCache = function () {
             \Illuminate\Support\Facades\Cache::forget('home:featured');
             \Illuminate\Support\Facades\Cache::forget('home:popular');
-            \Illuminate\Support\Facades\Cache::forget('home:shorts');
         };
 
         static::created($flushHomeCache);
@@ -224,11 +221,6 @@ class Video extends Model
     public function scopeProcessed($query)
     {
         return $query->where('status', 'processed');
-    }
-
-    public function scopeShorts($query)
-    {
-        return $query->where('is_short', true);
     }
 
     public function scopeFeatured($query)

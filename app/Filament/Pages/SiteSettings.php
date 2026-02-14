@@ -105,7 +105,6 @@ class SiteSettings extends Page implements HasForms
             'custom_footer_scripts' => Setting::get('custom_footer_scripts', ''),
             'infinite_scroll_enabled' => Setting::get('infinite_scroll_enabled', false),
             'videos_per_page' => Setting::get('videos_per_page', 24),
-            'homepage_shorts_carousel' => Setting::get('homepage_shorts_carousel', false),
         ]);
 
         $this->watermarkPreviewUrl = $this->resolveWatermarkPreviewUrl();
@@ -344,9 +343,6 @@ class SiteSettings extends Page implements HasForms
                                             ->maxValue(48)
                                             ->default(24)
                                             ->helperText('Number of videos to show per page or load'),
-                                        Toggle::make('homepage_shorts_carousel')
-                                            ->label('Homepage Shorts Carousel')
-                                            ->helperText('Show a horizontal carousel of shorts on the homepage. Clicking a short opens the full-screen shorts player.'),
                                     ])->columns(2),
                             ]),
                         Tabs\Tab::make('Users')

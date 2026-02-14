@@ -409,18 +409,6 @@ class SeoService
     }
 
     /**
-     * Generate SEO data for shorts page.
-     */
-    public function forShorts(): array
-    {
-        $vars = ['site_name' => $this->siteName()];
-        $title = $this->template($this->s('seo_shorts_title', 'Shorts | {site_name}'), $vars);
-        $description = $this->truncate($this->template($this->s('seo_shorts_description', 'Watch short-form videos on {site_name}.'), $vars));
-
-        return $this->baseMeta($title, $description, '/shorts');
-    }
-
-    /**
      * Generate SEO data for live streams page.
      */
     public function forLive(): array

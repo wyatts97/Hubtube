@@ -4,6 +4,7 @@ import SeoHead from '@/Components/SeoHead.vue';
 import { ref, watch, onMounted, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
+import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
 import { Search as SearchIcon, Users, Hash } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
@@ -20,6 +21,9 @@ const props = defineProps({
     results: Object,
     seo: { type: Object, default: () => ({}) },
 });
+
+const isInitialLoad = ref(true);
+onMounted(() => { setTimeout(() => { isInitialLoad.value = false; }, 100); });
 
 const searchQuery = ref(props.query || '');
 const activeType = ref(props.type || 'videos');
@@ -126,8 +130,13 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
                 {{ t('common.results_for') || 'Results for' }} "<span class="font-medium" style="color: var(--color-text-primary);">{{ query }}</span>"
             </p>
 
+            <!-- Skeleton Loading -->
+            <div v-if="isInitialLoad && activeType === 'videos'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <VideoCardSkeleton v-for="i in 8" :key="'skeleton-' + i" />
+            </div>
+
             <!-- Video Results -->
-            <template v-if="activeType === 'videos'">
+            <template v-else-if="activeType === 'videos'">
                 <div
                     v-if="videoItems.length"
                     v-bind="containerProps"

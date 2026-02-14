@@ -62,23 +62,6 @@ class ChannelController extends Controller
         ]);
     }
 
-    public function shorts(User $user): Response
-    {
-        $shorts = Video::query()
-            ->where('user_id', $user->id)
-            ->shorts()
-            ->public()
-            ->approved()
-            ->processed()
-            ->latest('published_at')
-            ->paginate(24);
-
-        return Inertia::render('Channel/Shorts', [
-            'channel' => $user->load('channel'),
-            'shorts' => $shorts,
-        ]);
-    }
-
     public function playlists(User $user, Request $request): Response
     {
         $tab = $request->query('tab', 'user');

@@ -105,9 +105,6 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('/api/videos/load-more', [HomeController::class, 'loadMoreVideos'])->name('videos.loadMore');
     Route::get('/trending', [HomeController::class, 'trending'])->name('trending');
-    Route::get('/shorts', [HomeController::class, 'shorts'])->name('shorts');
-    Route::get('/shorts/{video}', [HomeController::class, 'shorts'])->name('shorts.show');
-    Route::get('/api/shorts/load-more', [HomeController::class, 'loadMoreShorts'])->name('shorts.loadMore');
     Route::get('/search', [SearchController::class, 'index'])->name('search');
 
     Route::get('/videos', [VideoController::class, 'index'])->name('videos.index');
@@ -119,7 +116,6 @@ Route::middleware('age.verified')->group(function () {
 
     Route::get('/channel/{user:username}', [ChannelController::class, 'show'])->name('channel.show');
     Route::get('/channel/{user:username}/videos', [ChannelController::class, 'videos'])->name('channel.videos');
-    Route::get('/channel/{user:username}/shorts', [ChannelController::class, 'shorts'])->name('channel.shorts');
     Route::get('/channel/{user:username}/playlists', [ChannelController::class, 'playlists'])->name('channel.playlists');
     Route::get('/channel/{user:username}/about', [ChannelController::class, 'about'])->name('channel.about');
 
@@ -252,7 +248,6 @@ Route::middleware('age.verified')->group(function () {
     Route::prefix('{locale}')->where(['locale' => '[a-z]{2,3}'])->middleware(['locale', 'age.verified'])->group(function () {
         Route::get('/', [HomeController::class, 'index'])->name('locale.home');
         Route::get('/trending', [HomeController::class, 'trending'])->name('locale.trending');
-        Route::get('/shorts', [HomeController::class, 'shorts'])->name('locale.shorts');
         Route::get('/search', [SearchController::class, 'index'])->name('locale.search');
         Route::get('/videos', [VideoController::class, 'index'])->name('locale.videos.index');
         Route::get('/contact', [ContactController::class, 'show'])->name('locale.contact');
