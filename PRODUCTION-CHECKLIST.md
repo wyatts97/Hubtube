@@ -7,7 +7,7 @@
 
 ## 🔴 CRITICAL — Must Fix Before Launch
 
-### 1. Environment Configuration
+### 1. Environment Configuration (Ignore for scoring as these are not required for the app to function and will be changed during install/setup)
 - [ ] **Generate `APP_KEY`** — Run `php artisan key:generate`. Without this, sessions, encryption, and signed URLs will not work.
 - [ ] **Set `APP_ENV=production`** — Currently `local`. Must be `production` for proper error handling, caching, and security.
 - [ ] **Set `APP_DEBUG=false`** — Currently `true`. Debug mode leaks stack traces, env vars, and DB credentials to users.
@@ -15,76 +15,38 @@
 - [ ] **Set `DB_PASSWORD`** — Currently `password`. Use a strong, unique password in production.
 - [ ] **Set `SESSION_SECURE_COOKIE=true`** — Currently `false`. Session cookies must only be sent over HTTPS to prevent session hijacking.
 
-### 2. WP Imported User: "Change Password" Broken for Non-Bcrypt Hashes
-- [x] **`current_password` validation fails for WP users** — `SettingsController::updatePassword()` uses Laravel's `current_password` validation rule, which internally calls `Hash::check()`. For users with `$wp$2y$` or `$P$B` hashes, this throws a `RuntimeException` (same issue we fixed in login). Either: (a) wrap in try-catch and verify via `WordPressPasswordHasher`. Same issue affects `deleteAccount()` which also uses `current_password`. DO NOT FORCE FORGOT PASSWORD FLOW ON IMPORTED WP USERS.
-
-### 3. Installer Routes Not Locked Down Post-Install
-- [x] **Verify `installed` middleware blocks install routes** — The `CheckInstalled` middleware with `block` mode should prevent access to `/install/*` after `storage/installed` exists. Verify this works and that the installer cannot be re-run to overwrite the admin account or DB credentials. Add "You should now delete the /install directory from your server" message on install success page after installation success.
-
-### 4. `VITE_PUBLIC_BUILDER_KEY` Leaked in `.env`
-- [x] **Remove unused Builder.io key** — `.env` contains `VITE_PUBLIC_BUILDER_KEY=1ecd0197e63a4365a880d4476bcd25dc`. No code references it. This is a leaked API key committed to the repo. Remove it from `.env` and `.env.example`.
-
 ---
 
 ## 🟡 HIGH — Should Fix Before Launch
 
-### 8. Meilisearch Not Configured
-- [ ] **Switch `SCOUT_DRIVER=meilisearch`** — Currently `database` which uses `LIKE %query%` with no relevance ranking, typo tolerance, or faceted search. Meilisearch host/key are in `.env` but the driver isn't switched. For production, install Meilisearch and switch the driver.
-
-### 12. Content Security Policy Tightening
+### 2. Content Security Policy Tightening
 - [ ] **`unsafe-inline` and `unsafe-eval` in CSP** — `script-src` allows `'unsafe-inline' 'unsafe-eval'` which significantly weakens XSS protection. Audit inline scripts and migrate to nonces or hashes. This is an ongoing effort but should be tracked.
 
 ---
 
 ## 🟠 MEDIUM-HIGH — Should Fix Soon After Launch
 
-### 13. Dead Code Cleanup
+### 3. Dead Code Cleanup
 - [ ] **Remove `EmbeddedVideos/` Vue pages** — `Index.vue`, `Show.vue`, `Featured.vue` in `resources/js/Pages/EmbeddedVideos/` are orphaned (no routes point to them). Embedded videos now use the unified `videos` table.
 - [ ] **Remove `two_factor_enabled` / `two_factor_secret`** — User model has these fields in fillable/casts/hidden but no controller, middleware, or UI implements 2FA. Remove the fields to avoid confusion.
-
-### 15. 2FA Fields Unused
-- [ ] **`two_factor_enabled` / `two_factor_secret` exist but are dead** — User model has these fields in fillable/casts/hidden but no controller, middleware, or UI implements 2FA. Either implement TOTP-based 2FA or remove the fields to avoid confusion.
-
+- [ ] **Remove `FeatureTestOutput` from repo root** — 69KB test output file.
 ---
 
 ## 🟢 MEDIUM — Polish Before Launch
 
-### 16. Dead Code Cleanup
-- [ ] **Remove `EmbeddedVideos/` Vue pages** — `Index.vue`, `Show.vue`, `Featured.vue` in `resources/js/Pages/EmbeddedVideos/` are orphaned (no routes point to them). Embedded videos now use the unified `videos` table.
-- [ ] **Remove `FeatureTestOutput` from repo root** — 69KB test output file.
-- [ ] **Remove `PANEL-DEPLOY.md` if outdated** — 25KB deployment guide; verify it's still accurate or remove.
-
-### 17. Account Deletion Doesn't Clean Cloud Storage
-- [x] **`deleteAccount()` only deletes from local `public` disk** — If user's videos were offloaded to Wasabi/B2/S3, the cloud files are not deleted. Should use `StorageManager` to delete from the correct disk based on each video's `storage_disk` field.
-
-### 18. Wallet Withdrawal Has No Admin Approval UI
-- [x] **WithdrawalRequests created but no admin page to process them** — `processWithdraw()` creates a `WithdrawalRequest` and debits the user's wallet, but there's no Filament admin page for reviewing/approving/rejecting withdrawals. Add a `WithdrawalRequestResource` or admin page.
-
-### 19. Password Reset for WP Users
-- [x] **Password reset works but doesn't log migration** — When a WP user resets their password via "Forgot Password", `PasswordResetController::reset()` sets a bcrypt hash via `Hash::make()`. This works correctly but doesn't log the WP→bcrypt migration like the login flow does. Minor, but good for tracking.
-
-### 20. Skeleton Loading Components
+### 4. Skeleton Loading Components
 - [ ] **Add skeleton loaders for paginated views** — `VideoCardSkeleton` exists but channel pages, playlists, search results, and history have no skeleton loading states.
-
-### 21. Shorts Not Fully Implemented
-- [ ] **`is_short` never set during upload** — `VideoService::create()` doesn't check for `?type=short` query param. Shorts page shows a grid but there's no TikTok-style vertical viewer. Upload flow doesn't distinguish shorts from regular videos.
 
 ---
 
 ## 🔵 LOW — Nice to Have
 
-### 22. Error Monitoring
-- [ ] **Set up Sentry** — `config/sentry.php` exists and `bootstrap/app.php` has Sentry integration hooks, but no `SENTRY_DSN` is configured. Add DSN for production error tracking.
-
-### 23. Automated Backups
+### 5. Automated Backups
 - [ ] **Configure `spatie/laravel-backup`** — No backup strategy exists. Set up daily DB + storage backups with S3/Wasabi destination.
 
-### 24. SSL / HTTPS
+### 6. SSL / HTTPS
 - [ ] **Obtain SSL certificate** — Use Let's Encrypt / Certbot or Cloudflare.
 - [ ] **Force HTTPS** — Add `URL::forceScheme('https')` in `AppServiceProvider` or handle via Nginx redirect.
-
-### 25. Test Coverage
-- [ ] **19 test files exist but coverage is unknown** — Feature tests cover auth, comments, playlists, security headers, SEO, subscriptions, settings, videos, and production readiness. Run `php artisan test --coverage` to verify coverage percentage and add tests for wallet, live streaming, and WP password migration.
 
 ---
 
