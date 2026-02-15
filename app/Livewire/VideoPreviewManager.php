@@ -35,7 +35,12 @@ class VideoPreviewManager extends Component
         $video = Video::find($this->videoId);
         if (!$video) return;
 
-        $this->videoUrl = $video->video_url;
+        // Use the admin streaming route for Range request support (enables seekbar scrubbing)
+        if ($video->video_path && $video->storage_disk === 'public') {
+            $this->videoUrl = route('admin.video-stream', ['path' => $video->video_path]);
+        } else {
+            $this->videoUrl = $video->video_url;
+        }
         $this->hlsUrl = $video->hls_playlist_url;
         $this->currentThumbnail = $video->thumbnail;
         $this->thumbnails = $video->getAvailableThumbnails();

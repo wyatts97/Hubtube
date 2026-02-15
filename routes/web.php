@@ -59,24 +59,38 @@ Route::get('/robots.txt', function () {
 // Offline page for PWA
 Route::get('/offline', fn () => view('offline'))->name('offline');
 
-// Stream watermark preview/test videos with Range request support (php artisan serve doesn't support Range)
-Route::get('/admin/watermark-stream/{file}', function (string $file) {
-    $allowed = ['watermark_preview.mp4'];
-    // Also allow ULID-named uploaded test videos
-    if (!in_array($file, $allowed) && !preg_match('/^[0-9A-Z]{26}\.(mp4|webm|mov|avi|mkv)$/i', $file)) {
+// Stream video files with Range request support (php artisan serve doesn't support Range)
+// Used by watermark preview and admin video edit player
+Route::get('/admin/video-stream/{path}', function (string $path) {
+    // Only allow admin users
+    if (!auth()->check() || !auth()->user()->is_admin) {
+        abort(403);
+    }
+
+    // Resolve the file from public storage
+    $fullPath = storage_path('app/public/' . $path);
+    if (!file_exists($fullPath)) {
         abort(404);
     }
-    $path = storage_path('app/public/watermarks/' . $file);
-    if (!file_exists($path)) {
-        abort(404);
+
+    // Prevent directory traversal
+    $realBase = realpath(storage_path('app/public'));
+    $realPath = realpath($fullPath);
+    if (!$realPath || !str_starts_with($realPath, $realBase)) {
+        abort(403);
     }
-    $size = filesize($path);
-    $mime = 'video/mp4';
+
+    $size = filesize($fullPath);
+    $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+    $mimeMap = ['mp4' => 'video/mp4', 'webm' => 'video/webm', 'mov' => 'video/quicktime', 'mkv' => 'video/x-matroska', 'avi' => 'video/x-msvideo'];
+    $mime = $mimeMap[$ext] ?? 'video/mp4';
+
     $headers = [
         'Content-Type' => $mime,
         'Accept-Ranges' => 'bytes',
         'Content-Length' => $size,
     ];
+
     $request = request();
     if ($request->header('Range')) {
         $range = $request->header('Range');
@@ -87,15 +101,15 @@ Route::get('/admin/watermark-stream/{file}', function (string $file) {
             $length = $end - $start + 1;
             $headers['Content-Range'] = "bytes {$start}-{$end}/{$size}";
             $headers['Content-Length'] = $length;
-            $stream = fopen($path, 'rb');
+            $stream = fopen($fullPath, 'rb');
             fseek($stream, $start);
             $data = fread($stream, $length);
             fclose($stream);
             return response($data, 206, $headers);
         }
     }
-    return response()->file($path, $headers);
-})->where('file', '.+')->name('admin.watermark-stream');
+    return response()->file($fullPath, $headers);
+})->where('path', '.+')->name('admin.video-stream');
 
 // Thumbnail proxy for embedded video thumbnails
 Route::get('/api/thumb-proxy', [ThumbnailProxyController::class, 'proxy'])

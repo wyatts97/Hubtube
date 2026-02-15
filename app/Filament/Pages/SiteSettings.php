@@ -111,7 +111,7 @@ class SiteSettings extends Page implements HasForms
         if (!$testPath || !Storage::disk('public')->exists($testPath)) {
             return null;
         }
-        return '/admin/watermark-stream/' . basename($testPath);
+        return route('admin.video-stream', ['path' => $testPath]);
     }
 
     protected function resolveWatermarkPreviewUrl(): ?string
@@ -121,7 +121,7 @@ class SiteSettings extends Page implements HasForms
             return null;
         }
 
-        return '/admin/watermark-stream/' . basename($previewPath) . '?t=' . filemtime(Storage::disk('public')->path($previewPath));
+        return route('admin.video-stream', ['path' => $previewPath]) . '?t=' . filemtime(Storage::disk('public')->path($previewPath));
     }
 
     public function generateWatermarkPreview(): void
@@ -244,7 +244,7 @@ class SiteSettings extends Page implements HasForms
         }
 
         Setting::set('watermark_preview_path', $relativePath, 'general', 'string');
-        $this->watermarkPreviewUrl = '/admin/watermark-stream/watermark_preview.mp4?t=' . time();
+        $this->watermarkPreviewUrl = route('admin.video-stream', ['path' => 'watermarks/watermark_preview.mp4']) . '?t=' . time();
 
         Notification::make()
             ->title('Watermark preview generated')

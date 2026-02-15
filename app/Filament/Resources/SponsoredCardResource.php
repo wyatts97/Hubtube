@@ -106,18 +106,12 @@ class SponsoredCardResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('thumb_display')
+                Tables\Columns\ImageColumn::make('thumbnail_url')
                     ->label('Thumb')
-                    ->getStateUsing(function ($record): ?string {
-                        $thumb = $record->thumbnail_url;
-                        if (!$thumb) return null;
-                        if (str_starts_with($thumb, 'http://') || str_starts_with($thumb, 'https://') || str_starts_with($thumb, '/')) {
-                            return $thumb;
-                        }
-                        return '/storage/' . $thumb;
-                    })
+                    ->disk('public')
                     ->square()
-                    ->size(60),
+                    ->size(60)
+                    ->defaultImageUrl(url('/icons/icon-192x192.png')),
 
                 Tables\Columns\TextColumn::make('title')
                     ->searchable()
@@ -127,15 +121,17 @@ class SponsoredCardResource extends Resource
                 Tables\Columns\TextColumn::make('click_url')
                     ->label('URL')
                     ->limit(30)
-                    ->color('gray'),
+                    ->color('gray')
+                    ->copyable(),
 
-                Tables\Columns\TextColumn::make('pages_display')
+                Tables\Columns\TextColumn::make('target_pages')
                     ->label('Pages')
-                    ->getStateUsing(function ($record): string {
-                        $pages = $record->target_pages;
-                        if (empty($pages) || !is_array($pages)) return 'All';
-                        return implode(', ', array_map('ucfirst', $pages));
-                    }),
+                    ->formatStateUsing(function ($state): string {
+                        if (empty($state) || !is_array($state)) return 'All';
+                        return implode(', ', array_map('ucfirst', $state));
+                    })
+                    ->badge()
+                    ->color('gray'),
 
                 Tables\Columns\TextColumn::make('frequency')
                     ->label('Every N')
