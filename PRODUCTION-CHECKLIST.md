@@ -31,13 +31,6 @@
 
 ## 🟢 MEDIUM — Polish Before Launch
 
-### 6. Skeleton Loading Components
-
-### 7. Admin Panel Video Seekbar
-- [x] **Fixed video seekbar scrubbing in admin edit page** — Created a generalized `/admin/video-stream/{path}` route with HTTP Range request support. `VideoPreviewManager` now uses this route instead of direct `/storage/` URLs, enabling seekbar scrubbing even with `php artisan serve`. Also consolidated the old watermark-only streaming route into this generalized one.
-
-### 8. Sponsored Cards Admin List
-- [x] **Fixed sponsored cards list not rendering** — Fixed migration timestamp collision (was `000001`, now `000003`). Fixed Filament table columns to use real DB column names (`thumbnail_url`, `target_pages`) with `disk('public')` and `formatStateUsing()` instead of virtual columns with `getStateUsing()`, which could cause SQL errors during sort/filter operations.
 
 ---
 
