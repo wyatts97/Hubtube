@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\SocialLoginController;
 use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ContactController;
@@ -134,6 +135,14 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/api/video-ads', [\App\Http\Controllers\VideoAdController::class, 'getAds'])
         ->middleware('throttle:30,1')
         ->name('video-ads.get');
+
+    // Social Login Routes (accessible by both guests and authenticated users for account linking)
+    Route::get('/auth/{provider}/redirect', [SocialLoginController::class, 'redirect'])
+        ->where('provider', 'google|twitter|reddit')
+        ->name('social.redirect');
+    Route::get('/auth/{provider}/callback', [SocialLoginController::class, 'callback'])
+        ->where('provider', 'google|twitter|reddit')
+        ->name('social.callback');
 
     Route::middleware('guest')->group(function () {
         Route::get('/register', [RegisterController::class, 'create'])->name('register');

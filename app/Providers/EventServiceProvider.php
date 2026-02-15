@@ -17,6 +17,7 @@ class EventServiceProvider extends ServiceProvider
         ],
         \App\Events\VideoProcessed::class => [
             \App\Listeners\NotifyVideoProcessed::class,
+            \App\Listeners\TweetNewVideoListener::class,
         ],
         \App\Events\GiftSent::class => [
             \App\Listeners\ProcessGiftTransaction::class,
@@ -26,6 +27,9 @@ class EventServiceProvider extends ServiceProvider
         ],
         \App\Events\NewSubscriber::class => [
             \App\Listeners\NotifyChannelOfNewSubscriber::class,
+        ],
+        \SocialiteProviders\Manager\SocialiteWasCalled::class => [
+            \SocialiteProviders\Reddit\RedditExtendSocialite::class . '@handle',
         ],
     ];
 

@@ -38,4 +38,24 @@ return [
     // Scraper and Bunny Stream settings are managed via the admin panel (Setting model).
     // No env() calls needed — services read directly from Setting::get().
 
+    // Social Login — credentials managed via Admin Panel → Integrations → Social Networks
+    // Resolved at runtime from the Setting model (encrypted) via SocialLoginServiceProvider
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID', ''),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET', ''),
+        'redirect' => '/auth/google/callback',
+    ],
+
+    'twitter-oauth-2' => [
+        'client_id' => env('TWITTER_CLIENT_ID', ''),
+        'client_secret' => env('TWITTER_CLIENT_SECRET', ''),
+        'redirect' => '/auth/twitter/callback',
+    ],
+
+    'reddit' => [
+        'client_id' => env('REDDIT_CLIENT_ID', ''),
+        'client_secret' => env('REDDIT_CLIENT_SECRET', ''),
+        'redirect' => '/auth/reddit/callback',
+    ],
+
 ];

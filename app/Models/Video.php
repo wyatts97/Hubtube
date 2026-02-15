@@ -208,6 +208,11 @@ class Video extends Model
         return $this->hasMany(VideoTransaction::class);
     }
 
+    public function tweets(): HasMany
+    {
+        return $this->hasMany(VideoTweet::class);
+    }
+
     public function scopePublic($query)
     {
         return $query->where('privacy', 'public');

@@ -55,6 +55,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'csrf_token' => csrf_token(),
             'app' => fn () => $this->getAppSettings(),
+            'socialLogin' => fn () => $this->getSocialLoginProviders(),
             'theme' => fn () => $this->getThemeSettings(),
             'menuItems' => fn () => $this->getMenuItems(),
             'locale' => fn () => $this->getLocaleData(),
@@ -184,6 +185,17 @@ class HandleInertiaRequests extends Middleware
             ],
             'mobileVideoGrid' => $this->s('mobile_video_grid', '1'),
         ];
+    }
+
+    protected function getSocialLoginProviders(): array
+    {
+        $providers = [];
+        foreach (['google', 'twitter', 'reddit'] as $provider) {
+            if ((bool) $this->s("social_login_{$provider}_enabled", false)) {
+                $providers[] = $provider;
+            }
+        }
+        return $providers;
     }
 
     protected function getLocaleData(): array

@@ -14,3 +14,7 @@ Schedule::command('sanctum:prune-expired --hours=24')->daily();
 Schedule::command('videos:prune-deleted --days=30')->daily();
 Schedule::command('storage:cleanup')->daily();
 Schedule::command('uploads:cleanup-chunks --hours=24')->daily();
+
+// Twitter auto-post: tweet older videos on a configurable schedule
+// The interval is read inside the command; we run the check hourly and let the command decide
+Schedule::command('tweets:older-video')->hourly();

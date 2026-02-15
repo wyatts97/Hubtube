@@ -92,6 +92,7 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Users & Messages'),
                 NavigationGroup::make('Monetization'),
                 NavigationGroup::make('Appearance'),
+                NavigationGroup::make('Integrations'),
                 NavigationGroup::make('System')
                     ->collapsed(),
                 NavigationGroup::make('Tools')
