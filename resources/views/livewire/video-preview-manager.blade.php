@@ -1,33 +1,42 @@
 <div class="space-y-6">
     {{-- Video Player --}}
     @if($videoUrl || $hlsUrl)
-    <div x-data="{
-        player: null,
-        currentTime: 0,
-        duration: 0,
-        init() {
-            this.$nextTick(() => {
-                this.player = this.$refs.videoPlayer;
-                if (this.player) {
-                    this.player.addEventListener('timeupdate', () => {
-                        this.currentTime = this.player.currentTime;
-                        this.duration = this.player.duration || 0;
-                    });
-                    this.player.addEventListener('loadedmetadata', () => {
-                        this.duration = this.player.duration || 0;
-                    });
-                }
-            });
-        },
-        formatTime(seconds) {
-            if (!seconds || isNaN(seconds)) return '0:00';
-            const h = Math.floor(seconds / 3600);
-            const m = Math.floor((seconds % 3600) / 60);
-            const s = Math.floor(seconds % 60);
-            if (h > 0) return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-            return m + ':' + String(s).padStart(2, '0');
-        }
-    }">
+    @php
+        $video = \App\Models\Video::find($videoId);
+        $isCloudOnly = $video && $video->storage_disk && $video->storage_disk !== 'public'
+            && \App\Models\Setting::get('cloud_offloading_delete_local', false);
+    @endphp
+    <div
+        wire:ignore.self
+        x-data="{
+            player: null,
+            currentTime: 0,
+            duration: 0,
+            isCloudOnly: {{ $isCloudOnly ? 'true' : 'false' }},
+            init() {
+                this.$nextTick(() => {
+                    this.player = this.$refs.videoPlayer;
+                    if (this.player) {
+                        this.player.addEventListener('timeupdate', () => {
+                            this.currentTime = this.player.currentTime;
+                            this.duration = this.player.duration || 0;
+                        });
+                        this.player.addEventListener('loadedmetadata', () => {
+                            this.duration = this.player.duration || 0;
+                        });
+                    }
+                });
+            },
+            formatTime(seconds) {
+                if (!seconds || isNaN(seconds)) return '0:00';
+                const h = Math.floor(seconds / 3600);
+                const m = Math.floor((seconds % 3600) / 60);
+                const s = Math.floor(seconds % 60);
+                if (h > 0) return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+                return m + ':' + String(s).padStart(2, '0');
+            }
+        }"
+    >
         <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
             <div class="fi-section-header flex items-center gap-3 px-6 py-4">
                 <h3 class="fi-section-header-heading text-base font-semibold leading-6 text-gray-950 dark:text-white">
@@ -35,13 +44,13 @@
                 </h3>
             </div>
             <div class="fi-section-content px-6 pb-6">
-                <div class="relative rounded-lg overflow-hidden bg-black" style="max-height: 400px;">
+                <div wire:ignore class="relative rounded-lg overflow-hidden bg-black" style="max-height: 400px;">
                     <video
                         x-ref="videoPlayer"
                         class="w-full"
                         style="max-height: 400px;"
                         controls
-                        preload="metadata"
+                        preload="auto"
                         @if($videoUrl)
                         src="{{ $videoUrl }}"
                         @endif
@@ -50,13 +59,24 @@
                     </video>
                 </div>
 
+                {{-- Cloud-only warning --}}
+                <template x-if="isCloudOnly">
+                    <div class="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-4 py-2.5">
+                        <x-heroicon-m-exclamation-triangle class="h-5 w-5 text-amber-500 shrink-0" />
+                        <p class="text-sm text-amber-700 dark:text-amber-400">
+                            The original video file has been offloaded to cloud storage and deleted locally. Frame capture via FFmpeg is not available.
+                        </p>
+                    </div>
+                </template>
+
                 {{-- Capture Frame Button --}}
                 <div class="mt-4 flex items-center gap-3">
                     <button
                         type="button"
                         x-on:click="$wire.captureFrame(currentTime)"
                         class="fi-btn relative inline-flex items-center justify-center gap-1.5 font-semibold outline-none transition duration-75 focus-visible:ring-2 rounded-lg px-3 py-2 text-sm bg-primary-600 text-white shadow-sm hover:bg-primary-500 dark:bg-primary-500 dark:hover:bg-primary-400 focus-visible:ring-primary-500/50 dark:focus-visible:ring-primary-400/50"
-                        :disabled="!duration || $wire.isCapturing"
+                        :disabled="!duration || $wire.isCapturing || isCloudOnly"
+                        :class="{ 'opacity-50 cursor-not-allowed': isCloudOnly }"
                     >
                         <template x-if="$wire.isCapturing">
                             <x-filament::loading-indicator class="h-4 w-4" />

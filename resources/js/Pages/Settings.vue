@@ -182,41 +182,9 @@ const tabs = computed(() => {
                 <div class="flex-1">
                     <!-- Profile Tab -->
                     <div v-if="activeTab === 'profile'" class="space-y-6">
-                        <!-- Avatar & Banner Upload -->
+                        <!-- Profile Photo -->
                         <div class="card p-6">
-                            <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ t('settings.profile_images') || 'Profile Images' }}</h2>
-                            
-                            <!-- Banner Upload -->
-                            <div class="mb-6">
-                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ t('settings.banner') || 'Channel Banner' }}</label>
-                                <div class="relative h-32 md:h-40 rounded-xl overflow-hidden" style="background-color: var(--color-bg-secondary);">
-                                    <img
-                                        v-if="bannerPreview || user?.channel?.banner_image"
-                                        :src="bannerPreview || user.channel.banner_image"
-                                        alt="Channel banner"
-                                        class="w-full h-full object-cover"
-                                    />
-                                    <div v-else class="w-full h-full flex items-center justify-center">
-                                        <ImageIcon class="w-10 h-10" style="color: var(--color-text-muted);" />
-                                    </div>
-                                    <label class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
-                                        <div class="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium" style="background-color: rgba(0,0,0,0.6);">
-                                            <Camera class="w-4 h-4" />
-                                            {{ t('settings.change_banner') || 'Change Banner' }}
-                                        </div>
-                                        <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="handleBannerSelect" />
-                                    </label>
-                                </div>
-                                <p v-if="bannerForm.errors.banner" class="text-red-500 text-sm mt-1">{{ bannerForm.errors.banner }}</p>
-                                <div v-if="bannerPreview" class="flex items-center gap-2 mt-2">
-                                    <button @click="uploadBanner" :disabled="bannerForm.processing" class="btn btn-primary text-sm">
-                                        <Loader2 v-if="bannerForm.processing" class="w-4 h-4 animate-spin mr-1" />
-                                        {{ t('settings.save_banner') || 'Save Banner' }}
-                                    </button>
-                                    <button @click="bannerPreview = null; bannerForm.reset()" class="btn btn-ghost text-sm">{{ t('common.cancel') || 'Cancel' }}</button>
-                                </div>
-                                <p class="text-xs mt-1" style="color: var(--color-text-muted);">Recommended: 1280×320px, max 5MB (JPG, PNG, WebP)</p>
-                            </div>
+                            <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ t('settings.profile_images') || 'Profile Photo' }}</h2>
 
                             <!-- Avatar Upload -->
                             <div>

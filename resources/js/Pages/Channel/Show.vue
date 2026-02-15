@@ -9,7 +9,7 @@ import { sanitizeHtml } from '@/Composables/useSanitize';
 const { t } = useI18n();
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
-import { Bell, BellOff, Share2, Flag, Loader2 } from 'lucide-vue-next';
+import { Bell, BellOff, Share2, Flag, Loader2, Video, Eye, Calendar } from 'lucide-vue-next';
 
 const props = defineProps({
     channel: Object,
@@ -94,18 +94,8 @@ const tabs = computed(() => {
     <SeoHead :seo="seo" />
 
     <AppLayout>
-        <!-- Channel Banner -->
-        <div class="relative h-32 sm:h-48 md:h-64 rounded-lg sm:rounded-xl overflow-hidden mb-4 sm:mb-6" style="background: linear-gradient(to right, var(--color-accent), var(--color-accent)); opacity: 0.85;">
-            <img 
-                v-if="channel.channel?.banner" 
-                :src="channel.channel.banner" 
-                :alt="channel.username"
-                class="w-full h-full object-cover"
-            />
-        </div>
-
         <!-- Channel Info -->
-        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-6 sm:mb-8 pt-2 sm:pt-4">
             <div class="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 avatar shrink-0">
                 <img 
                     :src="channel.avatar_url || channel.avatar || '/images/default_avatar.webp'" 
@@ -120,8 +110,22 @@ const tabs = computed(() => {
                     <span v-if="channel.is_verified" class="ml-2" style="color: var(--color-accent);">✓</span>
                 </h1>
                 <p class="mt-1 text-sm sm:text-base" style="color: var(--color-text-secondary);">
-                    @{{ channel.username }} • {{ subCount.toLocaleString() }} {{ t('common.subscribers') || 'subscribers' }} • {{ videos.total }} {{ t('common.videos') || 'videos' }}
+                    @{{ channel.username }}
                 </p>
+                <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm" style="color: var(--color-text-muted);">
+                    <span class="inline-flex items-center gap-1.5">
+                        <Video class="w-4 h-4" />
+                        {{ videos.total }} {{ t('common.videos') || 'videos' }}
+                    </span>
+                    <span class="inline-flex items-center gap-1.5">
+                        <Bell class="w-4 h-4" />
+                        {{ subCount.toLocaleString() }} {{ t('common.subscribers') || 'subscribers' }}
+                    </span>
+                    <span v-if="channel.channel?.total_views" class="inline-flex items-center gap-1.5">
+                        <Eye class="w-4 h-4" />
+                        {{ Number(channel.channel.total_views).toLocaleString() }} {{ t('common.views') || 'views' }}
+                    </span>
+                </div>
                 <p v-if="channel.channel?.description" class="mt-2 line-clamp-2" style="color: var(--color-text-secondary);">
                     {{ channel.channel.description }}
                 </p>

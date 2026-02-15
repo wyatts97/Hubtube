@@ -103,10 +103,25 @@ class VideoPreviewManager extends Component
 
         try {
             $disk = $video->storage_disk ?? 'public';
+
+            // Check if file is cloud-only (offloaded with local deletion)
+            if ($disk !== 'public' && Setting::get('cloud_offloading_delete_local', false)) {
+                $localDiskPath = Storage::disk('public')->path($video->video_path);
+                if (!file_exists($localDiskPath)) {
+                    Notification::make()
+                        ->title('Frame capture unavailable')
+                        ->body('The original video file has been offloaded to cloud storage and deleted locally. FFmpeg cannot capture frames from remote files. Use the custom thumbnail upload instead.')
+                        ->warning()
+                        ->persistent()
+                        ->send();
+                    return;
+                }
+            }
+
             $localPath = StorageManager::localPath($video->video_path, $disk);
 
             if (!$localPath || !file_exists($localPath)) {
-                throw new \RuntimeException('Could not access video file locally.');
+                throw new \RuntimeException('Could not access video file locally. The file may have been moved or deleted.');
             }
 
             $ffmpeg = Setting::get('ffmpeg_path', 'ffmpeg');

@@ -132,34 +132,16 @@ media-google-cast-button {
     visibility: hidden !important;
 }
 
-/* Constrain seekbar thumbnail preview on mobile */
+/* Seekbar thumbnail preview sizing via Vidstack CSS variables */
+.video-player-wrapper {
+    --vds-thumbnail-max-width: 200px;
+    --vds-thumbnail-max-height: 160px;
+}
+
 @media (max-width: 640px) {
     .video-player-wrapper {
-        --video-slider-thumbnail-min-width: 0px;
-        --video-slider-thumbnail-min-height: 0px;
-    }
-
-    .video-player-wrapper .vds-slider-thumbnail {
-        max-height: 120px;
-        max-width: 80px;
-        min-height: 0;
-        min-width: 0;
-        width: auto;
-        height: auto;
-        overflow: hidden;
-        background: transparent !important;
-        box-shadow: none !important;
-    }
-
-    .video-player-wrapper .vds-slider-thumbnail media-thumbnail,
-    .video-player-wrapper .vds-slider-thumbnail img {
-        max-height: 120px !important;
-        max-width: 80px !important;
-        object-fit: contain;
-        height: auto;
-        width: auto;
-        display: block; /* Eliminate inline-block spacing */
-        margin: 0 auto; /* Center if container is wider */
+        --vds-thumbnail-max-width: 140px;
+        --vds-thumbnail-max-height: 100px;
     }
 }
 </style>

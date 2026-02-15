@@ -64,22 +64,12 @@ This is a separate table (not columns on `users`) so a single user can link mult
 | `config/services.php` | Add `google`, `twitter`, `reddit` client_id/secret/redirect entries |
 | `.env.example` | Add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `TWITTER_CLIENT_ID`, etc. |
 
-### Admin Settings (Optional)
+### Admin Settings
 Add toggles in `SiteSettings.php` to enable/disable each social provider so the admin can control which are shown.
 
 ### Environment Variables
-```env
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-GOOGLE_REDIRECT_URI=${APP_URL}/auth/google/callback
-
-TWITTER_CLIENT_ID=
-TWITTER_CLIENT_SECRET=
-TWITTER_REDIRECT_URI=${APP_URL}/auth/twitter/callback
-
-REDDIT_CLIENT_ID=
-REDDIT_CLIENT_SECRET=
-REDDIT_REDIRECT_URI=${APP_URL}/auth/reddit/callback
+```
+Set in the Admin Panel -> Integrations panel -> Social Networks (new, needs to be created using filament/blade best practices)
 ```
 
 ### Estimated Effort: **4–6 hours**
@@ -93,15 +83,14 @@ Automatically tweet when a new video is published, and periodically tweet older 
 
 ### Recommended Package
 - **`abraham/twitteroauth`** (v7.x) — lightweight Twitter API v2 client. Supports posting tweets with media, focus on tweets with link that will then show the featured image link preview on the tweet.
-- Alternative: **`noweh/laravel-twitter`** — Laravel-specific wrapper around Twitter API v2.
 
 ### Architecture
 
 **Two separate mechanisms:**
 
-#### A. New Video Auto-Tweet (Event-Driven)
+#### A. New Video Auto-Tweet (Event-Driven, Published videos only)
 ```
-VideoUploaded event (already exists)
+VideoPublished event (check if event exists or find actual published event)
   → NewVideoTweetListener (queued)
     → TwitterService::tweetNewVideo(Video $video)
       → Compose tweet: "{title} — Watch now: {url} #HubTube"
@@ -135,7 +124,7 @@ video_tweets
 | File | Purpose |
 |------|---------|
 | `app/Services/TwitterService.php` | Core service: `tweetNewVideo()`, `tweetOlderVideo()`, `composeTweet()`, handles API auth |
-| `app/Listeners/NewVideoTweetListener.php` | Listens to `VideoUploaded` event, calls TwitterService |
+| `app/Listeners/NewVideoTweetListener.php` | Listens to `VideoPublished` (or similar) event, calls TwitterService |
 | `app/Console/Commands/TweetOlderVideoCommand.php` | Artisan command for scheduled tweets |
 | `app/Models/VideoTweet.php` | Eloquent model for tracking tweets |
 | `database/migrations/xxxx_create_video_tweets_table.php` | Migration |
@@ -143,13 +132,12 @@ video_tweets
 ### Files to Modify
 | File | Change |
 |------|--------|
-| `app/Providers/EventServiceProvider.php` | Register `VideoUploaded → NewVideoTweetListener` |
+| `app/Providers/EventServiceProvider.php` | Register `VideoPublished` (or similar) event → `NewVideoTweetListener` |
 | `routes/console.php` or `app/Console/Kernel.php` | Schedule `TweetOlderVideoCommand` |
 | `config/services.php` | Add `twitter_api` section with bearer_token, api_key, api_secret, access_token, access_token_secret |
-| `.env.example` | Add `TWITTER_API_KEY`, `TWITTER_API_SECRET`, `TWITTER_ACCESS_TOKEN`, `TWITTER_ACCESS_TOKEN_SECRET`, `TWITTER_BEARER_TOKEN` |
 
 ### Admin Settings (Filament)
-Add a section in `SiteSettings.php` or a new `SocialPostingSettings.php` page:
+Configure Auth token inputs (with encryption) for twitter via Admin Panel tab Integrations -> Social Networks, similar to social login settings but in separate section (new, needs to be created using filament/blade best practices)
 - **Enable auto-tweet on new video** (toggle)
 - **Enable scheduled older video tweets** (toggle)
 - **Tweet interval** (hours between scheduled tweets, default: 4)
@@ -161,14 +149,9 @@ Add a section in `SiteSettings.php` or a new `SocialPostingSettings.php` page:
 ### Tweet Composition Logic
 ```php
 // Default tweet template (configurable in admin):
-"{title} — Watch now: {url} #{category} #HubTube"
-
+"{title} — Watch now: {url} #{category}"
 // Truncate to 280 chars, URL counts as 23 chars (t.co)
 ```
-
-### Estimated Effort: **6–8 hours*
-
----
 
 ## 6. Polish Mobile UI & PWA Support / Push Notifications
 

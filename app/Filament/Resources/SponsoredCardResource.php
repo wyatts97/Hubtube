@@ -106,9 +106,9 @@ class SponsoredCardResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('thumbnail_url')
+                Tables\Columns\ImageColumn::make('thumb_display')
                     ->label('Thumb')
-                    ->getStateUsing(function ($record) {
+                    ->getStateUsing(function ($record): ?string {
                         $thumb = $record->thumbnail_url;
                         if (!$thumb) return null;
                         if (str_starts_with($thumb, 'http://') || str_starts_with($thumb, 'https://') || str_starts_with($thumb, '/')) {
@@ -118,29 +118,36 @@ class SponsoredCardResource extends Resource
                     })
                     ->square()
                     ->size(60),
+
                 Tables\Columns\TextColumn::make('title')
                     ->searchable()
                     ->weight('bold')
                     ->limit(40),
+
                 Tables\Columns\TextColumn::make('click_url')
                     ->label('URL')
                     ->limit(30)
                     ->color('gray'),
-                Tables\Columns\TextColumn::make('target_pages')
+
+                Tables\Columns\TextColumn::make('pages_display')
                     ->label('Pages')
-                    ->formatStateUsing(function ($state) {
-                        if (!$state || (is_array($state) && empty($state))) return 'All';
-                        if (is_array($state)) return implode(', ', array_map('ucfirst', $state));
-                        return 'All';
+                    ->getStateUsing(function ($record): string {
+                        $pages = $record->target_pages;
+                        if (empty($pages) || !is_array($pages)) return 'All';
+                        return implode(', ', array_map('ucfirst', $pages));
                     }),
+
                 Tables\Columns\TextColumn::make('frequency')
                     ->label('Every N')
                     ->alignCenter(),
+
                 Tables\Columns\TextColumn::make('weight')
                     ->alignCenter(),
+
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Active')
                     ->boolean(),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime('M j, Y')
                     ->sortable()
