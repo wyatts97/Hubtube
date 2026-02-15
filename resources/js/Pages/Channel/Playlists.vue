@@ -7,20 +7,36 @@ import { useI18n } from '@/Composables/useI18n';
 
 const { t } = useI18n();
 
+const tSafe = (key, fallback) => {
+    const val = t(key);
+    return val === key ? fallback : val;
+};
+
 const props = defineProps({
     channel: Object,
     playlists: Object,
     favoritePlaylists: Object,
     activeTab: { type: String, default: 'user' },
+    showLikedVideos: { type: Boolean, default: false },
+    showWatchHistory: { type: Boolean, default: false },
 });
 
 const currentTab = ref(props.activeTab);
 
-const channelTabs = computed(() => [
-    { name: t('channel.videos') || 'Videos', href: `/channel/${props.channel.username}` },
-    { name: t('channel.playlists') || 'Playlists', href: `/channel/${props.channel.username}/playlists`, active: true },
-    { name: t('channel.about') || 'About', href: `/channel/${props.channel.username}/about` },
-]);
+const channelTabs = computed(() => {
+    const items = [
+        { name: tSafe('channel.videos', 'Videos'), href: `/channel/${props.channel.username}` },
+        { name: tSafe('channel.playlists', 'Playlists'), href: `/channel/${props.channel.username}/playlists`, active: true },
+    ];
+    if (props.showLikedVideos) {
+        items.push({ name: tSafe('channel.liked_videos', 'Liked Videos'), href: `/channel/${props.channel.username}/liked` });
+    }
+    if (props.showWatchHistory) {
+        items.push({ name: tSafe('channel.recently_watched', 'Recently Watched'), href: `/channel/${props.channel.username}/history` });
+    }
+    items.push({ name: tSafe('channel.about', 'About'), href: `/channel/${props.channel.username}/about` });
+    return items;
+});
 
 const switchTab = (tab) => {
     currentTab.value = tab;

@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Setting;
 use App\Models\Video;
+use App\Services\FfmpegService;
 use App\Services\StorageManager;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
@@ -129,7 +130,7 @@ class VideoPreviewManager extends Component
                 throw new \RuntimeException('Could not access video file locally. The file may have been moved or deleted.');
             }
 
-            $ffmpeg = Setting::get('ffmpeg_path', 'ffmpeg');
+            $ffmpeg = FfmpegService::ffmpegPath();
             $videoDir = "videos/{$video->slug}";
             $slugTitle = Str::slug($video->title, '_') ?: 'video';
             $outputFilename = "{$slugTitle}_frame_" . intval($timestamp) . '.jpg';

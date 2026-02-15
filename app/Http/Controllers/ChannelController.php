@@ -22,6 +22,31 @@ class ChannelController extends Controller
         return $this->show($user);
     }
 
+    public function localeVideos(string $locale, string $username): Response
+    {
+        return $this->videos(User::where('username', $username)->firstOrFail());
+    }
+
+    public function localePlaylists(string $locale, string $username, Request $request): Response
+    {
+        return $this->playlists(User::where('username', $username)->firstOrFail(), $request);
+    }
+
+    public function localeLikedVideos(string $locale, string $username): Response
+    {
+        return $this->likedVideos(User::where('username', $username)->firstOrFail());
+    }
+
+    public function localeWatchHistory(string $locale, string $username): Response
+    {
+        return $this->watchHistory(User::where('username', $username)->firstOrFail());
+    }
+
+    public function localeAbout(string $locale, string $username): Response
+    {
+        return $this->about(User::where('username', $username)->firstOrFail());
+    }
+
     public function show(User $user): Response
     {
         $user->load('channel');
@@ -121,6 +146,9 @@ class ChannelController extends Controller
 
     public function videos(User $user): Response
     {
+        $isOwner = auth()->id() === $user->id;
+        $settings = $user->settings ?? [];
+
         $videos = Video::query()
             ->where('user_id', $user->id)
             ->public()
@@ -132,6 +160,8 @@ class ChannelController extends Controller
         return Inertia::render('Channel/Videos', [
             'channel' => $user->load('channel'),
             'videos' => $videos,
+            'showLikedVideos' => $isOwner || !empty($settings['show_liked_videos']),
+            'showWatchHistory' => $isOwner || !empty($settings['show_watch_history']),
         ]);
     }
 
@@ -139,14 +169,15 @@ class ChannelController extends Controller
     {
         $tab = $request->query('tab', 'user');
 
+        $isOwner = auth()->id() === $user->id;
+        $settings = $user->settings ?? [];
+
         $playlists = $user->playlists()
-            ->public()
             ->withCount('videos')
             ->latest()
             ->paginate(24, ['*'], 'page');
 
         $favoritePlaylists = $user->favoritePlaylists()
-            ->public()
             ->with('user')
             ->withCount('videos')
             ->latest('playlist_favorites.created_at')
@@ -157,12 +188,17 @@ class ChannelController extends Controller
             'playlists' => $playlists,
             'favoritePlaylists' => $favoritePlaylists,
             'activeTab' => $tab,
+            'showLikedVideos' => $isOwner || !empty($settings['show_liked_videos']),
+            'showWatchHistory' => $isOwner || !empty($settings['show_watch_history']),
         ]);
     }
 
     public function about(User $user): Response
     {
         $user->load('channel');
+
+        $isOwner = auth()->id() === $user->id;
+        $settings = $user->settings ?? [];
 
         return Inertia::render('Channel/About', [
             'channel' => $user,
@@ -171,6 +207,8 @@ class ChannelController extends Controller
                 'joinedAt' => $user->created_at,
                 'videoCount' => $user->videos()->public()->approved()->count(),
             ],
+            'showLikedVideos' => $isOwner || !empty($settings['show_liked_videos']),
+            'showWatchHistory' => $isOwner || !empty($settings['show_watch_history']),
         ]);
     }
 }

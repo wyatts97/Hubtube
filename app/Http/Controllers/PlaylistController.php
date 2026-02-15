@@ -31,6 +31,33 @@ class PlaylistController extends Controller
         ]);
     }
 
+    public function publicIndex(Request $request): Response
+    {
+        $sort = $request->query('sort', 'newest');
+
+        $query = Playlist::query()
+            ->with('user:id,username')
+            ->withCount(['videos', 'favoritedBy']);
+
+        switch ($sort) {
+            case 'popular':
+                $query->orderByDesc('favorited_by_count');
+                break;
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'newest':
+            default:
+                $query->orderByDesc('created_at');
+                break;
+        }
+
+        return Inertia::render('PublicPlaylists', [
+            'playlists' => $query->paginate(24),
+            'currentSort' => $sort,
+        ]);
+    }
+
     public function show(Playlist $playlist): Response
     {
         if (!$this->canView($playlist)) {

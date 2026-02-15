@@ -11,17 +11,32 @@ const { t } = useI18n();
 const isInitialLoad = ref(true);
 onMounted(() => { setTimeout(() => { isInitialLoad.value = false; }, 100); });
 
+const tSafe = (key, fallback) => {
+    const val = t(key);
+    return val === key ? fallback : val;
+};
+
 const props = defineProps({
     channel: Object,
     videos: Object,
+    showLikedVideos: { type: Boolean, default: false },
+    showWatchHistory: { type: Boolean, default: false },
 });
 
-const tabs = computed(() => [
-    { name: t('channel.videos') || 'Videos', href: `/channel/${props.channel.username}`, active: true },
-    { name: t('channel.playlists') || 'Playlists', href: `/channel/${props.channel.username}/playlists` },
-    { name: t('channel.about') || 'About', href: `/channel/${props.channel.username}/about` },
-]);
-// Note: Liked Videos and Recently Watched tabs are only shown on Channel/Show.vue
+const tabs = computed(() => {
+    const items = [
+        { name: tSafe('channel.videos', 'Videos'), href: `/channel/${props.channel.username}`, active: true },
+        { name: tSafe('channel.playlists', 'Playlists'), href: `/channel/${props.channel.username}/playlists` },
+    ];
+    if (props.showLikedVideos) {
+        items.push({ name: tSafe('channel.liked_videos', 'Liked Videos'), href: `/channel/${props.channel.username}/liked` });
+    }
+    if (props.showWatchHistory) {
+        items.push({ name: tSafe('channel.recently_watched', 'Recently Watched'), href: `/channel/${props.channel.username}/history` });
+    }
+    items.push({ name: tSafe('channel.about', 'About'), href: `/channel/${props.channel.username}/about` });
+    return items;
+});
 </script>
 
 <template>
@@ -40,18 +55,19 @@ const tabs = computed(() => [
         </div>
 
         <!-- Tabs -->
-        <div class="border-b border-dark-800 mb-6">
-            <nav class="flex gap-6">
+        <div class="mb-6" style="border-bottom: 1px solid var(--color-border);">
+            <nav class="flex gap-6 overflow-x-auto scrollbar-hide">
                 <Link
                     v-for="tab in tabs"
                     :key="tab.name"
                     :href="tab.href"
                     :class="[
-                        'pb-3 px-1 border-b-2 transition-colors',
-                        tab.active 
-                            ? 'text-white border-primary-500' 
-                            : 'text-dark-400 hover:text-white border-transparent hover:border-primary-500'
+                        'pb-3 px-1 border-b-2 transition-colors whitespace-nowrap shrink-0',
+                        tab.active
+                            ? 'border-current'
+                            : 'border-transparent'
                     ]"
+                    :style="{ color: tab.active ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }"
                 >
                     {{ tab.name }}
                 </Link>

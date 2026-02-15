@@ -140,6 +140,7 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/live', [LiveStreamController::class, 'index'])->name('live.index');
     Route::get('/live/{liveStream}', [LiveStreamController::class, 'show'])->name('live.show');
 
+    Route::get('/public-playlists', [PlaylistController::class, 'publicIndex'])->name('playlists.public');
     Route::get('/playlist/{playlist:slug}', [PlaylistController::class, 'show'])->name('playlists.show');
 
     // Legal / Static Pages
@@ -282,6 +283,12 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/tags', [HomeController::class, 'localeTags'])->name('locale.tags.index');
         Route::get('/tag/{tag}', [HomeController::class, 'localeTag'])->name('locale.tags.show');
         Route::get('/channel/{username}', [ChannelController::class, 'localeShow'])->name('locale.channel.show');
+        Route::get('/channel/{username}/videos', [ChannelController::class, 'localeVideos'])->name('locale.channel.videos');
+        Route::get('/channel/{username}/playlists', [ChannelController::class, 'localePlaylists'])->name('locale.channel.playlists');
+        Route::get('/channel/{username}/liked', [ChannelController::class, 'localeLikedVideos'])->name('locale.channel.liked');
+        Route::get('/channel/{username}/history', [ChannelController::class, 'localeWatchHistory'])->name('locale.channel.history');
+        Route::get('/channel/{username}/about', [ChannelController::class, 'localeAbout'])->name('locale.channel.about');
+        Route::get('/public-playlists', [PlaylistController::class, 'publicIndex'])->name('locale.playlists.public');
         Route::get('/live', [LiveStreamController::class, 'index'])->name('locale.live.index');
         Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('locale.pages.show');
 

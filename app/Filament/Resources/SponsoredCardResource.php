@@ -106,9 +106,14 @@ class SponsoredCardResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('thumbnail_url')
+                Tables\Columns\ImageColumn::make('thumb_display')
                     ->label('Thumb')
-                    ->disk('public')
+                    ->getStateUsing(function ($record): ?string {
+                        $thumb = $record->thumbnail_url;
+                        if (!$thumb) return null;
+                        if (str_starts_with($thumb, 'http')) return $thumb;
+                        return '/storage/' . $thumb;
+                    })
                     ->square()
                     ->size(60)
                     ->defaultImageUrl(url('/icons/icon-192x192.png')),

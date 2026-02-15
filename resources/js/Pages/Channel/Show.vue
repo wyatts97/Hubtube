@@ -9,7 +9,7 @@ import { sanitizeHtml } from '@/Composables/useSanitize';
 const { t } = useI18n();
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
-import { Bell, BellOff, Share2, Flag, Loader2, Video, Eye, Calendar } from 'lucide-vue-next';
+import { Bell, BellOff, Flag, Loader2, Video, Eye, Calendar } from 'lucide-vue-next';
 
 const props = defineProps({
     channel: Object,
@@ -143,9 +143,6 @@ const tabs = computed(() => {
                 >
                     <Loader2 v-if="subscribing" class="w-4 h-4 animate-spin" />
                     <template v-else>{{ subscribed ? (t('common.subscribed') || 'Subscribed') : (t('common.subscribe') || 'Subscribe') }}</template>
-                </button>
-                <button class="btn btn-secondary">
-                    <Share2 class="w-4 h-4" />
                 </button>
             </div>
         </div>

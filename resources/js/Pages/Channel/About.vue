@@ -7,16 +7,32 @@ import { useI18n } from '@/Composables/useI18n';
 
 const { t } = useI18n();
 
+const tSafe = (key, fallback) => {
+    const val = t(key);
+    return val === key ? fallback : val;
+};
+
 const props = defineProps({
     channel: Object,
     stats: Object,
+    showLikedVideos: { type: Boolean, default: false },
+    showWatchHistory: { type: Boolean, default: false },
 });
 
-const tabs = computed(() => [
-    { name: t('channel.videos') || 'Videos', href: `/channel/${props.channel.username}` },
-    { name: t('channel.playlists') || 'Playlists', href: `/channel/${props.channel.username}/playlists` },
-    { name: t('channel.about') || 'About', href: `/channel/${props.channel.username}/about`, active: true },
-]);
+const tabs = computed(() => {
+    const items = [
+        { name: tSafe('channel.videos', 'Videos'), href: `/channel/${props.channel.username}` },
+        { name: tSafe('channel.playlists', 'Playlists'), href: `/channel/${props.channel.username}/playlists` },
+    ];
+    if (props.showLikedVideos) {
+        items.push({ name: tSafe('channel.liked_videos', 'Liked Videos'), href: `/channel/${props.channel.username}/liked` });
+    }
+    if (props.showWatchHistory) {
+        items.push({ name: tSafe('channel.recently_watched', 'Recently Watched'), href: `/channel/${props.channel.username}/history` });
+    }
+    items.push({ name: tSafe('channel.about', 'About'), href: `/channel/${props.channel.username}/about`, active: true });
+    return items;
+});
 
 const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -37,24 +53,25 @@ const formatDate = (date) => {
                 <img :src="channel.avatar_url || channel.avatar || '/images/default_avatar.webp'" :alt="channel.username" class="w-full h-full object-cover" />
             </div>
             <div>
-                <h1 class="text-xl font-bold text-white">{{ channel.username }}</h1>
-                <p class="text-dark-400">{{ t('channel.about') || 'About' }}</p>
+                <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ channel.username }}</h1>
+                <p style="color: var(--color-text-muted);">{{ tSafe('channel.about', 'About') }}</p>
             </div>
         </div>
 
         <!-- Tabs -->
-        <div class="border-b border-dark-800 mb-6">
-            <nav class="flex gap-6">
+        <div class="mb-6" style="border-bottom: 1px solid var(--color-border);">
+            <nav class="flex gap-6 overflow-x-auto scrollbar-hide">
                 <Link
                     v-for="tab in tabs"
                     :key="tab.name"
                     :href="tab.href"
                     :class="[
-                        'pb-3 px-1 border-b-2 transition-colors',
-                        tab.active 
-                            ? 'text-white border-primary-500' 
-                            : 'text-dark-400 hover:text-white border-transparent hover:border-primary-500'
+                        'pb-3 px-1 border-b-2 transition-colors whitespace-nowrap shrink-0',
+                        tab.active
+                            ? 'border-current'
+                            : 'border-transparent'
                     ]"
+                    :style="{ color: tab.active ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }"
                 >
                     {{ tab.name }}
                 </Link>
@@ -65,38 +82,38 @@ const formatDate = (date) => {
             <!-- Description -->
             <div class="lg:col-span-2">
                 <div class="card p-6">
-                    <h2 class="text-lg font-semibold text-white mb-4">{{ t('channel.description') || 'Description' }}</h2>
-                    <p v-if="channel.channel?.description" class="text-dark-300 whitespace-pre-wrap">
+                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ tSafe('channel.description', 'Description') }}</h2>
+                    <p v-if="channel.channel?.description" class="whitespace-pre-wrap" style="color: var(--color-text-secondary);">
                         {{ channel.channel.description }}
                     </p>
-                    <p v-else class="text-dark-500">{{ t('channel.no_videos_desc') || 'No description provided' }}</p>
+                    <p v-else style="color: var(--color-text-muted);"></p>
                 </div>
             </div>
 
             <!-- Stats -->
             <div class="space-y-4">
                 <div class="card p-6">
-                    <h2 class="text-lg font-semibold text-white mb-4">{{ t('channel.stats') || 'Stats' }}</h2>
+                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ tSafe('channel.stats', 'Stats') }}</h2>
                     <div class="space-y-4">
                         <div class="flex items-center gap-3">
-                            <Calendar class="w-5 h-5 text-dark-400" />
+                            <Calendar class="w-5 h-5" style="color: var(--color-text-muted);" />
                             <div>
-                                <p class="text-dark-400 text-sm">{{ t('channel.joined', { date: '' }).replace('{date}', '').trim() || 'Joined' }}</p>
-                                <p class="text-white">{{ formatDate(stats.joinedAt) }}</p>
+                                <p class="text-sm" style="color: var(--color-text-muted);">{{ tSafe('channel.joined', 'Joined') }}</p>
+                                <p style="color: var(--color-text-primary);">{{ formatDate(stats.joinedAt) }}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
-                            <Eye class="w-5 h-5 text-dark-400" />
+                            <Eye class="w-5 h-5" style="color: var(--color-text-muted);" />
                             <div>
-                                <p class="text-dark-400 text-sm">{{ t('channel.total_views') || 'Total Views' }}</p>
-                                <p class="text-white">{{ stats.totalViews?.toLocaleString() || 0 }}</p>
+                                <p class="text-sm" style="color: var(--color-text-muted);">{{ tSafe('channel.total_views', 'Total Views') }}</p>
+                                <p style="color: var(--color-text-primary);">{{ stats.totalViews?.toLocaleString() || 0 }}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
-                            <Video class="w-5 h-5 text-dark-400" />
+                            <Video class="w-5 h-5" style="color: var(--color-text-muted);" />
                             <div>
-                                <p class="text-dark-400 text-sm">{{ t('channel.video_count') || 'Videos' }}</p>
-                                <p class="text-white">{{ stats.videoCount }}</p>
+                                <p class="text-sm" style="color: var(--color-text-muted);">{{ tSafe('channel.video_count', 'Videos') }}</p>
+                                <p style="color: var(--color-text-primary);">{{ stats.videoCount }}</p>
                             </div>
                         </div>
                     </div>

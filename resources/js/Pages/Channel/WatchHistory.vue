@@ -79,7 +79,7 @@ const tabs = computed(() => {
 
         <div v-else class="text-center py-12">
             <History class="w-12 h-12 mx-auto mb-3" style="color: var(--color-text-muted);" />
-            <p style="color: var(--color-text-muted);">{{ t('channel.no_watch_history') || 'No watch history yet' }}</p>
+            <p style="color: var(--color-text-muted);">{{ tSafe('channel.no_watch_history', 'No watch history yet') }}</p>
         </div>
 
         <!-- Pagination -->

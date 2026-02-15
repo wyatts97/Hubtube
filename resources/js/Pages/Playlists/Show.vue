@@ -5,7 +5,7 @@ import SeoHead from '@/Components/SeoHead.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { useFetch } from '@/Composables/useFetch';
-import { ArrowLeft, Play, Lock, Globe, EyeOff, Heart } from 'lucide-vue-next';
+import { ArrowLeft, Play, Heart } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 
 const { t } = useI18n();
@@ -25,14 +25,6 @@ const favoritesCount = ref(props.playlist.favorited_by_count || 0);
 const favoriting = ref(false);
 
 const isOwner = computed(() => user.value && user.value.id === props.playlist.user_id);
-
-const privacyIcon = () => {
-    switch (props.playlist.privacy) {
-        case 'private': return Lock;
-        case 'unlisted': return EyeOff;
-        default: return Globe;
-    }
-};
 
 const toggleFavorite = async () => {
     if (!user.value) { router.visit('/login'); return; }
@@ -69,10 +61,6 @@ const removeVideo = (videoId) => {
             <div class="card p-6 mb-6">
                 <div class="flex items-start justify-between">
                     <div>
-                        <div class="flex items-center gap-2 mb-1">
-                            <component :is="privacyIcon()" class="w-4 h-4" style="color: var(--color-text-muted);" />
-                            <span class="text-xs uppercase tracking-wide" style="color: var(--color-text-muted);">{{ playlist.privacy }}</span>
-                        </div>
                         <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ playlist.title }}</h1>
                         <p v-if="playlist.description" class="mt-2" style="color: var(--color-text-secondary);">{{ playlist.description }}</p>
                         <div class="flex items-center gap-4 mt-3">
