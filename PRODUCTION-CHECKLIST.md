@@ -15,35 +15,23 @@
 - [ ] **Set `DB_PASSWORD`** — Currently `password`. Use a strong, unique password in production.
 - [ ] **Set `SESSION_SECURE_COOKIE=true`** — Currently `false`. Session cookies must only be sent over HTTPS to prevent session hijacking.
 
-### 2. Pending Package Installation
-- [ ] **Install `socialiteproviders/reddit`** — Required for Reddit social login. Run: `composer require socialiteproviders/reddit --ignore-platform-reqs`
-- [ ] **Install `abraham/twitteroauth`** — Required for Twitter auto-tweet service. Run: `composer require abraham/twitteroauth --ignore-platform-reqs`
-
-### 3. Pending Migrations
-- [ ] **Run `php artisan migrate`** — Three new tables need to be created: `social_accounts`, `video_tweets`, `sponsored_cards`.
-
 ---
 
 ## 🟡 HIGH — Should Fix Before Launch
 
-### 4. Content Security Policy Tightening
-- [x] **CSP nonce support added** — Replaced `'unsafe-inline'` in `script-src` with nonce-based authorization via `Vite::useCspNonce()`. Ziggy `@routes` also receives the nonce. `'unsafe-eval'` remains because Vue's runtime compiler requires it. `style-src` keeps `'unsafe-inline'` because Filament/Livewire inject inline styles dynamically.
 
 ---
 
 ## 🟠 MEDIUM-HIGH — Should Fix Soon After Launch
 
-### 5. Dead Code Cleanup
-- [x] **Removed `EmbeddedVideos/` Vue pages** — Deleted `Index.vue`, `Show.vue`, `Featured.vue` from `resources/js/Pages/EmbeddedVideos/`.
-- [x] **Removed `two_factor_enabled` / `two_factor_secret`** — Removed from User model `$fillable`, `$hidden`, and `casts()`. No migration needed (columns can remain in DB harmlessly).
-- [x] **Removed `FeatureTestOutput`** — Deleted 69KB test output file from repo root.
+
+
 
 ---
 
 ## 🟢 MEDIUM — Polish Before Launch
 
 ### 6. Skeleton Loading Components
-- [x] **Added skeleton loaders for paginated views** — `VideoCardSkeleton` now used on Trending, Search, History, Playlists, and Channel/Videos pages with a brief initial loading state.
 
 ### 7. Admin Panel Video Seekbar
 - [x] **Fixed video seekbar scrubbing in admin edit page** — Created a generalized `/admin/video-stream/{path}` route with HTTP Range request support. `VideoPreviewManager` now uses this route instead of direct `/storage/` URLs, enabling seekbar scrubbing even with `php artisan serve`. Also consolidated the old watermark-only streaming route into this generalized one.
@@ -61,9 +49,6 @@
 ### 10. SSL / HTTPS
 - [x] **Force HTTPS** — `AppServiceProvider::boot()` already calls `URL::forceScheme('https')` in production.
 - [ ] **Obtain SSL certificate** — Use Let's Encrypt / Certbot or Cloudflare. This is a server-level task.
-
-### 11. Shorts Vertical Viewer
-- [ ] **TikTok-style vertical swipe viewer** — Currently Shorts page shows a grid of VideoCards. A full-screen vertical snap-scroll viewer would improve engagement. Requires: dedicated `ShortsViewer.vue`, ad interstitials between shorts, vertical aspect ratio enforcement during upload.
 
 ---
 
@@ -126,6 +111,3 @@
 
 **Remaining tasks:**
 - **Server-level:** SSL certificate, `spatie/laravel-backup` installation
-- **Package install:** `socialiteproviders/reddit`, `abraham/twitteroauth`
-- **Database:** Run `php artisan migrate` for 3 new tables
-- **Nice-to-have:** TikTok-style Shorts vertical viewer
