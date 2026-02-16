@@ -13,47 +13,43 @@ class BunnyDownloadSingle extends Command
     protected $signature = 'bunny:download-single {videoId} {--disk=public}';
     protected $description = 'Download a single Bunny Stream video in the background. Downloads locally, then ProcessVideoJob handles processing + cloud offload.';
 
-    private const CACHE_DOWNLOADING = 'bunny_migration_downloading';
-    private const CACHE_CURRENT_VIDEO = 'bunny_migration_current_video';
-    private const CACHE_RESULT = 'bunny_migration_result';
+    private const CACHE_PREFIX = 'bunny_dl_';
 
     public function handle(): int
     {
         $videoId = (int) $this->argument('videoId');
+        $slotKey = self::CACHE_PREFIX . $videoId;
 
         $video = Video::find($videoId);
 
-        if (!$video || !$video->is_embedded) {
-            Log::warning('BunnyDownloadSingle: video not found or not embedded', ['id' => $videoId]);
-            Cache::forget(self::CACHE_DOWNLOADING);
-            Cache::put(self::CACHE_RESULT, [
+        if (!$video || !$video->source_video_id) {
+            Log::warning('BunnyDownloadSingle: video not found or has no source_video_id', ['id' => $videoId]);
+            Cache::put($slotKey, [
+                'done' => true,
                 'success' => false,
                 'video_id' => $videoId,
-                'title' => 'Unknown',
+                'title' => $video->title ?? 'Unknown',
                 'bunny_id' => '',
-                'error' => 'Video not found or not embedded',
-            ], 300);
+                'error' => 'Video not found or has no Bunny Stream ID',
+            ], 600);
             return 1;
         }
 
-        $this->info("Downloading: {$video->title} (ID: {$video->id})");
+        $this->info("Downloading: {$video->title} (ID: {$video->id}, Bunny: {$video->source_video_id})");
 
         $service = new BunnyStreamService();
-        // Always downloads to local first; ProcessVideoJob handles processing + cloud offload
         $result = $service->downloadVideo($video);
 
         // Store result for the Livewire page to pick up
-        Cache::put(self::CACHE_RESULT, [
+        Cache::put($slotKey, [
+            'done' => true,
             'success' => $result['success'],
             'video_id' => $video->id,
             'title' => $video->title,
             'bunny_id' => $video->source_video_id ?? '',
             'error' => $result['error'] ?? null,
-        ], 300);
-
-        // Clear the downloading flag so the next video can start
-        Cache::forget(self::CACHE_DOWNLOADING);
-        Cache::forget(self::CACHE_CURRENT_VIDEO);
+            'video_path' => $result['video_path'] ?? null,
+        ], 600);
 
         if ($result['success']) {
             $this->info("Success: {$result['video_path']}");

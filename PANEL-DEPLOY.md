@@ -26,6 +26,7 @@ A complete, step-by-step guide to deploying HubTube on a fresh VPS using **aaPan
 18. [Admin Panel Overview](#18-admin-panel-overview)
 19. [Updating HubTube](#19-updating-hubtube)
 20. [Troubleshooting](#20-troubleshooting)
+21. [Cloudflare CDN Setup](#21-cloudflare-cdn-setup)
 
 ---
 
@@ -939,6 +940,154 @@ sudo chmod 664 /www/wwwroot/hubtube/.env
 2. Check PHP: `upload_max_filesize = 5G` and `post_max_size = 5G`
 3. Check PHP: `max_execution_time = 600`
 4. If behind Cloudflare: free plan limits uploads to 100MB. Use Cloudflare Pro ($20/mo) for 500MB, or bypass Cloudflare for upload routes.
+
+---
+
+## 21. Cloudflare CDN Setup
+
+Cloudflare sits in front of your server as a reverse proxy, providing DDoS protection, global CDN caching, and SSL. This section covers connecting Cloudflare to HubTube.
+
+### Add Your Domain to Cloudflare
+
+1. Sign up at [dash.cloudflare.com](https://dash.cloudflare.com) (free plan works)
+2. Click **Add a Site** → enter your domain (e.g. `yourdomain.com`)
+3. Select the **Free** plan (or Pro if you need >100MB uploads through CF)
+4. Cloudflare scans your existing DNS records — review and confirm them
+5. Update your domain's **nameservers** at your registrar to the two Cloudflare nameservers shown
+6. Wait for propagation (usually 5–30 minutes, can take up to 24h)
+
+### DNS Records
+
+Set up these records in Cloudflare DNS:
+
+| Type | Name | Content | Proxy |
+|------|------|---------|-------|
+| **A** | `@` | `YOUR_SERVER_IP` | Proxied (orange cloud) |
+| **A** | `www` | `YOUR_SERVER_IP` | Proxied (orange cloud) |
+
+> **Proxied vs DNS Only:** Orange cloud (Proxied) = traffic goes through Cloudflare CDN. Grey cloud (DNS Only) = traffic goes direct to your server. Always use Proxied for the main site.
+
+### SSL/TLS Settings
+
+1. Go to **SSL/TLS** → **Overview**
+2. Set encryption mode to **Full (strict)**
+   - This requires a valid SSL cert on your origin server (Let's Encrypt from Step 13)
+   - **Never** use "Flexible" — it causes redirect loops with Laravel's HTTPS enforcement
+3. Go to **SSL/TLS** → **Edge Certificates**
+   - Enable **Always Use HTTPS** → On
+   - Set **Minimum TLS Version** → TLS 1.2
+   - Enable **Automatic HTTPS Rewrites** → On
+
+### Caching Rules
+
+Cloudflare caches static assets by default. For optimal HubTube performance:
+
+1. Go to **Caching** → **Configuration**
+   - Set **Browser Cache TTL** → Respect Existing Headers (Nginx already sets proper cache headers)
+2. Go to **Rules** → **Page Rules** (or **Cache Rules** on newer UI)
+   - Create a rule to bypass cache for the admin panel:
+
+| Setting | Value |
+|---------|-------|
+| **URL** | `yourdomain.com/admin/*` |
+| **Cache Level** | Bypass |
+
+   - Create a rule to bypass cache for API/auth routes:
+
+| Setting | Value |
+|---------|-------|
+| **URL** | `yourdomain.com/api/*` |
+| **Cache Level** | Bypass |
+
+### Upload Size Limits
+
+**Important:** Cloudflare free plan limits upload request bodies to **100MB**. This affects video uploads.
+
+| Plan | Max Upload Size |
+|------|----------------|
+| Free | 100 MB |
+| Pro ($20/mo) | 500 MB |
+| Business ($200/mo) | 500 MB |
+| Enterprise | 5 GB |
+
+**Workarounds for large video uploads on the free plan:**
+
+- **Option A (Recommended):** HubTube uses chunked uploads by default. Each chunk is under 100MB, so uploads work through Cloudflare regardless of total file size. No action needed if chunk size in admin is ≤ 95MB.
+- **Option B:** Create a DNS-only (grey cloud) subdomain for uploads:
+  1. Add an A record: `upload.yourdomain.com` → `YOUR_SERVER_IP` → **DNS Only** (grey cloud)
+  2. Set `CHUNK_UPLOAD_URL=https://upload.yourdomain.com` in `.env` (if supported)
+  3. Get a separate SSL cert for the upload subdomain via aaPanel
+
+### WebSocket Support
+
+HubTube uses WebSockets (Laravel Reverb) for live streaming chat and real-time notifications.
+
+1. Go to **Network**
+   - Enable **WebSockets** → On
+2. Cloudflare proxies WebSocket connections automatically when enabled
+3. No changes needed to the Nginx config — the `/app/` proxy block handles it
+
+> **Note:** Cloudflare has a 100-second idle timeout for WebSocket connections. Reverb sends periodic pings to keep connections alive, so this shouldn't be an issue.
+
+### Security Settings
+
+1. Go to **Security** → **Settings**
+   - Set **Security Level** → Medium
+   - Enable **Browser Integrity Check** → On
+   - Enable **Bot Fight Mode** → On (free)
+2. Go to **Security** → **WAF** (Web Application Firewall)
+   - The managed ruleset is enabled by default on all plans
+   - If you get false positives on video uploads or admin actions, create a WAF exception:
+     - **Skip WAF** for `yourdomain.com/admin/*`
+     - **Skip WAF** for `yourdomain.com/api/videos/upload*`
+
+### Speed Optimizations
+
+1. Go to **Speed** → **Optimization**
+   - Enable **Auto Minify** → JavaScript, CSS, HTML (all three)
+   - Enable **Brotli** → On
+   - Enable **Early Hints** → On
+   - Enable **Rocket Loader** → **Off** (can break Inertia/Vue SPA — leave disabled)
+
+> **Warning:** Do NOT enable Rocket Loader. It defers JavaScript loading in a way that breaks Vue/Inertia single-page apps.
+
+### Verify It's Working
+
+After DNS propagation:
+
+```bash
+# Check that Cloudflare is proxying your site
+curl -sI https://yourdomain.com | grep -i "cf-ray\|server"
+# Should show: server: cloudflare and a cf-ray header
+
+# Check SSL
+curl -sI https://yourdomain.com | grep -i "strict-transport"
+```
+
+In Cloudflare dashboard → **Analytics** you should see traffic flowing through.
+
+### Update .env
+
+No `.env` changes are required for basic Cloudflare setup. Laravel automatically reads the real client IP from Cloudflare's `CF-Connecting-IP` header via the `TrustProxies` middleware.
+
+If you're using rate limiting or IP-based features, ensure your `TrustProxies` middleware trusts Cloudflare IPs:
+
+```php
+// app/Http/Middleware/TrustProxies.php
+protected $proxies = '*'; // Trust all proxies (Cloudflare IPs rotate)
+```
+
+### Cloudflare + aaPanel SSL
+
+When using Cloudflare with **Full (strict)** SSL mode, you need a valid cert on your origin:
+
+- **Option A:** Keep using Let's Encrypt (already set up in Step 13) — auto-renews every 90 days
+- **Option B:** Use a Cloudflare Origin Certificate (15-year validity):
+  1. Cloudflare → **SSL/TLS** → **Origin Server** → **Create Certificate**
+  2. Copy the certificate and private key
+  3. In aaPanel → **Website** → your site → **SSL** → **Other Certificate**
+  4. Paste the cert and key → Save
+  5. This cert is only valid for traffic through Cloudflare (not direct access)
 
 ---
 

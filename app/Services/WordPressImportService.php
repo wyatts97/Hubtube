@@ -31,6 +31,7 @@ class WordPressImportService
     private array $terms = [];
     private array $termTaxonomy = [];
     private array $termRelationships = [];
+    private array $users = []; // WP user_id => user_login
 
     // In-memory caches to avoid repeated DB queries during import
     private array $categoryCache = [];
@@ -55,13 +56,14 @@ class WordPressImportService
         $this->terms = [];
         $this->termTaxonomy = [];
         $this->termRelationships = [];
+        $this->users = [];
 
         $handle = fopen($filePath, 'r');
         if (!$handle) {
             throw new \RuntimeException("Cannot open SQL file: {$filePath}");
         }
 
-        $targetTables = ['posts', 'postmeta', 'terms', 'term_taxonomy', 'term_relationships'];
+        $targetTables = ['posts', 'postmeta', 'terms', 'term_taxonomy', 'term_relationships', 'users'];
         $currentTable = null;
 
         while (($line = fgets($handle)) !== false) {
@@ -101,9 +103,19 @@ class WordPressImportService
         // Filter posts to only vidmov_video type
         $videoPosts = array_filter($this->posts, fn($p) => ($p['post_type'] ?? '') === 'vidmov_video' && ($p['post_status'] ?? '') === 'publish');
 
+        // Count how many are by the allowed author
+        $allowedAuthor = ['wedgietubeadmin', 'wedgietube'];
+        $filteredCount = count(array_filter($videoPosts, function ($p) use ($allowedAuthor) {
+            $authorId = (int) ($p['post_author'] ?? 0);
+            $authorLogin = $this->users[$authorId] ?? '';
+            return $authorLogin === $allowedAuthor;
+        }));
+
         return [
             'total_posts' => count($this->posts),
             'video_posts' => count($videoPosts),
+            'video_posts_by_author' => $filteredCount,
+            'wp_users' => count($this->users),
             'postmeta_entries' => count($this->postmeta),
             'terms' => count($this->terms),
             'term_taxonomy' => count($this->termTaxonomy),
@@ -187,6 +199,14 @@ class WordPressImportService
                 $ttId = (int) ($row['term_taxonomy_id'] ?? 0);
                 if ($objId && $ttId) {
                     $this->termRelationships[$objId][] = $ttId;
+                }
+                break;
+
+            case 'users':
+                $userId = (int) ($row['ID'] ?? 0);
+                $login = $row['user_login'] ?? '';
+                if ($userId && $login) {
+                    $this->users[$userId] = strtolower($login);
                 }
                 break;
         }
@@ -283,6 +303,7 @@ class WordPressImportService
             'terms' => ['term_id', 'name', 'slug', 'term_group'],
             'term_taxonomy' => ['term_taxonomy_id', 'term_id', 'taxonomy', 'description', 'parent', 'count'],
             'term_relationships' => ['object_id', 'term_taxonomy_id', 'term_order'],
+            'users' => ['ID', 'user_login', 'user_pass', 'user_nicename', 'user_email', 'user_url', 'user_registered', 'user_activation_key', 'user_status', 'display_name'],
             default => [],
         };
     }
@@ -293,6 +314,14 @@ class WordPressImportService
     public function getVideoPosts(): array
     {
         $videoPosts = array_filter($this->posts, fn($p) => ($p['post_type'] ?? '') === 'vidmov_video' && ($p['post_status'] ?? '') === 'publish');
+
+        // Filter to only videos posted by the 'wedgietube' WP user
+        $allowedAuthor = ['wedgietubeadmin', 'wedgietube'];
+        $videoPosts = array_filter($videoPosts, function ($p) use ($allowedAuthor) {
+            $authorId = (int) ($p['post_author'] ?? 0);
+            $authorLogin = $this->users[$authorId] ?? '';
+            return $authorLogin === $allowedAuthor;
+        });
 
         $results = [];
         foreach ($videoPosts as $postId => $post) {
@@ -454,11 +483,12 @@ class WordPressImportService
     }
 
     /**
-     * Purge all previously imported WP videos so user can re-import cleanly.
+     * Purge all previously imported WP/Bunny videos so user can re-import cleanly.
+     * Deletes videos that came from bunnystream or wordpress sources.
      */
     public function purgeImported(): int
     {
-        return Video::where('is_embedded', true)->forceDelete();
+        return Video::whereIn('source_site', ['bunnystream', 'wordpress'])->forceDelete();
     }
 
     /**
@@ -501,7 +531,9 @@ class WordPressImportService
     }
 
     /**
-     * Import a batch of video posts into the videos table as embedded videos.
+     * Import a batch of video posts into the videos table as pending downloads.
+     * Videos are created with status=pending_download and is_embedded=false.
+     * They will NOT appear on the frontend until downloaded and fully processed.
      * Returns import results.
      */
     public function importBatch(array $videoPosts): array
@@ -514,14 +546,13 @@ class WordPressImportService
             return ['imported' => 0, 'skipped' => 0, 'errors' => [['wp_id' => 0, 'title' => '', 'error' => 'No import user selected']]];
         }
 
-        // Pre-load existing imported source_video_ids for this batch
+        // Pre-load existing source_video_ids for this batch (any status)
         $batchSourceIds = [];
         foreach ($videoPosts as $video) {
             $id = (string) ($video['bunny_video_id'] ?? $video['wp_id']);
             $batchSourceIds[] = $id;
         }
-        $existingSourceIds = Video::where('is_embedded', true)
-            ->whereIn('source_video_id', $batchSourceIds)
+        $existingSourceIds = Video::whereIn('source_video_id', $batchSourceIds)
             ->pluck('source_video_id')
             ->flip()
             ->all();
@@ -531,25 +562,11 @@ class WordPressImportService
                 $sourceVideoId = (string) ($video['bunny_video_id'] ?? $video['wp_id']);
                 $sourceSite = $video['bunny_video_id'] ? 'bunnystream' : 'wordpress';
 
-                // Skip if already imported
+                // Skip if already imported (any status — pending, processing, processed, failed)
                 if (isset($existingSourceIds[$sourceVideoId])) {
                     $skipped++;
                     continue;
                 }
-
-                // Use the raw embed code exactly as it was in WordPress
-                $rawEmbedCode = $video['raw_embed_code'] ?? '';
-                $embedUrl = $this->extractEmbedUrl($rawEmbedCode);
-                $embedCode = $rawEmbedCode;
-
-                // Thumbnail: always use Bunny CDN still frame, webp is for hover preview only
-                $thumbnailUrl = null;
-                if ($video['bunny_video_id']) {
-                    $thumbnailUrl = "https://{$this->bunnyCdnHost}/{$video['bunny_video_id']}/thumbnail.jpg";
-                }
-
-                // Preview URL (animated webp for hover)
-                $previewUrl = $video['webp_preview'] ?? null;
 
                 // Source URL on original site
                 $sourceUrl = $video['slug'] ? "https://wedgietube.com/video/{$video['slug']}/" : '';
@@ -589,16 +606,12 @@ class WordPressImportService
                     'description' => !empty($video['description']) ? $video['description'] : null,
                     'duration' => $durationSeconds,
                     'privacy' => 'public',
-                    'status' => 'processed',
+                    'status' => 'pending_download',
                     'is_short' => false,
-                    'is_embedded' => true,
+                    'is_embedded' => false,
                     'is_featured' => false,
                     'is_approved' => true,
                     'age_restricted' => true,
-                    'embed_url' => $embedUrl,
-                    'embed_code' => $embedCode,
-                    'external_thumbnail_url' => $thumbnailUrl,
-                    'external_preview_url' => $previewUrl,
                     'source_site' => $sourceSite,
                     'source_video_id' => $sourceVideoId,
                     'source_url' => $sourceUrl,
@@ -607,7 +620,6 @@ class WordPressImportService
                     'tags' => !empty($video['tags']) ? $video['tags'] : null,
                     'category_id' => $categoryId,
                     'published_at' => $publishedAt,
-                    'processing_completed_at' => $publishedAt,
                 ]);
 
                 $imported++;

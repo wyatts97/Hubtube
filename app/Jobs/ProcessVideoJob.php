@@ -142,6 +142,12 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
 
     protected function getQualityPreset(): string
     {
+        // Force ultrafast for Bunny Stream migration videos — processing ~1000 videos
+        // needs maximum speed, not maximum quality. Ignore admin-configured preset.
+        if ($this->video->source_site === 'bunnystream') {
+            return 'ultrafast';
+        }
+
         return Setting::get('video_quality_preset', 'veryfast');
     }
 
