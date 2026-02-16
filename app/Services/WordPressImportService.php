@@ -104,7 +104,7 @@ class WordPressImportService
         $videoPosts = array_filter($this->posts, fn($p) => ($p['post_type'] ?? '') === 'vidmov_video' && ($p['post_status'] ?? '') === 'publish');
 
         // Count how many are by the allowed author
-        $allowedAuthor = 'wedgietube';
+        $allowedAuthor = 'wedgietubeadmin';
         $filteredCount = count(array_filter($videoPosts, function ($p) use ($allowedAuthor) {
             $authorId = (int) ($p['post_author'] ?? 0);
             $authorLogin = $this->users[$authorId] ?? '';
@@ -316,7 +316,7 @@ class WordPressImportService
         $videoPosts = array_filter($this->posts, fn($p) => ($p['post_type'] ?? '') === 'vidmov_video' && ($p['post_status'] ?? '') === 'publish');
 
         // Filter to only videos posted by the 'wedgietube' WP user
-        $allowedAuthor = 'wedgietube';
+        $allowedAuthor = 'wedgietubeadmin';
         $videoPosts = array_filter($videoPosts, function ($p) use ($allowedAuthor) {
             $authorId = (int) ($p['post_author'] ?? 0);
             $authorLogin = $this->users[$authorId] ?? '';
