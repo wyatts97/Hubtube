@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
+use App\Services\EmailService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -325,17 +326,42 @@ class VideoResource extends Resource
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
-                        ->action(fn (Video $record) => $record->update([
-                            'is_approved' => true,
-                            'published_at' => $record->published_at ?? now(),
-                        ]))
+                        ->action(function (Video $record) {
+                            $record->update([
+                                'is_approved' => true,
+                                'published_at' => $record->published_at ?? now(),
+                            ]);
+                            $record->loadMissing('user');
+                            if ($record->user) {
+                                EmailService::sendToUser('video-approved', $record->user->email, [
+                                    'username' => $record->user->username,
+                                    'video_title' => $record->title,
+                                    'video_url' => url("/{$record->slug}"),
+                                ]);
+                            }
+                        })
                         ->visible(fn (Video $record) => !$record->is_approved && $record->status === 'processed'),
 
                     Tables\Actions\Action::make('unapprove')
                         ->icon('heroicon-o-x-circle')
                         ->color('warning')
                         ->requiresConfirmation()
-                        ->action(fn (Video $record) => $record->update(['is_approved' => false]))
+                        ->form([
+                            Forms\Components\Textarea::make('rejection_reason')
+                                ->label('Reason (optional)')
+                                ->rows(3),
+                        ])
+                        ->action(function (Video $record, array $data) {
+                            $record->update(['is_approved' => false]);
+                            $record->loadMissing('user');
+                            if ($record->user) {
+                                EmailService::sendToUser('video-rejected', $record->user->email, [
+                                    'username' => $record->user->username,
+                                    'video_title' => $record->title,
+                                    'rejection_reason' => $data['rejection_reason'] ?? 'No reason provided.',
+                                ]);
+                            }
+                        })
                         ->visible(fn (Video $record) => $record->is_approved),
 
                     Tables\Actions\Action::make('feature')

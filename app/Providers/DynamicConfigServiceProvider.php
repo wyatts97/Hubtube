@@ -32,13 +32,15 @@ class DynamicConfigServiceProvider extends ServiceProvider
             return;
         }
 
+        $encryption = Setting::get('mail_encryption', config('mail.mailers.smtp.encryption'));
+
         config([
             'mail.default' => $mailer,
             'mail.mailers.smtp.host' => Setting::get('mail_host', config('mail.mailers.smtp.host')),
             'mail.mailers.smtp.port' => (int) Setting::get('mail_port', config('mail.mailers.smtp.port')),
             'mail.mailers.smtp.username' => Setting::get('mail_username', config('mail.mailers.smtp.username')),
             'mail.mailers.smtp.password' => Setting::getDecrypted('mail_password', config('mail.mailers.smtp.password')),
-            'mail.mailers.smtp.encryption' => Setting::get('mail_encryption', config('mail.mailers.smtp.encryption')),
+            'mail.mailers.smtp.encryption' => $encryption ?: null,
         ]);
 
         $fromAddress = Setting::get('mail_from_address', '');
@@ -49,6 +51,20 @@ class DynamicConfigServiceProvider extends ServiceProvider
         }
         if (!empty($fromName)) {
             config(['mail.from.name' => $fromName]);
+        }
+
+        // SSL peer verification — disable for self-hosted mail servers with self-signed certs
+        $verifyPeer = Setting::get('mail_verify_peer', 'true');
+        if ($verifyPeer === 'false' || $verifyPeer === '0') {
+            config([
+                'mail.mailers.smtp.stream' => [
+                    'ssl' => [
+                        'allow_self_signed' => true,
+                        'verify_peer' => false,
+                        'verify_peer_name' => false,
+                    ],
+                ],
+            ]);
         }
     }
 }

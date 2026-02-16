@@ -633,6 +633,7 @@ Add this line:
 | `videos:prune-deleted` | Daily | Permanently delete soft-deleted videos after 30 days |
 | `storage:cleanup` | Daily | Remove temp files from video processing |
 | `uploads:cleanup-chunks` | Daily | Remove abandoned chunk uploads older than 24h |
+| `tweets:older-video` | Hourly | Auto-tweet older videos (configurable interval in admin) |
 
 ---
 
@@ -704,10 +705,10 @@ Check in **App Store** → **PHP 8.4** → **Extensions** → ensure **opcache**
 
 ### Configure Meilisearch (Optional — Better Search)
 
-By default, search uses the `database` driver (`LIKE %query%`). For production, Meilisearch provides instant, typo-tolerant full-text search.
+By default, search uses the `database` driver (`LIKE %query%`). For production, Meilisearch provides instant, typo-tolerant full-text search with zero configuration.
 
 ```bash
-# Install Meilisearch
+# Install Meilisearch binary
 curl -L https://install.meilisearch.com | sh
 sudo mv ./meilisearch /usr/local/bin/
 sudo chmod +x /usr/local/bin/meilisearch
@@ -715,6 +716,10 @@ sudo chmod +x /usr/local/bin/meilisearch
 # Create data directory
 sudo mkdir -p /var/lib/meilisearch
 sudo chown www:www /var/lib/meilisearch
+
+# Generate a master key (save this!)
+MASTER_KEY=$(openssl rand -hex 16)
+echo "Your Meilisearch master key: $MASTER_KEY"
 
 # Create systemd service
 sudo nano /etc/systemd/system/meilisearch.service
@@ -737,6 +742,9 @@ WantedBy=multi-user.target
 ```bash
 sudo systemctl enable meilisearch
 sudo systemctl start meilisearch
+
+# Verify it's running
+curl -s http://127.0.0.1:7700/health   # Should return {"status":"available"}
 ```
 
 Update `.env`:
@@ -746,10 +754,14 @@ MEILISEARCH_HOST=http://127.0.0.1:7700
 MEILISEARCH_KEY=YOUR_MASTER_KEY
 ```
 
-Import existing data:
+Sync index settings and import existing videos:
 ```bash
+cd /www/wwwroot/hubtube
+php artisan scout:sync-index-settings
 php artisan scout:import "App\Models\Video"
 ```
+
+> **Index settings** are defined in `config/scout.php` → `meilisearch.index-settings.videos`. The `videos` index is configured with filterable attributes (`user_id`, `category_id`), sortable attributes (`created_at`, `views_count`, `likes_count`), and searchable attributes (`title`, `description`, `tags`). Only public, approved, processed videos are indexed.
 
 ---
 
@@ -757,36 +769,44 @@ php artisan scout:import "App\Models\Video"
 
 Access the admin panel at `https://yourdomain.com/admin`.
 
-### Settings Pages (15 total)
+### Settings Pages (18 total)
 
 | Page | Purpose |
-|------|---------|
-| **Dashboard** | Stats overview, trending videos, recent uploads, system status bar |
-| **Site Settings** | Site name, logo, registration toggle, upload limits, video quality presets, watermark config |
+|------|--------|
+| **Dashboard** | Stats overview (users, videos, views, revenue), trending videos, recent uploads, system status bar |
+| **Site Settings** | Site name, logo, registration toggle, upload limits, video quality presets, watermark config, FFmpeg |
 | **Theme Settings** | Colors, dark/light mode, CSS variables, custom CSS |
 | **Storage & CDN** | Cloud offloading (Wasabi/S3/B2), CDN URL, FFmpeg paths |
-| **Integrations** | Bunny Stream, SMTP/email config with test button |
+| **Integrations** | Bunny Stream API, SMTP/email config with test button |
+| **Social Networks** | Social login (Google/Twitter/Reddit), Twitter auto-tweet config with test tweet |
 | **Payment Settings** | Wallet, withdrawal limits, payment gateway config |
 | **Live Stream Settings** | Agora.io credentials, stream quality, gift settings |
-| **Ad Settings** | Video ads (pre/mid/post-roll), banner ads, ad targeting |
-| **SEO Settings** | Meta tags, JSON-LD schema, sitemap, robots.txt, OG tags |
-| **Language Settings** | Multi-language, auto-translation, translation overrides |
+| **Ad Settings** | Video ads (pre/mid/post-roll — MP4/VAST/VPAID/HTML), banner ads, ad targeting |
+| **SEO Settings** | Meta tags, JSON-LD schema, video sitemap, robots.txt, OG tags, hreflang |
+| **Language Settings** | Multi-language, auto-translation, translation overrides, regenerate button |
 | **PWA Settings** | App name, icons, push notification VAPID keys |
 | **WordPress Importer** | Import from WP SQL dump |
-| **Archive Importer** | Import from local WP archive directory |
-| **Bunny Migrator** | Download Bunny Stream videos to local/cloud |
+| **WP User Importer** | Import users from WP with password migration (HMAC-SHA384 + phpass) |
+| **Archive Importer** | Import from local WP archive directory with seekability fix |
+| **Bunny Migrator** | Download Bunny Stream videos to local/cloud storage |
+| **Activity Log** | Admin action audit trail (Spatie activity log) |
 | **Failed Jobs** | View and retry failed queue jobs |
 
-### Resources (11 total)
+### Resources (14 total)
 
-Videos, Categories, Channels, Users, Comments, Live Streams, Gifts, Wallet Transactions, Menu Items, Pages, Contact Messages
+Videos, Categories, Channels, Users, Comments, Live Streams, Gifts, Wallet Transactions, Withdrawal Requests, Sponsored Cards, Menu Items, Pages, Contact Messages, Activity Log
 
 ### Key Admin Actions
 
 - **Email:** Configure SMTP in Integrations → click "Send Test Email" to verify
 - **Storage:** Enable cloud offloading in Storage & CDN → enter Wasabi/S3 credentials → click "Test Connection"
 - **Video Processing:** Configure FFmpeg path, quality presets, and watermarks in Site Settings
-- **Sensitive credentials** (SMTP password, API keys, cloud storage secrets) are **encrypted at rest** in the database
+- **Social Login:** Enable Google/Twitter/Reddit OAuth in Social Networks → enter client ID/secret
+- **Auto-Tweet:** Configure Twitter API keys in Social Networks → enable auto-tweet → click "Send Test Tweet"
+- **Video Ads:** Configure pre/mid/post-roll ads in Ad Settings → add ad creatives (MP4, VAST, HTML)
+- **Sponsored Cards:** Create in-feed ad cards under Appearance → Sponsored Cards
+- **Languages:** Enable auto-translation in Language Settings → add languages → click "Regenerate"
+- **Sensitive credentials** (SMTP password, API keys, cloud storage secrets, social login secrets) are **encrypted at rest** in the database
 
 ---
 

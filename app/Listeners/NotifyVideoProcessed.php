@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Events\VideoProcessed;
 use App\Models\Notification;
+use App\Services\EmailService;
 
 class NotifyVideoProcessed
 {
@@ -32,5 +33,15 @@ class NotifyVideoProcessed
                 'url' => "/{$video->slug}",
             ],
         ]);
+
+        // Send email notification to the uploader
+        $video->loadMissing('user');
+        if ($video->user) {
+            EmailService::sendToUser('video-published', $video->user->email, [
+                'username' => $video->user->username,
+                'video_title' => $video->title,
+                'video_url' => url("/{$video->slug}"),
+            ]);
+        }
     }
 }

@@ -1,226 +1,205 @@
 #!/bin/bash
 
-# HubTube Development Server Setup for Ubuntu 22.04 / 24.04
-# This script sets up and runs the HubTube development server
+# =============================================================================
+# HubTube — Development Server Setup for Ubuntu 22.04 / 24.04
+# =============================================================================
+# Last updated: 2026-02-15
 #
-# Features supported:
-#   - Laravel 11 + Filament 3 admin panel (15 settings pages, 11 resources)
-#   - Vite 6 + Vue 3 + Tailwind CSS v4 frontend build
-#   - Laravel Reverb WebSockets (port 8080)
-#   - Laravel Horizon queue worker (Redis)
-#   - phpredis extension (required)
-#   - Meilisearch (optional, falls back to database driver)
-#   - Auto-translation via stichoza/google-translate-php
-#   - SEO system (JSON-LD, OG tags, video sitemap, hreflang)
-#   - Video processing (FFmpeg multi-res transcoding, HLS, watermarks)
-#   - Cloud storage offloading (Wasabi, S3, B2)
+# Tech Stack:
+#   - Laravel 11 + PHP 8.2+ + Filament 3 admin panel
+#   - Vue 3 + Inertia.js + Vite 6 + Tailwind CSS v4
+#   - Redis (sessions, cache, queues, broadcasting)
+#   - MySQL 8+ / MariaDB 10.11+
+#   - Laravel Reverb (WebSockets for live chat + real-time notifications)
+#   - Laravel Horizon (Redis queue dashboard + workers)
+#   - Laravel Scout (search — database driver for dev, Meilisearch for prod)
+#   - FFmpeg (video transcoding, HLS, thumbnails, watermarks, sprites)
+#
+# App Features:
+#   - 18 Filament admin pages, 14 CRUD resources
+#   - 41 Vue pages, 15 Vue components
+#   - 33 Eloquent models, 27 controllers, 16 services
+#   - 45 database migrations, 7 artisan commands, 7 scheduled jobs
+#   - Multi-language auto-translation (stichoza/google-translate-php)
+#   - SEO (JSON-LD, OG tags, video sitemap, hreflang, translated slugs)
+#   - Video processing (multi-res transcoding, HLS, watermarks, scrubber sprites)
+#   - Cloud storage offloading (Wasabi, S3, B2) with CDN support
+#   - Social login (Google, Twitter/X, Reddit) via Laravel Socialite
+#   - Auto-tweet service (new + scheduled older videos via Twitter API v2)
+#   - Video ads (pre/mid/post-roll — MP4, VAST, VPAID, HTML)
+#   - Sponsored in-feed ad cards with targeting
+#   - Wallet system with deposits, withdrawals, gifting
+#   - Live streaming via Agora.io with real-time chat
 #   - PWA with push notifications
-#   - Video & banner ad system
-#   - Encrypted credential storage (SMTP, API keys)
-#   - Content Security Policy headers
-#   - Scheduled cleanup (temp files, abandoned chunks)
-#   - All settings managed via Admin Panel (DB-backed)
+#   - Content Security Policy with nonce-based scripts
+#   - All optional features configured via Admin Panel (DB-backed Setting model)
+# =============================================================================
 
 set -e
 
-echo "🚀 Starting HubTube Development Server Setup..."
-
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Function to print colored output
-print_status() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
+print_status()  { echo -e "${GREEN}[INFO]${NC} $1"; }
+print_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+print_error()   { echo -e "${RED}[ERROR]${NC} $1"; }
+print_step()    { echo -e "${BLUE}[STEP]${NC} $1"; }
 
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-print_step() {
-    echo -e "${BLUE}[STEP]${NC} $1"
-}
-
-# Check if running on Ubuntu
-if ! grep -q "Ubuntu" /etc/os-release; then
-    print_error "This script is designed for Ubuntu 22.04"
-    exit 1
-fi
-
-# Get server IP
-SERVER_IP=$(hostname -I | awk '{print $1}')
-print_status "Server IP: $SERVER_IP"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  HubTube Development Server Setup"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Step 1: Check dependencies
 # ─────────────────────────────────────────────────────────────────────────────
 print_step "Checking dependencies..."
 
-# Check PHP
-if ! command -v php &> /dev/null; then
-    print_error "PHP is not installed. Please install PHP 8.2+ first."
+# PHP 8.2+
+if ! command -v php &>/dev/null; then
+    print_error "PHP is not installed. Install PHP 8.2+ first."
+    exit 1
+fi
+PHP_VERSION=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
+print_status "PHP: $PHP_VERSION"
+PHP_MAJOR=$(php -r 'echo PHP_MAJOR_VERSION;')
+PHP_MINOR=$(php -r 'echo PHP_MINOR_VERSION;')
+if [ "$PHP_MAJOR" -lt 8 ] || ([ "$PHP_MAJOR" -eq 8 ] && [ "$PHP_MINOR" -lt 2 ]); then
+    print_error "PHP 8.2+ is required. Current: $PHP_VERSION"
     exit 1
 fi
 
-PHP_VERSION=$(php -v | head -n1 | cut -d' ' -f2 | cut -d'.' -f1,2)
-print_status "PHP version: $PHP_VERSION"
-
-if [[ $(echo "$PHP_VERSION < 8.2" | bc -l) -eq 1 ]]; then
-    print_error "PHP 8.2+ is required. Current version: $PHP_VERSION"
-    exit 1
-fi
-
-# Check phpredis extension (required — app uses REDIS_CLIENT=phpredis)
+# phpredis extension (required — sessions, cache, queues all use Redis)
 if ! php -m 2>/dev/null | grep -qi "^redis$"; then
     print_error "phpredis extension is not installed."
-    print_error "Install it: sudo apt install php${PHP_VERSION}-redis"
+    print_error "Install: sudo apt install php${PHP_VERSION}-redis"
     exit 1
 fi
-print_status "phpredis extension: installed"
+print_status "phpredis: installed"
 
-# Check Composer
-if ! command -v composer &> /dev/null; then
-    print_error "Composer is not installed"
+# Composer
+if ! command -v composer &>/dev/null; then
+    print_error "Composer is not installed."
+    print_error "Install: curl -sS https://getcomposer.org/installer | php && sudo mv composer.phar /usr/local/bin/composer"
     exit 1
 fi
+print_status "Composer: $(composer --version 2>/dev/null | head -1)"
 
-# Check Node.js
-if ! command -v node &> /dev/null; then
-    print_error "Node.js is not installed"
+# Node.js 18+
+if ! command -v node &>/dev/null; then
+    print_error "Node.js is not installed. Install Node.js 20 LTS."
     exit 1
 fi
-
 NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-print_status "Node.js version: $(node -v)"
-
-if [[ $NODE_VERSION -lt 18 ]]; then
-    print_error "Node.js 18+ is required"
+print_status "Node.js: $(node -v)"
+if [ "$NODE_VERSION" -lt 18 ]; then
+    print_error "Node.js 18+ is required."
     exit 1
 fi
 
-# Check MariaDB/MySQL
-if ! command -v mysql &> /dev/null; then
-    print_warning "MySQL/MariaDB is not installed or not in PATH"
+# MySQL / MariaDB
+if command -v mysql &>/dev/null; then
+    print_status "MySQL: $(mysql --version 2>/dev/null | head -1)"
+else
+    print_warning "MySQL/MariaDB not found in PATH"
 fi
 
-# Check Redis
-if ! command -v redis-cli &> /dev/null; then
-    print_warning "Redis is not installed (required for cache, queue, sessions)"
-else
-    if redis-cli ping &>/dev/null; then
+# Redis
+if command -v redis-cli &>/dev/null; then
+    if redis-cli ping &>/dev/null 2>&1; then
         print_status "Redis: running"
     else
-        print_warning "Redis is installed but not running. Start it: sudo systemctl start redis-server"
+        print_warning "Redis installed but not running. Start: sudo systemctl start redis-server"
     fi
+else
+    print_warning "Redis not found (required for sessions, cache, queues)"
 fi
 
-# Check FFmpeg
-if ! command -v ffmpeg &> /dev/null; then
-    print_warning "FFmpeg is not installed (required for video processing)"
-else
+# FFmpeg (required for video processing)
+if command -v ffmpeg &>/dev/null; then
     print_status "FFmpeg: $(ffmpeg -version 2>&1 | head -n1 | cut -d' ' -f3)"
+else
+    print_warning "FFmpeg not installed (required for video processing, thumbnails, HLS)"
 fi
 
-# Check Meilisearch (optional)
-if command -v meilisearch &> /dev/null || curl -s http://127.0.0.1:7700/health &>/dev/null; then
-    print_status "Meilisearch: available"
+# Meilisearch (optional — falls back to database LIKE search)
+if curl -sf http://127.0.0.1:7700/health &>/dev/null; then
+    print_status "Meilisearch: running on port 7700"
 else
-    print_warning "Meilisearch not found — search will use database driver (slower but functional)"
+    print_warning "Meilisearch not running — search uses database driver (LIKE queries)"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Step 2: Environment file
 # ─────────────────────────────────────────────────────────────────────────────
-print_step "Checking environment configuration..."
+print_step "Checking environment..."
 if [ ! -f ".env" ]; then
-    print_status "Creating .env file from .env.example"
     cp .env.example .env
-    php artisan key:generate
-    print_warning "Please edit .env file with your database credentials"
-    echo "Press Enter to continue or Ctrl+C to stop..."
+    php artisan key:generate --force --no-interaction
+    print_status "Created .env — edit DB_PASSWORD and REDIS_PASSWORD before continuing"
+    print_warning "Press Enter to continue or Ctrl+C to edit .env first..."
     read -r
 else
-    print_status ".env file exists"
+    print_status ".env exists"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 3: Install PHP dependencies (always run to catch new packages)
+# Step 3: Install dependencies
 # ─────────────────────────────────────────────────────────────────────────────
 print_step "Installing PHP dependencies..."
 composer install --no-interaction --prefer-dist
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Step 4: Install Node dependencies (always run to catch new packages)
-# ─────────────────────────────────────────────────────────────────────────────
 print_step "Installing Node dependencies..."
 npm install
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 5: Build frontend assets (Vite 6 + Tailwind CSS v4)
+# Step 4: Build frontend (Vite 6 + Vue 3 + Tailwind CSS v4)
 # ─────────────────────────────────────────────────────────────────────────────
 print_step "Building frontend assets..."
 npm run build
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 6: Database migrations
+# Step 5: Database
 # ─────────────────────────────────────────────────────────────────────────────
-print_step "Running database migrations..."
+print_step "Running migrations (45 migration files)..."
 php artisan migrate --force
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Step 7: Seed database (only if users table is empty — safe for re-runs)
-# ─────────────────────────────────────────────────────────────────────────────
 print_step "Checking database seeding..."
 USER_COUNT=$(php artisan tinker --execute="echo \App\Models\User::count();" 2>/dev/null | tail -1)
 if [ "$USER_COUNT" = "0" ] || [ -z "$USER_COUNT" ]; then
     print_status "Seeding database (first run)..."
     php artisan db:seed --force
 else
-    print_status "Database already seeded ($USER_COUNT users found) — skipping"
+    print_status "Database already seeded ($USER_COUNT users) — skipping"
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 8: Storage link + installation marker
+# Step 6: Storage & assets
 # ─────────────────────────────────────────────────────────────────────────────
-print_step "Creating storage link..."
+print_step "Setting up storage and assets..."
+
+# Storage link
 if [ ! -L "public/storage" ]; then
     php artisan storage:link
+    print_status "Storage symlink created"
 else
-    print_status "Storage link already exists"
+    print_status "Storage symlink exists"
 fi
 
-# Mark as installed (skip web installer on dev server)
+# Mark as installed (skip web installer on dev)
 if [ ! -f "storage/installed" ]; then
-    print_step "Marking app as installed (skipping web installer)..."
     date > storage/installed
+    print_status "Marked as installed (skipping web installer)"
 fi
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Step 9: Publish Filament assets
-# ─────────────────────────────────────────────────────────────────────────────
-print_step "Publishing Filament assets..."
+# Filament admin panel assets
 php artisan filament:assets 2>/dev/null || true
+php artisan icons:cache 2>/dev/null || true
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 10: Generate translation files (if translation feature is enabled)
-# ─────────────────────────────────────────────────────────────────────────────
-if php artisan list 2>/dev/null | grep -q "translations:generate"; then
-    print_step "Generating translation files..."
-    php artisan translations:generate 2>/dev/null || print_warning "Translation generation skipped (configure in Admin → Languages)"
-else
-    print_status "Translation command not available — skipping"
-fi
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Step 11: Clear caches
+# Step 7: Clear caches
 # ─────────────────────────────────────────────────────────────────────────────
 print_step "Clearing caches..."
 php artisan config:clear
@@ -230,96 +209,105 @@ php artisan cache:clear
 php artisan event:clear
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 12: Start services
+# Step 8: Meilisearch index (if available)
+# ─────────────────────────────────────────────────────────────────────────────
+if curl -sf http://127.0.0.1:7700/health &>/dev/null; then
+    print_step "Syncing Meilisearch index settings..."
+    php artisan scout:sync-index-settings 2>/dev/null || true
+    print_status "Import videos with: php artisan scout:import 'App\\Models\\Video'"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 9: Start services
 # ─────────────────────────────────────────────────────────────────────────────
 print_step "Starting development services..."
 
-# Kill any existing processes
 pkill -f "php artisan serve" 2>/dev/null || true
 pkill -f "php artisan reverb:start" 2>/dev/null || true
 pkill -f "php artisan horizon" 2>/dev/null || true
 sleep 1
 
-# Read Reverb port from .env (default 8080)
+SERVER_IP=$(hostname -I | awk '{print $1}')
 REVERB_PORT=$(grep -E "^REVERB_PORT=" .env 2>/dev/null | cut -d'=' -f2 | tr -d '"' || echo "8080")
 REVERB_PORT=${REVERB_PORT:-8080}
 
-# Start Laravel development server
-print_status "Starting Laravel server on http://$SERVER_IP:8000"
 php artisan serve --host=$SERVER_IP --port=8000 &
 SERVER_PID=$!
 
-# Start Reverb (WebSocket server)
-print_status "Starting WebSocket server (Reverb) on port $REVERB_PORT"
 php artisan reverb:start &
 REVERB_PID=$!
 
-# Start Horizon (queue worker)
-print_status "Starting queue worker (Horizon)"
 php artisan horizon &
 HORIZON_PID=$!
 
-# Wait a moment for services to start
 sleep 3
 
-# Display access information
 echo ""
-echo "============================================================"
-echo "  🎉 HubTube Development Server is running!"
-echo "============================================================"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  HubTube Development Server is running!"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "📱 Access URLs:"
-echo "   Main App:     http://$SERVER_IP:8000"
-echo "   Admin Panel:  http://$SERVER_IP:8000/admin"
-echo "   WebSocket:    ws://$SERVER_IP:$REVERB_PORT"
+echo "  URLs:"
+echo "    App:        http://$SERVER_IP:8000"
+echo "    Admin:      http://$SERVER_IP:8000/admin"
+echo "    Horizon:    http://$SERVER_IP:8000/horizon"
+echo "    WebSocket:  ws://$SERVER_IP:$REVERB_PORT"
 echo ""
-echo "👤 Default Login:"
-echo "   Admin:        admin@hubtube.com / password"
-echo "   Demo User:    demo@hubtube.com / password"
+echo "  Default Login:"
+echo "    Admin:      admin@hubtube.com / password"
+echo "    Demo:       demo@hubtube.com / password"
 echo ""
-echo "🔧 Services Running:"
-echo "   Laravel Server  (PID: $SERVER_PID)"
-echo "   Reverb WS       (PID: $REVERB_PID, port $REVERB_PORT)"
-echo "   Horizon Queue   (PID: $HORIZON_PID)"
+echo "  Services:"
+echo "    Laravel Server   PID: $SERVER_PID"
+echo "    Reverb WS        PID: $REVERB_PID  (port $REVERB_PORT)"
+echo "    Horizon Queue    PID: $HORIZON_PID"
 echo ""
-echo "📋 Admin Panel Tools:"
-echo "   WP Import        — Import from WordPress SQL dump"
-echo "   Archive Import   — Import from local WP archive directory"
-echo "   Bunny Migrator   — Download Bunny Stream videos to local"
-echo "   Language Settings — Configure auto-translation + i18n"
-echo "   SEO Settings     — Meta tags, JSON-LD schema, sitemap, hreflang"
-echo "   Ad Settings      — Video ads (pre/mid/post-roll) + banner ads"
-echo "   Storage & CDN    — Cloud offloading (Wasabi/S3/B2), CDN config"
-echo "   Integrations     — SMTP config with test email, Bunny Stream"
-echo "   Theme Settings   — Colors, dark/light mode, CSS variables"
-echo "   PWA Settings     — Push notifications, offline support"
+echo "  Admin Panel (18 pages, 14 resources):"
+echo "    Site Settings      — Upload limits, watermark, moderation, FFmpeg"
+echo "    Theme Settings     — Colors, dark/light mode, CSS variables"
+echo "    Storage & CDN      — Wasabi/S3/B2, CDN URL, FFmpeg paths"
+echo "    Integrations       — Bunny Stream, SMTP/email with test button"
+echo "    Social Networks    — Social login (Google/X/Reddit), auto-tweet"
+echo "    Payment Settings   — Wallet, withdrawals, payment gateways"
+echo "    Live Streaming     — Agora.io credentials, gifts, stream quality"
+echo "    Ad Settings        — Video ads (pre/mid/post-roll), banner ads"
+echo "    SEO Settings       — Meta tags, JSON-LD, sitemap, robots.txt"
+echo "    Language Settings  — Auto-translation, overrides, regenerate"
+echo "    PWA Settings       — Push notifications, offline support"
+echo "    WP Importer        — Import from WordPress SQL dump"
+echo "    Archive Importer   — Import from local WP archive directory"
+echo "    Bunny Migrator     — Download Bunny Stream videos to local"
+echo "    Activity Log       — Admin action audit trail"
+echo "    Failed Jobs        — View and retry failed queue jobs"
 echo ""
-echo "📋 Useful Commands:"
-echo "   View logs:       tail -f storage/logs/laravel.log"
-echo "   Queue status:    php artisan horizon"
-echo "   Rebuild assets:  npm run build"
-echo "   Re-seed:         php artisan db:seed --force"
-echo "   Cleanup temp:    php artisan storage:cleanup"
-echo "   Cleanup chunks:  php artisan uploads:cleanup-chunks"
-echo "   Stop all:        pkill -f 'php artisan'"
+echo "  Scheduled Jobs (via cron — run 'php artisan schedule:run'):"
+echo "    horizon:snapshot          — Every 5 min"
+echo "    queue:prune-batches       — Daily"
+echo "    sanctum:prune-expired     — Daily"
+echo "    videos:prune-deleted      — Daily (soft-deleted >30 days)"
+echo "    storage:cleanup           — Daily (temp processing files)"
+echo "    uploads:cleanup-chunks    — Daily (abandoned chunks >24h)"
+echo "    tweets:older-video        — Hourly (auto-tweet older videos)"
 echo ""
-echo "Press Ctrl+C to stop all services"
+echo "  Useful Commands:"
+echo "    View logs:        tail -f storage/logs/laravel.log"
+echo "    Rebuild frontend: npm run build"
+echo "    Re-seed:          php artisan db:seed --force"
+echo "    Import search:    php artisan scout:import 'App\\Models\\Video'"
+echo "    Stop all:         pkill -f 'php artisan'"
+echo ""
+echo "  Press Ctrl+C to stop all services"
 
-# Function to cleanup on exit
 cleanup() {
     echo ""
     print_status "Stopping all services..."
     kill $SERVER_PID 2>/dev/null || true
     kill $REVERB_PID 2>/dev/null || true
     kill $HORIZON_PID 2>/dev/null || true
-    # Give processes a moment to exit gracefully
     sleep 1
     print_status "All services stopped"
     exit 0
 }
 
-# Set trap to cleanup on Ctrl+C and TERM
 trap cleanup INT TERM
-
-# Wait for user to stop
 wait

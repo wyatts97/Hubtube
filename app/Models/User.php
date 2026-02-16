@@ -248,4 +248,58 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     {
         return $this->is_admin;
     }
+
+    /**
+     * Override Laravel's default email verification notification
+     * to use our custom template system.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $enabled = Setting::get('email_notify_verify-email', 'true');
+        if ($enabled === 'false' || $enabled === '0') {
+            return;
+        }
+
+        if (!\App\Services\EmailService::isMailConfigured()) {
+            // Fall back to Laravel's default if mail isn't configured via admin panel
+            parent::sendEmailVerificationNotification();
+            return;
+        }
+
+        $verifyUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $this->getKey(), 'hash' => sha1($this->getEmailForVerification())]
+        );
+
+        \App\Services\EmailService::sendToUser('verify-email', $this->email, [
+            'username' => $this->username ?? 'there',
+            'verify_url' => $verifyUrl,
+        ]);
+    }
+
+    /**
+     * Override Laravel's default password reset notification
+     * to use our custom template system.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $enabled = Setting::get('email_notify_reset-password', 'true');
+        if ($enabled === 'false' || $enabled === '0') {
+            return;
+        }
+
+        if (!\App\Services\EmailService::isMailConfigured()) {
+            parent::sendPasswordResetNotification($token);
+            return;
+        }
+
+        $resetUrl = url(route('password.reset', ['token' => $token, 'email' => $this->email], false));
+
+        \App\Services\EmailService::sendToUser('reset-password', $this->email, [
+            'username' => $this->username ?? 'there',
+            'reset_url' => $resetUrl,
+            'expiry_minutes' => config('auth.passwords.users.expire', 60),
+        ]);
+    }
 }

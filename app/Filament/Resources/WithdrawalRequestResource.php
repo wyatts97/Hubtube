@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\WithdrawalRequestResource\Pages;
 use App\Models\WalletTransaction;
 use App\Models\WithdrawalRequest;
+use App\Services\EmailService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -154,6 +155,14 @@ class WithdrawalRequestResource extends Resource
                                     'description' => "Withdrawal request #{$record->id} approved",
                                 ]);
                         });
+
+                        $record->loadMissing('user');
+                        if ($record->user) {
+                            EmailService::sendToUser('withdrawal-approved', $record->user->email, [
+                                'username' => $record->user->username,
+                                'amount' => '$' . number_format($record->amount, 2),
+                            ]);
+                        }
                     }),
 
                 Tables\Actions\Action::make('reject')
@@ -182,6 +191,15 @@ class WithdrawalRequestResource extends Resource
                                     'description' => "Withdrawal request #{$record->id} rejected",
                                 ]);
                         });
+
+                        $record->loadMissing('user');
+                        if ($record->user) {
+                            EmailService::sendToUser('withdrawal-rejected', $record->user->email, [
+                                'username' => $record->user->username,
+                                'amount' => '$' . number_format($record->amount, 2),
+                                'rejection_reason' => $data['notes'] ?? 'No reason provided.',
+                            ]);
+                        }
                     }),
 
                 Tables\Actions\EditAction::make(),

@@ -149,8 +149,10 @@ class Video extends Model
         if (in_array($driver, ['database', 'null', null])) {
             return false;
         }
-        
-        return $this->status === 'processed' && $this->is_approved;
+
+        return $this->status === 'processed'
+            && $this->is_approved
+            && $this->privacy === 'public';
     }
 
     public function toSearchableArray(): array
@@ -162,6 +164,9 @@ class Video extends Model
             'tags' => $this->tags,
             'user_id' => $this->user_id,
             'category_id' => $this->category_id,
+            'views_count' => (int) $this->views_count,
+            'likes_count' => (int) $this->likes_count,
+            'created_at' => $this->created_at?->timestamp,
         ];
     }
 

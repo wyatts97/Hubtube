@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\EmailService;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\RedirectResponse;
@@ -25,6 +26,12 @@ class EmailVerificationController extends Controller
 
         if ($request->user()->markEmailAsVerified()) {
             event(new Verified($request->user()));
+
+            // Send welcome email after successful verification
+            EmailService::sendToUser('welcome', $request->user()->email, [
+                'username' => $request->user()->username ?? 'there',
+                'login_url' => url('/login'),
+            ]);
         }
 
         return redirect()->intended(route('home'))->with('success', 'Email verified successfully!');

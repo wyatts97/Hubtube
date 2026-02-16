@@ -131,13 +131,14 @@ return [
     */
 
     'meilisearch' => [
-        'host' => env('MEILISEARCH_HOST', 'http://localhost:7700'),
+        'host' => env('MEILISEARCH_HOST', 'http://127.0.0.1:7700'),
         'key' => env('MEILISEARCH_KEY'),
         'index-settings' => [
-            // 'videos' => [
-            //     'filterableAttributes' => ['user_id', 'category_id', 'status'],
-            //     'sortableAttributes' => ['created_at', 'views_count'],
-            // ],
+            'videos' => [
+                'filterableAttributes' => ['user_id', 'category_id'],
+                'sortableAttributes' => ['created_at', 'views_count', 'likes_count'],
+                'searchableAttributes' => ['title', 'description', 'tags'],
+            ],
         ],
     ],
 
