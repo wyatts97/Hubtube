@@ -304,7 +304,7 @@ server {
     index index.php;
 
     # ── Upload Limits ──
-    client_max_body_size 5G;
+    client_max_body_size 1000MB;
     client_body_timeout 600s;
     client_body_buffer_size 128k;
 
