@@ -22,12 +22,17 @@ sudo nano /www/wwwroot/hubtube/.env
 Change:
 ```env
 APP_URL=https://wedgietube.com
+
+# If switching from HTTP staging to HTTPS production:
+SESSION_SECURE_COOKIE=true
 ```
 
 If using Reverb WebSockets in production, also update:
 ```env
 REVERB_HOST=wedgietube.com
+REVERB_SCHEME=https
 VITE_REVERB_HOST=wedgietube.com
+VITE_REVERB_SCHEME=https
 ```
 
 ### 2. Update Nginx / Web Server
@@ -65,7 +70,6 @@ At your domain registrar (Cloudflare, Namecheap, etc.), create:
 | Type | Name | Value | TTL |
 |------|------|-------|-----|
 | A | `@` | `YOUR_SERVER_IP` | Auto |
-| A | `www` | `YOUR_SERVER_IP` | Auto |
 | CNAME | `www` | `wedgietube.com` | Auto |
 
 If using Cloudflare proxy (orange cloud), that works fine.
@@ -100,6 +104,15 @@ App\Models\Page::where('content', 'LIKE', '%wedgieme.com%')
     ->each(fn($p) => $p->update([
         'content' => str_replace('wedgieme.com', 'wedgietube.com', $p->content)
     ]));
+
+// Check admin settings (logo URLs, custom CSS, ad code, etc.)
+App\Models\Setting::where('value', 'LIKE', '%wedgieme.com%')->count();
+
+// If any exist:
+App\Models\Setting::where('value', 'LIKE', '%wedgieme.com%')
+    ->each(fn($s) => $s->update([
+        'value' => str_replace('wedgieme.com', 'wedgietube.com', $s->value)
+    ]));
 ```
 
 ### 6. Update Admin Panel Settings
@@ -131,7 +144,7 @@ cd /www/wwwroot/hubtube
 npm run build
 ```
 
-### 8. Clear All Caches
+### 8. Clear All Caches & Restart Workers
 
 ```bash
 php artisan config:clear
@@ -141,6 +154,13 @@ php artisan cache:clear
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
+
+# Restart background workers to pick up new .env values
+sudo supervisorctl restart hubtube-horizon
+sudo supervisorctl restart hubtube-reverb
+
+# Restart PHP-FPM to clear OPcache
+sudo systemctl restart php-fpm-84
 ```
 
 ### 9. Re-index Search (if using Meilisearch)
@@ -195,9 +215,10 @@ If you're using BillionMail or any self-hosted mail server, you need DNS records
 ## Rollback Plan
 
 If something goes wrong, just:
-1. Change `APP_URL` back to `https://wedgieme.com`
+1. Change `APP_URL` (and `REVERB_HOST`/`VITE_REVERB_HOST`) back to `https://wedgieme.com`
 2. Point DNS back to old domain
-3. `php artisan config:clear && php artisan cache:clear`
+3. `php artisan config:clear && php artisan cache:clear && php artisan config:cache`
 4. `npm run build`
+5. `sudo supervisorctl restart all && sudo systemctl restart php-fpm-84`
 
 The switch is fully reversible.

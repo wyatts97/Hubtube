@@ -464,6 +464,8 @@ sudo chmod 664 .env
 mkdir -p storage/app/public/videos
 mkdir -p storage/app/public/thumbnails
 mkdir -p storage/app/public/watermarks
+mkdir -p storage/app/public/avatars
+mkdir -p storage/app/public/banners
 mkdir -p storage/app/chunks
 mkdir -p storage/app/temp
 mkdir -p storage/framework/{cache,sessions,views}
@@ -819,7 +821,7 @@ When new code is available:
 cd /www/wwwroot/hubtube
 
 # Pull latest code
-git pull origin main
+git pull origin master
 
 # Install dependencies
 composer install --no-dev --optimize-autoloader

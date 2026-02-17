@@ -2,7 +2,7 @@
 # =============================================================================
 # HubTube — Production Setup Script
 # =============================================================================
-# Last updated: 2026-02-15
+# Last updated: 2026-02-17
 #
 # Run this AFTER cloning the repo on your production server.
 # Works with aaPanel, cPanel, Webmin, Plesk, or bare metal.
@@ -98,6 +98,8 @@ DIRS=(
     "storage/app/public/videos"
     "storage/app/public/thumbnails"
     "storage/app/public/watermarks"
+    "storage/app/public/avatars"
+    "storage/app/public/banners"
     "storage/app/public/sponsored"
     "storage/app/chunks"
     "storage/app/temp"
@@ -204,7 +206,7 @@ else
 fi
 
 # Check disabled functions
-DISABLED=$(php -i 2>/dev/null | grep "disable_functions" | head -1)
+DISABLED=$($PHP_BIN -i 2>/dev/null | grep "disable_functions" | head -1)
 NEEDED_FUNCS=("exec" "shell_exec" "proc_open" "proc_get_status" "proc_close" "putenv" "symlink" "pcntl_signal" "pcntl_alarm" "pcntl_async_signals")
 MISSING_FUNCS=()
 for func in "${NEEDED_FUNCS[@]}"; do
@@ -224,7 +226,7 @@ fi
 REQUIRED_EXTS=("redis" "fileinfo" "bcmath" "intl" "exif")
 MISSING_EXTS=()
 for ext in "${REQUIRED_EXTS[@]}"; do
-    if ! php -m 2>/dev/null | grep -qi "^${ext}$"; then
+    if ! $PHP_BIN -m 2>/dev/null | grep -qi "^${ext}$"; then
         MISSING_EXTS+=("$ext")
     fi
 done
