@@ -27,7 +27,7 @@
 #  12. Shows tailored next steps for your hosting panel
 #
 # Requirements:
-#   - PHP 8.2+ with extensions: redis, fileinfo, bcmath, intl, exif
+#   - PHP 8.2+ with extensions: redis, fileinfo, bcmath, intl, exif, gd
 #   - MySQL 8+ or MariaDB 10.11+
 #   - Redis server
 #   - Node.js 20+ and npm
@@ -223,7 +223,7 @@ else
 fi
 
 # Check required PHP extensions
-REQUIRED_EXTS=("redis" "fileinfo" "bcmath" "intl" "exif")
+REQUIRED_EXTS=("redis" "fileinfo" "bcmath" "intl" "exif" "gd")
 MISSING_EXTS=()
 for ext in "${REQUIRED_EXTS[@]}"; do
     if ! $PHP_BIN -m 2>/dev/null | grep -qi "^${ext}$"; then
@@ -333,7 +333,7 @@ if [ "$PANEL" = "aapanel" ]; then
     echo -e "  • Website → Add Site → Root Directory: ${BOLD}${PROJECT_DIR}/public${NC}"
     echo -e "  • Replace Nginx config with the one from PANEL-DEPLOY.md"
     echo -e "  • Disable open_basedir or set to: ${PROJECT_DIR}:/tmp/:/proc/"
-    echo -e "  • PHP 8.4 extensions: redis, fileinfo, bcmath, intl, exif, opcache"
+    echo -e "  • PHP 8.4 extensions: redis, fileinfo, bcmath, intl, exif, gd, opcache"
     echo -e "  • Remove disabled functions: exec, shell_exec, proc_open, putenv, symlink, pcntl_*"
     echo ""
 fi

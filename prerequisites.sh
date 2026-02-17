@@ -11,7 +11,7 @@
 #
 # What this script installs (if not already present):
 #   - Nginx
-#   - PHP 8.4 + required extensions (redis, fileinfo, bcmath, intl, etc.)
+#   - PHP 8.4 + required extensions (redis, gd, bcmath, intl, exif, etc.)
 #   - Composer (latest)
 #   - MariaDB 10.11+
 #   - Redis 7+ (required for cache, sessions, queues, Horizon)
@@ -124,13 +124,11 @@ section "PHP ${REQUIRED_PHP}"
 PHP_EXTENSIONS=(
     "php${REQUIRED_PHP}-fpm"
     "php${REQUIRED_PHP}-cli"
-    "php${REQUIRED_PHP}-common"
+    "php${REQUIRED_PHP}-common"    # includes tokenizer, fileinfo
     "php${REQUIRED_PHP}-mysql"
-    "php${REQUIRED_PHP}-pgsql"
-    "php${REQUIRED_PHP}-sqlite3"
     "php${REQUIRED_PHP}-redis"
     "php${REQUIRED_PHP}-curl"
-    "php${REQUIRED_PHP}-gd"
+    "php${REQUIRED_PHP}-gd"        # required by intervention/image (WebP support included)
     "php${REQUIRED_PHP}-imagick"
     "php${REQUIRED_PHP}-mbstring"
     "php${REQUIRED_PHP}-xml"
@@ -138,8 +136,7 @@ PHP_EXTENSIONS=(
     "php${REQUIRED_PHP}-bcmath"
     "php${REQUIRED_PHP}-intl"
     "php${REQUIRED_PHP}-readline"
-    "php${REQUIRED_PHP}-tokenizer"
-    "php${REQUIRED_PHP}-fileinfo"
+    "php${REQUIRED_PHP}-exif"      # required by spatie/medialibrary, image metadata
     "php${REQUIRED_PHP}-opcache"
 )
 
@@ -397,7 +394,14 @@ fi
 # ── FFmpeg ───────────────────────────────────────────────────────────────────
 section "FFmpeg (Static)"
 
-FFMPEG_STATIC_URL="https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz"
+# Detect CPU architecture for correct static FFmpeg build
+ARCH=$(dpkg --print-architecture 2>/dev/null || uname -m)
+case "$ARCH" in
+    amd64|x86_64)  FFMPEG_ARCH="amd64" ;;
+    arm64|aarch64) FFMPEG_ARCH="arm64" ;;
+    *)             FFMPEG_ARCH="amd64" ;;
+esac
+FFMPEG_STATIC_URL="https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz"
 FFMPEG_BIN="/usr/local/bin/ffmpeg"
 FFPROBE_BIN="/usr/local/bin/ffprobe"
 
@@ -551,7 +555,7 @@ check_ver "Certbot"        certbot
 # PHP extensions check
 echo ""
 info "PHP Extensions:"
-REQUIRED_MODS=(redis curl gd mbstring xml zip bcmath intl pdo_mysql opcache fileinfo imagick)
+REQUIRED_MODS=(redis curl gd mbstring xml zip bcmath intl pdo_mysql opcache fileinfo imagick exif tokenizer)
 ALL_MODS_OK=true
 for mod in "${REQUIRED_MODS[@]}"; do
     if php -m 2>/dev/null | grep -qi "^${mod}$"; then

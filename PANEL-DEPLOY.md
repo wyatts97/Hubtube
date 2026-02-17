@@ -176,7 +176,7 @@ sudo apt-get install -y ffmpeg
 ffmpeg -version   # Should show 6.x+
 ```
 
-> **Alternative:** For the latest FFmpeg with all codecs, the `prerequisites.sh` script installs a static build from johnvansickle.com.
+> **Alternative:** For the latest FFmpeg with all codecs, the `prerequisites.sh` script installs a static build.
 
 ### Supervisor (for background workers)
 
