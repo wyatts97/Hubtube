@@ -6,7 +6,8 @@ import {
     Video, Radio, Home, TrendingUp, Zap, ListVideo, History, 
     ChevronLeft, ChevronRight, Shield, Sun, Moon, Monitor,
     X, Check, CheckCheck, Rss, LayoutDashboard, ChevronDown, ChevronUp, Film,
-    Tag, Folder, Star, ExternalLink, Eye, EyeOff, LayoutGrid, Plus
+    Tag, Folder, Star, ExternalLink, Eye, EyeOff, LayoutGrid, Plus,
+    ImageIcon
 } from 'lucide-vue-next';
 import { useTheme } from '@/Composables/useTheme';
 import { useToast } from '@/Composables/useToast';
@@ -335,6 +336,10 @@ const handleMobileNavClick = (item) => {
                                 <Link href="/upload" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showUploadMenu = false">
                                     <Film class="w-4 h-4" style="color: var(--color-text-secondary);" />
                                     <span class="text-sm">{{ t('nav.upload_video') || 'Upload Video' }}</span>
+                                </Link>
+                                <Link href="/image-upload" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showUploadMenu = false">
+                                    <ImageIcon class="w-4 h-4" style="color: var(--color-text-secondary);" />
+                                    <span class="text-sm">{{ t('nav.upload_image') || 'Upload Image' }}</span>
                                 </Link>
                             </div>
                         </div>

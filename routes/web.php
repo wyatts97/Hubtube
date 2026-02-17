@@ -22,6 +22,8 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\ImageController;
+use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\SitemapController;
@@ -143,6 +145,12 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/public-playlists', [PlaylistController::class, 'publicIndex'])->name('playlists.public');
     Route::get('/playlist/{playlist:slug}', [PlaylistController::class, 'show'])->name('playlists.show');
 
+    // Image & Gallery routes (public browse)
+    Route::get('/images', [ImageController::class, 'index'])->name('images.index');
+    Route::get('/image/{image:uuid}', [ImageController::class, 'show'])->name('images.show');
+    Route::get('/galleries', [GalleryController::class, 'index'])->name('galleries.index');
+    Route::get('/gallery/{gallery:slug}', [GalleryController::class, 'show'])->name('galleries.show');
+
     // Legal / Static Pages
     Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('pages.show');
 
@@ -184,6 +192,17 @@ Route::middleware('age.verified')->group(function () {
             ->name('verification.send');
 
         Route::get('/upload', [VideoController::class, 'create'])->name('videos.create');
+
+        // Image upload & management
+        Route::get('/image-upload', [ImageController::class, 'create'])->name('images.create');
+        Route::post('/image-upload', [ImageController::class, 'store'])->middleware('throttle:10,1')->name('images.store');
+        Route::delete('/images/{image}', [ImageController::class, 'destroy'])->name('images.destroy');
+
+        // Gallery management
+        Route::get('/galleries/create', [GalleryController::class, 'create'])->name('galleries.create');
+        Route::post('/galleries', [GalleryController::class, 'store'])->name('galleries.store');
+        Route::put('/gallery/{gallery}', [GalleryController::class, 'update'])->name('galleries.update');
+        Route::delete('/gallery/{gallery}', [GalleryController::class, 'destroy'])->name('galleries.destroy');
         Route::get('/upload/success', [VideoController::class, 'uploadSuccess'])->name('videos.upload-success');
         Route::post('/upload', [VideoController::class, 'store'])->middleware('throttle:10,1')->name('videos.store');
         Route::post('/upload/chunk', [VideoController::class, 'uploadChunk'])->middleware('throttle:300,1')->name('videos.upload-chunk');
