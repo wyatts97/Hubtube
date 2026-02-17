@@ -131,13 +131,7 @@ else
     ok ".env already exists"
 fi
 
-# Generate APP_KEY if empty
-if grep -q "^APP_KEY=$" .env 2>/dev/null; then
-    $PHP_BIN artisan key:generate --force --no-interaction 2>/dev/null
-    ok "Generated APP_KEY"
-else
-    ok "APP_KEY already set"
-fi
+# APP_KEY generation is deferred until after Composer install (requires vendor/autoload.php)
 
 # ── Auto-detect Redis Password ───────────────────────────────────────────────
 section "Redis Configuration"
@@ -251,7 +245,16 @@ else
         fail "Composer not found! Install it:"
         echo "    curl -sS https://getcomposer.org/installer | php"
         echo "    sudo mv composer.phar /usr/local/bin/composer"
+        exit 1
     fi
+fi
+
+# Generate APP_KEY now that vendor/autoload.php exists
+if grep -q "^APP_KEY=$" .env 2>/dev/null; then
+    $PHP_BIN artisan key:generate --force --no-interaction
+    ok "Generated APP_KEY"
+else
+    ok "APP_KEY already set"
 fi
 
 # ── Frontend Build ───────────────────────────────────────────────────────────
