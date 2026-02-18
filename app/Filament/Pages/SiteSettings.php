@@ -44,6 +44,7 @@ class SiteSettings extends Page implements HasForms
     {
         $this->form->fill([
             'maintenance_mode' => Setting::get('maintenance_mode', false),
+            'maintenance_message' => Setting::get('maintenance_message', ''),
             'registration_enabled' => Setting::get('registration_enabled', true),
             'email_verification_required' => Setting::get('email_verification_required', true),
             'age_verification_required' => Setting::get('age_verification_required', true),
@@ -301,6 +302,12 @@ class SiteSettings extends Page implements HasForms
                                         Toggle::make('maintenance_mode')
                                             ->label('Maintenance Mode')
                                             ->helperText('When enabled, only admins can access the site'),
+                                        Textarea::make('maintenance_message')
+                                            ->label('Maintenance Message')
+                                            ->helperText('Message shown to visitors during maintenance')
+                                            ->placeholder('We are currently undergoing maintenance. Please check back soon.')
+                                            ->rows(2)
+                                            ->visible(fn ($get) => $get('maintenance_mode')),
                                     ]),
                                 Section::make('Video Display')
                                     ->schema([
