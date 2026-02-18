@@ -82,6 +82,9 @@ class VideoResource extends Resource
                             ->required(),
                         Forms\Components\Select::make('status')
                             ->options([
+                                'pending_download' => 'Pending Download',
+                                'downloading' => 'Downloading',
+                                'download_failed' => 'Download Failed',
                                 'pending' => 'Pending',
                                 'processing' => 'Processing',
                                 'processed' => 'Published',
@@ -188,12 +191,18 @@ class VideoResource extends Resource
                     ->formatStateUsing(fn (string $state, Video $record): string => match (true) {
                         $state === 'processed' && $record->is_approved => 'Published',
                         $state === 'processed' && !$record->is_approved => 'Needs Moderation',
+                        $state === 'pending_download' => 'Pending Download',
+                        $state === 'downloading' => 'Downloading',
+                        $state === 'download_failed' => 'Download Failed',
                         default => ucfirst($state),
                     })
                     ->color(fn (string $state, Video $record): string => match (true) {
                         $state === 'processed' && $record->is_approved => 'success',
                         $state === 'processed' && !$record->is_approved => 'warning',
                         $state === 'pending' => 'gray',
+                        $state === 'pending_download' => 'gray',
+                        $state === 'downloading' => 'info',
+                        $state === 'download_failed' => 'danger',
                         $state === 'processing' => 'info',
                         $state === 'failed' => 'danger',
                         default => 'gray',
@@ -258,6 +267,9 @@ class VideoResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
+                        'pending_download' => 'Pending Download',
+                        'downloading' => 'Downloading',
+                        'download_failed' => 'Download Failed',
                         'pending' => 'Pending',
                         'processing' => 'Processing',
                         'processed' => 'Published',

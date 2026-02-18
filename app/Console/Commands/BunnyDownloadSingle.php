@@ -10,14 +10,15 @@ use Illuminate\Support\Facades\Log;
 
 class BunnyDownloadSingle extends Command
 {
-    protected $signature = 'bunny:download-single {videoId} {--disk=public}';
-    protected $description = 'Download a single Bunny Stream video in the background. Downloads locally, then ProcessVideoJob handles processing + cloud offload.';
+    protected $signature = 'bunny:download-single {videoId} {--disk=public} {--light : Skip FFmpeg processing, mark as processed immediately}';
+    protected $description = 'Download a single Bunny Stream video in the background.';
 
     private const CACHE_PREFIX = 'bunny_dl_';
 
     public function handle(): int
     {
         $videoId = (int) $this->argument('videoId');
+        $light = (bool) $this->option('light');
         $slotKey = self::CACHE_PREFIX . $videoId;
 
         $video = Video::find($videoId);
@@ -35,10 +36,13 @@ class BunnyDownloadSingle extends Command
             return 1;
         }
 
-        $this->info("Downloading: {$video->title} (ID: {$video->id}, Bunny: {$video->source_video_id})");
+        $mode = $light ? 'light' : 'full';
+        $this->info("Downloading ({$mode}): {$video->title} (ID: {$video->id}, Bunny: {$video->source_video_id})");
 
         $service = new BunnyStreamService();
-        $result = $service->downloadVideo($video);
+        $result = $light
+            ? $service->downloadVideoLight($video)
+            : $service->downloadVideo($video);
 
         // Store result for the Livewire page to pick up
         Cache::put($slotKey, [
@@ -49,10 +53,11 @@ class BunnyDownloadSingle extends Command
             'bunny_id' => $video->source_video_id ?? '',
             'error' => $result['error'] ?? null,
             'video_path' => $result['video_path'] ?? null,
+            'mode' => $mode,
         ], 600);
 
         if ($result['success']) {
-            $this->info("Success: {$result['video_path']}");
+            $this->info("Success ({$mode}): {$result['video_path']}");
             return 0;
         }
 

@@ -13,10 +13,6 @@ class WordPressImportService
     // WP table prefix from the SQL dump
     private string $tablePrefix = 'MKdOzH8c_';
 
-    // Bunny Stream config from the WP options
-    private string $bunnyLibraryId = '250371';
-    private string $bunnyCdnHost = 'vz-1530c1f0-3aa.b-cdn.net';
-
     // Meta keys used by VidMov/Bunny Stream
     private const META_VIDEO_URL = 'beeteam368_video_url';
     private const META_DURATION = 'beeteam368_video_duration';
@@ -40,9 +36,17 @@ class WordPressImportService
     // The user_id to assign imported videos to (set by the admin)
     private ?int $importUserId = null;
 
+    // WP author filter (null = import all authors)
+    private ?string $authorFilter = null;
+
     public function setImportUserId(int $userId): void
     {
         $this->importUserId = $userId;
+    }
+
+    public function setAuthorFilter(?string $authorLogin): void
+    {
+        $this->authorFilter = $authorLogin ? strtolower($authorLogin) : null;
     }
 
     /**
@@ -103,19 +107,30 @@ class WordPressImportService
         // Filter posts to only vidmov_video type
         $videoPosts = array_filter($this->posts, fn($p) => ($p['post_type'] ?? '') === 'vidmov_video' && ($p['post_status'] ?? '') === 'publish');
 
-        // Count how many are by the allowed author
-        $allowedAuthor = 'wedgietubeadmin';
-        $filteredCount = count(array_filter($videoPosts, function ($p) use ($allowedAuthor) {
+        // Count per WP author
+        $authorCounts = [];
+        foreach ($videoPosts as $p) {
             $authorId = (int) ($p['post_author'] ?? 0);
-            $authorLogin = $this->users[$authorId] ?? '';
-            return $authorLogin === $allowedAuthor;
-        }));
+            $login = $this->users[$authorId] ?? 'unknown';
+            $authorCounts[$login] = ($authorCounts[$login] ?? 0) + 1;
+        }
+
+        // Count videos with Bunny Stream embeds
+        $withBunny = 0;
+        foreach ($videoPosts as $postId => $p) {
+            $meta = $this->postmeta[$postId] ?? [];
+            $embed = $meta[self::META_VIDEO_URL] ?? null;
+            if ($embed && $this->extractBunnyVideoId($embed)) {
+                $withBunny++;
+            }
+        }
 
         return [
             'total_posts' => count($this->posts),
             'video_posts' => count($videoPosts),
-            'video_posts_by_author' => $filteredCount,
+            'video_posts_with_bunny' => $withBunny,
             'wp_users' => count($this->users),
+            'wp_authors' => $authorCounts,
             'postmeta_entries' => count($this->postmeta),
             'terms' => count($this->terms),
             'term_taxonomy' => count($this->termTaxonomy),
@@ -315,13 +330,14 @@ class WordPressImportService
     {
         $videoPosts = array_filter($this->posts, fn($p) => ($p['post_type'] ?? '') === 'vidmov_video' && ($p['post_status'] ?? '') === 'publish');
 
-        // Filter to only videos posted by the 'wedgietube' WP user
-        $allowedAuthor = 'wedgietubeadmin';
-        $videoPosts = array_filter($videoPosts, function ($p) use ($allowedAuthor) {
-            $authorId = (int) ($p['post_author'] ?? 0);
-            $authorLogin = $this->users[$authorId] ?? '';
-            return $authorLogin === $allowedAuthor;
-        });
+        // Filter by author if set
+        if ($this->authorFilter) {
+            $videoPosts = array_filter($videoPosts, function ($p) {
+                $authorId = (int) ($p['post_author'] ?? 0);
+                $authorLogin = $this->users[$authorId] ?? '';
+                return strtolower($authorLogin) === $this->authorFilter;
+            });
+        }
 
         $results = [];
         foreach ($videoPosts as $postId => $post) {
@@ -607,7 +623,6 @@ class WordPressImportService
                     'duration' => $durationSeconds,
                     'privacy' => 'public',
                     'status' => 'pending_download',
-                    'is_short' => false,
                     'is_embedded' => false,
                     'is_featured' => false,
                     'is_approved' => true,

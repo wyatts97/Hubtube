@@ -411,18 +411,54 @@ class BunnyStreamService
     }
 
     /**
-     * Download a single video from Bunny Stream and queue it for full processing.
+     * Try all download strategies for a Bunny Stream video file.
+     * Returns the stored path on success, null on failure.
+     */
+    private function tryDownloadVideo(string $bunnyVideoId, string $storagePath): ?string
+    {
+        $videoPath = null;
+
+        // Strategy A: Try play data API for pre-authorized download URL
+        $playData = $this->getVideoPlayData($bunnyVideoId);
+        if ($playData && !empty($playData['fallbackUrl'])) {
+            Log::info('BunnyStreamService: trying play data fallback URL');
+            $videoPath = $this->downloadFile($playData['fallbackUrl'], $storagePath, 'public');
+        }
+
+        // Strategy B: Try direct CDN original (works if Direct URL Access is allowed)
+        if (!$videoPath) {
+            $originalUrl = $this->getOriginalUrl($bunnyVideoId);
+            Log::info('BunnyStreamService: trying direct CDN original');
+            $videoPath = $this->downloadFile($originalUrl, $storagePath, 'public');
+        }
+
+        // Strategy C: Download via HLS — the CDN always allows HLS streaming
+        if (!$videoPath) {
+            Log::info('BunnyStreamService: trying HLS download');
+            $videoPath = $this->downloadViaHls($bunnyVideoId, $storagePath, 'public');
+        }
+
+        // Strategy D: Try signed MP4 fallback URLs (if MP4 fallback is enabled)
+        if (!$videoPath) {
+            foreach (['1080p', '720p', '480p', '360p', '240p'] as $res) {
+                $mp4Url = $this->getMp4Url($bunnyVideoId, $res);
+                $videoPath = $this->downloadFile($mp4Url, $storagePath, 'public');
+                if ($videoPath) break;
+            }
+        }
+
+        return $videoPath;
+    }
+
+    /**
+     * Download a single video from Bunny Stream and queue it for full FFmpeg processing.
      *
      * Flow:
      *   1. Check disk space (need at least 2GB free)
      *   2. Download video file to local disk at videos/{slug}/{title}.mp4
-     *   3. Set video_path, storage_disk='public', status='pending'
-     *   4. Dispatch ProcessVideoJob which handles:
-     *      - Thumbnail generation (4 thumbs)
-     *      - Animated preview WebP
-     *      - Scrubber sprite sheet + VTT
-     *      - Multi-quality transcoding (360p, 480p, 720p, etc.)
-     *      - Cloud offload to Wasabi/S3 if enabled
+     *   3. Download thumbnail + preview from Bunny CDN
+     *   4. Set video_path, storage_disk='public', status='pending'
+     *   5. Dispatch ProcessVideoJob (thumbnails, HLS, multi-quality transcoding, cloud offload)
      *
      * Returns: ['success' => bool, 'error' => string|null, 'video_path' => string|null]
      */
@@ -441,77 +477,27 @@ class BunnyStreamService
         $freeBytes = @disk_free_space($storagePath);
         if ($freeBytes !== false && $freeBytes < 2 * 1024 * 1024 * 1024) {
             $freeGb = round($freeBytes / 1024 / 1024 / 1024, 1);
-            Log::warning('BunnyStreamService: low disk space', ['free_gb' => $freeGb]);
             return ['success' => false, 'error' => "Low disk space: {$freeGb}GB free, need at least 2GB"];
         }
 
         $bunnyVideoId = $video->source_video_id;
-        $fileSlug = Str::slug($video->title, '_');
-        if (empty($fileSlug)) {
-            $fileSlug = $video->uuid ?? Str::random(10);
-        }
-
-        // All assets go in videos/{slug}/ — matching the standard upload flow
+        $fileSlug = Str::slug($video->title, '_') ?: ($video->uuid ?? Str::random(10));
         $videoDir = "videos/{$video->slug}";
 
-        // Mark as downloading so the UI can show progress
+        // Mark as downloading
         $video->update(['status' => 'downloading']);
 
         Log::info('BunnyStreamService: downloading', [
             'video_id' => $video->id,
             'bunny_id' => $bunnyVideoId,
             'title' => $video->title,
-            'target_dir' => $videoDir,
         ]);
 
         // 1. Get video info from Bunny API
         $videoInfo = $this->getVideo($bunnyVideoId);
 
-        Log::info('BunnyStreamService: API response', [
-            'bunny_id' => $bunnyVideoId,
-            'api_returned' => $videoInfo !== null,
-            'hasOriginal' => $videoInfo['hasOriginal'] ?? 'N/A',
-            'availableResolutions' => $videoInfo['availableResolutions'] ?? 'N/A',
-            'status' => $videoInfo['status'] ?? 'N/A',
-        ]);
-
-        // 2. Download video file — ALWAYS to local disk first (FFmpeg needs local filesystem)
-        $videoPath = null;
-        $localStoragePath = "{$videoDir}/{$fileSlug}.mp4";
-
-        // Strategy A: Try play data API for pre-authorized download URL
-        if (!$videoPath) {
-            $playData = $this->getVideoPlayData($bunnyVideoId);
-            if ($playData && !empty($playData['fallbackUrl'])) {
-                Log::info('BunnyStreamService: trying play data fallback URL');
-                $videoPath = $this->downloadFile($playData['fallbackUrl'], $localStoragePath, 'public');
-            }
-        }
-
-        // Strategy B: Try direct CDN original (works if Direct URL Access is allowed)
-        if (!$videoPath) {
-            $originalUrl = $this->getOriginalUrl($bunnyVideoId);
-            Log::info('BunnyStreamService: trying direct CDN original', ['url' => $originalUrl]);
-            $videoPath = $this->downloadFile($originalUrl, $localStoragePath, 'public');
-        }
-
-        // Strategy C: Download via HLS — the CDN always allows HLS streaming
-        if (!$videoPath) {
-            Log::info('BunnyStreamService: direct CDN blocked, trying HLS download');
-            $videoPath = $this->downloadViaHls($bunnyVideoId, $localStoragePath, 'public');
-        }
-
-        // Strategy D: Try signed MP4 fallback URLs (if MP4 fallback is enabled)
-        if (!$videoPath) {
-            $resolutions = ['1080p', '720p', '480p', '360p', '240p'];
-            foreach ($resolutions as $res) {
-                $mp4Url = $this->getMp4Url($bunnyVideoId, $res);
-                $videoPath = $this->downloadFile($mp4Url, $localStoragePath, 'public');
-                if ($videoPath) {
-                    break;
-                }
-            }
-        }
+        // 2. Download video file
+        $videoPath = $this->tryDownloadVideo($bunnyVideoId, "{$videoDir}/{$fileSlug}.mp4");
 
         if (!$videoPath) {
             Log::error('BunnyStreamService: all download attempts failed', [
@@ -522,19 +508,35 @@ class BunnyStreamService
                 'status' => 'download_failed',
                 'failure_reason' => 'All download methods failed (play data, direct CDN, HLS, MP4 fallbacks)',
             ]);
-            return ['success' => false, 'error' => 'Could not download video file. Tried play data API, direct CDN, HLS download, and MP4 fallbacks.'];
+            return ['success' => false, 'error' => 'All download methods failed'];
         }
 
-        // 3. Update video record: set local path, status=pending for ProcessVideoJob
+        // 3. Download thumbnail from Bunny CDN
+        $thumbFile = $videoInfo['thumbnailFileName'] ?? 'thumbnail.jpg';
+        $thumbUrl = $this->getThumbnailUrl($bunnyVideoId, $thumbFile);
+        $thumbPath = $this->downloadFile($thumbUrl, "{$videoDir}/{$fileSlug}_thumb_0.jpg", 'public');
+
+        // 4. Download animated preview from Bunny CDN
+        $previewUrl = $this->getPreviewUrl($bunnyVideoId);
+        $previewPath = $this->downloadFile($previewUrl, "{$videoDir}/{$fileSlug}_preview.webp", 'public');
+
+        // 5. Update duration from Bunny API if available
+        $duration = $video->duration;
+        if ($videoInfo && !empty($videoInfo['length'])) {
+            $duration = (int) $videoInfo['length'];
+        }
+
+        // 6. Update video record: set local paths, status=pending for ProcessVideoJob
         $video->update([
             'video_path' => $videoPath,
+            'thumbnail' => $thumbPath ?: null,
+            'preview_path' => $previewPath ?: null,
             'storage_disk' => 'public',
+            'duration' => $duration,
             'status' => 'pending',
         ]);
 
-        // 4. Dispatch ProcessVideoJob for full processing pipeline
-        //    This generates: thumbnails, animated preview, scrubber sprites, multi-quality transcoding
-        //    And handles cloud offload to Wasabi/S3 if cloud_offloading_enabled is true
+        // 7. Dispatch ProcessVideoJob for full processing pipeline
         \App\Jobs\ProcessVideoJob::dispatch($video);
 
         Log::info('BunnyStreamService: download completed, ProcessVideoJob dispatched', [
@@ -542,11 +544,111 @@ class BunnyStreamService
             'video_path' => $videoPath,
         ]);
 
-        return [
-            'success' => true,
-            'error' => null,
+        return ['success' => true, 'error' => null, 'video_path' => $videoPath];
+    }
+
+    /**
+     * Download a single video from Bunny Stream and mark it as processed immediately.
+     * NO FFmpeg processing — the original MP4 is served directly.
+     * Thumbnail and preview are downloaded from Bunny CDN.
+     *
+     * This is the "light" import mode: fast, no encoding, video goes live immediately.
+     * FFmpeg processing can be run later via the admin panel if desired.
+     *
+     * Returns: ['success' => bool, 'error' => string|null, 'video_path' => string|null]
+     */
+    public function downloadVideoLight(Video $video): array
+    {
+        if (!$video->source_video_id) {
+            return ['success' => false, 'error' => 'Video has no source_video_id (Bunny Stream ID)'];
+        }
+
+        if (!in_array($video->status, ['pending_download', 'download_failed', 'failed'])) {
+            return ['success' => false, 'error' => "Video status is '{$video->status}', expected pending_download or download_failed"];
+        }
+
+        // Check disk space — need at least 500MB free (no FFmpeg processing)
+        $storagePath = Storage::disk('public')->path('');
+        $freeBytes = @disk_free_space($storagePath);
+        if ($freeBytes !== false && $freeBytes < 500 * 1024 * 1024) {
+            $freeGb = round($freeBytes / 1024 / 1024 / 1024, 1);
+            return ['success' => false, 'error' => "Low disk space: {$freeGb}GB free, need at least 500MB"];
+        }
+
+        $bunnyVideoId = $video->source_video_id;
+        $fileSlug = Str::slug($video->title, '_') ?: ($video->uuid ?? Str::random(10));
+        $videoDir = "videos/{$video->slug}";
+
+        // Mark as downloading
+        $video->update(['status' => 'downloading']);
+
+        Log::info('BunnyStreamService: light download', [
+            'video_id' => $video->id,
+            'bunny_id' => $bunnyVideoId,
+            'title' => $video->title,
+        ]);
+
+        // 1. Get video info from Bunny API for metadata enrichment
+        $videoInfo = $this->getVideo($bunnyVideoId);
+
+        // 2. Download video file
+        $videoPath = $this->tryDownloadVideo($bunnyVideoId, "{$videoDir}/{$fileSlug}.mp4");
+
+        if (!$videoPath) {
+            Log::error('BunnyStreamService: light download failed', [
+                'video_id' => $video->id,
+                'bunny_id' => $bunnyVideoId,
+            ]);
+            $video->update([
+                'status' => 'download_failed',
+                'failure_reason' => 'All download methods failed (play data, direct CDN, HLS, MP4 fallbacks)',
+            ]);
+            return ['success' => false, 'error' => 'All download methods failed'];
+        }
+
+        // 3. Download thumbnail from Bunny CDN
+        $thumbFile = $videoInfo['thumbnailFileName'] ?? 'thumbnail.jpg';
+        $thumbUrl = $this->getThumbnailUrl($bunnyVideoId, $thumbFile);
+        $thumbPath = $this->downloadFile($thumbUrl, "{$videoDir}/{$fileSlug}_thumb_0.jpg", 'public');
+
+        // 4. Download animated preview from Bunny CDN
+        $previewUrl = $this->getPreviewUrl($bunnyVideoId);
+        $previewPath = $this->downloadFile($previewUrl, "{$videoDir}/{$fileSlug}_preview.webp", 'public');
+
+        // 5. Update duration from Bunny API if available
+        $duration = $video->duration;
+        if ($videoInfo && !empty($videoInfo['length'])) {
+            $duration = (int) $videoInfo['length'];
+        }
+
+        // 6. Get file size
+        $size = 0;
+        $localPath = Storage::disk('public')->path($videoPath);
+        if (file_exists($localPath)) {
+            $size = filesize($localPath);
+        }
+
+        // 7. Mark as processed immediately — no FFmpeg, video goes live now
+        $video->update([
             'video_path' => $videoPath,
-        ];
+            'thumbnail' => $thumbPath ?: null,
+            'preview_path' => $previewPath ?: null,
+            'storage_disk' => 'public',
+            'duration' => $duration,
+            'size' => $size,
+            'status' => 'processed',
+            'qualities_available' => ['original'],
+            'processing_started_at' => now(),
+            'processing_completed_at' => now(),
+        ]);
+
+        Log::info('BunnyStreamService: light download completed, video is live', [
+            'video_id' => $video->id,
+            'video_path' => $videoPath,
+            'size' => $size,
+        ]);
+
+        return ['success' => true, 'error' => null, 'video_path' => $videoPath];
     }
 
     public function getLibraryId(): string
