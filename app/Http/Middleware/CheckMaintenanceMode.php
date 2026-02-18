@@ -5,7 +5,6 @@ namespace App\Http\Middleware;
 use App\Models\Setting;
 use Closure;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckMaintenanceMode
@@ -28,11 +27,15 @@ class CheckMaintenanceMode
                 return $next($request);
             }
 
-            // Return 503 maintenance page
-            return Inertia::render('Error', [
-                'status' => 503,
-                'message' => Setting::get('maintenance_message', 'We are currently undergoing maintenance. Please check back soon.'),
-            ])->toResponse($request)->setStatusCode(503);
+            // Allow Livewire and asset routes
+            if (str_starts_with($request->path(), 'livewire')) {
+                return $next($request);
+            }
+
+            $message = Setting::get('maintenance_message', 'We are currently undergoing maintenance. Please check back soon.');
+
+            return response()
+                ->view('maintenance', ['message' => $message], 503);
         }
 
         return $next($request);
