@@ -12,6 +12,10 @@ class AuthenticateFilament extends FilamentAuthenticate
             return null;
         }
 
+        // Store the admin URL as the intended destination so LoginController
+        // redirects back to /admin after successful authentication
+        session()->put('url.intended', url('/admin'));
+
         return route('login');
     }
 }

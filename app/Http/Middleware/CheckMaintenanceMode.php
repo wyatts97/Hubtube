@@ -17,19 +17,25 @@ class CheckMaintenanceMode
                 return $next($request);
             }
 
-            // Allow login/logout routes so admins can authenticate
-            if ($request->routeIs('login', 'login.store', 'logout')) {
-                return $next($request);
-            }
+            // Allow paths that must work during maintenance
+            $path = $request->path();
+            $allowedPrefixes = [
+                'admin',        // Filament admin panel
+                'livewire',     // Livewire requests (Filament uses Livewire)
+                'login',        // Login page (GET and POST)
+                'logout',       // Logout
+                'sanctum',      // CSRF cookie
+                'build',        // Vite assets
+                'vendor',       // Filament assets
+                'css',          // Stylesheets
+                'js',           // Scripts
+                'favicon',      // Favicon
+            ];
 
-            // Allow the Filament admin panel routes
-            if (str_starts_with($request->path(), 'admin')) {
-                return $next($request);
-            }
-
-            // Allow Livewire and asset routes
-            if (str_starts_with($request->path(), 'livewire')) {
-                return $next($request);
+            foreach ($allowedPrefixes as $prefix) {
+                if (str_starts_with($path, $prefix)) {
+                    return $next($request);
+                }
             }
 
             $message = Setting::get('maintenance_message', 'We are currently undergoing maintenance. Please check back soon.');
