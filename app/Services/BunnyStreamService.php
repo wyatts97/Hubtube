@@ -21,10 +21,10 @@ class BunnyStreamService
 
     public function __construct()
     {
-        $this->apiKey = Setting::get('bunny_stream_api_key', '');
+        $this->apiKey = Setting::getDecrypted('bunny_stream_api_key', '');
         $this->libraryId = Setting::get('bunny_stream_library_id', '');
         $this->cdnHost = Setting::get('bunny_stream_cdn_host', '');
-        $this->cdnTokenKey = Setting::get('bunny_stream_cdn_token_key', '');
+        $this->cdnTokenKey = Setting::getDecrypted('bunny_stream_cdn_token_key', '');
     }
 
     /**
