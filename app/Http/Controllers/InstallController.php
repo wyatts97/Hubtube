@@ -269,19 +269,20 @@ class InstallController extends Controller
 
         // 3. Create admin user
         try {
-            $userModel = app(\App\Models\User::class);
-            $admin = $userModel::firstOrCreate(
-                ['email' => $adminData['email']],
-                [
+            $admin = \App\Models\User::where('email', $adminData['email'])->first();
+            if (!$admin) {
+                $admin = new \App\Models\User();
+                $admin->forceFill([
                     'username' => $adminData['username'],
+                    'email' => $adminData['email'],
                     'password' => Hash::make($adminData['password']),
                     'email_verified_at' => now(),
                     'is_admin' => true,
                     'is_verified' => true,
                     'is_pro' => true,
                     'age_verified_at' => now(),
-                ]
-            );
+                ])->save();
+            }
 
             // Create channel for admin
             \App\Models\Channel::firstOrCreate(
