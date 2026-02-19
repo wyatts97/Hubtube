@@ -40,8 +40,6 @@ class Setting extends Model
         $setting = static::where('key', $key)->first();
 
         if (!$setting) {
-            // Cache null values to prevent repeated DB queries
-            Cache::put($cacheKey, $default, static::$cacheTtl);
             return $default;
         }
 

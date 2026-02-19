@@ -320,3 +320,4 @@ Route::middleware('age.verified')->group(function () {
 });
 
 }); // end installed:require
+
