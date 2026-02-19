@@ -80,7 +80,7 @@ function injectHtml(html) {
     for (const node of nodes) {
         if (node.nodeName === 'SCRIPT') {
             scripts.push({
-                src: node.src || node.getAttribute('src') || '',
+                src: node.getAttribute('src') || '',
                 attrs: Object.fromEntries(
                     Array.from(node.attributes).map(a => [a.name, a.value])
                 ),

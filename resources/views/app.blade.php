@@ -143,7 +143,7 @@
     {!! $customHeadScripts !!}
     @endif
 
-    @routes(nonce: \Illuminate\Support\Facades\Vite::cspNonce())
+    @routes
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @inertiaHead
 </head>
