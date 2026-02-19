@@ -3,14 +3,12 @@
 namespace App\Mail;
 
 use App\Models\EmailTemplate;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class TemplateMail extends Mailable implements ShouldQueue
+class TemplateMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use SerializesModels;
 
     public string $renderedBody;
     public string $renderedSubject;
