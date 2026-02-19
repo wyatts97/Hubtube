@@ -53,6 +53,7 @@ Route::get('/admin/login', fn () => redirect()->route('login'))->name('admin.log
 
 // Sitemap & Robots (outside age verification)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/sitemap_index.xml', [SitemapController::class, 'index'])->name('sitemap.index');
 Route::get('/robots.txt', function () {
     $content = \App\Models\Setting::get('seo_robots_txt', "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nSitemap: " . url('/sitemap.xml'));
     return response($content, 200, ['Content-Type' => 'text/plain']);

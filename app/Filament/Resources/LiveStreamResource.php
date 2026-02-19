@@ -17,6 +17,11 @@ class LiveStreamResource extends Resource
     protected static ?string $navigationGroup = 'Content';
     protected static ?int $navigationSort = 5;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return (bool) \App\Models\Setting::get('live_streaming_enabled', true);
+    }
+
     public static function form(Form $form): Form
     {
         return $form

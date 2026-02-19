@@ -30,7 +30,11 @@
         "theme": "Tema",
         "notifications": "Notificaciones",
         "mark_all_read": "Marcar todo leído",
-        "no_notifications": "Sin notificaciones"
+        "no_notifications": "Sin notificaciones",
+        "categories": "Categorías",
+        "tags": "Etiquetas",
+        "more": "Más",
+        "upload_image": "Imagen"
     },
     "common": {
         "save": "Guardar",

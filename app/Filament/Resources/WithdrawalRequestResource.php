@@ -23,6 +23,11 @@ class WithdrawalRequestResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return (bool) \App\Models\Setting::get('monetization_enabled', true);
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $count = static::getModel()::where('status', WithdrawalRequest::STATUS_PENDING)->count();

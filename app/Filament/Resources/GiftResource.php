@@ -18,6 +18,11 @@ class GiftResource extends Resource
     protected static ?string $navigationGroup = 'Monetization';
     protected static ?int $navigationSort = 2;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return (bool) \App\Models\Setting::get('monetization_enabled', true);
+    }
+
     public static function form(Form $form): Form
     {
         return $form

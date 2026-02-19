@@ -274,7 +274,7 @@ const mobileNavItems = computed(() => [
 const mobileMoreItems = computed(() => [
     { name: tSafe('nav.trending', 'Trending'), href: localizedUrl('/trending'), icon: TrendingUp },
     { name: tSafe('nav.tags', 'Tags'), href: localizedUrl('/tags'), icon: Tag },
-    { name: tSafe('nav.playlists', 'Playlists'), href: localizedUrl('/playlists'), icon: ListVideo },
+    { name: tSafe('nav.playlists', 'Playlists'), href: localizedUrl('/public-playlists'), icon: ListVideo },
 ]);
 
 const handleMobileNavClick = (item) => {

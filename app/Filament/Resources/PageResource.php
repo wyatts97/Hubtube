@@ -16,8 +16,8 @@ class PageResource extends Resource
     protected static ?string $model = Page::class;
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static ?string $navigationLabel = 'Legal Pages';
-    protected static ?string $navigationGroup = 'Content';
-    protected static ?int $navigationSort = 6;
+    protected static ?string $navigationGroup = 'System';
+    protected static ?int $navigationSort = 10;
 
     public static function form(Form $form): Form
     {
