@@ -297,6 +297,12 @@ class IntegrationSettings extends Page implements HasForms
                 ],
             ]);
         }
+
+        // Purge the cached mailer instances so Laravel re-creates the transport
+        // with the updated config instead of reusing the boot-time .env transport.
+        app()->forgetInstance('mail.manager');
+        app()->forgetInstance('mailer');
+        app(\Illuminate\Mail\MailManager::class)->forgetMailers();
     }
 
     public function sendTestEmail(): void
@@ -306,7 +312,7 @@ class IntegrationSettings extends Page implements HasForms
         $to = auth()->user()->email;
 
         try {
-            Mail::to($to)->send(new TemplateMail('welcome', [
+            Mail::to($to)->sendNow(new TemplateMail('welcome', [
                 'username' => auth()->user()->username ?? 'Admin',
                 'login_url' => url('/admin'),
             ]));
