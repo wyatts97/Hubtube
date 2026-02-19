@@ -1,15 +1,19 @@
 <script setup>
 /**
- * AdSlot — renders ad HTML (including <script> tags) safely into the DOM.
+ * AdSlot — renders ad HTML including <script> tags into the DOM.
  *
- * Vue's v-html does NOT execute <script> tags for security reasons.
- * Ad networks (ExoClick, JuicyAds, TrafficStars, etc.) deliver ads via
- * <script> tags, so we must manually clone and re-insert them so the
- * browser treats them as new, executable script elements.
+ * Critical fix for ExoClick and similar ad networks:
+ * Their code pattern is:
+ *   1. <script async src="ad-provider.js">   ← loads externally, async
+ *   2. <ins data-zoneid="...">               ← placeholder element
+ *   3. <script>AdProvider.push({serve:{}})<  ← must run AFTER #1 loads
  *
- * Usage:
- *   <AdSlot :html="adCode" />
- *   <AdSlot :html="mobileAdCode" class="md:hidden" />
+ * If we append all scripts immediately, #3 runs before #1 finishes loading,
+ * creating AdProvider as a plain array instead of ExoClick's object → no ad.
+ *
+ * Solution: collect all nodes, append non-script nodes immediately,
+ * load external src scripts sequentially (waiting for each to load),
+ * then run inline scripts in order after all external scripts are done.
  */
 import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 
@@ -19,50 +23,62 @@ const props = defineProps({
 
 const container = ref(null);
 
+function loadScriptSequentially(scripts, index, nonScriptNodes) {
+    if (index >= scripts.length) return;
+
+    const scriptDef = scripts[index];
+    const el = document.createElement('script');
+
+    for (const [name, value] of Object.entries(scriptDef.attrs)) {
+        el.setAttribute(name, value);
+    }
+
+    if (scriptDef.src) {
+        // External script — wait for it to load before running the next one
+        el.onload = () => loadScriptSequentially(scripts, index + 1, nonScriptNodes);
+        el.onerror = () => loadScriptSequentially(scripts, index + 1, nonScriptNodes);
+        container.value?.appendChild(el);
+    } else {
+        // Inline script — run immediately then continue
+        if (scriptDef.content) {
+            el.textContent = scriptDef.content;
+        }
+        container.value?.appendChild(el);
+        loadScriptSequentially(scripts, index + 1, nonScriptNodes);
+    }
+}
+
 function injectHtml(html) {
     if (!container.value) return;
 
-    // Clear previous content
     container.value.innerHTML = '';
 
     if (!html || !html.trim()) return;
 
-    // Create a temporary container to parse the HTML
     const temp = document.createElement('div');
     temp.innerHTML = html;
 
-    // Move all child nodes into the real container
-    // For script tags, we must create NEW script elements so the browser executes them
+    const scripts = [];
     const nodes = Array.from(temp.childNodes);
+
     for (const node of nodes) {
         if (node.nodeName === 'SCRIPT') {
-            const script = document.createElement('script');
-            // Copy all attributes
-            for (const attr of node.attributes) {
-                script.setAttribute(attr.name, attr.value);
-            }
-            // Copy inline script content
-            if (node.textContent) {
-                script.textContent = node.textContent;
-            }
-            container.value.appendChild(script);
+            scripts.push({
+                src: node.src || node.getAttribute('src') || '',
+                attrs: Object.fromEntries(
+                    Array.from(node.attributes).map(a => [a.name, a.value])
+                ),
+                content: node.textContent || '',
+            });
         } else {
+            // Append non-script nodes immediately (ins, div, etc.)
             container.value.appendChild(node.cloneNode(true));
-            // Also check for nested script tags inside non-script nodes
-            const nestedScripts = container.value.lastChild?.querySelectorAll?.('script');
-            if (nestedScripts?.length) {
-                for (const nested of nestedScripts) {
-                    const script = document.createElement('script');
-                    for (const attr of nested.attributes) {
-                        script.setAttribute(attr.name, attr.value);
-                    }
-                    if (nested.textContent) {
-                        script.textContent = nested.textContent;
-                    }
-                    nested.parentNode.replaceChild(script, nested);
-                }
-            }
         }
+    }
+
+    // Load scripts sequentially so external scripts finish before inline ones run
+    if (scripts.length > 0) {
+        loadScriptSequentially(scripts, 0, []);
     }
 }
 
