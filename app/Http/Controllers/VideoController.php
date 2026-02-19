@@ -59,15 +59,13 @@ class VideoController extends Controller
             'categories' => Category::active()->get(),
             'filters' => $request->only(['category', 'sort']),
             'bannerAd' => [
-                'enabled' => Setting::get('browse_banner_ad_enabled', false),
-                'type' => Setting::get('browse_banner_ad_type', 'html'),
-                'code' => Setting::get('browse_banner_ad_code', ''),
-                'image' => Setting::get('browse_banner_ad_image', ''),
-                'link' => Setting::get('browse_banner_ad_link', ''),
-                'mobileType' => Setting::get('browse_banner_ad_mobile_type', 'html'),
-                'mobileCode' => Setting::get('browse_banner_ad_mobile_code', ''),
-                'mobileImage' => Setting::get('browse_banner_ad_mobile_image', ''),
-                'mobileLink' => Setting::get('browse_banner_ad_mobile_link', ''),
+                'enabled' => (bool) Setting::get('browse_banner_ad_enabled', false),
+                'code' => (string) Setting::get('browse_banner_ad_code', ''),
+                'image' => (string) Setting::get('browse_banner_ad_image', ''),
+                'link' => (string) Setting::get('browse_banner_ad_link', ''),
+                'mobileCode' => (string) Setting::get('browse_banner_ad_mobile_code', ''),
+                'mobileImage' => (string) Setting::get('browse_banner_ad_mobile_image', ''),
+                'mobileLink' => (string) Setting::get('browse_banner_ad_mobile_link', ''),
             ],
             'adSettings' => [
                 'videoGridEnabled' => (bool) Setting::get('video_grid_ad_enabled', false),
@@ -148,33 +146,29 @@ class VideoController extends Controller
         $s = fn (string $key, mixed $default = null) => $all[$key] ?? $default;
 
         $sidebarAd = [
-            'enabled' => $s('video_sidebar_ad_enabled', false),
-            'code' => $s('video_sidebar_ad_code', ''),
-            'mobileCode' => $s('video_sidebar_ad_mobile_code', ''),
+            'enabled' => (bool) $s('video_sidebar_ad_enabled', false),
+            'code' => (string) $s('video_sidebar_ad_code', ''),
+            'mobileCode' => (string) $s('video_sidebar_ad_mobile_code', ''),
         ];
 
         $bannerAbovePlayer = [
             'enabled' => (bool) $s('banner_above_player_enabled', false),
-            'type' => $s('banner_above_player_type', 'html'),
-            'html' => $s('banner_above_player_html', ''),
-            'image' => $s('banner_above_player_image', ''),
-            'link' => $s('banner_above_player_link', ''),
-            'mobile_type' => $s('banner_above_player_mobile_type', 'html'),
-            'mobile_html' => $s('banner_above_player_mobile_html', ''),
-            'mobile_image' => $s('banner_above_player_mobile_image', ''),
-            'mobile_link' => $s('banner_above_player_mobile_link', ''),
+            'html' => (string) $s('banner_above_player_html', ''),
+            'image' => (string) $s('banner_above_player_image', ''),
+            'link' => (string) $s('banner_above_player_link', ''),
+            'mobile_html' => (string) $s('banner_above_player_mobile_html', ''),
+            'mobile_image' => (string) $s('banner_above_player_mobile_image', ''),
+            'mobile_link' => (string) $s('banner_above_player_mobile_link', ''),
         ];
 
         $bannerBelowPlayer = [
             'enabled' => (bool) $s('banner_below_player_enabled', false),
-            'type' => $s('banner_below_player_type', 'html'),
-            'html' => $s('banner_below_player_html', ''),
-            'image' => $s('banner_below_player_image', ''),
-            'link' => $s('banner_below_player_link', ''),
-            'mobile_type' => $s('banner_below_player_mobile_type', 'html'),
-            'mobile_html' => $s('banner_below_player_mobile_html', ''),
-            'mobile_image' => $s('banner_below_player_mobile_image', ''),
-            'mobile_link' => $s('banner_below_player_mobile_link', ''),
+            'html' => (string) $s('banner_below_player_html', ''),
+            'image' => (string) $s('banner_below_player_image', ''),
+            'link' => (string) $s('banner_below_player_link', ''),
+            'mobile_html' => (string) $s('banner_below_player_mobile_html', ''),
+            'mobile_image' => (string) $s('banner_below_player_mobile_image', ''),
+            'mobile_link' => (string) $s('banner_below_player_mobile_link', ''),
         ];
 
         // Get user's playlists with flag indicating if this video is already in each

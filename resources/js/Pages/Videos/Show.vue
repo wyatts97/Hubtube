@@ -345,15 +345,16 @@ const getRelatedTitle = (video) => {
                 <div v-if="bannerAbovePlayer?.enabled" class="flex justify-center mb-2">
                     <!-- Desktop banner (728x90) -->
                     <div class="hidden md:block">
-                        <AdSlot v-if="bannerAbovePlayer.type === 'html' && bannerAbovePlayer.html" :html="bannerAbovePlayer.html" />
-                        <a v-else-if="bannerAbovePlayer.type === 'image' && bannerAbovePlayer.image" :href="bannerAbovePlayer.link || '#'" target="_blank" rel="noopener noreferrer">
+                        <AdSlot v-if="bannerAbovePlayer.html" :html="bannerAbovePlayer.html" />
+                        <a v-else-if="bannerAbovePlayer.image" :href="bannerAbovePlayer.link || '#'" target="_blank" rel="noopener noreferrer">
                             <img :src="bannerAbovePlayer.image" alt="Advertisement" style="max-width: 728px; max-height: 90px;" class="rounded" loading="lazy" decoding="async" />
                         </a>
                     </div>
                     <!-- Mobile banner (300x100 / 300x50) -->
                     <div class="md:hidden">
-                        <AdSlot v-if="bannerAbovePlayer.mobile_type === 'html' && bannerAbovePlayer.mobile_html" :html="bannerAbovePlayer.mobile_html" />
-                        <a v-else-if="bannerAbovePlayer.mobile_type === 'image' && bannerAbovePlayer.mobile_image" :href="bannerAbovePlayer.mobile_link || '#'" target="_blank" rel="noopener noreferrer">
+                        <AdSlot v-if="bannerAbovePlayer.mobile_html" :html="bannerAbovePlayer.mobile_html" />
+                        <AdSlot v-else-if="bannerAbovePlayer.html" :html="bannerAbovePlayer.html" />
+                        <a v-else-if="bannerAbovePlayer.mobile_image" :href="bannerAbovePlayer.mobile_link || '#'" target="_blank" rel="noopener noreferrer">
                             <img :src="bannerAbovePlayer.mobile_image" alt="Advertisement" style="max-width: 300px; max-height: 100px;" class="rounded" loading="lazy" decoding="async" />
                         </a>
                     </div>
@@ -391,15 +392,16 @@ const getRelatedTitle = (video) => {
                 <div v-if="bannerBelowPlayer?.enabled" class="flex justify-center mt-2">
                     <!-- Desktop banner (728x90) -->
                     <div class="hidden md:block">
-                        <AdSlot v-if="bannerBelowPlayer.type === 'html' && bannerBelowPlayer.html" :html="bannerBelowPlayer.html" />
-                        <a v-else-if="bannerBelowPlayer.type === 'image' && bannerBelowPlayer.image" :href="bannerBelowPlayer.link || '#'" target="_blank" rel="noopener noreferrer">
+                        <AdSlot v-if="bannerBelowPlayer.html" :html="bannerBelowPlayer.html" />
+                        <a v-else-if="bannerBelowPlayer.image" :href="bannerBelowPlayer.link || '#'" target="_blank" rel="noopener noreferrer">
                             <img :src="bannerBelowPlayer.image" alt="Advertisement" style="max-width: 728px; max-height: 90px;" class="rounded" loading="lazy" decoding="async" />
                         </a>
                     </div>
                     <!-- Mobile banner (300x100 / 300x50) -->
                     <div class="md:hidden">
-                        <AdSlot v-if="bannerBelowPlayer.mobile_type === 'html' && bannerBelowPlayer.mobile_html" :html="bannerBelowPlayer.mobile_html" />
-                        <a v-else-if="bannerBelowPlayer.mobile_type === 'image' && bannerBelowPlayer.mobile_image" :href="bannerBelowPlayer.mobile_link || '#'" target="_blank" rel="noopener noreferrer">
+                        <AdSlot v-if="bannerBelowPlayer.mobile_html" :html="bannerBelowPlayer.mobile_html" />
+                        <AdSlot v-else-if="bannerBelowPlayer.html" :html="bannerBelowPlayer.html" />
+                        <a v-else-if="bannerBelowPlayer.mobile_image" :href="bannerBelowPlayer.mobile_link || '#'" target="_blank" rel="noopener noreferrer">
                             <img :src="bannerBelowPlayer.mobile_image" alt="Advertisement" style="max-width: 300px; max-height: 100px;" class="rounded" loading="lazy" decoding="async" />
                         </a>
                     </div>

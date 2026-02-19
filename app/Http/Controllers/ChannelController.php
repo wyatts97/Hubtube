@@ -75,15 +75,13 @@ class ChannelController extends Controller
             'showWatchHistory' => $isOwner || !empty($settings['show_watch_history']),
             'seo' => $this->seoService->forChannel($user),
             'bannerAd' => [
-                'enabled' => Setting::get('channel_banner_ad_enabled', false),
-                'type' => Setting::get('channel_banner_ad_type', 'html'),
-                'code' => Setting::get('channel_banner_ad_code', ''),
-                'image' => Setting::get('channel_banner_ad_image', ''),
-                'link' => Setting::get('channel_banner_ad_link', ''),
-                'mobileType' => Setting::get('channel_banner_ad_mobile_type', 'html'),
-                'mobileCode' => Setting::get('channel_banner_ad_mobile_code', ''),
-                'mobileImage' => Setting::get('channel_banner_ad_mobile_image', ''),
-                'mobileLink' => Setting::get('channel_banner_ad_mobile_link', ''),
+                'enabled' => (bool) Setting::get('channel_banner_ad_enabled', false),
+                'code' => (string) Setting::get('channel_banner_ad_code', ''),
+                'image' => (string) Setting::get('channel_banner_ad_image', ''),
+                'link' => (string) Setting::get('channel_banner_ad_link', ''),
+                'mobileCode' => (string) Setting::get('channel_banner_ad_mobile_code', ''),
+                'mobileImage' => (string) Setting::get('channel_banner_ad_mobile_image', ''),
+                'mobileLink' => (string) Setting::get('channel_banner_ad_mobile_link', ''),
             ],
         ]);
     }

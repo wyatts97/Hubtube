@@ -85,19 +85,16 @@ const withTranslation = (video) => {
     return video;
 };
 
-const bannerEnabled = computed(() => {
-    const e = props.bannerAd?.enabled;
-    return e === true || e === 'true' || e === 1 || e === '1';
-});
+const bannerEnabled = computed(() => !!props.bannerAd?.enabled);
 const desktopBannerHtml = computed(() => {
-    if (props.bannerAd?.type === 'image' && props.bannerAd?.image) {
+    if (props.bannerAd?.image && !props.bannerAd?.code) {
         const img = `<img src="${props.bannerAd.image}" alt="Ad" style="max-width:728px;height:auto;">`;
         return props.bannerAd.link ? `<a href="${props.bannerAd.link}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
     }
     return props.bannerAd?.code || '';
 });
 const mobileBannerHtml = computed(() => {
-    if (props.bannerAd?.mobileType === 'image' && props.bannerAd?.mobileImage) {
+    if (props.bannerAd?.mobileImage && !props.bannerAd?.mobileCode) {
         const img = `<img src="${props.bannerAd.mobileImage}" alt="Ad" style="max-width:300px;height:auto;">`;
         return props.bannerAd.mobileLink ? `<a href="${props.bannerAd.mobileLink}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
     }
