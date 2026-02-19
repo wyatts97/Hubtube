@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\Channel;
 use Illuminate\Auth\Events\Registered;
@@ -46,6 +47,11 @@ class RegisterController extends Controller
         event(new Registered($user));
 
         Auth::login($user);
+
+        $requireVerification = Setting::get('require_email_verification', 'false');
+        if ($requireVerification === 'true' || $requireVerification === '1') {
+            return redirect()->route('verification.notice');
+        }
 
         return redirect()->route('home')->with('success', 'Welcome to HubTube!');
     }

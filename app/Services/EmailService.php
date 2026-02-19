@@ -34,7 +34,7 @@ class EmailService
         }
 
         try {
-            Mail::to($toEmail)->send(new TemplateMail($templateSlug, $data));
+            Mail::to($toEmail)->sendNow(new TemplateMail($templateSlug, $data));
             return true;
         } catch (\Throwable $e) {
             Log::error("EmailService: failed to send '{$templateSlug}' to {$toEmail}: {$e->getMessage()}");
@@ -70,7 +70,7 @@ class EmailService
         }
 
         try {
-            Mail::to($adminEmail)->send(new TemplateMail($templateSlug, $data, $replyTo, $replyToName));
+            Mail::to($adminEmail)->sendNow(new TemplateMail($templateSlug, $data, $replyTo, $replyToName));
             return true;
         } catch (\Throwable $e) {
             Log::error("EmailService: failed to send admin notification '{$templateSlug}': {$e->getMessage()}");
