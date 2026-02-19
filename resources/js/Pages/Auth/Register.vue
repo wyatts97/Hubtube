@@ -11,6 +11,8 @@ const page = usePage();
 
 const showPassword = ref(false);
 const socialProviders = computed(() => page.props.socialLogin || []);
+const siteLogo = computed(() => page.props.theme?.site_logo || '');
+const siteTitle = computed(() => page.props.theme?.siteTitle || 'H');
 
 const providerMeta = {
     google: {
@@ -63,9 +65,10 @@ const onSubmit = submit('post', '/register', {
     <div class="min-h-screen flex items-center justify-center px-4 py-8" style="background-color: var(--color-bg-primary);">
         <div class="w-full max-w-md">
             <div class="text-center mb-8">
-                <Link href="/" class="inline-flex items-center gap-2">
-                    <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background-color: var(--color-accent);">
-                        <span class="text-2xl font-bold text-white">H</span>
+                <Link href="/" class="inline-flex items-center justify-center">
+                    <img v-if="siteLogo" :src="siteLogo" alt="Logo" class="h-12 w-auto object-contain" />
+                    <div v-else class="w-12 h-12 rounded-xl flex items-center justify-center" style="background-color: var(--color-accent);">
+                        <span class="text-2xl font-bold text-white">{{ siteTitle.charAt(0).toUpperCase() }}</span>
                     </div>
                 </Link>
                 <h1 class="text-2xl font-bold mt-4" style="color: var(--color-text-primary);">{{ t('auth.create_account') || 'Create your account' }}</h1>

@@ -849,9 +849,12 @@ const handleMobileNavClick = (item) => {
 
                         <div class="p-6">
                             <div class="text-center mb-6">
-                                <div class="w-12 h-12 rounded-xl flex items-center justify-center mx-auto" style="background-color: var(--color-accent);">
-                                    <span class="text-2xl font-bold text-white">H</span>
-                                </div>
+                                <Link href="/" class="inline-block">
+                                    <img v-if="themeSettings.site_logo" :src="themeSettings.site_logo" alt="Logo" class="h-12 w-auto mx-auto object-contain" />
+                                    <div v-else class="w-12 h-12 rounded-xl flex items-center justify-center mx-auto" style="background-color: var(--color-accent);">
+                                        <span class="text-2xl font-bold text-white">{{ (themeSettings.siteTitle || 'H').charAt(0).toUpperCase() }}</span>
+                                    </div>
+                                </Link>
                                 <h2 class="text-xl font-bold mt-3" style="color: var(--color-text-primary);">{{ t('auth.welcome_back') || 'Welcome back' }}</h2>
                                 <p class="text-sm mt-1" style="color: var(--color-text-secondary);">{{ t('auth.sign_in_desc') || 'Sign in to your account' }}</p>
                             </div>
