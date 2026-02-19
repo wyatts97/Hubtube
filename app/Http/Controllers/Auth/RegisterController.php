@@ -48,8 +48,8 @@ class RegisterController extends Controller
 
         Auth::login($user);
 
-        $requireVerification = Setting::get('require_email_verification', 'false');
-        if ($requireVerification === 'true' || $requireVerification === '1') {
+        $requireVerification = Setting::get('email_verification_required', false);
+        if ($requireVerification === true || $requireVerification === 'true' || $requireVerification === '1') {
             return redirect()->route('verification.notice');
         }
 
