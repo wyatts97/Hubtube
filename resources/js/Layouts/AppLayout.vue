@@ -17,6 +17,7 @@ import { useGlobalAutoTranslate } from '@/Composables/useGlobalAutoTranslate';
 import ToastContainer from '@/Components/ToastContainer.vue';
 import AgeVerificationModal from '@/Components/AgeVerificationModal.vue';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
+import AdSlot from '@/Components/AdSlot.vue';
 
 const toast = useToast();
 const { get, post } = useFetch();
@@ -686,8 +687,8 @@ const handleMobileNavClick = (item) => {
             <div class="max-w-6xl mx-auto">
                 <!-- Footer Ad Banner -->
                 <div v-if="themeSettings.footer_ad_enabled && (themeSettings.footer_ad_code || themeSettings.footer_ad_mobile_code)" class="flex justify-center mb-6">
-                    <div class="hidden sm:block" v-html="themeSettings.footer_ad_code"></div>
-                    <div class="sm:hidden" v-html="themeSettings.footer_ad_mobile_code || themeSettings.footer_ad_code"></div>
+                    <AdSlot :html="themeSettings.footer_ad_code" class="hidden sm:block" />
+                    <AdSlot :html="themeSettings.footer_ad_mobile_code || themeSettings.footer_ad_code" class="sm:hidden" />
                 </div>
 
                 <!-- Site Logo / Title -->

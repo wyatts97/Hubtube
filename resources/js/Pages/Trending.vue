@@ -8,7 +8,7 @@ import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { Loader2 } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
-import { sanitizeHtml } from '@/Composables/useSanitize';
+import AdSlot from '@/Components/AdSlot.vue';
 import { useI18n } from '@/Composables/useI18n';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 
@@ -128,8 +128,8 @@ const adsEnabled = computed(() => {
     const enabled = props.adSettings?.videoGridEnabled;
     return enabled === true || enabled === 'true' || enabled === 1 || enabled === '1';
 });
-const adCode = computed(() => sanitizeHtml(props.adSettings?.videoGridCode || ''));
-const adMobileCode = computed(() => sanitizeHtml(props.adSettings?.videoGridMobileCode || props.adSettings?.videoGridCode || ''));
+const adCode = computed(() => props.adSettings?.videoGridCode || '');
+const adMobileCode = computed(() => props.adSettings?.videoGridMobileCode || props.adSettings?.videoGridCode || '');
 const adFrequency = computed(() => parseInt(props.adSettings?.videoGridFrequency) || 8);
 const shouldShowAd = (index, totalLength) => {
     if (!adsEnabled.value || !adCode.value.trim()) return false;
@@ -184,8 +184,8 @@ const getSponsoredCard = (index) => {
                 <template v-for="(video, index) in videoList" :key="video.id">
                     <VideoCard :video="withTranslation(video)" />
                     <div v-if="shouldShowAd(index, videoList.length)" class="col-span-1 flex items-start justify-center rounded-xl p-2">
-                        <div class="hidden sm:block" v-html="adCode"></div>
-                        <div class="sm:hidden" v-html="adMobileCode"></div>
+                        <AdSlot :html="adCode" class="hidden sm:block" />
+                        <AdSlot :html="adMobileCode" class="sm:hidden" />
                     </div>
                     <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" />
                 </template>
@@ -208,8 +208,8 @@ const getSponsoredCard = (index) => {
                 <template v-for="(video, index) in videos.data" :key="video.id">
                     <VideoCard :video="withTranslation(video)" />
                     <div v-if="shouldShowAd(index, videos.data.length)" class="col-span-1 flex items-start justify-center rounded-xl p-2">
-                        <div class="hidden sm:block" v-html="adCode"></div>
-                        <div class="sm:hidden" v-html="adMobileCode"></div>
+                        <AdSlot :html="adCode" class="hidden sm:block" />
+                        <AdSlot :html="adMobileCode" class="sm:hidden" />
                     </div>
                     <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" />
                 </template>

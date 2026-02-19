@@ -4,7 +4,7 @@ import SeoHead from '@/Components/SeoHead.vue';
 import { ref, computed } from 'vue';
 import { useFetch } from '@/Composables/useFetch';
 import { useI18n } from '@/Composables/useI18n';
-import { sanitizeHtml } from '@/Composables/useSanitize';
+import AdSlot from '@/Components/AdSlot.vue';
 
 const { t } = useI18n();
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -31,14 +31,14 @@ const desktopBannerHtml = computed(() => {
         const img = `<img src="${props.bannerAd.image}" alt="Ad" style="max-width:728px;height:auto;">`;
         return props.bannerAd.link ? `<a href="${props.bannerAd.link}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
     }
-    return sanitizeHtml(props.bannerAd?.code || '');
+    return props.bannerAd?.code || '';
 });
 const mobileBannerHtml = computed(() => {
     if (props.bannerAd?.mobileType === 'image' && props.bannerAd?.mobileImage) {
         const img = `<img src="${props.bannerAd.mobileImage}" alt="Ad" style="max-width:300px;height:auto;">`;
         return props.bannerAd.mobileLink ? `<a href="${props.bannerAd.mobileLink}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
     }
-    return sanitizeHtml(props.bannerAd?.mobileCode || props.bannerAd?.code || '');
+    return props.bannerAd?.mobileCode || props.bannerAd?.code || '';
 });
 
 const page = usePage();
@@ -164,8 +164,8 @@ const tabs = computed(() => {
 
         <!-- Banner Ad -->
         <div v-if="bannerEnabled && (desktopBannerHtml || mobileBannerHtml)" class="mb-4 flex justify-center">
-            <div class="hidden sm:block" v-html="desktopBannerHtml"></div>
-            <div class="sm:hidden" v-html="mobileBannerHtml"></div>
+            <AdSlot :html="desktopBannerHtml" class="hidden sm:block" />
+            <AdSlot :html="mobileBannerHtml" class="sm:hidden" />
         </div>
 
         <!-- Videos Grid -->

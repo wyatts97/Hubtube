@@ -7,7 +7,7 @@ import VideoCard from '@/Components/VideoCard.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
-import { sanitizeHtml } from '@/Composables/useSanitize';
+import AdSlot from '@/Components/AdSlot.vue';
 
 const { t, localizedUrl } = useI18n();
 
@@ -30,14 +30,14 @@ const desktopBannerHtml = computed(() => {
         const img = `<img src="${props.bannerAd.image}" alt="Ad" style="max-width:728px;height:auto;">`;
         return props.bannerAd.link ? `<a href="${props.bannerAd.link}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
     }
-    return sanitizeHtml(props.bannerAd?.code || '');
+    return props.bannerAd?.code || '';
 });
 const mobileBannerHtml = computed(() => {
     if (props.bannerAd?.mobileType === 'image' && props.bannerAd?.mobileImage) {
         const img = `<img src="${props.bannerAd.mobileImage}" alt="Ad" style="max-width:300px;height:auto;">`;
         return props.bannerAd.mobileLink ? `<a href="${props.bannerAd.mobileLink}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
     }
-    return sanitizeHtml(props.bannerAd?.mobileCode || props.bannerAd?.code || '');
+    return props.bannerAd?.mobileCode || props.bannerAd?.code || '';
 });
 
 const sponsoredFrequency = computed(() => props.sponsoredCards?.[0]?.frequency || 8);
@@ -62,8 +62,8 @@ const goToPage = (pageNum) => {
     <AppLayout>
         <!-- Top Ad Banner -->
         <div v-if="bannerEnabled && (desktopBannerHtml || mobileBannerHtml)" class="mb-4 flex justify-center">
-            <div class="hidden sm:block" v-html="desktopBannerHtml"></div>
-            <div class="sm:hidden" v-html="mobileBannerHtml"></div>
+            <AdSlot :html="desktopBannerHtml" class="hidden sm:block" />
+            <AdSlot :html="mobileBannerHtml" class="sm:hidden" />
         </div>
 
         <div class="mb-6">

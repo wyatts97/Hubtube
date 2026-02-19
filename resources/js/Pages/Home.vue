@@ -9,7 +9,7 @@ import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import LiveStreamCard from '@/Components/LiveStreamCard.vue';
 import { Loader2 } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
-import { sanitizeHtml } from '@/Composables/useSanitize';
+import AdSlot from '@/Components/AdSlot.vue';
 import { useI18n } from '@/Composables/useI18n';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 
@@ -137,8 +137,8 @@ const adsEnabled = computed(() => {
     return enabled === true || enabled === 'true' || enabled === 1 || enabled === '1';
 });
 
-const adCode = computed(() => sanitizeHtml(props.adSettings?.videoGridCode || ''));
-const adMobileCode = computed(() => sanitizeHtml(props.adSettings?.videoGridMobileCode || props.adSettings?.videoGridCode || ''));
+const adCode = computed(() => props.adSettings?.videoGridCode || '');
+const adMobileCode = computed(() => props.adSettings?.videoGridMobileCode || props.adSettings?.videoGridCode || '');
 const adFrequency = computed(() => parseInt(props.adSettings?.videoGridFrequency) || 8);
 
 // Helper to check if ad should show after index
@@ -213,8 +213,8 @@ const getSponsoredCard = (index) => {
                             class="flex items-start justify-center rounded-xl p-2"
                             :class="mobileGrid === 2 ? 'col-span-2 sm:col-span-1' : 'col-span-1'"
                         >
-                            <div class="hidden sm:block" v-html="adCode"></div>
-                            <div class="sm:hidden" v-html="adMobileCode"></div>
+                            <AdSlot :html="adCode" class="hidden sm:block" />
+                            <AdSlot :html="adMobileCode" class="sm:hidden" />
                         </div>
                         <SponsoredVideoCard
                             v-if="getSponsoredCard(index)"
@@ -246,8 +246,8 @@ const getSponsoredCard = (index) => {
                             class="flex items-start justify-center rounded-xl p-2"
                             :class="mobileGrid === 2 ? 'col-span-2 sm:col-span-1' : 'col-span-1'"
                         >
-                            <div class="hidden sm:block" v-html="adCode"></div>
-                            <div class="sm:hidden" v-html="adMobileCode"></div>
+                            <AdSlot :html="adCode" class="hidden sm:block" />
+                            <AdSlot :html="adMobileCode" class="sm:hidden" />
                         </div>
                         <SponsoredVideoCard
                             v-if="getSponsoredCard(index)"

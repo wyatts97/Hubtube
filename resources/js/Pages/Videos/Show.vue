@@ -3,7 +3,7 @@ import { Link, router, usePage } from '@inertiajs/vue3';
 import SeoHead from '@/Components/SeoHead.vue';
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useFetch } from '@/Composables/useFetch';
-import { sanitizeHtml } from '@/Composables/useSanitize';
+import AdSlot from '@/Components/AdSlot.vue';
 import { useToast } from '@/Composables/useToast';
 import { useI18n } from '@/Composables/useI18n';
 import { useTranslation } from '@/Composables/useTranslation';
@@ -345,14 +345,14 @@ const getRelatedTitle = (video) => {
                 <div v-if="bannerAbovePlayer?.enabled" class="flex justify-center mb-2">
                     <!-- Desktop banner (728x90) -->
                     <div class="hidden md:block">
-                        <div v-if="bannerAbovePlayer.type === 'html' && bannerAbovePlayer.html" v-html="sanitizeHtml(bannerAbovePlayer.html)"></div>
+                        <AdSlot v-if="bannerAbovePlayer.type === 'html' && bannerAbovePlayer.html" :html="bannerAbovePlayer.html" />
                         <a v-else-if="bannerAbovePlayer.type === 'image' && bannerAbovePlayer.image" :href="bannerAbovePlayer.link || '#'" target="_blank" rel="noopener noreferrer">
                             <img :src="bannerAbovePlayer.image" alt="Advertisement" style="max-width: 728px; max-height: 90px;" class="rounded" loading="lazy" decoding="async" />
                         </a>
                     </div>
                     <!-- Mobile banner (300x100 / 300x50) -->
                     <div class="md:hidden">
-                        <div v-if="bannerAbovePlayer.mobile_type === 'html' && bannerAbovePlayer.mobile_html" v-html="sanitizeHtml(bannerAbovePlayer.mobile_html)"></div>
+                        <AdSlot v-if="bannerAbovePlayer.mobile_type === 'html' && bannerAbovePlayer.mobile_html" :html="bannerAbovePlayer.mobile_html" />
                         <a v-else-if="bannerAbovePlayer.mobile_type === 'image' && bannerAbovePlayer.mobile_image" :href="bannerAbovePlayer.mobile_link || '#'" target="_blank" rel="noopener noreferrer">
                             <img :src="bannerAbovePlayer.mobile_image" alt="Advertisement" style="max-width: 300px; max-height: 100px;" class="rounded" loading="lazy" decoding="async" />
                         </a>
@@ -391,14 +391,14 @@ const getRelatedTitle = (video) => {
                 <div v-if="bannerBelowPlayer?.enabled" class="flex justify-center mt-2">
                     <!-- Desktop banner (728x90) -->
                     <div class="hidden md:block">
-                        <div v-if="bannerBelowPlayer.type === 'html' && bannerBelowPlayer.html" v-html="sanitizeHtml(bannerBelowPlayer.html)"></div>
+                        <AdSlot v-if="bannerBelowPlayer.type === 'html' && bannerBelowPlayer.html" :html="bannerBelowPlayer.html" />
                         <a v-else-if="bannerBelowPlayer.type === 'image' && bannerBelowPlayer.image" :href="bannerBelowPlayer.link || '#'" target="_blank" rel="noopener noreferrer">
                             <img :src="bannerBelowPlayer.image" alt="Advertisement" style="max-width: 728px; max-height: 90px;" class="rounded" loading="lazy" decoding="async" />
                         </a>
                     </div>
                     <!-- Mobile banner (300x100 / 300x50) -->
                     <div class="md:hidden">
-                        <div v-if="bannerBelowPlayer.mobile_type === 'html' && bannerBelowPlayer.mobile_html" v-html="sanitizeHtml(bannerBelowPlayer.mobile_html)"></div>
+                        <AdSlot v-if="bannerBelowPlayer.mobile_type === 'html' && bannerBelowPlayer.mobile_html" :html="bannerBelowPlayer.mobile_html" />
                         <a v-else-if="bannerBelowPlayer.mobile_type === 'image' && bannerBelowPlayer.mobile_image" :href="bannerBelowPlayer.mobile_link || '#'" target="_blank" rel="noopener noreferrer">
                             <img :src="bannerBelowPlayer.mobile_image" alt="Advertisement" style="max-width: 300px; max-height: 100px;" class="rounded" loading="lazy" decoding="async" />
                         </a>
@@ -578,8 +578,8 @@ const getRelatedTitle = (video) => {
                 <!-- Ad Space - Only show if enabled and has code -->
                 <div v-if="sidebarAd?.enabled && (sidebarAd?.code || sidebarAd?.mobileCode)" class="mb-6">
                     <div class="ad-container flex items-center justify-center">
-                        <div class="hidden sm:flex items-center justify-center" v-html="sanitizeHtml(sidebarAd.code)"></div>
-                        <div class="sm:hidden flex items-center justify-center" v-html="sanitizeHtml(sidebarAd.mobileCode || sidebarAd.code)"></div>
+                        <AdSlot :html="sidebarAd.code" class="hidden sm:flex items-center justify-center" />
+                        <AdSlot :html="sidebarAd.mobileCode || sidebarAd.code" class="sm:hidden flex items-center justify-center" />
                     </div>
                 </div>
 

@@ -5,7 +5,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { Filter, X, ArrowUpDown, Clock, Flame, CalendarDays } from 'lucide-vue-next';
-import { sanitizeHtml } from '@/Composables/useSanitize';
+import AdSlot from '@/Components/AdSlot.vue';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 import { useI18n } from '@/Composables/useI18n';
 
@@ -94,22 +94,22 @@ const desktopBannerHtml = computed(() => {
         const img = `<img src="${props.bannerAd.image}" alt="Ad" style="max-width:728px;height:auto;">`;
         return props.bannerAd.link ? `<a href="${props.bannerAd.link}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
     }
-    return sanitizeHtml(props.bannerAd?.code || '');
+    return props.bannerAd?.code || '';
 });
 const mobileBannerHtml = computed(() => {
     if (props.bannerAd?.mobileType === 'image' && props.bannerAd?.mobileImage) {
         const img = `<img src="${props.bannerAd.mobileImage}" alt="Ad" style="max-width:300px;height:auto;">`;
         return props.bannerAd.mobileLink ? `<a href="${props.bannerAd.mobileLink}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
     }
-    return sanitizeHtml(props.bannerAd?.mobileCode || props.bannerAd?.code || '');
+    return props.bannerAd?.mobileCode || props.bannerAd?.code || '';
 });
 
 const adsEnabled = computed(() => {
     const enabled = props.adSettings?.videoGridEnabled;
     return enabled === true || enabled === 'true' || enabled === 1 || enabled === '1';
 });
-const adCode = computed(() => sanitizeHtml(props.adSettings?.videoGridCode || ''));
-const adMobileCode = computed(() => sanitizeHtml(props.adSettings?.videoGridMobileCode || props.adSettings?.videoGridCode || ''));
+const adCode = computed(() => props.adSettings?.videoGridCode || '');
+const adMobileCode = computed(() => props.adSettings?.videoGridMobileCode || props.adSettings?.videoGridCode || '');
 const adFrequency = computed(() => parseInt(props.adSettings?.videoGridFrequency) || 8);
 const shouldShowAd = (index, totalLength) => {
     if (!adsEnabled.value || !adCode.value.trim()) return false;
@@ -132,8 +132,8 @@ const getSponsoredCard = (index) => {
     <AppLayout>
         <!-- Top Ad Banner -->
         <div v-if="bannerEnabled && (desktopBannerHtml || mobileBannerHtml)" class="mb-4 flex justify-center">
-            <div class="hidden sm:block" v-html="desktopBannerHtml"></div>
-            <div class="sm:hidden" v-html="mobileBannerHtml"></div>
+            <AdSlot :html="desktopBannerHtml" class="hidden sm:block" />
+            <AdSlot :html="mobileBannerHtml" class="sm:hidden" />
         </div>
 
         <div class="mb-5">
@@ -223,8 +223,8 @@ const getSponsoredCard = (index) => {
                     v-if="shouldShowAd(index, videos.data.length)"
                     class="col-span-1 flex items-start justify-center rounded-xl p-2"
                 >
-                    <div class="hidden sm:block" v-html="adCode"></div>
-                    <div class="sm:hidden" v-html="adMobileCode"></div>
+                    <AdSlot :html="adCode" class="hidden sm:block" />
+                    <AdSlot :html="adMobileCode" class="sm:hidden" />
                 </div>
                 <SponsoredVideoCard
                     v-if="getSponsoredCard(index)"
