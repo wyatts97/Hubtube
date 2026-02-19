@@ -129,11 +129,10 @@ This enables detailed analytics without relying solely on aggregate counters. Us
 
 | Priority | Item | Dependencies | Est. Hours |
 |----------|------|-------------|------------|
-| 🟡 5 | **#8 Admin Analytics** | None (uses existing data) | 12–18h |
-| 🟢 6 | **#5 UI/UX Polish** | None (incremental) | 15–25h |
-| 🟢 7 | **#6 Mobile/PWA Polish** | None (incremental) | 10–15h |
-| 🔵 8 | **#7 Image/GIF System** | `intervention/image` package | 20–30h |
-
+| 🟡 5 | **#1 Admin Analytics** | None (uses existing data) | 12–18h |
+| 🟢 6 | **#2 UI/UX Polish** | None (incremental) | 15–25h |
+| 🟢 7 | **#3 Mobile/PWA Polish** | None (incremental) | 10–15h |
+| 🔵 8 | **#4 Image/GIF System** | `intervention/image` package | 20–30h 
 **Total estimated effort: 77–117 hours**
 
 ### Recommended Sprint Plan
