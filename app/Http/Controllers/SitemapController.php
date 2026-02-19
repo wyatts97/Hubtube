@@ -250,9 +250,6 @@ class SitemapController extends Controller
             $contentUrl = $this->xmlEscape($video->video_url);
         }
 
-        // Player URL (the page where the video plays)
-        $playerUrl = $this->xmlEscape(url("/{$video->slug}"));
-
         // Duration in seconds
         $duration = $video->duration ?? 0;
 
@@ -292,8 +289,6 @@ class SitemapController extends Controller
         if ($contentUrl) {
             $entry .= "      <video:content_loc>{$contentUrl}</video:content_loc>\n";
         }
-
-        $entry .= "      <video:player_loc>{$playerUrl}</video:player_loc>\n";
 
         if ($duration > 0) {
             $entry .= "      <video:duration>{$duration}</video:duration>\n";
