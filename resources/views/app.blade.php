@@ -125,6 +125,24 @@
         @endif
     @endif
 
+    {{-- Google Analytics --}}
+    @php $gaId = \App\Models\Setting::get('google_analytics_id', ''); @endphp
+    @if($gaId)
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{ $gaId }}');
+    </script>
+    @endif
+
+    {{-- Custom Head Scripts (from Admin > Site Settings > Analytics) --}}
+    @php $customHeadScripts = \App\Models\Setting::get('custom_head_scripts', ''); @endphp
+    @if($customHeadScripts)
+    {!! $customHeadScripts !!}
+    @endif
+
     @routes(nonce: \Illuminate\Support\Facades\Vite::cspNonce())
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @inertiaHead
@@ -191,6 +209,12 @@
                 }
             })();
         </script>
+    @endif
+
+    {{-- Custom Footer Scripts (from Admin > Site Settings > Analytics) --}}
+    @php $customFooterScripts = \App\Models\Setting::get('custom_footer_scripts', ''); @endphp
+    @if($customFooterScripts)
+    {!! $customFooterScripts !!}
     @endif
 </body>
 </html>

@@ -133,6 +133,9 @@ const closeDropdowns = (e) => {
     if (!e.target.closest('.mega-menu-area')) {
         openMegaMenu.value = null;
     }
+    if (!e.target.closest('.mobile-upload-menu')) {
+        showMobileUploadMenu.value = false;
+    }
 };
 
 onMounted(() => {
@@ -254,10 +257,12 @@ const tSafe = (key, fallback) => {
     return val !== key ? val : fallback;
 };
 
+const showMobileUploadMenu = ref(false);
+
 const mobileNavItems = computed(() => [
     { name: tSafe('nav.home', 'Home'), href: localizedUrl('/'), icon: Home },
     { name: tSafe('common.search', 'Search'), href: null, action: 'search', icon: Search },
-    { name: tSafe('nav.upload', 'Upload'), href: '/upload', icon: Plus, isCenter: true },
+    { name: tSafe('nav.upload', 'Upload'), href: null, action: 'upload', icon: Plus, isCenter: true },
     { name: tSafe('nav.trending', 'Trending'), href: localizedUrl('/trending'), icon: TrendingUp },
     { name: tSafe('nav.categories', 'Categories'), href: localizedUrl('/categories'), icon: LayoutGrid },
 ]);
@@ -265,6 +270,8 @@ const mobileNavItems = computed(() => [
 const handleMobileNavClick = (item) => {
     if (item.action === 'search') {
         showMobileSearch.value = true;
+    } else if (item.action === 'upload') {
+        showMobileUploadMenu.value = !showMobileUploadMenu.value;
     }
 };
 </script>
@@ -729,15 +736,32 @@ const handleMobileNavClick = (item) => {
                 >
                     <template v-for="item in mobileNavItems" :key="item.name">
                         <!-- Center Upload Button -->
-                        <div v-if="item.isCenter" class="flex items-center justify-center">
-                            <Link
-                                :href="item.href"
+                        <div v-if="item.isCenter" class="mobile-upload-menu relative flex flex-col items-center justify-center" style="flex: 1 1 0%; min-width: 0;">
+                            <!-- Upload Menu Popup -->
+                            <Transition name="fade">
+                                <div
+                                    v-if="showMobileUploadMenu"
+                                    class="absolute bottom-full mb-3 rounded-xl shadow-xl p-2 min-w-[160px]"
+                                    style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);"
+                                >
+                                    <Link href="/upload" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showMobileUploadMenu = false">
+                                        <Video class="w-4 h-4" style="color: var(--color-text-secondary);" />
+                                        <span class="text-sm">{{ t('nav.upload_video') || 'Upload Video' }}</span>
+                                    </Link>
+                                    <Link href="/image-upload" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showMobileUploadMenu = false">
+                                        <ImageIcon class="w-4 h-4" style="color: var(--color-text-secondary);" />
+                                        <span class="text-sm">{{ t('nav.upload_image') || 'Upload Image' }}</span>
+                                    </Link>
+                                </div>
+                            </Transition>
+                            <button
                                 class="flex items-center justify-center w-11 h-11 rounded-full shadow-lg active:scale-95 transition-all duration-200"
                                 :style="{ backgroundColor: 'var(--color-accent)' }"
                                 :aria-label="item.name"
+                                @click="handleMobileNavClick(item)"
                             >
                                 <component :is="item.icon" class="w-6 h-6 text-white" />
-                            </Link>
+                            </button>
                         </div>
                         <!-- Regular Nav Button -->
                         <component
@@ -745,6 +769,7 @@ const handleMobileNavClick = (item) => {
                             :is="item.href ? Link : 'button'"
                             :href="item.href || undefined"
                             class="flex flex-col items-center justify-center p-2 group"
+                            style="flex: 1 1 0%; min-width: 0;"
                             :aria-label="item.name"
                             @click="!item.href ? handleMobileNavClick(item) : null"
                         >
