@@ -14,9 +14,17 @@ class VideoProcessed implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    public int $tries = 1;
+    public bool $afterCommit = true;
+
     public function __construct(
         public Video $video
     ) {}
+
+    public function failed(\Throwable $e): void
+    {
+        \Illuminate\Support\Facades\Log::warning('VideoProcessed broadcast failed (Reverb may be down): ' . $e->getMessage());
+    }
 
     public function broadcastOn(): array
     {

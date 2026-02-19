@@ -369,6 +369,21 @@ class SeoSettings extends Page implements HasForms
                         Tabs\Tab::make('Sitemap')
                             ->icon('heroicon-o-map')
                             ->schema([
+                                Section::make('Sitemap URLs')
+                                    ->description('Submit these URLs to Google Search Console and Bing Webmaster Tools.')
+                                    ->schema([
+                                        Placeholder::make('sitemap_url')
+                                            ->label('Main Sitemap URL')
+                                            ->content(fn () => new HtmlString(
+                                                '<a href="' . url('/sitemap.xml') . '" target="_blank" class="text-primary-500 underline font-mono text-sm">' . url('/sitemap.xml') . '</a>'
+                                            )),
+                                        Placeholder::make('sitemap_index_url')
+                                            ->label('Sitemap Index URL')
+                                            ->content(fn () => new HtmlString(
+                                                '<a href="' . url('/sitemap_index.xml') . '" target="_blank" class="text-primary-500 underline font-mono text-sm">' . url('/sitemap_index.xml') . '</a>'
+                                                . '<p class="text-xs text-gray-500 mt-1">Submit the main sitemap.xml to search engines. It auto-generates from your content.</p>'
+                                            )),
+                                    ])->columns(2),
                                 Section::make('Video Sitemap')
                                     ->description('Enhanced sitemap with video-specific metadata for Google Video Search.')
                                     ->schema([

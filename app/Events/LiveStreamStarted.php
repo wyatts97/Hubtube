@@ -13,9 +13,17 @@ class LiveStreamStarted implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    public int $tries = 1;
+    public bool $afterCommit = true;
+
     public function __construct(
         public LiveStream $liveStream
     ) {}
+
+    public function failed(\Throwable $e): void
+    {
+        \Illuminate\Support\Facades\Log::warning('LiveStreamStarted broadcast failed (Reverb may be down): ' . $e->getMessage());
+    }
 
     public function broadcastOn(): array
     {

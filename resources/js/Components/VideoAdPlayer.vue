@@ -1,5 +1,15 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
+/**
+ * VideoAdPlayer — pre/mid/post-roll ads.
+ *
+ * VAST/VPAID ads use Google IMA SDK (loaded on demand).
+ * IMA handles: wrapper chains, skipoffset, impression/click/quartile pixels.
+ * Admin skip settings do NOT override VAST — the ad network controls that.
+ *
+ * Local MP4/HTML ads use the custom player with admin-configured skip delay.
+ * Weighted shuffle is handled server-side.
+ */
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useFetch } from '@/Composables/useFetch';
 
 const props = defineProps({
@@ -13,39 +23,42 @@ const emit = defineEmits([
     'ad-skipped',
     'request-pause',
     'request-play',
-    'request-current-time',
 ]);
 
 const { get } = useFetch();
 
-// State
+// ── State ──
 const adData = ref(null);
 const adConfig = ref(null);
 const currentAd = ref(null);
-const adPhase = ref('idle'); // idle, playing, skippable, done
-const adType = ref(null); // pre_roll, mid_roll, post_roll
+const adPhase = ref('idle');
+const adType = ref(null);
+
+// Local ad state (MP4 / HTML only)
 const adElapsed = ref(0);
 const skipAfter = ref(0);
 const canSkip = ref(false);
 const adVideoRef = ref(null);
 const adHtmlRef = ref(null);
-const vastMediaUrl = ref(null);
+
+// IMA state (VAST / VPAID only)
+const imaContainerRef = ref(null);
+const imaVideoRef = ref(null);
+let imaDisplayContainer = null;
+let imaAdsLoader = null;
+let imaAdsManager = null;
 
 // Mid-roll tracking
 const midRollsPlayed = ref(0);
 const lastMidRollTime = ref(0);
-const midRollCheckInterval = ref(null);
-const pendingMidRoll = ref(false);
 
 // Timers
-let skipTimer = null;
 let elapsedTimer = null;
 
-// Load ads from API
+// ── Ad loading ──
 const loadAds = async () => {
     const params = new URLSearchParams();
     if (props.categoryId) params.set('category_id', props.categoryId);
-
     const { ok, data } = await get(`/api/video-ads?${params.toString()}`);
     if (ok && data) {
         adData.value = data.ads;
@@ -53,47 +66,115 @@ const loadAds = async () => {
     }
 };
 
-// Check if we have ads for a placement
-const hasAds = (placement) => {
-    return adData.value?.[placement]?.length > 0;
-};
+const hasAds = (placement) => adData.value?.[placement]?.length > 0;
+const pickAd  = (placement) => adData.value?.[placement]?.[0] ?? null;
 
-// Pick an ad for a placement
-const pickAd = (placement) => {
-    const ads = adData.value?.[placement];
-    if (!ads?.length) return null;
-    // Server already handles shuffle/weighting, just take first
-    return ads[0];
-};
-
-// Get skip delay for a placement
+// ── Skip delay (local ads only) ──
 const getSkipDelay = (placement) => {
     if (!adConfig.value) return 5;
     switch (placement) {
-        case 'pre_roll': return adConfig.value.pre_roll_skip_after;
-        case 'mid_roll': return adConfig.value.mid_roll_skip_after;
+        case 'pre_roll':  return adConfig.value.pre_roll_skip_after;
+        case 'mid_roll':  return adConfig.value.mid_roll_skip_after;
         case 'post_roll': return adConfig.value.post_roll_skip_after;
-        default: return 5;
+        default:          return 5;
     }
 };
 
-// Start playing an ad
-const playAd = (placement) => {
-    const ad = pickAd(placement);
-    if (!ad) return false;
+// ── IMA SDK (VAST / VPAID) ──
+const loadImaSdk = () => new Promise((resolve, reject) => {
+    if (window.google?.ima) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://imasdk.googleapis.com/js/sdkloader/ima3.js';
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+});
 
-    currentAd.value = ad;
-    adType.value = placement;
-    adPhase.value = 'playing';
+const destroyIma = () => {
+    try { imaAdsManager?.destroy(); } catch (_) {}
+    try { imaAdsLoader?.contentComplete(); } catch (_) {}
+    imaAdsManager = null;
+    imaAdsLoader = null;
+    imaDisplayContainer = null;
+};
+
+const playVastAd = async (ad, placement) => {
+    try { await loadImaSdk(); }
+    catch (e) {
+        console.warn('[VideoAdPlayer] IMA SDK failed to load:', e);
+        endAd(); return;
+    }
+
+    await nextTick();
+    if (!imaContainerRef.value || !imaVideoRef.value) { endAd(); return; }
+
+    try {
+        const ima = window.google.ima;
+        destroyIma();
+
+        ima.settings.setDisableCustomPlaybackForIOS10Plus(true);
+
+        imaDisplayContainer = new ima.AdDisplayContainer(imaContainerRef.value, imaVideoRef.value);
+        imaDisplayContainer.initialize();
+
+        imaAdsLoader = new ima.AdsLoader(imaDisplayContainer);
+
+        imaAdsLoader.addEventListener(
+            ima.AdsManagerLoadedEvent.Type.ADS_MANAGER_LOADED,
+            (event) => {
+                imaAdsManager = event.getAdsManager(imaVideoRef.value);
+
+                imaAdsManager.addEventListener(ima.AdEvent.Type.STARTED, () => {
+                    emit('ad-started', placement);
+                    emit('request-pause');
+                });
+                imaAdsManager.addEventListener(ima.AdEvent.Type.COMPLETE, () => { destroyIma(); endAd(); });
+                imaAdsManager.addEventListener(ima.AdEvent.Type.SKIPPED,  () => { destroyIma(); emit('ad-skipped', placement); endAd(); });
+                imaAdsManager.addEventListener(ima.AdEvent.Type.ALL_ADS_COMPLETED, () => { destroyIma(); endAd(); });
+                imaAdsManager.addEventListener(ima.AdErrorEvent.Type.AD_ERROR, (err) => {
+                    console.warn('[VideoAdPlayer] IMA ad error:', err.getError().toString());
+                    destroyIma(); endAd();
+                });
+
+                try {
+                    const w = imaContainerRef.value?.offsetWidth  || 640;
+                    const h = imaContainerRef.value?.offsetHeight || 360;
+                    imaAdsManager.init(w, h, ima.ViewMode.NORMAL);
+                    imaAdsManager.start();
+                } catch (err) {
+                    console.warn('[VideoAdPlayer] IMA start error:', err);
+                    destroyIma(); endAd();
+                }
+            }
+        );
+
+        imaAdsLoader.addEventListener(ima.AdErrorEvent.Type.AD_ERROR, (err) => {
+            console.warn('[VideoAdPlayer] IMA loader error:', err.getError().toString());
+            destroyIma(); endAd();
+        });
+
+        const req = new ima.AdsRequest();
+        req.adTagUrl = ad.content.trim();
+        req.linearAdSlotWidth    = imaContainerRef.value?.offsetWidth  || 640;
+        req.linearAdSlotHeight   = imaContainerRef.value?.offsetHeight || 360;
+        req.nonLinearAdSlotWidth  = imaContainerRef.value?.offsetWidth  || 640;
+        req.nonLinearAdSlotHeight = 150;
+        imaAdsLoader.requestAds(req);
+    } catch (e) {
+        console.warn('[VideoAdPlayer] IMA setup error:', e);
+        destroyIma(); endAd();
+    }
+};
+
+// ── Local ad playback (MP4 / HTML) ──
+const playLocalAd = (ad, placement) => {
     adElapsed.value = 0;
     skipAfter.value = getSkipDelay(placement);
-    canSkip.value = skipAfter.value === 0;
-    vastMediaUrl.value = null;
+    canSkip.value   = skipAfter.value === 0;
 
     emit('ad-started', placement);
     emit('request-pause');
 
-    // Start elapsed timer
     clearTimers();
     elapsedTimer = setInterval(() => {
         adElapsed.value++;
@@ -102,315 +183,169 @@ const playAd = (placement) => {
         }
     }, 1000);
 
-    // Handle VAST/VPAID — fetch the XML and extract media URL
-    if (ad.type === 'vast' || ad.type === 'vpaid') {
-        fetchVastMedia(ad.content);
-    }
-
-    // For HTML ads, inject after next tick
     if (ad.type === 'html') {
         nextTick(() => {
-            if (adHtmlRef.value) {
-                adHtmlRef.value.innerHTML = ad.content;
-                // Execute any scripts in the injected HTML
-                const scripts = adHtmlRef.value.querySelectorAll('script');
-                scripts.forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    Array.from(oldScript.attributes).forEach(attr => {
-                        newScript.setAttribute(attr.name, attr.value);
-                    });
-                    newScript.textContent = oldScript.textContent;
-                    oldScript.parentNode.replaceChild(newScript, oldScript);
-                });
-            }
+            if (!adHtmlRef.value) return;
+            adHtmlRef.value.innerHTML = ad.content;
+            adHtmlRef.value.querySelectorAll('script').forEach(old => {
+                const s = document.createElement('script');
+                Array.from(old.attributes).forEach(a => s.setAttribute(a.name, a.value));
+                s.textContent = old.textContent;
+                old.parentNode.replaceChild(s, old);
+            });
         });
     }
+};
 
+// ── Main play dispatcher ──
+const playAd = (placement) => {
+    const ad = pickAd(placement);
+    if (!ad) return false;
+
+    currentAd.value = ad;
+    adType.value    = placement;
+    adPhase.value   = 'playing';
+
+    if (ad.type === 'vast' || ad.type === 'vpaid') {
+        playVastAd(ad, placement);
+    } else {
+        playLocalAd(ad, placement);
+    }
     return true;
 };
 
-// Fetch VAST XML and extract the first MediaFile
-const fetchVastMedia = async (vastUrl) => {
-    try {
-        const response = await fetch(vastUrl);
-        const text = await response.text();
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(text, 'text/xml');
-
-        // Try to find a MediaFile element
-        const mediaFiles = xml.querySelectorAll('MediaFile');
-        if (mediaFiles.length > 0) {
-            // Prefer MP4
-            let chosen = null;
-            mediaFiles.forEach(mf => {
-                const type = mf.getAttribute('type') || '';
-                if (type.includes('mp4') || type.includes('video')) {
-                    if (!chosen) chosen = mf;
-                }
-            });
-            if (!chosen) chosen = mediaFiles[0];
-            vastMediaUrl.value = (chosen.textContent || '').trim();
-        }
-
-        // Fire impression pixels
-        const impressions = xml.querySelectorAll('Impression');
-        impressions.forEach(imp => {
-            const url = (imp.textContent || '').trim();
-            if (url) {
-                new Image().src = url;
-            }
-        });
-    } catch (e) {
-        console.warn('Failed to parse VAST:', e);
-        endAd();
-    }
-};
-
-// Skip the current ad
+// ── Skip (local ads only) ──
 const skipAd = () => {
     if (!canSkip.value) return;
     emit('ad-skipped', adType.value);
     endAd();
 };
 
-// End the current ad (natural end or skip)
+// ── End ad ──
 const endAd = () => {
     clearTimers();
     const placement = adType.value;
-
     currentAd.value = null;
-    adPhase.value = 'idle';
-    adType.value = null;
+    adPhase.value   = 'idle';
+    adType.value    = null;
     adElapsed.value = 0;
-    canSkip.value = false;
-    vastMediaUrl.value = null;
-
-    // Clean up HTML ad container
-    if (adHtmlRef.value) {
-        adHtmlRef.value.innerHTML = '';
-    }
-
+    canSkip.value   = false;
+    if (adHtmlRef.value) adHtmlRef.value.innerHTML = '';
     emit('ad-ended', placement);
     emit('request-play');
 };
 
-// Ensure ad video actually starts playing.
-// Start muted (browser autoplay policy), then unmute after playback begins.
+// ── Local video helpers ──
 const tryPlayAd = () => {
     if (!adVideoRef.value) return;
-    const video = adVideoRef.value;
-    video.muted = true;
-    video.play()
-        .then(() => {
-            // Unmute once playback has started
-            setTimeout(() => { video.muted = false; }, 100);
-        })
-        .catch((err) => {
-            console.warn('[VideoAdPlayer] Ad autoplay failed:', err.message);
-        });
+    const v = adVideoRef.value;
+    v.muted = true;
+    v.play()
+        .then(() => setTimeout(() => { v.muted = false; }, 100))
+        .catch(err => console.warn('[VideoAdPlayer] Autoplay failed:', err.message));
 };
 
-// Handle click on ad — open click-through URL in new tab
 const onAdClick = () => {
-    if (currentAd.value?.click_url) {
+    if (currentAd.value?.click_url)
         window.open(currentAd.value.click_url, '_blank', 'noopener,noreferrer');
-    }
 };
 
-// Handle ad video ended naturally
-const onAdVideoEnded = () => {
-    endAd();
-};
-
-// Handle ad video error
+const onAdVideoEnded = () => endAd();
 const onAdVideoError = (e) => {
-    const video = e?.target;
-    const src = video?.src || video?.currentSrc || 'unknown';
-    console.warn('Ad video failed to load:', src, video?.error?.message || '');
+    console.warn('Ad video error:', e?.target?.error?.message || '');
     endAd();
 };
 
 const clearTimers = () => {
-    if (skipTimer) { clearTimeout(skipTimer); skipTimer = null; }
     if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; }
 };
 
-// ── Public API (called by parent) ──
+// ── Computed ──
+const isPlaying      = computed(() => adPhase.value !== 'idle');
+const isVastAd       = computed(() => currentAd.value?.type === 'vast' || currentAd.value?.type === 'vpaid');
+const isLocalVideoAd = computed(() => currentAd.value?.type === 'mp4');
+const isHtmlAd       = computed(() => currentAd.value?.type === 'html');
 
-// Called by parent to trigger pre-roll
-const triggerPreRoll = () => {
-    if (hasAds('pre_roll')) {
-        return playAd('pre_roll');
-    }
-    return false;
-};
-
-// Called by parent to trigger post-roll
-const triggerPostRoll = () => {
-    if (hasAds('post_roll')) {
-        return playAd('post_roll');
-    }
-    return false;
-};
-
-// Called by parent with current playback time to check mid-rolls
-const checkMidRoll = (currentTime) => {
-    if (!hasAds('mid_roll') || !adConfig.value) return false;
-    if (adPhase.value !== 'idle') return false;
-
-    const interval = adConfig.value.mid_roll_interval;
-    const maxCount = adConfig.value.mid_roll_max_count;
-
-    if (midRollsPlayed.value >= maxCount) return false;
-    if (currentTime - lastMidRollTime.value < interval) return false;
-    if (currentTime < interval) return false;
-
-    // Don't play mid-roll in the last 30 seconds
-    if (props.videoDuration > 0 && currentTime > props.videoDuration - 30) return false;
-
-    lastMidRollTime.value = currentTime;
-    midRollsPlayed.value++;
-    return playAd('mid_roll');
-};
-
-// Is an ad currently playing?
-const isPlaying = computed(() => adPhase.value !== 'idle');
-
-// Remaining seconds until skip
 const skipCountdown = computed(() => {
     if (canSkip.value || skipAfter.value === 0) return 0;
     return Math.max(0, skipAfter.value - adElapsed.value);
 });
 
-// Ad display type for template
-const adDisplayType = computed(() => {
-    if (!currentAd.value) return null;
-    if (currentAd.value.type === 'mp4') return 'video';
-    if (currentAd.value.type === 'vast' || currentAd.value.type === 'vpaid') return 'vast';
-    if (currentAd.value.type === 'html') return 'html';
-    return null;
-});
+// ── Public API ──
+const triggerPreRoll  = () => hasAds('pre_roll')  ? playAd('pre_roll')  : false;
+const triggerPostRoll = () => hasAds('post_roll') ? playAd('post_roll') : false;
 
-// Expose methods to parent
-defineExpose({
-    loadAds,
-    triggerPreRoll,
-    triggerPostRoll,
-    checkMidRoll,
-    isPlaying,
-    hasAds: (p) => hasAds(p),
-});
+const checkMidRoll = (currentTime) => {
+    if (!hasAds('mid_roll') || !adConfig.value || adPhase.value !== 'idle') return false;
+    const interval = adConfig.value.mid_roll_interval;
+    const maxCount = adConfig.value.mid_roll_max_count;
+    if (midRollsPlayed.value >= maxCount) return false;
+    if (currentTime - lastMidRollTime.value < interval) return false;
+    if (currentTime < interval) return false;
+    if (props.videoDuration > 0 && currentTime > props.videoDuration - 30) return false;
+    lastMidRollTime.value = currentTime;
+    midRollsPlayed.value++;
+    return playAd('mid_roll');
+};
 
-onMounted(() => {
-    loadAds();
-});
+defineExpose({ loadAds, triggerPreRoll, triggerPostRoll, checkMidRoll, isPlaying, hasAds: (p) => hasAds(p) });
 
-onUnmounted(() => {
-    clearTimers();
-});
+onMounted(() => loadAds());
+onUnmounted(() => { clearTimers(); destroyIma(); });
 </script>
 
 <template>
-    <!-- Ad Overlay — covers the video player area -->
-    <div
-        v-if="isPlaying && currentAd"
-        class="absolute inset-0 z-30 bg-black flex flex-col"
-    >
+    <div v-if="isPlaying && currentAd" class="absolute inset-0 z-30 bg-black flex flex-col">
         <!-- Ad Label -->
-        <div class="absolute top-3 left-3 z-40 flex items-center gap-2">
-            <span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-500 text-black uppercase tracking-wide">
-                Ad
-            </span>
+        <div class="absolute top-3 left-3 z-40">
+            <span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-500 text-black uppercase tracking-wide">Ad</span>
         </div>
 
-        <!-- Skip Button -->
-        <div class="absolute bottom-16 right-4 z-40">
-            <button
-                v-if="canSkip"
-                @click="skipAd"
-                class="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-sm font-medium rounded-lg border border-white/30 transition-all"
-            >
+        <!-- Skip Button — local ads only; IMA SDK renders its own skip UI -->
+        <div v-if="!isVastAd" class="absolute bottom-16 right-4 z-40">
+            <button v-if="canSkip" @click="skipAd"
+                class="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-sm font-medium rounded-lg border border-white/30 transition-all">
                 Skip Ad →
             </button>
-            <div
-                v-else-if="skipAfter > 0"
-                class="px-4 py-2 bg-black/60 text-white/80 text-sm rounded-lg"
-            >
+            <div v-else-if="skipAfter > 0" class="px-4 py-2 bg-black/60 text-white/80 text-sm rounded-lg">
                 Skip in {{ skipCountdown }}s
             </div>
         </div>
 
-        <!-- Ad Content Area -->
-        <div
-            class="flex-1 flex items-center justify-center relative"
-            :class="{ 'cursor-pointer': currentAd?.click_url }"
-            @click="onAdClick"
-        >
-            <!-- MP4 Video Ad -->
-            <video
-                v-if="adDisplayType === 'video'"
-                ref="adVideoRef"
-                :src="currentAd.content"
-                class="w-full h-full object-contain pointer-events-none"
-                autoplay
-                muted
-                playsinline
-                crossorigin="anonymous"
-                @ended="onAdVideoEnded"
-                @error="onAdVideoError"
-                @loadeddata="tryPlayAd"
-            ></video>
+        <!-- Ad Content -->
+        <div class="flex-1 relative overflow-hidden"
+            :class="{ 'cursor-pointer': currentAd?.click_url && !isVastAd }"
+            @click="!isVastAd && onAdClick()">
 
-            <!-- VAST/VPAID — plays the extracted media URL -->
-            <template v-if="adDisplayType === 'vast'">
-                <video
-                    v-if="vastMediaUrl"
-                    ref="adVideoRef"
-                    :src="vastMediaUrl"
-                    class="w-full h-full object-contain pointer-events-none"
-                    autoplay
-                    muted
-                    playsinline
-                    crossorigin="anonymous"
-                    @ended="onAdVideoEnded"
-                    @error="onAdVideoError"
-                    @loadeddata="tryPlayAd"
-                ></video>
-                <div v-else class="flex items-center justify-center">
-                    <div class="w-8 h-8 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
-                </div>
+            <!-- VAST/VPAID — Google IMA SDK handles everything -->
+            <template v-if="isVastAd">
+                <video ref="imaVideoRef" class="w-full h-full object-contain" playsinline style="display:block"></video>
+                <div ref="imaContainerRef" class="absolute inset-0" style="pointer-events:auto"></div>
             </template>
 
-            <!-- HTML Ad Script -->
-            <div
-                v-if="adDisplayType === 'html'"
-                ref="adHtmlRef"
-                class="w-full h-full flex items-center justify-center"
-            ></div>
+            <!-- Local MP4 -->
+            <video v-if="isLocalVideoAd" ref="adVideoRef" :src="currentAd.content"
+                class="w-full h-full object-contain pointer-events-none"
+                autoplay muted playsinline crossorigin="anonymous"
+                @ended="onAdVideoEnded" @error="onAdVideoError" @loadeddata="tryPlayAd">
+            </video>
 
-            <!-- Click-through CTA -->
-            <div
-                v-if="currentAd?.click_url && adDisplayType !== 'html'"
-                class="absolute bottom-16 left-4 z-40"
-            >
-                <span class="px-3 py-1.5 bg-white/20 backdrop-blur-sm text-white text-xs font-medium rounded-lg border border-white/30 inline-flex items-center gap-1.5">
-                    Learn More ↗
-                </span>
+            <!-- HTML Ad -->
+            <div v-if="isHtmlAd" ref="adHtmlRef" class="w-full h-full flex items-center justify-center"></div>
+
+            <!-- Click CTA (local only) -->
+            <div v-if="currentAd?.click_url && !isVastAd" class="absolute bottom-16 left-4 z-40">
+                <span class="px-3 py-1.5 bg-white/20 backdrop-blur-sm text-white text-xs font-medium rounded-lg border border-white/30 inline-flex items-center gap-1.5">Learn More ↗</span>
             </div>
         </div>
 
-        <!-- Ad Progress Bar -->
-        <div class="h-1 bg-white/10">
-            <div
-                v-if="skipAfter > 0 && !canSkip"
+        <!-- Progress Bar (local ads only) -->
+        <div v-if="!isVastAd" class="h-1 bg-white/10">
+            <div v-if="skipAfter > 0 && !canSkip"
                 class="h-full bg-yellow-500 transition-all duration-1000 ease-linear"
-                :style="{ width: Math.min(100, (adElapsed / skipAfter) * 100) + '%' }"
-            ></div>
-            <div
-                v-else
-                class="h-full bg-yellow-500"
-                style="width: 100%"
-            ></div>
+                :style="{ width: Math.min(100, (adElapsed / skipAfter) * 100) + '%' }">
+            </div>
+            <div v-else class="h-full bg-yellow-500" style="width:100%"></div>
         </div>
     </div>
 </template>

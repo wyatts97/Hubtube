@@ -202,6 +202,8 @@ const navigation = computed(() => {
     const items = [
         { name: t('nav.home') || 'Home', href: localizedUrl('/'), icon: Home, key: 'home' },
         { name: t('nav.trending') || 'Trending', href: localizedUrl('/trending'), icon: TrendingUp, key: 'trending' },
+        { name: t('nav.categories') || 'Categories', href: localizedUrl('/categories'), icon: LayoutGrid, key: 'categories' },
+        { name: t('nav.tags') || 'Tags', href: localizedUrl('/tags'), icon: Tag, key: 'tags' },
     ];
     if (liveStreamingEnabled.value) {
         items.push({ name: t('nav.live') || 'Live', href: localizedUrl('/live'), icon: Radio, key: 'live' });
