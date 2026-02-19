@@ -1,9 +1,10 @@
 <script setup>
-import { Link, router } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import SeoHead from '@/Components/SeoHead.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { ChevronLeft, ChevronRight, Hash } from 'lucide-vue-next';
+import { computed } from 'vue';
 import { useI18n } from '@/Composables/useI18n';
 
 const { t, localizedUrl } = useI18n();
@@ -14,6 +15,13 @@ const props = defineProps({
     videos: Object,
     seo: { type: Object, default: () => ({}) },
 });
+
+const page = usePage();
+const mobileGrid = computed(() => page.props.theme?.mobileVideoGrid === '2' ? 2 : 1);
+const gridClass = computed(() => mobileGrid.value === 2
+    ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4'
+    : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
+);
 
 const displayTag = props.translatedTag || props.tag;
 
@@ -38,7 +46,7 @@ const goToPage = (pageNum) => {
             </div>
         </div>
 
-        <div v-if="videos.data?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div v-if="videos.data?.length" :class="gridClass">
             <VideoCard v-for="video in videos.data" :key="video.id" :video="video" />
         </div>
 

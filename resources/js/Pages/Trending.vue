@@ -41,6 +41,11 @@ const changePeriod = (period) => {
 
 const page = usePage();
 const infiniteScrollEnabled = computed(() => page.props.app?.infinite_scroll_enabled ?? false);
+const mobileGrid = computed(() => page.props.theme?.mobileVideoGrid === '2' ? 2 : 1);
+const gridClass = computed(() => mobileGrid.value === 2
+    ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4'
+    : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
+);
 
 // Infinite scroll state
 const videoList = ref([...(props.videos?.data || [])]);
@@ -174,13 +179,13 @@ const getSponsoredCard = (index) => {
         </div>
 
         <!-- Skeleton Loading -->
-        <div v-if="isInitialLoad" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div v-if="isInitialLoad" :class="gridClass">
             <VideoCardSkeleton v-for="i in 8" :key="'skeleton-' + i" />
         </div>
 
         <!-- Infinite Scroll Mode -->
         <template v-else-if="infiniteScrollEnabled">
-            <div v-if="videoList.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div v-if="videoList.length" :class="gridClass">
                 <template v-for="(video, index) in videoList" :key="video.id">
                     <VideoCard :video="withTranslation(video)" />
                     <div v-if="shouldShowAd(index, videoList.length)" class="col-span-1 flex items-start justify-center rounded-xl p-2">
@@ -204,7 +209,7 @@ const getSponsoredCard = (index) => {
 
         <!-- Pagination Mode -->
         <template v-else>
-            <div v-if="videos.data?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div v-if="videos.data?.length" :class="gridClass">
                 <template v-for="(video, index) in videos.data" :key="video.id">
                     <VideoCard :video="withTranslation(video)" />
                     <div v-if="shouldShowAd(index, videos.data.length)" class="col-span-1 flex items-start justify-center rounded-xl p-2">

@@ -139,7 +139,7 @@ class HandleInertiaRequests extends Middleware
                 'overlayColor' => $this->s('age_overlay_color', 'rgba(0, 0, 0, 0.85)'),
                 'overlayBlur' => (int) $this->s('age_overlay_blur', 8),
                 'showLogo' => (bool) $this->s('age_show_logo', false),
-                'logoUrl' => $this->s('age_logo_url', ''),
+                'logoUrl' => $this->storageUrl($this->s('site_logo', '')),
                 'headerText' => $this->s('age_header_text', 'Age Verification Required'),
                 'headerSize' => (int) $this->s('age_header_size', 28),
                 'headerColor' => $this->s('age_header_color', ''),

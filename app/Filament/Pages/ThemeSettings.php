@@ -608,11 +608,7 @@ class ThemeSettings extends Page implements HasForms
                                     ->schema([
                                         Toggle::make('age_show_logo')
                                             ->label('Show Site Logo')
-                                            ->helperText('Display your site logo instead of the shield icon'),
-                                        TextInput::make('age_logo_url')
-                                            ->label('Logo URL')
-                                            ->placeholder('/images/logo.png')
-                                            ->visible(fn ($get) => $get('age_show_logo')),
+                                            ->helperText('When enabled, displays the site logo (set in Site Logo section above) instead of the shield icon.'),
                                     ]),
                                 
                                 Section::make('Typography')

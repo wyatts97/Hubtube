@@ -40,6 +40,11 @@ const mobileBannerHtml = computed(() => {
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
+const mobileGrid = computed(() => page.props.theme?.mobileVideoGrid === '2' ? 2 : 1);
+const gridClass = computed(() => mobileGrid.value === 2
+    ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4'
+    : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
+);
 const subscribed = ref(props.isSubscribed);
 const subCount = ref(props.subscriberCount);
 
@@ -166,7 +171,7 @@ const tabs = computed(() => {
         </div>
 
         <!-- Videos Grid -->
-        <div v-if="videos.data.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div v-if="videos.data.length" :class="gridClass">
             <VideoCard
                 v-for="video in videos.data"
                 :key="video.id"

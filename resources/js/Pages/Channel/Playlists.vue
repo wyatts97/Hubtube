@@ -63,13 +63,13 @@ const activeList = ref(null);
 
         <!-- Channel Tabs -->
         <div class="mb-6" style="border-bottom: 1px solid var(--color-border);">
-            <nav class="flex gap-6">
+            <nav class="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide -mx-1 px-1">
                 <Link
                     v-for="tab in channelTabs"
                     :key="tab.name"
                     :href="tab.href"
                     :class="[
-                        'pb-3 px-1 border-b-2 transition-colors',
+                        'pb-3 px-1 border-b-2 transition-colors whitespace-nowrap shrink-0 text-sm sm:text-base',
                         tab.active 
                             ? 'border-primary-500' 
                             : 'border-transparent hover:border-primary-500'

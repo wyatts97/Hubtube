@@ -7,7 +7,7 @@ import {
     ChevronLeft, ChevronRight, Shield, Sun, Moon, Monitor,
     X, Check, CheckCheck, Rss, LayoutDashboard, ChevronDown, ChevronUp, Film,
     Tag, Folder, Star, ExternalLink, Eye, EyeOff, LayoutGrid, Plus,
-    ImageIcon
+    ImageIcon, MoreHorizontal
 } from 'lucide-vue-next';
 import { useTheme } from '@/Composables/useTheme';
 import { useToast } from '@/Composables/useToast';
@@ -261,16 +261,29 @@ const tSafe = (key, fallback) => {
 };
 
 const showMobileUploadMenu = ref(false);
+const showMobileMoreMenu = ref(false);
 
 const mobileNavItems = computed(() => [
     { name: tSafe('nav.home', 'Home'), href: localizedUrl('/'), icon: Home },
     { name: tSafe('common.search', 'Search'), href: null, action: 'search', icon: Search },
-    { name: tSafe('nav.upload', 'Upload'), href: null, action: 'upload', icon: Plus, isCenter: true },
-    { name: tSafe('nav.trending', 'Trending'), href: localizedUrl('/trending'), icon: TrendingUp },
+    { name: '+', href: null, action: 'upload', icon: Plus, isCenter: true },
     { name: tSafe('nav.categories', 'Categories'), href: localizedUrl('/categories'), icon: LayoutGrid },
+    { name: tSafe('nav.more', 'More'), href: null, action: 'more', icon: MoreHorizontal },
+]);
+
+const mobileMoreItems = computed(() => [
+    { name: tSafe('nav.trending', 'Trending'), href: localizedUrl('/trending'), icon: TrendingUp },
+    { name: tSafe('nav.tags', 'Tags'), href: localizedUrl('/tags'), icon: Tag },
+    { name: tSafe('nav.playlists', 'Playlists'), href: localizedUrl('/playlists'), icon: ListVideo },
 ]);
 
 const handleMobileNavClick = (item) => {
+    if (item.action === 'more') {
+        showMobileMoreMenu.value = !showMobileMoreMenu.value;
+        showMobileUploadMenu.value = false;
+        return;
+    }
+    showMobileMoreMenu.value = false;
     if (item.action === 'search') {
         showMobileSearch.value = true;
     } else if (item.action === 'upload') {
@@ -749,11 +762,11 @@ const handleMobileNavClick = (item) => {
                                 >
                                     <Link href="/upload" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showMobileUploadMenu = false">
                                         <Video class="w-4 h-4" style="color: var(--color-text-secondary);" />
-                                        <span class="text-sm">{{ t('nav.upload_video') || 'Upload Video' }}</span>
+                                        <span class="text-sm">{{ t('nav.upload_video') || 'Video' }}</span>
                                     </Link>
                                     <Link href="/image-upload" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showMobileUploadMenu = false">
                                         <ImageIcon class="w-4 h-4" style="color: var(--color-text-secondary);" />
-                                        <span class="text-sm">{{ t('nav.upload_image') || 'Upload Image' }}</span>
+                                        <span class="text-sm">{{ t('nav.upload_image') || 'Image' }}</span>
                                     </Link>
                                 </div>
                             </Transition>
@@ -766,6 +779,38 @@ const handleMobileNavClick = (item) => {
                                 <component :is="item.icon" class="w-6 h-6 text-white" />
                             </button>
                         </div>
+                        <!-- More Button with popup menu -->
+                        <div v-else-if="item.action === 'more'" class="relative flex flex-col items-center justify-center" style="flex: 1 1 0%; min-width: 0;">
+                            <!-- More Menu Popup -->
+                            <Transition name="fade">
+                                <div
+                                    v-if="showMobileMoreMenu"
+                                    class="absolute bottom-full mb-3 right-0 rounded-xl shadow-xl p-2 min-w-[160px]"
+                                    style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);"
+                                >
+                                    <Link
+                                        v-for="moreItem in mobileMoreItems"
+                                        :key="moreItem.name"
+                                        :href="moreItem.href"
+                                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity"
+                                        style="color: var(--color-text-primary);"
+                                        @click="showMobileMoreMenu = false"
+                                    >
+                                        <component :is="moreItem.icon" class="w-4 h-4" style="color: var(--color-text-secondary);" />
+                                        <span class="text-sm">{{ moreItem.name }}</span>
+                                    </Link>
+                                </div>
+                            </Transition>
+                            <button
+                                class="flex flex-col items-center justify-center p-2 group"
+                                :aria-label="item.name"
+                                @click="handleMobileNavClick(item)"
+                            >
+                                <component :is="item.icon" class="w-5 h-5 transition-colors" :style="{ color: 'var(--color-text-secondary)' }" />
+                                <span class="text-[10px] mt-0.5 transition-colors" style="color: var(--color-text-muted);">{{ item.name }}</span>
+                            </button>
+                        </div>
+
                         <!-- Regular Nav Button -->
                         <component
                             v-else

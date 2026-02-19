@@ -1,5 +1,5 @@
 <script setup>
-import { Link, router } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import SeoHead from '@/Components/SeoHead.vue';
 import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -45,6 +45,13 @@ const getSponsoredCard = (index) => {
     return props.sponsoredCards[cardIndex % props.sponsoredCards.length] || null;
 };
 
+const page = usePage();
+const mobileGrid = computed(() => page.props.theme?.mobileVideoGrid === '2' ? 2 : 1);
+const gridClass = computed(() => mobileGrid.value === 2
+    ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4'
+    : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
+);
+
 const displayName = props.translatedName || props.category.name;
 const displayDescription = props.translatedDescription || props.category.description;
 
@@ -76,7 +83,7 @@ const goToPage = (pageNum) => {
             <p v-if="displayDescription" class="text-sm mt-1" style="color: var(--color-text-muted);">{{ displayDescription }}</p>
         </div>
 
-        <div v-if="videos.data?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div v-if="videos.data?.length" :class="gridClass">
             <template v-for="(video, index) in videos.data" :key="video.id">
                 <VideoCard :video="video" />
                 <SponsoredVideoCard
