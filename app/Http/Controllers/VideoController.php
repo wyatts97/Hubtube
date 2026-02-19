@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Video\StoreVideoRequest;
 use App\Http\Requests\Video\UpdateVideoRequest;
 use App\Models\Video;
+use App\Models\WatchHistory;
 use App\Models\Category;
 use App\Models\Setting;
 use App\Models\SponsoredCard;
@@ -123,6 +124,14 @@ class VideoController extends Controller
 
         $video->load(['user.channel', 'category']);
         $video->incrementViews();
+
+        // Record watch history for authenticated users
+        if (auth()->check()) {
+            WatchHistory::updateOrCreate(
+                ['user_id' => auth()->id(), 'video_id' => $video->id],
+                ['updated_at' => now()]
+            );
+        }
 
         $relatedVideos = Video::query()
             ->with('user')

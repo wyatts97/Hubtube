@@ -1,40 +1,73 @@
 <x-filament-panels::page>
     <div class="space-y-6" @if($shouldPoll) wire:poll.1s="importNext" @endif>
 
-        {{-- Step 1: Configure Paths --}}
+        {{-- Step 1: FTP Upload & Path Detection --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">Step 1: Configure Paths</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">Step 1: Upload Archive via FTP</h3>
             <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Point to the archive directory containing the WordPress <code class="text-xs bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">wp-content/uploads/</code> files and the SQL dump.
+                Upload the archive directory and SQL dump to the server via FTP/SFTP, then verify the paths below.
             </p>
 
             @if(!$isScanned && !$isImporting && !$importComplete)
-                <div class="grid grid-cols-1 gap-4 mb-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Archive Directory Path</label>
-                        <input
-                            type="text"
-                            wire:model="archivePath"
-                            placeholder="/home/wybuntu/hubtube/WTARCHIVE"
-                            class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm font-mono"
-                        />
-                        <p class="text-xs text-gray-400 mt-1">The directory containing YYYY/MM/ folders with video files, thumbnails, etc.</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SQL File Path</label>
-                        <input
-                            type="text"
-                            wire:model="sqlFilePath"
-                            placeholder="/home/wybuntu/hubtube/wedgietu_wp_nnfpq.sql"
-                            class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm font-mono"
-                        />
-                        <p class="text-xs text-gray-400 mt-1">Full path to the WordPress SQL dump file on this server.</p>
+                {{-- FTP Instructions --}}
+                <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-4">
+                    <div class="flex items-start gap-3">
+                        <x-heroicon-m-information-circle class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                        <div class="text-sm text-blue-700 dark:text-blue-300">
+                            <p class="font-medium mb-1">Upload these files via FTP/SFTP:</p>
+                            <ol class="list-decimal list-inside space-y-1 text-blue-600 dark:text-blue-400">
+                                <li>Upload the <code class="text-xs bg-blue-100 dark:bg-blue-800 px-1.5 py-0.5 rounded">WTARCHIVE/</code> directory to: <code class="text-xs bg-blue-100 dark:bg-blue-800 px-1.5 py-0.5 rounded font-mono">{{ $archivePath }}</code></li>
+                                <li>Upload the SQL dump to: <code class="text-xs bg-blue-100 dark:bg-blue-800 px-1.5 py-0.5 rounded font-mono">{{ $sqlFilePath }}</code></li>
+                            </ol>
+                        </div>
                     </div>
                 </div>
 
+                {{-- Detection Status --}}
+                <div class="flex items-center gap-3 p-3 rounded-lg border mb-4 {{ $archiveDetected ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' }}">
+                    @if($archiveDetected)
+                        <x-heroicon-m-check-circle class="w-5 h-5 text-green-500 flex-shrink-0" />
+                        <span class="text-sm text-green-700 dark:text-green-300">{{ $archiveStatus }}</span>
+                    @else
+                        <x-heroicon-m-exclamation-triangle class="w-5 h-5 text-yellow-500 flex-shrink-0" />
+                        <span class="text-sm text-yellow-700 dark:text-yellow-300">{{ $archiveStatus }}</span>
+                    @endif
+                </div>
+
+                {{-- Editable Paths (collapsed by default) --}}
+                <details class="mb-4">
+                    <summary class="text-sm font-medium text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300">
+                        Advanced: Edit paths manually...
+                    </summary>
+                    <div class="grid grid-cols-1 gap-4 mt-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Archive Directory Path</label>
+                            <input
+                                type="text"
+                                wire:model="archivePath"
+                                class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm font-mono"
+                            />
+                            <p class="text-xs text-gray-400 mt-1">The directory containing YYYY/MM/ folders with video files, thumbnails, etc.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SQL File Path</label>
+                            <input
+                                type="text"
+                                wire:model="sqlFilePath"
+                                class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm font-mono"
+                            />
+                            <p class="text-xs text-gray-400 mt-1">Full path to the WordPress SQL dump file on this server.</p>
+                        </div>
+                    </div>
+                </details>
+
                 <div class="flex items-center gap-3">
-                    <x-filament::button wire:click="scanArchive" wire:loading.attr="disabled" wire:target="scanArchive">
+                    <x-filament::button wire:click="checkArchive" color="gray" size="sm">
+                        <x-heroicon-m-arrow-path class="w-4 h-4 mr-1" />
+                        Re-check Files
+                    </x-filament::button>
+
+                    <x-filament::button wire:click="scanArchive" wire:loading.attr="disabled" wire:target="scanArchive" :disabled="!$archiveDetected">
                         <span wire:loading.remove wire:target="scanArchive">
                             <x-heroicon-m-magnifying-glass class="w-4 h-4 mr-1.5" />
                             Scan &amp; Analyze

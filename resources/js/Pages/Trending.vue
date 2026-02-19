@@ -20,10 +20,24 @@ onMounted(() => { setTimeout(() => { isInitialLoad.value = false; }, 100); });
 
 const props = defineProps({
     videos: Object,
+    period: { type: String, default: 'week' },
     seo: { type: Object, default: () => ({}) },
     adSettings: { type: Object, default: () => ({}) },
     sponsoredCards: { type: Array, default: () => [] },
 });
+
+const activePeriod = ref(props.period);
+const periods = [
+    { value: 'today', label: 'Today' },
+    { value: 'week', label: 'This Week' },
+    { value: 'month', label: 'This Month' },
+    { value: 'year', label: 'This Year' },
+    { value: 'all', label: 'All Time' },
+];
+const changePeriod = (period) => {
+    activePeriod.value = period;
+    router.get('/trending', { period }, { preserveState: false });
+};
 
 const page = usePage();
 const infiniteScrollEnabled = computed(() => page.props.app?.infinite_scroll_enabled ?? false);
@@ -136,8 +150,27 @@ const getSponsoredCard = (index) => {
 
     <AppLayout>
         <div class="mb-6">
-            <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('nav.trending') || 'Trending' }}</h1>
-            <p class="mt-1" style="color: var(--color-text-secondary);">{{ t('home.popular') || 'Popular videos from the past week' }}</p>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('nav.trending') || 'Trending' }}</h1>
+                    <p class="mt-1" style="color: var(--color-text-secondary);">{{ t('home.popular') || 'Most viewed videos' }}</p>
+                </div>
+                <div class="flex gap-1 flex-wrap">
+                    <button
+                        v-for="p in periods"
+                        :key="p.value"
+                        @click="changePeriod(p.value)"
+                        class="px-3 py-1.5 text-sm rounded-full transition-colors"
+                        :style="{
+                            backgroundColor: activePeriod === p.value ? 'var(--color-primary)' : 'var(--color-bg-card)',
+                            color: activePeriod === p.value ? '#fff' : 'var(--color-text-secondary)',
+                            border: activePeriod === p.value ? 'none' : '1px solid var(--color-border)',
+                        }"
+                    >
+                        {{ p.label }}
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Skeleton Loading -->

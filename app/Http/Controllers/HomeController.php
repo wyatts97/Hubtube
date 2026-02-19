@@ -117,15 +117,25 @@ class HomeController extends Controller
     public function trending(Request $request): Response|JsonResponse
     {
         $perPage = Setting::get('videos_per_page', 24);
-        
-        $videos = Video::query()
+        $period = $request->get('period', 'week');
+
+        $query = Video::query()
             ->with('user')
             ->public()
             ->approved()
-            ->processed()
-            ->where('published_at', '>=', now()->subDays(7))
-            ->orderByDesc('views_count')
-            ->paginate($perPage);
+            ->processed();
+
+        // Apply time filter
+        $query->where('published_at', '>=', match ($period) {
+            'today' => now()->startOfDay(),
+            'week' => now()->subDays(7),
+            'month' => now()->subDays(30),
+            'year' => now()->subYear(),
+            'all' => now()->subYears(50),
+            default => now()->subDays(7),
+        });
+
+        $videos = $query->orderByDesc('views_count')->paginate($perPage)->appends(['period' => $period]);
 
         // Return JSON for AJAX requests (infinite scroll)
         if ($request->wantsJson()) {
@@ -134,6 +144,7 @@ class HomeController extends Controller
 
         return Inertia::render('Trending', [
             'videos' => $videos,
+            'period' => $period,
             'seo' => $this->seoService->forTrending(),
             'adSettings' => [
                 'videoGridEnabled' => (bool) Setting::get('video_grid_ad_enabled', false),

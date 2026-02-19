@@ -23,7 +23,7 @@ export function timeAgo(date, locale = 'en') {
     // Use Intl.RelativeTimeFormat for locale-aware formatting
     if (typeof Intl !== 'undefined' && Intl.RelativeTimeFormat) {
         try {
-            const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+            const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'always' });
             for (const interval of intervals) {
                 const count = Math.floor(seconds / interval.seconds);
                 if (count >= 1) {

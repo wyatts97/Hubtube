@@ -596,7 +596,6 @@ class ArchiveImportService
                 'size' => $videoSize,
                 'privacy' => 'public',
                 'status' => 'processed',
-                'is_short' => false,
                 'is_embedded' => false,
                 'is_featured' => false,
                 'is_approved' => true,

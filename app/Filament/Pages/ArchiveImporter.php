@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\User;
 use App\Models\Video;
 use App\Services\FfmpegService;
 use App\Services\ArchiveImportService;
@@ -20,6 +21,10 @@ class ArchiveImporter extends Page
     public string $archivePath = '';
     public string $sqlFilePath = '';
     public ?int $importUserId = null;
+
+    // Archive detection
+    public bool $archiveDetected = false;
+    public string $archiveStatus = '';
 
     // Scan state
     public bool $isScanning = false;
@@ -47,6 +52,17 @@ class ArchiveImporter extends Page
     // Livewire polling for import progress
     public bool $shouldPoll = false;
 
+    public function mount(): void
+    {
+        // Auto-detect default paths based on the app's base directory
+        $basePath = base_path();
+        $this->archivePath = $basePath . '/WTARCHIVE';
+        $this->sqlFilePath = $basePath . '/wedgietu_wp_nnfpq.sql';
+
+        // Check if archive exists at default path
+        $this->checkArchive();
+    }
+
     public function getTitle(): string
     {
         return 'Archive Import';
@@ -60,6 +76,29 @@ class ArchiveImporter extends Page
     public function getUsersProperty(): array
     {
         return User::select('id', 'username', 'first_name', 'last_name')->orderBy('username')->get()->toArray();
+    }
+
+    /**
+     * Check if the archive directory and SQL file exist at the configured paths.
+     */
+    public function checkArchive(): void
+    {
+        $archiveExists = is_dir($this->archivePath);
+        $sqlExists = file_exists($this->sqlFilePath);
+
+        if ($archiveExists && $sqlExists) {
+            $this->archiveDetected = true;
+            $this->archiveStatus = 'Archive directory and SQL file found.';
+        } elseif ($archiveExists) {
+            $this->archiveDetected = false;
+            $this->archiveStatus = 'Archive directory found, but SQL file is missing.';
+        } elseif ($sqlExists) {
+            $this->archiveDetected = false;
+            $this->archiveStatus = 'SQL file found, but archive directory is missing.';
+        } else {
+            $this->archiveDetected = false;
+            $this->archiveStatus = 'Neither archive directory nor SQL file found. Upload them via FTP first.';
+        }
     }
 
     /**
