@@ -338,18 +338,6 @@ const getRelatedTitle = (video) => {
     <SeoHead :seo="seo" />
 
     <AppLayout>
-        <!-- TEMP AD DEBUG — remove after confirming -->
-        <div style="background:#1a1a2e;border:2px solid #e94560;padding:12px;margin-bottom:12px;font-size:12px;font-family:monospace;color:#eee;border-radius:6px;">
-            <strong style="color:#e94560;">AD DEBUG</strong><br>
-            bannerAbovePlayer.enabled: <strong>{{ bannerAbovePlayer?.enabled }}</strong> ({{ typeof bannerAbovePlayer?.enabled }})<br>
-            bannerAbovePlayer.html length: <strong>{{ bannerAbovePlayer?.html?.length ?? 0 }}</strong><br>
-            bannerAbovePlayer.mobile_html length: <strong>{{ bannerAbovePlayer?.mobile_html?.length ?? 0 }}</strong><br>
-            sidebarAd.enabled: <strong>{{ sidebarAd?.enabled }}</strong><br>
-            sidebarAd.code length: <strong>{{ sidebarAd?.code?.length ?? 0 }}</strong><br>
-            <details><summary style="cursor:pointer;color:#aaa;">Full bannerAbovePlayer prop</summary><pre style="white-space:pre-wrap;word-break:break-all;">{{ JSON.stringify(bannerAbovePlayer, null, 2) }}</pre></details>
-        </div>
-        <!-- END TEMP AD DEBUG -->
-
         <div class="flex flex-col xl:flex-row gap-6">
             <!-- Main Content -->
             <div class="flex-1 min-w-0">

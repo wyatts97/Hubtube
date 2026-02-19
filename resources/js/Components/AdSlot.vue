@@ -23,28 +23,44 @@ const props = defineProps({
 
 const container = ref(null);
 
-function loadScriptSequentially(scripts, index, nonScriptNodes) {
-    if (index >= scripts.length) return;
+function isScriptAlreadyLoaded(src) {
+    return !!document.querySelector(`script[src="${src}"]`);
+}
+
+function loadScriptSequentially(scripts, index) {
+    if (!container.value || index >= scripts.length) return;
 
     const scriptDef = scripts[index];
-    const el = document.createElement('script');
-
-    for (const [name, value] of Object.entries(scriptDef.attrs)) {
-        el.setAttribute(name, value);
-    }
+    const next = () => loadScriptSequentially(scripts, index + 1);
 
     if (scriptDef.src) {
-        // External script — wait for it to load before running the next one
-        el.onload = () => loadScriptSequentially(scripts, index + 1, nonScriptNodes);
-        el.onerror = () => loadScriptSequentially(scripts, index + 1, nonScriptNodes);
-        container.value?.appendChild(el);
+        if (isScriptAlreadyLoaded(scriptDef.src)) {
+            // Script already in DOM/loaded — run next immediately
+            next();
+        } else {
+            const el = document.createElement('script');
+            // Copy attributes except async/defer — we sequence manually
+            for (const [name, value] of Object.entries(scriptDef.attrs)) {
+                if (name === 'async' || name === 'defer') continue;
+                // Normalize type to text/javascript so browser always executes it
+                if (name === 'type') {
+                    el.setAttribute('type', 'text/javascript');
+                    continue;
+                }
+                el.setAttribute(name, value);
+            }
+            el.onload = next;
+            el.onerror = next;
+            container.value.appendChild(el);
+        }
     } else {
-        // Inline script — run immediately then continue
+        // Inline script — execute then continue
+        const el = document.createElement('script');
         if (scriptDef.content) {
             el.textContent = scriptDef.content;
         }
-        container.value?.appendChild(el);
-        loadScriptSequentially(scripts, index + 1, nonScriptNodes);
+        container.value.appendChild(el);
+        next();
     }
 }
 
@@ -78,7 +94,7 @@ function injectHtml(html) {
 
     // Load scripts sequentially so external scripts finish before inline ones run
     if (scripts.length > 0) {
-        loadScriptSequentially(scripts, 0, []);
+        loadScriptSequentially(scripts, 0);
     }
 }
 
