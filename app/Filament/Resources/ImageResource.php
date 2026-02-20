@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Filament\Resources;
 
@@ -12,8 +12,11 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
+use App\Filament\Concerns\HasCustomizableNavigation;
+
 class ImageResource extends Resource
 {
+    use HasCustomizableNavigation;
     protected static ?string $model = Image::class;
     protected static ?string $navigationIcon = 'heroicon-o-photo';
     protected static ?string $navigationGroup = 'Content';
@@ -88,7 +91,7 @@ class ImageResource extends Resource
                             ->suffix('px'),
                         Forms\Components\TextInput::make('file_size')
                             ->disabled()
-                            ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 2) . ' MB' : '—'),
+                            ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 2) . ' MB' : 'â€”'),
                         Forms\Components\Toggle::make('is_animated')
                             ->disabled(),
                     ])->columns(3)
@@ -130,7 +133,7 @@ class ImageResource extends Resource
 
                 Tables\Columns\TextColumn::make('dimensions')
                     ->label('Size')
-                    ->getStateUsing(fn (Image $record): string => "{$record->width}×{$record->height}")
+                    ->getStateUsing(fn (Image $record): string => "{$record->width}Ã—{$record->height}")
                     ->size('sm')
                     ->toggleable(isToggledHiddenByDefault: true),
 
@@ -160,7 +163,7 @@ class ImageResource extends Resource
 
                 Tables\Columns\TextColumn::make('file_size')
                     ->label('File Size')
-                    ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—')
+                    ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : 'â€”')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 

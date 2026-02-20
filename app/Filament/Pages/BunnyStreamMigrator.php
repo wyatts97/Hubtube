@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Filament\Pages;
 
@@ -11,8 +11,11 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 
+use App\Filament\Concerns\HasCustomizableNavigation;
+
 class BunnyStreamMigrator extends Page
 {
+    use HasCustomizableNavigation;
     protected static ?string $navigationIcon = 'heroicon-o-cloud-arrow-down';
     protected static ?string $navigationLabel = 'Bunny Migration';
     protected static ?string $navigationGroup = 'Tools';
@@ -38,7 +41,7 @@ class BunnyStreamMigrator extends Page
     public int $completedThisSession = 0;
     public int $failedThisSession = 0;
 
-    // Active download slots — tracks video IDs currently being downloaded
+    // Active download slots â€” tracks video IDs currently being downloaded
     public array $activeSlots = [];
 
     // Session log (last 50 entries)
@@ -140,7 +143,7 @@ class BunnyStreamMigrator extends Page
         if (!$service->isConfigured()) {
             Notification::make()
                 ->title('Bunny Stream API not configured')
-                ->body('Configure API Key and Library ID in Admin → Integrations → Services.')
+                ->body('Configure API Key and Library ID in Admin â†’ Integrations â†’ Services.')
                 ->danger()
                 ->send();
             return;
@@ -153,7 +156,7 @@ class BunnyStreamMigrator extends Page
             $this->bunnyTotalVideos = $result['total_videos'];
             Notification::make()
                 ->title('Connected to Bunny Stream')
-                ->body("Library {$result['library_id']} — {$result['total_videos']} videos in library.")
+                ->body("Library {$result['library_id']} â€” {$result['total_videos']} videos in library.")
                 ->success()
                 ->send();
         } else {
@@ -200,7 +203,7 @@ class BunnyStreamMigrator extends Page
     }
 
     /**
-     * Poll handler — called every 3 seconds while migrating.
+     * Poll handler â€” called every 3 seconds while migrating.
      * Checks for completed downloads, collects results, dispatches new ones.
      */
     public function pollProgress(): void
@@ -240,7 +243,7 @@ class BunnyStreamMigrator extends Page
                     $this->migrationLog = array_slice($this->migrationLog, 0, 50);
                 }
             } else {
-                // Still running — verify the video is actually still downloading
+                // Still running â€” verify the video is actually still downloading
                 $video = Video::find($videoId);
                 if ($video && $video->status === 'downloading') {
                     $stillActive[] = $videoId;

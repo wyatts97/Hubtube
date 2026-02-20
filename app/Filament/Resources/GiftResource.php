@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Filament\Resources;
 
@@ -11,8 +11,11 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
 
+use App\Filament\Concerns\HasCustomizableNavigation;
+
 class GiftResource extends Resource
 {
+    use HasCustomizableNavigation;
     protected static ?string $model = Gift::class;
     protected static ?string $navigationIcon = 'heroicon-o-gift';
     protected static ?string $navigationGroup = 'Monetization';
@@ -20,6 +23,7 @@ class GiftResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
+        if (static::isHiddenByNavCustomizer()) return false;
         return (bool) \App\Models\Setting::get('monetization_enabled', true);
     }
 

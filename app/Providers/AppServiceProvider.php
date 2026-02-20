@@ -14,6 +14,8 @@ class AppServiceProvider extends ServiceProvider
             \Filament\Http\Responses\Auth\Contracts\LogoutResponse::class,
             \App\Http\Responses\LogoutResponse::class,
         );
+
+        $this->app->singleton(\App\Services\AdminNavConfig::class);
     }
 
     public function boot(): void

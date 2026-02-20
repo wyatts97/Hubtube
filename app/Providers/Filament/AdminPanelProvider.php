@@ -25,6 +25,46 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
 {
+    protected static function buildNavigationGroups(): array
+    {
+        $defaults = [
+            ['key' => 'Content',          'collapsed' => false, 'sort' => 1],
+            ['key' => 'Users & Messages', 'collapsed' => false, 'sort' => 2],
+            ['key' => 'Monetization',     'collapsed' => false, 'sort' => 3],
+            ['key' => 'Appearance',       'collapsed' => false, 'sort' => 4],
+            ['key' => 'Integrations',     'collapsed' => false, 'sort' => 5],
+            ['key' => 'System',           'collapsed' => true,  'sort' => 6],
+            ['key' => 'Tools',            'collapsed' => true,  'sort' => 7],
+        ];
+
+        try {
+            $raw = \App\Models\Setting::get('admin_nav_config', null);
+            if ($raw) {
+                $config = json_decode($raw, true);
+                if (is_array($config)) {
+                    $byKey = collect($config)->keyBy('key');
+                    foreach ($defaults as &$d) {
+                        if ($byKey->has($d['key'])) {
+                            $saved = $byKey[$d['key']];
+                            $d['collapsed'] = (bool) ($saved['collapsed'] ?? $d['collapsed']);
+                            $d['sort']      = (int)  ($saved['sort']      ?? $d['sort']);
+                        }
+                    }
+                    unset($d);
+                    usort($defaults, fn ($a, $b) => $a['sort'] <=> $b['sort']);
+                }
+            }
+        } catch (\Throwable) {}
+
+        return array_map(function (array $g) {
+            $group = NavigationGroup::make($g['key']);
+            if ($g['collapsed']) {
+                $group->collapsed();
+            }
+            return $group;
+        }, $defaults);
+    }
+
     public function panel(Panel $panel): Panel
     {
         // Resolve site logo for admin panel branding
@@ -106,17 +146,7 @@ class AdminPanelProvider extends PanelProvider
                     }
                 },
             )
-            ->navigationGroups([
-                NavigationGroup::make('Content'),
-                NavigationGroup::make('Users & Messages'),
-                NavigationGroup::make('Monetization'),
-                NavigationGroup::make('Appearance'),
-                NavigationGroup::make('Integrations'),
-                NavigationGroup::make('System')
-                    ->collapsed(),
-                NavigationGroup::make('Tools')
-                    ->collapsed(),
-            ])
+            ->navigationGroups(static::buildNavigationGroups())
             ->sidebarCollapsibleOnDesktop()
             ->middleware([
                 EncryptCookies::class,

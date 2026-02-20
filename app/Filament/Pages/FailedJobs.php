@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Filament\Pages;
 
@@ -16,8 +16,11 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
+use App\Filament\Concerns\HasCustomizableNavigation;
+
 class FailedJobs extends Page implements HasTable
 {
+    use HasCustomizableNavigation;
     use InteractsWithTable;
 
     protected static ?string $navigationIcon = 'heroicon-o-exclamation-triangle';
@@ -28,6 +31,7 @@ class FailedJobs extends Page implements HasTable
 
     public static function shouldRegisterNavigation(): bool
     {
+        if (static::isHiddenByNavCustomizer()) return false;
         try {
             return DB::table('failed_jobs')->count() > 0;
         } catch (\Exception $e) {

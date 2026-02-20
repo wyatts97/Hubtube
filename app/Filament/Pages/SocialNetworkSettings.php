@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Filament\Pages;
 
@@ -19,8 +19,11 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
+use App\Filament\Concerns\HasCustomizableNavigation;
+
 class SocialNetworkSettings extends Page implements HasForms
 {
+    use HasCustomizableNavigation;
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-share';
@@ -36,35 +39,35 @@ class SocialNetworkSettings extends Page implements HasForms
     public function mount(): void
     {
         $this->form->fill([
-            // ── Social Login: Google ──
+            // â”€â”€ Social Login: Google â”€â”€
             'social_login_google_enabled' => (bool) Setting::get('social_login_google_enabled', false),
             'social_login_google_client_id' => Setting::getDecrypted('social_login_google_client_id', ''),
             'social_login_google_client_secret' => Setting::getDecrypted('social_login_google_client_secret', ''),
 
-            // ── Social Login: Twitter/X ──
+            // â”€â”€ Social Login: Twitter/X â”€â”€
             'social_login_twitter_enabled' => (bool) Setting::get('social_login_twitter_enabled', false),
             'social_login_twitter_client_id' => Setting::getDecrypted('social_login_twitter_client_id', ''),
             'social_login_twitter_client_secret' => Setting::getDecrypted('social_login_twitter_client_secret', ''),
 
-            // ── Social Login: Reddit ──
+            // â”€â”€ Social Login: Reddit â”€â”€
             'social_login_reddit_enabled' => (bool) Setting::get('social_login_reddit_enabled', false),
             'social_login_reddit_client_id' => Setting::getDecrypted('social_login_reddit_client_id', ''),
             'social_login_reddit_client_secret' => Setting::getDecrypted('social_login_reddit_client_secret', ''),
 
-            // ── Twitter Auto-Post: API Credentials ──
+            // â”€â”€ Twitter Auto-Post: API Credentials â”€â”€
             'twitter_api_bearer_token' => Setting::getDecrypted('twitter_api_bearer_token', ''),
             'twitter_api_consumer_key' => Setting::getDecrypted('twitter_api_consumer_key', ''),
             'twitter_api_consumer_secret' => Setting::getDecrypted('twitter_api_consumer_secret', ''),
             'twitter_api_access_token' => Setting::getDecrypted('twitter_api_access_token', ''),
             'twitter_api_access_token_secret' => Setting::getDecrypted('twitter_api_access_token_secret', ''),
 
-            // ── Twitter Auto-Post: Settings ──
+            // â”€â”€ Twitter Auto-Post: Settings â”€â”€
             'twitter_auto_tweet_new_enabled' => (bool) Setting::get('twitter_auto_tweet_new_enabled', false),
             'twitter_auto_tweet_scheduled_enabled' => (bool) Setting::get('twitter_auto_tweet_scheduled_enabled', false),
             'twitter_tweet_interval_hours' => (int) Setting::get('twitter_tweet_interval_hours', 4),
             'twitter_min_video_age_days' => (int) Setting::get('twitter_min_video_age_days', 7),
             'twitter_no_retweet_within_days' => (int) Setting::get('twitter_no_retweet_within_days', 30),
-            'twitter_tweet_template' => Setting::get('twitter_tweet_template', '{title} — Watch now: {url} #{category}'),
+            'twitter_tweet_template' => Setting::get('twitter_tweet_template', '{title} â€” Watch now: {url} #{category}'),
             'twitter_hashtags' => Setting::get('twitter_hashtags', ''),
         ]);
     }
@@ -83,7 +86,7 @@ class SocialNetworkSettings extends Page implements HasForms
                                     ->columnSpanFull(),
 
                                 Section::make('Google')
-                                    ->description('Create credentials at console.cloud.google.com → APIs & Services → Credentials. Set the redirect URI to: ' . url('/auth/google/callback'))
+                                    ->description('Create credentials at console.cloud.google.com â†’ APIs & Services â†’ Credentials. Set the redirect URI to: ' . url('/auth/google/callback'))
                                     ->icon('heroicon-o-globe-alt')
                                     ->collapsible()
                                     ->schema([
@@ -152,7 +155,7 @@ class SocialNetworkSettings extends Page implements HasForms
                                     ->columnSpanFull(),
 
                                 Section::make('API Credentials')
-                                    ->description('From developer.x.com → Your App → Keys and Tokens. These are the OAuth 1.0a keys used for posting tweets on behalf of your account.')
+                                    ->description('From developer.x.com â†’ Your App â†’ Keys and Tokens. These are the OAuth 1.0a keys used for posting tweets on behalf of your account.')
                                     ->icon('heroicon-o-key')
                                     ->collapsible()
                                     ->schema([
@@ -221,7 +224,7 @@ class SocialNetworkSettings extends Page implements HasForms
                                         Textarea::make('twitter_tweet_template')
                                             ->label('Tweet Template')
                                             ->rows(3)
-                                            ->placeholder('{title} — Watch now: {url} #{category}')
+                                            ->placeholder('{title} â€” Watch now: {url} #{category}')
                                             ->helperText('Available placeholders: {title}, {url}, {channel}, {category}. URLs count as 23 chars (t.co). Max 280 chars total.'),
                                         TextInput::make('twitter_hashtags')
                                             ->label('Additional Hashtags')

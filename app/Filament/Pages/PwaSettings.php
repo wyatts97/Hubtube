@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Filament\Pages;
 
@@ -14,8 +14,11 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
+use App\Filament\Concerns\HasCustomizableNavigation;
+
 class PwaSettings extends Page implements HasForms
 {
+    use HasCustomizableNavigation;
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-device-phone-mobile';
@@ -85,7 +88,7 @@ class PwaSettings extends Page implements HasForms
                         TextInput::make('vapid_private_key')
                             ->label('VAPID Private Key')
                             ->password()
-                            ->helperText('The private key from your VAPID key pair — keep this secret')
+                            ->helperText('The private key from your VAPID key pair â€” keep this secret')
                             ->columnSpanFull(),
                         TextInput::make('push_subject')
                             ->label('Subject (Contact)')

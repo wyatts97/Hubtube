@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Filament\Resources;
 
@@ -13,8 +13,11 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
 
+use App\Filament\Concerns\HasCustomizableNavigation;
+
 class WithdrawalRequestResource extends Resource
 {
+    use HasCustomizableNavigation;
     protected static ?string $model = WithdrawalRequest::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-up-tray';
@@ -25,6 +28,7 @@ class WithdrawalRequestResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
+        if (static::isHiddenByNavCustomizer()) return false;
         return (bool) \App\Models\Setting::get('monetization_enabled', true);
     }
 

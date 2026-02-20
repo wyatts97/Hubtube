@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Filament\Pages;
 
@@ -20,8 +20,11 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Mail;
 
+use App\Filament\Concerns\HasCustomizableNavigation;
+
 class IntegrationSettings extends Page implements HasForms
 {
+    use HasCustomizableNavigation;
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-puzzle-piece';
@@ -111,7 +114,7 @@ class IntegrationSettings extends Page implements HasForms
                                         Select::make('mail_mailer')
                                             ->label('Mail Driver')
                                             ->options([
-                                                'log' => 'Log (no emails sent — development only)',
+                                                'log' => 'Log (no emails sent â€” development only)',
                                                 'smtp' => 'SMTP (external or self-hosted)',
                                                 'sendmail' => 'Sendmail (local)',
                                                 'ses' => 'Amazon SES',
@@ -132,7 +135,7 @@ class IntegrationSettings extends Page implements HasForms
                                             ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
                                         TextInput::make('mail_username')
                                             ->label('SMTP Username')
-                                            ->helperText('Some self-hosted servers don\'t require authentication — leave blank if not needed.')
+                                            ->helperText('Some self-hosted servers don\'t require authentication â€” leave blank if not needed.')
                                             ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
                                         TextInput::make('mail_password')
                                             ->label('SMTP Password')
@@ -331,7 +334,7 @@ class IntegrationSettings extends Page implements HasForms
         }
     }
 
-    // ── Email Templates Management ──────────────────────────────────────────
+    // â”€â”€ Email Templates Management â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function loadEmailTemplates(): void
     {

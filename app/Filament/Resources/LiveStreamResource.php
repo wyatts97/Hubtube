@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Filament\Resources;
 
@@ -10,8 +10,11 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
+use App\Filament\Concerns\HasCustomizableNavigation;
+
 class LiveStreamResource extends Resource
 {
+    use HasCustomizableNavigation;
     protected static ?string $model = LiveStream::class;
     protected static ?string $navigationIcon = 'heroicon-o-signal';
     protected static ?string $navigationGroup = 'Content';
@@ -19,6 +22,7 @@ class LiveStreamResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
+        if (static::isHiddenByNavCustomizer()) return false;
         return (bool) \App\Models\Setting::get('live_streaming_enabled', true);
     }
 

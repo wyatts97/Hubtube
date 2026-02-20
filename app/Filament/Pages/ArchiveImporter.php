@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Filament\Pages;
 
@@ -9,8 +9,11 @@ use App\Services\ArchiveImportService;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
+use App\Filament\Concerns\HasCustomizableNavigation;
+
 class ArchiveImporter extends Page
 {
+    use HasCustomizableNavigation;
     protected static ?string $navigationIcon = 'heroicon-o-folder-open';
     protected static ?string $navigationLabel = 'Archive Import';
     protected static ?string $navigationGroup = 'Tools';

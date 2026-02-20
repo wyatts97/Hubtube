@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Filament\Pages;
 
@@ -25,8 +25,11 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 
+use App\Filament\Concerns\HasCustomizableNavigation;
+
 class LanguageSettings extends Page implements HasForms, HasTable
 {
+    use HasCustomizableNavigation;
     use InteractsWithForms;
     use InteractsWithTable;
 
@@ -124,7 +127,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
             ->send();
     }
 
-    // ── Translation Overrides Table ──
+    // â”€â”€ Translation Overrides Table â”€â”€
 
     protected function getLocaleOptions(): array
     {
@@ -186,7 +189,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
                 Tables\Columns\TextColumn::make('notes')
                     ->color('gray')
                     ->limit(30)
-                    ->placeholder('—')
+                    ->placeholder('â€”')
                     ->toggleable(),
 
                 Tables\Columns\ToggleColumn::make('is_active')
@@ -307,7 +310,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
         $this->useForceMode = true;
         $this->regenerating = true;
         $this->regenerationStep = 'generate';
-        $this->regenerationStatus = 'Regenerating all translation files…';
+        $this->regenerationStatus = 'Regenerating all translation filesâ€¦';
         $this->generationOutput = '';
     }
 
@@ -319,7 +322,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
         $this->useForceMode = false;
         $this->regenerating = true;
         $this->regenerationStep = 'generate';
-        $this->regenerationStatus = 'Syncing new translation keys…';
+        $this->regenerationStatus = 'Syncing new translation keysâ€¦';
         $this->generationOutput = '';
     }
 
@@ -340,7 +343,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
 
                 if ($exitCode === 0) {
                     $this->regenerationStep = 'build';
-                    $this->regenerationStatus = 'Rebuilding frontend assets…';
+                    $this->regenerationStatus = 'Rebuilding frontend assetsâ€¦';
                 } else {
                     $this->regenerating = false;
                     $this->regenerationStep = '';

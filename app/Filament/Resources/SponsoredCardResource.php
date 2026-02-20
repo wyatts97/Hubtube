@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Filament\Resources;
 
@@ -11,8 +11,11 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
+use App\Filament\Concerns\HasCustomizableNavigation;
+
 class SponsoredCardResource extends Resource
 {
+    use HasCustomizableNavigation;
     protected static ?string $model = SponsoredCard::class;
     protected static ?string $navigationIcon = 'heroicon-o-megaphone';
     protected static ?string $navigationLabel = 'Sponsored Cards';
@@ -42,7 +45,7 @@ class SponsoredCardResource extends Resource
                             ->disk('public')
                             ->directory('sponsored')
                             ->visibility('public')
-                            ->helperText('Recommended: 640×360 (16:9 aspect ratio) to match video cards'),
+                            ->helperText('Recommended: 640Ã—360 (16:9 aspect ratio) to match video cards'),
                         Forms\Components\TextInput::make('description')
                             ->maxLength(255)
                             ->placeholder('Optional short description shown below the title'),

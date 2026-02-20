@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Filament\Resources;
 
@@ -11,8 +11,11 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 
+use App\Filament\Concerns\HasCustomizableNavigation;
+
 class GalleryResource extends Resource
 {
+    use HasCustomizableNavigation;
     protected static ?string $model = Gallery::class;
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-group';
     protected static ?string $navigationGroup = 'Content';

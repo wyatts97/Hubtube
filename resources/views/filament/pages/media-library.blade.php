@@ -200,33 +200,38 @@
                     <p class="text-xs text-gray-600">Upload MP4 ad creatives above, then copy the URL into Appearance  Ad Creatives.</p>
                 </div>
             @else
-                <div class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;">
                     @foreach ($videos as $file)
-                    <div class="group bg-gray-900 border border-gray-700 rounded-xl overflow-hidden hover:border-primary-500 transition-colors">
-                        <div class="relative bg-black" style="height:110px;">
-                            <video src="{{ $file['url'] }}" class="w-full h-full object-cover" muted preload="metadata"></video>
+                    <div class="group" style="background:#111827;border:1px solid #374151;border-radius:12px;display:flex;flex-direction:column;overflow:hidden;transition:border-color 0.15s;" onmouseenter="this.style.borderColor='#f43f5e'" onmouseleave="this.style.borderColor='#374151'">
+                        {{-- Thumbnail --}}
+                        <div style="position:relative;height:110px;background:#000;flex-shrink:0;">
+                            <video src="{{ $file['url'] }}" style="width:100%;height:100%;object-fit:cover;display:block;" muted preload="metadata"></video>
                             @if (!empty($file['duration']))
-                                <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 bg-black/80 text-white text-[10px] font-mono font-semibold rounded">
-                                    {{ $file['duration'] }}
-                                </span>
+                                <span style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.85);color:#fff;font-size:10px;font-family:monospace;font-weight:600;padding:2px 5px;border-radius:4px;line-height:1.4;">{{ $file['duration'] }}</span>
                             @endif
-                            <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
-                                <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                                    <x-heroicon-s-play class="w-4 h-4 text-white ml-0.5" />
+                            <div class="opacity-0 group-hover:opacity-100 transition-opacity" style="position:absolute;inset:0;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
+                                <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;">
+                                    <x-heroicon-s-play style="width:16px;height:16px;color:#fff;margin-left:2px;" />
                                 </div>
                             </div>
                         </div>
-                        <div class="p-2.5">
-                            <p class="text-xs text-gray-300 truncate leading-tight font-medium" title="{{ $file['name'] }}">{{ $file['name'] }}</p>
-                            <p class="text-[10px] text-gray-500 mt-0.5">{{ $file['size'] }}</p>
-                            <div class="flex gap-1 mt-2">
+                        {{-- Info --}}
+                        <div style="padding:10px;flex:1;display:flex;flex-direction:column;gap:4px;">
+                            <p style="font-size:11px;color:#d1d5db;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $file['name'] }}">{{ $file['name'] }}</p>
+                            <p style="font-size:10px;color:#6b7280;">{{ $file['size'] }}</p>
+                            <div style="display:flex;gap:4px;margin-top:4px;">
                                 <button
-                                    class="flex-1 text-[11px] py-1 px-1.5 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors font-medium"
-                                    onclick="(function(btn,url){navigator.clipboard.writeText(url).then(()=>{btn.textContent='Copied!';btn.style.background='#14532d';btn.style.color='#86efac';setTimeout(()=>{btn.textContent='Copy URL';btn.style.background='';btn.style.color='';},2000);})})(this,'{{ $file['url'] }}')"
+                                    style="flex:1;font-size:11px;padding:4px 6px;background:#374151;color:#d1d5db;border:none;border-radius:6px;cursor:pointer;font-weight:500;transition:background 0.15s;"
+                                    onmouseenter="this.style.background='#4b5563'" onmouseleave="this.style.background='#374151'"
+                                    onclick="(function(btn,url){navigator.clipboard.writeText(url).then(()=>{btn.textContent='Copied!';btn.style.background='#14532d';btn.style.color='#86efac';setTimeout(()=>{btn.textContent='Copy URL';btn.style.background='#374151';btn.style.color='#d1d5db';},2000);})})(this,'{{ $file['url'] }}')"
                                 >Copy URL</button>
-                                <button wire:click="confirmDelete('{{ $file['path'] }}')"
-                                    class="p-1 bg-gray-700 text-gray-400 rounded-lg hover:bg-danger-900 hover:text-danger-400 transition-colors" title="Delete">
-                                    <x-heroicon-o-trash class="w-3.5 h-3.5" />
+                                <button
+                                    wire:click="confirmDelete('{{ $file['path'] }}')"
+                                    style="padding:4px 6px;background:#374151;color:#9ca3af;border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;"
+                                    onmouseenter="this.style.background='#450a0a';this.style.color='#f87171'" onmouseleave="this.style.background='#374151';this.style.color='#9ca3af'"
+                                    title="Delete"
+                                >
+                                    <x-heroicon-o-trash style="width:14px;height:14px;" />
                                 </button>
                             </div>
                         </div>

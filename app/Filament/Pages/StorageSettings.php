@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Filament\Pages;
 
@@ -19,8 +19,11 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
+use App\Filament\Concerns\HasCustomizableNavigation;
+
 class StorageSettings extends Page implements HasForms
 {
+    use HasCustomizableNavigation;
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-cloud';
@@ -120,7 +123,7 @@ class StorageSettings extends Page implements HasForms
                                             ->visible(fn ($get) => $get('cloud_offloading_enabled')),
                                         Toggle::make('cloud_storage_public_bucket')
                                             ->label('Bucket Has Public Access')
-                                            ->helperText('Enable if your bucket policy allows public reads. When off (default), pre-signed temporary URLs are used — this works with private buckets and is more secure.')
+                                            ->helperText('Enable if your bucket policy allows public reads. When off (default), pre-signed temporary URLs are used â€” this works with private buckets and is more secure.')
                                             ->visible(fn ($get) => $get('cloud_offloading_enabled')),
                                         TextInput::make('cloud_url_expiry_minutes')
                                             ->label('Pre-signed URL Expiry (minutes)')

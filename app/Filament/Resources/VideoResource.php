@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Filament\Resources;
 
@@ -16,8 +16,11 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
+use App\Filament\Concerns\HasCustomizableNavigation;
+
 class VideoResource extends Resource
 {
+    use HasCustomizableNavigation;
     protected static ?string $model = Video::class;
     protected static ?string $navigationIcon = 'heroicon-o-video-camera';
     protected static ?string $navigationGroup = 'Content';
@@ -140,7 +143,7 @@ class VideoResource extends Resource
                             ->suffix('seconds'),
                         Forms\Components\TextInput::make('size')
                             ->disabled()
-                            ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—'),
+                            ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : 'â€”'),
                         Forms\Components\TextInput::make('failure_reason')
                             ->disabled()
                             ->visible(fn ($record) => $record?->status === 'failed')
@@ -170,7 +173,7 @@ class VideoResource extends Resource
                     ->weight('bold')
                     ->limit(50)
                     ->tooltip(fn (Video $record): string => $record->title)
-                    ->description(fn (Video $record): string => $record->formatted_duration ?: '—'),
+                    ->description(fn (Video $record): string => $record->formatted_duration ?: 'â€”'),
 
                 Tables\Columns\TextColumn::make('user.username')
                     ->label('Uploader')
@@ -183,7 +186,7 @@ class VideoResource extends Resource
                     ->label('Category')
                     ->sortable()
                     ->size('sm')
-                    ->placeholder('—')
+                    ->placeholder('â€”')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('status')
@@ -242,7 +245,7 @@ class VideoResource extends Resource
 
                 Tables\Columns\TextColumn::make('size')
                     ->label('Size')
-                    ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—')
+                    ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : 'â€”')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 

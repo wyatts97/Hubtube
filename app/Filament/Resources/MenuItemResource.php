@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Filament\Resources;
 
@@ -11,8 +11,11 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
+use App\Filament\Concerns\HasCustomizableNavigation;
+
 class MenuItemResource extends Resource
 {
+    use HasCustomizableNavigation;
     protected static ?string $model = MenuItem::class;
     protected static ?string $navigationIcon = 'heroicon-o-bars-3';
     protected static ?string $navigationLabel = 'Menu Builder';
@@ -140,7 +143,7 @@ class MenuItemResource extends Resource
                 Tables\Columns\TextColumn::make('label')
                     ->searchable()
                     ->sortable()
-                    ->description(fn (MenuItem $record) => $record->parent ? "↳ Child of: {$record->parent->label}" : null),
+                    ->description(fn (MenuItem $record) => $record->parent ? "â†³ Child of: {$record->parent->label}" : null),
                 Tables\Columns\TextColumn::make('type')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {

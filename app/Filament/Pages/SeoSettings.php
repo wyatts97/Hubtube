@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Filament\Pages;
 
@@ -18,8 +18,11 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\HtmlString;
 
+use App\Filament\Concerns\HasCustomizableNavigation;
+
 class SeoSettings extends Page implements HasForms
 {
+    use HasCustomizableNavigation;
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-magnifying-glass';
@@ -121,11 +124,11 @@ class SeoSettings extends Page implements HasForms
                                             ->options([
                                                 '|' => '| (pipe)',
                                                 '-' => '- (dash)',
-                                                '–' => '– (en dash)',
-                                                '—' => '— (em dash)',
-                                                '·' => '· (middle dot)',
+                                                'â€“' => 'â€“ (en dash)',
+                                                'â€”' => 'â€” (em dash)',
+                                                'Â·' => 'Â· (middle dot)',
                                                 '>' => '> (arrow)',
-                                                '»' => '» (guillemet)',
+                                                'Â»' => 'Â» (guillemet)',
                                             ])
                                             ->default('|'),
                                         Textarea::make('seo_meta_description')
@@ -146,7 +149,7 @@ class SeoSettings extends Page implements HasForms
                                             ->label('Default OG Image URL')
                                             ->url()
                                             ->placeholder('https://yoursite.com/images/og-default.jpg')
-                                            ->helperText('Recommended: 1200×630px. Used when no page-specific image is available.'),
+                                            ->helperText('Recommended: 1200Ã—630px. Used when no page-specific image is available.'),
                                         Select::make('seo_og_type')
                                             ->label('Default OG Type')
                                             ->options([
@@ -182,15 +185,15 @@ class SeoSettings extends Page implements HasForms
                                         TextInput::make('seo_google_verification')
                                             ->label('Google Search Console')
                                             ->placeholder('google-site-verification content value')
-                                            ->helperText('From Google Search Console → Settings → Ownership verification → HTML tag.'),
+                                            ->helperText('From Google Search Console â†’ Settings â†’ Ownership verification â†’ HTML tag.'),
                                         TextInput::make('seo_bing_verification')
                                             ->label('Bing Webmaster Tools')
                                             ->placeholder('msvalidate.01 content value')
-                                            ->helperText('From Bing Webmaster Tools → Settings → Ownership verification.'),
+                                            ->helperText('From Bing Webmaster Tools â†’ Settings â†’ Ownership verification.'),
                                         TextInput::make('seo_yandex_verification')
                                             ->label('Yandex Webmaster')
                                             ->placeholder('yandex-verification content value')
-                                            ->helperText('From Yandex Webmaster → Settings → Verification.'),
+                                            ->helperText('From Yandex Webmaster â†’ Settings â†’ Verification.'),
                                         TextInput::make('seo_pinterest_verification')
                                             ->label('Pinterest')
                                             ->placeholder('p:domain_verify content value'),
@@ -223,9 +226,9 @@ class SeoSettings extends Page implements HasForms
                                 Placeholder::make('video_seo_info')
                                     ->content(new HtmlString(
                                         '<div class="text-sm p-3 rounded-lg" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3);">' .
-                                        '<strong>📺 Video SEO Best Practices</strong><br>' .
+                                        '<strong>ðŸ“º Video SEO Best Practices</strong><br>' .
                                         'HubTube automatically generates <strong>JSON-LD VideoObject</strong> schema markup for every video page. ' .
-                                        'This tells Google, Bing, and Yandex about your video\'s thumbnail, duration, upload date, and description — ' .
+                                        'This tells Google, Bing, and Yandex about your video\'s thumbnail, duration, upload date, and description â€” ' .
                                         'enabling <strong>rich video snippets</strong> in search results (thumbnail + duration badge).<br><br>' .
                                         '<strong>Available template variables:</strong> <code>{title}</code>, <code>{description}</code>, <code>{site_name}</code>, ' .
                                         '<code>{uploader}</code>, <code>{category}</code>, <code>{duration}</code>, <code>{views}</code>, <code>{tags}</code>' .
@@ -335,7 +338,7 @@ class SeoSettings extends Page implements HasForms
                                 Placeholder::make('schema_info')
                                     ->content(new HtmlString(
                                         '<div class="text-sm p-3 rounded-lg" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3);">' .
-                                        '<strong>🏢 Organization Schema</strong><br>' .
+                                        '<strong>ðŸ¢ Organization Schema</strong><br>' .
                                         'Defines your site as an organization in Google\'s Knowledge Graph. ' .
                                         'Fill in your organization details and social profiles to enable a branded knowledge panel.' .
                                         '</div>'
@@ -353,7 +356,7 @@ class SeoSettings extends Page implements HasForms
                                             ->label('Organization Logo URL')
                                             ->url()
                                             ->placeholder('https://yoursite.com/logo.png')
-                                            ->helperText('Recommended: 112×112px minimum, square.'),
+                                            ->helperText('Recommended: 112Ã—112px minimum, square.'),
                                         TextInput::make('seo_schema_org_url')
                                             ->label('Organization URL')
                                             ->url()
