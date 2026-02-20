@@ -323,7 +323,10 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
         ];
 
         $videoInfo = $this->getVideoInfo($inputPath);
-        $this->video->update(['duration' => $videoInfo['duration']]);
+        $this->video->update([
+            'duration' => $videoInfo['duration'],
+            'is_portrait' => $videoInfo['height'] > $videoInfo['width'],
+        ]);
 
         // Ensure original file is browser-seekable (moov atom at start).
         // Skip on retry — faststart is idempotent but wastes time re-muxing.

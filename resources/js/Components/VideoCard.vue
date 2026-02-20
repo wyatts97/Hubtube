@@ -101,17 +101,23 @@ const onPreviewLoad = () => { previewLoaded.value = true; };
                 @error="(e) => e.target.src = placeholderImg"
             />
             
-            <!-- Animated Preview (WebP) -->
-            <img
+            <!-- Animated Preview (WebP) — portrait videos use object-contain to show full frame -->
+            <div
                 v-if="video.preview_url"
-                :src="isHovering ? video.preview_url : ''"
-                :alt="video.title"
-                class="absolute inset-0 w-full h-full object-cover transition-opacity duration-200"
+                class="absolute inset-0 w-full h-full transition-opacity duration-200"
                 :class="isHovering && previewLoaded ? 'opacity-100' : 'opacity-0'"
-                loading="lazy"
-                decoding="async"
-                @load="onPreviewLoad"
-            />
+                :style="video.is_portrait ? { backgroundColor: '#000' } : {}"
+            >
+                <img
+                    :src="isHovering ? video.preview_url : ''"
+                    :alt="video.title"
+                    class="w-full h-full transition-opacity duration-200"
+                    :class="video.is_portrait ? 'object-contain' : 'object-cover'"
+                    loading="lazy"
+                    decoding="async"
+                    @load="onPreviewLoad"
+                />
+            </div>
             
             <!-- Duration Badge -->
             <span v-if="showDuration" class="duration absolute bottom-2 right-2 bg-black/80 text-white text-xs font-medium px-1.5 py-0.5 rounded">
