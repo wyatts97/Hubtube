@@ -124,11 +124,11 @@ class SeoSettings extends Page implements HasForms
                                             ->options([
                                                 '|' => '| (pipe)',
                                                 '-' => '- (dash)',
-                                                'â€“' => 'â€“ (en dash)',
-                                                'â€”' => 'â€” (em dash)',
-                                                'Â·' => 'Â· (middle dot)',
+                                                "\u2013" => "\u2013 (en dash)",
+                                                "\u2014" => "\u2014 (em dash)",
+                                                "\u00b7" => "\u00b7 (middle dot)",
                                                 '>' => '> (arrow)',
-                                                'Â»' => 'Â» (guillemet)',
+                                                "\u00bb" => "\u00bb (guillemet)",
                                             ])
                                             ->default('|'),
                                         Textarea::make('seo_meta_description')
@@ -185,15 +185,15 @@ class SeoSettings extends Page implements HasForms
                                         TextInput::make('seo_google_verification')
                                             ->label('Google Search Console')
                                             ->placeholder('google-site-verification content value')
-                                            ->helperText('From Google Search Console â†’ Settings â†’ Ownership verification â†’ HTML tag.'),
+                                            ->helperText('From Google Search Console → Settings → Ownership verification → HTML tag.'),
                                         TextInput::make('seo_bing_verification')
                                             ->label('Bing Webmaster Tools')
                                             ->placeholder('msvalidate.01 content value')
-                                            ->helperText('From Bing Webmaster Tools â†’ Settings â†’ Ownership verification.'),
+                                            ->helperText('From Bing Webmaster Tools → Settings → Ownership verification.'),
                                         TextInput::make('seo_yandex_verification')
                                             ->label('Yandex Webmaster')
                                             ->placeholder('yandex-verification content value')
-                                            ->helperText('From Yandex Webmaster â†’ Settings â†’ Verification.'),
+                                            ->helperText('From Yandex Webmaster → Settings → Verification.'),
                                         TextInput::make('seo_pinterest_verification')
                                             ->label('Pinterest')
                                             ->placeholder('p:domain_verify content value'),
@@ -226,9 +226,9 @@ class SeoSettings extends Page implements HasForms
                                 Placeholder::make('video_seo_info')
                                     ->content(new HtmlString(
                                         '<div class="text-sm p-3 rounded-lg" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3);">' .
-                                        '<strong>ðŸ“º Video SEO Best Practices</strong><br>' .
+                                        '<strong>📺 Video SEO Best Practices</strong><br>' .
                                         'HubTube automatically generates <strong>JSON-LD VideoObject</strong> schema markup for every video page. ' .
-                                        'This tells Google, Bing, and Yandex about your video\'s thumbnail, duration, upload date, and description â€” ' .
+                                        'This tells Google, Bing, and Yandex about your video\'s thumbnail, duration, upload date, and description — ' .
                                         'enabling <strong>rich video snippets</strong> in search results (thumbnail + duration badge).<br><br>' .
                                         '<strong>Available template variables:</strong> <code>{title}</code>, <code>{description}</code>, <code>{site_name}</code>, ' .
                                         '<code>{uploader}</code>, <code>{category}</code>, <code>{duration}</code>, <code>{views}</code>, <code>{tags}</code>' .
@@ -338,7 +338,7 @@ class SeoSettings extends Page implements HasForms
                                 Placeholder::make('schema_info')
                                     ->content(new HtmlString(
                                         '<div class="text-sm p-3 rounded-lg" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3);">' .
-                                        '<strong>ðŸ¢ Organization Schema</strong><br>' .
+                                        '<strong>🏢 Organization Schema</strong><br>' .
                                         'Defines your site as an organization in Google\'s Knowledge Graph. ' .
                                         'Fill in your organization details and social profiles to enable a branded knowledge panel.' .
                                         '</div>'

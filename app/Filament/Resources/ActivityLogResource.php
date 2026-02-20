@@ -199,7 +199,7 @@ class ActivityLogResource extends Resource
     private static function resolveSubjectLabel(Activity $record): string
     {
         if (!$record->subject_type || !$record->subject_id) {
-            return 'â€”';
+            return '—';
         }
 
         return class_basename($record->subject_type) . ' #' . $record->subject_id;

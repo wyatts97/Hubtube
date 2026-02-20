@@ -50,6 +50,7 @@ class VideoAd extends Model
         return $query->where(function ($q) use ($categoryId) {
             $q->whereNull('category_ids')
               ->orWhereJsonContains('category_ids', $categoryId)
+              ->orWhereJsonContains('category_ids', (string) $categoryId)
               ->orWhereJsonLength('category_ids', 0);
         });
     }

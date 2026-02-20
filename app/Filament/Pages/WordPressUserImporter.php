@@ -145,7 +145,7 @@ class WordPressUserImporter extends Page
     }
 
     /**
-     * Start the import â€” parses file, splits into batch files, then polling takes over.
+     * Start the import — parses file, splits into batch files, then polling takes over.
      */
     public function runImport(): void
     {
@@ -201,7 +201,7 @@ class WordPressUserImporter extends Page
     }
 
     /**
-     * Called by wire:poll â€” processes ONE batch per tick.
+     * Called by wire:poll — processes ONE batch per tick.
      * Static flag prevents Livewire from processing multiple batches when it
      * batches queued poll calls into a single HTTP request.
      */
@@ -271,7 +271,7 @@ class WordPressUserImporter extends Page
     }
 
     /**
-     * Finalize the import â€” clean up temp files, log, notify.
+     * Finalize the import — clean up temp files, log, notify.
      */
     private function finishImport(): void
     {

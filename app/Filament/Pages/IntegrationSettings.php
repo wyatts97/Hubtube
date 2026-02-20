@@ -114,7 +114,7 @@ class IntegrationSettings extends Page implements HasForms
                                         Select::make('mail_mailer')
                                             ->label('Mail Driver')
                                             ->options([
-                                                'log' => 'Log (no emails sent â€” development only)',
+                                                'log' => 'Log (no emails sent — development only)',
                                                 'smtp' => 'SMTP (external or self-hosted)',
                                                 'sendmail' => 'Sendmail (local)',
                                                 'ses' => 'Amazon SES',
@@ -135,7 +135,7 @@ class IntegrationSettings extends Page implements HasForms
                                             ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
                                         TextInput::make('mail_username')
                                             ->label('SMTP Username')
-                                            ->helperText('Some self-hosted servers don\'t require authentication â€” leave blank if not needed.')
+                                            ->helperText('Some self-hosted servers don\'t require authentication — leave blank if not needed.')
                                             ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
                                         TextInput::make('mail_password')
                                             ->label('SMTP Password')
@@ -334,7 +334,7 @@ class IntegrationSettings extends Page implements HasForms
         }
     }
 
-    // â”€â”€ Email Templates Management â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Email Templates Management ------------------------------------------
 
     public function loadEmailTemplates(): void
     {

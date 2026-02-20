@@ -221,8 +221,14 @@ class VideoController extends Controller
     {
         Gate::authorize('upload-video');
 
+        $existingTags = \App\Models\Hashtag::orderByDesc('usage_count')
+            ->limit(200)
+            ->pluck('name')
+            ->toArray();
+
         return Inertia::render('Videos/Create', [
             'categories' => Category::active()->get(),
+            'existingTags' => $existingTags,
         ]);
     }
 
@@ -340,9 +346,15 @@ class VideoController extends Controller
     {
         $this->authorize('update', $video);
 
+        $existingTags = \App\Models\Hashtag::orderByDesc('usage_count')
+            ->limit(200)
+            ->pluck('name')
+            ->toArray();
+
         return Inertia::render('Videos/Edit', [
             'video' => $video,
             'categories' => Category::active()->get(),
+            'existingTags' => $existingTags,
         ]);
     }
 

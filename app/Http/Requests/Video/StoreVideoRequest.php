@@ -13,6 +13,32 @@ class StoreVideoRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        // When forceFormData is used (file uploads), tags may arrive as a
+        // comma-separated string or a single string instead of an array.
+        // Normalize to a proper array of trimmed, non-empty strings.
+        $tags = $this->input('tags');
+        if (is_string($tags)) {
+            $tags = array_values(array_filter(array_map('trim', explode(',', $tags))));
+            $this->merge(['tags' => $tags]);
+        } elseif (is_array($tags)) {
+            // Each element might also be comma-separated (user typed "tag1, tag2" and pressed Enter)
+            $normalized = [];
+            foreach ($tags as $tag) {
+                if (is_string($tag)) {
+                    foreach (explode(',', $tag) as $part) {
+                        $part = trim($part);
+                        if ($part !== '') {
+                            $normalized[] = $part;
+                        }
+                    }
+                }
+            }
+            $this->merge(['tags' => $normalized]);
+        }
+    }
+
     public function rules(): array
     {
         $maxSize = $this->user()->max_video_size / 1024;

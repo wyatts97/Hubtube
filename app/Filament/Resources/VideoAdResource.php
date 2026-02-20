@@ -79,7 +79,7 @@ class VideoAdResource extends Resource
                 ]),
             ]),
 
-            // â”€â”€ MP4: file upload + URL (either/or) â”€â”€
+            // — MP4: file upload + URL (either/or) —
             Section::make('MP4 Video Source')
                 ->description('Upload a video file OR paste an external URL. Uploaded file takes priority.')
                 ->visible(fn ($get) => $get('type') === 'mp4')
@@ -101,14 +101,13 @@ class VideoAdResource extends Resource
                     TextInput::make('content')
                         ->label('External MP4 URL (optional if file uploaded)')
                         ->placeholder('https://example.com/ads/my-ad.mp4')
-                        ->url()
                         ->columnSpanFull()
                         ->helperText('Leave empty if you uploaded a file above.'),
                 ]),
 
-            // â”€â”€ VAST / VPAID: tag URL only â”€â”€
+            // — VAST / VPAID: tag URL only —
             Section::make('VAST / VPAID Tag')
-                ->description('Paste your ad tag URL. Served via Google IMA SDK â€” the ad network controls skip, impression tracking, and click-through.')
+                ->description('Paste your ad tag URL. Served via Google IMA SDK — the ad network controls skip, impression tracking, and click-through.')
                 ->visible(fn ($get) => in_array($get('type'), ['vast', 'vpaid']))
                 ->schema([
                     TextInput::make('content')
@@ -122,16 +121,16 @@ class VideoAdResource extends Resource
                         ->label('')
                         ->content(new HtmlString(
                             '<div style="background:#1e3a5f;border:1px solid #2563eb;border-radius:8px;padding:12px 16px;font-size:13px;color:#93c5fd;">'
-                            . '<strong style="color:#60a5fa;">â„¹ VAST/VPAID Notes</strong><br>'
-                            . 'â€¢ Skip delay settings in "Ad Settings â†’ Video Roll Ads" do <strong>not</strong> apply â€” the ad network controls skip.<br>'
-                            . 'â€¢ Click-through URL is handled by the VAST tag itself.<br>'
-                            . 'â€¢ Weight and category/role targeting still apply for ad selection.'
+                            . '<strong style="color:#60a5fa;">ℹ VAST/VPAID Notes</strong><br>'
+                            . '• Skip delay settings in "Ad Settings → Video Roll Ads" do <strong>not</strong> apply — the ad network controls skip.<br>'
+                            . '• Click-through URL is handled by the VAST tag itself.<br>'
+                            . '• Weight and category/role targeting still apply for ad selection.'
                             . '</div>'
                         ))
                         ->columnSpanFull(),
                 ]),
 
-            // â”€â”€ HTML: raw script â”€â”€
+            // — HTML: raw script —
             Section::make('HTML Ad Script')
                 ->visible(fn ($get) => $get('type') === 'html')
                 ->schema([
@@ -143,7 +142,7 @@ class VideoAdResource extends Resource
                         ->columnSpanFull(),
                 ]),
 
-            // â”€â”€ Click-through (MP4 / HTML only) â”€â”€
+            // — Click-through (MP4 / HTML only) —
             Section::make('Click-Through')->schema([
                 TextInput::make('click_url')
                     ->label('Click-Through URL')
@@ -154,7 +153,7 @@ class VideoAdResource extends Resource
                     ->columnSpanFull(),
             ])->visible(fn ($get) => in_array($get('type'), ['mp4', 'html'])),
 
-            // â”€â”€ Targeting â”€â”€
+            // — Targeting —
             Section::make('Targeting')->schema([
                 Grid::make(2)->schema([
                     CheckboxList::make('category_ids')
@@ -215,10 +214,10 @@ class VideoAdResource extends Resource
                     ->label('Source')
                     ->formatStateUsing(function (string $state, VideoAd $record): string {
                         if ($record->type === 'mp4' && $record->file_path) {
-                            return 'ðŸ“ ' . basename($record->file_path);
+                            return '📁 ' . basename($record->file_path);
                         }
                         if ($record->type === 'html') {
-                            return 'ðŸ–¥ HTML script (' . strlen($state) . ' chars)';
+                            return '🖥 HTML script (' . strlen($state) . ' chars)';
                         }
                         return \Illuminate\Support\Str::limit($state, 50);
                     })
@@ -238,7 +237,7 @@ class VideoAdResource extends Resource
                         $roles = ($record->target_roles && count($record->target_roles))
                             ? implode(', ', $record->target_roles)
                             : 'All roles';
-                        return "{$cats} Â· {$roles}";
+                        return "{$cats} · {$roles}";
                     })
                     ->color('gray')
                     ->size('sm'),

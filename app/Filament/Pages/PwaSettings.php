@@ -88,7 +88,7 @@ class PwaSettings extends Page implements HasForms
                         TextInput::make('vapid_private_key')
                             ->label('VAPID Private Key')
                             ->password()
-                            ->helperText('The private key from your VAPID key pair â€” keep this secret')
+                            ->helperText('The private key from your VAPID key pair — keep this secret')
                             ->columnSpanFull(),
                         TextInput::make('push_subject')
                             ->label('Subject (Contact)')

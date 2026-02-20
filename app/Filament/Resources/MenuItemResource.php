@@ -143,7 +143,7 @@ class MenuItemResource extends Resource
                 Tables\Columns\TextColumn::make('label')
                     ->searchable()
                     ->sortable()
-                    ->description(fn (MenuItem $record) => $record->parent ? "â†³ Child of: {$record->parent->label}" : null),
+                    ->description(fn (MenuItem $record) => $record->parent ? "↳ Child of: {$record->parent->label}" : null),
                 Tables\Columns\TextColumn::make('type')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {

@@ -9,6 +9,7 @@ const { t } = useI18n();
 
 const props = defineProps({
     categories: Array,
+    existingTags: { type: Array, default: () => [] },
 });
 
 const page = usePage();
@@ -45,12 +46,22 @@ const minScheduleDate = computed(() => {
 });
 
 const tagInput = ref('');
+const showTagSuggestions = ref(false);
 
-const addTag = () => {
-    const tag = tagInput.value.trim().replace(/^#/, '');
+const filteredTags = computed(() => {
+    const q = tagInput.value.trim().replace(/^#/, '').toLowerCase();
+    if (!q) return [];
+    return props.existingTags
+        .filter(t => t.toLowerCase().includes(q) && !form.tags.includes(t))
+        .slice(0, 10);
+});
+
+const addTag = (tagValue) => {
+    const tag = (typeof tagValue === 'string' ? tagValue : tagInput.value).trim().replace(/^#/, '');
     if (tag && !form.tags.includes(tag) && form.tags.length < 20) {
         form.tags = [...form.tags, tag];
         tagInput.value = '';
+        showTagSuggestions.value = false;
     }
 };
 
@@ -357,13 +368,30 @@ onUnmounted(() => {
                                 </button>
                             </span>
                         </div>
-                        <input
-                            v-model="tagInput"
-                            type="text"
-                            class="input"
-                            :placeholder="t('upload.add_tag') || 'Add tag and press Enter'"
-                            @keydown.enter.prevent="addTag"
-                        />
+                        <div class="relative">
+                            <input
+                                v-model="tagInput"
+                                type="text"
+                                class="input"
+                                :placeholder="t('upload.add_tag') || 'Select or type a tag and press Enter'"
+                                @keydown.enter.prevent="addTag(tagInput)"
+                                @focus="showTagSuggestions = true"
+                                @blur="setTimeout(() => showTagSuggestions = false, 200)"
+                                autocomplete="off"
+                            />
+                            <div v-if="showTagSuggestions && filteredTags.length" class="absolute z-50 w-full mt-1 rounded-lg shadow-xl overflow-hidden max-h-48 overflow-y-auto" style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);">
+                                <button
+                                    v-for="suggestion in filteredTags"
+                                    :key="suggestion"
+                                    type="button"
+                                    class="w-full text-left px-3 py-2 text-sm hover:opacity-80 transition-opacity"
+                                    style="color: var(--color-text-primary);"
+                                    @mousedown.prevent="addTag(suggestion)"
+                                >
+                                    #{{ suggestion }}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

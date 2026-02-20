@@ -127,7 +127,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
             ->send();
     }
 
-    // â”€â”€ Translation Overrides Table â”€â”€
+    // -- Translation Overrides Table --
 
     protected function getLocaleOptions(): array
     {
@@ -189,7 +189,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
                 Tables\Columns\TextColumn::make('notes')
                     ->color('gray')
                     ->limit(30)
-                    ->placeholder('â€”')
+                    ->placeholder('—')
                     ->toggleable(),
 
                 Tables\Columns\ToggleColumn::make('is_active')
@@ -310,7 +310,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
         $this->useForceMode = true;
         $this->regenerating = true;
         $this->regenerationStep = 'generate';
-        $this->regenerationStatus = 'Regenerating all translation filesâ€¦';
+        $this->regenerationStatus = 'Regenerating all translation files…';
         $this->generationOutput = '';
     }
 
@@ -322,7 +322,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
         $this->useForceMode = false;
         $this->regenerating = true;
         $this->regenerationStep = 'generate';
-        $this->regenerationStatus = 'Syncing new translation keysâ€¦';
+        $this->regenerationStatus = 'Syncing new translation keys…';
         $this->generationOutput = '';
     }
 
@@ -343,7 +343,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
 
                 if ($exitCode === 0) {
                     $this->regenerationStep = 'build';
-                    $this->regenerationStatus = 'Rebuilding frontend assetsâ€¦';
+                    $this->regenerationStatus = 'Rebuilding frontend assets…';
                 } else {
                     $this->regenerating = false;
                     $this->regenerationStep = '';

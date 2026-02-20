@@ -11,6 +11,28 @@ class UpdateVideoRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $tags = $this->input('tags');
+        if (is_string($tags)) {
+            $tags = array_values(array_filter(array_map('trim', explode(',', $tags))));
+            $this->merge(['tags' => $tags]);
+        } elseif (is_array($tags)) {
+            $normalized = [];
+            foreach ($tags as $tag) {
+                if (is_string($tag)) {
+                    foreach (explode(',', $tag) as $part) {
+                        $part = trim($part);
+                        if ($part !== '') {
+                            $normalized[] = $part;
+                        }
+                    }
+                }
+            }
+            $this->merge(['tags' => $normalized]);
+        }
+    }
+
     public function rules(): array
     {
         return [

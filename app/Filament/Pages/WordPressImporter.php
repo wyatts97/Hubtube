@@ -28,7 +28,7 @@ class WordPressImporter extends Page
     protected static ?int $navigationSort = 99;
     protected static string $view = 'filament.pages.wordpress-importer';
 
-    // â”€â”€ Upload & Parse â”€â”€
+    // -- Upload & Parse --
     public $sqlFile = null;
     public ?string $storedFilePath = null;
     public bool $isParsing = false;
@@ -36,14 +36,14 @@ class WordPressImporter extends Page
     public array $parseStats = [];
     public array $previewVideos = [];
 
-    // â”€â”€ Import Settings â”€â”€
+    // -- Import Settings --
     public ?int $importUserId = null;
     public ?string $wpAuthor = null;
     public int $batchSize = 50;
     public int $delayMs = 100;
     public string $downloadMode = 'light'; // 'light' = no FFmpeg, 'full' = with FFmpeg
 
-    // â”€â”€ Import State â”€â”€
+    // -- Import State --
     public bool $isImporting = false;
     public bool $importComplete = false;
     public int $totalVideos = 0;
@@ -52,7 +52,7 @@ class WordPressImporter extends Page
     public int $skippedCount = 0;
     public array $importErrors = [];
 
-    // â”€â”€ Download Pipeline State â”€â”€
+    // -- Download Pipeline State --
     public bool $isDownloading = false;
     public bool $downloadComplete = false;
     public int $maxConcurrent = 2;
@@ -61,7 +61,7 @@ class WordPressImporter extends Page
     public int $downloadedCount = 0;
     public int $downloadFailedCount = 0;
 
-    // â”€â”€ Pipeline Stats (refreshed by polling) â”€â”€
+    // -- Pipeline Stats (refreshed by polling) --
     public int $statPendingDownload = 0;
     public int $statDownloading = 0;
     public int $statDownloadFailed = 0;
@@ -69,7 +69,7 @@ class WordPressImporter extends Page
     public int $statProcessing = 0;
     public int $statProcessed = 0;
 
-    // â”€â”€ Bunny Connection â”€â”€
+    // -- Bunny Connection --
     public bool $bunnyConnected = false;
     public ?string $bunnyError = null;
 
@@ -102,9 +102,9 @@ class WordPressImporter extends Page
         return $this->parseStats['wp_authors'] ?? [];
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ---------------------------------------------
     // Bunny Connection
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ---------------------------------------------
 
     public function testBunnyConnection(): void
     {
@@ -119,9 +119,9 @@ class WordPressImporter extends Page
         }
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ---------------------------------------------
     // Step 1: Upload & Parse SQL
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ---------------------------------------------
 
     public function updatedSqlFile(): void
     {
@@ -194,9 +194,9 @@ class WordPressImporter extends Page
         $this->previewVideos = array_slice($videoPosts, 0, 10);
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ---------------------------------------------
     // Step 2: Import Records into DB
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ---------------------------------------------
 
     public function runImport(): void
     {
@@ -277,9 +277,9 @@ class WordPressImporter extends Page
         }
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ---------------------------------------------
     // Step 3: Download Pipeline
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ---------------------------------------------
 
     public function startDownloads(): void
     {
@@ -339,7 +339,7 @@ class WordPressImporter extends Page
                 continue; // Still running
             }
 
-            // Slot finished â€” process result
+            // Slot finished — process result
             unset($this->activeSlots[$videoId]);
             Cache::forget($cacheKey);
 
@@ -492,9 +492,9 @@ class WordPressImporter extends Page
         Notification::make()->title("Downloading: {$video->title}")->success()->send();
     }
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ---------------------------------------------
     // Stats & Helpers
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ---------------------------------------------
 
     public function refreshStats(): void
     {

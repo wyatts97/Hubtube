@@ -37,11 +37,7 @@ class RecentUploadsTable extends BaseWidget
                 Tables\Columns\TextColumn::make('title')
                     ->limit(30)
                     ->weight('bold')
-                    ->url(fn (Video $record) => ($record->status === 'processed' && $record->is_approved)
-                        ? '/' . $record->slug
-                        : route('filament.admin.resources.videos.edit', $record)
-                    )
-                    ->openUrlInNewTab(fn (Video $record) => $record->status === 'processed' && $record->is_approved),
+                    ->url(fn (Video $record) => route('filament.admin.resources.videos.edit', $record)),
 
                 Tables\Columns\TextColumn::make('user.username')
                     ->label('By')

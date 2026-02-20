@@ -143,7 +143,7 @@ class VideoResource extends Resource
                             ->suffix('seconds'),
                         Forms\Components\TextInput::make('size')
                             ->disabled()
-                            ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : 'â€”'),
+                            ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—'),
                         Forms\Components\TextInput::make('failure_reason')
                             ->disabled()
                             ->visible(fn ($record) => $record?->status === 'failed')
@@ -172,7 +172,7 @@ class VideoResource extends Resource
                     ->sortable()
                     ->weight('bold')
                     ->limit(50)
-                    ->description(fn (Video $record): string => $record->formatted_duration ?: 'â€”'),
+                    ->description(fn (Video $record): string => $record->formatted_duration ?: '—'),
 
                 Tables\Columns\TextColumn::make('user.username')
                     ->label('Uploader')
@@ -185,7 +185,7 @@ class VideoResource extends Resource
                     ->label('Category')
                     ->sortable()
                     ->size('sm')
-                    ->placeholder('â€”')
+                    ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('status')
@@ -244,7 +244,7 @@ class VideoResource extends Resource
 
                 Tables\Columns\TextColumn::make('size')
                     ->label('Size')
-                    ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : 'â€”')
+                    ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 

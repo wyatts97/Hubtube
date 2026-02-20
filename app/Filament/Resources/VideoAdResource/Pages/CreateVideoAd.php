@@ -14,6 +14,9 @@ class CreateVideoAd extends CreateRecord
         $data['category_ids'] = !empty($data['category_ids']) ? array_map('intval', $data['category_ids']) : null;
         $data['target_roles'] = !empty($data['target_roles']) ? $data['target_roles'] : null;
 
+        // Ensure content is never null (DB column is NOT NULL)
+        $data['content'] = $data['content'] ?? '';
+
         // If a file was uploaded, clear the external URL field
         if (!empty($data['file_path'])) {
             $data['content'] = '';
