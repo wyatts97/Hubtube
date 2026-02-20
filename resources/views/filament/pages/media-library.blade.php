@@ -228,7 +228,7 @@
                                 <button
                                     wire:click="confirmDelete('{{ $file['path'] }}')"
                                     style="padding:4px 6px;background:#242427;color:#ffffff;border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;"
-                                    onmouseenter="this.style.background='#242427';this.style.color='#ff0000'" onmouseleave="this.style.background='#242427';this.style.color='#242427'"
+                                    onmouseenter="this.style.background='#ff0000';this.style.color='#ff0000'" onmouseleave="this.style.background='#ff0000';this.style.color='ff0000'"
                                     title="Delete"
                                 >
                                     <x-heroicon-o-trash style="width:14px;height:14px;" />
