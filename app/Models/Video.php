@@ -285,28 +285,31 @@ class Video extends Model
 
     public function getThumbnailUrlAttribute(): ?string
     {
+        // Prefer local thumbnail over external URL — migrated videos may have
+        // stale Bunny CDN URLs in external_thumbnail_url even though the
+        // thumbnail was downloaded locally during migration.
+        if ($this->thumbnail) {
+            return StorageManager::url($this->thumbnail, $this->storage_disk ?? 'public');
+        }
+
         if ($this->external_thumbnail_url) {
             return $this->external_thumbnail_url;
         }
 
-        if (!$this->thumbnail) {
-            return null;
-        }
-
-        return StorageManager::url($this->thumbnail, $this->storage_disk ?? 'public');
+        return null;
     }
 
     public function getPreviewUrlAttribute(): ?string
     {
+        if ($this->preview_path) {
+            return StorageManager::url($this->preview_path, $this->storage_disk ?? 'public');
+        }
+
         if ($this->external_preview_url) {
             return $this->external_preview_url;
         }
 
-        if (!$this->preview_path) {
-            return null;
-        }
-
-        return StorageManager::url($this->preview_path, $this->storage_disk ?? 'public');
+        return null;
     }
 
     public function getPreviewThumbnailsUrlAttribute(): ?string

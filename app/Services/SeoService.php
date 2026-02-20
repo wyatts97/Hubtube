@@ -129,14 +129,13 @@ class SeoService
         $thumbnailUrl = $video->thumbnail_url;
 
         // For og:image and twitter:image we need a permanent (non-expiring) URL.
-        // thumbnail_url may return a pre-signed S3 URL that expires in ~2 hours,
-        // but Twitterbot/Facebookbot can crawl hours after the tweet is posted.
-        // Use permanentUrl() for the thumbnail path, falling back to thumbnail_url
-        // for external thumbnails (Bunny CDN etc.) which are already permanent.
-        if ($video->external_thumbnail_url) {
-            $ogThumbnailUrl = $video->external_thumbnail_url;
-        } elseif ($video->thumbnail) {
+        // Prefer local thumbnail over external_thumbnail_url because migrated videos
+        // may still have stale Bunny CDN URLs in external_thumbnail_url even though
+        // the thumbnail was downloaded locally during migration.
+        if ($video->thumbnail) {
             $ogThumbnailUrl = StorageManager::permanentUrl($video->thumbnail, $video->storage_disk ?? 'public');
+        } elseif ($video->external_thumbnail_url) {
+            $ogThumbnailUrl = $video->external_thumbnail_url;
         } else {
             $ogThumbnailUrl = $thumbnailUrl;
         }
