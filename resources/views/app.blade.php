@@ -7,21 +7,112 @@
 
     <title inertia>{{ config('app.name', 'HubTube') }}</title>
 
-    {{-- Default SEO meta (overridden per-page by Inertia Head / SeoHead component) --}}
+    {{-- Server-side SEO meta tags — critical for crawlers (Twitterbot, Facebookbot, Googlebot)
+         that don't execute JavaScript. Without Inertia SSR, the SeoHead.vue component only
+         renders client-side, so these tags must be in the raw HTML response. --}}
     @php
+        $seo = \App\Services\SeoService::getCurrent();
         $seoDesc = \App\Models\Setting::get('seo_meta_description', '');
         $seoKeywords = \App\Models\Setting::get('seo_meta_keywords', '');
         $googleVerify = \App\Models\Setting::get('seo_google_verification', '');
         $bingVerify = \App\Models\Setting::get('seo_bing_verification', '');
         $yandexVerify = \App\Models\Setting::get('seo_yandex_verification', '');
         $pinterestVerify = \App\Models\Setting::get('seo_pinterest_verification', '');
+
+        // Use page-specific SEO if available, fall back to site defaults
+        $metaDesc = $seo['description'] ?? $seoDesc;
+        $metaTitle = $seo['title'] ?? null;
+        $ogImage = $seo['og']['image'] ?? '';
+        $ogTitle = $seo['og']['title'] ?? $metaTitle;
+        $ogDesc = $seo['og']['description'] ?? $metaDesc;
+        $ogType = $seo['og']['type'] ?? 'website';
+        $ogUrl = $seo['og']['url'] ?? null;
+        $ogSiteName = $seo['og']['site_name'] ?? \App\Models\Setting::get('site_name', config('app.name', 'HubTube'));
+        $twCard = $seo['twitter']['card'] ?? \App\Models\Setting::get('seo_twitter_card', 'summary_large_image');
+        $twSite = $seo['twitter']['site'] ?? \App\Models\Setting::get('seo_twitter_site', '');
+        $twImage = $seo['twitter']['image'] ?? $ogImage;
+        $twTitle = $seo['twitter']['title'] ?? $ogTitle;
+        $twDesc = $seo['twitter']['description'] ?? $ogDesc;
+        $canonical = $seo['canonical'] ?? null;
+        $robots = $seo['robots'] ?? null;
+        $keywords = $seo['keywords'] ?? $seoKeywords;
+        $schemas = $seo['schema'] ?? [];
     @endphp
-    @if($seoDesc)
-    <meta name="description" content="{{ $seoDesc }}">
+
+    {{-- Page description --}}
+    @if($metaDesc)
+    <meta name="description" content="{{ $metaDesc }}">
     @endif
-    @if($seoKeywords)
-    <meta name="keywords" content="{{ $seoKeywords }}">
+    @if($keywords)
+    <meta name="keywords" content="{{ $keywords }}">
     @endif
+    @if($robots)
+    <meta name="robots" content="{{ $robots }}">
+    @endif
+    @if($canonical)
+    <link rel="canonical" href="{{ $canonical }}">
+    @endif
+
+    {{-- Open Graph --}}
+    @if($ogTitle)
+    <meta property="og:title" content="{{ $ogTitle }}">
+    @endif
+    @if($ogDesc)
+    <meta property="og:description" content="{{ $ogDesc }}">
+    @endif
+    <meta property="og:type" content="{{ $ogType }}">
+    @if($ogUrl)
+    <meta property="og:url" content="{{ $ogUrl }}">
+    @endif
+    <meta property="og:site_name" content="{{ $ogSiteName }}">
+    @if($ogImage)
+    <meta property="og:image" content="{{ $ogImage }}">
+    @if(!empty($seo['og']['image:width']))
+    <meta property="og:image:width" content="{{ $seo['og']['image:width'] }}">
+    <meta property="og:image:height" content="{{ $seo['og']['image:height'] ?? '720' }}">
+    @endif
+    @endif
+    @if(!empty($seo['og']['locale']))
+    <meta property="og:locale" content="{{ $seo['og']['locale'] }}">
+    @endif
+    @if(!empty($seo['og']['locale:alternate']))
+    @foreach($seo['og']['locale:alternate'] as $altLocale)
+    <meta property="og:locale:alternate" content="{{ $altLocale }}">
+    @endforeach
+    @endif
+    @if(!empty($seo['og']['video:duration']))
+    <meta property="og:video:duration" content="{{ $seo['og']['video:duration'] }}">
+    @endif
+    @if(!empty($seo['og']['video:release_date']))
+    <meta property="og:video:release_date" content="{{ $seo['og']['video:release_date'] }}">
+    @endif
+    @if(!empty($seo['og']['video:tag']) && is_array($seo['og']['video:tag']))
+    @foreach($seo['og']['video:tag'] as $tag)
+    <meta property="og:video:tag" content="{{ $tag }}">
+    @endforeach
+    @endif
+
+    {{-- Twitter Card --}}
+    <meta name="twitter:card" content="{{ $twCard }}">
+    @if($twSite)
+    <meta name="twitter:site" content="{{ $twSite }}">
+    @endif
+    @if($twTitle)
+    <meta name="twitter:title" content="{{ $twTitle }}">
+    @endif
+    @if($twDesc)
+    <meta name="twitter:description" content="{{ $twDesc }}">
+    @endif
+    @if($twImage)
+    <meta name="twitter:image" content="{{ $twImage }}">
+    @endif
+
+    {{-- JSON-LD Structured Data --}}
+    @if(!empty($schemas))
+    <script type="application/ld+json">{!! json_encode(count($schemas) === 1 ? $schemas[0] : $schemas, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    @endif
+
+    {{-- Verification tags --}}
     @if($googleVerify)
     <meta name="google-site-verification" content="{{ $googleVerify }}">
     @endif

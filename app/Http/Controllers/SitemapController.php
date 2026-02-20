@@ -75,7 +75,7 @@ class SitemapController extends Controller
         $content .= "<urlset {$namespaces}>\n";
 
         // Static pages with hreflang alternates
-        $staticPages = ['/', '/trending', '/shorts', '/live', '/categories'];
+        $staticPages = ['/', '/trending', '/live', '/categories'];
         foreach ($staticPages as $page) {
             $content .= $this->staticUrlEntry($page, now()->toW3cString(), 'daily', '0.8');
         }
@@ -235,19 +235,20 @@ class SitemapController extends Controller
             mb_substr(strip_tags($video->description ?? $video->title), 0, 2048)
         );
 
-        // Thumbnail URL
+        // Thumbnail URL — use permanent (non-expiring) URLs for sitemaps.
+        // Prefer local thumbnail over external_thumbnail_url (stale Bunny CDN URLs).
         $thumbnailUrl = '';
-        if ($video->external_thumbnail_url) {
+        if ($video->thumbnail) {
+            $thumbnailUrl = StorageManager::permanentUrl($video->thumbnail, $video->storage_disk ?? 'public');
+        } elseif ($video->external_thumbnail_url) {
             $thumbnailUrl = $video->external_thumbnail_url;
-        } elseif ($video->thumbnail) {
-            $thumbnailUrl = StorageManager::url($video->thumbnail, $video->storage_disk ?? 'public');
         }
         $thumbnailUrl = $this->xmlEscape($thumbnailUrl);
 
-        // Content URL (the actual video file)
+        // Content URL (the actual video file) — use permanent URL for sitemaps
         $contentUrl = '';
-        if (!$video->is_embedded && $video->video_url) {
-            $contentUrl = $this->xmlEscape($video->video_url);
+        if (!$video->is_embedded && $video->video_path) {
+            $contentUrl = $this->xmlEscape(StorageManager::permanentUrl($video->video_path, $video->storage_disk ?? 'public'));
         }
 
         // Duration in seconds

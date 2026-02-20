@@ -14,6 +14,18 @@ class SeoService
 {
     protected array $settings = [];
 
+    /**
+     * Last generated SEO data — stored statically so app.blade.php can
+     * render OG/Twitter/Schema tags server-side (Inertia has no SSR,
+     * so SeoHead.vue only renders client-side, invisible to crawlers).
+     */
+    protected static ?array $currentSeo = null;
+
+    public static function getCurrent(): ?array
+    {
+        return static::$currentSeo;
+    }
+
     protected function s(string $key, mixed $default = null): mixed
     {
         if (empty($this->settings)) {
@@ -94,6 +106,7 @@ class SeoService
             $seo['schema'][] = $this->websiteSchema();
         }
 
+        static::$currentSeo = $seo;
         return $seo;
     }
 
@@ -253,6 +266,7 @@ class SeoService
             $seo['alternateUrls'] = $translationService->getAlternateUrls(Video::class, $video->id, $video->slug);
         }
 
+        static::$currentSeo = $seo;
         return $seo;
     }
 
@@ -300,6 +314,7 @@ class SeoService
         }
         $seo['schema'][] = $schema;
 
+        static::$currentSeo = $seo;
         return $seo;
     }
 
@@ -377,6 +392,7 @@ class SeoService
             $seo['schema'][] = $schema;
         }
 
+        static::$currentSeo = $seo;
         return $seo;
     }
 
@@ -407,6 +423,7 @@ class SeoService
             'url' => url("/category/{$category->slug}"),
         ];
 
+        static::$currentSeo = $seo;
         return $seo;
     }
 
@@ -419,7 +436,9 @@ class SeoService
         $title = $this->template($this->s('seo_trending_title', 'Trending Videos | {site_name}'), $vars);
         $description = $this->truncate($this->template($this->s('seo_trending_description', 'Watch the most popular trending videos on {site_name} right now.'), $vars));
 
-        return $this->baseMeta($title, $description, '/trending');
+        $seo = $this->baseMeta($title, $description, '/trending');
+        static::$currentSeo = $seo;
+        return $seo;
     }
 
     /**
@@ -431,7 +450,9 @@ class SeoService
         $title = $this->template($this->s('seo_live_title', 'Live Streams | {site_name}'), $vars);
         $description = $this->truncate($this->template($this->s('seo_live_description', 'Watch live streams on {site_name}.'), $vars));
 
-        return $this->baseMeta($title, $description, '/live');
+        $seo = $this->baseMeta($title, $description, '/live');
+        static::$currentSeo = $seo;
+        return $seo;
     }
 
     /**
@@ -445,6 +466,7 @@ class SeoService
         $seo = $this->baseMeta($title, '', '/search');
         $seo['robots'] = 'noindex, follow';
 
+        static::$currentSeo = $seo;
         return $seo;
     }
 
@@ -456,7 +478,9 @@ class SeoService
         $title = "#{$tag} Videos {$this->separator()} {$this->siteName()}";
         $description = $this->truncate("Watch videos tagged with #{$tag} on {$this->siteName()}.");
 
-        return $this->baseMeta($title, $description, "/tag/{$tag}");
+        $seo = $this->baseMeta($title, $description, "/tag/{$tag}");
+        static::$currentSeo = $seo;
+        return $seo;
     }
 
     /**
