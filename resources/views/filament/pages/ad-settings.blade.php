@@ -1,17 +1,16 @@
 <x-filament-panels::page>
-    {{-- Global Ad Settings Form --}}
     <form wire:submit="save">
         {{ $this->form }}
 
-        <div class="mt-6">
+        <div class="mt-6 flex items-center gap-4">
             <x-filament::button type="submit">
                 Save Ad Settings
             </x-filament::button>
+
+            <a href="{{ route('filament.admin.resources.video-ads.index') }}"
+               style="font-size:13px;color:#818cf8;text-decoration:underline;">
+                Manage Video Ad Creatives →
+            </a>
         </div>
     </form>
-
-    {{-- Video Ad Creatives Table --}}
-    <div class="mt-8">
-        {{ $this->table }}
-    </div>
 </x-filament-panels::page>
