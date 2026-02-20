@@ -67,6 +67,7 @@ class MediaLibrary extends Page
                 'url'      => Storage::disk('public')->url($path),
                 'size'     => $this->formatBytes(Storage::disk('public')->size($path)),
                 'modified' => Storage::disk('public')->lastModified($path),
+                'duration' => $this->getVideoDuration(Storage::disk('public')->path($path)),
             ];
         }
 
@@ -154,6 +155,19 @@ class MediaLibrary extends Page
         }
 
         $this->deleteTarget = null;
+    }
+
+    protected function getVideoDuration(string $absolutePath): ?string
+    {
+        if (!file_exists($absolutePath)) return null;
+        try {
+            $output = shell_exec('ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ' . escapeshellarg($absolutePath) . ' 2>/dev/null');
+            $seconds = (int) round((float) trim($output ?? ''));
+            if ($seconds <= 0) return null;
+            return sprintf('%d:%02d', intdiv($seconds, 60), $seconds % 60);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     protected function formatBytes(int $bytes): string
