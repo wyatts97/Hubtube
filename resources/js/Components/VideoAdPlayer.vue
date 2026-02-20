@@ -40,6 +40,7 @@ const skipAfter = ref(0);
 const canSkip = ref(false);
 const adVideoRef = ref(null);
 const adHtmlRef = ref(null);
+const autoplayBlocked = ref(false);
 
 // IMA state (VAST / VPAID only)
 const imaContainerRef = ref(null);
@@ -230,6 +231,7 @@ const endAd = () => {
     adType.value    = null;
     adElapsed.value = 0;
     canSkip.value   = false;
+    autoplayBlocked.value = false;
     if (adHtmlRef.value) adHtmlRef.value.innerHTML = '';
     emit('ad-ended', placement);
     emit('request-play');
@@ -240,12 +242,25 @@ const tryPlayAd = () => {
     if (!adVideoRef.value) return;
     const v = adVideoRef.value;
     v.muted = true;
-    v.play()
-        .then(() => setTimeout(() => { v.muted = false; }, 100))
-        .catch(err => console.warn('[VideoAdPlayer] Autoplay failed:', err.message));
+    const p = v.play();
+    if (p !== undefined) {
+        p.then(() => {
+            autoplayBlocked.value = false;
+            setTimeout(() => { v.muted = false; }, 200);
+        }).catch(() => {
+            autoplayBlocked.value = true;
+        });
+    }
 };
 
-const onAdClick = () => {
+const manualPlay = () => {
+    if (!adVideoRef.value) return;
+    const v = adVideoRef.value;
+    v.muted = false;
+    v.play().then(() => { autoplayBlocked.value = false; }).catch(() => {});
+};
+
+const onAdClick = (e) => {
     if (currentAd.value?.click_url)
         window.open(currentAd.value.click_url, '_blank', 'noopener,noreferrer');
 };
@@ -297,25 +312,23 @@ onUnmounted(() => { clearTimers(); destroyIma(); });
 <template>
     <div v-if="isPlaying && currentAd" class="absolute inset-0 z-30 bg-black flex flex-col">
         <!-- Ad Label -->
-        <div class="absolute top-3 left-3 z-40">
-            <span class="px-2 py-0.5 rounded text-xs font-bold bg-yellow-500 text-black uppercase tracking-wide">Ad</span>
+        <div class="absolute top-2 left-2 z-40">
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-500 text-black uppercase tracking-wide">Ad</span>
         </div>
 
         <!-- Skip Button — local ads only; IMA SDK renders its own skip UI -->
-        <div v-if="!isVastAd" class="absolute bottom-16 right-4 z-40">
-            <button v-if="canSkip" @click="skipAd"
-                class="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-sm font-medium rounded-lg border border-white/30 transition-all">
-                Skip Ad →
+        <div v-if="!isVastAd" class="absolute bottom-4 right-2 z-40">
+            <button v-if="canSkip" @click.stop="skipAd"
+                class="px-2.5 py-1 bg-black/60 hover:bg-black/80 text-white text-xs font-medium rounded border border-white/40 transition-all">
+                Skip →
             </button>
-            <div v-else-if="skipAfter > 0" class="px-4 py-2 bg-black/60 text-white/80 text-sm rounded-lg">
+            <div v-else-if="skipAfter > 0" class="px-2.5 py-1 bg-black/60 text-white/70 text-xs rounded border border-white/20">
                 Skip in {{ skipCountdown }}s
             </div>
         </div>
 
         <!-- Ad Content -->
-        <div class="flex-1 relative overflow-hidden"
-            :class="{ 'cursor-pointer': currentAd?.click_url && !isVastAd }"
-            @click="!isVastAd && onAdClick()">
+        <div class="flex-1 relative overflow-hidden">
 
             <!-- VAST/VPAID — Google IMA SDK handles everything -->
             <template v-if="isVastAd">
@@ -324,18 +337,35 @@ onUnmounted(() => { clearTimers(); destroyIma(); });
             </template>
 
             <!-- Local MP4 -->
-            <video v-if="isLocalVideoAd" ref="adVideoRef" :src="currentAd.content"
-                class="w-full h-full object-contain pointer-events-none"
-                autoplay muted playsinline crossorigin="anonymous"
-                @ended="onAdVideoEnded" @error="onAdVideoError" @loadeddata="tryPlayAd">
-            </video>
+            <template v-if="isLocalVideoAd">
+                <video ref="adVideoRef" :src="currentAd.content"
+                    class="w-full h-full object-contain"
+                    autoplay muted playsinline crossorigin="anonymous"
+                    @ended="onAdVideoEnded" @error="onAdVideoError"
+                    @loadeddata="tryPlayAd" @canplay="tryPlayAd">
+                </video>
+
+                <!-- Tap-to-play overlay — only shown when autoplay is blocked (mobile) -->
+                <div v-if="autoplayBlocked"
+                    class="absolute inset-0 flex items-center justify-center bg-black/40 cursor-pointer z-10"
+                    @click.stop="manualPlay">
+                    <div class="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </div>
+                </div>
+            </template>
 
             <!-- HTML Ad -->
             <div v-if="isHtmlAd" ref="adHtmlRef" class="w-full h-full flex items-center justify-center"></div>
 
-            <!-- Click CTA (local only) -->
-            <div v-if="currentAd?.click_url && !isVastAd" class="absolute bottom-16 left-4 z-40">
-                <span class="px-3 py-1.5 bg-white/20 backdrop-blur-sm text-white text-xs font-medium rounded-lg border border-white/30 inline-flex items-center gap-1.5">Learn More ↗</span>
+            <!-- Click CTA (local only, not covering center) -->
+            <div v-if="currentAd?.click_url && !isVastAd && !autoplayBlocked" class="absolute bottom-4 left-2 z-40">
+                <button @click.stop="onAdClick"
+                    class="px-2.5 py-1 bg-black/60 hover:bg-black/80 text-white text-xs font-medium rounded border border-white/40 transition-all inline-flex items-center gap-1">
+                    Learn More ↗
+                </button>
             </div>
         </div>
 
