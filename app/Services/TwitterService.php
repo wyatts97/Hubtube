@@ -140,7 +140,7 @@ class TwitterService
         try {
             $connection = $this->getConnection();
 
-            $response = $connection->post('tweets', ['text' => $text], true);
+            $response = $connection->post('tweets', ['text' => $text], ['jsonPayload' => true]);
 
             if ($connection->getLastHttpCode() === 201 || $connection->getLastHttpCode() === 200) {
                 $tweetId = $response->data->id ?? null;
@@ -185,7 +185,7 @@ class TwitterService
 
         $text = '🎬 Test tweet from ' . config('app.name', 'HubTube') . ' — Auto-posting is configured and working! ' . now()->format('Y-m-d H:i:s');
 
-        $response = $connection->post('tweets', ['text' => $text], true);
+        $response = $connection->post('tweets', ['text' => $text], ['jsonPayload' => true]);
 
         if ($connection->getLastHttpCode() === 201 || $connection->getLastHttpCode() === 200) {
             Log::info('TwitterService: Test tweet sent successfully');

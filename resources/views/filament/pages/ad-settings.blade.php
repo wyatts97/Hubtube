@@ -7,10 +7,13 @@
                 Save Ad Settings
             </x-filament::button>
 
-            <a href="{{ route('filament.admin.resources.video-ads.index') }}"
-               style="font-size:13px;color:#818cf8;text-decoration:underline;">
-                Manage Video Ad Creatives →
-            </a>
+            <x-filament::button
+                tag="a"
+                href="{{ route('filament.admin.resources.video-ads.index') }}"
+                color="gray"
+                icon="heroicon-o-film">
+                Manage Video Ad Creatives
+            </x-filament::button>
         </div>
     </form>
 </x-filament-panels::page>
