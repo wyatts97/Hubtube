@@ -28,7 +28,12 @@ trait HasCustomizableNavigation
             return false;
         }
 
-        return parent::shouldRegisterNavigation();
+        $parent = get_parent_class(static::class);
+        if ($parent && method_exists($parent, 'shouldRegisterNavigation')) {
+            return $parent::shouldRegisterNavigation();
+        }
+
+        return true;
     }
 
     public static function getNavigationSort(): ?int
