@@ -238,7 +238,7 @@ class AdminNavCustomizer extends Page
         Setting::set('admin_nav_config', json_encode($this->groups));
 
         Notification::make()
-            ->title('Navigation layout saved â€” reload the page to see changes')
+            ->title('Navigation layout saved — reload the page to see changes')
             ->success()
             ->send();
     }

@@ -202,7 +202,7 @@
             @else
                 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;">
                     @foreach ($videos as $file)
-                    <div class="group" style="background:#111827;border:1px solid #374151;border-radius:12px;display:flex;flex-direction:column;overflow:hidden;transition:border-color 0.15s;" onmouseenter="this.style.borderColor='#f43f5e'" onmouseleave="this.style.borderColor='#374151'">
+                    <div class="group" style="background:#18181B;border:1px solid #242427;border-radius:12px;display:flex;flex-direction:column;overflow:hidden;transition:border-color 0.15s;" onmouseenter="this.style.borderColor='#f43f5e'" onmouseleave="this.style.borderColor='#242427'">
                         {{-- Thumbnail --}}
                         <div style="position:relative;height:110px;background:#000;flex-shrink:0;">
                             <video src="{{ $file['url'] }}" style="width:100%;height:100%;object-fit:cover;display:block;" muted preload="metadata"></video>
@@ -221,14 +221,14 @@
                             <p style="font-size:10px;color:#6b7280;">{{ $file['size'] }}</p>
                             <div style="display:flex;gap:4px;margin-top:4px;">
                                 <button
-                                    style="flex:1;font-size:11px;padding:4px 6px;background:#374151;color:#d1d5db;border:none;border-radius:6px;cursor:pointer;font-weight:500;transition:background 0.15s;"
-                                    onmouseenter="this.style.background='#4b5563'" onmouseleave="this.style.background='#374151'"
+                                    style="flex:1;font-size:11px;padding:4px 6px;background:#242427;color:#d1d5db;border:none;border-radius:6px;cursor:pointer;font-weight:500;transition:background 0.15s;"
+                                    onmouseenter="this.style.background='#6B6B73'" onmouseleave="this.style.background='#242427'"
                                     onclick="(function(btn,url){navigator.clipboard.writeText(url).then(()=>{btn.textContent='Copied!';btn.style.background='#14532d';btn.style.color='#86efac';setTimeout(()=>{btn.textContent='Copy URL';btn.style.background='#374151';btn.style.color='#d1d5db';},2000);})})(this,'{{ $file['url'] }}')"
                                 >Copy URL</button>
                                 <button
                                     wire:click="confirmDelete('{{ $file['path'] }}')"
-                                    style="padding:4px 6px;background:#374151;color:#9ca3af;border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;"
-                                    onmouseenter="this.style.background='#450a0a';this.style.color='#f87171'" onmouseleave="this.style.background='#374151';this.style.color='#9ca3af'"
+                                    style="padding:4px 6px;background:#242427;color:#ffffff;border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;"
+                                    onmouseenter="this.style.background='#242427';this.style.color='#ff0000'" onmouseleave="this.style.background='#242427';this.style.color='#242427'"
                                     title="Delete"
                                 >
                                     <x-heroicon-o-trash style="width:14px;height:14px;" />
