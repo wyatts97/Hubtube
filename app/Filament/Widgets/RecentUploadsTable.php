@@ -41,8 +41,7 @@ class RecentUploadsTable extends BaseWidget
                         ? '/' . $record->slug
                         : route('filament.admin.resources.videos.edit', $record)
                     )
-                    ->openUrlInNewTab(fn (Video $record) => $record->status === 'processed' && $record->is_approved)
-                    ->tooltip(fn (Video $record): string => $record->title),
+                    ->openUrlInNewTab(fn (Video $record) => $record->status === 'processed' && $record->is_approved),
 
                 Tables\Columns\TextColumn::make('user.username')
                     ->label('By')

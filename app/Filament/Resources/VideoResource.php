@@ -172,7 +172,6 @@ class VideoResource extends Resource
                     ->sortable()
                     ->weight('bold')
                     ->limit(50)
-                    ->tooltip(fn (Video $record): string => $record->title)
                     ->description(fn (Video $record): string => $record->formatted_duration ?: 'â€”'),
 
                 Tables\Columns\TextColumn::make('user.username')

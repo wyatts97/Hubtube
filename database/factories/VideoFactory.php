@@ -44,14 +44,6 @@ class VideoFactory extends Factory
         ];
     }
 
-    public function short(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'is_short' => true,
-            'duration' => fake()->numberBetween(5, 60),
-        ]);
-    }
-
     public function featured(): static
     {
         return $this->state(fn (array $attributes) => [
@@ -85,15 +77,6 @@ class VideoFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'is_approved' => false,
-        ]);
-    }
-
-    public function embedded(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'is_embedded' => true,
-            'embed_url' => 'https://example.com/embed/test',
-            'video_path' => null,
         ]);
     }
 

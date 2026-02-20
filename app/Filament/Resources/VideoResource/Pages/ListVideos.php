@@ -49,14 +49,6 @@ class ListVideos extends ListRecords
             'featured' => Tab::make('Featured')
                 ->icon('heroicon-o-star')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('is_featured', true)),
-
-            'shorts' => Tab::make('Shorts')
-                ->icon('heroicon-o-device-phone-mobile')
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('is_short', true)),
-
-            'embedded' => Tab::make('Embedded')
-                ->icon('heroicon-o-link')
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('is_embedded', true)),
         ];
     }
 

@@ -41,8 +41,7 @@ class TrendingVideosTable extends BaseWidget
                     ->limit(30)
                     ->weight('bold')
                     ->url(fn (Video $record) => '/' . $record->slug)
-                    ->openUrlInNewTab()
-                    ->tooltip(fn (Video $record): string => $record->title),
+                    ->openUrlInNewTab(),
 
                 Tables\Columns\TextColumn::make('user.username')
                     ->label('By')

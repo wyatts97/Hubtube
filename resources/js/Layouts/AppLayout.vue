@@ -757,21 +757,21 @@ const handleMobileNavClick = (item) => {
                             <Transition name="fade">
                                 <div
                                     v-if="showMobileUploadMenu"
-                                    class="absolute bottom-full mb-3 rounded-xl shadow-xl p-2 min-w-[160px]"
+                                    class="absolute bottom-full mb-3 rounded-xl shadow-xl p-1.5 w-[120px]"
                                     style="background-color: var(--color-bg-card); border: 1px solid var(--color-border); left: 50%; transform: translateX(-50%);"
                                 >
-                                    <Link href="/upload" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showMobileUploadMenu = false">
-                                        <Video class="w-4 h-4" style="color: var(--color-text-secondary);" />
+                                    <Link href="/upload" class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showMobileUploadMenu = false">
+                                        <Video class="w-4 h-4 shrink-0" style="color: var(--color-text-secondary);" />
                                         <span class="text-sm">Video</span>
                                     </Link>
-                                    <Link href="/image-upload" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showMobileUploadMenu = false">
-                                        <ImageIcon class="w-4 h-4" style="color: var(--color-text-secondary);" />
+                                    <Link href="/image-upload" class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showMobileUploadMenu = false">
+                                        <ImageIcon class="w-4 h-4 shrink-0" style="color: var(--color-text-secondary);" />
                                         <span class="text-sm">{{ t('nav.upload_image') || 'Image' }}</span>
                                     </Link>
                                 </div>
                             </Transition>
                             <button
-                                class="flex items-center justify-center w-11 h-11 rounded-full shadow-lg active:scale-95 transition-all duration-200"
+                                class="flex items-center justify-center w-11 h-11 rounded-full shadow-lg active:scale-95 transition-all duration-200 mx-auto"
                                 :style="{ backgroundColor: 'var(--color-accent)' }"
                                 :aria-label="item.name"
                                 @click="handleMobileNavClick(item)"

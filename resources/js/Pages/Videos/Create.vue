@@ -2,7 +2,7 @@
 import { Head, useForm, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Upload, X, Video, FileVideo, CheckCircle, AlertCircle, Smartphone, Calendar } from 'lucide-vue-next';
+import { Upload, X, Video, FileVideo, CheckCircle, AlertCircle, Calendar } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 
 const { t } = useI18n();
@@ -14,10 +14,6 @@ const props = defineProps({
 const page = usePage();
 const currentUser = computed(() => page.props.auth?.user);
 const canSchedule = computed(() => currentUser.value?.is_admin || currentUser.value?.is_pro);
-
-// Detect short upload mode from URL query param
-const urlParams = new URLSearchParams(window.location.search);
-const isShortMode = ref(urlParams.get('type') === 'short');
 
 const dragActive = ref(false);
 const videoPreview = ref(null);
@@ -39,7 +35,6 @@ const form = useForm({
     age_restricted: true,
     tags: [],
     video_file: null,
-    is_short: isShortMode.value,
     scheduled_at: '',
 });
 
@@ -100,24 +95,6 @@ const handleFile = (file) => {
         videoWidth.value = video.videoWidth;
         videoHeight.value = video.videoHeight;
         URL.revokeObjectURL(objectUrl);
-        
-        // Validate shorts constraints
-        if (isShortMode.value) {
-            // Must be vertical (height > width)
-            if (video.videoWidth >= video.videoHeight) {
-                uploadError.value = `Shorts must be vertical (portrait) video. Your video is ${video.videoWidth}×${video.videoHeight} which is landscape/square. Please use a 9:16 vertical video.`;
-                resetFileState();
-                return;
-            }
-            
-            // Max 60 seconds
-            if (video.duration > 60) {
-                const dur = Math.ceil(video.duration);
-                uploadError.value = `Shorts must be 60 seconds or less. Your video is ${dur} seconds long.`;
-                resetFileState();
-                return;
-            }
-        }
         
         // All good — set the file
         form.video_file = file;
@@ -207,17 +184,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <Head :title="isShortMode ? (t('upload.title_short') || 'Upload Short') : (t('upload.title') || 'Upload Video')" />
+    <Head :title="t('upload.title') || 'Upload Video'" />
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">
             <div class="flex items-center gap-3 mb-6">
-                <div v-if="isShortMode" class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: var(--color-accent);">
-                    <Smartphone class="w-5 h-5 text-white" />
-                </div>
                 <div>
-                    <h1 class="text-xl sm:text-2xl font-bold" style="color: var(--color-text-primary);">{{ isShortMode ? (t('upload.title_short') || 'Upload Short') : (t('upload.title') || 'Upload Video') }}</h1>
-                    <p v-if="isShortMode" class="text-sm mt-0.5" style="color: var(--color-text-muted);">{{ t('upload.short_constraints') || 'Vertical video, 60 seconds max' }}</p>
+                    <h1 class="text-xl sm:text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('upload.title') || 'Upload Video' }}</h1>
                 </div>
             </div>
 
@@ -234,7 +207,7 @@ onUnmounted(() => {
                     <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: var(--color-bg-secondary);">
                         <Upload class="w-8 h-8" style="color: var(--color-text-muted);" />
                     </div>
-                    <p class="text-lg font-medium mb-2" style="color: var(--color-text-primary);">{{ isShortMode ? (t('upload.drag_drop_short') || 'Drag and drop your short') : (t('upload.drag_drop') || 'Drag and drop video file') }}</p>
+                    <p class="text-lg font-medium mb-2" style="color: var(--color-text-primary);">{{ t('upload.drag_drop') || 'Drag and drop video file' }}</p>
                     <p class="mb-4" style="color: var(--color-text-muted);">{{ t('upload.or_browse') || 'or click to browse' }}</p>
                     <label class="btn btn-primary cursor-pointer">
                         {{ t('upload.select_file') || 'Select File' }}
@@ -247,9 +220,6 @@ onUnmounted(() => {
                     </label>
                     <p class="text-sm mt-4" style="color: var(--color-text-muted);">
                         {{ t('upload.supported_formats') || 'Supported formats: MP4, MOV, AVI, MKV, WebM' }}
-                    </p>
-                    <p v-if="isShortMode" class="text-sm mt-1" style="color: var(--color-accent);">
-                        {{ t('upload.short_constraints') || 'Must be vertical (9:16) and 60 seconds or less' }}
                     </p>
                 </div>
 
@@ -398,7 +368,7 @@ onUnmounted(() => {
                 </div>
 
                 <!-- Scheduling (Admin/Pro only) -->
-                <div v-if="canSchedule && !isShortMode" class="card p-6">
+                <div v-if="canSchedule" class="card p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
                             <Calendar class="w-5 h-5" style="color: var(--color-accent);" />
@@ -436,7 +406,7 @@ onUnmounted(() => {
                     >
                         <span v-if="form.processing">{{ t('video.uploading') || 'Uploading...' }}</span>
                         <span v-else-if="enableScheduling && form.scheduled_at">{{ t('upload.schedule') || 'Schedule' }}</span>
-                        <span v-else>{{ isShortMode ? (t('upload.title_short') || 'Upload Short') : (t('upload.title') || 'Upload Video') }}</span>
+                        <span v-else>{{ t('upload.title') || 'Upload Video' }}</span>
                     </button>
                 </div>
             </form>
