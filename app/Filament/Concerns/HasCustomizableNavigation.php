@@ -24,6 +24,11 @@ trait HasCustomizableNavigation
 
     public static function shouldRegisterNavigation(): bool
     {
+        // Respect explicit opt-out via static property (e.g. ActivityLog)
+        if (isset(static::$shouldRegisterNavigation) && static::$shouldRegisterNavigation === false) {
+            return false;
+        }
+
         if (static::isHiddenByNavCustomizer()) {
             return false;
         }

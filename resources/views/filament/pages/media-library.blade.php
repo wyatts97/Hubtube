@@ -1,17 +1,17 @@
-﻿<x-filament-panels::page>
+<x-filament-panels::page>
 <div class="space-y-6">
 
     {{-- Delete Confirmation Modal --}}
     @if ($deleteTarget)
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-        <div class="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4">
+        <div style="background:#27272a;border:1px solid #3f3f46;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.5);padding:24px;max-width:360px;width:100%;margin:0 16px;">
             <div class="flex flex-col items-center gap-3 text-center">
                 <div class="w-10 h-10 rounded-full bg-danger-500/20 flex items-center justify-center">
                     <x-heroicon-o-trash class="w-5 h-5 text-danger-400" />
                 </div>
                 <div>
-                    <p class="text-sm font-semibold text-gray-100">Delete File?</p>
-                    <p class="text-xs text-gray-400 mt-1 break-all">{{ basename($deleteTarget) }}</p>
+                    <p class="text-sm font-semibold text-white">Delete File?</p>
+                    <p class="text-xs mt-1 break-all" style="color:#a1a1aa;">{{ basename($deleteTarget) }}</p>
                 </div>
                 <div class="flex gap-3 w-full">
                     <x-filament::button wire:click="cancelDelete" color="gray" size="sm" class="flex-1">Cancel</x-filament::button>
@@ -23,27 +23,19 @@
     @endif
 
     {{-- Tab Bar --}}
-    <div class="flex border-b border-gray-700">
+    <div style="display:flex;border-bottom:1px solid #3f3f46;">
         <button
             wire:click="$set('activeTab', 'images')"
-            @class([
-                'flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors',
-                'text-primary-400 border-primary-500' => $activeTab === 'images',
-                'text-gray-400 border-transparent hover:text-gray-200 hover:border-gray-500' => $activeTab !== 'images',
-            ])
+            style="display:flex;align-items:center;gap:8px;padding:10px 16px;font-size:14px;font-weight:500;border:none;border-bottom:2px solid {{ $activeTab === 'images' ? 'var(--color-primary-500,#f43f5e)' : 'transparent' }};color:{{ $activeTab === 'images' ? 'var(--color-primary-400,#fb7185)' : '#a1a1aa' }};background:transparent;cursor:pointer;margin-bottom:-1px;transition:color 0.15s;"
         >
-            <x-heroicon-o-photo class="w-4 h-4" />
+            <x-heroicon-o-photo style="width:16px;height:16px;" />
             Images
         </button>
         <button
             wire:click="$set('activeTab', 'videos')"
-            @class([
-                'flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors',
-                'text-primary-400 border-primary-500' => $activeTab === 'videos',
-                'text-gray-400 border-transparent hover:text-gray-200 hover:border-gray-500' => $activeTab !== 'videos',
-            ])
+            style="display:flex;align-items:center;gap:8px;padding:10px 16px;font-size:14px;font-weight:500;border:none;border-bottom:2px solid {{ $activeTab === 'videos' ? 'var(--color-primary-500,#f43f5e)' : 'transparent' }};color:{{ $activeTab === 'videos' ? 'var(--color-primary-400,#fb7185)' : '#a1a1aa' }};background:transparent;cursor:pointer;margin-bottom:-1px;transition:color 0.15s;"
         >
-            <x-heroicon-o-film class="w-4 h-4" />
+            <x-heroicon-o-film style="width:16px;height:16px;" />
             Ad Videos
         </button>
     </div>
@@ -60,19 +52,19 @@
                 x-on:dragover.prevent="dragging = true"
                 x-on:dragleave.prevent="dragging = false"
                 x-on:drop.prevent="dragging = false"
-                :class="dragging ? 'border-primary-500 bg-primary-500/5' : 'border-gray-600 hover:border-gray-500'"
+                :class="dragging ? 'border-primary-500 bg-primary-500/5' : 'border-zinc-600 hover:border-zinc-500'"
                 class="relative border-2 border-dashed rounded-xl transition-colors"
             >
                 <label class="flex flex-col items-center justify-center gap-2 py-6 px-4 cursor-pointer">
                     <input type="file" wire:model="uploadedImages" multiple accept="image/*"
                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <x-heroicon-o-arrow-up-tray class="w-6 h-6 text-gray-400" />
-                    <span class="text-sm text-gray-300 font-medium">Drop images here or <span class="text-primary-400 underline">click to browse</span></span>
-                    <span class="text-xs text-gray-500">JPG, PNG, GIF, WebP, SVG, ICO  max 10 MB</span>
+                    <x-heroicon-o-arrow-up-tray class="w-6 h-6 text-zinc-400" />
+                    <span class="text-sm font-medium" style="color:#d4d4d8;">Drop images here or <span class="text-primary-400 underline">click to browse</span></span>
+                    <span class="text-xs" style="color:#71717a;">JPG, PNG, GIF, WebP, SVG, ICO  max 10 MB</span>
                 </label>
             </div>
 
-            <div wire:loading wire:target="uploadedImages" class="mt-3 flex items-center gap-2 text-sm text-gray-400">
+            <div wire:loading wire:target="uploadedImages" class="mt-3 flex items-center gap-2 text-sm" style="color:#a1a1aa;">
                 <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
@@ -82,7 +74,7 @@
 
             @if ($uploadedImages)
                 <div class="mt-3 flex items-center gap-3" wire:loading.remove wire:target="uploadedImages">
-                    <span class="text-sm text-gray-400">{{ count($uploadedImages) }} file(s) ready</span>
+                    <span class="text-sm" style="color:#a1a1aa;">{{ count($uploadedImages) }} file(s) ready</span>
                     <x-filament::button wire:click="uploadImages" size="sm" icon="heroicon-o-arrow-up-tray">
                         Upload Now
                     </x-filament::button>
@@ -96,7 +88,7 @@
             <x-slot name="heading">
                 Images
                 @if (!empty($images))
-                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-700 text-gray-300">{{ count($images) }}</span>
+                    <span style="margin-left:8px;display:inline-flex;align-items:center;padding:1px 8px;border-radius:9999px;font-size:11px;font-weight:500;background:#3f3f46;color:#d4d4d8;">{{ count($images) }}</span>
                 @endif
             </x-slot>
             @if (!empty($images))
@@ -105,29 +97,32 @@
 
             @if (empty($images))
                 <div class="flex flex-col items-center justify-center py-10 text-center gap-2">
-                    <x-heroicon-o-photo class="w-8 h-8 text-gray-600" />
-                    <p class="text-sm text-gray-400">No images yet</p>
-                    <p class="text-xs text-gray-600">Upload banner images, logos, and other static assets above.</p>
+                    <x-heroicon-o-photo class="w-8 h-8" style="color:#52525b;" />
+                    <p class="text-sm" style="color:#a1a1aa;">No images yet</p>
+                    <p class="text-xs" style="color:#52525b;">Upload banner images, logos, and other static assets above.</p>
                 </div>
             @else
-                <div class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));">
+                <div class="grid gap-3" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));">
                     @foreach ($images as $file)
-                    <div class="group relative bg-gray-900 border border-gray-700 rounded-xl overflow-hidden hover:border-primary-500 transition-colors">
+                    <div class="group" style="background:#18181b;border:1px solid #3f3f46;border-radius:10px;overflow:hidden;transition:border-color 0.15s;" onmouseenter="this.style.borderColor='var(--color-primary-500,#f43f5e)'" onmouseleave="this.style.borderColor='#3f3f46'">
                         <div style="height:100px;">
                             <img src="{{ $file['url'] }}" alt="{{ $file['name'] }}"
-                                 class="w-full h-full object-cover" loading="lazy">
+                                 style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy">
                         </div>
-                        <div class="p-2">
-                            <p class="text-xs text-gray-300 truncate leading-tight" title="{{ $file['name'] }}">{{ $file['name'] }}</p>
-                            <p class="text-[10px] text-gray-500 mt-0.5">{{ $file['size'] }}</p>
-                            <div class="flex gap-1 mt-2">
+                        <div style="padding:8px;">
+                            <p style="font-size:11px;color:#d4d4d8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0 0 2px;" title="{{ $file['name'] }}">{{ $file['name'] }}</p>
+                            <p style="font-size:10px;color:#71717a;margin:0 0 6px;">{{ $file['size'] }}</p>
+                            <div style="display:flex;gap:4px;">
                                 <button
-                                    class="flex-1 text-[11px] py-1 px-1.5 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors font-medium"
-                                    onclick="(function(btn,url){navigator.clipboard.writeText(url).then(()=>{btn.textContent='Copied!';btn.style.background='#14532d';btn.style.color='#86efac';setTimeout(()=>{btn.textContent='Copy URL';btn.style.background='';btn.style.color='';},2000);})})(this,'{{ $file['url'] }}')"
+                                    style="flex:1;font-size:11px;padding:4px 6px;background:#27272a;color:#d4d4d8;border:none;border-radius:6px;cursor:pointer;font-weight:500;transition:background 0.15s;"
+                                    onmouseenter="this.style.background='#3f3f46'" onmouseleave="this.style.background='#27272a'"
+                                    onclick="(function(btn,url){navigator.clipboard.writeText(url).then(()=>{btn.textContent='Copied!';btn.style.background='#14532d';btn.style.color='#86efac';setTimeout(()=>{btn.textContent='Copy URL';btn.style.background='#27272a';btn.style.color='#d4d4d8';},2000);})})(this,'{{ $file['url'] }}')"
                                 >Copy URL</button>
                                 <button wire:click="confirmDelete('{{ $file['path'] }}')"
-                                    class="p-1 bg-gray-700 text-gray-400 rounded-lg hover:bg-danger-900 hover:text-danger-400 transition-colors" title="Delete">
-                                    <x-heroicon-o-trash class="w-3.5 h-3.5" />
+                                    style="padding:4px 6px;background:#27272a;color:#a1a1aa;border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;"
+                                    onmouseenter="this.style.background='rgba(127,29,29,0.4)';this.style.color='#f87171'" onmouseleave="this.style.background='#27272a';this.style.color='#a1a1aa'"
+                                    title="Delete">
+                                    <x-heroicon-o-trash style="width:13px;height:13px;" />
                                 </button>
                             </div>
                         </div>
@@ -150,19 +145,19 @@
                 x-on:dragover.prevent="dragging = true"
                 x-on:dragleave.prevent="dragging = false"
                 x-on:drop.prevent="dragging = false"
-                :class="dragging ? 'border-primary-500 bg-primary-500/5' : 'border-gray-600 hover:border-gray-500'"
+                :class="dragging ? 'border-primary-500 bg-primary-500/5' : 'border-zinc-600 hover:border-zinc-500'"
                 class="relative border-2 border-dashed rounded-xl transition-colors"
             >
                 <label class="flex flex-col items-center justify-center gap-2 py-6 px-4 cursor-pointer">
                     <input type="file" wire:model="uploadedVideos" multiple accept="video/mp4,video/webm,video/quicktime"
                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <x-heroicon-o-arrow-up-tray class="w-6 h-6 text-gray-400" />
-                    <span class="text-sm text-gray-300 font-medium">Drop videos here or <span class="text-primary-400 underline">click to browse</span></span>
-                    <span class="text-xs text-gray-500">MP4, WebM, MOV  max 200 MB</span>
+                    <x-heroicon-o-arrow-up-tray class="w-6 h-6 text-zinc-400" />
+                    <span class="text-sm font-medium" style="color:#d4d4d8;">Drop videos here or <span class="text-primary-400 underline">click to browse</span></span>
+                    <span class="text-xs" style="color:#71717a;">MP4, WebM, MOV  max 200 MB</span>
                 </label>
             </div>
 
-            <div wire:loading wire:target="uploadedVideos" class="mt-3 flex items-center gap-2 text-sm text-gray-400">
+            <div wire:loading wire:target="uploadedVideos" class="mt-3 flex items-center gap-2 text-sm" style="color:#a1a1aa;">
                 <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
@@ -172,7 +167,7 @@
 
             @if ($uploadedVideos)
                 <div class="mt-3 flex items-center gap-3" wire:loading.remove wire:target="uploadedVideos">
-                    <span class="text-sm text-gray-400">{{ count($uploadedVideos) }} file(s) ready</span>
+                    <span class="text-sm" style="color:#a1a1aa;">{{ count($uploadedVideos) }} file(s) ready</span>
                     <x-filament::button wire:click="uploadVideos" size="sm" icon="heroicon-o-arrow-up-tray">
                         Upload Now
                     </x-filament::button>
@@ -186,7 +181,7 @@
             <x-slot name="heading">
                 Ad Videos
                 @if (!empty($videos))
-                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-700 text-gray-300">{{ count($videos) }}</span>
+                    <span style="margin-left:8px;display:inline-flex;align-items:center;padding:1px 8px;border-radius:9999px;font-size:11px;font-weight:500;background:#3f3f46;color:#d4d4d8;">{{ count($videos) }}</span>
                 @endif
             </x-slot>
             @if (!empty($videos))
@@ -195,14 +190,14 @@
 
             @if (empty($videos))
                 <div class="flex flex-col items-center justify-center py-10 text-center gap-2">
-                    <x-heroicon-o-film class="w-8 h-8 text-gray-600" />
-                    <p class="text-sm text-gray-400">No ad videos yet</p>
-                    <p class="text-xs text-gray-600">Upload MP4 ad creatives above, then copy the URL into Appearance  Ad Creatives.</p>
+                    <x-heroicon-o-film class="w-8 h-8" style="color:#52525b;" />
+                    <p class="text-sm" style="color:#a1a1aa;">No ad videos yet</p>
+                    <p class="text-xs" style="color:#52525b;">Upload MP4 ad creatives above, then copy the URL into Appearance  Ad Creatives.</p>
                 </div>
             @else
                 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;">
                     @foreach ($videos as $file)
-                    <div class="group" style="background:#18181B;border:1px solid #242427;border-radius:12px;display:flex;flex-direction:column;overflow:hidden;transition:border-color 0.15s;" onmouseenter="this.style.borderColor='#f43f5e'" onmouseleave="this.style.borderColor='#242427'">
+                    <div class="group" style="background:#18181b;border:1px solid #3f3f46;border-radius:12px;display:flex;flex-direction:column;overflow:hidden;transition:border-color 0.15s;" onmouseenter="this.style.borderColor='#f43f5e'" onmouseleave="this.style.borderColor='#3f3f46'">
                         {{-- Thumbnail --}}
                         <div style="position:relative;height:110px;background:#000;flex-shrink:0;">
                             <video src="{{ $file['url'] }}" style="width:100%;height:100%;object-fit:cover;display:block;" muted preload="metadata"></video>
@@ -217,18 +212,18 @@
                         </div>
                         {{-- Info --}}
                         <div style="padding:10px;flex:1;display:flex;flex-direction:column;gap:4px;">
-                            <p style="font-size:11px;color:#d1d5db;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $file['name'] }}">{{ $file['name'] }}</p>
-                            <p style="font-size:10px;color:#6b7280;">{{ $file['size'] }}</p>
+                            <p style="font-size:11px;color:#d4d4d8;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $file['name'] }}">{{ $file['name'] }}</p>
+                            <p style="font-size:10px;color:#71717a;">{{ $file['size'] }}</p>
                             <div style="display:flex;gap:4px;margin-top:4px;">
                                 <button
-                                    style="flex:1;font-size:11px;padding:4px 6px;background:#242427;color:#d1d5db;border:none;border-radius:6px;cursor:pointer;font-weight:500;transition:background 0.15s;"
-                                    onmouseenter="this.style.background='#6B6B73'" onmouseleave="this.style.background='#242427'"
-                                    onclick="(function(btn,url){navigator.clipboard.writeText(url).then(()=>{btn.textContent='Copied!';btn.style.background='#14532d';btn.style.color='#86efac';setTimeout(()=>{btn.textContent='Copy URL';btn.style.background='#374151';btn.style.color='#d1d5db';},2000);})})(this,'{{ $file['url'] }}')"
+                                    style="flex:1;font-size:11px;padding:4px 6px;background:#27272a;color:#d4d4d8;border:none;border-radius:6px;cursor:pointer;font-weight:500;transition:background 0.15s;"
+                                    onmouseenter="this.style.background='#3f3f46'" onmouseleave="this.style.background='#27272a'"
+                                    onclick="(function(btn,url){navigator.clipboard.writeText(url).then(()=>{btn.textContent='Copied!';btn.style.background='#14532d';btn.style.color='#86efac';setTimeout(()=>{btn.textContent='Copy URL';btn.style.background='#27272a';btn.style.color='#d4d4d8';},2000);})})(this,'{{ $file['url'] }}')"
                                 >Copy URL</button>
                                 <button
                                     wire:click="confirmDelete('{{ $file['path'] }}')"
-                                    style="padding:4px 6px;background:#242427;color:#ffffff;border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;"
-                                    onmouseenter="this.style.background='#ff0000';this.style.color='#ff0000'" onmouseleave="this.style.background='#ff0000';this.style.color='ff0000'"
+                                    style="padding:4px 6px;background:#27272a;color:#a1a1aa;border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;"
+                                    onmouseenter="this.style.background='rgba(127,29,29,0.4)';this.style.color='#f87171'" onmouseleave="this.style.background='#27272a';this.style.color='#a1a1aa'"
                                     title="Delete"
                                 >
                                     <x-heroicon-o-trash style="width:14px;height:14px;" />
