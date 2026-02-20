@@ -44,7 +44,7 @@ class TweetOlderVideoCommand extends Command
         // 1. Is older than $minAgeDays
         // 2. Has not been tweeted within $noRetweetDays
         $video = Video::where('status', 'processed')
-            ->where('created_at', '<', now()->subDays($minAgeDays))
+            ->where('published_at', '<', now()->subDays($minAgeDays))
             ->whereDoesntHave('tweets', function ($query) use ($noRetweetDays) {
                 $query->where('tweeted_at', '>', now()->subDays($noRetweetDays));
             })
