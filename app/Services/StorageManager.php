@@ -170,6 +170,33 @@ class StorageManager
     }
 
     /**
+     * Get a permanent public URL for a file — never pre-signed.
+     * Use this for og:image / twitter:image where the URL must not expire.
+     * Works by using the plain disk URL regardless of bucket privacy setting.
+     */
+    public static function permanentUrl(string $path, ?string $diskName = null): string
+    {
+        $diskName = $diskName ?? static::getActiveDiskName();
+
+        if ($diskName === 'public') {
+            if (Setting::get('cdn_enabled', false)) {
+                $cdnUrl = Setting::get('cdn_url', '');
+                if (!empty($cdnUrl)) {
+                    return rtrim($cdnUrl, '/') . '/' . ltrim($path, '/');
+                }
+            }
+            return asset('storage/' . $path);
+        }
+
+        // For cloud disks, build a permanent URL from the endpoint + bucket + path
+        try {
+            return static::disk($diskName)->url($path);
+        } catch (\Throwable $e) {
+            return asset('storage/' . $path);
+        }
+    }
+
+    /**
      * Generate a temporary (pre-signed) URL for private files.
      * Useful for paid/private videos.
      */

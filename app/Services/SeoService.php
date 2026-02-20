@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Models\Video;
 use App\Models\User;
 use App\Models\Category;
+use App\Services\StorageManager;
 use Illuminate\Support\Facades\App;
 
 class SeoService
@@ -126,6 +127,20 @@ class SeoService
         $metaDescription = $this->truncate($this->template($descriptionTemplate, array_merge($vars, ['description' => $description])));
 
         $thumbnailUrl = $video->thumbnail_url;
+
+        // For og:image and twitter:image we need a permanent (non-expiring) URL.
+        // thumbnail_url may return a pre-signed S3 URL that expires in ~2 hours,
+        // but Twitterbot/Facebookbot can crawl hours after the tweet is posted.
+        // Use permanentUrl() for the thumbnail path, falling back to thumbnail_url
+        // for external thumbnails (Bunny CDN etc.) which are already permanent.
+        if ($video->external_thumbnail_url) {
+            $ogThumbnailUrl = $video->external_thumbnail_url;
+        } elseif ($video->thumbnail) {
+            $ogThumbnailUrl = StorageManager::permanentUrl($video->thumbnail, $video->storage_disk ?? 'public');
+        } else {
+            $ogThumbnailUrl = $thumbnailUrl;
+        }
+
         $videoUrl = $video->video_url;
         $canonicalPath = "/{$video->slug}";
 
@@ -133,7 +148,7 @@ class SeoService
 
         // Enhanced OG tags for video
         $seo['og']['type'] = 'video.other';
-        $seo['og']['image'] = $thumbnailUrl;
+        $seo['og']['image'] = $ogThumbnailUrl;
         $seo['og']['image:width'] = '1280';
         $seo['og']['image:height'] = '720';
         $seo['og']['video:duration'] = (string) ($video->duration ?? 0);
@@ -144,7 +159,7 @@ class SeoService
 
         // Twitter player card
         $seo['twitter']['card'] = 'summary_large_image';
-        $seo['twitter']['image'] = $thumbnailUrl;
+        $seo['twitter']['image'] = $ogThumbnailUrl;
 
         // Thumbnail alt text
         $altTemplate = $this->s('seo_video_thumbnail_alt_template', '{title} - Video Thumbnail');
