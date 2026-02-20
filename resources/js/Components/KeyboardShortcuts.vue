@@ -62,7 +62,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKeydown));
                         <Keyboard class="w-5 h-5" />
                         {{ t('video.keyboard_shortcuts') || 'Keyboard Shortcuts' }}
                     </h3>
-                    <button @click="show = false" class="p-1 rounded hover:opacity-70">
+                    <button @click="show = false" class="p-1 rounded hover:opacity-70" aria-label="Close keyboard shortcuts">
                         <X class="w-5 h-5" style="color: var(--color-text-secondary);" />
                     </button>
                 </div>

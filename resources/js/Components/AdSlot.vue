@@ -96,12 +96,43 @@ function injectHtml(html) {
     if (scripts.length > 0) {
         loadScriptSequentially(scripts, 0);
     }
+
+    // Accessibility: ensure all injected iframes have a title attribute (PageSpeed audit)
+    nextTick(() => {
+        if (!container.value) return;
+        container.value.querySelectorAll('iframe:not([title])').forEach(iframe => {
+            iframe.setAttribute('title', 'Advertisement');
+        });
+    });
+}
+
+// MutationObserver to catch iframes created asynchronously by ad scripts
+let iframeObserver = null;
+
+function startIframeObserver() {
+    if (!container.value || iframeObserver) return;
+    iframeObserver = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+            for (const node of mutation.addedNodes) {
+                if (node.nodeName === 'IFRAME' && !node.getAttribute('title')) {
+                    node.setAttribute('title', 'Advertisement');
+                }
+                if (node.querySelectorAll) {
+                    node.querySelectorAll('iframe:not([title])').forEach(iframe => {
+                        iframe.setAttribute('title', 'Advertisement');
+                    });
+                }
+            }
+        }
+    });
+    iframeObserver.observe(container.value, { childList: true, subtree: true });
 }
 
 onMounted(() => {
     if (props.html) {
         nextTick(() => injectHtml(props.html));
     }
+    startIframeObserver();
 });
 
 watch(() => props.html, (newHtml) => {
@@ -109,6 +140,10 @@ watch(() => props.html, (newHtml) => {
 });
 
 onBeforeUnmount(() => {
+    if (iframeObserver) {
+        iframeObserver.disconnect();
+        iframeObserver = null;
+    }
     if (container.value) {
         container.value.innerHTML = '';
     }

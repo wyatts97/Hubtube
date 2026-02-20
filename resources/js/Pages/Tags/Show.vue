@@ -62,6 +62,7 @@ const goToPage = (pageNum) => {
                 :disabled="videos.current_page === 1"
                 class="p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 :style="{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }"
+                aria-label="Previous page"
             >
                 <ChevronLeft class="w-5 h-5" />
             </button>
@@ -88,6 +89,7 @@ const goToPage = (pageNum) => {
                 :disabled="videos.current_page === videos.last_page"
                 class="p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 :style="{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }"
+                aria-label="Next page"
             >
                 <ChevronRight class="w-5 h-5" />
             </button>

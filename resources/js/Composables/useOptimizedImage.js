@@ -11,7 +11,7 @@
  *   <img v-bind="avatarProps(user.avatar, 40)" />
  */
 
-const THUMBNAIL_WIDTHS = [320, 480, 640, 960, 1280];
+const THUMBNAIL_WIDTHS = [320, 480, 640, 960];
 const AVATAR_SIZES = [32, 48, 64, 96, 128];
 
 /**
@@ -66,7 +66,9 @@ export function useOptimizedImage() {
             alt,
             loading: 'lazy',
             decoding: 'async',
-            sizes: '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw',
+            // Matches actual grid layout: 1-col mobile (~100vw), 2-col tablet (~50vw), 3-col (~33vw), 4-col desktop (~25vw)
+            // Subtract padding/gaps so browser picks a smaller image (PageSpeed: "image larger than displayed")
+            sizes: '(max-width: 640px) 45vw, (max-width: 1024px) 33vw, 25vw',
         };
         if (srcset) {
             props.srcset = srcset;

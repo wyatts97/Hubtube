@@ -66,6 +66,7 @@ const embedUrl = computed(() => {
             <iframe
                 v-else-if="embedUrl"
                 :src="embedUrl"
+                :title="video.title || 'Embedded video'"
                 class="absolute inset-0 w-full h-full"
                 frameborder="0"
                 allowfullscreen

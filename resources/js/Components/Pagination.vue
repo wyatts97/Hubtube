@@ -31,6 +31,7 @@ const goToPage = (pageNum) => {
                 backgroundColor: 'var(--color-bg-secondary)',
                 color: 'var(--color-text-primary)',
             }"
+            aria-label="Previous page"
         >
             <ChevronLeft class="w-5 h-5" />
         </button>
@@ -65,6 +66,7 @@ const goToPage = (pageNum) => {
                 backgroundColor: 'var(--color-bg-secondary)',
                 color: 'var(--color-text-primary)',
             }"
+            aria-label="Next page"
         >
             <ChevronRight class="w-5 h-5" />
         </button>

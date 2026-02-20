@@ -116,16 +116,16 @@ onUnmounted(() => {
                     <span class="opacity-60 ml-2">{{ currentIndex + 1 }} / {{ images.length }}</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button @click="zoomOut" class="p-2 rounded-full hover:bg-white/10 text-white transition-colors" title="Zoom out">
+                    <button @click="zoomOut" class="p-2 rounded-full hover:bg-white/10 text-white transition-colors" title="Zoom out" aria-label="Zoom out">
                         <ZoomOut class="w-5 h-5" />
                     </button>
-                    <button @click="zoomIn" class="p-2 rounded-full hover:bg-white/10 text-white transition-colors" title="Zoom in">
+                    <button @click="zoomIn" class="p-2 rounded-full hover:bg-white/10 text-white transition-colors" title="Zoom in" aria-label="Zoom in">
                         <ZoomIn class="w-5 h-5" />
                     </button>
-                    <button @click="downloadImage" class="p-2 rounded-full hover:bg-white/10 text-white transition-colors" title="Download">
+                    <button @click="downloadImage" class="p-2 rounded-full hover:bg-white/10 text-white transition-colors" title="Download" aria-label="Download image">
                         <Download class="w-5 h-5" />
                     </button>
-                    <button @click="close" class="p-2 rounded-full hover:bg-white/10 text-white transition-colors" title="Close">
+                    <button @click="close" class="p-2 rounded-full hover:bg-white/10 text-white transition-colors" title="Close" aria-label="Close lightbox">
                         <X class="w-5 h-5" />
                     </button>
                 </div>
@@ -136,6 +136,7 @@ onUnmounted(() => {
                 v-if="images.length > 1"
                 @click.stop="prev"
                 class="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full hover:bg-white/10 text-white transition-colors z-10"
+                aria-label="Previous image"
             >
                 <ChevronLeft class="w-8 h-8" />
             </button>
@@ -143,6 +144,7 @@ onUnmounted(() => {
                 v-if="images.length > 1"
                 @click.stop="next"
                 class="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full hover:bg-white/10 text-white transition-colors z-10"
+                aria-label="Next image"
             >
                 <ChevronRight class="w-8 h-8" />
             </button>
@@ -167,6 +169,7 @@ onUnmounted(() => {
                     :key="idx"
                     @click="currentIndex = idx"
                     class="w-12 h-12 rounded-lg overflow-hidden shrink-0 transition-all border-2"
+                    :aria-label="`View image ${idx + 1}`"
                     :style="{ borderColor: idx === currentIndex ? 'var(--color-accent)' : 'transparent', opacity: idx === currentIndex ? 1 : 0.5 }"
                 >
                     <img
