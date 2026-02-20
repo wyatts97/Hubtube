@@ -119,6 +119,11 @@ Route::get('/api/thumb-proxy', [ThumbnailProxyController::class, 'proxy'])
     ->middleware('throttle:30,1')
     ->name('thumb.proxy');
 
+// Video Ads API (outside age.verified — the page itself already enforces age gate)
+Route::get('/api/video-ads', [\App\Http\Controllers\VideoAdController::class, 'getAds'])
+    ->middleware('throttle:30,1')
+    ->name('video-ads.get');
+
 Route::middleware('age.verified')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('/api/videos/load-more', [HomeController::class, 'loadMoreVideos'])->name('videos.loadMore');
@@ -154,11 +159,6 @@ Route::middleware('age.verified')->group(function () {
 
     // Legal / Static Pages
     Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('pages.show');
-
-    // Video Ads API (accessible by all users including guests)
-    Route::get('/api/video-ads', [\App\Http\Controllers\VideoAdController::class, 'getAds'])
-        ->middleware('throttle:30,1')
-        ->name('video-ads.get');
 
     // Social Login Routes (accessible by both guests and authenticated users for account linking)
     Route::get('/auth/{provider}/redirect', [SocialLoginController::class, 'redirect'])

@@ -77,13 +77,13 @@ const onAdRequestPlay = () => {
 };
 
 // Setup video event listeners for ad triggers
-const setupAdTriggers = () => {
+const setupAdTriggers = async () => {
     const video = getVideoElement();
     if (!video || !adPlayerRef.value) return;
 
-    // Pre-roll: try to play before video starts
+    // Pre-roll: wait for ads to load, then try to play before video starts
     if (!preRollDone.value) {
-        const played = adPlayerRef.value.triggerPreRoll();
+        const played = await adPlayerRef.value.triggerPreRoll();
         if (!played) preRollDone.value = true;
     }
 
@@ -95,9 +95,9 @@ const setupAdTriggers = () => {
     });
 
     // Post-roll: trigger when video ends
-    video.addEventListener('ended', () => {
+    video.addEventListener('ended', async () => {
         if (!postRollDone.value && adPlayerRef.value) {
-            const played = adPlayerRef.value.triggerPostRoll();
+            const played = await adPlayerRef.value.triggerPostRoll();
             postRollDone.value = true;
         }
     });

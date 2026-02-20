@@ -57,14 +57,22 @@ const lastMidRollTime = ref(0);
 let elapsedTimer = null;
 
 // ── Ad loading ──
-const loadAds = async () => {
+let adsLoadedPromise = null;
+
+const loadAds = () => {
     const params = new URLSearchParams();
     if (props.categoryId) params.set('category_id', props.categoryId);
-    const { ok, data } = await get(`/api/video-ads?${params.toString()}`);
-    if (ok && data) {
-        adData.value = data.ads;
-        adConfig.value = data.config;
-    }
+    adsLoadedPromise = get(`/api/video-ads?${params.toString()}`).then(({ ok, data }) => {
+        if (ok && data) {
+            adData.value = data.ads;
+            adConfig.value = data.config;
+        }
+    });
+    return adsLoadedPromise;
+};
+
+const waitForAds = async () => {
+    if (adsLoadedPromise) await adsLoadedPromise;
 };
 
 const hasAds = (placement) => adData.value?.[placement]?.length > 0;
@@ -287,8 +295,14 @@ const skipCountdown = computed(() => {
 });
 
 // ── Public API ──
-const triggerPreRoll  = () => hasAds('pre_roll')  ? playAd('pre_roll')  : false;
-const triggerPostRoll = () => hasAds('post_roll') ? playAd('post_roll') : false;
+const triggerPreRoll = async () => {
+    await waitForAds();
+    return hasAds('pre_roll') ? playAd('pre_roll') : false;
+};
+const triggerPostRoll = async () => {
+    await waitForAds();
+    return hasAds('post_roll') ? playAd('post_roll') : false;
+};
 
 const checkMidRoll = (currentTime) => {
     if (!hasAds('mid_roll') || !adConfig.value || adPhase.value !== 'idle') return false;
