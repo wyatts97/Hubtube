@@ -15,11 +15,24 @@ class VideoProcessed implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $tries = 1;
+    public int $maxExceptions = 1;
     public bool $afterCommit = true;
 
     public function __construct(
         public Video $video
     ) {}
+
+    public function broadcastWhen(): bool
+    {
+        $host = config('broadcasting.connections.reverb.options.host',
+                config('broadcasting.connections.pusher.options.host', 'localhost'));
+
+        if (app()->environment('production') && in_array($host, ['localhost', '127.0.0.1'])) {
+            return false;
+        }
+
+        return true;
+    }
 
     public function failed(\Throwable $e): void
     {

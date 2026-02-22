@@ -237,17 +237,21 @@ const reportSuccess = ref(false);
 const submitReport = async () => {
     if (!reportReason.value || !user.value) return;
     reportSubmitting.value = true;
-    const { ok } = await post('/reports', {
+    const { ok, data, status } = await post('/reports', {
         reportable_type: 'video',
         reportable_id: props.video.id,
         reason: reportReason.value,
         description: reportDescription.value,
     });
+    reportSubmitting.value = false;
     if (ok) {
         reportSuccess.value = true;
+        toast.success(data?.message || 'Report submitted successfully!');
         setTimeout(() => { showReportModal.value = false; reportSuccess.value = false; reportReason.value = ''; reportDescription.value = ''; }, 1500);
+    } else {
+        const msg = data?.error || data?.message || (status === 422 ? 'You have already reported this content' : 'Failed to submit report. Please try again.');
+        toast.error(msg);
     }
-    reportSubmitting.value = false;
 };
 
 // Share modal
