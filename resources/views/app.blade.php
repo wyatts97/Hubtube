@@ -281,10 +281,13 @@
 <body class="font-sans antialiased" style="background-color: var(--color-bg-primary); color: var(--color-text-primary);">
     @inertia
 
-    {{-- Custom Ad Scripts (ExoClick, etc.) --}}
-    {{-- Ad network scripts (popunder, interstitial, sticky) are injected via JS to ensure
-         proper execution. External scripts load sequentially so inline scripts that depend
-         on them (e.g. AdProvider.push) run after the provider JS is ready. --}}
+    {{-- Custom Ad Scripts (ExoClick / pemsrv popunder, interstitial, sticky) --}}
+    {{-- These scripts MUST be output as raw HTML (not dynamically injected) because:
+         1. Ad scripts like ExoClick use document.currentScript which only works in
+            parser-inserted <script> tags, not dynamically created ones.
+         2. The popunder's popMagic.init() + loadHosted() must run in the original
+            script context for anti-adblock protections to work.
+         Desktop/mobile selection is done server-side via User-Agent. --}}
     @php
         $popunderEnabled = filter_var(\App\Models\Setting::get('custom_popunder_enabled', false), FILTER_VALIDATE_BOOLEAN);
         $popunderCode = \App\Models\Setting::get('custom_popunder_code', '') ?: '';
@@ -295,95 +298,19 @@
         $stickyEnabled = filter_var(\App\Models\Setting::get('custom_sticky_banner_enabled', false), FILTER_VALIDATE_BOOLEAN);
         $stickyCode = \App\Models\Setting::get('custom_sticky_banner_code', '') ?: '';
         $stickyMobileCode = \App\Models\Setting::get('custom_sticky_banner_mobile_code', '') ?: '';
+
+        // Server-side mobile detection via User-Agent for ad variant selection
+        $ua = request()->header('User-Agent', '');
+        $isMobileUA = (bool) preg_match('/Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile|webOS/i', $ua);
     @endphp
-    @if($popunderEnabled || $interstitialEnabled || $stickyEnabled)
-    <script>
-        /**
-         * Inject ad HTML into the DOM and execute scripts sequentially.
-         * External <script src="..."> tags are loaded one at a time (waiting for onload)
-         * so that inline scripts that reference the provider object run after it exists.
-         * Non-script nodes (ins, div, etc.) are appended immediately and remain visible.
-         */
-        function htInjectAdCode(html, className) {
-            if (!html) return;
-            var container = document.createElement('div');
-            container.className = className;
-            document.body.appendChild(container);
-
-            var temp = document.createElement('div');
-            temp.innerHTML = html;
-
-            var scripts = [];
-            var nodes = Array.from(temp.childNodes);
-            for (var i = 0; i < nodes.length; i++) {
-                var node = nodes[i];
-                if (node.nodeName === 'SCRIPT') {
-                    var src = node.getAttribute('src') || '';
-                    var attrs = {};
-                    Array.from(node.attributes).forEach(function(a) { attrs[a.name] = a.value; });
-                    scripts.push({ src: src, attrs: attrs, content: node.textContent || '' });
-                } else {
-                    container.appendChild(node.cloneNode(true));
-                }
-            }
-
-            function loadNext(idx) {
-                if (idx >= scripts.length) return;
-                var def = scripts[idx];
-                var el = document.createElement('script');
-
-                if (def.src) {
-                    // External script — copy attributes, wait for load before continuing
-                    Object.keys(def.attrs).forEach(function(name) {
-                        if (name === 'async' || name === 'defer') return;
-                        el.setAttribute(name, def.attrs[name]);
-                    });
-                    el.onload = function() { loadNext(idx + 1); };
-                    el.onerror = function() { loadNext(idx + 1); };
-                    container.appendChild(el);
-                } else {
-                    // Inline script — execute immediately then continue
-                    el.textContent = def.content;
-                    container.appendChild(el);
-                    loadNext(idx + 1);
-                }
-            }
-
-            if (scripts.length > 0) {
-                loadNext(0);
-            }
-        }
-    </script>
-    @endif
     @if($popunderEnabled && ($popunderCode || $popunderMobileCode))
-        <script>
-            (function(){
-                var code = (window.innerWidth < 768)
-                    ? @json($popunderMobileCode ?: $popunderCode)
-                    : @json($popunderCode);
-                htInjectAdCode(code, 'ht-popunder-ad');
-            })();
-        </script>
+        {!! $isMobileUA ? ($popunderMobileCode ?: $popunderCode) : $popunderCode !!}
     @endif
     @if($interstitialEnabled && ($interstitialCode || $interstitialMobileCode))
-        <script>
-            (function(){
-                var code = (window.innerWidth < 768)
-                    ? @json($interstitialMobileCode ?: $interstitialCode)
-                    : @json($interstitialCode);
-                htInjectAdCode(code, 'ht-interstitial-ad');
-            })();
-        </script>
+        {!! $isMobileUA ? ($interstitialMobileCode ?: $interstitialCode) : $interstitialCode !!}
     @endif
     @if($stickyEnabled && ($stickyCode || $stickyMobileCode))
-        <script>
-            (function(){
-                var code = (window.innerWidth < 768)
-                    ? @json($stickyMobileCode ?: $stickyCode)
-                    : @json($stickyCode);
-                htInjectAdCode(code, 'ht-sticky-ad');
-            })();
-        </script>
+        {!! $isMobileUA ? ($stickyMobileCode ?: $stickyCode) : $stickyCode !!}
     @endif
 
     {{-- Custom Footer Scripts (from Admin > Site Settings > Analytics) --}}

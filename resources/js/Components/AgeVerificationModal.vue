@@ -46,6 +46,23 @@ const confirm = () => {
     setTimeout(() => {
         showModal.value = false;
         isSubmitting.value = false;
+
+        // Re-initialize popunder/ad scripts after the age gate is dismissed.
+        // ExoClick's popMagic + hosted popunder1000.js bind click handlers to
+        // <a> tags at window.load time. If the age gate was showing, some links
+        // may not have had handlers attached. Dispatch a synthetic load event
+        // and also try calling preparePop directly so the script re-queries
+        // all <a> tags now that the page is fully interactive.
+        setTimeout(() => {
+            // Try the hosted ExoClick object first
+            if (typeof exoJsPop101 !== 'undefined' && exoJsPop101.add) {
+                try { exoJsPop101.add(); } catch (e) { /* silent */ }
+            }
+            // Try the inline popMagic fallback
+            if (typeof popMagic !== 'undefined' && popMagic.preparePop) {
+                try { popMagic.preparePop(); } catch (e) { /* silent */ }
+            }
+        }, 500);
     }, 300);
 };
 
