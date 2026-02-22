@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ContactMessage;
 use App\Models\Report;
 use App\Services\EmailService;
 use Illuminate\Http\JsonResponse;
@@ -42,7 +43,7 @@ class ReportController extends Controller
             return response()->json(['error' => 'You have already reported this content'], 422);
         }
 
-        Report::create([
+        $report = Report::create([
             'user_id' => $request->user()->id,
             'reportable_type' => $morphType,
             'reportable_id' => $validated['reportable_id'],
@@ -57,6 +58,30 @@ class ReportController extends Controller
         if ($reportable) {
             $reportedContent = $reportable->title ?? $reportable->username ?? $reportable->name ?? $reportedContent;
         }
+
+        $reasonLabels = [
+            'spam' => 'Spam or misleading',
+            'harassment' => 'Harassment or bullying',
+            'illegal' => 'Illegal content',
+            'copyright' => 'Copyright violation',
+            'underage' => 'Underage content',
+            'other' => 'Other',
+        ];
+
+        // Create an admin inbox entry so reports appear alongside contact messages
+        ContactMessage::create([
+            'type' => 'report',
+            'name' => $request->user()->username,
+            'email' => $request->user()->email,
+            'user_id' => $request->user()->id,
+            'report_id' => $report->id,
+            'subject' => 'Report: ' . ($reasonLabels[$validated['reason']] ?? $validated['reason']) . ' — ' . $reportedContent,
+            'message' => ($validated['description'] ?? '(No additional details)')
+                . "\n\n---\nType: " . ucfirst($validated['reportable_type'])
+                . "\nContent: " . $reportedContent
+                . "\nReason: " . ($reasonLabels[$validated['reason']] ?? $validated['reason']),
+            'is_read' => false,
+        ]);
 
         EmailService::sendToAdmin('admin-new-report', [
             'reporter' => $request->user()->username,

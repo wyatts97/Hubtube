@@ -10,6 +10,7 @@ const { t } = useI18n();
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
+const adminNotifs = computed(() => page.props.adminNotificationSettings ?? {});
 const activeTab = ref('profile');
 
 const profileForm = useForm({
@@ -295,7 +296,7 @@ const tabs = computed(() => {
                     <div v-if="activeTab === 'notifications'" class="card p-6">
                         <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ t('settings.notification_prefs') || 'Notification Preferences' }}</h2>
                         <form @submit.prevent="updateNotifications" class="space-y-4">
-                            <div class="flex items-center justify-between">
+                            <div v-if="adminNotifs.email_notifications !== false" class="flex items-center justify-between">
                                 <div>
                                     <p style="color: var(--color-text-primary);">{{ t('settings.email_notifications') || 'Email Notifications' }}</p>
                                     <p class="text-sm" style="color: var(--color-text-secondary);">{{ t('settings.email_notifications_desc') || 'Receive notifications via email' }}</p>
@@ -335,7 +336,7 @@ const tabs = computed(() => {
                                     <span v-else>{{ pushSubscribed ? 'Disable' : 'Enable' }}</span>
                                 </button>
                             </div>
-                            <div class="flex items-center justify-between">
+                            <div v-if="adminNotifs.subscription_notifications !== false" class="flex items-center justify-between">
                                 <div>
                                     <p style="color: var(--color-text-primary);">{{ t('settings.subscription_updates') || 'Subscription Updates' }}</p>
                                     <p class="text-sm" style="color: var(--color-text-secondary);">{{ t('settings.subscription_updates_desc') || 'Get notified when channels you subscribe to upload' }}</p>

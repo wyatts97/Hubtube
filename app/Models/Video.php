@@ -59,6 +59,7 @@ class Video extends Model
         'geo_blocked_countries',
         'tags',
         'published_at',
+        'scheduled_at',
         'processing_started_at',
         'processing_completed_at',
         'scrubber_vtt_path',
@@ -97,6 +98,7 @@ class Video extends Model
             'geo_blocked_countries' => 'array',
             'tags' => 'array',
             'published_at' => 'datetime',
+            'scheduled_at' => 'datetime',
             'processing_started_at' => 'datetime',
             'processing_completed_at' => 'datetime',
         ];

@@ -58,7 +58,7 @@ class IntegrationSettings extends Page implements HasForms
             'mail_encryption' => Setting::get('mail_encryption', 'tls'),
             'mail_from_address' => Setting::get('mail_from_address', ''),
             'mail_from_name' => Setting::get('mail_from_name', ''),
-            'mail_verify_peer' => Setting::get('mail_verify_peer', 'true') === 'true',
+            'mail_verify_peer' => (bool) filter_var(Setting::get('mail_verify_peer', true), FILTER_VALIDATE_BOOLEAN),
         ]);
 
         $this->loadEmailTemplates();
@@ -187,15 +187,12 @@ class IntegrationSettings extends Page implements HasForms
             }
 
             $type = match (true) {
-                str_starts_with($key, 'email_notify_') || str_starts_with($key, 'admin_notify_') || $key === 'mail_verify_peer' => 'boolean',
+                $key === 'mail_verify_peer' => 'boolean',
                 is_int($value) => 'integer',
                 default => 'string',
             };
 
-            $group = match (true) {
-                str_starts_with($key, 'email_notify_') || str_starts_with($key, 'admin_notify_') || $key === 'admin_notification_email' => 'notifications',
-                default => 'integrations',
-            };
+            $group = 'integrations';
 
             Setting::set($key, $value, $group, $type);
         }

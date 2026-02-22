@@ -19,7 +19,7 @@ class ContactMessageResource extends Resource
     use HasCustomizableNavigation;
     protected static ?string $model = ContactMessage::class;
     protected static ?string $navigationIcon = 'heroicon-o-envelope';
-    protected static ?string $navigationLabel = 'Contact Messages';
+    protected static ?string $navigationLabel = 'Contact & Reports';
     protected static ?string $navigationGroup = 'Users & Messages';
     protected static ?int $navigationSort = 2;
 
@@ -39,7 +39,11 @@ class ContactMessageResource extends Resource
             ->schema([
                 Forms\Components\Section::make('Message Details')
                     ->schema([
+                        Forms\Components\TextInput::make('type')
+                            ->disabled()
+                            ->formatStateUsing(fn ($state) => ucfirst($state ?? 'contact')),
                         Forms\Components\TextInput::make('name')
+                            ->label(fn ($record) => $record?->type === 'report' ? 'Reporter' : 'Name')
                             ->disabled(),
                         Forms\Components\TextInput::make('email')
                             ->disabled(),
@@ -52,7 +56,7 @@ class ContactMessageResource extends Resource
                             ->columnSpanFull(),
                         Forms\Components\Toggle::make('is_read')
                             ->label('Mark as Read'),
-                    ])->columns(2),
+                    ])->columns(3),
             ]);
     }
 
@@ -70,7 +74,17 @@ class ContactMessageResource extends Resource
                     ->falseColor('danger')
                     ->grow(false),
 
+                Tables\Columns\TextColumn::make('type')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => ucfirst($state ?? 'contact'))
+                    ->color(fn ($state) => match ($state) {
+                        'report' => 'danger',
+                        default => 'info',
+                    })
+                    ->grow(false),
+
                 Tables\Columns\TextColumn::make('name')
+                    ->label('From')
                     ->searchable()
                     ->sortable()
                     ->weight(fn (ContactMessage $record) => $record->is_read ? 'normal' : 'bold'),
@@ -80,18 +94,20 @@ class ContactMessageResource extends Resource
                     ->sortable()
                     ->icon('heroicon-m-envelope')
                     ->size('sm')
-                    ->copyable(),
+                    ->copyable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('subject')
                     ->searchable()
-                    ->limit(40)
+                    ->limit(50)
                     ->placeholder('(no subject)')
                     ->weight(fn (ContactMessage $record) => $record->is_read ? 'normal' : 'bold'),
 
                 Tables\Columns\TextColumn::make('message')
                     ->limit(60)
                     ->size('sm')
-                    ->color('gray'),
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Received')
@@ -102,6 +118,13 @@ class ContactMessageResource extends Resource
                     ->tooltip(fn (ContactMessage $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('type')
+                    ->options([
+                        'contact' => 'Contact',
+                        'report' => 'Report',
+                    ])
+                    ->label('Type'),
+
                 Tables\Filters\TernaryFilter::make('is_read')
                     ->label('Read Status')
                     ->trueLabel('Read')

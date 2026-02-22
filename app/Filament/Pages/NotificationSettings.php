@@ -33,20 +33,20 @@ class NotificationSettings extends Page implements HasForms
         $this->form->fill([
             // Admin notifications
             'admin_notification_email' => Setting::get('admin_notification_email', ''),
-            'admin_notify_contact-form-admin' => Setting::get('admin_notify_contact-form-admin', 'true') === 'true',
-            'admin_notify_admin-new-user' => Setting::get('admin_notify_admin-new-user', 'false') === 'true',
-            'admin_notify_admin-new-video' => Setting::get('admin_notify_admin-new-video', 'false') === 'true',
-            'admin_notify_admin-new-report' => Setting::get('admin_notify_admin-new-report', 'true') === 'true',
+            'admin_notify_contact-form-admin' => (bool) filter_var(Setting::get('admin_notify_contact-form-admin', true), FILTER_VALIDATE_BOOLEAN),
+            'admin_notify_admin-new-user' => (bool) filter_var(Setting::get('admin_notify_admin-new-user', false), FILTER_VALIDATE_BOOLEAN),
+            'admin_notify_admin-new-video' => (bool) filter_var(Setting::get('admin_notify_admin-new-video', false), FILTER_VALIDATE_BOOLEAN),
+            'admin_notify_admin-new-report' => (bool) filter_var(Setting::get('admin_notify_admin-new-report', true), FILTER_VALIDATE_BOOLEAN),
             // User email notifications
-            'email_notify_verify-email' => Setting::get('email_notify_verify-email', 'true') === 'true',
-            'email_notify_reset-password' => Setting::get('email_notify_reset-password', 'true') === 'true',
-            'email_notify_welcome' => Setting::get('email_notify_welcome', 'true') === 'true',
-            'email_notify_video-published' => Setting::get('email_notify_video-published', 'true') === 'true',
-            'email_notify_new-subscriber' => Setting::get('email_notify_new-subscriber', 'true') === 'true',
-            'email_notify_video-approved' => Setting::get('email_notify_video-approved', 'true') === 'true',
-            'email_notify_video-rejected' => Setting::get('email_notify_video-rejected', 'true') === 'true',
-            'email_notify_withdrawal-approved' => Setting::get('email_notify_withdrawal-approved', 'true') === 'true',
-            'email_notify_withdrawal-rejected' => Setting::get('email_notify_withdrawal-rejected', 'true') === 'true',
+            'email_notify_verify-email' => (bool) filter_var(Setting::get('email_notify_verify-email', true), FILTER_VALIDATE_BOOLEAN),
+            'email_notify_reset-password' => (bool) filter_var(Setting::get('email_notify_reset-password', true), FILTER_VALIDATE_BOOLEAN),
+            'email_notify_welcome' => (bool) filter_var(Setting::get('email_notify_welcome', true), FILTER_VALIDATE_BOOLEAN),
+            'email_notify_video-published' => (bool) filter_var(Setting::get('email_notify_video-published', true), FILTER_VALIDATE_BOOLEAN),
+            'email_notify_new-subscriber' => (bool) filter_var(Setting::get('email_notify_new-subscriber', true), FILTER_VALIDATE_BOOLEAN),
+            'email_notify_video-approved' => (bool) filter_var(Setting::get('email_notify_video-approved', true), FILTER_VALIDATE_BOOLEAN),
+            'email_notify_video-rejected' => (bool) filter_var(Setting::get('email_notify_video-rejected', true), FILTER_VALIDATE_BOOLEAN),
+            'email_notify_withdrawal-approved' => (bool) filter_var(Setting::get('email_notify_withdrawal-approved', true), FILTER_VALIDATE_BOOLEAN),
+            'email_notify_withdrawal-rejected' => (bool) filter_var(Setting::get('email_notify_withdrawal-rejected', true), FILTER_VALIDATE_BOOLEAN),
         ]);
     }
 

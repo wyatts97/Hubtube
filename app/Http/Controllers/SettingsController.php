@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules\Password;
+use App\Models\Setting;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -19,7 +20,12 @@ class SettingsController extends Controller
 {
     public function index(): Response
     {
-        return Inertia::render('Settings');
+        return Inertia::render('Settings', [
+            'adminNotificationSettings' => [
+                'email_notifications' => (bool) filter_var(Setting::get('email_notify_new-subscriber', true), FILTER_VALIDATE_BOOLEAN),
+                'subscription_notifications' => (bool) filter_var(Setting::get('email_notify_new-subscriber', true), FILTER_VALIDATE_BOOLEAN),
+            ],
+        ]);
     }
 
     public function updateProfile(Request $request): RedirectResponse

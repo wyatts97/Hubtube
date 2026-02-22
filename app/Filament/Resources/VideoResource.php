@@ -75,14 +75,6 @@ class VideoResource extends Resource
                             ->relationship('category', 'name')
                             ->searchable()
                             ->preload(),
-                        Forms\Components\Select::make('privacy')
-                            ->options([
-                                'public' => 'Public',
-                                'private' => 'Private',
-                                'unlisted' => 'Unlisted',
-                            ])
-                            ->default('public')
-                            ->required(),
                         Forms\Components\Select::make('status')
                             ->options([
                                 'pending_download' => 'Pending Download',
@@ -98,6 +90,13 @@ class VideoResource extends Resource
                             ->hiddenOn('create'),
                         Forms\Components\TagsInput::make('tags')
                             ->separator(',')
+                            ->columnSpanFull(),
+                        Forms\Components\DateTimePicker::make('scheduled_at')
+                            ->label('Schedule Publish')
+                            ->helperText('Leave empty to publish immediately when approved. Set a future date/time to auto-publish.')
+                            ->native(false)
+                            ->minDate(now())
+                            ->hiddenOn('create')
                             ->columnSpanFull(),
                     ])->columns(2),
 
@@ -248,16 +247,6 @@ class VideoResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('privacy')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'public' => 'success',
-                        'unlisted' => 'warning',
-                        'private' => 'danger',
-                        default => 'gray',
-                    })
-                    ->toggleable(isToggledHiddenByDefault: true),
-
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Uploaded')
                     ->since()
@@ -295,13 +284,6 @@ class VideoResource extends Resource
                     ->relationship('user', 'username')
                     ->searchable()
                     ->preload(),
-
-                Tables\Filters\SelectFilter::make('privacy')
-                    ->options([
-                        'public' => 'Public',
-                        'private' => 'Private',
-                        'unlisted' => 'Unlisted',
-                    ]),
 
                 Tables\Filters\Filter::make('needs_moderation')
                     ->label('Needs Moderation')
