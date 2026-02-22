@@ -36,6 +36,9 @@ class EmailTemplate extends Model
         'video-rejected' => ['{{username}}', '{{video_title}}', '{{rejection_reason}}', '{{site_name}}'],
         'withdrawal-approved' => ['{{username}}', '{{amount}}', '{{site_name}}'],
         'withdrawal-rejected' => ['{{username}}', '{{amount}}', '{{rejection_reason}}', '{{site_name}}'],
+        'admin-new-user' => ['{{username}}', '{{email}}', '{{registered_at}}', '{{site_name}}'],
+        'admin-new-video' => ['{{username}}', '{{video_title}}', '{{video_url}}', '{{site_name}}'],
+        'admin-new-report' => ['{{reporter}}', '{{report_type}}', '{{report_reason}}', '{{reported_content}}', '{{description}}', '{{site_name}}'],
     ];
 
     /**
@@ -124,6 +127,30 @@ class EmailTemplate extends Model
                 'description' => 'Sent when an admin rejects a withdrawal request.',
                 'subject' => "Your withdrawal was not approved — {$site}",
                 'body_html' => '<p>Hi {{username}},</p><p>Your withdrawal request for <strong>{{amount}}</strong> was not approved.</p><blockquote style="border-left:4px solid #e5e7eb;padding-left:16px;color:#6b7280;">{{rejection_reason}}</blockquote>',
+                'is_active' => true,
+            ],
+            [
+                'slug' => 'admin-new-user',
+                'name' => 'Admin: New User Signup',
+                'description' => 'Sent to admin when a new user registers.',
+                'subject' => "New user registered: {{username}} — {$site}",
+                'body_html' => '<p>A new user has registered on {{site_name}}.</p><p><strong>Username:</strong> {{username}}<br><strong>Email:</strong> {{email}}<br><strong>Registered:</strong> {{registered_at}}</p>',
+                'is_active' => true,
+            ],
+            [
+                'slug' => 'admin-new-video',
+                'name' => 'Admin: New Video Upload',
+                'description' => 'Sent to admin when a new video is uploaded.',
+                'subject' => "New video uploaded: {{video_title}} — {$site}",
+                'body_html' => '<p>A new video has been uploaded on {{site_name}}.</p><p><strong>Title:</strong> {{video_title}}<br><strong>Uploaded by:</strong> {{username}}</p><p><a href="{{video_url}}" style="display:inline-block;padding:12px 24px;background-color:#4f46e5;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;">View Video</a></p>',
+                'is_active' => true,
+            ],
+            [
+                'slug' => 'admin-new-report',
+                'name' => 'Admin: New Report',
+                'description' => 'Sent to admin when content is reported by a user.',
+                'subject' => "New {{report_type}} report: {{report_reason}} — {$site}",
+                'body_html' => '<p>A user has reported content on {{site_name}}.</p><p><strong>Type:</strong> {{report_type}}<br><strong>Reason:</strong> {{report_reason}}<br><strong>Reported by:</strong> {{reporter}}<br><strong>Content:</strong> {{reported_content}}</p><p>{{description}}</p>',
                 'is_active' => true,
             ],
         ];

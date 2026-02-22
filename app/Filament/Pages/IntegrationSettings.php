@@ -62,6 +62,9 @@ class IntegrationSettings extends Page implements HasForms
             // Admin notifications
             'admin_notification_email' => Setting::get('admin_notification_email', ''),
             'admin_notify_contact-form-admin' => Setting::get('admin_notify_contact-form-admin', 'true') === 'true',
+            'admin_notify_admin-new-user' => Setting::get('admin_notify_admin-new-user', 'false') === 'true',
+            'admin_notify_admin-new-video' => Setting::get('admin_notify_admin-new-video', 'false') === 'true',
+            'admin_notify_admin-new-report' => Setting::get('admin_notify_admin-new-report', 'true') === 'true',
             // User email notifications
             'email_notify_verify-email' => Setting::get('email_notify_verify-email', 'true') === 'true',
             'email_notify_reset-password' => Setting::get('email_notify_reset-password', 'true') === 'true',
@@ -188,6 +191,15 @@ class IntegrationSettings extends Page implements HasForms
                                         Toggle::make('admin_notify_contact-form-admin')
                                             ->label('Contact Form Submissions')
                                             ->helperText('Email admin when someone submits the contact form'),
+                                        Toggle::make('admin_notify_admin-new-user')
+                                            ->label('New User Signups')
+                                            ->helperText('Email admin when a new user registers'),
+                                        Toggle::make('admin_notify_admin-new-video')
+                                            ->label('New Video Uploads')
+                                            ->helperText('Email admin when a new video is uploaded'),
+                                        Toggle::make('admin_notify_admin-new-report')
+                                            ->label('New Content Reports')
+                                            ->helperText('Email admin when a user reports content (video, comment, user, etc.)'),
                                     ])->columns(2),
                                 Section::make('User Email Notifications')
                                     ->description('Toggle which emails are sent to users. Disabling a type here prevents that email from being sent to any user.')

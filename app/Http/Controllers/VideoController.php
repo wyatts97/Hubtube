@@ -9,6 +9,7 @@ use App\Models\WatchHistory;
 use App\Models\Category;
 use App\Models\Setting;
 use App\Models\SponsoredCard;
+use App\Services\EmailService;
 use App\Services\SeoService;
 use App\Services\StorageManager;
 use App\Services\TranslationService;
@@ -244,6 +245,12 @@ class VideoController extends Controller
         Gate::authorize('upload-video');
 
         $video = $this->videoService->create($request->validated(), $request->user());
+
+        EmailService::sendToAdmin('admin-new-video', [
+            'username' => $request->user()->username,
+            'video_title' => $video->title,
+            'video_url' => url("/{$video->slug}"),
+        ]);
 
         // Admin/Pro users go to the full edit page; default users go to the status page
         if ($request->user()->canEditVideo()) {

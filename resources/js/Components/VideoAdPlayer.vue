@@ -369,6 +369,12 @@ onUnmounted(() => { clearTimers(); destroyIma(); });
                         </svg>
                     </div>
                 </div>
+
+                <!-- Click-through overlay — clicking the video area opens the ad URL -->
+                <div v-if="currentAd?.click_url && !autoplayBlocked"
+                    class="absolute inset-0 z-5 cursor-pointer"
+                    @click.stop="onAdClick">
+                </div>
             </template>
 
             <!-- HTML Ad -->

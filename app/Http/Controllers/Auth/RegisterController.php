@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Channel;
+use App\Services\EmailService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -45,6 +46,12 @@ class RegisterController extends Controller
         ]);
 
         event(new Registered($user));
+
+        EmailService::sendToAdmin('admin-new-user', [
+            'username' => $user->username,
+            'email' => $user->email,
+            'registered_at' => now()->toDateTimeString(),
+        ]);
 
         Auth::login($user);
 
