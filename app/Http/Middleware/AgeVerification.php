@@ -18,6 +18,12 @@ class AgeVerification
             return $next($request);
         }
 
+        // Authenticated users should never hit the public age gate – they've already created an account.
+        // This prevents Inertia requests from receiving JSON errors while browsing when logged in.
+        if ($request->user()) {
+            return $next($request);
+        }
+
         if ($required && !app()->environment('testing') && $this->shouldEnforce($request) && !$this->isAgeVerified($request)) {
             return response()->json([
                 'error' => 'Age verification required.',
