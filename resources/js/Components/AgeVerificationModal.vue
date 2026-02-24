@@ -56,11 +56,10 @@ const confirm = () => {
         setTimeout(() => {
             // Try the hosted ExoClick object first
             if (typeof exoJsPop101 !== 'undefined' && exoJsPop101.add) {
-                try { exoJsPop101.add(); } catch (e) { /* silent */ }
+                try { exoJsPop101.add(); } catch (e) { console.warn('[AgeVerification] exoJsPop101.add failed:', e); }
             }
-            // Try the inline popMagic fallback
             if (typeof popMagic !== 'undefined' && popMagic.preparePop) {
-                try { popMagic.preparePop(); } catch (e) { /* silent */ }
+                try { popMagic.preparePop(); } catch (e) { console.warn('[AgeVerification] popMagic.preparePop failed:', e); }
             }
         }, 500);
     }, 300);

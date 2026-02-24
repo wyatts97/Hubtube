@@ -1,7 +1,7 @@
 <script setup>
 import { usePage, router } from '@inertiajs/vue3';
 import SeoHead from '@/Components/SeoHead.vue';
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
@@ -57,20 +57,30 @@ const hasMore = computed(() => currentPage.value < lastPage.value);
 // Load more videos for infinite scroll
 const loadMore = async () => {
     if (loading.value || !hasMore.value) return;
-    
+
     loading.value = true;
     try {
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         const response = await fetch(`/trending?page=${currentPage.value + 1}`, {
-            headers: { 
-                'Accept': 'application/json', 
+            headers: {
+                'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
                 'X-CSRF-TOKEN': csrfToken || '',
             },
             credentials: 'same-origin',
         });
+
+        if (!response.ok) {
+            console.error('Failed to load more videos:', response.status, await response.text());
+            return;
+        }
+
         const data = await response.json();
-        
+        if (!data?.data || !Array.isArray(data.data)) {
+            console.error('Invalid load-more response:', data);
+            return;
+        }
+
         videoList.value.push(...data.data);
         currentPage.value = data.current_page;
         lastPage.value = data.last_page;
@@ -81,13 +91,45 @@ const loadMore = async () => {
     }
 };
 
-// Infinite scroll observer
+// Infinite scroll observer — attach when loadMoreTrigger becomes available (after isInitialLoad)
 let observer = null;
 const loadMoreTrigger = ref(null);
+
+const setupObserver = () => {
+    if (!infiniteScrollEnabled.value || !loadMoreTrigger.value) return;
+    if (observer) observer.disconnect();
+
+    observer = new IntersectionObserver(
+        (entries) => {
+            const entry = entries?.length > 0 ? entries[0] : null;
+            if (entry?.isIntersecting && hasMore.value && !loading.value) {
+                loadMore();
+            }
+        },
+        { rootMargin: '200px' }
+    );
+    observer.observe(loadMoreTrigger.value);
+};
+
+watch(isInitialLoad, (loading) => {
+    if (loading) return;
+    if (!infiniteScrollEnabled.value) return;
+    nextTick(setupObserver);
+}, { flush: 'post' });
 
 onMounted(() => {
     const allVideos = props.videos?.data || [];
     if (allVideos.length) translateVideos(allVideos);
+    if (!isInitialLoad.value && infiniteScrollEnabled.value) {
+        nextTick(setupObserver);
+    }
+});
+
+onUnmounted(() => {
+    if (observer) {
+        observer.disconnect();
+        observer = null;
+    }
 });
 
 const withTranslation = (video) => {
@@ -102,26 +144,6 @@ const withTranslation = (video) => {
     }
     return video;
 };
-
-onMounted(() => {
-    if (infiniteScrollEnabled.value && loadMoreTrigger.value) {
-        observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting && hasMore.value && !loading.value) {
-                    loadMore();
-                }
-            },
-            { rootMargin: '200px' }
-        );
-        observer.observe(loadMoreTrigger.value);
-    }
-});
-
-onUnmounted(() => {
-    if (observer) {
-        observer.disconnect();
-    }
-});
 
 // Pagination navigation
 const goToPage = (pageNum) => {

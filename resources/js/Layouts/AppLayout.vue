@@ -149,7 +149,9 @@ onMounted(() => {
             credentials: 'same-origin',
         }).then(r => r.ok ? r.json() : null).then(d => {
             if (d) unreadCount.value = d.count || 0;
-        }).catch(() => {});
+        }).catch((err) => {
+            console.warn('[AppLayout] Failed to fetch unread count:', err);
+        });
     }
 });
 

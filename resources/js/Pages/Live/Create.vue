@@ -47,11 +47,12 @@ const goLive = async () => {
     }
 
     try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
         const response = await fetch('/go-live', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-CSRF-TOKEN': csrfToken || '',
             },
             body: JSON.stringify({
                 title: title.value,
@@ -78,7 +79,7 @@ const goLive = async () => {
         await fetch(`/live/${streamData.stream.id}/start`, {
             method: 'POST',
             headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-CSRF-TOKEN': csrfToken || '',
             },
         });
 
@@ -94,10 +95,11 @@ const endStream = async () => {
 
     try {
         if (streamData) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
             await fetch(`/live/${streamData.stream.id}/end`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-CSRF-TOKEN': csrfToken || '',
                 },
             });
         }

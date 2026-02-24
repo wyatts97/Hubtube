@@ -37,8 +37,18 @@ onUnmounted(() => {
 });
 
 const loadGifts = async () => {
-    const response = await fetch('/gifts');
-    gifts.value = await response.json();
+    try {
+        const response = await fetch('/gifts');
+        if (!response.ok) {
+            console.warn('[Live] Failed to load gifts:', response.status);
+            return;
+        }
+        const data = await response.json();
+        gifts.value = Array.isArray(data) ? data : (data?.data ?? []);
+    } catch (error) {
+        console.error('[Live] Failed to load gifts:', error);
+        gifts.value = [];
+    }
 };
 
 const initAgora = async () => {
@@ -83,7 +93,13 @@ const initRTM = async () => {
         await rtmChannel.join();
 
         rtmChannel.on('ChannelMessage', ({ text }, senderId) => {
-            const message = JSON.parse(text);
+            let message;
+            try {
+                message = JSON.parse(text);
+            } catch {
+                console.warn('[Live] Invalid RTM message:', text?.slice?.(0, 100));
+                return;
+            }
             handleRTMMessage(message, senderId);
         });
     } catch (error) {
@@ -133,11 +149,12 @@ const sendGift = async (gift) => {
     if (!user.value) return;
 
     try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
         const response = await fetch(`/live/${props.stream.id}/gift`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-CSRF-TOKEN': csrfToken || '',
             },
             body: JSON.stringify({ gift_id: gift.id }),
         });

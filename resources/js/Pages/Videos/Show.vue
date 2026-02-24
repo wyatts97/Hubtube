@@ -76,6 +76,36 @@ const onAdRequestPlay = () => {
     if (player) player.play().catch(() => {});
 };
 
+// Ad setup cleanup — clear timers and remove listeners on unmount
+let adCheckIntervalId = null;
+let adSafetyTimeoutId = null;
+let adSetupDelayId = null;
+let adVideoEl = null;
+let adTimeupdateHandler = null;
+let adEndedHandler = null;
+
+const cleanupAdSetup = () => {
+    if (adCheckIntervalId) {
+        clearInterval(adCheckIntervalId);
+        adCheckIntervalId = null;
+    }
+    if (adSafetyTimeoutId) {
+        clearTimeout(adSafetyTimeoutId);
+        adSafetyTimeoutId = null;
+    }
+    if (adSetupDelayId) {
+        clearTimeout(adSetupDelayId);
+        adSetupDelayId = null;
+    }
+    if (adVideoEl && (adTimeupdateHandler || adEndedHandler)) {
+        if (adTimeupdateHandler) adVideoEl.removeEventListener('timeupdate', adTimeupdateHandler);
+        if (adEndedHandler) adVideoEl.removeEventListener('ended', adEndedHandler);
+        adVideoEl = null;
+        adTimeupdateHandler = null;
+        adEndedHandler = null;
+    }
+};
+
 // Setup video event listeners for ad triggers
 const setupAdTriggers = async () => {
     const video = getVideoElement();
@@ -87,34 +117,45 @@ const setupAdTriggers = async () => {
         if (!played) preRollDone.value = true;
     }
 
-    // Mid-roll: check on timeupdate
-    video.addEventListener('timeupdate', () => {
+    // Store refs for cleanup; remove any previous listeners
+    cleanupAdSetup();
+    adVideoEl = video;
+
+    adTimeupdateHandler = () => {
         if (adPlayerRef.value && !adPlayerRef.value.isPlaying) {
             adPlayerRef.value.checkMidRoll(video.currentTime);
         }
-    });
-
-    // Post-roll: trigger when video ends
-    video.addEventListener('ended', async () => {
+    };
+    adEndedHandler = async () => {
         if (!postRollDone.value && adPlayerRef.value) {
             const played = await adPlayerRef.value.triggerPostRoll();
             postRollDone.value = true;
         }
-    });
+    };
+
+    video.addEventListener('timeupdate', adTimeupdateHandler);
+    video.addEventListener('ended', adEndedHandler);
 };
 
 // Wait for Vidstack player to be ready, then setup ad triggers
 const waitForVideoAndSetupAds = () => {
-    const checkInterval = setInterval(() => {
+    adCheckIntervalId = setInterval(() => {
         const player = getPlayerElement();
         if (player) {
-            clearInterval(checkInterval);
+            clearInterval(adCheckIntervalId);
+            adCheckIntervalId = null;
             // Small delay to let Vidstack fully initialize
-            setTimeout(setupAdTriggers, 500);
+            adSetupDelayId = setTimeout(setupAdTriggers, 500);
         }
     }, 200);
     // Safety: stop checking after 10s
-    setTimeout(() => clearInterval(checkInterval), 10000);
+    adSafetyTimeoutId = setTimeout(() => {
+        if (adCheckIntervalId) {
+            clearInterval(adCheckIntervalId);
+            adCheckIntervalId = null;
+        }
+        adSafetyTimeoutId = null;
+    }, 10000);
 };
 
 const hlsPlaylistUrl = computed(() => props.video.hls_playlist_url || '');
@@ -225,6 +266,7 @@ onMounted(() => {
 });
 onUnmounted(() => {
     document.removeEventListener('click', closePlaylistMenu);
+    cleanupAdSetup();
 });
 
 // Report modal

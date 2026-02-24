@@ -1,10 +1,14 @@
 <script setup>
+import { computed } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { sanitizeHtml } from '@/Composables/useSanitize';
 
 const props = defineProps({
     page: Object,
 });
+
+const sanitizedContent = computed(() => sanitizeHtml(props.page?.content ?? ''));
 </script>
 
 <template>
@@ -22,7 +26,7 @@ const props = defineProps({
                 <div
                     class="prose prose-invert max-w-none legal-content"
                     style="color: var(--color-text-secondary);"
-                    v-html="page.content"
+                    v-html="sanitizedContent"
                 ></div>
             </div>
         </div>

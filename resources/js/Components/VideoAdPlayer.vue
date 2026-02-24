@@ -62,12 +62,16 @@ let adsLoadedPromise = null;
 const loadAds = () => {
     const params = new URLSearchParams();
     if (props.categoryId) params.set('category_id', props.categoryId);
-    adsLoadedPromise = get(`/api/video-ads?${params.toString()}`).then(({ ok, data }) => {
-        if (ok && data) {
-            adData.value = data.ads;
-            adConfig.value = data.config;
-        }
-    });
+    adsLoadedPromise = get(`/api/video-ads?${params.toString()}`)
+        .then(({ ok, data }) => {
+            if (ok && data) {
+                adData.value = data.ads;
+                adConfig.value = data.config;
+            }
+        })
+        .catch((err) => {
+            console.warn('[VideoAdPlayer] Failed to load ads:', err);
+        });
     return adsLoadedPromise;
 };
 
