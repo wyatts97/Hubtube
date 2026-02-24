@@ -64,10 +64,6 @@ class StatsOverview extends BaseWidget
             $totalComments = Comment::count();
             $comments7d = Comment::where('created_at', '>=', $now->copy()->subDays(7))->count();
 
-            // ── Live Streams ──
-            $liveNow = LiveStream::where('status', 'live')->count();
-            $streams7d = LiveStream::where('created_at', '>=', $now->copy()->subDays(7))->count();
-
             // ── Revenue ──
             $totalRevenue = WalletTransaction::where('type', 'deposit')
                 ->where('status', 'completed')
