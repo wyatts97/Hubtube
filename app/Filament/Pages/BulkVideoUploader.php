@@ -230,7 +230,9 @@ class BulkVideoUploader extends Page implements HasForms
             'video_path' => $newPath,
             'storage_disk' => 'public',
             'size' => Storage::disk('public')->size($newPath),
-            'published_at' => now(),
+            'is_approved' => false,
+            'scheduled_at' => null,
+            'published_at' => null,
         ]);
 
         event(new VideoUploaded($video));
