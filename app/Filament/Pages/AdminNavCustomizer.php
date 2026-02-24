@@ -37,7 +37,6 @@ class AdminNavCustomizer extends Page
                     ['key' => 'App\\Filament\\Resources\\GalleryResource',      'label' => 'Galleries',        'icon' => 'heroicon-o-rectangle-group',        'hidden' => false, 'sort' => 4],
                     ['key' => 'App\\Filament\\Resources\\CommentResource',      'label' => 'Comments',         'icon' => 'heroicon-o-chat-bubble-left-right', 'hidden' => false, 'sort' => 5],
                     ['key' => 'App\\Filament\\Resources\\ChannelResource',      'label' => 'Channels',         'icon' => 'heroicon-o-tv',                     'hidden' => false, 'sort' => 6],
-                    ['key' => 'App\\Filament\\Resources\\LiveStreamResource',   'label' => 'Live Streams',     'icon' => 'heroicon-o-signal',                 'hidden' => false, 'sort' => 7],
                 ],
             ],
             [
@@ -60,7 +59,6 @@ class AdminNavCustomizer extends Page
                 'items'     => [
                     ['key' => 'App\\Filament\\Resources\\WalletTransactionResource', 'label' => 'Wallet Transactions', 'icon' => 'heroicon-o-banknotes',    'hidden' => false, 'sort' => 1],
                     ['key' => 'App\\Filament\\Resources\\WithdrawalRequestResource', 'label' => 'Withdrawals',         'icon' => 'heroicon-o-arrow-up-tray', 'hidden' => false, 'sort' => 2],
-                    ['key' => 'App\\Filament\\Resources\\GiftResource',              'label' => 'Gifts',               'icon' => 'heroicon-o-gift',          'hidden' => false, 'sort' => 3],
                     ['key' => 'App\\Filament\\Pages\\PaymentSettings',               'label' => 'Payment Gateways',    'icon' => 'heroicon-o-credit-card',   'hidden' => false, 'sort' => 4],
                 ],
             ],
@@ -101,7 +99,6 @@ class AdminNavCustomizer extends Page
                 'items'     => [
                     ['key' => 'App\\Filament\\Pages\\SiteSettings',    'label' => 'Site Settings',  'icon' => 'heroicon-o-cog-6-tooth',          'hidden' => false, 'sort' => 1],
                     ['key' => 'App\\Filament\\Pages\\StorageSettings', 'label' => 'Storage & CDN',  'icon' => 'heroicon-o-cloud',                'hidden' => false, 'sort' => 2],
-                    ['key' => 'App\\Filament\\Pages\\LiveStreamSettings', 'label' => 'Live Streaming', 'icon' => 'heroicon-o-video-camera',      'hidden' => false, 'sort' => 3],
                     ['key' => 'App\\Filament\\Pages\\PwaSettings',     'label' => 'PWA & Push',     'icon' => 'heroicon-o-device-phone-mobile',  'hidden' => false, 'sort' => 4],
                     ['key' => 'App\\Filament\\Resources\\PageResource', 'label' => 'Legal Pages',   'icon' => 'heroicon-o-document-text',        'hidden' => false, 'sort' => 5],
                     ['key' => 'App\\Filament\\Pages\\FailedJobs',      'label' => 'Failed Jobs',    'icon' => 'heroicon-o-exclamation-triangle',  'hidden' => false, 'sort' => 6],

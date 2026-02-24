@@ -443,10 +443,6 @@ const tabs = computed(() => {
                                     </li>
                                     <li class="flex items-center gap-2">
                                         <span style="color: var(--color-accent);">✓</span>
-                                        Go Live streaming access
-                                    </li>
-                                    <li class="flex items-center gap-2">
-                                        <span style="color: var(--color-accent);">✓</span>
                                         Priority video processing
                                     </li>
                                     <li class="flex items-center gap-2">

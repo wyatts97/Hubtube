@@ -197,21 +197,14 @@ const getIconColor = (navKey) => {
     return 'var(--color-text-secondary)';
 };
 
-const liveStreamingEnabled = computed(() => page.props.app?.live_streaming_enabled !== false);
 const monetizationEnabled = computed(() => page.props.app?.monetization_enabled !== false);
 
-const navigation = computed(() => {
-    const items = [
-        { name: t('nav.home') || 'Home', href: localizedUrl('/'), icon: Home, key: 'home' },
-        { name: t('nav.trending') || 'Trending', href: localizedUrl('/trending'), icon: TrendingUp, key: 'trending' },
-        { name: t('nav.categories') || 'Categories', href: localizedUrl('/categories'), icon: LayoutGrid, key: 'categories' },
-        { name: t('nav.tags') || 'Tags', href: localizedUrl('/tags'), icon: Tag, key: 'tags' },
-    ];
-    if (liveStreamingEnabled.value) {
-        items.push({ name: t('nav.live') || 'Live', href: localizedUrl('/live'), icon: Radio, key: 'live' });
-    }
-    return items;
-});
+const navigation = computed(() => [
+    { name: t('nav.home') || 'Home', href: localizedUrl('/'), icon: Home, key: 'home' },
+    { name: t('nav.trending') || 'Trending', href: localizedUrl('/trending'), icon: TrendingUp, key: 'trending' },
+    { name: t('nav.categories') || 'Categories', href: localizedUrl('/categories'), icon: LayoutGrid, key: 'categories' },
+    { name: t('nav.tags') || 'Tags', href: localizedUrl('/tags'), icon: Tag, key: 'tags' },
+]);
 
 const libraryNav = computed(() => [
     { name: t('nav.playlists') || 'Playlists', href: '/playlists', icon: ListVideo, key: 'playlists' },
@@ -368,11 +361,6 @@ const handleMobileNavClick = (item) => {
                                 </Link>
                             </div>
                         </div>
-
-                        <!-- Go Live Icon -->
-                        <Link v-if="liveStreamingEnabled" href="/go-live" class="p-2 rounded-full hover:opacity-80 transition-opacity hidden sm:flex" style="color: var(--color-text-secondary);" title="Go Live" aria-label="Go Live">
-                            <Radio class="w-5 h-5" />
-                        </Link>
 
                         <div class="relative">
                             <button @click="toggleNotifications" class="notification-trigger p-2 rounded-full relative" style="color: var(--color-text-secondary);" aria-label="Notifications">

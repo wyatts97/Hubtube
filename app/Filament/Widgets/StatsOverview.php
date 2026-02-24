@@ -3,7 +3,6 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Comment;
-use App\Models\LiveStream;
 use App\Models\User;
 use App\Models\Video;
 use App\Models\WalletTransaction;
@@ -118,11 +117,6 @@ class StatsOverview extends BaseWidget
                     ->color('warning'),
 
                 // Row 2
-                Stat::make('Live Now', $liveNow)
-                    ->description("{$streams7d} streams this week")
-                    ->descriptionIcon('heroicon-m-signal')
-                    ->color($liveNow > 0 ? 'danger' : 'gray'),
-
                 Stat::make('Comments', number_format($totalComments))
                     ->description("+{$comments7d} this week")
                     ->descriptionIcon('heroicon-m-chat-bubble-left-right')

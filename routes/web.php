@@ -11,11 +11,9 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
 // EmbeddedVideoController removed - imported videos now use the regular Video model and /<slug> route
 use App\Http\Controllers\FeedController;
-use App\Http\Controllers\GiftController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LikeController;
-use App\Http\Controllers\LiveStreamController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\ReportController;
@@ -145,9 +143,6 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/channel/{user:username}/history', [ChannelController::class, 'watchHistory'])->name('channel.history');
     Route::get('/channel/{user:username}/about', [ChannelController::class, 'about'])->name('channel.about');
 
-    Route::get('/live', [LiveStreamController::class, 'index'])->name('live.index');
-    Route::get('/live/{liveStream}', [LiveStreamController::class, 'show'])->name('live.show');
-
     Route::get('/public-playlists', [PlaylistController::class, 'publicIndex'])->name('playlists.public');
     Route::get('/playlist/{playlist:slug}', [PlaylistController::class, 'show'])->name('playlists.show');
 
@@ -245,14 +240,6 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/wallet/withdraw', [WalletController::class, 'withdraw'])->name('wallet.withdraw');
         Route::post('/wallet/withdraw', [WalletController::class, 'processWithdraw'])->middleware('throttle:5,1')->name('wallet.withdraw.process');
 
-        Route::get('/go-live', [LiveStreamController::class, 'create'])->name('live.create');
-        Route::post('/go-live', [LiveStreamController::class, 'store'])->middleware('throttle:5,1')->name('live.store');
-        Route::post('/live/{liveStream}/start', [LiveStreamController::class, 'start'])->name('live.start');
-        Route::post('/live/{liveStream}/end', [LiveStreamController::class, 'end'])->name('live.end');
-
-        Route::get('/gifts', [GiftController::class, 'index'])->name('gifts.index');
-        Route::post('/live/{liveStream}/gift', [GiftController::class, 'send'])->middleware('throttle:60,1')->name('gifts.send');
-
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
         Route::put('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile');
         Route::post('/settings/avatar', [SettingsController::class, 'updateAvatar'])->name('settings.avatar');
@@ -309,7 +296,6 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/channel/{username}/history', [ChannelController::class, 'localeWatchHistory'])->name('locale.channel.history');
         Route::get('/channel/{username}/about', [ChannelController::class, 'localeAbout'])->name('locale.channel.about');
         Route::get('/public-playlists', [PlaylistController::class, 'publicIndex'])->name('locale.playlists.public');
-        Route::get('/live', [LiveStreamController::class, 'index'])->name('locale.live.index');
         Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('locale.pages.show');
 
         // Locale-prefixed video show — uses plain {slug} param to avoid model binding conflict with {locale}

@@ -13,7 +13,7 @@ class ReportController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'reportable_type' => 'required|in:video,comment,user,live_stream',
+            'reportable_type' => 'required|in:video,comment,user',
             'reportable_id' => 'required|integer',
             'reason' => 'required|in:spam,harassment,illegal,copyright,underage,other',
             'description' => 'nullable|string|max:2000',
@@ -23,7 +23,6 @@ class ReportController extends Controller
             'video' => \App\Models\Video::class,
             'comment' => \App\Models\Comment::class,
             'user' => \App\Models\User::class,
-            'live_stream' => \App\Models\LiveStream::class,
         ];
 
         $morphType = $typeMap[$validated['reportable_type']] ?? null;

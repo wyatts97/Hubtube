@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
-use App\Models\LiveStream;
 use App\Models\Setting;
 use App\Models\SponsoredCard;
 use App\Models\Video;
@@ -62,16 +61,6 @@ class HomeController extends Controller
                 ->get()
         );
 
-        // Live streams — cached 30 seconds (changes frequently)
-        $liveStreams = Cache::remember('home:live', 30, fn () =>
-            LiveStream::query()
-                ->with('user')
-                ->live()
-                ->orderByDesc('viewer_count')
-                ->limit(6)
-                ->get()
-        );
-
         // Categories — cached 10 minutes (rarely changes)
         $categories = Cache::remember('home:categories', 600, fn () =>
             Category::active()
@@ -91,7 +80,6 @@ class HomeController extends Controller
             'featuredVideos' => $featuredVideos,
             'latestVideos' => $latestVideos,
             'popularVideos' => $popularVideos,
-            'liveStreams' => $liveStreams,
             'categories' => $categories,
             'adSettings' => $adSettings,
             'seo' => $this->seoService->forHome(),

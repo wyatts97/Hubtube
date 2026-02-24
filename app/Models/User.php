@@ -133,21 +133,6 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         return $this->hasMany(WalletTransaction::class);
     }
 
-    public function liveStreams(): HasMany
-    {
-        return $this->hasMany(LiveStream::class);
-    }
-
-    public function giftsSent(): HasMany
-    {
-        return $this->hasMany(GiftTransaction::class, 'sender_id');
-    }
-
-    public function giftsReceived(): HasMany
-    {
-        return $this->hasMany(GiftTransaction::class, 'receiver_id');
-    }
-
     public function complianceRecords(): HasMany
     {
         return $this->hasMany(ComplianceRecord::class);
@@ -199,14 +184,6 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
             ->count();
             
         return $todayUploads < $limit;
-    }
-
-    public function canGoLive(): bool
-    {
-        if ($this->is_pro) {
-            return true;
-        }
-        return (bool) Setting::get('free_users_can_go_live', false);
     }
 
     public function getMaxVideoSizeAttribute(): int

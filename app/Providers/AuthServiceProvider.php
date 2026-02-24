@@ -12,7 +12,6 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\Video::class => \App\Policies\VideoPolicy::class,
         \App\Models\Comment::class => \App\Policies\CommentPolicy::class,
         \App\Models\Playlist::class => \App\Policies\PlaylistPolicy::class,
-        \App\Models\LiveStream::class => \App\Policies\LiveStreamPolicy::class,
     ];
 
     public function boot(): void
@@ -23,10 +22,6 @@ class AuthServiceProvider extends ServiceProvider
 
         Gate::define('upload-video', function ($user) {
             return $user->canUpload();
-        });
-
-        Gate::define('go-live', function ($user) {
-            return $user->canGoLive() && $user->isAgeVerified();
         });
 
         Gate::define('withdraw', function ($user) {

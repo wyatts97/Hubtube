@@ -6,7 +6,6 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
-import LiveStreamCard from '@/Components/LiveStreamCard.vue';
 import { Loader2 } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
 import AdSlot from '@/Components/AdSlot.vue';
@@ -29,7 +28,6 @@ const props = defineProps({
     featuredVideos: Array,
     latestVideos: Object, // Now a paginated object
     popularVideos: Array,
-    liveStreams: Array,
     categories: Array,
     adSettings: Object, // Ad settings from admin
     seo: { type: Object, default: () => ({}) },
@@ -187,20 +185,6 @@ const getSponsoredCard = (index) => {
     <SeoHead :seo="seo" />
 
     <AppLayout>
-        <!-- Live Streams Section -->
-        <section v-if="liveStreams.length > 0" class="mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold flex items-center gap-2" style="color: var(--color-text-primary);">
-                    <span class="w-3 h-3 rounded-full animate-pulse" style="background-color: var(--color-accent);"></span>
-                    {{ t('home.live_now') || 'Live Now' }}
-                </h2>
-                <a :href="localizedUrl('/live')" class="text-sm font-medium" style="color: var(--color-accent);">{{ t('common.view_all') || 'View All' }}</a>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                <LiveStreamCard v-for="stream in liveStreams" :key="stream.id" :stream="stream" />
-            </div>
-        </section>
-
         <!-- Featured Videos -->
         <section v-if="featuredVideos.length > 0 || isInitialLoad" class="mb-8">
             <div class="flex items-center justify-between mb-4">

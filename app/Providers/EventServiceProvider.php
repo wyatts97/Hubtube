@@ -19,12 +19,6 @@ class EventServiceProvider extends ServiceProvider
             \App\Listeners\NotifyVideoProcessed::class,
             \App\Listeners\TweetNewVideoListener::class,
         ],
-        \App\Events\GiftSent::class => [
-            \App\Listeners\ProcessGiftTransaction::class,
-        ],
-        \App\Events\LiveStreamStarted::class => [
-            \App\Listeners\NotifySubscribersOfLiveStream::class,
-        ],
         \App\Events\NewSubscriber::class => [
             \App\Listeners\NotifyChannelOfNewSubscriber::class,
         ],
