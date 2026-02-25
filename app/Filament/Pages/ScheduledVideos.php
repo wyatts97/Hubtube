@@ -3,41 +3,39 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\HasCustomizableNavigation;
-use App\Models\ScheduleTemplate;
+use App\Models\Setting;
 use App\Models\Video;
 use App\Services\AdminLogger;
-use Filament\Forms\Components\Repeater;
+use App\Services\VideoService;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
-use Filament\Forms\Components\Toggle;
-use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Carbon;
 
-class ScheduledVideos extends Page implements HasForms
+class ScheduledVideos extends Page implements HasTable
 {
     use HasCustomizableNavigation;
-    use InteractsWithForms;
+    use InteractsWithTable;
 
     protected static ?string $navigationIcon = 'heroicon-o-clock';
-    protected static ?string $navigationLabel = 'Scheduled';
+    protected static ?string $navigationLabel = 'Scheduled Queue';
     protected static ?string $navigationGroup = 'Content';
     protected static ?int $navigationSort = 6;
     protected static string $view = 'filament.pages.scheduled-videos';
 
-    public ?array $templateData = [];
-    public bool $showTemplateForm = false;
-    public ?int $editingTemplateId = null;
-
     public static function getNavigationBadge(): ?string
     {
-        return Video::whereNotNull('scheduled_at')
-            ->where('scheduled_at', '>', now())
-            ->count() ?: null;
+        $count = Video::whereNotNull('queue_order')
+            ->where('is_approved', false)
+            ->count();
+
+        return $count > 0 ? (string)$count : null;
     }
 
     public static function getNavigationBadgeColor(): ?string
@@ -45,230 +43,108 @@ class ScheduledVideos extends Page implements HasForms
         return 'info';
     }
 
-    protected function getForms(): array
+    protected function getHeaderActions(): array
     {
         return [
-            'templateForm',
+            \Filament\Actions\Action::make('configureSchedule')
+            ->label('Schedule Settings')
+            ->icon('heroicon-o-cog-6-tooth')
+            ->form([
+                Select::make('posts_per_day')
+                ->label('Posts Per Day')
+                ->options([
+                    1 => '1 Post per Day',
+                    2 => '2 Posts per Day (Every 12h)',
+                    3 => '3 Posts per Day (Every 8h)',
+                    4 => '4 Posts per Day (Every 6h)',
+                    6 => '6 Posts per Day (Every 4h)',
+                ])
+                ->default((int)Setting::get('schedule_posts_per_day', 1))
+                ->required(),
+                TimePicker::make('start_hour')
+                ->label('Daily Start Time')
+                ->seconds(false)
+                ->default(Setting::get('schedule_start_hour', '08:00:00'))
+                ->required(),
+            ])
+            ->action(function (array $data) {
+            Setting::set('schedule_posts_per_day', $data['posts_per_day']);
+            Setting::set('schedule_start_hour', $data['start_hour']);
+            AdminLogger::settingsSaved('Queue Configuration', array_keys($data));
+            Notification::make()->title('Schedule Settings Updated')->success()->send();
+            app(VideoService::class)->recalculateScheduleQueue();
+        }),
+
+            \Filament\Actions\Action::make('recalculate')
+            ->label('Recalculate Times')
+            ->icon('heroicon-o-arrow-path')
+            ->color('warning')
+            ->action(function () {
+            app(VideoService::class)->recalculateScheduleQueue();
+            Notification::make()->title('Queue times updated!')->success()->send();
+        }),
         ];
     }
 
-    public function mount(): void
+    public function table(Table $table): Table
     {
-        $this->templateForm->fill([]);
-    }
-
-    public function templateForm(Form $form): Form
-    {
-        return $form
-            ->schema([
-                TextInput::make('name')
-                    ->label('Template Name')
-                    ->required()
-                    ->placeholder('e.g. Weekday Evenings'),
-                Repeater::make('slots')
-                    ->label('Time Slots')
-                    ->schema([
-                        Select::make('day')
-                            ->options([
-                                'monday' => 'Monday',
-                                'tuesday' => 'Tuesday',
-                                'wednesday' => 'Wednesday',
-                                'thursday' => 'Thursday',
-                                'friday' => 'Friday',
-                                'saturday' => 'Saturday',
-                                'sunday' => 'Sunday',
-                            ])
-                            ->required(),
-                        TimePicker::make('time')
-                            ->seconds(false)
-                            ->required(),
-                    ])
-                    ->columns(2)
-                    ->minItems(1)
-                    ->defaultItems(1)
-                    ->addActionLabel('Add Time Slot')
-                    ->collapsible(),
-                Toggle::make('is_active')
-                    ->label('Active')
-                    ->default(true),
-            ])
-            ->statePath('templateData');
-    }
-
-    public function getScheduledVideosProperty(): \Illuminate\Database\Eloquent\Collection
-    {
-        return Video::with('user', 'category')
-            ->whereNotNull('scheduled_at')
-            ->where('scheduled_at', '>', now())
-            ->orderBy('scheduled_at')
-            ->get();
-    }
-
-    public function getPublishedScheduledProperty(): \Illuminate\Database\Eloquent\Collection
-    {
-        return Video::with('user')
-            ->whereNotNull('published_at')
-            ->where('published_at', '>', now()->subDays(7))
-            ->where('is_approved', true)
-            ->orderByDesc('published_at')
-            ->limit(10)
-            ->get();
-    }
-
-    public function getTemplatesProperty(): \Illuminate\Database\Eloquent\Collection
-    {
-        return ScheduleTemplate::orderBy('name')->get();
-    }
-
-    public function openTemplateForm(?int $id = null): void
-    {
-        $this->editingTemplateId = $id;
-        $this->showTemplateForm = true;
-
-        if ($id) {
-            $template = ScheduleTemplate::find($id);
-            if ($template) {
-                $this->templateForm->fill([
-                    'name' => $template->name,
-                    'slots' => $template->slots,
-                    'is_active' => $template->is_active,
-                ]);
-            }
-        } else {
-            $this->templateForm->fill([
-                'name' => '',
-                'slots' => [['day' => 'monday', 'time' => '18:00']],
-                'is_active' => true,
-            ]);
-        }
-    }
-
-    public function closeTemplateForm(): void
-    {
-        $this->showTemplateForm = false;
-        $this->editingTemplateId = null;
-        $this->templateForm->fill([]);
-    }
-
-    public function saveTemplate(): void
-    {
-        $data = $this->templateForm->getState();
-
-        if ($this->editingTemplateId) {
-            $template = ScheduleTemplate::find($this->editingTemplateId);
-            $template?->update($data);
-            Notification::make()->title('Template updated')->success()->send();
-        } else {
-            ScheduleTemplate::create($data);
-            Notification::make()->title('Template created')->success()->send();
-        }
-
-        AdminLogger::settingsSaved('Schedule Template', array_keys($data));
-        $this->closeTemplateForm();
-    }
-
-    public function deleteTemplate(int $id): void
-    {
-        ScheduleTemplate::find($id)?->delete();
-        Notification::make()->title('Template deleted')->success()->send();
-    }
-
-    public function applyTemplate(int $templateId): void
-    {
-        $template = ScheduleTemplate::find($templateId);
-        if (!$template) {
-            Notification::make()->title('Template not found')->danger()->send();
-            return;
-        }
-
-        // Get unscheduled processed videos that are not yet approved (waiting to be scheduled)
-        $videos = Video::where('status', 'processed')
+        return $table
+            ->query(
+            Video::query()
+            ->with('user', 'category')
+            ->whereNotNull('queue_order')
             ->where('is_approved', false)
-            ->whereNull('scheduled_at')
-            ->orderBy('created_at')
-            ->get();
-
-        if ($videos->isEmpty()) {
-            Notification::make()->title('No unscheduled videos available')->warning()->send();
-            return;
-        }
-
-        $slots = $template->getNextSlots($videos->count());
-
-        if (empty($slots)) {
-            Notification::make()->title('No available time slots found')->warning()->send();
-            return;
-        }
-
-        $scheduled = 0;
-        foreach ($videos as $index => $video) {
-            if (!isset($slots[$index])) break;
-
-            $video->update(['scheduled_at' => $slots[$index]]);
-            $scheduled++;
-        }
-
-        Notification::make()
-            ->title("Scheduled {$scheduled} video(s) using \"{$template->name}\"")
-            ->success()
-            ->send();
-    }
-
-    public function shuffleScheduled(): void
-    {
-        $videos = Video::whereNotNull('scheduled_at')
-            ->where('scheduled_at', '>', now())
-            ->orderBy('scheduled_at')
-            ->get();
-
-        if ($videos->count() < 2) {
-            Notification::make()->title('Need at least 2 scheduled videos to shuffle')->warning()->send();
-            return;
-        }
-
-        // Collect the existing scheduled times, shuffle the videos, reassign
-        $times = $videos->pluck('scheduled_at')->toArray();
-        $videoIds = $videos->pluck('id')->toArray();
-        shuffle($videoIds);
-
-        foreach ($videoIds as $index => $videoId) {
-            Video::where('id', $videoId)->update(['scheduled_at' => $times[$index]]);
-        }
-
-        Notification::make()
-            ->title('Shuffled ' . count($videoIds) . ' scheduled videos')
-            ->success()
-            ->send();
-    }
-
-    public function unscheduleVideo(int $videoId): void
-    {
-        $video = Video::find($videoId);
-        if ($video) {
-            $video->update(['scheduled_at' => null]);
-            Notification::make()->title('Video unscheduled')->success()->send();
-        }
-    }
-
-    public function publishNow(int $videoId): void
-    {
-        $video = Video::find($videoId);
-        if ($video) {
-            $video->update([
-                'is_approved' => true,
-                'published_at' => now(),
-                'scheduled_at' => null,
-            ]);
+        )
+            ->reorderable('queue_order')
+            ->defaultSort('queue_order')
+            ->columns([
+            TextColumn::make('title')
+            ->searchable()
+            ->sortable()
+            ->weight('bold')
+            ->limit(50)
+            ->description(fn(Video $record): string => $record->formatted_duration ?: '—'),
+            TextColumn::make('user.username')
+            ->label('Uploader')
+            ->size('sm'),
+            TextColumn::make('scheduled_at')
+            ->label('Scheduled For')
+            ->dateTime('M j, Y g:i A')
+            ->sortable()
+            ->description(fn(Video $record) => $record->scheduled_at ? $record->scheduled_at->diffForHumans() : ''),
+            TextColumn::make('status')
+            ->badge()
+            ->color(fn(string $state) => $state === 'processed' ? 'success' : 'warning')
+            ->formatStateUsing(fn(string $state) => $state === 'processed' ? 'Ready' : ucfirst($state)),
+        ])
+            ->actions([
+            Action::make('publishNow')
+            ->label('Publish Now')
+            ->icon('heroicon-o-rocket-launch')
+            ->color('success')
+            ->requiresConfirmation()
+            ->action(function (Video $record) {
+            $record->update([
+                    'is_approved' => true,
+                    'published_at' => now(),
+                    'scheduled_at' => null,
+                    'queue_order' => null,
+                ]);
+            app(VideoService::class)->recalculateScheduleQueue();
             Notification::make()->title('Video published immediately')->success()->send();
-        }
-    }
-
-    public function reschedule(int $videoId, string $datetime): void
-    {
-        $video = Video::find($videoId);
-        if ($video && $datetime) {
-            $video->update(['scheduled_at' => Carbon::parse($datetime)]);
-            Notification::make()->title('Video rescheduled')->success()->send();
-        }
+        }),
+            Action::make('removeFromQueue')
+            ->label('Remove')
+            ->icon('heroicon-o-x-circle')
+            ->color('danger')
+            ->action(function (Video $record) {
+            $record->update([
+                    'scheduled_at' => null,
+                    'queue_order' => null,
+                ]);
+            app(VideoService::class)->recalculateScheduleQueue();
+            Notification::make()->title('Video removed from queue')->success()->send();
+        }),
+        ]);
     }
 }

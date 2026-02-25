@@ -5,7 +5,6 @@ namespace App\Filament\Pages;
 use App\Events\VideoUploaded;
 use App\Filament\Concerns\HasCustomizableNavigation;
 use App\Models\Category;
-use App\Models\ScheduleTemplate;
 use App\Models\User;
 use App\Models\Video;
 use App\Services\AdminLogger;
