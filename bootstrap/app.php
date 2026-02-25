@@ -107,8 +107,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (HttpException $e, Request $request) {
             $status = $e->getStatusCode();
 
-            // Handle CSRF token mismatch
+            // Handle CSRF token mismatch (skip for admin)
+            $isAdmin = $request->is('admin/*') || $request->is('admin') || $request->is('livewire/*');
             if ($status === 419 || str_contains($e->getMessage(), 'CSRF')) {
+                if ($isAdmin) {
+                    return null;
+                }
+
                 if ($request->inertia()) {
                     return Inertia::render('Error', [
                         'status' => 419,
@@ -121,8 +126,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 ]);
             }
 
-            // Render 404, 403, 500, 503 via Inertia Error page (with AppLayout)
+            // Render 404, 403, 500, 503 via Inertia Error page (skip for admin)
             if (in_array($status, [404, 403, 500, 503])) {
+                if ($isAdmin) {
+                    return null;
+                }
+
                 return Inertia::render('Error', [
                     'status' => $status,
                     'message' => $e->getMessage() ?: null,

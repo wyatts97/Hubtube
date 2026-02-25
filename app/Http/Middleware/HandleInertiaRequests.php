@@ -13,6 +13,19 @@ class HandleInertiaRequests extends Middleware
 {
     protected $rootView = 'app';
 
+    /**
+     * Skip Inertia entirely for admin/Filament routes so Livewire
+     * navigation works without Inertia interference.
+     */
+    public function handle(Request $request, \Closure $next): mixed
+    {
+        if ($request->is('admin/*') || $request->is('admin') || $request->is('livewire/*')) {
+            return $next($request);
+        }
+
+        return parent::handle($request, $next);
+    }
+
     public function version(Request $request): ?string
     {
         return parent::version($request);
@@ -24,9 +37,9 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user() ? (function () use ($request) {
-                    $user = $request->user();
-                    $user->loadMissing('channel');
-                    return [
+            $user = $request->user();
+            $user->loadMissing('channel');
+            return [
                         'id' => $user->id,
                         'username' => $user->username,
                         'email' => $user->email,
@@ -45,20 +58,20 @@ class HandleInertiaRequests extends Middleware
                             'banner_image' => $user->channel->banner_image,
                         ] : null,
                     ];
-                })() : null,
+        })() : null,
             ],
             'flash' => [
-                'success' => fn () => $request->session()->get('success'),
-                'error' => fn () => $request->session()->get('error'),
-                'warning' => fn () => $request->session()->get('warning'),
-                'info' => fn () => $request->session()->get('info'),
+                'success' => fn() => $request->session()->get('success'),
+                'error' => fn() => $request->session()->get('error'),
+                'warning' => fn() => $request->session()->get('warning'),
+                'info' => fn() => $request->session()->get('info'),
             ],
             'csrf_token' => csrf_token(),
-            'app' => fn () => $this->getAppSettings(),
-            'socialLogin' => fn () => $this->getSocialLoginProviders(),
-            'theme' => fn () => $this->getThemeSettings(),
-            'menuItems' => fn () => $this->getMenuItems(),
-            'locale' => fn () => $this->getLocaleData(),
+            'app' => fn() => $this->getAppSettings(),
+            'socialLogin' => fn() => $this->getSocialLoginProviders(),
+            'theme' => fn() => $this->getThemeSettings(),
+            'menuItems' => fn() => $this->getMenuItems(),
+            'locale' => fn() => $this->getLocaleData(),
         ];
     }
 
@@ -70,7 +83,8 @@ class HandleInertiaRequests extends Middleware
         if (!isset($this->cachedSettings)) {
             try {
                 $this->cachedSettings = Setting::getAll();
-            } catch (\Exception $e) {
+            }
+            catch (\Exception $e) {
                 $this->cachedSettings = [];
             }
         }
@@ -88,10 +102,10 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             'name' => config('app.name'),
-            'age_verification_required' => (bool) $this->s('age_verification_required', true),
+            'age_verification_required' => (bool)$this->s('age_verification_required', true),
             'infinite_scroll_enabled' => $this->s('infinite_scroll_enabled', false),
             'videos_per_page' => $this->s('videos_per_page', 24),
-            'monetization_enabled' => (bool) $this->s('monetization_enabled', true),
+            'monetization_enabled' => (bool)$this->s('monetization_enabled', true),
         ];
     }
 
@@ -102,7 +116,7 @@ class HandleInertiaRequests extends Middleware
             'siteTitleFont' => $this->s('site_title_font', ''),
             'siteTitleSize' => $this->s('site_title_size', 20),
             'siteTitleColor' => $this->s('site_title_color', ''),
-            
+
             'mode' => $this->s('theme_mode', 'dark'),
             'allowToggle' => $this->s('allow_user_theme_toggle', true),
             'dark' => [
@@ -136,11 +150,11 @@ class HandleInertiaRequests extends Middleware
             ],
             'ageVerification' => [
                 'overlayColor' => $this->s('age_overlay_color', 'rgba(0, 0, 0, 0.85)'),
-                'overlayBlur' => (int) $this->s('age_overlay_blur', 8),
-                'showLogo' => (bool) $this->s('age_show_logo', false),
+                'overlayBlur' => (int)$this->s('age_overlay_blur', 8),
+                'showLogo' => (bool)$this->s('age_show_logo', false),
                 'logoUrl' => $this->storageUrl($this->s('site_logo', '')),
                 'headerText' => $this->s('age_header_text', 'Age Verification Required'),
-                'headerSize' => (int) $this->s('age_header_size', 28),
+                'headerSize' => (int)$this->s('age_header_size', 28),
                 'headerColor' => $this->s('age_header_color', ''),
                 'descriptionText' => $this->s('age_description_text', 'This website contains age-restricted content. You must be at least 18 years old to enter.'),
                 'disclaimerText' => $this->s('age_disclaimer_text', 'By clicking "{confirm}", you confirm that you are at least 18 years of age and consent to viewing adult content.'),
@@ -164,23 +178,23 @@ class HandleInertiaRequests extends Middleware
             'site_favicon' => $this->storageUrl($this->s('site_favicon', '')),
             'footer_logo_url' => $this->storageUrl($this->s('footer_logo_url', '')),
             'progressBarColor' => $this->s('progress_bar_color', ''),
-            'footer_ad_enabled' => (bool) $this->s('footer_ad_enabled', false),
+            'footer_ad_enabled' => (bool)$this->s('footer_ad_enabled', false),
             'footer_ad_code' => $this->s('footer_ad_code', ''),
             'footer_ad_mobile_code' => $this->s('footer_ad_mobile_code', ''),
             'videoCard' => [
-                'showAvatar' => (bool) $this->s('video_card_show_avatar', true),
-                'showUploader' => (bool) $this->s('video_card_show_uploader', true),
-                'showViews' => (bool) $this->s('video_card_show_views', true),
-                'showDuration' => (bool) $this->s('video_card_show_duration', true),
-                'showTimestamp' => (bool) $this->s('video_card_show_timestamp', true),
+                'showAvatar' => (bool)$this->s('video_card_show_avatar', true),
+                'showUploader' => (bool)$this->s('video_card_show_uploader', true),
+                'showViews' => (bool)$this->s('video_card_show_views', true),
+                'showDuration' => (bool)$this->s('video_card_show_duration', true),
+                'showTimestamp' => (bool)$this->s('video_card_show_timestamp', true),
                 'titleFont' => $this->s('video_card_title_font', ''),
-                'titleSize' => (int) $this->s('video_card_title_size', 14),
+                'titleSize' => (int)$this->s('video_card_title_size', 14),
                 'titleColor' => $this->s('video_card_title_color', ''),
-                'titleLines' => (int) $this->s('video_card_title_lines', 2),
+                'titleLines' => (int)$this->s('video_card_title_lines', 2),
                 'metaFont' => $this->s('video_card_meta_font', ''),
-                'metaSize' => (int) $this->s('video_card_meta_size', 13),
+                'metaSize' => (int)$this->s('video_card_meta_size', 13),
                 'metaColor' => $this->s('video_card_meta_color', ''),
-                'borderRadius' => (int) $this->s('video_card_border_radius', 12),
+                'borderRadius' => (int)$this->s('video_card_border_radius', 12),
             ],
             'mobileVideoGrid' => $this->s('mobile_video_grid', '1'),
         ];
@@ -190,7 +204,7 @@ class HandleInertiaRequests extends Middleware
     {
         $providers = [];
         foreach (['google', 'twitter', 'reddit'] as $provider) {
-            if ((bool) $this->s("social_login_{$provider}_enabled", false)) {
+            if ((bool)$this->s("social_login_{$provider}_enabled", false)) {
                 $providers[] = $provider;
             }
         }
@@ -220,7 +234,8 @@ class HandleInertiaRequests extends Middleware
                 'prefix' => $isTranslated ? "/{$currentLocale}" : '',
                 'translations' => $translations,
             ];
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             return [
                 'current' => 'en',
                 'default' => 'en',
@@ -261,7 +276,8 @@ class HandleInertiaRequests extends Middleware
                 'header' => $items->merge($headerOnly)->sortBy('sort_order')->values()->toArray(),
                 'mobile' => $items->merge($mobileOnly)->sortBy('sort_order')->values()->toArray(),
             ];
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             // Table may not exist yet (pre-migration)
             return ['header' => [], 'mobile' => []];
         }
