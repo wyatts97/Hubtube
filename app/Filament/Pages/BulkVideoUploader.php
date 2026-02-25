@@ -43,6 +43,7 @@ class BulkVideoUploader extends Page implements HasForms
     // "Apply to All" fields
     public ?int $bulkCategoryId = null;
     public ?int $bulkUserId = null;
+    public ?int $bulkTemplateId = null;
     public array $bulkTags = [];
     public bool $bulkAgeRestricted = true;
 
@@ -63,18 +64,18 @@ class BulkVideoUploader extends Page implements HasForms
     {
         return $form
             ->schema([
-                \Filament\Forms\Components\FileUpload::make('video_files')
-                    ->label('Drop video files here or click to browse')
-                    ->disk('public')
-                    ->directory('videos/admin-uploads')
-                    ->acceptedFileTypes(['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'])
-                    ->maxSize(5242880) // 5GB
-                    ->multiple()
-                    ->maxFiles(50)
-                    ->visibility('public')
-                    ->storeFileNamesIn('video_file_names')
-                    ->columnSpanFull(),
-            ])
+            \Filament\Forms\Components\FileUpload::make('video_files')
+            ->label('Drop video files here or click to browse')
+            ->disk('public')
+            ->directory('videos/admin-uploads')
+            ->acceptedFileTypes(['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'])
+            ->maxSize(5242880) // 5GB
+            ->multiple()
+            ->maxFiles(50)
+            ->visibility('public')
+            ->storeFileNamesIn('video_file_names')
+            ->columnSpanFull(),
+        ])
             ->statePath('uploadData');
     }
 
@@ -100,7 +101,7 @@ class BulkVideoUploader extends Page implements HasForms
                 'user_id' => $this->bulkUserId ?? auth()->id(),
                 'age_restricted' => $this->bulkAgeRestricted,
                 'file_path' => $tempPath,
-                'file_size' => Storage::disk('public')->exists($tempPath) ? Storage::disk('public')->size($tempPath) : 0,
+                'file_size' => Storage::disk('public')->exists($tempPath) ?Storage::disk('public')->size($tempPath) : 0,
                 'file_name' => $originalName,
             ];
         }
@@ -179,7 +180,20 @@ class BulkVideoUploader extends Page implements HasForms
         $this->isCreating = true;
         $this->createdVideoIds = [];
 
-        foreach ($this->entries as $entry) {
+        // Fetch schedule slots if a master template is selected
+        $slots = [];
+        if ($this->bulkTemplateId) {
+            $template = ScheduleTemplate::find($this->bulkTemplateId);
+            if ($template) {
+                // Get enough slots for all entries
+                $slots = $template->getNextSlots(count($this->entries), now());
+            }
+        }
+
+        foreach ($this->entries as $index => $entry) {
+            // Assign schedule slot if available
+            $entry['scheduled_at'] = $slots[$index] ?? null;
+
             $video = $this->createSingleVideo($entry);
             if ($video) {
                 $this->createdVideoIds[] = $video->id;
@@ -218,7 +232,7 @@ class BulkVideoUploader extends Page implements HasForms
 
         $video = Video::create([
             'user_id' => $entry['user_id'] ?? auth()->id(),
-            'uuid' => (string) Str::uuid(),
+            'uuid' => (string)Str::uuid(),
             'title' => $title,
             'slug' => $slug,
             'description' => $entry['description'] ?? null,
@@ -231,8 +245,8 @@ class BulkVideoUploader extends Page implements HasForms
             'storage_disk' => 'public',
             'size' => Storage::disk('public')->size($newPath),
             'is_approved' => false,
-            'scheduled_at' => null,
-            'requires_schedule' => true,
+            'scheduled_at' => $entry['scheduled_at'] ?? null,
+            'requires_schedule' => isset($entry['scheduled_at']) ? true : false,
             'published_at' => null,
         ]);
 
@@ -268,7 +282,8 @@ class BulkVideoUploader extends Page implements HasForms
     public function selectThumbnail(int $videoId, int $thumbIndex): void
     {
         $video = Video::find($videoId);
-        if (!$video) return;
+        if (!$video)
+            return;
 
         $slug = $video->slug;
         $slugTitle = Str::slug($video->title, '_');

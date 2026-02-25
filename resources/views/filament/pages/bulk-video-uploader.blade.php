@@ -35,6 +35,15 @@
                             </select>
                         </div>
                         <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Schedule Template</label>
+                            <select wire:model="bulkTemplateId" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm">
+                                <option value="">— Publish Immediately —</option>
+                                @foreach ($this->templates as $template)
+                                    <option value="{{ $template->id }}">{{ $template->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Age Restricted</label>
                             <label class="flex items-center gap-2 mt-2">
                                 <input type="checkbox" wire:model="bulkAgeRestricted" class="rounded border-gray-300 dark:border-gray-600">
