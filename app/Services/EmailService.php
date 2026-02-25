@@ -54,8 +54,9 @@ class EmailService
 
         // Check if admin wants this notification type
         $settingKey = "admin_notify_{$templateSlug}";
-        $enabled = Setting::get($settingKey, 'true');
-        if ($enabled === 'false' || $enabled === '0') {
+        $enabled = Setting::get($settingKey, true);
+        // Handle boolean or string values consistently
+        if (!filter_var($enabled, FILTER_VALIDATE_BOOLEAN)) {
             return false;
         }
 
