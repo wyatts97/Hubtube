@@ -137,10 +137,11 @@ class VideoService
             'processing_completed_at' => now(),
         ];
 
-        // Auto-approve if global toggle is on, or if uploader is in the trusted list
-        if ($this->shouldAutoApprove($video)) {
+        // Auto-approve if global toggle is on (or trusted uploader) AND a publish time was provided.
+        // Bulk uploads now set published_at to null so they stay in the scheduling queue until an admin sets a time.
+        if ($video->published_at && $this->shouldAutoApprove($video)) {
             $updateData['is_approved'] = true;
-            $updateData['published_at'] = $video->published_at ?? now();
+            $updateData['published_at'] = $video->published_at;
         }
 
         $video->update($updateData);
