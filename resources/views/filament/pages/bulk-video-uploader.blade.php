@@ -35,13 +35,11 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Schedule Template</label>
-                            <select wire:model="bulkTemplateId" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm">
-                                <option value="">— Publish Immediately —</option>
-                                @foreach ($this->templates as $template)
-                                    <option value="{{ $template->id }}">{{ $template->name }}</option>
-                                @endforeach
-                            </select>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Add to Queue</label>
+                            <label class="flex items-center gap-2 mt-2">
+                                <input type="checkbox" wire:model="addToQueue" class="rounded border-gray-300 dark:border-gray-600">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">Yes (Schedule automatically)</span>
+                            </label>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Age Restricted</label>

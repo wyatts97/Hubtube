@@ -43,7 +43,7 @@ class BulkVideoUploader extends Page implements HasForms
     // "Apply to All" fields
     public ?int $bulkCategoryId = null;
     public ?int $bulkUserId = null;
-    public ?int $bulkTemplateId = null;
+    public bool $addToQueue = true;
     public array $bulkTags = [];
     public bool $bulkAgeRestricted = true;
 
@@ -122,10 +122,7 @@ class BulkVideoUploader extends Page implements HasForms
         return User::orderBy('username')->pluck('username', 'id');
     }
 
-    public function getTemplatesProperty(): \Illuminate\Database\Eloquent\Collection
-    {
-        return ScheduleTemplate::where('is_active', true)->orderBy('name')->get();
-    }
+
 
     public function removeEntry(int $index): void
     {
@@ -180,24 +177,23 @@ class BulkVideoUploader extends Page implements HasForms
         $this->isCreating = true;
         $this->createdVideoIds = [];
 
-        // Fetch schedule slots if a master template is selected
-        $slots = [];
-        if ($this->bulkTemplateId) {
-            $template = ScheduleTemplate::find($this->bulkTemplateId);
-            if ($template) {
-                // Get enough slots for all entries
-                $slots = $template->getNextSlots(count($this->entries), now());
-            }
-        }
+        // Determine current max queue order
+        $maxOrder = Video::max('queue_order') ?? 0;
 
         foreach ($this->entries as $index => $entry) {
-            // Assign schedule slot if available
-            $entry['scheduled_at'] = $slots[$index] ?? null;
+            if ($this->addToQueue) {
+                $maxOrder++;
+                $entry['queue_order'] = $maxOrder;
+            }
 
             $video = $this->createSingleVideo($entry);
             if ($video) {
                 $this->createdVideoIds[] = $video->id;
             }
+        }
+
+        if ($this->addToQueue) {
+            ScheduledVideos::recalculateScheduleQueue();
         }
 
         $count = count($this->createdVideoIds);
@@ -245,8 +241,8 @@ class BulkVideoUploader extends Page implements HasForms
             'storage_disk' => 'public',
             'size' => Storage::disk('public')->size($newPath),
             'is_approved' => false,
-            'scheduled_at' => $entry['scheduled_at'] ?? null,
-            'requires_schedule' => isset($entry['scheduled_at']) ? true : false,
+            'queue_order' => $entry['queue_order'] ?? null,
+            'requires_schedule' => isset($entry['queue_order']) ? true : false,
             'published_at' => null,
         ]);
 
