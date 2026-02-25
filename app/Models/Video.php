@@ -60,6 +60,7 @@ class Video extends Model
         'tags',
         'published_at',
         'scheduled_at',
+        'requires_schedule',
         'processing_started_at',
         'processing_completed_at',
         'scrubber_vtt_path',
@@ -101,6 +102,7 @@ class Video extends Model
             'scheduled_at' => 'datetime',
             'processing_started_at' => 'datetime',
             'processing_completed_at' => 'datetime',
+            'requires_schedule' => 'boolean',
         ];
     }
 
@@ -116,6 +118,14 @@ class Video extends Model
         static::created($flushHomeCache);
         static::updated($flushHomeCache);
         static::deleted($flushHomeCache);
+
+        static::saving(function (Video $video) {
+            if ($video->scheduled_at && !$video->is_approved) {
+                $video->requires_schedule = true;
+            } elseif (!$video->scheduled_at && $video->is_approved) {
+                $video->requires_schedule = false;
+            }
+        });
 
         static::deleting(function (Video $video) {
             // Skip storage cleanup for embedded videos (no local files)
