@@ -36,7 +36,6 @@ class AdminNavCustomizer extends Page
                     ['key' => 'App\\Filament\\Resources\\CategoryResource',     'label' => 'Categories',       'icon' => 'heroicon-o-tag',                    'hidden' => false, 'sort' => 3],
                     ['key' => 'App\\Filament\\Resources\\GalleryResource',      'label' => 'Galleries',        'icon' => 'heroicon-o-rectangle-group',        'hidden' => false, 'sort' => 4],
                     ['key' => 'App\\Filament\\Resources\\CommentResource',      'label' => 'Comments',         'icon' => 'heroicon-o-chat-bubble-left-right', 'hidden' => false, 'sort' => 5],
-                    ['key' => 'App\\Filament\\Resources\\ChannelResource',      'label' => 'Channels',         'icon' => 'heroicon-o-tv',                     'hidden' => false, 'sort' => 6],
                 ],
             ],
             [
