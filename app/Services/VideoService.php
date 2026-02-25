@@ -10,6 +10,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 
 class VideoService
 {
@@ -114,7 +115,8 @@ class VideoService
         if (StorageManager::isCloudDisk($disk)) {
             $path = "{$directory}/{$filename}";
             StorageManager::put($path, file_get_contents($file->getRealPath()), $disk);
-        } else {
+        }
+        else {
             $path = $file->storeAs($directory, $filename, 'public');
         }
 
@@ -174,5 +176,44 @@ class VideoService
             'failure_reason' => $reason,
             'processing_completed_at' => now(),
         ]);
+    }
+
+    /**
+     * Walks the entire ordered queue and updates `scheduled_at` based on config.
+     */
+    public function recalculateScheduleQueue(): void
+    {
+        $videos = Video::whereNotNull('queue_order')
+            ->where('is_approved', false)
+            ->orderBy('queue_order')
+            ->get();
+
+        if ($videos->isEmpty())
+            return;
+
+        $postsPerDay = (int)Setting::get('schedule_posts_per_day', 1);
+        $startHourInput = Setting::get('schedule_start_hour', '08:00:00');
+
+        $intervalHours = 24 / max(1, $postsPerDay);
+
+        // Find the next available start time
+        $cursor = now()->copy();
+        $startHourCarbon = Carbon::parse($startHourInput);
+
+        $cursor->setTimeFromTimeString($startHourInput);
+        if ($cursor->isPast()) {
+            // Find the closest interval chunk to now without going into the past
+            while ($cursor->isPast()) {
+                $cursor->addHours($intervalHours);
+            }
+        }
+
+        foreach ($videos as $index => $video) {
+            $video->update([
+                'queue_order' => $index + 1, // Fix any gaps
+                'scheduled_at' => $cursor->copy(),
+            ]);
+            $cursor->addHours($intervalHours);
+        }
     }
 }

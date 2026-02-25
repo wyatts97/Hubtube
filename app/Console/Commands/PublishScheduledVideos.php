@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Video;
+use App\Services\VideoService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -38,7 +39,7 @@ class PublishScheduledVideos extends Command
 
         // It is possible publishing a video left a gap at the top of the queue order,
         // so we can trigger a recalculation to shift the remaining ones up.
-        \App\Filament\Pages\ScheduledVideos::recalculateScheduleQueue();
+        app(VideoService::class)->recalculateScheduleQueue();
 
         $this->info("Published {$count} scheduled video(s).");
         return self::SUCCESS;

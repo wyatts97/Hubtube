@@ -9,6 +9,7 @@ use App\Models\ScheduleTemplate;
 use App\Models\User;
 use App\Models\Video;
 use App\Services\AdminLogger;
+use App\Services\VideoService;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -193,7 +194,7 @@ class BulkVideoUploader extends Page implements HasForms
         }
 
         if ($this->addToQueue) {
-            ScheduledVideos::recalculateScheduleQueue();
+            app(VideoService::class)->recalculateScheduleQueue();
         }
 
         $count = count($this->createdVideoIds);
