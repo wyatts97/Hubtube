@@ -13,19 +13,6 @@ class HandleInertiaRequests extends Middleware
 {
     protected $rootView = 'app';
 
-    /**
-     * Skip Inertia entirely for admin/Filament routes so Livewire
-     * navigation works without Inertia interference.
-     */
-    public function handle(Request $request, \Closure $next): mixed
-    {
-        if ($request->is('admin/*') || $request->is('admin') || $request->is('livewire/*')) {
-            return $next($request);
-        }
-
-        return parent::handle($request, $next);
-    }
-
     public function version(Request $request): ?string
     {
         return parent::version($request);
