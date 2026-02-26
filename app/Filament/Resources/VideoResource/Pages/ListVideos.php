@@ -14,17 +14,6 @@ class ListVideos extends ListRecords
 {
     protected static string $resource = VideoResource::class;
 
-    protected function getHeader(): ?string
-    {
-        // Ensure Livewire on this page has the latest CSRF token (guards against 419 during polling)
-        return '<script>(function(){' .
-            'var token = document.querySelector("meta[name=\\"csrf-token\\"]")?.content || "";' .
-            'window.Livewire = window.Livewire || {};' .
-            'window.Livewire.csrfToken = token;' .
-            'window.livewireScriptConfig = Object.assign({}, window.livewireScriptConfig || {}, { csrfToken: token });' .
-        '})();</script>';
-    }
-
     protected function getHeaderActions(): array
     {
         return [
