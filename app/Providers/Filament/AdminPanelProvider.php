@@ -150,8 +150,14 @@ class AdminPanelProvider extends PanelProvider
             // Also inject a meta tag fallback in case the Filament layout omitted it.
             ->renderHook(
                 PanelsRenderHook::HEAD_START,
-                fn (): string => '<meta name="csrf-token" content="' . csrf_token() . '">' .
-                    '<script>window.Livewire=window.Livewire||{};window.Livewire.csrfToken=document.querySelector(' . '"meta[name=\"csrf-token\"]"' . ')?.content||"";</script>'
+                fn (): string =>
+                    '<meta name="csrf-token" content="' . csrf_token() . '">' .
+                    '<script>(function(){' .
+                    'var token = document.querySelector("meta[name=\\"csrf-token\\"]")?.content || "";' .
+                    'window.Livewire = window.Livewire || {};' .
+                    'window.Livewire.csrfToken = token;' .
+                    'window.livewireScriptConfig = Object.assign({}, window.livewireScriptConfig || {}, { csrfToken: token });' .
+                    '})();</script>'
             )
             ->navigationGroups(static::buildNavigationGroups())
             ->sidebarCollapsibleOnDesktop()
