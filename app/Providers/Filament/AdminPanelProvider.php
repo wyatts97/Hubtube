@@ -146,6 +146,11 @@ class AdminPanelProvider extends PanelProvider
                     }
                 },
             )
+            // Ensure Livewire always has a CSRF token available for /livewire/update requests.
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => '<script>window.Livewire=window.Livewire||{};window.Livewire.csrfToken=document.querySelector(' . '"meta[name=\\"csrf-token\\"]"' . ')?.content||"";</script>'
+            )
             ->navigationGroups(static::buildNavigationGroups())
             ->sidebarCollapsibleOnDesktop()
             ->middleware([
