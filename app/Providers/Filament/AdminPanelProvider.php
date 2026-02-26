@@ -146,19 +146,6 @@ class AdminPanelProvider extends PanelProvider
                     }
                 },
             )
-            // Place at HEAD_START so the token is set before Livewire assets boot.
-            // Also inject a meta tag fallback in case the Filament layout omitted it.
-            ->renderHook(
-                PanelsRenderHook::HEAD_START,
-                fn (): string =>
-                    '<meta name="csrf-token" content="' . csrf_token() . '">' .
-                    '<script>(function(){' .
-                    'var token = document.querySelector("meta[name=\\"csrf-token\\"]")?.content || "";' .
-                    'window.Livewire = window.Livewire || {};' .
-                    'window.Livewire.csrfToken = token;' .
-                    'window.livewireScriptConfig = Object.assign({}, window.livewireScriptConfig || {}, { csrfToken: token });' .
-                    '})();</script>'
-            )
             ->navigationGroups(static::buildNavigationGroups())
             ->sidebarCollapsibleOnDesktop()
             ->middleware([
