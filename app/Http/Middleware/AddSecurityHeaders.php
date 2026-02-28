@@ -20,7 +20,7 @@ class AddSecurityHeaders
         // 'unsafe-inline' + 'unsafe-eval' + https: covers all ad network needs.
         $csp = implode('; ', [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http:",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' data: https: http:",
             "style-src 'self' 'unsafe-inline' https: http:",
             "img-src 'self' data: blob: https: http:",
             "media-src 'self' blob: https: http:",
