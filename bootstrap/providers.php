@@ -5,6 +5,7 @@ return [
     App\Providers\AuthServiceProvider::class,
     App\Providers\DynamicConfigServiceProvider::class,
     App\Providers\EventServiceProvider::class,
+    App\Providers\Filament\AdminPanelProvider::class,
     App\Providers\HorizonServiceProvider::class,
     App\Providers\SocialLoginServiceProvider::class,
 ];
