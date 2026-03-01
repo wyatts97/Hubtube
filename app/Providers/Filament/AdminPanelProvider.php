@@ -121,6 +121,8 @@ class AdminPanelProvider extends PanelProvider
         }
 
         return $builder
+            ->login()
+            ->profile()
             ->userMenuItems([
                 MenuItem::make()
                     ->label('View Site')
