@@ -421,7 +421,6 @@ class VideoResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->poll('30s')
             ->striped()
             ->paginated([10, 25, 50, 100]);
     }
