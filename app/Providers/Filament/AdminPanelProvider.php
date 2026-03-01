@@ -137,6 +137,17 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([])
             ->renderHook(
+                PanelsRenderHook::HEAD_START,
+                fn (): string =>
+                    '<meta name="csrf-token" content="' . csrf_token() . '">' .
+                    '<script>(function(){' .
+                    'var token = document.querySelector("meta[name=\\"csrf-token\\"]")?.content || "";' .
+                    'window.Livewire = window.Livewire || {};' .
+                    'window.Livewire.csrfToken = token;' .
+                    'window.livewireScriptConfig = Object.assign({}, window.livewireScriptConfig || {}, { csrfToken: token });' .
+                    '})();</script>'
+            )
+            ->renderHook(
                 PanelsRenderHook::TOPBAR_START,
                 function (): string {
                     try {

@@ -61,8 +61,9 @@
     57 => 'App\\Providers\\AuthServiceProvider',
     58 => 'App\\Providers\\DynamicConfigServiceProvider',
     59 => 'App\\Providers\\EventServiceProvider',
-    60 => 'App\\Providers\\HorizonServiceProvider',
-    61 => 'App\\Providers\\SocialLoginServiceProvider',
+    60 => 'App\\Providers\\Filament\\AdminPanelProvider',
+    61 => 'App\\Providers\\HorizonServiceProvider',
+    62 => 'App\\Providers\\SocialLoginServiceProvider',
   ),
   'eager' => 
   array (
@@ -109,8 +110,9 @@
     40 => 'App\\Providers\\AuthServiceProvider',
     41 => 'App\\Providers\\DynamicConfigServiceProvider',
     42 => 'App\\Providers\\EventServiceProvider',
-    43 => 'App\\Providers\\HorizonServiceProvider',
-    44 => 'App\\Providers\\SocialLoginServiceProvider',
+    43 => 'App\\Providers\\Filament\\AdminPanelProvider',
+    44 => 'App\\Providers\\HorizonServiceProvider',
+    45 => 'App\\Providers\\SocialLoginServiceProvider',
   ),
   'deferred' => 
   array (

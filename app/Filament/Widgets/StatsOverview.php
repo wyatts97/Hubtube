@@ -12,8 +12,6 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class StatsOverview extends BaseWidget
 {
-    protected static ?string $pollingInterval = '30s';
-
     protected int | string | array $columnSpan = 'full';
 
     protected function getColumns(): int
