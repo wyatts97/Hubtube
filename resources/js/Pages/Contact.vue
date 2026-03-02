@@ -1,40 +1,28 @@
 <script setup>
-import { Head, usePage } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ref, computed } from 'vue';
-import { z } from 'zod';
+import { computed } from 'vue';
 import { Send, CheckCircle, Mail, User, MessageSquare } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
-import { useFormValidation } from '@/Composables/useFormValidation';
 
 const { t } = useI18n();
 
 const page = usePage();
 const success = computed(() => page.props.flash?.success);
 
-const schema = z.object({
-    name: z.string().min(2, 'Name is required.').max(80, 'Name must be 80 characters or less.'),
-    email: z.string().email('Enter a valid email address.'),
-    subject: z.string().max(120, 'Subject must be 120 characters or less.').optional().or(z.literal('')),
-    message: z.string().min(10, 'Message must be at least 10 characters.').max(2000, 'Message must be 2000 characters or less.'),
-});
-
-const { defineField, errors, submit, resetForm, isSubmitting } = useFormValidation(schema, {
+const form = useForm({
     name: '',
     email: '',
     subject: '',
     message: '',
 });
 
-const [name, nameAttrs] = defineField('name');
-const [email, emailAttrs] = defineField('email');
-const [subject, subjectAttrs] = defineField('subject');
-const [message, messageAttrs] = defineField('message');
-
-const onSubmit = submit('post', '/contact', {
-    preserveScroll: true,
-    onSuccess: () => resetForm(),
-});
+const onSubmit = () => {
+    form.post('/contact', {
+        preserveScroll: true,
+        onSuccess: () => form.reset(),
+    });
+};
 </script>
 
 <template>
@@ -67,15 +55,14 @@ const onSubmit = submit('post', '/contact', {
                         <div class="relative">
                             <User class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style="color: var(--color-text-muted);" />
                             <input
-                                v-model="name"
-                                v-bind="nameAttrs"
+                                v-model="form.name"
                                 type="text"
                                 class="input pl-14 w-full"
                                 placeholder="Your name"
                                 required
                             />
                         </div>
-                        <p v-if="errors.name" class="text-red-400 text-xs mt-1">{{ errors.name }}</p>
+                        <p v-if="form.errors.name" class="text-red-400 text-xs mt-1">{{ form.errors.name }}</p>
                     </div>
 
                     <!-- Email -->
@@ -86,15 +73,14 @@ const onSubmit = submit('post', '/contact', {
                         <div class="relative">
                             <Mail class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style="color: var(--color-text-muted);" />
                             <input
-                                v-model="email"
-                                v-bind="emailAttrs"
+                                v-model="form.email"
                                 type="email"
                                 class="input pl-14 w-full"
                                 placeholder="your@email.com"
                                 required
                             />
                         </div>
-                        <p v-if="errors.email" class="text-red-400 text-xs mt-1">{{ errors.email }}</p>
+                        <p v-if="form.errors.email" class="text-red-400 text-xs mt-1">{{ form.errors.email }}</p>
                     </div>
                 </div>
 
@@ -104,13 +90,12 @@ const onSubmit = submit('post', '/contact', {
                         {{ t('contact.subject') || 'Subject' }}
                     </label>
                     <input
-                        v-model="subject"
-                        v-bind="subjectAttrs"
+                        v-model="form.subject"
                         type="text"
                         class="input w-full"
                         placeholder="What is this about?"
                     />
-                    <p v-if="errors.subject" class="text-red-400 text-xs mt-1">{{ errors.subject }}</p>
+                    <p v-if="form.errors.subject" class="text-red-400 text-xs mt-1">{{ form.errors.subject }}</p>
                 </div>
 
                 <!-- Message -->
@@ -121,24 +106,23 @@ const onSubmit = submit('post', '/contact', {
                     <div class="relative">
                         <MessageSquare class="absolute left-3 top-3 w-4 h-4" style="color: var(--color-text-muted);" />
                         <textarea
-                            v-model="message"
-                            v-bind="messageAttrs"
+                            v-model="form.message"
                             class="input pl-10 w-full"
                             rows="6"
                             placeholder="Your message..."
                             required
                         ></textarea>
                     </div>
-                    <p v-if="errors.message" class="text-red-400 text-xs mt-1">{{ errors.message }}</p>
+                    <p v-if="form.errors.message" class="text-red-400 text-xs mt-1">{{ form.errors.message }}</p>
                 </div>
 
                 <button
                     type="submit"
                     class="btn btn-primary inline-flex items-center gap-2"
-                    :disabled="isSubmitting"
+                    :disabled="form.processing"
                 >
                     <Send class="w-4 h-4" />
-                    {{ isSubmitting ? (t('common.loading') || 'Sending...') : (t('contact.send') || 'Send Message') }}
+                    {{ form.processing ? (t('common.loading') || 'Sending...') : (t('contact.send') || 'Send Message') }}
                 </button>
             </form>
         </div>

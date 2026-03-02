@@ -13,7 +13,6 @@
         "@sentry/vite-plugin": "^4.9.1",
         "@sentry/vue": "^10.38.0",
         "@unpic/vue": "^0.0.50",
-        "@vee-validate/zod": "^4.12.7",
         "@vueuse/core": "^10.7.2",
         "@vueuse/motion": "^2.0.0",
         "defu": "^6.1.4",
@@ -22,7 +21,6 @@
         "lucide-vue-next": "^0.323.0",
         "nprogress": "^0.2.0",
         "pusher-js": "^8.4.0-rc2",
-        "vee-validate": "^4.12.7",
         "vidstack": "^1.12.13",
         "vue": "^3.4.15",
         "vue-virtual-scroller": "^2.0.0-beta.8"
@@ -34,7 +32,6 @@
         "tailwindcss": "^4.0.0",
         "typescript": "^5.3.3",
         "vite": "^6.0.0",
-        "vite-plugin-image-optimizer": "^1.1.8",
-        "zod": "^3.23.8"
+        "vite-plugin-image-optimizer": "^1.1.8"
     }
 }

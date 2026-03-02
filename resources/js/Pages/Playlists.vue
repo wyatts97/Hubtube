@@ -1,11 +1,9 @@
 <script setup>
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
-import { z } from 'zod';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ListVideo, Plus, X } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
-import { useFormValidation } from '@/Composables/useFormValidation';
 
 const { t } = useI18n();
 
@@ -21,25 +19,19 @@ onMounted(() => { setTimeout(() => { isInitialLoad.value = false; }, 100); });
 
 const showCreateModal = ref(false);
 
-const schema = z.object({
-    title: z.string().min(1, 'Title is required.').max(120, 'Title must be 120 characters or less.'),
-    description: z.string().max(500, 'Description must be 500 characters or less.').optional().or(z.literal('')),
-});
-
-const { defineField, errors, submit, resetForm, isSubmitting } = useFormValidation(schema, {
+const form = useForm({
     title: '',
     description: '',
 });
 
-const [title, titleAttrs] = defineField('title');
-const [description, descriptionAttrs] = defineField('description');
-
-const createPlaylist = submit('post', '/playlists', {
-    onSuccess: () => {
-        showCreateModal.value = false;
-        resetForm();
-    },
-});
+const createPlaylist = () => {
+    form.post('/playlists', {
+        onSuccess: () => {
+            showCreateModal.value = false;
+            form.reset();
+        },
+    });
+};
 </script>
 
 <template>
@@ -122,17 +114,17 @@ const createPlaylist = submit('post', '/playlists', {
                 <form @submit.prevent="createPlaylist" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('common.title') || 'Title' }}</label>
-                        <input v-model="title" v-bind="titleAttrs" type="text" class="input" required />
-                        <p v-if="errors.title" class="text-red-500 text-sm mt-1">{{ errors.title }}</p>
+                        <input v-model="form.title" type="text" class="input" required />
+                        <p v-if="form.errors.title" class="text-red-500 text-sm mt-1">{{ form.errors.title }}</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('common.description') || 'Description' }}</label>
-                        <textarea v-model="description" v-bind="descriptionAttrs" rows="3" class="input resize-none"></textarea>
-                        <p v-if="errors.description" class="text-red-500 text-sm mt-1">{{ errors.description }}</p>
+                        <textarea v-model="form.description" rows="3" class="input resize-none"></textarea>
+                        <p v-if="form.errors.description" class="text-red-500 text-sm mt-1">{{ form.errors.description }}</p>
                     </div>
                     <div class="flex justify-end gap-2">
                         <button type="button" @click="showCreateModal = false" class="btn btn-ghost">{{ t('common.cancel') || 'Cancel' }}</button>
-                        <button type="submit" :disabled="isSubmitting" class="btn btn-primary">{{ t('common.create') || 'Create' }}</button>
+                        <button type="submit" :disabled="form.processing" class="btn btn-primary">{{ t('common.create') || 'Create' }}</button>
                     </div>
                 </form>
             </div>

@@ -1,28 +1,24 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ArrowLeft } from 'lucide-vue-next';
-import { z } from 'zod';
 import { ref } from 'vue';
 import { useI18n } from '@/Composables/useI18n';
-import { useFormValidation } from '@/Composables/useFormValidation';
 
 const { t } = useI18n();
 
-const schema = z.object({
-    email: z.string().email('Enter a valid email address.'),
-});
-
 const sent = ref(false);
-const { defineField, errors, submit, isSubmitting } = useFormValidation(schema, {
+
+const form = useForm({
     email: '',
 });
 
-const [email, emailAttrs] = defineField('email');
-const onSubmit = submit('post', '/forgot-password', {
-    onSuccess: () => {
-        sent.value = true;
-    },
-});
+const onSubmit = () => {
+    form.post('/forgot-password', {
+        onSuccess: () => {
+            sent.value = true;
+        },
+    });
+};
 </script>
 
 <template>
@@ -52,18 +48,17 @@ const onSubmit = submit('post', '/forgot-password', {
                         </label>
                         <input
                             id="email"
-                            v-model="email"
-                            v-bind="emailAttrs"
+                            v-model="form.email"
                             type="email"
                             class="input"
                             required
                             autofocus
                         />
-                        <p v-if="errors.email" class="text-red-500 text-sm mt-1">{{ errors.email }}</p>
+                        <p v-if="form.errors.email" class="text-red-500 text-sm mt-1">{{ form.errors.email }}</p>
                     </div>
 
-                    <button type="submit" :disabled="isSubmitting" class="btn btn-primary w-full">
-                        <span v-if="isSubmitting">{{ t('common.loading') || 'Sending...' }}</span>
+                    <button type="submit" :disabled="form.processing" class="btn btn-primary w-full">
+                        <span v-if="form.processing">{{ t('common.loading') || 'Sending...' }}</span>
                         <span v-else>{{ t('auth.send_reset_link') || 'Send Reset Link' }}</span>
                     </button>
                 </form>

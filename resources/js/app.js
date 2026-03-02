@@ -10,7 +10,6 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import { MotionPlugin } from '@vueuse/motion';
 import VueVirtualScroller from 'vue-virtual-scroller';
-import { configure } from 'vee-validate';
 import * as Sentry from '@sentry/vue';
 
 const appName = import.meta.env.VITE_APP_NAME || 'HubTube';
@@ -60,10 +59,6 @@ if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').catch(() => {});
     });
 }
-
-configure({
-    validateOnInput: true,
-});
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
