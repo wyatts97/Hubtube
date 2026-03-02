@@ -89,6 +89,9 @@ return [
             'password' => env('REDIS_PASSWORD'),
             'port' => env('REDIS_PORT', '6379'),
             'database' => env('REDIS_SESSION_DB', '2'),
+            'options' => [
+                'prefix' => env('REDIS_SESSION_PREFIX', Str::slug(env('APP_NAME', 'hubtube'), '_').'_session_'),
+            ],
         ],
     ],
 ];
