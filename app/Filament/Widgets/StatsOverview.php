@@ -23,31 +23,36 @@ class StatsOverview extends BaseWidget
     {
         try {
             $now = Carbon::now();
+            $sevenDaysAgo = $now->copy()->subDays(6)->startOfDay();
 
-            // ── Users ──
+            // ── Users (batched 7-day chart query) ──
             $totalUsers = User::count();
             $users24h = User::where('created_at', '>=', $now->copy()->subDay())->count();
             $users7d = User::where('created_at', '>=', $now->copy()->subDays(7))->count();
             $users30d = User::where('created_at', '>=', $now->copy()->subDays(30))->count();
 
-            // 7-day user trend (daily counts for sparkline)
-            $userChart = [];
-            for ($i = 6; $i >= 0; $i--) {
-                $day = $now->copy()->subDays($i);
-                $userChart[] = User::whereDate('created_at', $day->toDateString())->count();
-            }
+            // Single query for 7-day sparkline data
+            $userChartData = User::where('created_at', '>=', $sevenDaysAgo)
+                ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
+                ->groupByRaw('DATE(created_at)')
+                ->pluck('count', 'date')
+                ->toArray();
 
-            // ── Videos ──
+            $userChart = $this->fillChartData($userChartData, $now, 7);
+
+            // ── Videos (batched 7-day chart query) ──
             $totalVideos = Video::count();
             $videos24h = Video::where('created_at', '>=', $now->copy()->subDay())->count();
             $videos7d = Video::where('created_at', '>=', $now->copy()->subDays(7))->count();
             $videos30d = Video::where('created_at', '>=', $now->copy()->subDays(30))->count();
 
-            $videoChart = [];
-            for ($i = 6; $i >= 0; $i--) {
-                $day = $now->copy()->subDays($i);
-                $videoChart[] = Video::whereDate('created_at', $day->toDateString())->count();
-            }
+            $videoChartData = Video::where('created_at', '>=', $sevenDaysAgo)
+                ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
+                ->groupByRaw('DATE(created_at)')
+                ->pluck('count', 'date')
+                ->toArray();
+
+            $videoChart = $this->fillChartData($videoChartData, $now, 7);
 
             // ── Total Views ──
             $totalViews = Video::sum('views_count');
@@ -144,5 +149,18 @@ class StatsOverview extends BaseWidget
             return number_format($bytes / 1024, 1) . ' KB';
         }
         return $bytes . ' B';
+    }
+
+    /**
+     * Fill chart data array with zeros for missing days.
+     */
+    private function fillChartData(array $data, Carbon $now, int $days): array
+    {
+        $result = [];
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $date = $now->copy()->subDays($i)->toDateString();
+            $result[] = $data[$date] ?? 0;
+        }
+        return $result;
     }
 }

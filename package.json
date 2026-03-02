@@ -9,6 +9,7 @@
     },
     "dependencies": {
         "@inertiajs/vue3": "^1.0.14",
+        "sortablejs": "^1.15.6",
         "@sentry/vite-plugin": "^4.9.1",
         "@sentry/vue": "^10.38.0",
         "@unpic/vue": "^0.0.50",

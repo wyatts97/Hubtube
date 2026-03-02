@@ -86,34 +86,6 @@
     </div>
 
     @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
-    <script>
-        window.__initDashboardSortable = function() {
-            const el = document.getElementById('dashboard-widgets');
-            if (!el || el.__sortableInstance) return;
-
-            el.__sortableInstance = new Sortable(el, {
-                animation: 250,
-                handle: '.drag-handle',
-                draggable: '.dashboard-widget',
-                ghostClass: 'opacity-20',
-                chosenClass: 'shadow-2xl',
-                dragClass: 'shadow-2xl',
-                forceFallback: true,
-                fallbackClass: 'opacity-80',
-                onEnd: function() {
-                    const items = el.querySelectorAll('.dashboard-widget');
-                    const keys = Array.from(items).map(item => item.dataset.widgetKey);
-                    @this.reorderWidgets(keys);
-                },
-            });
-        };
-
-        // Re-init after Livewire morphs the DOM
-        document.addEventListener('livewire:navigated', () => {
-            const el = document.getElementById('dashboard-widgets');
-            if (el) el.__sortableInstance = null;
-        });
-    </script>
+    @vite(['resources/js/admin/sortable-init.js'])
     @endpush
 </x-filament-panels::page>

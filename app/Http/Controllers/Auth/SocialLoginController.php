@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\Channel;
 use App\Models\Setting;
 use App\Models\SocialAccount;
 use App\Models\User;
+use App\Services\ChannelService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -115,20 +115,7 @@ class SocialLoginController extends Controller
             'email_verified_at' => $email ? now() : null,
         ]);
 
-        // Create channel (same logic as RegisterController)
-        $baseSlug = Str::slug($user->username) ?: 'channel';
-        $slug = $baseSlug . '-' . $user->id;
-        $suffix = 2;
-        while (Channel::where('slug', $slug)->exists()) {
-            $slug = $baseSlug . '-' . $user->id . '-' . $suffix;
-            $suffix++;
-        }
-
-        Channel::create([
-            'user_id' => $user->id,
-            'name' => $user->username,
-            'slug' => $slug,
-        ]);
+        ChannelService::createForUser($user);
 
         SocialAccount::create([
             'user_id' => $user->id,
