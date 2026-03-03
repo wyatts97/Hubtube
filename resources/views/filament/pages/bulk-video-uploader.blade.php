@@ -35,10 +35,10 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Add to Queue</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Schedule Publishing</label>
                             <label class="flex items-center gap-2 mt-2">
                                 <input type="checkbox" wire:model="addToQueue" class="rounded border-gray-300 dark:border-gray-600">
-                                <span class="text-sm text-gray-600 dark:text-gray-400">Yes (Schedule automatically)</span>
+                                <span class="text-sm text-gray-600 dark:text-gray-400">Auto-publish on schedule (skip moderation)</span>
                             </label>
                         </div>
                         <div>
@@ -154,7 +154,7 @@
         {{-- Processing Status --}}
         @if (!empty($createdVideoIds))
             <x-filament::section heading="Processing Status" icon="heroicon-o-cpu-chip"
-                description="Videos are being processed. Thumbnails will appear once processing completes.">
+                description="Videos are being processed. Once complete, scheduled videos will auto-publish at their scheduled time.">
                 <div wire:poll.5s class="space-y-3">
                     @foreach ($this->createdVideos as $video)
                         <div class="flex items-center justify-between py-3 px-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900" wire:key="proc-{{ $video->id }}">
@@ -173,7 +173,15 @@
                             </div>
                             <div class="flex items-center gap-3">
                                 @if ($video->status === 'processed')
-                                    <x-filament::badge color="success">Processed</x-filament::badge>
+                                    @if ($video->scheduled_at)
+                                        <x-filament::badge color="info" icon="heroicon-o-clock">
+                                            Scheduled: {{ $video->scheduled_at->format('M j, g:i A') }}
+                                        </x-filament::badge>
+                                    @elseif ($video->is_approved)
+                                        <x-filament::badge color="success">Published</x-filament::badge>
+                                    @else
+                                        <x-filament::badge color="warning">Needs Moderation</x-filament::badge>
+                                    @endif
                                 @elseif ($video->status === 'processing')
                                     <x-filament::badge color="info">
                                         <span class="flex items-center gap-1">

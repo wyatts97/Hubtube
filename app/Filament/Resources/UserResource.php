@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Hash;
 
 use App\Filament\Concerns\HasCustomizableNavigation;
 
@@ -35,6 +36,12 @@ class UserResource extends Resource
                             ->email()
                             ->required()
                             ->unique(ignoreRecord: true),
+                        Forms\Components\TextInput::make('password')
+                            ->password()
+                            ->required(fn (string $operation): bool => $operation === 'create')
+                            ->dehydrateStateUsing(fn ($state) => $state ? Hash::make($state) : null)
+                            ->dehydrated(fn ($state) => filled($state))
+                            ->helperText(fn (string $operation): ?string => $operation === 'edit' ? 'Leave blank to keep current password' : null),
                         Forms\Components\TextInput::make('first_name')
                             ->maxLength(50),
                         Forms\Components\TextInput::make('last_name')
