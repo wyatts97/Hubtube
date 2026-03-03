@@ -74,6 +74,7 @@ class BulkVideoUploader extends Page implements HasForms
             ->maxFiles(50)
             ->visibility('public')
             ->storeFileNamesIn('video_file_names')
+            ->previewable(false)
             ->columnSpanFull(),
         ])
             ->statePath('uploadData');
@@ -98,10 +99,11 @@ class BulkVideoUploader extends Page implements HasForms
                 'description' => '',
                 'category_id' => $this->bulkCategoryId,
                 'tags' => $this->bulkTags,
+                'tags_input' => '',
                 'user_id' => $this->bulkUserId ?? auth()->id(),
                 'age_restricted' => $this->bulkAgeRestricted,
                 'file_path' => $tempPath,
-                'file_size' => Storage::disk('public')->exists($tempPath) ?Storage::disk('public')->size($tempPath) : 0,
+                'file_size' => Storage::disk('public')->exists($tempPath) ? Storage::disk('public')->size($tempPath) : 0,
                 'file_name' => $originalName,
             ];
         }
@@ -226,6 +228,15 @@ class BulkVideoUploader extends Page implements HasForms
         Storage::disk('public')->makeDirectory($directory);
         Storage::disk('public')->move($tempPath, $newPath);
 
+        // Parse tags from comma-separated input
+        $tags = $entry['tags'] ?? [];
+        if (!empty($entry['tags_input'])) {
+            $parsedTags = array_map('trim', explode(',', $entry['tags_input']));
+            $parsedTags = array_filter($parsedTags, fn($t) => !empty($t));
+            $tags = array_merge($tags, $parsedTags);
+            $tags = array_unique($tags);
+        }
+
         $video = Video::create([
             'user_id' => $entry['user_id'] ?? auth()->id(),
             'uuid' => (string)Str::uuid(),
@@ -235,7 +246,7 @@ class BulkVideoUploader extends Page implements HasForms
             'category_id' => $entry['category_id'] ?: null,
             'privacy' => 'public',
             'age_restricted' => $entry['age_restricted'] ?? true,
-            'tags' => $entry['tags'] ?? [],
+            'tags' => $tags,
             'status' => 'pending',
             'video_path' => $newPath,
             'storage_disk' => 'public',

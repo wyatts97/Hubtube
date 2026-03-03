@@ -63,22 +63,33 @@
                     <div class="space-y-4">
                         @foreach ($entries as $index => $entry)
                             <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4" wire:key="entry-{{ $index }}">
-                                <div class="flex items-start justify-between gap-4">
-                                    <div class="flex-1 space-y-3">
-                                        {{-- File info header --}}
-                                        <div class="flex items-center gap-3">
-                                            <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-900/20">
-                                                <x-heroicon-o-video-camera class="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                                <div class="flex gap-4">
+                                    {{-- Video Thumbnail Preview --}}
+                                    <div class="flex-shrink-0">
+                                        @if (!empty($entry['file_path']) && \Illuminate\Support\Facades\Storage::disk('public')->exists($entry['file_path']))
+                                            <div class="w-32 h-20 rounded-lg bg-gray-900 overflow-hidden relative">
+                                                <video
+                                                    src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($entry['file_path']) }}"
+                                                    class="w-full h-full object-cover"
+                                                    preload="metadata"
+                                                    muted
+                                                ></video>
+                                                <div class="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                                                    {{ $entry['file_size'] ? number_format($entry['file_size'] / 1048576, 1) . ' MB' : '' }}
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $entry['file_name'] }}</p>
-                                                <p class="text-xs text-gray-500 dark:text-gray-400">
-                                                    {{ $entry['file_size'] ? number_format($entry['file_size'] / 1048576, 1) . ' MB' : '—' }}
-                                                </p>
+                                        @else
+                                            <div class="w-32 h-20 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                                <x-heroicon-o-video-camera class="w-8 h-8 text-gray-400" />
                                             </div>
-                                        </div>
+                                        @endif
+                                    </div>
 
-                                        {{-- Metadata fields --}}
+                                    {{-- Metadata fields --}}
+                                    <div class="flex-1 space-y-3">
+                                        {{-- File name header --}}
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $entry['file_name'] }}</p>
+
                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             <div class="md:col-span-2">
                                                 <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Title *</label>
@@ -120,6 +131,16 @@
                                                         <option value="{{ $id }}">{{ $username }}</option>
                                                     @endforeach
                                                 </select>
+                                            </div>
+                                            <div class="md:col-span-2">
+                                                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Tags</label>
+                                                <input
+                                                    type="text"
+                                                    wire:model.blur="entries.{{ $index }}.tags_input"
+                                                    placeholder="tag1, tag2, tag3..."
+                                                    class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm"
+                                                />
+                                                <p class="text-xs text-gray-400 mt-0.5">Separate tags with commas</p>
                                             </div>
                                         </div>
                                     </div>

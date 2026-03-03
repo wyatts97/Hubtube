@@ -11,6 +11,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TimePicker;
 use Filament\Pages\Page;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -98,6 +99,14 @@ class ScheduledVideos extends Page implements HasTable
             ->reorderable('queue_order')
             ->defaultSort('queue_order')
             ->columns([
+            ImageColumn::make('thumbnail_display')
+            ->label('Thumbnail')
+            ->getStateUsing(fn (Video $record): ?string => $record->thumbnail_url)
+            ->height(50)
+            ->width(89)
+            ->extraImgAttributes(['class' => 'rounded object-cover'])
+            ->defaultImageUrl(url('/icons/icon-192x192.png')),
+
             TextColumn::make('title')
             ->searchable()
             ->sortable()
