@@ -77,7 +77,10 @@ const thumbRadius = computed(() => {
 });
 
 const handleMouseEnter = () => { isHovering.value = true; };
-const handleMouseLeave = () => { isHovering.value = false; };
+const handleMouseLeave = () => { 
+    isHovering.value = false; 
+    previewLoaded.value = false; 
+};
 const onPreviewLoad = () => { previewLoaded.value = true; };
 </script>
 
