@@ -240,7 +240,7 @@ class Video extends Model
 
     public function scopeApproved($query)
     {
-        return $query->where('is_approved', true);
+        return $query->where('is_approved', true)->whereNotNull('published_at');
     }
 
     public function scopeProcessed($query)

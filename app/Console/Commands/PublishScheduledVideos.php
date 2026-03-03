@@ -17,7 +17,7 @@ class PublishScheduledVideos extends Command
         $videos = Video::whereNotNull('scheduled_at')
             ->where('scheduled_at', '<=', now())
             ->where('status', 'processed')
-            ->where('is_approved', false)
+            ->whereNull('published_at')
             ->get();
 
         if ($videos->isEmpty()) {
@@ -29,9 +29,10 @@ class PublishScheduledVideos extends Command
         foreach ($videos as $video) {
             $video->update([
                 'is_approved' => true,
-                'published_at' => $video->scheduled_at,
+                'published_at' => $video->scheduled_at ?? now(),
                 'scheduled_at' => null,
                 'queue_order' => null,
+                'requires_schedule' => false,
             ]);
             $count++;
             Log::info("Published scheduled video: {$video->title} (ID: {$video->id})");

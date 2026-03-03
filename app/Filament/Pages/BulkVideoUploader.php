@@ -14,7 +14,6 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -181,24 +180,19 @@ class BulkVideoUploader extends Page implements HasForms
         // Determine current max queue order
         $maxOrder = Video::max('queue_order') ?? 0;
 
-        Log::info('[BulkUpload] Starting createAllVideos', ['addToQueue' => $this->addToQueue, 'entryCount' => count($this->entries)]);
-
         foreach ($this->entries as $index => $entry) {
             if ($this->addToQueue) {
                 $maxOrder++;
                 $entry['queue_order'] = $maxOrder;
-                Log::info('[BulkUpload] Assigning queue_order', ['index' => $index, 'queue_order' => $maxOrder]);
             }
 
             $video = $this->createSingleVideo($entry);
             if ($video) {
                 $this->createdVideoIds[] = $video->id;
-                Log::info('[BulkUpload] Video created', ['id' => $video->id, 'queue_order' => $video->queue_order, 'scheduled_at' => $video->scheduled_at]);
             }
         }
 
         if ($this->addToQueue) {
-            Log::info('[BulkUpload] Calling recalculateScheduleQueue');
             app(VideoService::class)->recalculateScheduleQueue();
         }
 
@@ -246,9 +240,9 @@ class BulkVideoUploader extends Page implements HasForms
             'video_path' => $newPath,
             'storage_disk' => 'public',
             'size' => Storage::disk('public')->size($newPath),
-            'is_approved' => false,
+            'is_approved' => isset($entry['queue_order']),
             'queue_order' => $entry['queue_order'] ?? null,
-            'requires_schedule' => isset($entry['queue_order']) ? true : false,
+            'requires_schedule' => isset($entry['queue_order']),
             'published_at' => null,
         ]);
 

@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
 use App\Services\EmailService;
+use App\Services\VideoService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -30,6 +31,7 @@ class VideoResource extends Resource
     {
         return static::getModel()::where('is_approved', false)
             ->where('status', 'processed')
+            ->whereNull('queue_order')
             ->count() ?: null;
     }
 
@@ -190,7 +192,8 @@ class VideoResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->formatStateUsing(fn (string $state, Video $record): string => match (true) {
-                        $state === 'processed' && $record->is_approved => 'Published',
+                        $state === 'processed' && $record->is_approved && $record->published_at => 'Published',
+                        $state === 'processed' && !is_null($record->queue_order) => 'Scheduled',
                         $state === 'processed' && !$record->is_approved => 'Needs Moderation',
                         $state === 'pending_download' => 'Pending Download',
                         $state === 'downloading' => 'Downloading',
@@ -198,7 +201,8 @@ class VideoResource extends Resource
                         default => ucfirst($state),
                     })
                     ->color(fn (string $state, Video $record): string => match (true) {
-                        $state === 'processed' && $record->is_approved => 'success',
+                        $state === 'processed' && $record->is_approved && $record->published_at => 'success',
+                        $state === 'processed' && !is_null($record->queue_order) => 'info',
                         $state === 'processed' && !$record->is_approved => 'warning',
                         $state === 'pending' => 'gray',
                         $state === 'pending_download' => 'gray',
@@ -366,6 +370,39 @@ class VideoResource extends Resource
                         ->action(fn (Video $record) => $record->update(['is_featured' => !$record->is_featured]))
                         ->label(fn (Video $record) => $record->is_featured ? 'Unfeature' : 'Feature'),
 
+                    Tables\Actions\Action::make('addToSchedule')
+                        ->label('Add to Schedule')
+                        ->icon('heroicon-o-calendar')
+                        ->color('info')
+                        ->requiresConfirmation()
+                        ->modalDescription('This will add the video to the publishing schedule. It will be auto-approved and published at the scheduled time.')
+                        ->action(function (Video $record) {
+                            $maxOrder = Video::max('queue_order') ?? 0;
+                            $record->update([
+                                'queue_order' => $maxOrder + 1,
+                                'is_approved' => true,
+                                'published_at' => null,
+                                'requires_schedule' => true,
+                            ]);
+                            app(VideoService::class)->recalculateScheduleQueue();
+                        })
+                        ->visible(fn (Video $record) => $record->status === 'processed' && is_null($record->queue_order)),
+
+                    Tables\Actions\Action::make('removeFromSchedule')
+                        ->label('Remove from Schedule')
+                        ->icon('heroicon-o-calendar-days')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->action(function (Video $record) {
+                            $record->update([
+                                'queue_order' => null,
+                                'scheduled_at' => null,
+                                'requires_schedule' => false,
+                            ]);
+                            app(VideoService::class)->recalculateScheduleQueue();
+                        })
+                        ->visible(fn (Video $record) => !is_null($record->queue_order)),
+
                     Tables\Actions\Action::make('reprocess')
                         ->icon('heroicon-o-arrow-path')
                         ->color('info')
@@ -416,6 +453,28 @@ class VideoResource extends Resource
                         ->icon('heroicon-o-star')
                         ->color('gray')
                         ->action(fn (Collection $records) => $records->each(fn (Video $v) => $v->update(['is_featured' => false])))
+                        ->deselectRecordsAfterCompletion(),
+
+                    Tables\Actions\BulkAction::make('addToSchedule')
+                        ->label('Add to Schedule')
+                        ->icon('heroicon-o-calendar')
+                        ->color('info')
+                        ->requiresConfirmation()
+                        ->action(function (Collection $records) {
+                            $maxOrder = Video::max('queue_order') ?? 0;
+                            foreach ($records as $video) {
+                                if ($video->status === 'processed' && is_null($video->queue_order)) {
+                                    $maxOrder++;
+                                    $video->update([
+                                        'queue_order' => $maxOrder,
+                                        'is_approved' => true,
+                                        'published_at' => null,
+                                        'requires_schedule' => true,
+                                    ]);
+                                }
+                            }
+                            app(VideoService::class)->recalculateScheduleQueue();
+                        })
                         ->deselectRecordsAfterCompletion(),
 
                     Tables\Actions\DeleteBulkAction::make(),

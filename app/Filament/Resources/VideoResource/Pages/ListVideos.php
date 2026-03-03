@@ -30,14 +30,14 @@ class ListVideos extends ListRecords
 
             'moderation' => Tab::make('Needs Moderation')
             ->icon('heroicon-o-shield-check')
-            ->modifyQueryUsing(fn(Builder $query) => $query->where('is_approved', false)->where('status', 'processed')->whereNull('scheduled_at')->whereNull('queue_order'))
-            ->badge(fn () => Video::where('is_approved', false)->where('status', 'processed')->whereNull('scheduled_at')->whereNull('queue_order')->count())
+            ->modifyQueryUsing(fn(Builder $query) => $query->where('is_approved', false)->where('status', 'processed')->whereNull('queue_order'))
+            ->badge(fn () => Video::where('is_approved', false)->where('status', 'processed')->whereNull('queue_order')->count())
             ->badgeColor('warning'),
 
             'scheduled' => Tab::make('Scheduled')
             ->icon('heroicon-o-calendar')
-            ->modifyQueryUsing(fn(Builder $query) => $query->where('is_approved', false)->where(fn($q) => $q->whereNotNull('scheduled_at')->orWhereNotNull('queue_order')))
-            ->badge(fn () => Video::where('is_approved', false)->where(fn($q) => $q->whereNotNull('scheduled_at')->orWhereNotNull('queue_order'))->count())
+            ->modifyQueryUsing(fn(Builder $query) => $query->whereNull('published_at')->where('status', 'processed')->where(fn($q) => $q->whereNotNull('scheduled_at')->orWhereNotNull('queue_order')))
+            ->badge(fn () => Video::whereNull('published_at')->where('status', 'processed')->where(fn($q) => $q->whereNotNull('scheduled_at')->orWhereNotNull('queue_order'))->count())
             ->badgeColor('info'),
 
             'processing' => Tab::make('Processing')

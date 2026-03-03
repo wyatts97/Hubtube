@@ -24,7 +24,7 @@ class ScheduledVideos extends Page implements HasTable
     use InteractsWithTable;
 
     protected static ?string $navigationIcon = 'heroicon-o-clock';
-    protected static ?string $navigationLabel = 'Scheduled Queue';
+    protected static ?string $navigationLabel = 'Scheduled';
     protected static ?string $navigationGroup = 'Content';
     protected static ?int $navigationSort = 6;
     protected static string $view = 'filament.pages.scheduled-videos';
@@ -32,7 +32,7 @@ class ScheduledVideos extends Page implements HasTable
     public static function getNavigationBadge(): ?string
     {
         $count = Video::whereNotNull('queue_order')
-            ->where('is_approved', false)
+            ->whereNull('published_at')
             ->count();
 
         return $count > 0 ? (string)$count : null;
@@ -93,7 +93,7 @@ class ScheduledVideos extends Page implements HasTable
             Video::query()
             ->with('user', 'category')
             ->whereNotNull('queue_order')
-            ->where('is_approved', false)
+            ->whereNull('published_at')
         )
             ->reorderable('queue_order')
             ->defaultSort('queue_order')

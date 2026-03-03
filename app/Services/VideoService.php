@@ -184,11 +184,9 @@ class VideoService
     public function recalculateScheduleQueue(): void
     {
         $videos = Video::whereNotNull('queue_order')
-            ->where('is_approved', false)
+            ->whereNull('published_at')
             ->orderBy('queue_order')
             ->get();
-
-        Log::info('[Schedule] recalculateScheduleQueue called', ['videoCount' => $videos->count()]);
 
         if ($videos->isEmpty())
             return;
@@ -216,7 +214,6 @@ class VideoService
                 'queue_order' => $index + 1, // Fix any gaps
                 'scheduled_at' => $scheduledTime,
             ]);
-            Log::info('[Schedule] Set scheduled_at for video', ['id' => $video->id, 'title' => $video->title, 'scheduled_at' => $scheduledTime->toDateTimeString()]);
             $cursor->addHours($intervalHours);
         }
     }
