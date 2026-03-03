@@ -20,6 +20,15 @@ class ArchiveImporter extends Page
     protected static ?int $navigationSort = 98;
     protected static string $view = 'filament.pages.archive-importer';
 
+    /**
+     * Hide this page from navigation - the archive import tool has served its purpose.
+     * The files are kept locally for potential future reuse of the architecture.
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     // Config inputs
     public string $archivePath = '';
     public string $sqlFilePath = '';
