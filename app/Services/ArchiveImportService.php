@@ -700,7 +700,7 @@ class ArchiveImportService
         return 0;
     }
 
-    private function resolveCategory(string $name): string
+    private function resolveCategory(string $name): ?int
     {
         $slug = Str::slug($name);
         if (isset($this->categoryCache[$slug])) {
@@ -710,7 +710,7 @@ class ArchiveImportService
             ['slug' => $slug],
             ['name' => $name, 'description' => '', 'is_active' => true]
         );
-        $this->categoryCache[$slug] = (string) $category->id;
+        $this->categoryCache[$slug] = $category->id;
         return $this->categoryCache[$slug];
     }
 
