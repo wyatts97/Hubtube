@@ -188,6 +188,8 @@ class VideoService
             ->orderBy('queue_order')
             ->get();
 
+        Log::info('[Schedule] recalculateScheduleQueue called', ['videoCount' => $videos->count()]);
+
         if ($videos->isEmpty())
             return;
 
@@ -209,10 +211,12 @@ class VideoService
         }
 
         foreach ($videos as $index => $video) {
+            $scheduledTime = $cursor->copy();
             $video->update([
                 'queue_order' => $index + 1, // Fix any gaps
-                'scheduled_at' => $cursor->copy(),
+                'scheduled_at' => $scheduledTime,
             ]);
+            Log::info('[Schedule] Set scheduled_at for video', ['id' => $video->id, 'title' => $video->title, 'scheduled_at' => $scheduledTime->toDateTimeString()]);
             $cursor->addHours($intervalHours);
         }
     }

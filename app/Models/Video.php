@@ -61,6 +61,7 @@ class Video extends Model
         'published_at',
         'scheduled_at',
         'requires_schedule',
+        'queue_order',
         'processing_started_at',
         'processing_completed_at',
         'scrubber_vtt_path',

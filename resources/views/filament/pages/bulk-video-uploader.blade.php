@@ -37,7 +37,7 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Schedule Publishing</label>
                             <label class="flex items-center gap-2 mt-2">
-                                <input type="checkbox" wire:model="addToQueue" class="rounded border-gray-300 dark:border-gray-600">
+                                <input type="checkbox" wire:model.live="addToQueue" class="rounded border-gray-300 dark:border-gray-600">
                                 <span class="text-sm text-gray-600 dark:text-gray-400">Auto-publish on schedule (skip moderation)</span>
                             </label>
                         </div>
