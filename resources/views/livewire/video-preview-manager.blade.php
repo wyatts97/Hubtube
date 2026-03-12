@@ -1,7 +1,9 @@
-<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
-
 <div class="space-y-6">
+    @once
+        <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+        <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js" defer></script>
+    @endonce
+
     {{-- Video Player --}}
     @if($videoUrl || $hlsUrl)
     @php

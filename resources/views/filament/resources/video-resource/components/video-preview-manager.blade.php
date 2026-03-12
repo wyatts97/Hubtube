@@ -1,4 +1,20 @@
 {{-- @deprecated Moved to resources/views/livewire/video-preview-manager.blade.php --}}
+@php
+    $resolvedVideoId = $videoId ?? ($record->id ?? null) ?? ($this->record->id ?? null);
+@endphp
+
+@if($resolvedVideoId)
+    <livewire:video-preview-manager :video-id="$resolvedVideoId" wire:key="video-preview-legacy-{{ $resolvedVideoId }}" />
+@else
+    <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
+        <div class="fi-section-content px-6 py-8 text-center">
+            <x-heroicon-o-video-camera class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No video available for preview.</p>
+        </div>
+    </div>
+@endif
+
+@if(false)
 <div class="space-y-6">
     {{-- Video Player --}}
     @if($videoUrl || $hlsUrl)
@@ -177,3 +193,5 @@
         </div>
     </div>
 </div>
+
+@endif

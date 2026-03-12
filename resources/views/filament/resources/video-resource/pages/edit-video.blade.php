@@ -7,7 +7,7 @@
 >
     {{-- Video Preview & Thumbnail Manager --}}
     @if($record->status === 'processed' || $record->video_path)
-        @livewire(\App\Livewire\VideoPreviewManager::class, ['videoId' => $record->id], key('video-preview-' . $record->id))
+        <livewire:video-preview-manager :video-id="$record->id" wire:key="video-preview-{{ $record->id }}" />
     @endif
 
     {{-- Standard Filament Edit Form --}}

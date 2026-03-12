@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class LoginController extends Controller
 {
@@ -17,7 +18,7 @@ class LoginController extends Controller
         return Inertia::render('Auth/Login');
     }
 
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request): RedirectResponse|SymfonyResponse
     {
         $request->authenticate();
 
@@ -28,7 +29,13 @@ class LoginController extends Controller
 
         // Admin users go to the admin dashboard by default
         if ($user->is_admin) {
-            return redirect()->intended(url('/admin'))->with('success', 'Welcome back!');
+            $adminUrl = url('/admin');
+
+            if ($request->inertia()) {
+                return Inertia::location($adminUrl);
+            }
+
+            return redirect()->intended($adminUrl)->with('success', 'Welcome back!');
         }
 
         return redirect()->intended(route('home'))->with('success', 'Welcome back!');

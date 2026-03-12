@@ -46,8 +46,8 @@ const submitLogin = () => {
     loginForm.post('/login', {
         onSuccess: () => {
             showLoginModal.value = false;
+            showLoginPassword.value = false;
             loginForm.reset();
-            window.location.reload();
         },
         onFinish: () => {
             loginForm.reset('password');
