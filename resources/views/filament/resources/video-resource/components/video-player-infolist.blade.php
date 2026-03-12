@@ -2,11 +2,13 @@
     $record = $getRecord();
     $videoUrl = null;
 
-    if ($record->video_path && ($record->storage_disk ?? 'public') === 'public') {
+    // Match the same logic as VideoPreviewManager::loadVideoData()
+    if ($record->video_path && $record->storage_disk === 'public') {
         $videoUrl = route('admin.video-stream', ['path' => $record->video_path]);
     } else {
         $videoUrl = $record->video_url;
     }
+    $hlsUrl = $record->hls_playlist_url;
 @endphp
 
 @if($videoUrl)

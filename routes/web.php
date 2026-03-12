@@ -296,7 +296,7 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/channel/{username}/history', [ChannelController::class, 'localeWatchHistory'])->name('locale.channel.history');
         Route::get('/channel/{username}/about', [ChannelController::class, 'localeAbout'])->name('locale.channel.about');
         Route::get('/public-playlists', [PlaylistController::class, 'publicIndex'])->name('locale.playlists.public');
-        Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('locale.pages.show');
+        Route::get('/pages/{slug}', [PageController::class, 'localeShow'])->name('locale.pages.show');
 
         // Locale-prefixed video show — uses plain {slug} param to avoid model binding conflict with {locale}
         Route::get('/{slug}', [VideoController::class, 'localeShow'])->name('locale.videos.show');

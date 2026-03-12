@@ -31,16 +31,23 @@ class PageController extends Controller
         if ($locale !== $defaultLocale) {
             try {
                 $translationService = app(TranslationService::class);
-                $translated = $translationService->translateModel(
-                    Page::class,
-                    $page->id,
-                    ['title' => $title, 'content' => $content],
-                    $locale
+                // Translate title (short text — safe)
+                $translatedTitle = $translationService->translateField(
+                    Page::class, $page->id, 'title', $title, $locale
                 );
-                $title = $translated['title'] ?? $title;
-                $content = $translated['content'] ?? $content;
-            } catch (\Exception $e) {
+                $title = $translatedTitle ?: $title;
+
+                // Translate content separately (can be very long HTML — may fail)
+                $translatedContent = $translationService->translateField(
+                    Page::class, $page->id, 'content', $content, $locale
+                );
+                $content = $translatedContent ?: $content;
+            } catch (\Throwable $e) {
                 // Translation failed — fall back to original content
+                \Illuminate\Support\Facades\Log::warning('Page translation failed: ' . $e->getMessage(), [
+                    'page_id' => $page->id,
+                    'locale' => $locale,
+                ]);
             }
         }
 
@@ -52,5 +59,16 @@ class PageController extends Controller
                 'updated_at' => $page->updated_at->toDateString(),
             ],
         ]);
+    }
+
+    /**
+     * Locale-prefixed page show.
+     * Uses plain {slug} param to avoid model binding conflict with {locale} prefix.
+     */
+    public function localeShow(string $locale, string $slug): Response
+    {
+        $page = Page::where('slug', $slug)->firstOrFail();
+
+        return $this->show($page);
     }
 }

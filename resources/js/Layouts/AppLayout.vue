@@ -358,11 +358,11 @@ const handleMobileNavClick = (item) => {
                             <div v-if="showUploadMenu" class="upload-menu-dropdown absolute right-0 mt-2 w-44 card p-1 shadow-xl" style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);">
                                 <Link href="/upload" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showUploadMenu = false">
                                     <Film class="w-4 h-4" style="color: var(--color-text-secondary);" />
-                                    <span class="text-sm">{{ t('nav.upload_video') || 'Upload Video' }}</span>
+                                    <span class="text-sm">{{ t('nav.upload_video') || 'Video' }}</span>
                                 </Link>
                                 <Link href="/image-upload" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showUploadMenu = false">
                                     <ImageIcon class="w-4 h-4" style="color: var(--color-text-secondary);" />
-                                    <span class="text-sm">{{ t('nav.upload_image') || 'Upload Image' }}</span>
+                                    <span class="text-sm">{{ t('nav.upload_image') || 'Image' }}</span>
                                 </Link>
                             </div>
                         </div>
