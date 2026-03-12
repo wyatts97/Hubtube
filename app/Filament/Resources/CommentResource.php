@@ -36,7 +36,7 @@ class CommentResource extends Resource
                             ->required()
                             ->searchable()
                             ->disabled(),
-                        Forms\Components\Textarea::make('body')
+                        Forms\Components\Textarea::make('content')
                             ->required()
                             ->maxLength(5000)
                             ->columnSpanFull(),
@@ -62,7 +62,8 @@ class CommentResource extends Resource
                     ->label('Video')
                     ->limit(30)
                     ->searchable(),
-                Tables\Columns\TextColumn::make('body')
+                Tables\Columns\TextColumn::make('content')
+                    ->label('Comment')
                     ->limit(50)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('likes_count')

@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Events\VideoProcessed;
+use App\Models\Notification;
 use App\Models\Video;
 use App\Services\VideoService;
 use Illuminate\Console\Command;
@@ -36,6 +38,17 @@ class PublishScheduledVideos extends Command
             ]);
             $count++;
             Log::info("Published scheduled video: {$video->title} (ID: {$video->id})");
+
+            // Now that the video is actually live, send the "published" notification.
+            // This was deferred from ProcessVideoJob to avoid premature emails for scheduled videos.
+            $alreadyNotified = Notification::where('user_id', $video->user_id)
+                ->where('type', 'video_processed')
+                ->where('data->video_id', $video->id)
+                ->exists();
+
+            if (!$alreadyNotified) {
+                event(new VideoProcessed($video));
+            }
         }
 
         // It is possible publishing a video left a gap at the top of the queue order,

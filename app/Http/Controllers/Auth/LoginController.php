@@ -26,6 +26,11 @@ class LoginController extends Controller
         $user = Auth::user();
         $user->update(['last_active_at' => now()]);
 
+        // Admin users go to the admin dashboard by default
+        if ($user->is_admin) {
+            return redirect()->intended(url('/admin'))->with('success', 'Welcome back!');
+        }
+
         return redirect()->intended(route('home'))->with('success', 'Welcome back!');
     }
 

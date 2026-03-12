@@ -41,6 +41,7 @@ const canSkip = ref(false);
 const adVideoRef = ref(null);
 const adHtmlRef = ref(null);
 const autoplayBlocked = ref(false);
+const adBuffering = ref(false);
 
 // IMA state (VAST / VPAID only)
 const imaContainerRef = ref(null);
@@ -253,17 +254,29 @@ const endAd = () => {
 const tryPlayAd = () => {
     if (!adVideoRef.value) return;
     const v = adVideoRef.value;
+    adBuffering.value = false;
     v.muted = true;
     const p = v.play();
     if (p !== undefined) {
         p.then(() => {
             autoplayBlocked.value = false;
-            setTimeout(() => { v.muted = false; }, 200);
+            // Wait until playback is visually confirmed before unmuting
+            const unmuteCheck = () => {
+                if (v.currentTime > 0.1) {
+                    v.muted = false;
+                } else {
+                    requestAnimationFrame(unmuteCheck);
+                }
+            };
+            requestAnimationFrame(unmuteCheck);
         }).catch(() => {
             autoplayBlocked.value = true;
         });
     }
 };
+
+const onAdWaiting = () => { adBuffering.value = true; };
+const onAdPlaying = () => { adBuffering.value = false; };
 
 const manualPlay = () => {
     if (!adVideoRef.value) return;
@@ -358,10 +371,16 @@ onUnmounted(() => { clearTimers(); destroyIma(); });
             <template v-if="isLocalVideoAd">
                 <video ref="adVideoRef" :src="currentAd.content"
                     class="w-full h-full object-contain"
-                    autoplay muted playsinline crossorigin="anonymous"
+                    preload="auto" autoplay muted playsinline crossorigin="anonymous"
                     @ended="onAdVideoEnded" @error="onAdVideoError"
-                    @loadeddata="tryPlayAd" @canplay="tryPlayAd">
+                    @canplay="tryPlayAd" @waiting="onAdWaiting" @playing="onAdPlaying">
                 </video>
+
+                <!-- Buffering spinner -->
+                <div v-if="adBuffering"
+                    class="absolute inset-0 flex items-center justify-center bg-black/60 z-10">
+                    <div class="w-10 h-10 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                </div>
 
                 <!-- Tap-to-play overlay — only shown when autoplay is blocked (mobile) -->
                 <div v-if="autoplayBlocked"

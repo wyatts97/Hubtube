@@ -342,27 +342,54 @@ class VideoResource extends Resource
                         })
                         ->visible(fn (Video $record) => !$record->is_approved && $record->status === 'processed'),
 
-                    Tables\Actions\Action::make('unapprove')
+                    Tables\Actions\Action::make('reject')
+                        ->label('Reject')
                         ->icon('heroicon-o-x-circle')
-                        ->color('warning')
-                        ->requiresConfirmation()
+                        ->color('danger')
+                        ->modalHeading('Reject Video')
+                        ->modalDescription('Select a reason for rejecting this video. The uploader will be notified by email.')
                         ->form([
-                            Forms\Components\Textarea::make('rejection_reason')
-                                ->label('Reason (optional)')
-                                ->rows(3),
+                            Forms\Components\Select::make('rejection_reason')
+                                ->label('Reason for Rejection')
+                                ->required()
+                                ->options([
+                                    'Copyrighted Material' => 'Copyrighted Material',
+                                    'Illegal Content' => 'Illegal Content',
+                                    'Too Short' => 'Too Short',
+                                    'Too Low Quality' => 'Too Low Quality',
+                                    'Violates Website Guidelines' => 'Violates Website Guidelines',
+                                    'Spam or Misleading' => 'Spam or Misleading',
+                                    'Duplicate Content' => 'Duplicate Content',
+                                    'Other' => 'Other (specify below)',
+                                ]),
+                            Forms\Components\Textarea::make('custom_reason')
+                                ->label('Additional Details (optional)')
+                                ->rows(3)
+                                ->placeholder('Provide any additional context for the uploader...'),
                         ])
                         ->action(function (Video $record, array $data) {
-                            $record->update(['is_approved' => false]);
+                            $reason = $data['rejection_reason'];
+                            if ($reason === 'Other' && !empty($data['custom_reason'])) {
+                                $reason = $data['custom_reason'];
+                            } elseif (!empty($data['custom_reason'])) {
+                                $reason .= ' — ' . $data['custom_reason'];
+                            }
+
+                            $record->update([
+                                'is_approved' => false,
+                                'status' => 'rejected',
+                            ]);
+
                             $record->loadMissing('user');
                             if ($record->user) {
                                 EmailService::sendToUser('video-rejected', $record->user->email, [
                                     'username' => $record->user->username,
                                     'video_title' => $record->title,
-                                    'rejection_reason' => $data['rejection_reason'] ?? 'No reason provided.',
+                                    'rejection_reason' => $reason,
                                 ]);
                             }
                         })
-                        ->visible(fn (Video $record) => $record->is_approved),
+                        ->visible(fn (Video $record) => $record->status === 'processed' || $record->is_approved),
 
                     Tables\Actions\Action::make('feature')
                         ->icon('heroicon-o-star')

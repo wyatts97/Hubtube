@@ -110,7 +110,7 @@ class EmailTemplate extends Model
                 'name' => 'Video Rejected',
                 'description' => 'Sent to the uploader when an admin rejects their video.',
                 'subject' => "Your video was not approved — {$site}",
-                'body_html' => '<p>Hi {{username}},</p><p>Unfortunately, your video <strong>{{video_title}}</strong> was not approved for the following reason:</p><blockquote style="border-left:4px solid #e5e7eb;padding-left:16px;color:#6b7280;">{{rejection_reason}}</blockquote><p>You can edit and resubmit your video if you\'d like.</p>',
+                'body_html' => '<p>Hi {{username}},</p><p>Unfortunately, your video <strong>{{video_title}}</strong> was not approved for the following reason:</p><blockquote style="border-left:4px solid #ef4444;padding-left:16px;color:#6b7280;margin:16px 0;"><strong>{{rejection_reason}}</strong></blockquote><p>If you believe this was a mistake, you may edit and resubmit your video. Please ensure your content complies with our <a href="/pages/terms-of-service" style="color:#4f46e5;text-decoration:underline;">Terms of Service</a> before resubmitting.</p><p>If you have questions, feel free to contact us.</p>',
                 'is_active' => true,
             ],
             [

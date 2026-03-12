@@ -114,6 +114,21 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
 
     protected function notifyOnce(): void
     {
+        // Refresh the model to get the latest state after markAsProcessed
+        $this->video->refresh();
+
+        // Don't send "published" notifications for scheduled/queued videos.
+        // These are just processed — they'll be published later by videos:publish-scheduled.
+        // The PublishScheduledVideos command will fire the event when they actually go live.
+        if ($this->video->requires_schedule || $this->video->queue_order !== null) {
+            return;
+        }
+
+        // Also skip if the video wasn't auto-approved (needs moderation)
+        if (!$this->video->is_approved) {
+            return;
+        }
+
         // Prevent duplicate notifications on job retries
         $exists = Notification::where('user_id', $this->video->user_id)
             ->where('type', 'video_processed')

@@ -104,14 +104,45 @@ return Application::configure(basePath: dirname(__DIR__))
             return false; // Don't stop other reporters (Sentry, log files)
         });
 
+        // Handle CSRF / session expiry for Livewire (admin panel polling pages).
+        // Livewire sends XHR requests; when the session expires these get 419.
+        // Returning a redirect forces Livewire to do a full page reload which
+        // regenerates the session + CSRF token — no more browser "page expired" popups.
+        $exceptions->render(function (TokenMismatchException $e, Request $request) {
+            // Livewire requests: return a 409 with redirect header so Livewire
+            // triggers a full page reload instead of showing a JS confirm dialog.
+            if ($request->hasHeader('X-Livewire')) {
+                return response('', 409, [
+                    'X-Livewire-Redirect' => $request->header('Referer', url('/admin')),
+                ]);
+            }
+
+            // Admin panel (non-Livewire): redirect back to refresh the page
+            if ($request->is('admin/*') || $request->is('admin')) {
+                return redirect($request->fullUrl());
+            }
+
+            // Inertia (frontend)
+            if ($request->inertia()) {
+                return Inertia::render('Error', [
+                    'status' => 419,
+                    'message' => 'Your session has expired. Please refresh the page.',
+                ])->toResponse($request)->setStatusCode(419);
+            }
+
+            return redirect()->back()->withErrors([
+                'session' => 'Your session has expired. Please try again.',
+            ]);
+        });
+
         $exceptions->render(function (HttpException $e, Request $request) {
             $status = $e->getStatusCode();
 
-            // Handle CSRF token mismatch (skip for admin)
+            // 419 HttpException (secondary path — primary is TokenMismatchException above)
             $isAdmin = $request->is('admin/*') || $request->is('admin') || $request->is('livewire/*');
             if ($status === 419 || str_contains($e->getMessage(), 'CSRF')) {
-                if ($isAdmin) {
-                    return null;
+                if ($isAdmin || $request->hasHeader('X-Livewire')) {
+                    return redirect($request->header('Referer', url('/admin')));
                 }
 
                 if ($request->inertia()) {
@@ -120,7 +151,7 @@ return Application::configure(basePath: dirname(__DIR__))
                         'message' => 'Your session has expired. Please refresh the page.',
                     ])->toResponse($request)->setStatusCode(419);
                 }
-                
+
                 return redirect()->back()->withErrors([
                     'session' => 'Your session has expired. Please try again.',
                 ]);
