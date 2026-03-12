@@ -1,3 +1,6 @@
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+
 <div class="space-y-6">
     {{-- Video Player --}}
     @if($videoUrl || $hlsUrl)
@@ -9,23 +12,35 @@
     <div
         wire:ignore.self
         x-data="{
-            player: null,
+            plyr: null,
             currentTime: 0,
             duration: 0,
             isCloudOnly: {{ $isCloudOnly ? 'true' : 'false' }},
             init() {
                 this.$nextTick(() => {
-                    this.player = this.$refs.videoPlayer;
-                    if (this.player) {
-                        this.player.addEventListener('timeupdate', () => {
-                            this.currentTime = this.player.currentTime;
-                            this.duration = this.player.duration || 0;
-                        });
-                        this.player.addEventListener('loadedmetadata', () => {
-                            this.duration = this.player.duration || 0;
-                        });
-                    }
+                    const videoEl = this.$refs.videoPlayer;
+                    if (!videoEl) return;
+
+                    this.plyr = new Plyr(videoEl, {
+                        controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'settings', 'fullscreen'],
+                        settings: ['speed'],
+                        speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
+                        keyboard: { focused: true, global: false },
+                        tooltips: { controls: true, seek: true },
+                        seekTime: 5,
+                    });
+
+                    this.plyr.on('timeupdate', () => {
+                        this.currentTime = this.plyr.currentTime || 0;
+                        this.duration = this.plyr.duration || 0;
+                    });
+                    this.plyr.on('loadedmetadata', () => {
+                        this.duration = this.plyr.duration || 0;
+                    });
                 });
+            },
+            destroy() {
+                if (this.plyr) { this.plyr.destroy(); this.plyr = null; }
             },
             formatTime(seconds) {
                 if (!seconds || isNaN(seconds)) return '0:00';
@@ -44,18 +59,18 @@
                 </h3>
             </div>
             <div class="fi-section-content px-6 pb-6">
-                <div wire:ignore class="relative rounded-lg overflow-hidden bg-black" style="max-height: 400px;">
+                <div wire:ignore class="relative rounded-lg overflow-hidden bg-black" style="max-height: 480px;">
                     <video
                         x-ref="videoPlayer"
                         class="w-full"
-                        style="max-height: 400px;"
-                        controls
+                        style="max-height: 480px;"
                         preload="auto"
+                        playsinline
+                        crossorigin="anonymous"
                         @if($videoUrl)
                         src="{{ $videoUrl }}"
                         @endif
                     >
-                        Your browser does not support the video tag.
                     </video>
                 </div>
 

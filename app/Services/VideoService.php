@@ -70,6 +70,17 @@ class VideoService
     protected function generateUniqueSlug(string $title): string
     {
         $baseSlug = Str::slug($title) ?: 'video';
+
+        // Short slugs (< 4 chars) can collide with real routes at the root level
+        // (e.g. "otk" → sitename.com/otk could conflict with /api, /admin, etc.)
+        // Append a short random suffix to make them distinct and URL-safe.
+        if (Str::length($baseSlug) < 4) {
+            $baseSlug .= '-' . Str::lower(Str::random(6));
+        }
+
+        // Truncate very long slugs to 200 chars to keep URLs manageable
+        $baseSlug = Str::limit($baseSlug, 200, '');
+
         $slug = $baseSlug;
         $suffix = 2;
         while (Video::withTrashed()->where('slug', $slug)->exists()) {

@@ -97,11 +97,16 @@ const fetchNotifications = async () => {
     }
 };
 
-const toggleNotifications = () => {
+const toggleNotifications = async () => {
     showNotifications.value = !showNotifications.value;
     showUserMenu.value = false;
-    if (showNotifications.value && !notificationsLoaded.value) {
-        fetchNotifications();
+    if (showNotifications.value) {
+        // Always refresh notifications when opening the dropdown
+        await fetchNotifications();
+        // Auto-mark all as read when opening the dropdown
+        if (unreadCount.value > 0) {
+            markAllRead();
+        }
     }
 };
 

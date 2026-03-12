@@ -79,7 +79,9 @@ const thumbRadius = computed(() => {
 const handleMouseEnter = () => { isHovering.value = true; };
 const handleMouseLeave = () => { 
     isHovering.value = false; 
-    previewLoaded.value = false; 
+    // Don't reset previewLoaded here — the opacity transition handles the visual
+    // switch. Resetting it causes the static thumbnail to briefly show opacity-0
+    // while the alt text / broken image icon flashes visibly (bad UX).
 };
 const onPreviewLoad = () => { previewLoaded.value = true; };
 </script>
@@ -107,13 +109,13 @@ const onPreviewLoad = () => { previewLoaded.value = true; };
             <!-- Animated Preview (WebP) — portrait videos use object-contain to show full frame -->
             <div
                 v-if="video.preview_url"
-                class="absolute inset-0 w-full h-full transition-opacity duration-200"
+                class="absolute inset-0 w-full h-full transition-opacity duration-200 pointer-events-none"
                 :class="isHovering && previewLoaded ? 'opacity-100' : 'opacity-0'"
                 :style="video.is_portrait ? { backgroundColor: '#000' } : {}"
             >
                 <img
-                    :src="isHovering ? video.preview_url : ''"
-                    :alt="video.title"
+                    :src="(isHovering || previewLoaded) ? video.preview_url : ''"
+                    alt=""
                     class="w-full h-full transition-opacity duration-200"
                     :class="video.is_portrait ? 'object-contain' : 'object-cover'"
                     loading="lazy"

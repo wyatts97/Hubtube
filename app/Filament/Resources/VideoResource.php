@@ -11,6 +11,8 @@ use App\Services\EmailService;
 use App\Services\VideoService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -38,6 +40,49 @@ class VideoResource extends Resource
     public static function getNavigationBadgeColor(): ?string
     {
         return 'warning';
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Infolists\Components\Section::make('Video Preview')
+                    ->schema([
+                        Infolists\Components\ViewEntry::make('video_player')
+                            ->view('filament.resources.video-resource.components.video-player-infolist')
+                            ->columnSpanFull(),
+                    ])
+                    ->visible(fn (Video $record) => $record->video_path || $record->video_url)
+                    ->collapsible(),
+
+                Infolists\Components\Section::make('Details')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('title'),
+                        Infolists\Components\TextEntry::make('user.username')
+                            ->label('Uploader'),
+                        Infolists\Components\TextEntry::make('status')
+                            ->badge()
+                            ->color(fn (string $state): string => match ($state) {
+                                'processed' => 'success',
+                                'processing' => 'info',
+                                'pending' => 'warning',
+                                'failed' => 'danger',
+                                default => 'gray',
+                            }),
+                        Infolists\Components\TextEntry::make('category.name')
+                            ->label('Category')
+                            ->default('—'),
+                        Infolists\Components\TextEntry::make('views_count')
+                            ->label('Views')
+                            ->numeric(),
+                        Infolists\Components\TextEntry::make('formatted_duration')
+                            ->label('Duration')
+                            ->default('—'),
+                        Infolists\Components\TextEntry::make('description')
+                            ->columnSpanFull()
+                            ->default('No description'),
+                    ])->columns(3),
+            ]);
     }
 
     public static function form(Form $form): Form
@@ -528,6 +573,7 @@ class VideoResource extends Resource
         return [
             'index' => Pages\ListVideos::route('/'),
             'create' => Pages\CreateVideo::route('/create'),
+            'view' => Pages\ViewVideo::route('/{record}'),
             'edit' => Pages\EditVideo::route('/{record}/edit'),
         ];
     }

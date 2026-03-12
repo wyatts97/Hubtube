@@ -164,9 +164,20 @@ class TranslationController extends Controller
         $knownRoutes = ['/', '/trending', '/shorts', '/search', '/videos', '/live', '/contact',
             '/categories', '/playlists', '/public-playlists', '/history', '/settings', '/dashboard', '/upload',
             '/login', '/register', '/feed', '/notifications'];
+        $knownPrefixes = ['/pages/', '/channel/', '/category/', '/tag/', '/playlist/', '/gallery/', '/image/',
+            '/auth/', '/api/', '/admin/', '/images/', '/galleries/', '/videos/'];
         $pathSegments = explode('/', ltrim($currentPath, '/'));
 
-        if (count($pathSegments) === 1 && $pathSegments[0] !== '' && !in_array($currentPath, $knownRoutes)) {
+        // Check if the path starts with a known multi-segment prefix
+        $isKnownPrefix = false;
+        foreach ($knownPrefixes as $prefix) {
+            if (str_starts_with($currentPath, $prefix)) {
+                $isKnownPrefix = true;
+                break;
+            }
+        }
+
+        if (!$isKnownPrefix && count($pathSegments) === 1 && $pathSegments[0] !== '' && !in_array($currentPath, $knownRoutes)) {
             // Single-segment path that isn't a known route — likely a video slug
             $slug = $pathSegments[0];
             $video = Video::where('slug', $slug)->first();
