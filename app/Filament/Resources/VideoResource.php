@@ -387,6 +387,20 @@ class VideoResource extends Resource
                         })
                         ->visible(fn (Video $record) => !$record->is_approved && $record->status === 'processed'),
 
+                    Tables\Actions\Action::make('unpublish')
+                        ->label('Unpublish')
+                        ->icon('heroicon-o-eye-slash')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->modalHeading('Unpublish Video')
+                        ->modalDescription('This will hide the video from the live site and set it back to "needs moderation" status. The video will not be deleted.')
+                        ->action(function (Video $record) {
+                            $record->update([
+                                'is_approved' => false,
+                            ]);
+                        })
+                        ->visible(fn (Video $record) => $record->is_approved && $record->status === 'processed'),
+
                     Tables\Actions\Action::make('reject')
                         ->label('Reject')
                         ->icon('heroicon-o-x-circle')
@@ -434,7 +448,7 @@ class VideoResource extends Resource
                                 ]);
                             }
                         })
-                        ->visible(fn (Video $record) => $record->status === 'processed' || $record->is_approved),
+                        ->visible(fn (Video $record) => !$record->is_approved && $record->status === 'processed'),
 
                     Tables\Actions\Action::make('feature')
                         ->icon('heroicon-o-star')

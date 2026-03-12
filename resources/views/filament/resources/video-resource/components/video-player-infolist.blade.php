@@ -2,10 +2,12 @@
     $record = $getRecord();
     $videoUrl = null;
 
-    // Match the same logic as VideoPreviewManager::loadVideoData()
-    if ($record->video_path && $record->storage_disk === 'public') {
+    // Use admin streaming route for local files (supports Range requests for seeking)
+    // storage_disk is null or 'public' for locally stored videos
+    $disk = $record->storage_disk ?? 'public';
+    if ($record->video_path && $disk === 'public') {
         $videoUrl = route('admin.video-stream', ['path' => $record->video_path]);
-    } else {
+    } elseif ($record->video_path) {
         $videoUrl = $record->video_url;
     }
     $hlsUrl = $record->hls_playlist_url;

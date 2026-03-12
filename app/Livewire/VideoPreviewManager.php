@@ -37,7 +37,9 @@ class VideoPreviewManager extends Component
         if (!$video) return;
 
         // Use the admin streaming route for Range request support (enables seekbar scrubbing)
-        if ($video->video_path && $video->storage_disk === 'public') {
+        // storage_disk is null or 'public' for locally stored videos
+        $disk = $video->storage_disk ?? 'public';
+        if ($video->video_path && $disk === 'public') {
             $this->videoUrl = route('admin.video-stream', ['path' => $video->video_path]);
         } else {
             $this->videoUrl = $video->video_url;
