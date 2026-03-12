@@ -40,7 +40,8 @@ class VideoPreviewManager extends Component
         // storage_disk is null or 'public' for locally stored videos
         $disk = $video->storage_disk ?? 'public';
         if ($video->video_path && $disk === 'public') {
-            $this->videoUrl = route('admin.video-stream', ['path' => $video->video_path]);
+            $normalizedPath = ltrim(str_replace('\\', '/', $video->video_path), '/');
+            $this->videoUrl = route('admin.video-stream') . '?path=' . rawurlencode($normalizedPath);
         } else {
             $this->videoUrl = $video->video_url;
         }

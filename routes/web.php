@@ -61,11 +61,28 @@ Route::get('/robots.txt', function () {
 Route::get('/offline', fn () => view('offline'))->name('offline');
 
 // Stream video files with Range request support (php artisan serve doesn't support Range)
-// Used by watermark preview and admin video edit player
-Route::get('/admin/video-stream/{path}', function (string $path) {
+// Used by watermark preview and admin video edit player.
+//
+// IMPORTANT:
+// We prefer query-string paths (/admin/video-stream?path=videos/.../file.mp4)
+// instead of embedding the file path directly in the URL path. This avoids
+// production nginx configs that aggressively treat *.mp4 URLs as static files
+// and return 404 before Laravel gets the request.
+Route::get('/admin/video-stream/{legacyPath?}', function (?string $legacyPath = null) {
     // Only allow admin users
     if (!auth()->check() || !auth()->user()->is_admin) {
         abort(403);
+    }
+
+    // Preferred: query param (?path=videos/slug/file.mp4)
+    // Legacy fallback: /admin/video-stream/videos/slug/file.mp4
+    $path = request()->query('path', $legacyPath ?? '');
+    $path = rawurldecode((string) $path);
+    $path = str_replace('\\', '/', $path);
+    $path = ltrim($path, '/');
+
+    if ($path === '' || strpos($path, "\0") !== false) {
+        abort(404);
     }
 
     // Resolve the file from public storage
@@ -110,7 +127,7 @@ Route::get('/admin/video-stream/{path}', function (string $path) {
         }
     }
     return response()->file($fullPath, $headers);
-})->where('path', '.+')->name('admin.video-stream');
+})->where('legacyPath', '.*')->name('admin.video-stream');
 
 // Thumbnail proxy for embedded video thumbnails
 Route::get('/api/thumb-proxy', [ThumbnailProxyController::class, 'proxy'])
