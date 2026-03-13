@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Video;
 
+use App\Models\Video;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateVideoRequest extends FormRequest
@@ -13,32 +14,9 @@ class UpdateVideoRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $tags = $this->input('tags');
-        if (is_string($tags)) {
-            $tags = array_values(array_filter(array_map('trim', explode(',', $tags))));
-            $this->merge(['tags' => $tags]);
-        } elseif (is_array($tags) && count($tags) > 0) {
-            // Detect single-character corruption: if most elements are 1 char,
-            // the original string was iterated char-by-char by FormData.
-            $singleCharCount = count(array_filter($tags, fn ($t) => is_string($t) && mb_strlen(trim($t)) <= 1));
-            if (count($tags) >= 3 && $singleCharCount / count($tags) >= 0.5) {
-                $joined = implode('', $tags);
-                $tags = array_values(array_filter(array_map('trim', explode(',', $joined))));
-                $this->merge(['tags' => $tags]);
-            } else {
-                $normalized = [];
-                foreach ($tags as $tag) {
-                    if (is_string($tag)) {
-                        foreach (explode(',', $tag) as $part) {
-                            $part = trim($part);
-                            if ($part !== '') {
-                                $normalized[] = $part;
-                            }
-                        }
-                    }
-                }
-                $this->merge(['tags' => $normalized]);
-            }
+        $rawTags = $this->input('tags');
+        if ($rawTags !== null) {
+            $this->merge(['tags' => Video::normalizeTagsInput($rawTags)]);
         }
     }
 

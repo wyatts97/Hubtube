@@ -107,6 +107,60 @@ class Video extends Model
         ];
     }
 
+    public static function normalizeTagsInput(mixed $tags): array
+    {
+        if ($tags === null) {
+            return [];
+        }
+
+        if (is_string($tags)) {
+            $decoded = json_decode($tags, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $tags = $decoded;
+            }
+        }
+
+        if (is_string($tags)) {
+            $tags = preg_split('/[\r\n,]+/', $tags) ?: [];
+        }
+
+        if (!is_array($tags)) {
+            return [];
+        }
+
+        // Recover legacy corruption where tags arrived as a character array
+        // (e.g. ['T','w','i','n','k',',','S','e','l','f']).
+        $singleCharCount = count(array_filter(
+            $tags,
+            fn ($tag) => is_string($tag) && mb_strlen(trim($tag)) <= 1
+        ));
+
+        if (count($tags) >= 3 && ($singleCharCount / count($tags)) >= 0.5) {
+            $tags = preg_split('/[\r\n,]+/', implode('', $tags)) ?: [];
+        }
+
+        $normalized = [];
+        foreach ($tags as $tag) {
+            if (!is_scalar($tag)) {
+                continue;
+            }
+
+            foreach ((preg_split('/[\r\n,]+/', (string) $tag) ?: []) as $part) {
+                $part = ltrim(trim($part), '#');
+                if ($part !== '') {
+                    $normalized[] = $part;
+                }
+            }
+        }
+
+        return array_values(array_unique($normalized));
+    }
+
+    public function getTagsAttribute($value): array
+    {
+        return static::normalizeTagsInput($value);
+    }
+
     protected static function booted(): void
     {
         // Flush homepage caches when a video is created, updated, or deleted
@@ -121,6 +175,9 @@ class Video extends Model
         static::deleted($flushHomeCache);
 
         static::saving(function (Video $video) {
+            $normalizedTags = static::normalizeTagsInput($video->getAttribute('tags'));
+            $video->setAttribute('tags', empty($normalizedTags) ? null : $normalizedTags);
+
             if ($video->scheduled_at && !$video->is_approved) {
                 $video->requires_schedule = true;
             } elseif (!$video->scheduled_at && $video->is_approved) {

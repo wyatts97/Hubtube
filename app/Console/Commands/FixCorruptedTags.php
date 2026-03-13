@@ -9,7 +9,7 @@ class FixCorruptedTags extends Command
 {
     protected $signature = 'videos:fix-corrupted-tags {--dry-run : Show what would be fixed without saving}';
 
-    protected $description = 'Fix videos whose tags were corrupted into single-character arrays (e.g. ["A","t","o","m","i","c"] instead of ["Atomic"])';
+    protected $description = 'Fix videos whose tags were malformed (single-character arrays or string tags) into clean tag arrays';
 
     public function handle(): int
     {
@@ -22,42 +22,24 @@ class FixCorruptedTags extends Command
 
         $fixed = 0;
 
+        /** @var Video $video */
         foreach ($videos as $video) {
-            $tags = $video->tags;
+            $rawTags = $video->getRawOriginal('tags');
+            $currentTags = $video->tags;
+            $normalized = Video::normalizeTagsInput($rawTags);
 
-            if (!is_array($tags) || count($tags) < 2) {
-                continue;
-            }
-
-            // Detect corruption: if most tags are single characters, they were likely
-            // split from a string. A normal tag list would have multi-character entries.
-            $singleCharCount = collect($tags)->filter(fn ($t) => is_string($t) && mb_strlen(trim($t)) <= 1)->count();
-            $ratio = $singleCharCount / count($tags);
-
-            if ($ratio < 0.5) {
-                continue;
-            }
-
-            // Reconstruct: join all single chars back into a string, then split on
-            // comma/space boundaries to recover the original tags.
-            $joined = implode('', $tags);
-
-            // Split on commas (with optional surrounding spaces)
-            $reconstructed = array_values(array_filter(
-                array_map('trim', explode(',', $joined)),
-                fn ($t) => $t !== ''
-            ));
-
-            if (empty($reconstructed)) {
+            $needsFix = !is_array($currentTags) || $currentTags !== $normalized;
+            if (!$needsFix) {
                 continue;
             }
 
             $this->info("Video #{$video->id} \"{$video->title}\":");
-            $this->line("  Before: " . json_encode($tags));
-            $this->line("  After:  " . json_encode($reconstructed));
+            $this->line("  Before(raw): " . (string) $rawTags);
+            $this->line("  Before(cast): " . json_encode($currentTags));
+            $this->line("  After:        " . json_encode($normalized));
 
             if (!$dryRun) {
-                $video->tags = $reconstructed;
+                $video->tags = empty($normalized) ? null : $normalized;
                 $video->save();
             }
 

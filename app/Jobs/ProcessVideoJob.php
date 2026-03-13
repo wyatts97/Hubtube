@@ -468,6 +468,7 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
         $duration = 0;
         $width = 0;
         $height = 0;
+        $rotation = 0;
 
         if (isset($info['format']['duration'])) {
             $duration = (int) $info['format']['duration'];
@@ -477,6 +478,26 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
             if (($stream['codec_type'] ?? '') === 'video') {
                 $width = $stream['width'] ?? 0;
                 $height = $stream['height'] ?? 0;
+
+                // Some mobile videos are stored as landscape with rotation metadata.
+                // Normalize dimensions so portrait detection and downstream UI logic
+                // use the *displayed* orientation.
+                if (isset($stream['tags']['rotate']) && is_numeric($stream['tags']['rotate'])) {
+                    $rotation = (int) $stream['tags']['rotate'];
+                }
+
+                foreach (($stream['side_data_list'] ?? []) as $sideData) {
+                    if (isset($sideData['rotation']) && is_numeric($sideData['rotation'])) {
+                        $rotation = (int) $sideData['rotation'];
+                        break;
+                    }
+                }
+
+                $normalizedRotation = (($rotation % 360) + 360) % 360;
+                if (in_array($normalizedRotation, [90, 270], true)) {
+                    [$width, $height] = [$height, $width];
+                }
+
                 break;
             }
         }
@@ -534,10 +555,11 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
             $previewDuration = min(3, $duration);
         }
         
-        // Generate animated WebP with reduced size for performance
-        // Scale to 320px width, 10fps, good quality
+        // Generate animated WebP with reduced size for performance.
+        // Fit preview into a 16:9 card canvas with pillarboxing when needed,
+        // so portrait frames remain fully visible on hover cards.
         $cmd = sprintf(
-            '%s -y -ss %d -t %d -i %s -vf "fps=10,scale=320:-1:flags=lanczos" -c:v libwebp -lossless 0 -compression_level 4 -q:v 70 -loop 0 -preset default -an -vsync 0 %s 2>&1',
+            '%s -y -ss %d -t %d -i %s -vf "fps=10,scale=320:180:force_original_aspect_ratio=decrease:flags=lanczos,pad=320:180:(ow-iw)/2:(oh-ih)/2:black" -c:v libwebp -lossless 0 -compression_level 4 -q:v 70 -loop 0 -preset default -an -vsync 0 %s 2>&1',
             $ffmpeg,
             $startTime,
             $previewDuration,
@@ -583,16 +605,21 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
             mkdir($spriteDir, 0755, true);
         }
 
-        // Generate one thumbnail every 5 seconds, width=200 with aspect ratio preserved
+        // Generate one thumbnail every N seconds and fit each sprite frame into a
+        // 16:9 canvas so portrait sources are fully visible in preview UIs.
         $interval = max(5, (int) ($duration / 100)); // At most ~100 frames
         $thumbWidth = 200;
+        $thumbHeight = 112;
 
         $cmd = sprintf(
-            '%s -y -i %s -vf "fps=1/%d,scale=%d:-2" -q:v 3 %s/sprite_%%04d.jpg 2>&1',
+            '%s -y -i %s -vf "fps=1/%d,scale=%d:%d:force_original_aspect_ratio=decrease:flags=lanczos,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black" -q:v 3 %s/sprite_%%04d.jpg 2>&1',
             $ffmpeg,
             escapeshellarg($inputPath),
             $interval,
             $thumbWidth,
+            $thumbHeight,
+            $thumbWidth,
+            $thumbHeight,
             escapeshellarg($spriteDir)
         );
 

@@ -22,6 +22,7 @@ const vc = computed(() => page.props.theme?.videoCard || {});
 
 const isHovering = ref(false);
 const previewLoaded = ref(false);
+const previewIsPortrait = ref(Boolean(props.video.is_portrait));
 
 const placeholderImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Crect fill='%23181818' width='640' height='360'/%3E%3Cpolygon fill='%23333' points='280,130 280,230 360,180'/%3E%3C/svg%3E";
 
@@ -83,7 +84,14 @@ const handleMouseLeave = () => {
     // switch. Resetting it causes the static thumbnail to briefly show opacity-0
     // while the alt text / broken image icon flashes visibly (bad UX).
 };
-const onPreviewLoad = () => { previewLoaded.value = true; };
+const onPreviewLoad = (event) => {
+    previewLoaded.value = true;
+
+    const img = event?.target;
+    if (img?.naturalWidth && img?.naturalHeight) {
+        previewIsPortrait.value = img.naturalHeight > img.naturalWidth;
+    }
+};
 </script>
 
 <template>
@@ -111,13 +119,13 @@ const onPreviewLoad = () => { previewLoaded.value = true; };
                 v-if="video.preview_url"
                 class="absolute inset-0 w-full h-full transition-opacity duration-200 pointer-events-none"
                 :class="isHovering && previewLoaded ? 'opacity-100' : 'opacity-0'"
-                :style="video.is_portrait ? { backgroundColor: '#000' } : {}"
+                :style="previewIsPortrait ? { backgroundColor: '#000' } : {}"
             >
                 <img
                     :src="(isHovering || previewLoaded) ? video.preview_url : ''"
                     alt=""
                     class="w-full h-full transition-opacity duration-200"
-                    :class="video.is_portrait ? 'object-contain' : 'object-cover'"
+                    :class="previewIsPortrait ? 'object-contain' : 'object-cover'"
                     loading="lazy"
                     decoding="async"
                     @load="onPreviewLoad"
