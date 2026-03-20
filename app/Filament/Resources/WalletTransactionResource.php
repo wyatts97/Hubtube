@@ -20,7 +20,6 @@ class WalletTransactionResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        if (static::isHiddenByNavCustomizer()) return false;
         return (bool) \App\Models\Setting::get('monetization_enabled', true);
     }
 
