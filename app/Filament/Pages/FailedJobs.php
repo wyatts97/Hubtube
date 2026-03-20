@@ -29,7 +29,6 @@ class FailedJobs extends Page implements HasTable
 
     public static function shouldRegisterNavigation(): bool
     {
-        if (static::isHiddenByNavCustomizer()) return false;
         try {
             return DB::table('failed_jobs')->count() > 0;
         } catch (\Exception $e) {
