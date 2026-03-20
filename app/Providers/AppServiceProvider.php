@@ -19,7 +19,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        Model::shouldBeStrict(!$this->app->isProduction());
+        Model::shouldBeStrict(!$this->app->environment('production'));
         
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
