@@ -21,11 +21,9 @@ use Filament\Tables\Table;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class VideoAdResource extends Resource
 {
-    use HasCustomizableNavigation;
     protected static ?string $model = VideoAd::class;
     protected static ?string $navigationIcon = 'heroicon-o-film';
     protected static ?string $navigationLabel = 'Ad Creatives';

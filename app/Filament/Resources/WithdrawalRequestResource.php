@@ -13,11 +13,9 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class WithdrawalRequestResource extends Resource
 {
-    use HasCustomizableNavigation;
     protected static ?string $model = WithdrawalRequest::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-up-tray';

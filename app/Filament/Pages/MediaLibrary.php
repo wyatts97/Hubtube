@@ -8,11 +8,9 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\WithFileUploads;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class MediaLibrary extends Page
 {
-    use HasCustomizableNavigation;
     use WithFileUploads;
 
     protected static ?string $navigationIcon = 'heroicon-o-photo';

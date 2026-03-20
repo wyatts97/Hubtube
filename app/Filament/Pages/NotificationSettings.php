@@ -13,11 +13,9 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class NotificationSettings extends Page implements HasForms
 {
-    use HasCustomizableNavigation;
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-bell';

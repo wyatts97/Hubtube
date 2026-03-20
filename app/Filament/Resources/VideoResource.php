@@ -19,11 +19,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class VideoResource extends Resource
 {
-    use HasCustomizableNavigation;
     protected static ?string $model = Video::class;
     protected static ?string $navigationIcon = 'heroicon-o-video-camera';
     protected static ?string $navigationGroup = 'Content';
@@ -436,7 +434,7 @@ class VideoResource extends Resource
 
                             $record->update([
                                 'is_approved' => false,
-                                'status' => 'rejected',
+                                'failure_reason' => $reason,
                             ]);
 
                             $record->loadMissing('user');
@@ -503,7 +501,7 @@ class VideoResource extends Resource
                     Tables\Actions\Action::make('view_frontend')
                         ->icon('heroicon-o-eye')
                         ->color('gray')
-                        ->url(fn (Video $record): string => '/' . $record->slug)
+                        ->url(fn (Video $record): string => url('/' . $record->slug))
                         ->openUrlInNewTab()
                         ->visible(fn (Video $record) => $record->status === 'processed' && $record->is_approved),
 

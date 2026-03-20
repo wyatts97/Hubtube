@@ -25,11 +25,9 @@ use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class SiteSettings extends Page implements HasForms
 {
-    use HasCustomizableNavigation;
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';

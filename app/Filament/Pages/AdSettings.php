@@ -20,11 +20,9 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Storage;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class AdSettings extends Page implements HasForms
 {
-    use HasCustomizableNavigation;
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';

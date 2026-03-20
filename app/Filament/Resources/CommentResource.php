@@ -10,11 +10,9 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class CommentResource extends Resource
 {
-    use HasCustomizableNavigation;
     protected static ?string $model = Comment::class;
     protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left-right';
     protected static ?string $navigationGroup = 'Content';
@@ -54,6 +52,7 @@ class CommentResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with(['user', 'video' => fn ($q) => $q->withTrashed()]))
             ->columns([
                 Tables\Columns\TextColumn::make('user.username')
                     ->label('User')
@@ -61,6 +60,7 @@ class CommentResource extends Resource
                 Tables\Columns\TextColumn::make('video.title')
                     ->label('Video')
                     ->limit(30)
+                    ->placeholder('(deleted)')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('content')
                     ->label('Comment')

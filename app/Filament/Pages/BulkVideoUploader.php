@@ -3,7 +3,6 @@
 namespace App\Filament\Pages;
 
 use App\Events\VideoUploaded;
-use App\Filament\Concerns\HasCustomizableNavigation;
 use App\Models\Category;
 use App\Models\User;
 use App\Models\Video;
@@ -19,7 +18,6 @@ use Illuminate\Support\Str;
 
 class BulkVideoUploader extends Page implements HasForms
 {
-    use HasCustomizableNavigation;
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-up-tray';

@@ -10,11 +10,9 @@ use Filament\Notifications\Notification;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Storage;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class WordPressUserImporter extends Page
 {
-    use HasCustomizableNavigation;
     use WithFileUploads;
 
     protected static ?string $navigationIcon = 'heroicon-o-users';

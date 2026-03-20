@@ -12,11 +12,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class ContactMessageResource extends Resource
 {
-    use HasCustomizableNavigation;
     protected static ?string $model = ContactMessage::class;
     protected static ?string $navigationIcon = 'heroicon-o-envelope';
     protected static ?string $navigationLabel = 'Contact & Reports';

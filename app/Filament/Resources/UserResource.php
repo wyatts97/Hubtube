@@ -12,11 +12,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class UserResource extends Resource
 {
-    use HasCustomizableNavigation;
     protected static ?string $model = User::class;
     protected static ?string $navigationIcon = 'heroicon-o-users';
     protected static ?string $navigationGroup = 'Users & Messages';

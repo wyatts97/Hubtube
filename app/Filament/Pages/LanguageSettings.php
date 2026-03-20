@@ -25,11 +25,9 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class LanguageSettings extends Page implements HasForms, HasTable
 {
-    use HasCustomizableNavigation;
     use InteractsWithForms;
     use InteractsWithTable;
 

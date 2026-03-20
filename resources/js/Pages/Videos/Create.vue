@@ -10,6 +10,7 @@ const { t } = useI18n();
 const props = defineProps({
     categories: Array,
     existingTags: { type: Array, default: () => [] },
+    uploadLimitReached: { type: Boolean, default: false },
 });
 
 const page = usePage();
@@ -205,7 +206,21 @@ onUnmounted(() => {
                 </div>
             </div>
 
-            <form @submit.prevent="submit" class="space-y-6">
+            <!-- Upload limit reached banner -->
+            <div v-if="uploadLimitReached" class="card p-6 mb-6 border" style="border-color: var(--color-accent); background-color: var(--color-bg-card);">
+                <div class="flex items-start gap-4">
+                    <AlertCircle class="w-8 h-8 shrink-0 mt-0.5" style="color: var(--color-accent);" />
+                    <div>
+                        <h2 class="text-lg font-semibold mb-1" style="color: var(--color-text-primary);">Daily Upload Limit Reached</h2>
+                        <p class="text-sm" style="color: var(--color-text-secondary);">
+                            You've reached your maximum number of uploads for today. Your limit resets at midnight.
+                            Upgrade to a Pro account to increase your daily upload limit.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <form v-if="!uploadLimitReached" @submit.prevent="submit" class="space-y-6">
                 <!-- Video Upload Area -->
                 <div
                     v-if="!form.video_file"

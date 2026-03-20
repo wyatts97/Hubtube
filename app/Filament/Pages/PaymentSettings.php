@@ -14,11 +14,9 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class PaymentSettings extends Page implements HasForms
 {
-    use HasCustomizableNavigation;
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';

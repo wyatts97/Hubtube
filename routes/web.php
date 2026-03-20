@@ -104,29 +104,48 @@ Route::get('/admin/video-stream/{legacyPath?}', function (?string $legacyPath = 
     $mime = $mimeMap[$ext] ?? 'video/mp4';
 
     $headers = [
-        'Content-Type' => $mime,
-        'Accept-Ranges' => 'bytes',
-        'Content-Length' => $size,
+        'Content-Type'              => $mime,
+        'Accept-Ranges'             => 'bytes',
+        'Cache-Control'             => 'no-cache, no-store',
+        'X-Content-Type-Options'    => 'nosniff',
     ];
 
     $request = request();
-    if ($request->header('Range')) {
-        $range = $request->header('Range');
-        if (preg_match('/bytes=(\d+)-(\d*)/', $range, $m)) {
-            $start = (int) $m[1];
-            $end = $m[2] !== '' ? (int) $m[2] : $size - 1;
-            $end = min($end, $size - 1);
-            $length = $end - $start + 1;
-            $headers['Content-Range'] = "bytes {$start}-{$end}/{$size}";
-            $headers['Content-Length'] = $length;
+    $rangeHeader = $request->header('Range');
+
+    if ($rangeHeader && preg_match('/bytes=(\d+)-(\d*)/', $rangeHeader, $m)) {
+        $start  = (int) $m[1];
+        $end    = $m[2] !== '' ? (int) $m[2] : $size - 1;
+        $end    = min($end, $size - 1);
+        $length = $end - $start + 1;
+
+        $headers['Content-Range']  = "bytes {$start}-{$end}/{$size}";
+        $headers['Content-Length'] = $length;
+
+        return response()->stream(function () use ($fullPath, $start, $length) {
             $stream = fopen($fullPath, 'rb');
             fseek($stream, $start);
-            $data = fread($stream, $length);
+            $remaining = $length;
+            while ($remaining > 0 && !feof($stream)) {
+                $chunk = min(256 * 1024, $remaining);
+                echo fread($stream, $chunk);
+                $remaining -= $chunk;
+                flush();
+            }
             fclose($stream);
-            return response($data, 206, $headers);
-        }
+        }, 206, $headers);
     }
-    return response()->file($fullPath, $headers);
+
+    $headers['Content-Length'] = $size;
+
+    return response()->stream(function () use ($fullPath) {
+        $stream = fopen($fullPath, 'rb');
+        while (!feof($stream)) {
+            echo fread($stream, 256 * 1024);
+            flush();
+        }
+        fclose($stream);
+    }, 200, $headers);
 })->where('legacyPath', '.*')->name('admin.video-stream');
 
 // Thumbnail proxy for embedded video thumbnails

@@ -16,11 +16,9 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class FailedJobs extends Page implements HasTable
 {
-    use HasCustomizableNavigation;
     use InteractsWithTable;
 
     protected static ?string $navigationIcon = 'heroicon-o-exclamation-triangle';

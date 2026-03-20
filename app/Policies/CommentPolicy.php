@@ -15,12 +15,12 @@ class CommentPolicy
     public function delete(User $user, Comment $comment): bool
     {
         return $user->id === $comment->user_id 
-            || $user->id === $comment->video->user_id 
+            || $user->id === ($comment->video?->user_id)
             || $user->is_admin;
     }
 
     public function pin(User $user, Comment $comment): bool
     {
-        return $user->id === $comment->video->user_id || $user->is_admin;
+        return $user->id === ($comment->video?->user_id) || $user->is_admin;
     }
 }

@@ -10,11 +10,9 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class WalletTransactionResource extends Resource
 {
-    use HasCustomizableNavigation;
     protected static ?string $model = WalletTransaction::class;
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
     protected static ?string $navigationGroup = 'Monetization';

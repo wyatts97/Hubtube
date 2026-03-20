@@ -11,11 +11,9 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class CategoryResource extends Resource
 {
-    use HasCustomizableNavigation;
     protected static ?string $model = Category::class;
     protected static ?string $navigationIcon = 'heroicon-o-tag';
     protected static ?string $navigationGroup = 'Content';

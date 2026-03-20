@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 use App\Models\Setting;
 use App\Models\Video;
 use App\Services\AdminLogger;
@@ -21,7 +20,6 @@ use Illuminate\Support\Carbon;
 
 class ScheduledVideos extends Page implements HasTable
 {
-    use HasCustomizableNavigation;
     use InteractsWithTable;
 
     protected static ?string $navigationIcon = 'heroicon-o-clock';

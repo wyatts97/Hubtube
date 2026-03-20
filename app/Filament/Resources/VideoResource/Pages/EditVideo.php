@@ -20,7 +20,7 @@ class EditVideo extends EditRecord
                 ->label('View on Site')
                 ->icon('heroicon-o-eye')
                 ->color('gray')
-                ->url(fn () => '/' . $this->record->slug)
+                ->url(fn () => url('/' . $this->record->slug))
                 ->openUrlInNewTab()
                 ->visible(fn () => $this->record->status === 'processed' && $this->record->is_approved),
 

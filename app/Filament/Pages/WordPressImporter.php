@@ -15,11 +15,9 @@ use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Livewire\WithFileUploads;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class WordPressImporter extends Page
 {
-    use HasCustomizableNavigation;
     use WithFileUploads;
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-down-tray';

@@ -11,11 +11,9 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class SponsoredCardResource extends Resource
 {
-    use HasCustomizableNavigation;
     protected static ?string $model = SponsoredCard::class;
     protected static ?string $navigationIcon = 'heroicon-o-megaphone';
     protected static ?string $navigationLabel = 'Sponsored Cards';

@@ -20,11 +20,9 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Mail;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class IntegrationSettings extends Page implements HasForms
 {
-    use HasCustomizableNavigation;
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-puzzle-piece';

@@ -218,9 +218,19 @@ class VideoController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(): Response|RedirectResponse
     {
-        Gate::authorize('upload-video');
+        if (!auth()->check()) {
+            return redirect()->route('login');
+        }
+
+        if (!auth()->user()->canUpload()) {
+            return Inertia::render('Videos/Create', [
+                'categories' => Category::active()->get(),
+                'existingTags' => [],
+                'uploadLimitReached' => true,
+            ]);
+        }
 
         $existingTags = \App\Models\Hashtag::orderByDesc('usage_count')
             ->limit(200)
@@ -242,7 +252,9 @@ class VideoController extends Controller
 
     public function store(StoreVideoRequest $request): RedirectResponse
     {
-        Gate::authorize('upload-video');
+        if (!$request->user()->canUpload()) {
+            return back()->withErrors(['upload' => 'You have reached your daily upload limit. Please try again tomorrow.']);
+        }
 
         $video = $this->videoService->create($request->validated(), $request->user());
 
@@ -270,7 +282,12 @@ class VideoController extends Controller
      */
     public function uploadChunk(Request $request): JsonResponse
     {
-        Gate::authorize('upload-video');
+        if (!$request->user()?->canUpload()) {
+            return response()->json([
+                'error' => 'You have reached your daily upload limit. Please try again tomorrow.',
+                'limit_reached' => true,
+            ], 429);
+        }
 
         $request->validate([
             'chunk' => 'required|file',

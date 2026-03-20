@@ -10,11 +10,9 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class ChannelResource extends Resource
 {
-    use HasCustomizableNavigation;
     protected static bool $shouldRegisterNavigation = false;
     protected static ?string $model = Channel::class;
     protected static ?string $navigationIcon = 'heroicon-o-tv';

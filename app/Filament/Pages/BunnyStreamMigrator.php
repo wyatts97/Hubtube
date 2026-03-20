@@ -11,11 +11,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class BunnyStreamMigrator extends Page
 {
-    use HasCustomizableNavigation;
     protected static ?string $navigationIcon = 'heroicon-o-cloud-arrow-down';
     protected static ?string $navigationLabel = 'Bunny Migration';
     protected static ?string $navigationGroup = 'Tools';

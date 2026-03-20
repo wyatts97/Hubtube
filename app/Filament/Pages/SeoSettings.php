@@ -18,11 +18,9 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\HtmlString;
 
-use App\Filament\Concerns\HasCustomizableNavigation;
 
 class SeoSettings extends Page implements HasForms
 {
-    use HasCustomizableNavigation;
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-magnifying-glass';
