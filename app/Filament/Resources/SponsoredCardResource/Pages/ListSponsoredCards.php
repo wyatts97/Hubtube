@@ -73,9 +73,10 @@ class ListSponsoredCards extends ListRecords
             $csv = Reader::createFromPath($filePath, 'r');
             $csv->setHeaderOffset(0);
             
-            $records = $csv->getRecords();
+            $records = iterator_to_array($csv->getRecords());
             $imported = 0;
             $skipped = 0;
+            $seenTitles = []; // Track normalized titles to skip format variants
 
             foreach ($records as $record) {
                 // Skip if no title or URL
@@ -84,12 +85,31 @@ class ListSponsoredCards extends ListRecords
                     continue;
                 }
 
-                // Check for duplicate by external_id
+                // Normalize title to detect format variants (wmv, mov, mp4, 4K, 1080p, HD, etc.)
+                $normalizedTitle = $this->normalizeTitle($record['title']);
+                
+                // Skip if we've already imported this video (different format variant)
+                if (isset($seenTitles[$normalizedTitle])) {
+                    $skipped++;
+                    continue;
+                }
+
+                // Check for duplicate by external_id in database
                 $externalId = $record['unique Item ID'] ?? null;
                 if ($externalId && SponsoredCard::where('external_id', $externalId)->exists()) {
                     $skipped++;
                     continue;
                 }
+
+                // Check for duplicate by normalized title in database
+                if (SponsoredCard::whereRaw('LOWER(title) LIKE ?', ['%' . strtolower($normalizedTitle) . '%'])->exists()) {
+                    $skipped++;
+                    $seenTitles[$normalizedTitle] = true;
+                    continue;
+                }
+
+                // Mark this title as seen
+                $seenTitles[$normalizedTitle] = true;
 
                 // Parse preview thumbnail URLs - they might be comma-separated or pipe-separated
                 $previewImages = [];
@@ -105,15 +125,15 @@ class ListSponsoredCards extends ListRecords
                     }
                 }
 
-                // If no preview images, use the default thumbnail
+                // Get thumbnail URL
                 $thumbnailUrl = $record['default thumbnail URL'] ?? ($record['preview image URL'] ?? '');
-                if (empty($previewImages) && $thumbnailUrl) {
-                    $previewImages[] = $thumbnailUrl;
-                }
+
+                // Use normalized title (without format suffix) for display
+                $displayTitle = $normalizedTitle;
 
                 SponsoredCard::create([
                     'external_id' => $externalId,
-                    'title' => $record['title'],
+                    'title' => $displayTitle,
                     'thumbnail_url' => $thumbnailUrl,
                     'click_url' => $record['video URL'],
                     'description' => $record['description'] ?? null,
@@ -139,7 +159,7 @@ class ListSponsoredCards extends ListRecords
 
             Notification::make()
                 ->title('Import Complete')
-                ->body("Imported {$imported} sponsored cards. Skipped {$skipped} (duplicates or invalid).")
+                ->body("Imported {$imported} sponsored cards. Skipped {$skipped} (duplicates/format variants).")
                 ->success()
                 ->send();
 
@@ -150,5 +170,26 @@ class ListSponsoredCards extends ListRecords
                 ->danger()
                 ->send();
         }
+    }
+
+    /**
+     * Normalize a title by removing format suffixes like wmv, mov, mp4, 4K, 1080p, HD, etc.
+     */
+    protected function normalizeTitle(string $title): string
+    {
+        // Remove common format/resolution suffixes (case-insensitive)
+        $patterns = [
+            '/\s*[\(\[]?\s*(wmv|mov|mp4|avi|mkv|webm)\s*[\)\]]?\s*$/i',
+            '/\s*[\(\[]?\s*(4k|1080p|720p|480p|hd|hidef|hi-def)\s*[\)\]]?\s*$/i',
+            '/\s*-\s*(wmv|mov|mp4|4k|1080p|720p|hd)\s*$/i',
+            '/\s+(wmv|mov|mp4)$/i',
+        ];
+        
+        $normalized = $title;
+        foreach ($patterns as $pattern) {
+            $normalized = preg_replace($pattern, '', $normalized);
+        }
+        
+        return trim($normalized);
     }
 }

@@ -1,7 +1,6 @@
 <script setup>
 import { usePage } from '@inertiajs/vue3';
 import { computed, ref, onUnmounted } from 'vue';
-import { Clock, Tag } from 'lucide-vue-next';
 
 const page = usePage();
 
@@ -131,12 +130,9 @@ const discountPercent = computed(() => props.card.discount_percent);
                 />
             </div>
 
-            <!-- Duration Badge -->
+            <!-- Duration Badge (no clock icon, matches regular video cards) -->
             <div v-if="card.formatted_duration" class="absolute bottom-2 right-2 z-10">
-                <span class="duration-badge flex items-center gap-1">
-                    <Clock class="w-3 h-3" />
-                    {{ card.formatted_duration }}
-                </span>
+                <span class="duration-badge">{{ card.formatted_duration }}</span>
             </div>
 
             <!-- Gradient Overlay -->
@@ -149,25 +145,36 @@ const discountPercent = computed(() => props.card.discount_percent);
                     {{ card.title }}
                 </h3>
                 
-                <!-- Studio / Brand -->
-                <p v-if="card.studio" class="mt-1 text-sm" :style="{ color: metaColor }">
-                    {{ card.studio }}
+                <!-- Studio with price on same line (for clips/videos) -->
+                <p v-if="card.studio" class="mt-1 flex items-center gap-2" :style="{ ...metaStyle, color: metaColor }">
+                    <span>{{ card.studio }}</span>
+                    <template v-if="hasPrice">
+                        <span class="text-gray-500 dark:text-gray-600">•</span>
+                        <span>{{ displayPrice }}</span>
+                        <span v-if="originalPrice" class="line-through opacity-60">{{ originalPrice }}</span>
+                    </template>
                 </p>
 
-                <!-- Price Display -->
-                <div v-if="hasPrice" class="mt-2 flex items-center gap-2">
-                    <span class="text-lg font-bold text-emerald-500">{{ displayPrice }}</span>
-                    <span v-if="originalPrice" class="text-sm line-through" :style="{ color: metaColor }">
-                        {{ originalPrice }}
-                    </span>
-                </div>
+                <!-- Price on same line as description (for products without studio) -->
+                <p v-else-if="hasPrice && card.description" class="mt-1 flex items-center gap-2" :style="{ ...metaStyle, color: metaColor }">
+                    <span class="line-clamp-1 flex-1">{{ card.description }}</span>
+                    <span>{{ displayPrice }}</span>
+                    <span v-if="originalPrice" class="line-through opacity-60">{{ originalPrice }}</span>
+                </p>
 
-                <!-- Description or Sponsored label -->
-                <p v-else-if="card.description" class="mt-1 text-sm line-clamp-2" :style="{ color: metaColor }">
+                <!-- Price only (no studio, no description) -->
+                <p v-else-if="hasPrice" class="mt-1" :style="{ ...metaStyle, color: metaColor }">
+                    {{ displayPrice }}
+                    <span v-if="originalPrice" class="line-through opacity-60 ml-2">{{ originalPrice }}</span>
+                </p>
+
+                <!-- Description only (no price) -->
+                <p v-else-if="card.description" class="mt-1 line-clamp-2" :style="{ ...metaStyle, color: metaColor }">
                     {{ card.description }}
                 </p>
-                <p v-else class="mt-1 flex items-center gap-1 text-sm" :style="{ color: metaColor }">
-                    <Tag class="w-3 h-3" />
+
+                <!-- Fallback: Sponsored label -->
+                <p v-else class="mt-1" :style="{ ...metaStyle, color: metaColor }">
                     Sponsored
                 </p>
             </div>
