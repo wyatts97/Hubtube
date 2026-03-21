@@ -26,6 +26,10 @@ class SponsoredCardResource extends Resource
             ->schema([
                 Forms\Components\Section::make('Creative')
                     ->schema([
+                        Forms\Components\TextInput::make('external_id')
+                            ->label('External ID')
+                            ->maxLength(100)
+                            ->placeholder('Optional external reference ID'),
                         Forms\Components\TextInput::make('title')
                             ->required()
                             ->maxLength(255)
@@ -39,15 +43,62 @@ class SponsoredCardResource extends Resource
                         Forms\Components\FileUpload::make('thumbnail_url')
                             ->label('Thumbnail Image')
                             ->image()
-                            ->required()
                             ->disk('public')
                             ->directory('sponsored')
                             ->visibility('public')
-                            ->helperText('Recommended: 640Ã—360 (16:9 aspect ratio) to match video cards'),
+                            ->helperText('Recommended: 640×360 (16:9). Can also use external URL.'),
                         Forms\Components\TextInput::make('description')
                             ->maxLength(255)
                             ->placeholder('Optional short description shown below the title'),
+                        Forms\Components\TextInput::make('studio')
+                            ->maxLength(255)
+                            ->placeholder('Studio or brand name'),
                     ])->columns(2),
+
+                Forms\Components\Section::make('Pricing & Ribbon')
+                    ->schema([
+                        Forms\Components\Grid::make(3)->schema([
+                            Forms\Components\TextInput::make('price')
+                                ->label('Price')
+                                ->numeric()
+                                ->prefix('$')
+                                ->step(0.01)
+                                ->placeholder('9.99'),
+                            Forms\Components\TextInput::make('sale_price')
+                                ->label('Sale Price')
+                                ->numeric()
+                                ->prefix('$')
+                                ->step(0.01)
+                                ->placeholder('7.99')
+                                ->helperText('Leave empty if not on sale'),
+                            Forms\Components\TextInput::make('duration')
+                                ->label('Duration (seconds)')
+                                ->numeric()
+                                ->placeholder('300'),
+                        ]),
+                        Forms\Components\TextInput::make('ribbon_text')
+                            ->label('Ribbon Text')
+                            ->maxLength(50)
+                            ->placeholder('e.g. "Product", "Video", "Clip"')
+                            ->helperText('Text shown after "Featured" on the ribbon (e.g. "Featured Product")'),
+                    ]),
+
+                Forms\Components\Section::make('Preview Images')
+                    ->description('Multiple images that cycle on hover (like video card previews)')
+                    ->schema([
+                        Forms\Components\Repeater::make('preview_images')
+                            ->label('Preview Images')
+                            ->simple(
+                                Forms\Components\TextInput::make('url')
+                                    ->label('Image URL')
+                                    ->url()
+                                    ->placeholder('https://example.com/preview1.jpg')
+                            )
+                            ->addActionLabel('Add Preview Image')
+                            ->reorderable()
+                            ->collapsible()
+                            ->defaultItems(0),
+                    ])->collapsed(),
 
                 Forms\Components\Section::make('Targeting & Display')
                     ->schema([
@@ -149,6 +200,18 @@ class SponsoredCardResource extends Resource
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Active')
                     ->boolean(),
+
+                Tables\Columns\TextColumn::make('price')
+                    ->money('USD')
+                    ->sortable()
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('ribbon_text')
+                    ->label('Ribbon')
+                    ->badge()
+                    ->color('danger')
+                    ->formatStateUsing(fn ($state) => $state ? "Featured {$state}" : null)
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime('M j, Y')

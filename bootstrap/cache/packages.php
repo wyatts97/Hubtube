@@ -6,6 +6,13 @@
       'EloquentSerialize' => 'AnourValar\\EloquentSerialize\\Facades\\EloquentSerializeFacade',
     ),
   ),
+  'beyondcode/laravel-query-detector' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'BeyondCode\\QueryDetector\\QueryDetectorServiceProvider',
+    ),
+  ),
   'blade-ui-kit/blade-heroicons' => 
   array (
     'providers' => 
@@ -198,16 +205,18 @@
       0 => 'RyanChandler\\BladeCaptureDirective\\BladeCaptureDirectiveServiceProvider',
     ),
   ),
-  'sentry/sentry-laravel' => 
+  'socialiteproviders/manager' => 
   array (
-    'aliases' => 
-    array (
-      'Sentry' => 'Sentry\\Laravel\\Facade',
-    ),
     'providers' => 
     array (
-      0 => 'Sentry\\Laravel\\ServiceProvider',
-      1 => 'Sentry\\Laravel\\Tracing\\ServiceProvider',
+      0 => 'SocialiteProviders\\Manager\\ServiceProvider',
+    ),
+  ),
+  'spatie/laravel-activitylog' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Spatie\\Activitylog\\ActivitylogServiceProvider',
     ),
   ),
   'spatie/laravel-medialibrary' => 
