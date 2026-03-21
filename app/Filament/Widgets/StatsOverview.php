@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Comment;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
 use App\Models\WalletTransaction;
@@ -67,18 +68,24 @@ class StatsOverview extends BaseWidget
             $totalComments = Comment::count();
             $comments7d = Comment::where('created_at', '>=', $now->copy()->subDays(7))->count();
 
-            // ── Revenue ──
-            $totalRevenue = WalletTransaction::where('type', 'deposit')
-                ->where('status', 'completed')
-                ->sum('amount');
-            $revenue7d = WalletTransaction::where('type', 'deposit')
-                ->where('status', 'completed')
-                ->where('created_at', '>=', $now->copy()->subDays(7))
-                ->sum('amount');
-            $revenue30d = WalletTransaction::where('type', 'deposit')
-                ->where('status', 'completed')
-                ->where('created_at', '>=', $now->copy()->subDays(30))
-                ->sum('amount');
+            // ── Revenue (only if monetization is enabled) ──
+            $monetizationEnabled = (bool) Setting::get('monetization_enabled', false);
+            $totalRevenue = 0;
+            $revenue7d = 0;
+            $revenue30d = 0;
+            if ($monetizationEnabled) {
+                $totalRevenue = WalletTransaction::where('type', 'deposit')
+                    ->where('status', 'completed')
+                    ->sum('amount');
+                $revenue7d = WalletTransaction::where('type', 'deposit')
+                    ->where('status', 'completed')
+                    ->where('created_at', '>=', $now->copy()->subDays(7))
+                    ->sum('amount');
+                $revenue30d = WalletTransaction::where('type', 'deposit')
+                    ->where('status', 'completed')
+                    ->where('created_at', '>=', $now->copy()->subDays(30))
+                    ->sum('amount');
+            }
 
             // ── Storage ──
             $totalSize = Video::sum('size');
@@ -89,7 +96,7 @@ class StatsOverview extends BaseWidget
             $pendingCount = Video::where('status', 'pending')->count();
             $failedCount = Video::where('status', 'failed')->count();
 
-            return [
+            $stats = [
                 // Row 1
                 Stat::make('Total Users', number_format($totalUsers))
                     ->description("+{$users24h} today · +{$users7d} this week · +{$users30d} this month")
@@ -110,11 +117,6 @@ class StatsOverview extends BaseWidget
                     ->descriptionIcon('heroicon-m-eye')
                     ->color('info'),
 
-                Stat::make('Revenue', '$' . number_format($totalRevenue, 2))
-                    ->description('$' . number_format($revenue7d, 2) . ' this week · $' . number_format($revenue30d, 2) . ' this month')
-                    ->descriptionIcon('heroicon-m-banknotes')
-                    ->color('warning'),
-
                 // Row 2
                 Stat::make('Comments', number_format($totalComments))
                     ->description("+{$comments7d} this week")
@@ -134,6 +136,19 @@ class StatsOverview extends BaseWidget
                     ->descriptionIcon('heroicon-m-cog-6-tooth')
                     ->color($failedCount > 0 ? 'danger' : ($processingCount > 0 ? 'info' : 'gray')),
             ];
+
+            // Add Revenue stat only if monetization is enabled
+            if ($monetizationEnabled) {
+                // Insert after Total Views (index 2) to keep it in row 1
+                array_splice($stats, 3, 0, [
+                    Stat::make('Revenue', '$' . number_format($totalRevenue, 2))
+                        ->description('$' . number_format($revenue7d, 2) . ' this week · $' . number_format($revenue30d, 2) . ' this month')
+                        ->descriptionIcon('heroicon-m-banknotes')
+                        ->color('warning'),
+                ]);
+            }
+
+            return $stats;
         } catch (\Throwable $e) {
             return [];
         }
