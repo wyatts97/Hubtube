@@ -8,7 +8,7 @@ import { useFetch } from '@/Composables/useFetch';
 import { ArrowLeft, Play, Heart } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 
-const { t } = useI18n();
+const { t, localizedUrl } = useI18n();
 
 const props = defineProps({
     playlist: Object,
@@ -25,6 +25,21 @@ const favoritesCount = ref(props.playlist.favorited_by_count || 0);
 const favoriting = ref(false);
 
 const isOwner = computed(() => user.value && user.value.id === props.playlist.user_id);
+
+const getPlaylistVideoHref = (video, index) => {
+    const baseUrl = localizedUrl(`/${video.slug}`);
+    const params = new URLSearchParams({
+        playlist: props.playlist.slug,
+        index: String(index),
+    });
+    return `${baseUrl}?${params.toString()}`;
+};
+
+const firstVideoHref = computed(() => {
+    const firstVideo = props.playlist.videos?.[0];
+    if (!firstVideo) return '#';
+    return getPlaylistVideoHref(firstVideo, 0);
+});
 
 const toggleFavorite = async () => {
     if (!user.value) { router.visit('/login'); return; }
@@ -87,17 +102,22 @@ const removeVideo = (videoId) => {
                             <Heart class="w-4 h-4" :fill="favorited ? 'currentColor' : 'none'" />
                             {{ favorited ? (t('playlist.favorited') || 'Favorited') : (t('playlist.favorite') || 'Favorite') }}
                         </button>
-                        <button v-if="playlist.videos?.length" class="btn btn-primary gap-2">
+                        <Link v-if="playlist.videos?.length" :href="firstVideoHref" class="btn btn-primary gap-2">
                             <Play class="w-4 h-4" />
                             {{ t('playlist.play_all') || 'Play All' }}
-                        </button>
+                        </Link>
                     </div>
                 </div>
             </div>
 
             <!-- Videos -->
             <div v-if="playlist.videos?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                <VideoCard v-for="video in playlist.videos" :key="video.id" :video="video" />
+                <VideoCard
+                    v-for="(video, idx) in playlist.videos"
+                    :key="video.id"
+                    :video="video"
+                    :href="getPlaylistVideoHref(video, idx)"
+                />
             </div>
 
             <div v-else class="text-center py-16">

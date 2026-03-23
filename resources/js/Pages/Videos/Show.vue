@@ -13,7 +13,7 @@ import CommentSection from '@/Components/CommentSection.vue';
 import VideoPlayer from '@/Components/VideoPlayer.vue';
 import EmbeddedVideoPlayer from '@/Components/EmbeddedVideoPlayer.vue';
 import VideoAdPlayer from '@/Components/VideoAdPlayer.vue';
-import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff, Eye, ListVideo, Plus, Check, Loader2, Folder, Hash } from 'lucide-vue-next';
+import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff, Eye, ListVideo, Plus, Check, Loader2, Folder, Hash, Play, Shuffle, Repeat, SkipBack, SkipForward } from 'lucide-vue-next';
 
 const props = defineProps({
     video: Object,
@@ -24,11 +24,13 @@ const props = defineProps({
     sidebarAd: Object,
     bannerAbovePlayer: { type: Object, default: () => ({}) },
     bannerBelowPlayer: { type: Object, default: () => ({}) },
+    playlistContext: { type: Object, default: null },
     userPlaylists: { type: Array, default: () => [] },
     seo: { type: Object, default: () => ({}) },
 });
 
 const toast = useToast();
+const { t, localizedUrl } = useI18n();
 
 // Ad system refs
 const adPlayerRef = ref(null);
@@ -62,6 +64,8 @@ const onAdEnded = (placement) => {
     } else if (placement === 'mid_roll') {
         const player = getPlayerElement();
         if (player) player.play().catch(() => {});
+    } else if (placement === 'post_roll') {
+        goToNextPlaylistVideo();
     }
     // post_roll: video already ended, nothing to resume
 };
@@ -127,9 +131,14 @@ const setupAdTriggers = async () => {
         }
     };
     adEndedHandler = async () => {
+        let postRollPlayed = false;
         if (!postRollDone.value && adPlayerRef.value) {
             const played = await adPlayerRef.value.triggerPostRoll();
+            postRollPlayed = !!played;
             postRollDone.value = true;
+        }
+        if (!postRollPlayed) {
+            goToNextPlaylistVideo();
         }
     };
 
@@ -162,6 +171,89 @@ const hlsPlaylistUrl = computed(() => props.video.hls_playlist_url || '');
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
+
+const playlistMode = ref('play'); // play | shuffle | loop
+const playlistContext = computed(() => props.playlistContext || null);
+const playlistVideos = computed(() => playlistContext.value?.videos || []);
+const hasPlaylistContext = computed(() => !!playlistContext.value && playlistVideos.value.length > 0);
+const currentPlaylistIndex = computed(() => {
+    const idx = Number(playlistContext.value?.currentIndex ?? -1);
+    return Number.isInteger(idx) ? idx : -1;
+});
+
+const buildPlaylistVideoHref = (item, index) => {
+    if (!playlistContext.value || !item?.slug) return '#';
+    const baseUrl = localizedUrl(`/${item.slug}`);
+    const params = new URLSearchParams({
+        playlist: playlistContext.value.slug,
+        index: String(index),
+    });
+    return `${baseUrl}?${params.toString()}`;
+};
+
+const goToPlaylistIndex = (index) => {
+    if (!hasPlaylistContext.value || index < 0 || index >= playlistVideos.value.length) return;
+    const targetVideo = playlistVideos.value[index];
+    const href = buildPlaylistVideoHref(targetVideo, index);
+    router.visit(href, {
+        preserveScroll: true,
+        preserveState: false,
+    });
+};
+
+const getNextPlaylistIndex = () => {
+    if (!hasPlaylistContext.value) return null;
+
+    const total = playlistVideos.value.length;
+    const current = currentPlaylistIndex.value;
+    if (total === 0 || current < 0) return null;
+
+    if (playlistMode.value === 'loop') {
+        return current;
+    }
+
+    if (playlistMode.value === 'shuffle') {
+        if (total === 1) return current;
+        let next = current;
+        while (next === current) {
+            next = Math.floor(Math.random() * total);
+        }
+        return next;
+    }
+
+    if (current + 1 < total) {
+        return current + 1;
+    }
+
+    return null;
+};
+
+const goToNextPlaylistVideo = () => {
+    const nextIndex = getNextPlaylistIndex();
+    if (nextIndex === null) return;
+    goToPlaylistIndex(nextIndex);
+};
+
+const goToPreviousPlaylistVideo = () => {
+    if (!hasPlaylistContext.value) return;
+    const previousIndex = currentPlaylistIndex.value - 1;
+    if (previousIndex >= 0) {
+        goToPlaylistIndex(previousIndex);
+    }
+};
+
+const playAllFromStart = () => {
+    playlistMode.value = 'play';
+    goToPlaylistIndex(0);
+};
+
+const toggleShuffleMode = () => {
+    playlistMode.value = playlistMode.value === 'shuffle' ? 'play' : 'shuffle';
+};
+
+const toggleLoopMode = () => {
+    playlistMode.value = playlistMode.value === 'loop' ? 'play' : 'loop';
+};
 
 const liked = ref(props.userLike === 'like');
 const disliked = ref(props.userLike === 'dislike');
@@ -350,7 +442,6 @@ const formattedViews = computed(() => {
 });
 
 // ── Translation ──
-const { t, localizedUrl } = useI18n();
 const { isTranslated, translateItem, translateBatch, getTranslated } = useTranslation();
 
 const translatedTitle = ref(props.video.title);
@@ -450,6 +541,74 @@ const getRelatedTitle = (video) => {
                         <a v-else-if="bannerBelowPlayer.mobile_image" :href="bannerBelowPlayer.mobile_link || '#'" target="_blank" rel="noopener noreferrer">
                             <img :src="bannerBelowPlayer.mobile_image" alt="Advertisement" style="max-width: 300px; max-height: 100px;" class="rounded" loading="lazy" decoding="async" />
                         </a>
+                    </div>
+                </div>
+
+                <div v-if="hasPlaylistContext" class="card p-3 sm:p-4 mt-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                        <div>
+                            <p class="text-xs sm:text-sm" style="color: var(--color-text-muted);">Playlist</p>
+                            <h3 class="font-semibold text-sm sm:text-base" style="color: var(--color-text-primary);">
+                                {{ playlistContext.title }}
+                                <span style="color: var(--color-text-muted);">({{ currentPlaylistIndex + 1 }}/{{ playlistContext.videoCount }})</span>
+                            </h3>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button @click="playAllFromStart" class="btn btn-secondary gap-1.5 text-xs sm:text-sm px-2.5 py-1.5">
+                                <Play class="w-3.5 h-3.5" />
+                                <span>Play All</span>
+                            </button>
+                            <button
+                                @click="toggleShuffleMode"
+                                class="btn gap-1.5 text-xs sm:text-sm px-2.5 py-1.5"
+                                :class="playlistMode === 'shuffle' ? 'btn-primary' : 'btn-secondary'"
+                            >
+                                <Shuffle class="w-3.5 h-3.5" />
+                                <span>Shuffle</span>
+                            </button>
+                            <button
+                                @click="toggleLoopMode"
+                                class="btn gap-1.5 text-xs sm:text-sm px-2.5 py-1.5"
+                                :class="playlistMode === 'loop' ? 'btn-primary' : 'btn-secondary'"
+                            >
+                                <Repeat class="w-3.5 h-3.5" />
+                                <span>Loop</span>
+                            </button>
+                            <button @click="goToPreviousPlaylistVideo" :disabled="currentPlaylistIndex <= 0" class="btn btn-secondary p-2">
+                                <SkipBack class="w-3.5 h-3.5" />
+                            </button>
+                            <button @click="goToNextPlaylistVideo" :disabled="getNextPlaylistIndex() === null" class="btn btn-secondary p-2">
+                                <SkipForward class="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+                        <Link
+                            v-for="(playlistVideo, idx) in playlistVideos"
+                            :key="playlistVideo.id"
+                            :href="buildPlaylistVideoHref(playlistVideo, idx)"
+                            class="group shrink-0 w-56 sm:w-64 rounded-lg overflow-hidden border transition-all"
+                            :style="idx === currentPlaylistIndex
+                                ? { borderColor: 'var(--color-accent)', boxShadow: '0 0 0 1px var(--color-accent) inset' }
+                                : { borderColor: 'var(--color-border)' }"
+                        >
+                            <div class="relative aspect-video bg-black">
+                                <img
+                                    :src="playlistVideo.thumbnail_url || '/images/default_avatar.webp'"
+                                    :alt="playlistVideo.title"
+                                    class="w-full h-full object-cover"
+                                    loading="lazy"
+                                    decoding="async"
+                                />
+                                <span class="absolute top-2 left-2 text-[11px] px-1.5 py-0.5 rounded bg-black/80 text-white">{{ idx + 1 }}</span>
+                                <span v-if="playlistVideo.duration_formatted" class="absolute bottom-2 right-2 text-[11px] px-1.5 py-0.5 rounded bg-black/80 text-white">{{ playlistVideo.duration_formatted }}</span>
+                            </div>
+                            <div class="p-2.5">
+                                <p class="text-xs font-medium line-clamp-2" style="color: var(--color-text-primary);">{{ playlistVideo.title }}</p>
+                                <p class="text-[11px] mt-1" style="color: var(--color-text-muted);">{{ playlistVideo.user?.username || 'Unknown creator' }}</p>
+                            </div>
+                        </Link>
                     </div>
                 </div>
 

@@ -16,6 +16,10 @@ const props = defineProps({
         type: Object,
         required: true,
     },
+    href: {
+        type: String,
+        default: '',
+    },
 });
 
 const vc = computed(() => page.props.theme?.videoCard || {});
@@ -34,6 +38,8 @@ const videoUrl = computed(() => {
     const slug = (isTranslated.value && props.video.translated_slug) ? props.video.translated_slug : props.video.slug;
     return localizedUrl(`/${slug}`);
 });
+
+const cardHref = computed(() => props.href || videoUrl.value);
 
 const formattedViews = computed(() => formatViews(props.video.views_count));
 
@@ -99,7 +105,7 @@ const onPreviewLoad = (event) => {
         v-motion
         :initial="{ opacity: 0, y: 8 }"
         :enter="{ opacity: 1, y: 0, transition: { duration: 0.2 } }"
-        :href="videoUrl" 
+        :href="cardHref" 
         class="video-card"
         :aria-label="`${video.title} — ${video.user?.username || 'Unknown'} — ${formattedViews} views`"
         @mouseenter="handleMouseEnter"

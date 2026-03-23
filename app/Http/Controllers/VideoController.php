@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Video\StoreVideoRequest;
+use App\Models\Playlist;
 use App\Http\Requests\Video\UpdateVideoRequest;
 use App\Models\Video;
 use App\Models\WatchHistory;
@@ -106,10 +107,10 @@ class VideoController extends Controller
             abort(404);
         }
 
-        return $this->show($video);
+        return $this->show(request(), $video);
     }
 
-    public function show(Video $video): Response
+    public function show(Request $request, Video $video): Response
     {
         if (!$video->isAccessibleBy(auth()->user())) {
             abort(403);
@@ -141,6 +142,51 @@ class VideoController extends Controller
             ->processed()
             ->limit(12)
             ->get();
+
+        $playlistContext = null;
+        $playlistSlug = trim((string) $request->query('playlist', ''));
+
+        if ($playlistSlug !== '') {
+            $playlist = Playlist::query()
+                ->where('slug', $playlistSlug)
+                ->with([
+                    'videos' => fn ($q) => $q
+                        ->with('user')
+                        ->public()
+                        ->approved()
+                        ->processed(),
+                ])
+                ->first();
+
+            if ($playlist) {
+                $playlistVideos = $playlist->videos->values();
+                $currentIndex = $playlistVideos->search(fn ($item) => (int) $item->id === (int) $video->id);
+
+                if ($currentIndex !== false) {
+                    $playlistContext = [
+                        'id' => $playlist->id,
+                        'slug' => $playlist->slug,
+                        'title' => $playlist->title,
+                        'videoCount' => $playlistVideos->count(),
+                        'currentIndex' => (int) $currentIndex,
+                        'videos' => $playlistVideos->map(fn ($item) => [
+                            'id' => $item->id,
+                            'slug' => $item->slug,
+                            'title' => $item->title,
+                            'thumbnail_url' => $item->thumbnail_url,
+                            'duration' => $item->duration,
+                            'duration_formatted' => $item->formatted_duration,
+                            'views_count' => $item->views_count,
+                            'published_at' => $item->published_at,
+                            'user' => $item->user ? [
+                                'id' => $item->user->id,
+                                'username' => $item->user->username,
+                            ] : null,
+                        ])->values(),
+                    ];
+                }
+            }
+        }
 
         // Batch-load all settings in a single query instead of ~18 individual calls
         $all = Setting::getAll();
@@ -213,6 +259,7 @@ class VideoController extends Controller
             'sidebarAd' => $sidebarAd,
             'bannerAbovePlayer' => $bannerAbovePlayer,
             'bannerBelowPlayer' => $bannerBelowPlayer,
+            'playlistContext' => $playlistContext,
             'userPlaylists' => $userPlaylists,
             'seo' => $this->seoService->forVideo($video),
         ]);
