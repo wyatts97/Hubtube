@@ -37,6 +37,7 @@ class PlaylistController extends Controller
 
         $query = Playlist::query()
             ->with('user:id,username')
+            ->where('video_count', '>', 0)
             ->withCount(['videos', 'favoritedBy']);
 
         switch ($sort) {

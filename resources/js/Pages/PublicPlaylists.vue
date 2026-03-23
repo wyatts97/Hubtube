@@ -26,6 +26,10 @@ const sortOptions = [
     { value: 'popular', label: 'Most Popular', icon: TrendingUp },
 ];
 
+const visiblePlaylists = computed(() => {
+    return (props.playlists?.data || []).filter((playlist) => Number(playlist.videos_count || 0) > 0);
+});
+
 const changeSort = (sort) => {
     router.get('/public-playlists', { sort }, { preserveState: true, preserveScroll: false });
 };
@@ -71,9 +75,9 @@ const changeSort = (sort) => {
         </div>
 
         <!-- Playlists Grid -->
-        <div v-else-if="playlists?.data?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div v-else-if="visiblePlaylists.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <Link
-                v-for="playlist in playlists.data"
+                v-for="playlist in visiblePlaylists"
                 :key="playlist.id"
                 :href="`/playlist/${playlist.slug}`"
                 class="card overflow-hidden hover:ring-2 transition-all"

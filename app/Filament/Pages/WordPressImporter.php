@@ -136,7 +136,7 @@ class WordPressImporter extends Page
         $this->isParsing = true;
 
         try {
-            $service = new WordPressImportService();
+            $service = app(WordPressImportService::class);
 
             $this->storedFilePath = $this->sqlFile->store('wp-imports', 'local');
             $filePath = Storage::disk('local')->path($this->storedFilePath);
@@ -179,7 +179,7 @@ class WordPressImporter extends Page
         }
 
         // Re-count videos for selected author
-        $service = new WordPressImportService();
+        $service = app(WordPressImportService::class);
         $filePath = Storage::disk('local')->path($this->storedFilePath);
         $service->parseSqlFile($filePath);
 
@@ -221,7 +221,7 @@ class WordPressImporter extends Page
         $this->importErrors = [];
 
         try {
-            $service = new WordPressImportService();
+            $service = app(WordPressImportService::class);
             $service->setImportUserId($this->importUserId);
 
             if ($this->wpAuthor) {
@@ -521,7 +521,7 @@ class WordPressImporter extends Page
 
     public function purgeImported(): void
     {
-        $service = new WordPressImportService();
+        $service = app(WordPressImportService::class);
         $deleted = $service->purgeImported();
 
         AdminLogger::log('Purged WordPress imported videos', 'admin', [

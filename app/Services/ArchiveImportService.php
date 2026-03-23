@@ -13,6 +13,10 @@ use Illuminate\Support\Str;
 
 class ArchiveImportService
 {
+    public function __construct(
+        protected TagSyncService $tagSyncService,
+    ) {}
+
     // WP table prefix from the SQL dump
     private string $tablePrefix = 'MKdOzH8c_';
 
@@ -582,7 +586,7 @@ class ArchiveImportService
             $publishedAt = $video['post_date'] ? \Carbon\Carbon::parse($video['post_date']) : now();
 
             // Create the video record as a NATIVE video (not embedded)
-            Video::create([
+            $createdVideo = Video::create([
                 'user_id' => $this->importUserId,
                 'uuid' => $uuid,
                 'title' => $video['title'],
@@ -610,6 +614,8 @@ class ArchiveImportService
                 'published_at' => $publishedAt,
                 'processing_completed_at' => $publishedAt,
             ]);
+
+            $this->tagSyncService->syncVideo($createdVideo);
 
             return ['status' => 'imported', 'message' => "Imported: {$video['title']}"];
 

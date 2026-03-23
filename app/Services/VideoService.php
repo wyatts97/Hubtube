@@ -14,6 +14,10 @@ use Illuminate\Support\Carbon;
 
 class VideoService
 {
+    public function __construct(
+        protected TagSyncService $tagSyncService,
+    ) {}
+
     public function create(array $data, User $user): Video
     {
         $video = Video::create([
@@ -33,6 +37,8 @@ class VideoService
         if (isset($data['video_file'])) {
             $this->handleVideoUpload($video, $data['video_file']);
         }
+
+        $this->tagSyncService->syncVideo($video);
 
         event(new VideoUploaded($video));
 
@@ -57,6 +63,8 @@ class VideoService
         if (isset($data['thumbnail'])) {
             $this->handleThumbnailUpload($video, $data['thumbnail']);
         }
+
+        $this->tagSyncService->syncVideo($video);
 
         return $video->fresh();
     }

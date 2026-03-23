@@ -10,6 +10,10 @@ use Illuminate\Support\Str;
 
 class WordPressImportService
 {
+    public function __construct(
+        protected TagSyncService $tagSyncService,
+    ) {}
+
     // WP table prefix from the SQL dump
     private string $tablePrefix = 'MKdOzH8c_';
 
@@ -614,7 +618,7 @@ class WordPressImportService
 
                 $publishedAt = $video['post_date'] ? \Carbon\Carbon::parse($video['post_date']) : now();
 
-                Video::create([
+                $createdVideo = Video::create([
                     'user_id' => $this->importUserId,
                     'uuid' => (string) Str::uuid(),
                     'title' => $video['title'],
@@ -636,6 +640,8 @@ class WordPressImportService
                     'category_id' => $categoryId,
                     'published_at' => $publishedAt,
                 ]);
+
+                $this->tagSyncService->syncVideo($createdVideo);
 
                 $imported++;
             } catch (\Throwable $e) {

@@ -135,7 +135,7 @@ class ArchiveImporter extends Page
         $this->resetState();
 
         try {
-            $service = new ArchiveImportService();
+            $service = app(ArchiveImportService::class);
             $service->setArchivePath($this->archivePath);
 
             // Scan archive directory
@@ -229,7 +229,7 @@ class ArchiveImporter extends Page
 
         $video = $importableVideos[$this->processedCount];
 
-        $service = new ArchiveImportService();
+        $service = app(ArchiveImportService::class);
         $service->setImportUserId($this->importUserId);
         $service->setArchivePath($this->archivePath);
 
@@ -285,7 +285,7 @@ class ArchiveImporter extends Page
      */
     public function purgeImported(): void
     {
-        $service = new ArchiveImportService();
+        $service = app(ArchiveImportService::class);
         $deleted = $service->purgeImported();
 
         Notification::make()
