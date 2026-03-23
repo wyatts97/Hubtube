@@ -13,7 +13,7 @@ import CommentSection from '@/Components/CommentSection.vue';
 import VideoPlayer from '@/Components/VideoPlayer.vue';
 import EmbeddedVideoPlayer from '@/Components/EmbeddedVideoPlayer.vue';
 import VideoAdPlayer from '@/Components/VideoAdPlayer.vue';
-import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff, Eye, ListVideo, Plus, Check, Loader2, Folder, Hash, Play, Shuffle, Repeat, SkipBack, SkipForward } from 'lucide-vue-next';
+import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff, Eye, ListVideo, Plus, Check, Loader2, Folder, Hash, Play, Shuffle, Repeat, SkipBack, SkipForward, ChevronLeft, ChevronRight } from 'lucide-vue-next';
 
 const props = defineProps({
     video: Object,
@@ -176,6 +176,11 @@ const playlistMode = ref('play'); // play | shuffle | loop
 const playlistContext = computed(() => props.playlistContext || null);
 const playlistVideos = computed(() => playlistContext.value?.videos || []);
 const hasPlaylistContext = computed(() => !!playlistContext.value && playlistVideos.value.length > 0);
+const playlistRailRef = ref(null);
+const canScrollLeft = ref(false);
+const canScrollRight = ref(false);
+const touchStartX = ref(0);
+const touchStartScrollLeft = ref(0);
 const currentPlaylistIndex = computed(() => {
     const idx = Number(playlistContext.value?.currentIndex ?? -1);
     return Number.isInteger(idx) ? idx : -1;
@@ -253,6 +258,49 @@ const toggleShuffleMode = () => {
 
 const toggleLoopMode = () => {
     playlistMode.value = playlistMode.value === 'loop' ? 'play' : 'loop';
+};
+
+const updatePlaylistRailButtons = () => {
+    const el = playlistRailRef.value;
+    if (!el) {
+        canScrollLeft.value = false;
+        canScrollRight.value = false;
+        return;
+    }
+
+    canScrollLeft.value = el.scrollLeft > 4;
+    canScrollRight.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+};
+
+const scrollPlaylistRail = (direction) => {
+    const el = playlistRailRef.value;
+    if (!el) return;
+    const amount = Math.max(Math.floor(el.clientWidth * 0.85), 220);
+    el.scrollBy({
+        left: direction === 'left' ? -amount : amount,
+        behavior: 'smooth',
+    });
+    setTimeout(updatePlaylistRailButtons, 250);
+};
+
+const onPlaylistRailTouchStart = (event) => {
+    const touch = event.touches?.[0];
+    if (!touch) return;
+    touchStartX.value = touch.clientX;
+    touchStartScrollLeft.value = playlistRailRef.value?.scrollLeft || 0;
+};
+
+const onPlaylistRailTouchMove = (event) => {
+    const touch = event.touches?.[0];
+    const el = playlistRailRef.value;
+    if (!touch || !el) return;
+    const delta = touch.clientX - touchStartX.value;
+    el.scrollLeft = touchStartScrollLeft.value - delta;
+    updatePlaylistRailButtons();
+};
+
+const getPlaylistItemAriaLabel = (playlistVideo, index) => {
+    return `${t('playlist.open_video')} ${index + 1}: ${playlistVideo.title}`;
 };
 
 const liked = ref(props.userLike === 'like');
@@ -355,10 +403,17 @@ onMounted(() => {
     if (!props.video.is_embedded) {
         waitForVideoAndSetupAds();
     }
+    window.addEventListener('resize', updatePlaylistRailButtons);
+    setTimeout(updatePlaylistRailButtons, 0);
 });
 onUnmounted(() => {
     document.removeEventListener('click', closePlaylistMenu);
+    window.removeEventListener('resize', updatePlaylistRailButtons);
     cleanupAdSetup();
+});
+
+watch([hasPlaylistContext, currentPlaylistIndex], () => {
+    setTimeout(updatePlaylistRailButtons, 0);
 });
 
 // Report modal
@@ -547,68 +602,122 @@ const getRelatedTitle = (video) => {
                 <div v-if="hasPlaylistContext" class="card p-3 sm:p-4 mt-4">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                         <div>
-                            <p class="text-xs sm:text-sm" style="color: var(--color-text-muted);">Playlist</p>
+                            <p class="text-xs sm:text-sm" style="color: var(--color-text-muted);">{{ t('playlist.label') }}</p>
                             <h3 class="font-semibold text-sm sm:text-base" style="color: var(--color-text-primary);">
                                 {{ playlistContext.title }}
                                 <span style="color: var(--color-text-muted);">({{ currentPlaylistIndex + 1 }}/{{ playlistContext.videoCount }})</span>
                             </h3>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
-                            <button @click="playAllFromStart" class="btn btn-secondary gap-1.5 text-xs sm:text-sm px-2.5 py-1.5">
+                            <button
+                                @click="playAllFromStart"
+                                class="btn btn-secondary gap-1.5 text-xs sm:text-sm px-2.5 py-1.5"
+                                :title="t('playlist.play_all')"
+                                :aria-label="t('playlist.play_all')"
+                            >
                                 <Play class="w-3.5 h-3.5" />
-                                <span>Play All</span>
+                                <span>{{ t('playlist.play_all') }}</span>
                             </button>
                             <button
                                 @click="toggleShuffleMode"
                                 class="btn gap-1.5 text-xs sm:text-sm px-2.5 py-1.5"
                                 :class="playlistMode === 'shuffle' ? 'btn-primary' : 'btn-secondary'"
+                                :title="t('playlist.shuffle')"
+                                :aria-label="t('playlist.shuffle')"
                             >
                                 <Shuffle class="w-3.5 h-3.5" />
-                                <span>Shuffle</span>
+                                <span>{{ t('playlist.shuffle') }}</span>
                             </button>
                             <button
                                 @click="toggleLoopMode"
                                 class="btn gap-1.5 text-xs sm:text-sm px-2.5 py-1.5"
                                 :class="playlistMode === 'loop' ? 'btn-primary' : 'btn-secondary'"
+                                :title="t('playlist.loop')"
+                                :aria-label="t('playlist.loop')"
                             >
                                 <Repeat class="w-3.5 h-3.5" />
-                                <span>Loop</span>
+                                <span>{{ t('playlist.loop') }}</span>
                             </button>
-                            <button @click="goToPreviousPlaylistVideo" :disabled="currentPlaylistIndex <= 0" class="btn btn-secondary p-2">
+                            <button
+                                @click="goToPreviousPlaylistVideo"
+                                :disabled="currentPlaylistIndex <= 0"
+                                class="btn btn-secondary p-2"
+                                :title="t('playlist.previous')"
+                                :aria-label="t('playlist.previous')"
+                            >
                                 <SkipBack class="w-3.5 h-3.5" />
                             </button>
-                            <button @click="goToNextPlaylistVideo" :disabled="getNextPlaylistIndex() === null" class="btn btn-secondary p-2">
+                            <button
+                                @click="goToNextPlaylistVideo"
+                                :disabled="getNextPlaylistIndex() === null"
+                                class="btn btn-secondary p-2"
+                                :title="t('playlist.next')"
+                                :aria-label="t('playlist.next')"
+                            >
                                 <SkipForward class="w-3.5 h-3.5" />
                             </button>
                         </div>
                     </div>
 
-                    <div class="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-                        <Link
-                            v-for="(playlistVideo, idx) in playlistVideos"
-                            :key="playlistVideo.id"
-                            :href="buildPlaylistVideoHref(playlistVideo, idx)"
-                            class="group shrink-0 w-56 sm:w-64 rounded-lg overflow-hidden border transition-all"
-                            :style="idx === currentPlaylistIndex
-                                ? { borderColor: 'var(--color-accent)', boxShadow: '0 0 0 1px var(--color-accent) inset' }
-                                : { borderColor: 'var(--color-border)' }"
+                    <div class="relative">
+                        <button
+                            v-if="canScrollLeft"
+                            type="button"
+                            class="absolute left-1 top-1/2 -translate-y-1/2 z-10 btn btn-secondary p-2 shadow"
+                            @click="scrollPlaylistRail('left')"
+                            :title="t('playlist.scroll_left')"
+                            :aria-label="t('playlist.scroll_left')"
                         >
-                            <div class="relative aspect-video bg-black">
-                                <img
-                                    :src="playlistVideo.thumbnail_url || '/images/default_avatar.webp'"
-                                    :alt="playlistVideo.title"
-                                    class="w-full h-full object-cover"
-                                    loading="lazy"
-                                    decoding="async"
-                                />
-                                <span class="absolute top-2 left-2 text-[11px] px-1.5 py-0.5 rounded bg-black/80 text-white">{{ idx + 1 }}</span>
-                                <span v-if="playlistVideo.duration_formatted" class="absolute bottom-2 right-2 text-[11px] px-1.5 py-0.5 rounded bg-black/80 text-white">{{ playlistVideo.duration_formatted }}</span>
-                            </div>
-                            <div class="p-2.5">
-                                <p class="text-xs font-medium line-clamp-2" style="color: var(--color-text-primary);">{{ playlistVideo.title }}</p>
-                                <p class="text-[11px] mt-1" style="color: var(--color-text-muted);">{{ playlistVideo.user?.username || 'Unknown creator' }}</p>
-                            </div>
-                        </Link>
+                            <ChevronLeft class="w-4 h-4" />
+                        </button>
+
+                        <div
+                            ref="playlistRailRef"
+                            class="flex gap-3 overflow-x-auto pb-1 px-8 sm:px-10 scrollbar-hide scroll-smooth"
+                            @scroll.passive="updatePlaylistRailButtons"
+                            @touchstart.passive="onPlaylistRailTouchStart"
+                            @touchmove.passive="onPlaylistRailTouchMove"
+                            @touchend.passive="updatePlaylistRailButtons"
+                        >
+                            <Link
+                                v-for="(playlistVideo, idx) in playlistVideos"
+                                :key="playlistVideo.id"
+                                :href="buildPlaylistVideoHref(playlistVideo, idx)"
+                                class="group shrink-0 w-56 sm:w-64 rounded-lg overflow-hidden border transition-all"
+                                :style="idx === currentPlaylistIndex
+                                    ? { borderColor: 'var(--color-accent)', boxShadow: '0 0 0 1px var(--color-accent) inset' }
+                                    : { borderColor: 'var(--color-border)' }"
+                                :title="playlistVideo.title"
+                                :aria-label="getPlaylistItemAriaLabel(playlistVideo, idx)"
+                            >
+                                <div class="relative aspect-video bg-black">
+                                    <img
+                                        :src="playlistVideo.thumbnail_url || '/images/default_avatar.webp'"
+                                        :alt="playlistVideo.title"
+                                        class="w-full h-full object-cover"
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
+                                    <span class="absolute top-2 left-2 text-[11px] px-1.5 py-0.5 rounded bg-black/80 text-white">{{ idx + 1 }}</span>
+                                    <span v-if="playlistVideo.duration_formatted" class="absolute bottom-2 right-2 text-[11px] px-1.5 py-0.5 rounded bg-black/80 text-white">{{ playlistVideo.duration_formatted }}</span>
+                                </div>
+                                <div class="p-2.5">
+                                    <p class="text-xs font-medium line-clamp-2" style="color: var(--color-text-primary);">{{ playlistVideo.title }}</p>
+                                    <p class="text-[11px] mt-1" style="color: var(--color-text-muted);">{{ playlistVideo.user?.username || t('playlist.unknown_creator') }}</p>
+                                </div>
+                            </Link>
+                        </div>
+
+                        <button
+                            v-if="canScrollRight"
+                            type="button"
+                            class="absolute right-1 top-1/2 -translate-y-1/2 z-10 btn btn-secondary p-2 shadow"
+                            @click="scrollPlaylistRail('right')"
+                            :title="t('playlist.scroll_right')"
+                            :aria-label="t('playlist.scroll_right')"
+                        >
+                            <ChevronRight class="w-4 h-4" />
+                        </button>
                     </div>
                 </div>
 
