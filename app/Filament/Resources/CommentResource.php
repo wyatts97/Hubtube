@@ -53,6 +53,7 @@ class CommentResource extends Resource
     {
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with(['user', 'video' => fn ($q) => $q->withTrashed()]))
+            ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('user.username')
                     ->label('User')
@@ -61,6 +62,8 @@ class CommentResource extends Resource
                     ->label('Video')
                     ->limit(30)
                     ->placeholder('(deleted)')
+                    ->url(fn (Comment $record): ?string => $record->video?->slug ? url('/' . $record->video->slug) : null)
+                    ->openUrlInNewTab()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('content')
                     ->label('Comment')
