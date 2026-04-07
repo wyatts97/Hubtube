@@ -136,8 +136,19 @@ class ScheduledVideos extends Page implements HasTable
                     'published_at' => now(),
                     'scheduled_at' => null,
                     'queue_order' => null,
+                    'requires_schedule' => false,
                 ]);
             app(VideoService::class)->recalculateScheduleQueue();
+
+            // Fire notification/tweet now that video is actually live
+            $alreadyNotified = \App\Models\Notification::where('user_id', $record->user_id)
+                ->where('type', 'video_processed')
+                ->where('data->video_id', $record->id)
+                ->exists();
+            if (!$alreadyNotified) {
+                event(new \App\Events\VideoProcessed($record));
+            }
+
             Notification::make()->title('Video published immediately')->success()->send();
         }),
             Action::make('removeFromQueue')

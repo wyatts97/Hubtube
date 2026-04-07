@@ -117,6 +117,12 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
         // Refresh the model to get the latest state after markAsProcessed
         $this->video->refresh();
 
+        // Don't notify if the video isn't actually published yet.
+        // Bulk uploads set published_at to null — this is the strongest guard.
+        if (!$this->video->published_at) {
+            return;
+        }
+
         // Don't send "published" notifications for scheduled/queued videos.
         // These are just processed — they'll be published later by videos:publish-scheduled.
         // The PublishScheduledVideos command will fire the event when they actually go live.

@@ -14,9 +14,20 @@ class TweetNewVideoListener implements ShouldQueue
     public function handle(VideoProcessed $event): void
     {
         $video = $event->video;
+        $video->refresh();
 
         // Only tweet for successfully processed (published) videos
         if ($video->status !== 'processed') {
+            return;
+        }
+
+        // Only tweet when the video is actually live — not just processed/scheduled.
+        if (
+            !$video->published_at ||
+            $video->scheduled_at ||
+            $video->queue_order !== null ||
+            $video->requires_schedule
+        ) {
             return;
         }
 

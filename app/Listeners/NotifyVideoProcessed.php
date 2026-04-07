@@ -11,6 +11,7 @@ class NotifyVideoProcessed
     public function handle(VideoProcessed $event): void
     {
         $video = $event->video;
+        $video->refresh();
 
         // Only notify when the video is actually live.
         if (
