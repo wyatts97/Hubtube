@@ -50,6 +50,7 @@ class SponsoredCard extends Model
             $q->whereNull('target_pages')
               ->orWhere('target_pages', '[]')
               ->orWhere('target_pages', 'null')
+              ->orWhereRaw("JSON_LENGTH(target_pages) = 0")
               ->orWhereJsonContains('target_pages', $page);
         });
     }
@@ -60,6 +61,7 @@ class SponsoredCard extends Model
             $q->whereNull('target_roles')
               ->orWhere('target_roles', '[]')
               ->orWhere('target_roles', 'null')
+              ->orWhereRaw("JSON_LENGTH(target_roles) = 0")
               ->orWhereJsonContains('target_roles', $role ?? 'guest');
         });
     }
@@ -69,7 +71,8 @@ class SponsoredCard extends Model
         return $query->where(function ($q) use ($categoryId) {
             $q->whereNull('category_ids')
               ->orWhere('category_ids', '[]')
-              ->orWhere('category_ids', 'null');
+              ->orWhere('category_ids', 'null')
+              ->orWhereRaw("JSON_LENGTH(category_ids) = 0");
             if ($categoryId) {
                 $q->orWhereJsonContains('category_ids', $categoryId);
             }
@@ -103,39 +106,59 @@ class SponsoredCard extends Model
             return [];
         }
 
-        // Weighted random selection
-        $selected = [];
+        // Shuffle first so equal-weight cards are randomly ordered
         $pool = $cards->toArray();
+        shuffle($pool);
 
-        for ($i = 0; $i < min($limit, count($pool)); $i++) {
-            $totalWeight = array_sum(array_column($pool, 'weight'));
-            $rand = mt_rand(1, max(1, $totalWeight));
-            $cumulative = 0;
+        $selected = [];
 
-            foreach ($pool as $key => $card) {
-                $cumulative += $card['weight'];
-                if ($rand <= $cumulative) {
-                    $card['thumbnail_url'] = static::resolveThumbUrl($card['thumbnail_url'] ?? '');
-                    // Resolve preview images to public URLs
-                    if (!empty($card['preview_images']) && is_array($card['preview_images'])) {
-                        $card['preview_images'] = array_map(fn($img) => static::resolveThumbUrl($img), $card['preview_images']);
+        while (count($selected) < $limit && !empty($pool)) {
+            $totalWeight = array_sum(array_map(fn($c) => max(0, (int) ($c['weight'] ?? 0)), $pool));
+
+            if ($totalWeight <= 0) {
+                // All weights are zero — just take the next (pool is already shuffled)
+                $card = array_shift($pool);
+            } else {
+                $rand = mt_rand(1, $totalWeight);
+                $cumulative = 0;
+                $chosenKey = null;
+
+                foreach ($pool as $key => $card) {
+                    $w = max(0, (int) ($card['weight'] ?? 0));
+                    if ($w === 0) continue;
+                    $cumulative += $w;
+                    if ($rand <= $cumulative) {
+                        $chosenKey = $key;
+                        break;
                     }
-                    // Add computed fields
-                    $card['formatted_price'] = $card['price'] ? '$' . number_format((float) $card['price'], 2) : null;
-                    $card['formatted_sale_price'] = $card['sale_price'] ? '$' . number_format((float) $card['sale_price'], 2) : null;
-                    $card['is_on_sale'] = $card['sale_price'] && $card['price'] && $card['sale_price'] < $card['price'];
-                    $card['discount_percent'] = $card['is_on_sale'] ? (int) round((($card['price'] - $card['sale_price']) / $card['price']) * 100) : null;
-                    if ($card['duration']) {
-                        $minutes = floor($card['duration'] / 60);
-                        $seconds = $card['duration'] % 60;
-                        $card['formatted_duration'] = sprintf('%d:%02d', $minutes, $seconds);
-                    }
-                    $selected[] = $card;
-                    unset($pool[$key]);
-                    $pool = array_values($pool);
-                    break;
                 }
+
+                if ($chosenKey === null) break;
+
+                $card = $pool[$chosenKey];
+                array_splice($pool, $chosenKey, 1);
             }
+
+            $card['thumbnail_url'] = static::resolveThumbUrl($card['thumbnail_url'] ?? '');
+
+            if (!empty($card['preview_images']) && is_array($card['preview_images'])) {
+                $card['preview_images'] = array_map(fn($img) => static::resolveThumbUrl($img), $card['preview_images']);
+            }
+
+            $card['formatted_price'] = $card['price'] ? '$' . number_format((float) $card['price'], 2) : null;
+            $card['formatted_sale_price'] = $card['sale_price'] ? '$' . number_format((float) $card['sale_price'], 2) : null;
+            $card['is_on_sale'] = $card['sale_price'] && $card['price'] && $card['sale_price'] < $card['price'];
+            $card['discount_percent'] = $card['is_on_sale']
+                ? (int) round((($card['price'] - $card['sale_price']) / $card['price']) * 100)
+                : null;
+
+            if (!empty($card['duration'])) {
+                $minutes = floor($card['duration'] / 60);
+                $seconds = $card['duration'] % 60;
+                $card['formatted_duration'] = sprintf('%d:%02d', $minutes, $seconds);
+            }
+
+            $selected[] = $card;
         }
 
         return $selected;
