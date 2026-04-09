@@ -180,7 +180,7 @@ class Video extends Model
 
             if ($video->scheduled_at && !$video->is_approved) {
                 $video->requires_schedule = true;
-            } elseif (!$video->scheduled_at && $video->is_approved) {
+            } elseif (!$video->scheduled_at && $video->is_approved && $video->queue_order === null) {
                 $video->requires_schedule = false;
             }
         });

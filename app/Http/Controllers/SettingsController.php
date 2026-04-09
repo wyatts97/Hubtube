@@ -126,11 +126,23 @@ class SettingsController extends Controller
         $user = $request->user();
         $settings = $user->settings ?? [];
 
+        $emailNotifications = array_key_exists('email_notifications', $validated)
+            ? (bool) $validated['email_notifications']
+            : (bool) ($settings['email_notifications'] ?? true);
+
+        $pushNotifications = array_key_exists('push_notifications', $validated)
+            ? (bool) $validated['push_notifications']
+            : (bool) ($settings['push_notifications'] ?? true);
+
+        $subscriptionNotifications = array_key_exists('subscription_notifications', $validated)
+            ? (bool) $validated['subscription_notifications']
+            : (bool) ($settings['subscription_notifications'] ?? true);
+
         $user->update([
             'settings' => array_merge($settings, [
-                'email_notifications' => $validated['email_notifications'] ?? true,
-                'push_notifications' => $validated['push_notifications'] ?? true,
-                'subscription_notifications' => $validated['subscription_notifications'] ?? true,
+                'email_notifications' => $emailNotifications,
+                'push_notifications' => $pushNotifications,
+                'subscription_notifications' => $subscriptionNotifications,
             ]),
         ]);
 

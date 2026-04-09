@@ -11,6 +11,17 @@ class NotifyVideoProcessed
     public function handle(VideoProcessed $event): void
     {
         $video = $event->video;
+        $video->refresh();
+
+        // Only notify when the video is actually live.
+        if (
+            !$video->published_at ||
+            $video->scheduled_at ||
+            $video->queue_order !== null ||
+            $video->requires_schedule
+        ) {
+            return;
+        }
 
         // Prevent duplicate notifications (e.g. from job retries or race conditions)
         $exists = Notification::where('user_id', $video->user_id)

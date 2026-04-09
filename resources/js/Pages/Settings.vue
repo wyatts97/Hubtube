@@ -67,9 +67,9 @@ const passwordForm = useForm({
 });
 
 const notificationForm = useForm({
-    email_notifications: user.value?.email_notifications ?? true,
-    push_notifications: user.value?.push_notifications ?? true,
-    subscription_notifications: user.value?.subscription_notifications ?? true,
+    email_notifications: user.value?.settings?.email_notifications ?? true,
+    push_notifications: user.value?.settings?.push_notifications ?? true,
+    subscription_notifications: user.value?.settings?.subscription_notifications ?? true,
 });
 
 const { isSupported: pushSupported, isSubscribed: pushSubscribed, isLoading: pushLoading, checkSubscription, toggle: togglePush } = usePushNotifications();
