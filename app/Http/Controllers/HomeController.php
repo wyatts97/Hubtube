@@ -214,10 +214,10 @@ class HomeController extends Controller
             'seo' => $this->seoService->forCategory($category),
             'bannerAd' => [
                 'enabled' => (bool) Setting::get('category_banner_ad_enabled', false),
-                'code' => (string) Setting::get('category_banner_ad_code', ''),
+                'code' => (string) Setting::get('category_banner_ad_html', ''),
                 'image' => (string) Setting::get('category_banner_ad_image', ''),
                 'link' => (string) Setting::get('category_banner_ad_link', ''),
-                'mobileCode' => (string) Setting::get('category_banner_ad_mobile_code', ''),
+                'mobileCode' => (string) Setting::get('category_banner_ad_mobile_html', ''),
                 'mobileImage' => (string) Setting::get('category_banner_ad_mobile_image', ''),
                 'mobileLink' => (string) Setting::get('category_banner_ad_mobile_link', ''),
             ],

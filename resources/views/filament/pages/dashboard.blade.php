@@ -3,7 +3,7 @@
         {{-- Widget Grid --}}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             @foreach($this->getOrderedWidgets() as $widget)
-                <div class="{{ $widget['span'] === 'full' ? 'md:col-span-2' : '' }}">
+                <div class="min-w-0 overflow-x-auto {{ $widget['span'] === 'full' ? 'md:col-span-2' : '' }}">
                     @livewire($widget['class'], [], key($widget['key']))
                 </div>
             @endforeach

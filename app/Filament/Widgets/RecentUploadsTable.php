@@ -35,7 +35,7 @@ class RecentUploadsTable extends BaseWidget
                     ->extraImgAttributes(['class' => 'rounded object-cover']),
 
                 Tables\Columns\TextColumn::make('title')
-                    ->limit(30)
+                    ->wrap()
                     ->weight('bold')
                     ->url(fn (Video $record) => route('filament.admin.resources.videos.edit', $record)),
 

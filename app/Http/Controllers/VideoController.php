@@ -62,10 +62,10 @@ class VideoController extends Controller
             'filters' => $request->only(['category', 'sort']),
             'bannerAd' => [
                 'enabled' => (bool) Setting::get('browse_banner_ad_enabled', false),
-                'code' => (string) Setting::get('browse_banner_ad_code', ''),
+                'code' => (string) Setting::get('browse_banner_ad_html', ''),
                 'image' => (string) Setting::get('browse_banner_ad_image', ''),
                 'link' => (string) Setting::get('browse_banner_ad_link', ''),
-                'mobileCode' => (string) Setting::get('browse_banner_ad_mobile_code', ''),
+                'mobileCode' => (string) Setting::get('browse_banner_ad_mobile_html', ''),
                 'mobileImage' => (string) Setting::get('browse_banner_ad_mobile_image', ''),
                 'mobileLink' => (string) Setting::get('browse_banner_ad_mobile_link', ''),
             ],

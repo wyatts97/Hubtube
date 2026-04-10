@@ -76,10 +76,10 @@ class ChannelController extends Controller
             'seo' => $this->seoService->forChannel($user),
             'bannerAd' => [
                 'enabled' => (bool) Setting::get('channel_banner_ad_enabled', false),
-                'code' => (string) Setting::get('channel_banner_ad_code', ''),
+                'code' => (string) Setting::get('channel_banner_ad_html', ''),
                 'image' => (string) Setting::get('channel_banner_ad_image', ''),
                 'link' => (string) Setting::get('channel_banner_ad_link', ''),
-                'mobileCode' => (string) Setting::get('channel_banner_ad_mobile_code', ''),
+                'mobileCode' => (string) Setting::get('channel_banner_ad_mobile_html', ''),
                 'mobileImage' => (string) Setting::get('channel_banner_ad_mobile_image', ''),
                 'mobileLink' => (string) Setting::get('channel_banner_ad_mobile_link', ''),
             ],

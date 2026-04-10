@@ -37,10 +37,10 @@ class SearchController extends Controller
             'seo' => $this->seoService->forSearch($query),
             'bannerAd' => [
                 'enabled' => (bool) Setting::get('search_banner_ad_enabled', false),
-                'code' => (string) Setting::get('search_banner_ad_code', ''),
+                'code' => (string) Setting::get('search_banner_ad_html', ''),
                 'image' => (string) Setting::get('search_banner_ad_image', ''),
                 'link' => (string) Setting::get('search_banner_ad_link', ''),
-                'mobileCode' => (string) Setting::get('search_banner_ad_mobile_code', ''),
+                'mobileCode' => (string) Setting::get('search_banner_ad_mobile_html', ''),
                 'mobileImage' => (string) Setting::get('search_banner_ad_mobile_image', ''),
                 'mobileLink' => (string) Setting::get('search_banner_ad_mobile_link', ''),
             ],
