@@ -16,6 +16,7 @@ class NotifyVideoProcessed
         // Only notify when the video is actually live.
         if (
             !$video->published_at ||
+            !$video->is_approved ||
             $video->scheduled_at ||
             $video->queue_order !== null ||
             $video->requires_schedule

@@ -177,12 +177,6 @@ class Video extends Model
         static::saving(function (Video $video) {
             $normalizedTags = static::normalizeTagsInput($video->getAttribute('tags'));
             $video->setAttribute('tags', empty($normalizedTags) ? null : $normalizedTags);
-
-            if ($video->scheduled_at && !$video->is_approved) {
-                $video->requires_schedule = true;
-            } elseif (!$video->scheduled_at && $video->is_approved && $video->queue_order === null) {
-                $video->requires_schedule = false;
-            }
         });
 
         static::deleting(function (Video $video) {

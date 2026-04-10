@@ -7,6 +7,8 @@ use App\Models\Category;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
+use App\Events\VideoProcessed;
+use App\Models\Notification as AppNotification;
 use App\Services\EmailService;
 use App\Services\VideoService;
 use Filament\Forms;
@@ -382,6 +384,15 @@ class VideoResource extends Resource
                                     'video_url' => url("/{$record->slug}"),
                                 ]);
                             }
+
+                            // Fire VideoProcessed so "published" notification + tweet go out
+                            $alreadyNotified = AppNotification::where('user_id', $record->user_id)
+                                ->where('type', 'video_processed')
+                                ->where('data->video_id', $record->id)
+                                ->exists();
+                            if (!$alreadyNotified) {
+                                event(new VideoProcessed($record));
+                            }
                         })
                         ->visible(fn (Video $record) => !$record->is_approved && $record->status === 'processed'),
 
@@ -514,10 +525,23 @@ class VideoResource extends Resource
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
-                        ->action(fn (Collection $records) => $records->each(fn (Video $v) => $v->update([
-                            'is_approved' => true,
-                            'published_at' => $v->published_at ?? now(),
-                        ])))
+                        ->action(function (Collection $records) {
+                            $records->each(function (Video $v) {
+                                $v->update([
+                                    'is_approved' => true,
+                                    'published_at' => $v->published_at ?? now(),
+                                ]);
+
+                                // Fire VideoProcessed so "published" notification + tweet go out
+                                $alreadyNotified = AppNotification::where('user_id', $v->user_id)
+                                    ->where('type', 'video_processed')
+                                    ->where('data->video_id', $v->id)
+                                    ->exists();
+                                if (!$alreadyNotified) {
+                                    event(new VideoProcessed($v));
+                                }
+                            });
+                        })
                         ->deselectRecordsAfterCompletion(),
 
                     Tables\Actions\BulkAction::make('unapprove')

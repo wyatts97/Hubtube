@@ -24,6 +24,8 @@ class TweetNewVideoListener implements ShouldQueue
         // Only tweet when the video is actually live — not just processed/scheduled.
         if (
             !$video->published_at ||
+            !$video->is_approved ||
+            $video->privacy !== 'public' ||
             $video->scheduled_at ||
             $video->queue_order !== null ||
             $video->requires_schedule

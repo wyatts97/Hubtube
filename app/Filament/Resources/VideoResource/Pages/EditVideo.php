@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources\VideoResource\Pages;
 
+use App\Events\VideoProcessed;
 use App\Filament\Resources\VideoResource;
 use App\Jobs\ProcessVideoJob;
+use App\Models\Notification as AppNotification;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
@@ -28,10 +30,21 @@ class EditVideo extends EditRecord
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
                 ->requiresConfirmation()
-                ->action(fn () => $this->record->update([
-                    'is_approved' => true,
-                    'published_at' => $this->record->published_at ?? now(),
-                ]))
+                ->action(function () {
+                    $this->record->update([
+                        'is_approved' => true,
+                        'published_at' => $this->record->published_at ?? now(),
+                    ]);
+
+                    // Fire VideoProcessed so "published" notification + tweet go out
+                    $alreadyNotified = AppNotification::where('user_id', $this->record->user_id)
+                        ->where('type', 'video_processed')
+                        ->where('data->video_id', $this->record->id)
+                        ->exists();
+                    if (!$alreadyNotified) {
+                        event(new VideoProcessed($this->record));
+                    }
+                })
                 ->visible(fn () => !$this->record->is_approved && $this->record->status === 'processed'),
 
             Actions\Action::make('reprocess')
