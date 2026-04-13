@@ -32,7 +32,7 @@ return new class extends Migration
         });
 
         // ── Watch history: user + date (history page, feed) ──
-        Schema::table('watch_histories', function (Blueprint $table) {
+        Schema::table('watch_history', function (Blueprint $table) {
             $table->index(['user_id', 'created_at'], 'idx_watch_history_user_date');
         });
 
@@ -64,7 +64,7 @@ return new class extends Migration
             $table->dropIndex('idx_videos_user_published');
         });
 
-        Schema::table('watch_histories', function (Blueprint $table) {
+        Schema::table('watch_history', function (Blueprint $table) {
             $table->dropIndex('idx_watch_history_user_date');
         });
 
