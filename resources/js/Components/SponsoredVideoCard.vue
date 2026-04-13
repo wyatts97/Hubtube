@@ -1,8 +1,10 @@
 <script setup>
 import { usePage } from '@inertiajs/vue3';
 import { computed, ref, onUnmounted } from 'vue';
+import { useFetch } from '@/Composables/useFetch';
 
 const page = usePage();
+const { post } = useFetch();
 
 const props = defineProps({
     card: {
@@ -74,6 +76,12 @@ onUnmounted(() => {
     if (previewInterval) clearInterval(previewInterval);
 });
 
+const handleClick = (e) => {
+    if (props.card?.id) {
+        post(`/api/sponsored/${props.card.id}/click`, {}).catch(() => {});
+    }
+};
+
 // Ribbon text
 const ribbonText = computed(() => {
     const suffix = props.card.ribbon_text || '';
@@ -96,6 +104,7 @@ const discountPercent = computed(() => props.card.discount_percent);
         :aria-label="`Sponsored: ${card.title}`"
         @mouseenter="startPreview"
         @mouseleave="stopPreview"
+        @click="handleClick"
     >
         <div class="thumbnail relative overflow-hidden" :style="{ borderRadius: thumbRadius }">
             <!-- Featured Ribbon -->
@@ -136,7 +145,7 @@ const discountPercent = computed(() => props.card.discount_percent);
             </div>
 
             <!-- Gradient Overlay -->
-            <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div class="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
 
         <div class="flex gap-3 mt-3">

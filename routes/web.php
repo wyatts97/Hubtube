@@ -158,6 +158,19 @@ Route::get('/api/video-ads', [\App\Http\Controllers\VideoAdController::class, 'g
     ->middleware('throttle:30,1')
     ->name('video-ads.get');
 
+// Ad impression & click tracking (fire-and-forget, heavily rate-limited)
+Route::post('/api/ad-impression', [\App\Http\Controllers\VideoAdController::class, 'recordImpression'])
+    ->middleware('throttle:120,1')
+    ->name('video-ads.impression');
+Route::post('/api/ad-click', [\App\Http\Controllers\VideoAdController::class, 'recordClick'])
+    ->middleware('throttle:60,1')
+    ->name('video-ads.click');
+
+// Sponsored card click tracking
+Route::post('/api/sponsored/{cardId}/click', [\App\Http\Controllers\VideoAdController::class, 'recordSponsoredClick'])
+    ->middleware('throttle:60,1')
+    ->name('sponsored.click');
+
 Route::middleware('age.verified')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('/api/videos/load-more', [HomeController::class, 'loadMoreVideos'])->name('videos.loadMore');

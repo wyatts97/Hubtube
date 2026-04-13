@@ -320,6 +320,8 @@ const handleLike = async () => {
         disliked.value = data.disliked;
         likesCount.value = data.likesCount;
         dislikesCount.value = data.dislikesCount;
+    } else if (!ok) {
+        toast.error(data?.message || t('common.error') || 'Something went wrong');
     }
 };
 
@@ -331,6 +333,8 @@ const handleDislike = async () => {
         disliked.value = data.disliked;
         likesCount.value = data.likesCount;
         dislikesCount.value = data.dislikesCount;
+    } else if (!ok) {
+        toast.error(data?.message || t('common.error') || 'Something went wrong');
     }
 };
 
@@ -338,8 +342,12 @@ const handleSubscribe = async () => {
     if (!user.value) { router.visit('/login'); return; }
     subscribing.value = true;
     const fn = subscribed.value ? (url) => del(url, null) : (url) => post(url, {});
-    const { ok } = await fn(`/channel/${props.video.user.id}/subscribe`);
-    if (ok) subscribed.value = !subscribed.value;
+    const { ok, data } = await fn(`/channel/${props.video.user.id}/subscribe`);
+    if (ok) {
+        subscribed.value = !subscribed.value;
+    } else {
+        toast.error(data?.message || t('common.error') || 'Something went wrong');
+    }
     subscribing.value = false;
 };
 

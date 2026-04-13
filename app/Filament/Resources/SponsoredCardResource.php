@@ -205,6 +205,12 @@ class SponsoredCardResource extends Resource
                 Tables\Columns\TextColumn::make('weight')
                     ->alignCenter(),
 
+                Tables\Columns\TextColumn::make('clicks_count')
+                    ->label('Clicks')
+                    ->numeric()
+                    ->sortable()
+                    ->alignCenter(),
+
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Active')
                     ->boolean(),

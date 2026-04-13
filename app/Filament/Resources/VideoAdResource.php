@@ -240,6 +240,18 @@ class VideoAdResource extends Resource
                     ->color('gray')
                     ->size('sm'),
 
+                Tables\Columns\TextColumn::make('impressions_count')
+                    ->label('Impressions')
+                    ->numeric()
+                    ->sortable()
+                    ->alignCenter(),
+
+                Tables\Columns\TextColumn::make('clicks_count')
+                    ->label('Clicks')
+                    ->numeric()
+                    ->sortable()
+                    ->alignCenter(),
+
                 Tables\Columns\ToggleColumn::make('is_active')
                     ->label('Active'),
             ])

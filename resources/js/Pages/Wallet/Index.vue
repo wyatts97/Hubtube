@@ -1,10 +1,13 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Wallet, ArrowUpRight, ArrowDownLeft, Plus, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { Wallet, ArrowUpRight, ArrowDownLeft, Plus, ArrowDown, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import { computed } from 'vue';
 
 const { t } = useI18n();
+const page = usePage();
+const currency = computed(() => page.props.app?.currency || 'USD');
 
 const props = defineProps({
     balance: [String, Number],
@@ -18,7 +21,7 @@ const props = defineProps({
 
 const formatCurrency = (amount) => {
     const num = parseFloat(amount);
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.value }).format(num);
 };
 
 const formatDate = (date) => {
@@ -128,9 +131,16 @@ const formatType = (type) => {
                         </div>
                     </div>
                 </div>
-                <div v-else class="p-8 text-center">
-                    <Wallet class="w-12 h-12 mx-auto mb-3" style="color: var(--color-text-muted);" />
-                    <p style="color: var(--color-text-secondary);">{{ t('wallet.no_transactions') || 'No transactions yet' }}</p>
+                <div v-else class="py-16 text-center">
+                    <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: var(--color-bg-secondary);">
+                        <Wallet class="w-8 h-8" style="color: var(--color-text-muted);" />
+                    </div>
+                    <p class="font-semibold" style="color: var(--color-text-secondary);">{{ t('wallet.no_transactions') || 'No transactions yet' }}</p>
+                    <p class="text-sm mt-1" style="color: var(--color-text-muted);">{{ t('wallet.no_transactions_desc') || 'Your earnings and payments will appear here' }}</p>
+                    <Link href="/upload" class="btn btn-primary mt-5 gap-2">
+                        <TrendingUp class="w-4 h-4" />
+                        {{ t('dashboard.upload_video') || 'Start Uploading to Earn' }}
+                    </Link>
                 </div>
 
                 <!-- Pagination -->

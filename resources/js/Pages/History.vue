@@ -7,8 +7,10 @@ import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
 import { History, Trash2 } from 'lucide-vue-next';
 import { useFetch } from '@/Composables/useFetch';
 import { useI18n } from '@/Composables/useI18n';
+import { useToast } from '@/Composables/useToast';
 
 const { t } = useI18n();
+const toast = useToast();
 
 defineProps({
     videos: Object,
@@ -22,9 +24,11 @@ const { del } = useFetch();
 const clearHistory = async () => {
     if (!confirm(t('history.clear_confirm') || 'Are you sure you want to clear your watch history?')) return;
     
-    const { ok } = await del('/history', null);
+    const { ok, data } = await del('/history', null);
     if (ok) {
         router.reload();
+    } else {
+        toast.error(data?.message || t('common.error') || 'Failed to clear history');
     }
 };
 </script>

@@ -25,7 +25,7 @@ const emit = defineEmits([
     'request-play',
 ]);
 
-const { get } = useFetch();
+const { get, post } = useFetch();
 
 // ── State ──
 const adData = ref(null);
@@ -141,6 +141,7 @@ const playVastAd = async (ad, placement) => {
                 imaAdsManager.addEventListener(ima.AdEvent.Type.STARTED, () => {
                     emit('ad-started', placement);
                     emit('request-pause');
+                    fireImpression(ad);
                 });
                 imaAdsManager.addEventListener(ima.AdEvent.Type.COMPLETE, () => { destroyIma(); endAd(); });
                 imaAdsManager.addEventListener(ima.AdEvent.Type.SKIPPED,  () => { destroyIma(); emit('ad-skipped', placement); endAd(); });
@@ -180,6 +181,17 @@ const playVastAd = async (ad, placement) => {
     }
 };
 
+// ── Impression / click pixel helpers ──
+const fireImpression = (ad) => {
+    if (!ad?.id) return;
+    post('/api/ad-impression', { ad_id: ad.id }).catch(() => {});
+};
+
+const fireClick = (ad) => {
+    if (!ad?.id) return;
+    post('/api/ad-click', { ad_id: ad.id }).catch(() => {});
+};
+
 // ── Local ad playback (MP4 / HTML) ──
 const playLocalAd = (ad, placement) => {
     adElapsed.value = 0;
@@ -188,6 +200,7 @@ const playLocalAd = (ad, placement) => {
 
     emit('ad-started', placement);
     emit('request-pause');
+    fireImpression(ad);
 
     clearTimers();
     elapsedTimer = setInterval(() => {
@@ -286,8 +299,10 @@ const manualPlay = () => {
 };
 
 const onAdClick = (e) => {
-    if (currentAd.value?.click_url)
+    if (currentAd.value?.click_url) {
+        fireClick(currentAd.value);
         window.open(currentAd.value.click_url, '_blank', 'noopener,noreferrer');
+    }
 };
 
 const onAdVideoEnded = () => endAd();

@@ -4,12 +4,14 @@ import SeoHead from '@/Components/SeoHead.vue';
 import { ref, computed } from 'vue';
 import { useFetch } from '@/Composables/useFetch';
 import { useI18n } from '@/Composables/useI18n';
+import { useToast } from '@/Composables/useToast';
 import AdSlot from '@/Components/AdSlot.vue';
-
-const { t } = useI18n();
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { Bell, BellOff, Flag, Loader2, Video, Eye, Calendar } from 'lucide-vue-next';
+
+const { t } = useI18n();
+const toast = useToast();
 
 const props = defineProps({
     channel: Object,
@@ -59,7 +61,7 @@ const handleSubscribe = async () => {
     
     subscribing.value = true;
     const fn = subscribed.value ? del : post;
-    const { ok } = await fn(`/channel/${props.channel.id}/subscribe`);
+    const { ok, data } = await fn(`/channel/${props.channel.id}/subscribe`);
     if (ok) {
         if (subscribed.value) {
             subCount.value--;
@@ -67,6 +69,8 @@ const handleSubscribe = async () => {
             subCount.value++;
         }
         subscribed.value = !subscribed.value;
+    } else {
+        toast.error(data?.message || t('common.error') || 'Something went wrong');
     }
     subscribing.value = false;
 };
@@ -121,7 +125,7 @@ const tabs = computed(() => {
                     </span>
                     <span class="inline-flex items-center gap-1.5">
                         <Bell class="w-4 h-4" />
-                        {{ subCount.toLocaleString() }} {{ t('common.subscribers') || 'subscribers' }}
+                        <span class="font-medium" style="color: var(--color-text-primary);">{{ subCount.toLocaleString() }}</span>&nbsp;{{ t('common.subscribers') || 'subscribers' }}
                     </span>
                     <span v-if="channel.channel?.total_views" class="inline-flex items-center gap-1.5">
                         <Eye class="w-4 h-4" />
@@ -179,9 +183,14 @@ const tabs = computed(() => {
             />
         </div>
 
-        <div v-else class="text-center py-12">
-            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('channel.no_videos') || 'No videos yet' }}</p>
-            <p class="mt-2" style="color: var(--color-text-muted);">{{ t('channel.no_videos_desc') || "This channel hasn't uploaded any videos" }}</p>
+        <div v-else class="text-center py-16">
+            <Video class="w-14 h-14 mx-auto mb-4" style="color: var(--color-text-muted);" />
+            <p class="text-lg font-semibold" style="color: var(--color-text-secondary);">{{ t('channel.no_videos') || 'No videos yet' }}</p>
+            <p class="mt-2 text-sm" style="color: var(--color-text-muted);">{{ t('channel.no_videos_desc') || "This channel hasn't uploaded any videos" }}</p>
+            <Link v-if="user && user.id === channel.id" href="/upload" class="btn btn-primary mt-5 gap-2">
+                <Video class="w-4 h-4" />
+                {{ t('dashboard.upload_video') || 'Upload Your First Video' }}
+            </Link>
         </div>
 
         <!-- Pagination -->

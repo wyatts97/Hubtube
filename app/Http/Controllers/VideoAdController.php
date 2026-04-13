@@ -3,12 +3,46 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Models\SponsoredCard;
 use App\Models\VideoAd;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class VideoAdController extends Controller
 {
+    /**
+     * Record a video ad impression (fire-and-forget, rate-limited per ad per IP).
+     */
+    public function recordImpression(Request $request): JsonResponse
+    {
+        $adId = $request->integer('ad_id');
+        if ($adId) {
+            VideoAd::where('id', $adId)->increment('impressions_count');
+        }
+        return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Record a video ad click (fire-and-forget, rate-limited per ad per IP).
+     */
+    public function recordClick(Request $request): JsonResponse
+    {
+        $adId = $request->integer('ad_id');
+        if ($adId) {
+            VideoAd::where('id', $adId)->increment('clicks_count');
+        }
+        return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Record a sponsored card click and redirect to the target URL.
+     */
+    public function recordSponsoredClick(Request $request, int $cardId): JsonResponse
+    {
+        SponsoredCard::where('id', $cardId)->increment('clicks_count');
+        return response()->json(['ok' => true]);
+    }
+
     public function getAds(Request $request): JsonResponse
     {
         $categoryId = $request->integer('category_id');
