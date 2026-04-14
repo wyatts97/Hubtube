@@ -30,7 +30,7 @@ class HomeController extends Controller
         // Featured videos — cached 2 minutes
         $featuredVideos = Cache::remember('home:featured', 120, fn () =>
             Video::query()
-                ->with('user')
+                ->with(['user.channel', 'category'])
                 ->featured()
                 ->public()
                 ->approved()
@@ -42,7 +42,7 @@ class HomeController extends Controller
 
         // Latest videos — paginated, not cached (page-dependent)
         $latestVideos = Video::query()
-            ->with('user')
+            ->with(['user.channel', 'category'])
             ->public()
             ->approved()
             ->processed()
@@ -52,7 +52,7 @@ class HomeController extends Controller
         // Popular videos — cached 5 minutes
         $popularVideos = Cache::remember('home:popular', 300, fn () =>
             Video::query()
-                ->with('user')
+                ->with(['user.channel', 'category'])
                 ->public()
                 ->approved()
                 ->processed()
@@ -92,7 +92,7 @@ class HomeController extends Controller
         $perPage = Setting::get('videos_per_page', 24);
 
         $videos = Video::query()
-            ->with('user')
+            ->with(['user.channel', 'category'])
             ->public()
             ->approved()
             ->processed()
@@ -107,38 +107,54 @@ class HomeController extends Controller
         $perPage = Setting::get('videos_per_page', 24);
         $period = $request->get('period', 'week');
 
-        $query = Video::query()
-            ->with('user')
-            ->public()
-            ->approved()
-            ->processed();
-
-        // Apply time filter
-        $query->where('published_at', '>=', match ($period) {
-            'today' => now()->startOfDay(),
-            'week' => now()->subDays(7),
-            'month' => now()->subDays(30),
-            'year' => now()->subYear(),
-            'all' => now()->subYears(50),
-            default => now()->subDays(7),
-        });
-
-        $videos = $query->orderByDesc('views_count')->paginate($perPage)->appends(['period' => $period]);
-
-        // Return JSON for AJAX requests (infinite scroll)
+        // For AJAX (infinite scroll) we skip the cache and query directly with the current page
         if ($request->wantsJson()) {
-            return response()->json($videos);
+            $query = Video::query()
+                ->with(['user.channel', 'category'])
+                ->public()->approved()->processed()
+                ->where('published_at', '>=', match ($period) {
+                    'today' => now()->startOfDay(),
+                    'week'  => now()->subDays(7),
+                    'month' => now()->subDays(30),
+                    'year'  => now()->subYear(),
+                    'all'   => now()->subYears(50),
+                    default => now()->subDays(7),
+                })
+                ->orderByDesc('views_count')
+                ->paginate($perPage)
+                ->appends(['period' => $period]);
+            return response()->json($query);
         }
 
+        // Cached per-period (5 minutes) — busted when a video is published via model observer
+        $page = max(1, (int) $request->get('page', 1));
+        $cacheKey = "trending:{$period}:page:{$page}";
+
+        $videos = Cache::remember($cacheKey, 300, function () use ($period, $perPage, $page) {
+            $query = Video::query()
+                ->with(['user.channel', 'category'])
+                ->public()->approved()->processed()
+                ->where('published_at', '>=', match ($period) {
+                    'today' => now()->startOfDay(),
+                    'week'  => now()->subDays(7),
+                    'month' => now()->subDays(30),
+                    'year'  => now()->subYear(),
+                    'all'   => now()->subYears(50),
+                    default => now()->subDays(7),
+                })
+                ->orderByDesc('views_count');
+            return $query->paginate($perPage, ['*'], 'page', $page)->appends(['period' => $period]);
+        });
+
         return Inertia::render('Trending', [
-            'videos' => $videos,
-            'period' => $period,
-            'seo' => $this->seoService->forTrending(),
-            'adSettings' => [
-                'videoGridEnabled' => (bool) Setting::get('video_grid_ad_enabled', false),
-                'videoGridCode' => (string) Setting::get('video_grid_ad_code', ''),
+            'videos'       => $videos,
+            'period'       => $period,
+            'seo'          => $this->seoService->forTrending(),
+            'adSettings'   => [
+                'videoGridEnabled'    => (bool) Setting::get('video_grid_ad_enabled', false),
+                'videoGridCode'       => (string) Setting::get('video_grid_ad_code', ''),
                 'videoGridMobileCode' => (string) Setting::get('video_grid_ad_mobile_code', ''),
-                'videoGridFrequency' => (int) Setting::get('video_grid_ad_frequency', 8),
+                'videoGridFrequency'  => (int) Setting::get('video_grid_ad_frequency', 8),
             ],
             'sponsoredCards' => SponsoredCard::getForPage('trending', auth()->user()?->role ?? 'guest'),
         ]);
@@ -146,19 +162,22 @@ class HomeController extends Controller
 
     public function categories(): Response
     {
-        $categories = Category::active()
-            ->parentCategories()
-            ->withCount('videos')
-            ->orderBy('sort_order')
-            ->get()
-            ->map(function ($category) {
-                $latestVideo = Video::where('category_id', $category->id)
-                    ->public()->approved()->processed()
-                    ->latest('published_at')
-                    ->first();
-                $category->latest_thumbnail = $latestVideo?->thumbnail_url ?? $latestVideo?->thumbnail ?? null;
-                return $category;
-            });
+        // Cache category list with thumbnails for 1 hour (changes very rarely)
+        $categories = Cache::remember('categories:active:with_thumbs', 3600, function () {
+            return Category::active()
+                ->parentCategories()
+                ->withCount('videos')
+                ->orderBy('sort_order')
+                ->get()
+                ->map(function ($category) {
+                    $latestVideo = Video::where('category_id', $category->id)
+                        ->public()->approved()->processed()
+                        ->latest('published_at')
+                        ->first();
+                    $category->latest_thumbnail = $latestVideo?->thumbnail_url ?? $latestVideo?->thumbnail ?? null;
+                    return $category;
+                });
+        });
 
         $locale = App::getLocale();
         $defaultLocale = TranslationService::getDefaultLocale();
@@ -180,14 +199,19 @@ class HomeController extends Controller
 
     public function category(Category $category): Response
     {
-        $videos = Video::query()
-            ->with('user')
-            ->where('category_id', $category->id)
-            ->public()
-            ->approved()
-            ->processed()
-            ->latest('published_at')
-            ->paginate(24);
+        $page = max(1, (int) request()->get('page', 1));
+        $cacheKey = "category:{$category->id}:page:{$page}";
+
+        $videos = Cache::remember($cacheKey, 600, fn () =>
+            Video::query()
+                ->with(['user.channel'])
+                ->where('category_id', $category->id)
+                ->public()
+                ->approved()
+                ->processed()
+                ->latest('published_at')
+                ->paginate(24, ['*'], 'page', $page)
+        );
 
         $locale = App::getLocale();
         $defaultLocale = TranslationService::getDefaultLocale();
@@ -288,14 +312,19 @@ class HomeController extends Controller
 
     public function tag(string $tag): Response
     {
-        $videos = Video::query()
-            ->with('user')
-            ->public()
-            ->approved()
-            ->processed()
-            ->whereJsonContains('tags', $tag)
-            ->latest('published_at')
-            ->paginate(24);
+        $page = max(1, (int) request()->get('page', 1));
+        $cacheKey = 'tag:' . md5($tag) . ":page:{$page}";
+
+        $videos = Cache::remember($cacheKey, 300, fn () =>
+            Video::query()
+                ->with(['user.channel'])
+                ->public()
+                ->approved()
+                ->processed()
+                ->whereJsonContains('tags', $tag)
+                ->latest('published_at')
+                ->paginate(24, ['*'], 'page', $page)
+        );
 
         $locale = App::getLocale();
         $defaultLocale = TranslationService::getDefaultLocale();

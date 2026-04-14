@@ -163,16 +163,33 @@ class Video extends Model
 
     protected static function booted(): void
     {
-        // Flush homepage caches when a video is created, updated, or deleted
-        // so stale/phantom entries don't persist in cached sections.
-        $flushHomeCache = function () {
-            \Illuminate\Support\Facades\Cache::forget('home:featured');
-            \Illuminate\Support\Facades\Cache::forget('home:popular');
+        // Flush homepage, trending, category, and related-video caches when a video changes
+        $flushCaches = function (Video $video) {
+            $cache = \Illuminate\Support\Facades\Cache::class;
+            // Home caches
+            $cache::forget('home:featured');
+            $cache::forget('home:popular');
+            // Category page caches (flush all pages for this category)
+            if ($video->category_id) {
+                for ($p = 1; $p <= 20; $p++) {
+                    $cache::forget("category:{$video->category_id}:page:{$p}");
+                }
+                // Also bust categories list (video count changed)
+                $cache::forget('categories:active:with_thumbs');
+            }
+            // Related videos on the video's own show page
+            $cache::forget("video:{$video->id}:related");
+            // Trending page caches (all periods, first 5 pages)
+            foreach (['today', 'week', 'month', 'year', 'all'] as $period) {
+                for ($p = 1; $p <= 5; $p++) {
+                    $cache::forget("trending:{$period}:page:{$p}");
+                }
+            }
         };
 
-        static::created($flushHomeCache);
-        static::updated($flushHomeCache);
-        static::deleted($flushHomeCache);
+        static::created($flushCaches);
+        static::updated($flushCaches);
+        static::deleted($flushCaches);
 
         static::saving(function (Video $video) {
             $normalizedTags = static::normalizeTagsInput($video->getAttribute('tags'));

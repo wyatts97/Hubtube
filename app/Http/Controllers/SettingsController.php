@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules\Password;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use App\Models\Setting;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -57,7 +59,20 @@ class SettingsController extends Controller
             }
         }
 
-        $path = $request->file('avatar')->store("avatars/{$user->id}", 'public');
+        try {
+            $manager = new ImageManager(new GdDriver());
+            $image   = $manager->read($request->file('avatar')->getPathname());
+            $image->cover(256, 256);
+            $webp    = (string) $image->toWebp(85);
+
+            $relativePath = "avatars/{$user->id}/avatar.webp";
+            Storage::disk('public')->put($relativePath, $webp);
+            $path = $relativePath;
+        } catch (\Throwable $e) {
+            Log::warning('Avatar WebP conversion failed, using original', ['error' => $e->getMessage()]);
+            $path = $request->file('avatar')->store("avatars/{$user->id}", 'public');
+        }
+
         $user->update(['avatar' => '/storage/' . $path]);
 
         return redirect()->route('settings')->with('success', 'Avatar updated successfully.');

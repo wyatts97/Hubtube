@@ -522,27 +522,58 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
         $count = (int) Setting::get('thumbnail_count', 4);
         $slugTitle = $this->getSluggedTitle();
 
+        // Probe whether libwebp is available in this FFmpeg build
+        $useWebP = $this->ffmpegSupportsWebP($ffmpeg);
+        $ext = $useWebP ? 'webp' : 'jpg';
+
         for ($i = 0; $i < $count; $i++) {
             $time = (int) ($duration / ($count + 1) * ($i + 1));
-            $output = "{$videoDir}/{$slugTitle}_thumb_{$i}.jpg";
-            
-            $cmd = sprintf(
-                '%s -y -ss %d -i %s -vframes 1 -q:v 2 %s 2>&1',
-                $ffmpeg,
-                $time,
-                escapeshellarg($inputPath),
-                escapeshellarg($output)
-            );
+            $output = "{$videoDir}/{$slugTitle}_thumb_{$i}.{$ext}";
+
+            if ($useWebP) {
+                // WebP: single frame, quality 85, lossless=0
+                $cmd = sprintf(
+                    '%s -y -ss %d -i %s -vframes 1 -vf "scale=640:-2:flags=lanczos" -c:v libwebp -lossless 0 -q:v 85 %s 2>&1',
+                    $ffmpeg,
+                    $time,
+                    escapeshellarg($inputPath),
+                    escapeshellarg($output)
+                );
+            } else {
+                $cmd = sprintf(
+                    '%s -y -ss %d -i %s -vframes 1 -q:v 2 %s 2>&1',
+                    $ffmpeg,
+                    $time,
+                    escapeshellarg($inputPath),
+                    escapeshellarg($output)
+                );
+            }
+
             [$exitCode, $cmdOutput] = $this->runCommand($cmd);
             if ($exitCode !== 0) {
-                Log::warning('Thumbnail generation failed', ['index' => $i, 'exit_code' => $exitCode, 'output' => substr($cmdOutput, 0, 300)]);
+                Log::warning('Thumbnail generation failed', ['index' => $i, 'ext' => $ext, 'exit_code' => $exitCode, 'output' => substr($cmdOutput, 0, 300)]);
             }
         }
 
         $storagePath = Storage::disk('public')->path('');
         $this->video->update([
-            'thumbnail' => str_replace($storagePath, '', "{$videoDir}/{$slugTitle}_thumb_0.jpg"),
+            'thumbnail' => str_replace($storagePath, '', "{$videoDir}/{$slugTitle}_thumb_0.{$ext}"),
         ]);
+    }
+
+    /**
+     * Check whether this FFmpeg binary was compiled with libwebp support.
+     * Runs once per job and caches the result for the duration of the process.
+     */
+    protected function ffmpegSupportsWebP(string $ffmpeg): bool
+    {
+        static $cache = [];
+        if (isset($cache[$ffmpeg])) {
+            return $cache[$ffmpeg];
+        }
+        [, $output] = $this->runCommand("{$ffmpeg} -encoders 2>&1");
+        $cache[$ffmpeg] = str_contains($output, 'libwebp');
+        return $cache[$ffmpeg];
     }
 
     protected function generateAnimatedPreview(string $inputPath, string $videoDir, int $duration): void

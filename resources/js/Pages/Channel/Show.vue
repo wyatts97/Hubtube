@@ -107,6 +107,8 @@ const tabs = computed(() => {
                     :src="channel.avatar_url || channel.avatar || '/images/default_avatar.webp'" 
                     :alt="channel.username"
                     class="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                 />
             </div>
             

@@ -60,12 +60,12 @@ class SearchController extends Controller
         $driver = config('scout.driver');
         if ($driver && !in_array($driver, ['database', 'null', 'collection'])) {
             return Video::search($query)
-                ->query(fn($q) => $q->with('user')->public()->approved()->processed())
+                ->query(fn($q) => $q->with(['user.channel'])->public()->approved()->processed())
                 ->paginate(24);
         }
 
         return Video::query()
-            ->with('user')
+            ->with(['user.channel'])
             ->public()
             ->approved()
             ->processed()

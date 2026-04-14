@@ -19,6 +19,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -39,7 +40,7 @@ class VideoController extends Controller
             : null;
 
         $videos = Video::query()
-            ->with(['user', 'category'])
+            ->with(['user.channel', 'category'])
             ->public()
             ->approved()
             ->processed()
@@ -137,15 +138,20 @@ class VideoController extends Controller
             );
         }
 
-        $relatedVideos = Video::query()
-            ->with('user')
-            ->where('id', '!=', $video->id)
-            ->where('category_id', $video->category_id)
-            ->public()
-            ->approved()
-            ->processed()
-            ->limit(12)
-            ->get();
+        $relatedVideos = Cache::remember(
+            "video:{$video->id}:related",
+            600,
+            fn () => Video::query()
+                ->with(['user.channel'])
+                ->where('id', '!=', $video->id)
+                ->where('category_id', $video->category_id)
+                ->public()
+                ->approved()
+                ->processed()
+                ->latest('published_at')
+                ->limit(12)
+                ->get()
+        );
 
         $playlistContext = null;
         $playlistSlug = trim((string) $request->query('playlist', ''));
@@ -155,7 +161,7 @@ class VideoController extends Controller
                 ->where('slug', $playlistSlug)
                 ->with([
                     'videos' => fn ($q) => $q
-                        ->with('user')
+                        ->with(['user.channel'])
                         ->public()
                         ->approved()
                         ->processed(),
