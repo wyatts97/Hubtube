@@ -16,6 +16,7 @@ import { useI18n } from '@/Composables/useI18n';
 import { useGlobalAutoTranslate } from '@/Composables/useGlobalAutoTranslate';
 import ToastContainer from '@/Components/ToastContainer.vue';
 import AgeVerificationModal from '@/Components/AgeVerificationModal.vue';
+import AdInterstitial from '@/Components/AdInterstitial.vue';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
 import AdSlot from '@/Components/AdSlot.vue';
 
@@ -932,6 +933,9 @@ const handleMobileNavClick = (item) => {
         
         <!-- Age Verification Modal -->
         <AgeVerificationModal />
+
+        <!-- Interstitial Ad -->
+        <AdInterstitial />
 
         <!-- Translation Loading Overlay — full-page blur with min 3s display -->
         <Transition name="translate-fade">

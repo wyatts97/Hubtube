@@ -66,18 +66,22 @@ class VideoAdController extends Controller
         $postRollEnabled = (bool) Setting::get('video_ad_post_roll_enabled', false);
         $shuffle = (bool) Setting::get('video_ad_shuffle', true);
 
+        $outstreamEnabled = (bool) Setting::get('video_outstream_ad_enabled', false);
+
         $ads = [
-            'pre_roll' => [],
-            'mid_roll' => [],
+            'pre_roll'  => [],
+            'mid_roll'  => [],
             'post_roll' => [],
+            'outstream' => [],
         ];
 
         $config = [
-            'pre_roll_skip_after' => (int) Setting::get('video_ad_pre_roll_skip_after', 5),
-            'mid_roll_skip_after' => (int) Setting::get('video_ad_mid_roll_skip_after', 5),
-            'post_roll_skip_after' => (int) Setting::get('video_ad_post_roll_skip_after', 0),
-            'mid_roll_interval' => (int) Setting::get('video_ad_mid_roll_interval', 300),
-            'mid_roll_max_count' => (int) Setting::get('video_ad_mid_roll_max_count', 3),
+            'pre_roll_skip_after'   => (int) Setting::get('video_ad_pre_roll_skip_after', 5),
+            'mid_roll_skip_after'   => (int) Setting::get('video_ad_mid_roll_skip_after', 5),
+            'post_roll_skip_after'  => (int) Setting::get('video_ad_post_roll_skip_after', 0),
+            'mid_roll_interval'     => (int) Setting::get('video_ad_mid_roll_interval', 300),
+            'mid_roll_max_count'    => (int) Setting::get('video_ad_mid_roll_max_count', 3),
+            'outstream_frequency'   => (int) Setting::get('video_outstream_ad_frequency', 6),
         ];
 
         if ($preRollEnabled) {
@@ -90,6 +94,10 @@ class VideoAdController extends Controller
 
         if ($postRollEnabled) {
             $ads['post_roll'] = VideoAd::getAdsForPlacement('post_roll', $categoryId, $userRole, $shuffle);
+        }
+
+        if ($outstreamEnabled) {
+            $ads['outstream'] = VideoAd::getAdsForPlacement('outstream', $categoryId, $userRole, false);
         }
 
         return response()->json([

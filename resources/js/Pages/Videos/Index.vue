@@ -6,6 +6,7 @@ import VideoCard from '@/Components/VideoCard.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { Filter, X, ArrowUpDown, Clock, Flame, CalendarDays } from 'lucide-vue-next';
 import AdSlot from '@/Components/AdSlot.vue';
+import OutstreamAd from '@/Components/OutstreamAd.vue';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 import { useI18n } from '@/Composables/useI18n';
 
@@ -26,6 +27,7 @@ const props = defineProps({
     bannerAd: { type: Object, default: () => ({}) },
     adSettings: { type: Object, default: () => ({}) },
     sponsoredCards: { type: Array, default: () => [] },
+    outstreamAds: { type: Array, default: () => [] },
 });
 
 const category = ref(props.filters?.category || '');
@@ -125,6 +127,16 @@ const getSponsoredCard = (index) => {
     if ((index + 1) % sponsoredFrequency.value !== 0) return null;
     const cardIndex = Math.floor((index + 1) / sponsoredFrequency.value) - 1;
     return props.sponsoredCards[cardIndex % props.sponsoredCards.length] || null;
+};
+
+// Outstream ads: interleaved at configured frequency
+const outstreamFrequency = computed(() => parseInt(props.adSettings?.outstreamFrequency) || 6);
+const getOutstreamAd = (index) => {
+    if (!props.outstreamAds?.length) return null;
+    // Offset by 3 so outstream and sponsored cards don't land on the same index
+    if ((index + 4) % outstreamFrequency.value !== 0) return null;
+    const adIndex = Math.floor((index + 4) / outstreamFrequency.value) - 1;
+    return props.outstreamAds[adIndex % props.outstreamAds.length] || null;
 };
 </script>
 
@@ -231,6 +243,10 @@ const getSponsoredCard = (index) => {
                 <SponsoredVideoCard
                     v-if="getSponsoredCard(index)"
                     :card="getSponsoredCard(index)"
+                />
+                <OutstreamAd
+                    v-if="getOutstreamAd(index)"
+                    :ad="getOutstreamAd(index)"
                 />
             </template>
         </div>

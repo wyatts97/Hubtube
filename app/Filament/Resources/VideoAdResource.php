@@ -47,6 +47,7 @@ class VideoAdResource extends Resource
                             'pre_roll'  => 'Pre-Roll (before video)',
                             'mid_roll'  => 'Mid-Roll (during video)',
                             'post_roll' => 'Post-Roll (after video)',
+                            'outstream' => 'Outstream (in video grid)',
                         ])
                         ->default('pre_roll'),
                 ]),
@@ -137,6 +138,19 @@ class VideoAdResource extends Resource
                         ->required()
                         ->rows(6)
                         ->placeholder('<script>...</script>')
+                        ->columnSpanFull(),
+                ]),
+
+            // — Outstream thumbnail (optional preview image shown before video plays) —
+            Section::make('Outstream Preview Image')
+                ->description('Optional: thumbnail shown in the grid before the video autoplays. Recommended 640×360.')
+                ->visible(fn ($get) => $get('placement') === 'outstream')
+                ->schema([
+                    FileUpload::make('outstream_thumbnail')
+                        ->label('Preview Thumbnail')
+                        ->image()
+                        ->disk('public')
+                        ->directory('media/ads')
                         ->columnSpanFull(),
                 ]),
 

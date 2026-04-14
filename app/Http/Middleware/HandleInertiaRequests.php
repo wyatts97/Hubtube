@@ -94,6 +94,13 @@ class HandleInertiaRequests extends Middleware
             'videos_per_page' => $this->s('videos_per_page', 24),
             'monetization_enabled' => (bool)$this->s('monetization_enabled', true),
             'currency' => $this->s('currency', 'USD'),
+            'interstitial' => [
+                'enabled'    => (bool) $this->s('custom_interstitial_enabled', false),
+                'code'       => (string) $this->s('custom_interstitial_code', ''),
+                'mobileCode' => (string) $this->s('custom_interstitial_mobile_code', ''),
+                'frequency'  => (int) $this->s('interstitial_frequency', 5),
+                'skipDelay'  => (int) $this->s('interstitial_skip_delay', 5),
+            ],
         ];
     }
 

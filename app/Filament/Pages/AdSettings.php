@@ -113,8 +113,12 @@ class AdSettings extends Page implements HasForms
             'custom_popunder_code'              => Setting::get('custom_popunder_code', ''),
             'custom_popunder_mobile_code'       => Setting::get('custom_popunder_mobile_code', ''),
             'custom_interstitial_enabled'       => Setting::get('custom_interstitial_enabled', false),
+            'interstitial_frequency'            => Setting::get('interstitial_frequency', 5),
+            'interstitial_skip_delay'           => Setting::get('interstitial_skip_delay', 5),
             'custom_interstitial_code'          => Setting::get('custom_interstitial_code', ''),
             'custom_interstitial_mobile_code'   => Setting::get('custom_interstitial_mobile_code', ''),
+            'video_outstream_ad_enabled'        => Setting::get('video_outstream_ad_enabled', false),
+            'video_outstream_ad_frequency'      => Setting::get('video_outstream_ad_frequency', 6),
             'custom_sticky_banner_enabled'      => Setting::get('custom_sticky_banner_enabled', false),
             'custom_sticky_banner_code'         => Setting::get('custom_sticky_banner_code', ''),
             'custom_sticky_banner_mobile_code'  => Setting::get('custom_sticky_banner_mobile_code', ''),
@@ -278,20 +282,45 @@ class AdSettings extends Page implements HasForms
                                             ->visible(fn ($get) => $get('custom_popunder_enabled')),
                                     ]),
                                 Section::make('Interstitial / Full-Page Ad')
-                                    ->description('Full-screen interstitial ad overlay shown on page transitions.')
+                                    ->description('Full-screen interstitial ad overlay shown on page transitions. Controlled by the Vue AdInterstitial component using sessionStorage page-view tracking.')
                                     ->icon('heroicon-o-arrows-pointing-out')
                                     ->collapsible()->collapsed()
                                     ->schema([
                                         Toggle::make('custom_interstitial_enabled')->label('Enable Interstitial Ad')->live(),
+                                        Grid::make(2)->schema([
+                                            TextInput::make('interstitial_frequency')
+                                                ->label('Show Every N Pages')
+                                                ->numeric()->default(5)->minValue(1)->maxValue(50)
+                                                ->helperText('e.g. 5 = show every 5th page view per session')
+                                                ->visible(fn ($get) => $get('custom_interstitial_enabled')),
+                                            TextInput::make('interstitial_skip_delay')
+                                                ->label('Skip / Close After (sec)')
+                                                ->numeric()->default(5)->minValue(0)->maxValue(30)
+                                                ->helperText('0 = immediately closeable')
+                                                ->visible(fn ($get) => $get('custom_interstitial_enabled')),
+                                        ]),
                                         Textarea::make('custom_interstitial_code')
-                                            ->label('Desktop Interstitial Script Code')->rows(5)->columnSpanFull()
+                                            ->label('Desktop Interstitial Ad Code')->rows(5)->columnSpanFull()
                                             ->placeholder('<script src="https://a.magsrv.com/ad-provider.js"></script>...')
-                                            ->helperText('Injected before </body> on every page.')
+                                            ->helperText('Shown inside the interstitial overlay on desktop.')
                                             ->visible(fn ($get) => $get('custom_interstitial_enabled')),
                                         Textarea::make('custom_interstitial_mobile_code')
-                                            ->label('Mobile Interstitial Script Code')->rows(5)->columnSpanFull()
-                                            ->helperText('Leave empty to use desktop code on all devices.')
+                                            ->label('Mobile Interstitial Ad Code')->rows(5)->columnSpanFull()
+                                            ->helperText('Leave empty to use desktop code on mobile.')
                                             ->visible(fn ($get) => $get('custom_interstitial_enabled')),
+                                    ]),
+
+                                Section::make('Outstream Video Ads (In Video Grid)')
+                                    ->description('Native muted autoplay video ads that appear inline within the video grid. Manage ad creatives under Appearance → Ad Creatives with placement set to "Outstream".')
+                                    ->icon('heroicon-o-play-circle')
+                                    ->collapsible()->collapsed()
+                                    ->schema([
+                                        Toggle::make('video_outstream_ad_enabled')->label('Enable Outstream Ads')->live(),
+                                        TextInput::make('video_outstream_ad_frequency')
+                                            ->label('Ad Frequency (every N videos)')
+                                            ->numeric()->default(6)->minValue(2)->maxValue(50)
+                                            ->helperText('Show an outstream ad after every N video cards')
+                                            ->visible(fn ($get) => $get('video_outstream_ad_enabled')),
                                     ]),
                                 Section::make('Sticky Banner / Video Slider Ad')
                                     ->description('Sticky banner fixed at the bottom of the viewport.')

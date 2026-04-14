@@ -74,7 +74,11 @@ class VideoController extends Controller
                 'videoGridCode' => (string) Setting::get('video_grid_ad_code', ''),
                 'videoGridMobileCode' => (string) Setting::get('video_grid_ad_mobile_code', ''),
                 'videoGridFrequency' => (int) Setting::get('video_grid_ad_frequency', 8),
+                'outstreamFrequency' => (int) Setting::get('video_outstream_ad_frequency', 6),
             ],
+            'outstreamAds' => (bool) Setting::get('video_outstream_ad_enabled', false)
+                ? \App\Models\VideoAd::getAdsForPlacement('outstream', null, auth()->user()?->is_pro ? 'pro' : (auth()->check() ? 'default' : 'guest'), false)
+                : [],
             'sponsoredCards' => SponsoredCard::getForPage(
                 'browse',
                 auth()->user()?->role ?? 'guest',

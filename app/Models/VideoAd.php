@@ -13,6 +13,7 @@ class VideoAd extends Model
         'placement',
         'content',
         'file_path',
+        'outstream_thumbnail',
         'click_url',
         'weight',
         'is_active',
@@ -129,12 +130,15 @@ class VideoAd extends Model
         }
 
         return [
-            'id' => $ad->id,
-            'type' => $ad->type,
-            'placement' => $ad->placement,
-            'content' => $content,
-            'click_url' => $ad->click_url,
-            'name' => $ad->name,
+            'id'                  => $ad->id,
+            'type'                => $ad->type,
+            'placement'           => $ad->placement,
+            'content'             => $content,
+            'click_url'           => $ad->click_url,
+            'name'                => $ad->name,
+            'outstream_thumbnail' => $ad->outstream_thumbnail
+                ? asset('storage/' . $ad->outstream_thumbnail)
+                : null,
         ];
     }
 }
