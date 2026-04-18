@@ -59,8 +59,6 @@ class CategoryResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('thumbnail')
-                    ->square(),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable(),

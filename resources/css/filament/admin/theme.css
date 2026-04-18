@@ -79,11 +79,30 @@
 
 .fi-wi-stats-overview-stat:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px -8px rgb(99 102 241 / 0.15), 0 0 0 1px rgb(99 102 241 / 0.15);
+    box-shadow: 0 10px 28px -12px rgb(0 0 0 / 0.35);
 }
 
 .fi-wi-stats-overview-stat:hover::before {
     opacity: 1;
+}
+
+/* Kill Filament's default hover ring/border on stat cards — keep only the
+   gradient top accent and the translateY "rise" animation. */
+.fi-wi-stats-overview-stat,
+.fi-wi-stats-overview-stat:hover,
+.fi-wi-stats-overview-stat:focus,
+.fi-wi-stats-overview-stat:focus-within,
+.fi-wi-stats-overview-stat:focus-visible {
+    outline: none !important;
+    --tw-ring-shadow: 0 0 transparent !important;
+    --tw-ring-offset-shadow: 0 0 transparent !important;
+}
+
+.dark .fi-wi-stats-overview-stat {
+    border-color: rgb(255 255 255 / 0.06) !important;
+}
+.dark .fi-wi-stats-overview-stat:hover {
+    border-color: rgb(255 255 255 / 0.06) !important;
 }
 
 /* Numeric tabular alignment on stat values */
@@ -596,3 +615,377 @@ kbd {
     z-index: 40;
     position: relative;
 }
+
+/* ============================================================
+   /videos page (and similar resource tables): neutralize any
+   white hover ring on the outer section/card. Keep row hover tint.
+   ============================================================ */
+.fi-resource-list-records-page .fi-section,
+.fi-resource-list-records-page .fi-ta,
+.fi-page-dashboard .fi-section,
+.fi-page-dashboard .fi-wi {
+    transition: border-color 0.15s ease, box-shadow 0.2s ease;
+}
+
+.fi-resource-list-records-page .fi-section:hover,
+.fi-resource-list-records-page .fi-ta:hover,
+.fi-page-dashboard .fi-wi:hover {
+    outline: none !important;
+    --tw-ring-shadow: 0 0 transparent !important;
+    --tw-ring-offset-shadow: 0 0 transparent !important;
+}
+
+.dark .fi-resource-list-records-page .fi-section,
+.dark .fi-resource-list-records-page .fi-section:hover,
+.dark .fi-resource-list-records-page .fi-ta,
+.dark .fi-resource-list-records-page .fi-ta:hover {
+    border-color: rgb(255 255 255 / 0.06) !important;
+}
+
+/* ============================================================
+   Dashboard outer spacing — generous gaps between welcome banner,
+   stats grid, content widgets, and signups widget.
+   ============================================================ */
+.fi-page-dashboard .fi-page-content > .space-y-5 > * + * {
+    margin-top: 1.75rem !important;
+}
+.fi-page-dashboard .fi-page-content .grid {
+    gap: 1.75rem !important;
+}
+
+/* ============================================================
+   Custom video widgets (Trending / Recent Uploads)
+   ============================================================ */
+.ht-vidwidget {
+    position: relative;
+    border-radius: 0.875rem;
+    border: 1px solid rgb(229 231 235);
+    background: rgb(255 255 255);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+.dark .ht-vidwidget {
+    border-color: rgb(255 255 255 / 0.06);
+    background: linear-gradient(180deg, rgb(24 24 27 / 0.85), rgb(18 18 20 / 0.85));
+    backdrop-filter: blur(8px);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.03);
+}
+
+/* Gradient top accent (matches stat cards) */
+.ht-vidwidget::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgb(99 102 241 / 0.65), rgb(168 85 247 / 0.45), transparent);
+    opacity: 0.8;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.ht-vidwidget__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.875rem 1.125rem;
+    border-bottom: 1px solid rgb(229 231 235);
+}
+.dark .ht-vidwidget__header {
+    border-bottom-color: rgb(255 255 255 / 0.05);
+}
+
+.ht-vidwidget__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.5rem;
+    flex-shrink: 0;
+}
+.ht-vidwidget__icon--trending {
+    background: linear-gradient(135deg, rgb(244 63 94 / 0.18), rgb(251 146 60 / 0.18));
+    color: rgb(251 113 133);
+}
+.ht-vidwidget__icon--recent {
+    background: linear-gradient(135deg, rgb(16 185 129 / 0.18), rgb(56 189 248 / 0.18));
+    color: rgb(52 211 153);
+}
+
+.ht-vidwidget__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgb(17 24 39);
+    margin: 0;
+    letter-spacing: -0.005em;
+}
+.dark .ht-vidwidget__title {
+    color: rgb(243 244 246);
+}
+
+.ht-vidwidget__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgb(99 102 241);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.ht-vidwidget__link:hover {
+    background: rgb(99 102 241 / 0.1);
+    color: rgb(129 140 248);
+}
+
+.ht-vidwidget__filter {
+    position: relative;
+}
+.ht-vidwidget__filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.3125rem 0.625rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: rgb(107 114 128);
+    background: rgb(249 250 251);
+    border: 1px solid rgb(229 231 235);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.dark .ht-vidwidget__filter-btn {
+    color: rgb(209 213 219);
+    background: rgb(255 255 255 / 0.04);
+    border-color: rgb(255 255 255 / 0.08);
+}
+.ht-vidwidget__filter-btn:hover {
+    color: rgb(99 102 241);
+    border-color: rgb(99 102 241 / 0.3);
+}
+.dark .ht-vidwidget__filter-btn:hover {
+    color: rgb(129 140 248);
+    background: rgb(99 102 241 / 0.1);
+    border-color: rgb(99 102 241 / 0.3);
+}
+.ht-vidwidget__filter-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.375rem);
+    z-index: 50;
+    min-width: 9rem;
+    padding: 0.25rem;
+    background: rgb(255 255 255);
+    border: 1px solid rgb(229 231 235);
+    border-radius: 0.625rem;
+    box-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.18);
+}
+.dark .ht-vidwidget__filter-menu {
+    background: rgb(28 28 32);
+    border-color: rgb(255 255 255 / 0.08);
+    box-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.6);
+}
+.ht-vidwidget__filter-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.375rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: rgb(55 65 81);
+    border-radius: 0.375rem;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+}
+.dark .ht-vidwidget__filter-item {
+    color: rgb(209 213 219);
+}
+.ht-vidwidget__filter-item:hover {
+    background: rgb(99 102 241 / 0.1);
+    color: rgb(99 102 241);
+}
+.dark .ht-vidwidget__filter-item:hover {
+    color: rgb(165 180 252);
+}
+.ht-vidwidget__filter-item.is-active {
+    background: rgb(99 102 241 / 0.15);
+    color: rgb(99 102 241);
+    font-weight: 600;
+}
+.dark .ht-vidwidget__filter-item.is-active {
+    color: rgb(165 180 252);
+}
+
+.ht-vidwidget__body {
+    display: flex;
+    flex-direction: column;
+    padding: 0.375rem;
+    gap: 0.125rem;
+    flex: 1 1 auto;
+}
+
+.ht-vidwidget__empty {
+    padding: 2.25rem 1rem;
+    text-align: center;
+    font-size: 0.8125rem;
+    color: rgb(156 163 175);
+}
+
+/* Row */
+.ht-vidrow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 0.625rem;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+.ht-vidrow:hover {
+    background: rgb(99 102 241 / 0.06);
+}
+.dark .ht-vidrow:hover {
+    background: rgb(99 102 241 / 0.1);
+}
+
+.ht-vidrow__rank {
+    flex-shrink: 0;
+    width: 1.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: rgb(156 163 175);
+    text-align: center;
+    letter-spacing: -0.02em;
+}
+.ht-vidrow__rank[data-rank="1"] { color: rgb(251 191 36); }
+.ht-vidrow__rank[data-rank="2"] { color: rgb(203 213 225); }
+.ht-vidrow__rank[data-rank="3"] { color: rgb(251 146 60); }
+
+.ht-vidrow__thumb {
+    position: relative;
+    flex-shrink: 0;
+    width: 4.5rem;
+    height: 2.75rem;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: rgb(229 231 235);
+}
+.dark .ht-vidrow__thumb {
+    background: rgb(38 38 45);
+}
+.ht-vidrow__thumb--no-rank { width: 5rem; height: 3rem; }
+.ht-vidrow__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.ht-vidrow__thumb-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: rgb(148 163 184);
+}
+.ht-vidrow__play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgb(0 0 0 / 0.25);
+    color: white;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+.ht-vidrow:hover .ht-vidrow__play {
+    opacity: 1;
+}
+
+.ht-vidrow__body {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.ht-vidrow__title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: rgb(17 24 39);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+}
+.dark .ht-vidrow__title {
+    color: rgb(243 244 246);
+}
+.ht-vidrow__meta {
+    margin-top: 0.1875rem;
+    font-size: 0.6875rem;
+    color: rgb(107 114 128);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-width: 0;
+}
+.dark .ht-vidrow__meta {
+    color: rgb(148 163 184);
+}
+.ht-vidrow__dot { opacity: 0.6; }
+
+.ht-vidrow__stats {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+    font-size: 0.6875rem;
+}
+
+.ht-vidstat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: rgb(107 114 128);
+}
+.dark .ht-vidstat {
+    color: rgb(148 163 184);
+}
+.ht-vidstat--views { color: rgb(56 189 248); }
+.dark .ht-vidstat--views { color: rgb(125 211 252); }
+.ht-vidstat--likes { color: rgb(168 85 247); }
+.dark .ht-vidstat--likes { color: rgb(196 181 253); }
+
+/* Status pills */
+.ht-vidpill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+.ht-vidpill--emerald { background: rgb(16 185 129 / 0.15); color: rgb(52 211 153); }
+.ht-vidpill--amber   { background: rgb(245 158 11 / 0.15); color: rgb(251 191 36); }
+.ht-vidpill--sky     { background: rgb(14 165 233 / 0.15); color: rgb(125 211 252); }
+.ht-vidpill--rose    { background: rgb(244 63 94 / 0.15);  color: rgb(251 113 133); }
+.ht-vidpill--gray    { background: rgb(148 163 184 / 0.15); color: rgb(203 213 225); }
+
+/* [x-cloak] hide until Alpine boots */
+[x-cloak] { display: none !important; }

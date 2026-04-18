@@ -13,20 +13,15 @@ class VideoSchedule extends Page
     protected static ?int    $navigationSort  = 5;
     protected static string  $view            = 'filament.pages.video-schedule';
 
-    public static function shouldRegisterNavigation(): bool
+    public function getHeaderWidgets(): array
     {
-        // Only show in sidebar if the FullCalendar package has been installed.
-        return class_exists(\Saade\FilamentFullCalendar\Widgets\FullCalendarWidget::class);
+        return [
+            VideoScheduleCalendarWidget::class,
+        ];
     }
 
-    protected function getHeaderWidgets(): array
+    public function getHeaderWidgetsColumns(): int|array
     {
-        if (!class_exists(VideoScheduleCalendarWidget::class)) {
-            return [];
-        }
-        if (!class_exists(\Saade\FilamentFullCalendar\Widgets\FullCalendarWidget::class)) {
-            return [];
-        }
-        return [VideoScheduleCalendarWidget::class];
+        return 1;
     }
 }
