@@ -210,7 +210,8 @@ class WithdrawalRequestResource extends Resource
 
                 Tables\Actions\EditAction::make(),
             ])
-            ->bulkActions([]);
+            ->bulkActions([])
+            ->striped();
     }
 
     public static function getPages(): array

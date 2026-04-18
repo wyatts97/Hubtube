@@ -17,6 +17,17 @@ class CommentResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left-right';
     protected static ?string $navigationGroup = 'Content';
     protected static ?int $navigationSort = 4;
+    protected static ?string $recordTitleAttribute = 'content';
+
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::where('is_approved', false)->count() ?: null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'warning';
+    }
 
     public static function form(Form $form): Form
     {
@@ -100,7 +111,8 @@ class CommentResource extends Resource
                         ->icon('heroicon-o-check')
                         ->action(fn ($records) => $records->each->update(['is_approved' => true])),
                 ]),
-            ]);
+            ])
+            ->striped();
     }
 
     public static function getPages(): array

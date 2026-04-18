@@ -125,7 +125,8 @@ class WalletTransactionResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
             ])
-            ->bulkActions([]);
+            ->bulkActions([])
+            ->striped();
     }
 
     public static function getPages(): array

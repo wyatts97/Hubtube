@@ -28,19 +28,23 @@ class AdminPanelProvider extends PanelProvider
     protected static function buildNavigationGroups(): array
     {
         $groups = [
-            ['key' => 'Content',          'collapsed' => false],
-            ['key' => 'Users & Messages', 'collapsed' => false],
-            ['key' => 'Monetization',     'collapsed' => false],
-            ['key' => 'Appearance',       'collapsed' => false],
-            ['key' => 'Integrations',     'collapsed' => false],
-            ['key' => 'System',           'collapsed' => true],
-            ['key' => 'Tools',            'collapsed' => true],
+            ['key' => 'Overview',         'collapsed' => false, 'icon' => 'heroicon-o-squares-2x2'],
+            ['key' => 'Content',          'collapsed' => false, 'icon' => 'heroicon-o-video-camera'],
+            ['key' => 'Users & Messages', 'collapsed' => false, 'icon' => 'heroicon-o-users'],
+            ['key' => 'Monetization',     'collapsed' => false, 'icon' => 'heroicon-o-banknotes'],
+            ['key' => 'Appearance',       'collapsed' => false, 'icon' => 'heroicon-o-paint-brush'],
+            ['key' => 'Integrations',     'collapsed' => true,  'icon' => 'heroicon-o-puzzle-piece'],
+            ['key' => 'System',           'collapsed' => true,  'icon' => 'heroicon-o-cog-6-tooth'],
+            ['key' => 'Tools',            'collapsed' => true,  'icon' => 'heroicon-o-wrench-screwdriver'],
         ];
 
         return array_map(function (array $g) {
             $group = NavigationGroup::make($g['key']);
             if ($g['collapsed']) {
                 $group->collapsed();
+            }
+            if (!empty($g['icon'])) {
+                $group->icon($g['icon']);
             }
             return $group;
         }, $groups);
@@ -87,9 +91,17 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->darkMode(true, true)
             ->brandName($brandName)
+            ->font('Inter')
             ->colors([
-                'primary' => Color::Rose,
-            ]);
+                'primary' => Color::Indigo,
+                'danger'  => Color::Rose,
+                'warning' => Color::Amber,
+                'success' => Color::Emerald,
+                'info'    => Color::Sky,
+                'gray'    => Color::Zinc,
+            ])
+            ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
+            ->globalSearchFieldKeyBindingSuffix();
 
         if ($faviconUrl) {
             $builder = $builder->favicon($faviconUrl);
@@ -109,6 +121,11 @@ class AdminPanelProvider extends PanelProvider
                     ->label('View Site')
                     ->url('/')
                     ->icon('heroicon-o-globe-alt'),
+                MenuItem::make()
+                    ->label('Flush Cache')
+                    ->icon('heroicon-o-arrow-path')
+                    ->url('/admin/flush-cache')
+                    ->color('warning'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
@@ -129,8 +146,14 @@ class AdminPanelProvider extends PanelProvider
                     }
                 },
             )
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => '<style>' . file_get_contents(resource_path('css/filament/admin/theme.css')) . '</style>',
+            )
             ->navigationGroups(static::buildNavigationGroups())
             ->sidebarCollapsibleOnDesktop()
+            ->sidebarFullyCollapsibleOnDesktop()
+            ->spa()
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

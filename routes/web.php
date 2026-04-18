@@ -49,6 +49,22 @@ Route::middleware('installed:require')->group(function () {
 // Admin auth is handled by main site login modal/page
 Route::get('/admin/login', fn () => redirect()->route('login'))->name('admin.login.redirect');
 
+// Admin: flush application caches (from Filament user menu)
+Route::get('/admin/flush-cache', function () {
+    if (!auth()->check() || !auth()->user()->is_admin) {
+        abort(403);
+    }
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    \Illuminate\Support\Facades\Artisan::call('view:clear');
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+    \Illuminate\Support\Facades\Artisan::call('route:clear');
+    \Filament\Notifications\Notification::make()
+        ->title('All caches flushed')
+        ->success()
+        ->send();
+    return redirect('/admin');
+})->middleware(['web', 'auth'])->name('admin.flush-cache');
+
 // Sitemap & Robots (outside age verification)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/sitemap_index.xml', [SitemapController::class, 'index'])->name('sitemap.index');

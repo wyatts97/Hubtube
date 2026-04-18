@@ -36,6 +36,21 @@ class FailedJobs extends Page implements HasTable
         }
     }
 
+    public static function getNavigationBadge(): ?string
+    {
+        try {
+            $count = DB::table('failed_jobs')->count();
+            return $count > 0 ? (string) $count : null;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';
+    }
+
     public function table(Table $table): Table
     {
         return $table

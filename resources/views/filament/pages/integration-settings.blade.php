@@ -1,10 +1,12 @@
 <x-filament-panels::page>
     {{-- SMTP / Bunny Stream Settings Form --}}
     <form wire:submit="save">
+        @include('filament.partials.unsaved-banner')
+
         {{ $this->form }}
 
-        <div class="mt-6">
-            <x-filament::button type="submit">
+        <div class="mt-6 flex items-center gap-3">
+            <x-filament::button type="submit" icon="heroicon-m-check">
                 Save Settings
             </x-filament::button>
         </div>

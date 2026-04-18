@@ -1,9 +1,11 @@
 <x-filament-panels::page>
     <form wire:submit="save">
+        @include('filament.partials.unsaved-banner')
+
         {{ $this->form }}
 
         <div class="mt-6 flex items-center gap-4">
-            <x-filament::button type="submit">
+            <x-filament::button type="submit" icon="heroicon-m-check">
                 Save Ad Settings
             </x-filament::button>
 

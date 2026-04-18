@@ -166,7 +166,8 @@ class ActivityLogResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->striped();
     }
 
     public static function getPages(): array

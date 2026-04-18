@@ -103,25 +103,33 @@ class StatsOverview extends BaseWidget
                     ->descriptionIcon('heroicon-m-users')
                     ->chart($userChart)
                     ->chartColor('primary')
-                    ->color('primary'),
+                    ->color('primary')
+                    ->url(route('filament.admin.resources.users.index'))
+                    ->extraAttributes(['class' => 'cursor-pointer']),
 
                 Stat::make('Total Videos', number_format($totalVideos))
                     ->description("+{$videos24h} today · +{$videos7d} this week · +{$videos30d} this month")
                     ->descriptionIcon('heroicon-m-video-camera')
                     ->chart($videoChart)
                     ->chartColor('success')
-                    ->color('success'),
+                    ->color('success')
+                    ->url(route('filament.admin.resources.videos.index'))
+                    ->extraAttributes(['class' => 'cursor-pointer']),
 
                 Stat::make('Total Views', number_format($totalViews))
                     ->description("Top: {$topVideoLabel}")
                     ->descriptionIcon('heroicon-m-eye')
-                    ->color('info'),
+                    ->color('info')
+                    ->url(route('filament.admin.pages.analytics'))
+                    ->extraAttributes(['class' => 'cursor-pointer']),
 
                 // Row 2
                 Stat::make('Comments', number_format($totalComments))
                     ->description("+{$comments7d} this week")
                     ->descriptionIcon('heroicon-m-chat-bubble-left-right')
-                    ->color('gray'),
+                    ->color('gray')
+                    ->url(route('filament.admin.resources.comments.index'))
+                    ->extraAttributes(['class' => 'cursor-pointer']),
 
                 Stat::make('Video Storage', $storageLabel)
                     ->description(number_format($totalVideos) . ' files on disk')

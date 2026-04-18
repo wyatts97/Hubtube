@@ -1,0 +1,184 @@
+/*
+ * HubTube Admin Theme
+ * Custom Filament 3 panel overrides for a modern, branded admin experience.
+ */
+
+/* ── Sidebar Polish ── */
+.fi-sidebar {
+    backdrop-filter: blur(12px);
+}
+
+.fi-sidebar-nav-groups {
+    gap: 0.25rem;
+}
+
+.fi-sidebar-group-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.5;
+}
+
+.fi-sidebar-item-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+.fi-sidebar-item-icon {
+    width: 1.125rem;
+    height: 1.125rem;
+}
+
+/* Active sidebar item */
+.fi-sidebar-item-active .fi-sidebar-item-label {
+    font-weight: 600;
+}
+
+/* ── Top Bar ── */
+.fi-topbar {
+    border-bottom-width: 1px;
+}
+
+/* ── Cards / Sections ── */
+.fi-section {
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.03);
+}
+
+.fi-section-header {
+    padding: 1rem 1.25rem;
+}
+
+.fi-section-content {
+    padding: 1rem 1.25rem;
+}
+
+/* ── Stat Widgets ── */
+.fi-wi-stats-overview-stat {
+    border-radius: 0.75rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fi-wi-stats-overview-stat:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+}
+
+/* ── Tables ── */
+.fi-ta-header-cell {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.fi-ta-cell {
+    font-size: 0.8125rem;
+}
+
+/* Rounder table container */
+.fi-ta {
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+/* ── Form Fields ── */
+.fi-fo-field-wrp label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+/* ── Buttons ── */
+.fi-btn {
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    letter-spacing: 0.01em;
+}
+
+/* ── Badges ── */
+.fi-badge {
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+/* ── Tabs ── */
+.fi-tabs-item-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+/* ── Modal ── */
+.fi-modal-window {
+    border-radius: 1rem;
+}
+
+/* ── Login Page ── */
+.fi-simple-page {
+    background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #2d1b4e 100%);
+}
+
+.fi-simple-main-ctn {
+    backdrop-filter: blur(16px);
+}
+
+/* Dark mode: slightly elevated cards */
+.dark .fi-section {
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.15), 0 0 0 1px rgb(255 255 255 / 0.03);
+}
+
+.dark .fi-wi-stats-overview-stat:hover {
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.25);
+}
+
+/* ── Notification toasts ── */
+.fi-no {
+    border-radius: 0.75rem;
+}
+
+/* ── Custom: Pending moderation alert banner ── */
+.ht-moderation-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    background: rgb(251 191 36 / 0.1);
+    border: 1px solid rgb(251 191 36 / 0.2);
+    color: rgb(217 119 6);
+}
+
+.dark .ht-moderation-banner {
+    background: rgb(251 191 36 / 0.08);
+    border-color: rgb(251 191 36 / 0.15);
+    color: rgb(251 191 36 / 0.9);
+}
+
+/* ── Custom: Welcome card ── */
+.ht-welcome-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, rgb(99 102 241 / 0.08), rgb(168 85 247 / 0.08));
+    border: 1px solid rgb(99 102 241 / 0.15);
+}
+
+.dark .ht-welcome-card {
+    background: linear-gradient(135deg, rgb(99 102 241 / 0.12), rgb(168 85 247 / 0.1));
+    border-color: rgb(99 102 241 / 0.2);
+}
+
+/* ── Custom: Quick action buttons row ── */
+.ht-quick-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}

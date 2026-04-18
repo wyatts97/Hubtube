@@ -7,11 +7,43 @@ use App\Filament\Widgets\RecentUploadsTable;
 use App\Filament\Widgets\StatsOverview;
 use App\Filament\Widgets\TrendingVideosTable;
 use App\Models\Setting;
+use App\Models\Video;
 use Filament\Pages\Dashboard as BaseDashboard;
 
 class Dashboard extends BaseDashboard
 {
     protected static string $view = 'filament.pages.dashboard';
+    protected static ?string $navigationGroup = 'Overview';
+
+    public function getGreeting(): string
+    {
+        $hour = now()->hour;
+        $name = auth()->user()?->username ?? 'Admin';
+        $greeting = match (true) {
+            $hour < 12 => 'Good morning',
+            $hour < 17 => 'Good afternoon',
+            default    => 'Good evening',
+        };
+        return "{$greeting}, {$name}";
+    }
+
+    public function getPendingModerationCount(): int
+    {
+        return Video::where('is_approved', false)
+            ->where('status', 'processed')
+            ->whereNull('queue_order')
+            ->count();
+    }
+
+    public function getProcessingCount(): int
+    {
+        return Video::whereIn('status', ['processing', 'pending'])->count();
+    }
+
+    public function getFailedCount(): int
+    {
+        return Video::where('status', 'failed')->count();
+    }
 
     /**
      * All available widgets with metadata for the layout manager.

@@ -186,7 +186,8 @@ class MenuItemResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->reorderable('sort_order');
+            ->reorderable('sort_order')
+            ->striped();
     }
 
     public static function getPages(): array

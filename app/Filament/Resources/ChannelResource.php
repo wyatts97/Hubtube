@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ChannelResource\Pages;
 use App\Models\Channel;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -14,6 +15,20 @@ use Filament\Tables\Table;
 class ChannelResource extends Resource
 {
     protected static bool $shouldRegisterNavigation = false;
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'slug'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Subscribers' => number_format($record->subscriber_count ?? 0),
+            'Views'       => number_format($record->total_views ?? 0),
+        ];
+    }
     protected static ?string $model = Channel::class;
     protected static ?string $navigationIcon = 'heroicon-o-tv';
     protected static ?string $navigationGroup = 'Content';
@@ -104,7 +119,8 @@ class ChannelResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->striped();
     }
 
     public static function getRelations(): array

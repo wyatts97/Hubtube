@@ -28,6 +28,26 @@ class VideoResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-video-camera';
     protected static ?string $navigationGroup = 'Content';
     protected static ?int $navigationSort = 1;
+    protected static ?string $recordTitleAttribute = 'title';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['title', 'slug', 'user.username'];
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            'Uploader' => $record->user?->username ?? '—',
+            'Status'   => ucfirst($record->status),
+            'Views'    => number_format($record->views_count),
+        ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with('user');
+    }
 
     public static function getNavigationBadge(): ?string
     {
@@ -200,17 +220,26 @@ class VideoResource extends Resource
             ]);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['user', 'category']);
+    }
+
     public static function table(Table $table): Table
     {
         return $table
             ->defaultSort('created_at', 'desc')
+            ->poll('15s')
             ->columns([
                 Tables\Columns\ImageColumn::make('thumbnail_display')
                     ->label('Thumbnail')
                     ->getStateUsing(fn (Video $record): ?string => $record->thumbnail_url)
                     ->height(50)
                     ->width(89)
-                    ->extraImgAttributes(['class' => 'rounded object-cover'])
+                    ->extraImgAttributes(fn (Video $record): array => [
+                        'class' => 'rounded object-cover transition-transform hover:scale-[2.5] hover:z-50 hover:shadow-xl hover:relative',
+                        'title' => $record->title,
+                    ])
                     ->defaultImageUrl(url('/icons/icon-192x192.png')),
 
                 Tables\Columns\TextColumn::make('title')
@@ -363,6 +392,36 @@ class VideoResource extends Resource
                     }),
             ], layout: Tables\Enums\FiltersLayout::AboveContentCollapsible)
             ->actions([
+                // Always-visible approve button for videos needing moderation
+                Tables\Actions\Action::make('quickApprove')
+                    ->label('Approve')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->button()
+                    ->requiresConfirmation()
+                    ->action(function (Video $record) {
+                        $record->update([
+                            'is_approved' => true,
+                            'published_at' => $record->published_at ?? now(),
+                        ]);
+                        $record->loadMissing('user');
+                        if ($record->user) {
+                            EmailService::sendToUser('video-approved', $record->user->email, [
+                                'username' => $record->user->username,
+                                'video_title' => $record->title,
+                                'video_url' => url("/{$record->slug}"),
+                            ]);
+                        }
+                        $alreadyNotified = AppNotification::where('user_id', $record->user_id)
+                            ->where('type', 'video_processed')
+                            ->where('data->video_id', $record->id)
+                            ->exists();
+                        if (!$alreadyNotified) {
+                            event(new VideoProcessed($record));
+                        }
+                    })
+                    ->visible(fn (Video $record) => !$record->is_approved && $record->status === 'processed'),
+
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\ViewAction::make(),
                     Tables\Actions\EditAction::make(),
@@ -589,7 +648,18 @@ class VideoResource extends Resource
                 ]),
             ])
             ->striped()
-            ->paginated([10, 25, 50, 100]);
+            ->paginated([10, 25, 50, 100])
+            ->recordUrl(fn (Video $record): string => route('filament.admin.resources.videos.edit', $record))
+            ->emptyStateIcon('heroicon-o-video-camera')
+            ->emptyStateHeading('No videos yet')
+            ->emptyStateDescription('Upload your first video to get started.')
+            ->emptyStateActions([
+                Tables\Actions\Action::make('create')
+                    ->label('Upload Video')
+                    ->icon('heroicon-m-arrow-up-tray')
+                    ->url(route('filament.admin.resources.videos.create'))
+                    ->button(),
+            ]);
     }
 
     public static function getWidgets(): array

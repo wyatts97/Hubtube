@@ -80,7 +80,8 @@ class PageResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
             ])
-            ->bulkActions([]);
+            ->bulkActions([])
+            ->striped();
     }
 
     public static function getPages(): array

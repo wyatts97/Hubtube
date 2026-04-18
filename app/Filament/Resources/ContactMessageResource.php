@@ -152,7 +152,8 @@ class ContactMessageResource extends Resource
 
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+            ->striped();
     }
 
     public static function getPages(): array

@@ -18,6 +18,12 @@ class CategoryResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-tag';
     protected static ?string $navigationGroup = 'Content';
     protected static ?int $navigationSort = 2;
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'slug'];
+    }
 
     public static function form(Form $form): Form
     {
@@ -82,7 +88,8 @@ class CategoryResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->reorderable('sort_order');
+            ->reorderable('sort_order')
+            ->striped();
     }
 
     public static function getPages(): array

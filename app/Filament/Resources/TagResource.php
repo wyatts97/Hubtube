@@ -24,6 +24,13 @@ class TagResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'slug'];
+    }
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
@@ -94,7 +101,8 @@ class TagResource extends Resource
                             }
                         }),
                 ]),
-            ]);
+            ])
+            ->striped();
     }
 
     public static function getPages(): array
