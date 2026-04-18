@@ -68,28 +68,54 @@ class CommentResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('user.username')
                     ->label('User')
-                    ->searchable(),
+                    ->searchable()
+                    ->icon('heroicon-m-user')
+                    ->iconColor('gray')
+                    ->weight('semibold')
+                    ->grow(false),
                 Tables\Columns\TextColumn::make('video.title')
                     ->label('Video')
                     ->limit(30)
                     ->placeholder('(deleted)')
                     ->url(fn (Comment $record): ?string => $record->video?->slug ? url('/' . $record->video->slug) : null)
                     ->openUrlInNewTab()
-                    ->searchable(),
+                    ->searchable()
+                    ->color('gray')
+                    ->size('sm'),
                 Tables\Columns\TextColumn::make('content')
                     ->label('Comment')
-                    ->limit(50)
+                    ->wrap()
+                    ->limit(120)
                     ->searchable(),
-                Tables\Columns\TextColumn::make('likes_count')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\IconColumn::make('is_approved')
-                    ->boolean(),
+                Tables\Columns\TextColumn::make('moderation_status')
+                    ->label('Status')
+                    ->badge()
+                    ->alignCenter()
+                    ->getStateUsing(fn (Comment $record): string => $record->is_approved ? 'Approved' : 'Pending')
+                    ->color(fn (string $state): string => $state === 'Approved' ? 'success' : 'warning')
+                    ->icon(fn (string $state): string => $state === 'Approved' ? 'heroicon-m-check-circle' : 'heroicon-m-clock'),
                 Tables\Columns\IconColumn::make('is_pinned')
-                    ->boolean(),
+                    ->label('Pinned')
+                    ->alignCenter()
+                    ->boolean()
+                    ->trueIcon('heroicon-s-bookmark')
+                    ->falseIcon('heroicon-o-bookmark')
+                    ->trueColor('warning')
+                    ->falseColor('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('likes_count')
+                    ->label('Likes')
+                    ->numeric()
+                    ->sortable()
+                    ->alignRight()
+                    ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable(),
+                    ->label('Posted')
+                    ->since()
+                    ->sortable()
+                    ->color('gray')
+                    ->size('sm')
+                    ->tooltip(fn (Comment $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_approved'),

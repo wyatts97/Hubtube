@@ -287,17 +287,22 @@ class VideoResource extends Resource
                         default => 'gray',
                     }),
 
+                // Hidden by default — Status badge above already communicates approved/needs-moderation.
+                // Still available via the column toggle for admins who want a standalone flag.
                 Tables\Columns\IconColumn::make('is_approved')
                     ->boolean()
                     ->label('Approved')
-                    ->trueIcon('heroicon-o-check-circle')
-                    ->falseIcon('heroicon-o-x-circle')
+                    ->alignCenter()
+                    ->trueIcon('heroicon-m-check-circle')
+                    ->falseIcon('heroicon-m-clock')
                     ->trueColor('success')
-                    ->falseColor('danger'),
+                    ->falseColor('warning')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\IconColumn::make('is_featured')
                     ->boolean()
                     ->label('Featured')
+                    ->alignCenter()
                     ->trueIcon('heroicon-s-star')
                     ->falseIcon('heroicon-o-star')
                     ->trueColor('warning')
@@ -308,6 +313,7 @@ class VideoResource extends Resource
                     ->label('Views')
                     ->numeric()
                     ->sortable()
+                    ->alignRight()
                     ->icon('heroicon-m-eye')
                     ->iconColor('gray'),
 

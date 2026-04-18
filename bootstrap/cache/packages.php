@@ -6,11 +6,29 @@
       'EloquentSerialize' => 'AnourValar\\EloquentSerialize\\Facades\\EloquentSerializeFacade',
     ),
   ),
+  'awcodes/filament-tiptap-editor' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'FilamentTiptapEditor\\FilamentTiptapEditorServiceProvider',
+    ),
+  ),
   'beyondcode/laravel-query-detector' => 
   array (
     'providers' => 
     array (
       0 => 'BeyondCode\\QueryDetector\\QueryDetectorServiceProvider',
+    ),
+  ),
+  'bezhansalleh/filament-shield' => 
+  array (
+    'aliases' => 
+    array (
+      'FilamentShield' => 'BezhanSalleh\\FilamentShield\\Facades\\FilamentShield',
+    ),
+    'providers' => 
+    array (
+      0 => 'BezhanSalleh\\FilamentShield\\FilamentShieldServiceProvider',
     ),
   ),
   'blade-ui-kit/blade-heroicons' => 
@@ -137,6 +155,13 @@
       0 => 'Laravel\\Scout\\ScoutServiceProvider',
     ),
   ),
+  'laravel/sentinel' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Laravel\\Sentinel\\SentinelServiceProvider',
+    ),
+  ),
   'laravel/socialite' => 
   array (
     'aliases' => 
@@ -153,6 +178,17 @@
     'providers' => 
     array (
       0 => 'Laravel\\Tinker\\TinkerServiceProvider',
+    ),
+  ),
+  'leandrocfe/filament-apex-charts' => 
+  array (
+    'aliases' => 
+    array (
+      'FilamentApexCharts' => 'Leandrocfe\\FilamentApexCharts\\Facades\\FilamentApexCharts',
+    ),
+    'providers' => 
+    array (
+      0 => 'Leandrocfe\\FilamentApexCharts\\FilamentApexChartsServiceProvider',
     ),
   ),
   'livewire/livewire' => 
@@ -194,6 +230,13 @@
       0 => 'Pest\\Laravel\\PestServiceProvider',
     ),
   ),
+  'pxlrbt/filament-spotlight' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'pxlrbt\\FilamentSpotlight\\SpotlightServiceProvider',
+    ),
+  ),
   'ryangjchandler/blade-capture-directive' => 
   array (
     'aliases' => 
@@ -203,6 +246,13 @@
     'providers' => 
     array (
       0 => 'RyanChandler\\BladeCaptureDirective\\BladeCaptureDirectiveServiceProvider',
+    ),
+  ),
+  'saade/filament-fullcalendar' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Saade\\FilamentFullCalendar\\FilamentFullCalendarServiceProvider',
     ),
   ),
   'socialiteproviders/manager' => 
@@ -238,6 +288,17 @@
     'providers' => 
     array (
       0 => 'Tighten\\Ziggy\\ZiggyServiceProvider',
+    ),
+  ),
+  'wire-elements/spotlight' => 
+  array (
+    'aliases' => 
+    array (
+      'Spotlight' => 'LivewireUI\\Spotlight\\SpotlightFacade',
+    ),
+    'providers' => 
+    array (
+      0 => 'LivewireUI\\Spotlight\\SpotlightServiceProvider',
     ),
   ),
 );

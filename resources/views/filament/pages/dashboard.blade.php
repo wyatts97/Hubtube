@@ -3,15 +3,16 @@
 
         {{-- Welcome Banner + Quick Actions --}}
         <div class="ht-welcome-card">
-            <div>
-                <h2 class="text-lg font-bold text-gray-900 dark:text-white">{{ $this->getGreeting() }}</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                    {{ now()->format('l, F j, Y') }}
-                    <span class="hidden md:inline-flex items-center gap-1 ml-2 text-xs">
-                        · Press
-                        <kbd class="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 font-mono text-[10px]">Ctrl</kbd>
-                        +
-                        <kbd class="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 font-mono text-[10px]">K</kbd>
+            <div class="min-w-0">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">{{ $this->getGreeting() }}</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2 flex-wrap">
+                    <span>{{ now()->format('l, F j, Y') }}</span>
+                    <span class="hidden md:inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+                        <span class="mx-1">·</span>
+                        Press
+                        <kbd class="px-1.5 py-0.5 rounded border border-gray-300 dark:border-white/10 bg-white dark:bg-gray-800 font-mono text-[10px] text-gray-600 dark:text-gray-300">Ctrl</kbd>
+                        <span class="text-gray-300 dark:text-gray-600">+</span>
+                        <kbd class="px-1.5 py-0.5 rounded border border-gray-300 dark:border-white/10 bg-white dark:bg-gray-800 font-mono text-[10px] text-gray-600 dark:text-gray-300">K</kbd>
                         to search
                     </span>
                 </p>

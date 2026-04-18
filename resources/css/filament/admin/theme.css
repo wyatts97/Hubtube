@@ -56,31 +56,85 @@
 
 /* ── Stat Widgets ── */
 .fi-wi-stats-overview-stat {
-    border-radius: 0.75rem;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    position: relative;
+    border-radius: 0.875rem;
+    min-height: 10.5rem;
+    padding: 1.25rem !important;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    overflow: hidden;
+}
+
+/* Subtle gradient top-border accent */
+.fi-wi-stats-overview-stat::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgb(99 102 241 / 0.5), transparent);
+    opacity: 0.5;
+    pointer-events: none;
 }
 
 .fi-wi-stats-overview-stat:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px -8px rgb(99 102 241 / 0.15), 0 0 0 1px rgb(99 102 241 / 0.15);
+}
+
+.fi-wi-stats-overview-stat:hover::before {
+    opacity: 1;
+}
+
+/* Numeric tabular alignment on stat values */
+.fi-wi-stats-overview-stat-value {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.fi-wi-stats-overview-stat-description {
+    font-size: 0.75rem;
+    line-height: 1.35;
 }
 
 /* ── Tables ── */
 .fi-ta-header-cell {
     font-size: 0.6875rem;
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
 }
 
 .fi-ta-cell {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
 }
 
 /* Rounder table container */
 .fi-ta {
-    border-radius: 0.75rem;
+    border-radius: 0.875rem;
     overflow: hidden;
+}
+
+/* Stripe contrast on dark */
+.dark .fi-ta-row:nth-child(even) {
+    background-color: rgb(255 255 255 / 0.015);
+}
+
+.fi-ta-row:nth-child(even) {
+    background-color: rgb(0 0 0 / 0.02);
+}
+
+/* Row hover */
+.fi-ta-row:hover {
+    background-color: rgb(99 102 241 / 0.04);
+}
+.dark .fi-ta-row:hover {
+    background-color: rgb(99 102 241 / 0.06);
 }
 
 /* ── Form Fields ── */
@@ -161,19 +215,27 @@
 
 /* ── Custom: Welcome card ── */
 .ht-welcome-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr;
     gap: 1rem;
+    align-items: center;
     padding: 1.25rem 1.5rem;
-    border-radius: 0.75rem;
+    border-radius: 0.875rem;
     background: linear-gradient(135deg, rgb(99 102 241 / 0.08), rgb(168 85 247 / 0.08));
     border: 1px solid rgb(99 102 241 / 0.15);
+    box-shadow: 0 0 0 1px rgb(99 102 241 / 0.04), 0 8px 32px -12px rgb(99 102 241 / 0.18);
+}
+
+@media (min-width: 768px) {
+    .ht-welcome-card {
+        grid-template-columns: 1fr auto;
+    }
 }
 
 .dark .ht-welcome-card {
     background: linear-gradient(135deg, rgb(99 102 241 / 0.12), rgb(168 85 247 / 0.1));
     border-color: rgb(99 102 241 / 0.2);
+    box-shadow: 0 0 0 1px rgb(99 102 241 / 0.08), 0 12px 40px -16px rgb(99 102 241 / 0.3);
 }
 
 /* ── Custom: Quick action buttons row ── */
@@ -181,4 +243,186 @@
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+/* ── Custom: Analytics summary cards ── */
+.ht-summary-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 1.125rem 1.25rem;
+    border-radius: 0.875rem;
+    background: rgb(255 255 255);
+    border: 1px solid rgb(229 231 235);
+    min-height: 5.5rem;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    overflow: hidden;
+}
+
+.dark .ht-summary-card {
+    background: rgb(24 24 27 / 0.6);
+    border-color: rgb(255 255 255 / 0.06);
+    backdrop-filter: blur(8px);
+}
+
+.ht-summary-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.ht-summary-card:hover {
+    transform: translateY(-2px);
+}
+
+.dark .ht-summary-card:hover {
+    border-color: rgb(255 255 255 / 0.12);
+    box-shadow: 0 12px 32px -12px rgb(0 0 0 / 0.4);
+}
+
+.ht-summary-card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.75rem;
+    flex-shrink: 0;
+}
+
+/* Tint variants */
+.ht-tint-indigo  { background: rgb(99 102 241 / 0.1);  color: rgb(129 140 248); }
+.ht-tint-emerald { background: rgb(16 185 129 / 0.1);  color: rgb(52 211 153); }
+.ht-tint-sky     { background: rgb(14 165 233 / 0.1);  color: rgb(56 189 248); }
+.ht-tint-amber   { background: rgb(245 158 11 / 0.1);  color: rgb(251 191 36); }
+.ht-tint-rose    { background: rgb(244 63 94 / 0.1);   color: rgb(251 113 133); }
+
+.ht-summary-card[data-tint="indigo"]::before  { background: linear-gradient(90deg, transparent, rgb(99 102 241 / 0.7), transparent); }
+.ht-summary-card[data-tint="emerald"]::before { background: linear-gradient(90deg, transparent, rgb(16 185 129 / 0.7), transparent); }
+.ht-summary-card[data-tint="sky"]::before     { background: linear-gradient(90deg, transparent, rgb(14 165 233 / 0.7), transparent); }
+.ht-summary-card[data-tint="amber"]::before   { background: linear-gradient(90deg, transparent, rgb(245 158 11 / 0.7), transparent); }
+.ht-summary-card[data-tint="rose"]::before    { background: linear-gradient(90deg, transparent, rgb(244 63 94 / 0.7), transparent); }
+
+/* ── ApexCharts tweaks ── */
+.apexcharts-tooltip {
+    border-radius: 0.625rem !important;
+    box-shadow: 0 8px 24px -8px rgb(0 0 0 / 0.25) !important;
+    border: 1px solid rgb(255 255 255 / 0.08) !important;
+}
+
+.apexcharts-menu {
+    border-radius: 0.625rem !important;
+}
+
+/* ── Dashboard grid breathing room ── */
+.fi-wi {
+    border-radius: 0.875rem !important;
+}
+
+/* ── Typography sweep (Phase F) ── */
+
+/* Page headings */
+.fi-header-heading {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.fi-header-subheading {
+    font-size: 0.875rem;
+    color: rgb(107 114 128);
+    margin-top: 0.25rem;
+}
+
+.dark .fi-header-subheading {
+    color: rgb(148 163 184);
+}
+
+/* Section headings inside forms/pages */
+.fi-section-header-heading {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.fi-section-header-description {
+    font-size: 0.8125rem;
+    color: rgb(107 114 128);
+}
+
+.dark .fi-section-header-description {
+    color: rgb(148 163 184);
+}
+
+/* Sidebar – slightly wider for long labels like "Users & Messages" */
+.fi-sidebar {
+    width: 16rem;
+}
+
+/* Dark mode sidebar background gets a subtle gradient */
+.dark .fi-sidebar {
+    background: linear-gradient(180deg, rgb(24 24 27 / 0.95), rgb(18 18 20 / 0.95));
+}
+
+/* Badges inside tables: tighter vertical padding */
+.fi-ta .fi-badge {
+    padding: 0.125rem 0.625rem;
+}
+
+/* Pagination controls */
+.fi-pagination {
+    padding: 0.75rem 1rem;
+}
+
+/* Modal heading sizing */
+.fi-modal-heading {
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+/* Main page background subtle gradient on dark */
+.dark .fi-main {
+    background: radial-gradient(ellipse at top, rgb(30 27 75 / 0.15), transparent 60%),
+                rgb(9 9 11);
+}
+
+/* Improve the system status bar at the top of the page */
+.fi-topbar {
+    backdrop-filter: blur(8px);
+}
+
+.dark .fi-topbar {
+    background-color: rgb(24 24 27 / 0.85);
+    border-bottom-color: rgb(255 255 255 / 0.06);
+}
+
+/* Kbd key styling used in welcome banner */
+kbd {
+    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace;
+}
+
+/* Tabs – cleaner underline */
+.fi-tabs-item {
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+
+/* Forms: fieldset collapsible header */
+.fi-fo-fieldset-label {
+    font-weight: 600;
+    font-size: 0.8125rem;
+    letter-spacing: 0.01em;
+}
+
+/* Breadcrumbs */
+.fi-breadcrumbs-item {
+    font-size: 0.8125rem;
 }

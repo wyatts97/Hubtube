@@ -17,7 +17,7 @@ class StatsOverview extends BaseWidget
 
     protected function getColumns(): int
     {
-        return 4;
+        return 3;
     }
 
     protected function getStats(): array
@@ -64,9 +64,46 @@ class StatsOverview extends BaseWidget
                 ? \Illuminate\Support\Str::limit($topVideo->title, 25) . ' (' . number_format($topVideo->views_count) . ')'
                 : 'No videos yet';
 
-            // ── Comments ──
+            // ── Comments (7-day sparkline) ──
             $totalComments = Comment::count();
             $comments7d = Comment::where('created_at', '>=', $now->copy()->subDays(7))->count();
+            $commentChartData = Comment::where('created_at', '>=', $sevenDaysAgo)
+                ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
+                ->groupByRaw('DATE(created_at)')
+                ->pluck('count', 'date')
+                ->toArray();
+            $commentChart = $this->fillChartData($commentChartData, $now, 7);
+
+            // ── Views (sparkline = recent videos' aggregate views per day via created_at proxy) ──
+            // We can't show true daily view deltas (no snapshot table), so chart
+            // shows total views added to the catalogue each day via new uploads' views_count.
+            $viewChartData = Video::where('created_at', '>=', $sevenDaysAgo)
+                ->selectRaw('DATE(created_at) as date, SUM(views_count) as total')
+                ->groupByRaw('DATE(created_at)')
+                ->pluck('total', 'date')
+                ->toArray();
+            $viewChart = $this->fillChartData($viewChartData, $now, 7);
+
+            // ── Processing queue size over last 7 days (failed-job proxy) ──
+            $processChartData = Video::where('created_at', '>=', $sevenDaysAgo)
+                ->where('status', 'failed')
+                ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
+                ->groupByRaw('DATE(created_at)')
+                ->pluck('count', 'date')
+                ->toArray();
+            $processChart = $this->fillChartData($processChartData, $now, 7);
+
+            // ── Storage growth sparkline (new bytes uploaded per day) ──
+            $storageChartData = Video::where('created_at', '>=', $sevenDaysAgo)
+                ->selectRaw('DATE(created_at) as date, SUM(size) as total')
+                ->groupByRaw('DATE(created_at)')
+                ->pluck('total', 'date')
+                ->toArray();
+            // Normalize to MB so chart values stay reasonable
+            $storageChart = array_map(
+                fn ($v) => (int) round(((int) $v) / 1048576),
+                $this->fillChartData($storageChartData, $now, 7)
+            );
 
             // ── Revenue (only if monetization is enabled) ──
             $monetizationEnabled = (bool) Setting::get('monetization_enabled', false);
@@ -119,6 +156,8 @@ class StatsOverview extends BaseWidget
                 Stat::make('Total Views', number_format($totalViews))
                     ->description("Top: {$topVideoLabel}")
                     ->descriptionIcon('heroicon-m-eye')
+                    ->chart($viewChart)
+                    ->chartColor('info')
                     ->color('info')
                     ->url(route('filament.admin.pages.analytics'))
                     ->extraAttributes(['class' => 'cursor-pointer']),
@@ -127,6 +166,8 @@ class StatsOverview extends BaseWidget
                 Stat::make('Comments', number_format($totalComments))
                     ->description("+{$comments7d} this week")
                     ->descriptionIcon('heroicon-m-chat-bubble-left-right')
+                    ->chart($commentChart)
+                    ->chartColor('gray')
                     ->color('gray')
                     ->url(route('filament.admin.resources.comments.index'))
                     ->extraAttributes(['class' => 'cursor-pointer']),
@@ -134,6 +175,8 @@ class StatsOverview extends BaseWidget
                 Stat::make('Video Storage', $storageLabel)
                     ->description(number_format($totalVideos) . ' files on disk')
                     ->descriptionIcon('heroicon-m-server-stack')
+                    ->chart($storageChart)
+                    ->chartColor('gray')
                     ->color('gray'),
 
                 Stat::make('Processing', $processingCount > 0 ? "{$processingCount} encoding" : 'Idle')
@@ -142,6 +185,8 @@ class StatsOverview extends BaseWidget
                         ($failedCount > 0 ? " · {$failedCount} failed" : '')
                     )
                     ->descriptionIcon('heroicon-m-cog-6-tooth')
+                    ->chart($processChart)
+                    ->chartColor($failedCount > 0 ? 'danger' : 'gray')
                     ->color($failedCount > 0 ? 'danger' : ($processingCount > 0 ? 'info' : 'gray')),
             ];
 

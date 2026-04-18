@@ -34,24 +34,21 @@ class PageResource extends Resource
                     ->maxLength(255)
                     ->unique(ignoreRecord: true)
                     ->helperText('URL path: /pages/{slug}'),
-                Forms\Components\RichEditor::make('content')
-                    ->required()
-                    ->columnSpanFull()
-                    ->toolbarButtons([
-                        'bold',
-                        'italic',
-                        'underline',
-                        'strike',
-                        'h2',
-                        'h3',
-                        'bulletList',
-                        'orderedList',
-                        'link',
-                        'blockquote',
-                        'horizontalRule',
-                        'undo',
-                        'redo',
-                    ]),
+                (class_exists(\FilamentTiptapEditor\TiptapEditor::class)
+                    ? \FilamentTiptapEditor\TiptapEditor::make('content')
+                        ->profile('default')
+                        ->required()
+                        ->columnSpanFull()
+                    : Forms\Components\RichEditor::make('content')
+                        ->required()
+                        ->columnSpanFull()
+                        ->toolbarButtons([
+                            'bold', 'italic', 'underline', 'strike',
+                            'h2', 'h3', 'bulletList', 'orderedList',
+                            'link', 'blockquote', 'horizontalRule',
+                            'undo', 'redo',
+                        ])
+                ),
                 Forms\Components\Toggle::make('is_published')
                     ->default(true)
                     ->helperText('Unpublished pages return a 404.'),
