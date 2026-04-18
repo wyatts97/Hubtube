@@ -426,3 +426,173 @@ kbd {
 .fi-breadcrumbs-item {
     font-size: 0.8125rem;
 }
+
+/* ── ht-panel: dark-native card used on Analytics page ── */
+.ht-panel {
+    border-radius: 0.875rem;
+    border: 1px solid rgb(229 231 235);
+    background: rgb(255 255 255);
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+}
+
+.dark .ht-panel {
+    border-color: rgb(255 255 255 / 0.08);
+    background: rgb(24 24 27 / 0.6);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.02) inset;
+}
+
+.ht-panel__header {
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid rgb(229 231 235);
+}
+
+.dark .ht-panel__header {
+    border-bottom-color: rgb(255 255 255 / 0.06);
+}
+
+.ht-panel__header h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgb(55 65 81);
+    margin: 0;
+}
+
+.dark .ht-panel__header h3 {
+    color: rgb(229 231 235);
+}
+
+.ht-panel__body-scroll {
+    overflow-x: auto;
+}
+
+.ht-panel__empty {
+    padding: 2rem;
+    text-align: center;
+    font-size: 0.875rem;
+    color: rgb(156 163 175);
+}
+
+.ht-panel__table {
+    width: 100%;
+    font-size: 0.875rem;
+    border-collapse: collapse;
+}
+
+.ht-panel__table thead th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgb(107 114 128);
+    border-bottom: 1px solid rgb(229 231 235);
+    background: rgb(249 250 251);
+}
+
+.dark .ht-panel__table thead th {
+    color: rgb(148 163 184);
+    border-bottom-color: rgb(255 255 255 / 0.06);
+    background: rgb(255 255 255 / 0.02);
+}
+
+.ht-panel__table tbody td {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid rgb(243 244 246);
+    color: rgb(55 65 81);
+}
+
+.dark .ht-panel__table tbody td {
+    border-top-color: rgb(255 255 255 / 0.04);
+    color: rgb(209 213 219);
+}
+
+.ht-panel__table tbody tr:hover td {
+    background: rgb(99 102 241 / 0.04);
+}
+
+.dark .ht-panel__table tbody tr:hover td {
+    background: rgb(99 102 241 / 0.07);
+}
+
+.ht-panel__name {
+    font-weight: 500;
+    color: rgb(17 24 39) !important;
+}
+
+.dark .ht-panel__name {
+    color: rgb(255 255 255) !important;
+}
+
+.ht-right   { text-align: right; }
+.ht-num     { font-variant-numeric: tabular-nums; }
+.ht-muted   { color: rgb(107 114 128) !important; }
+.dark .ht-muted { color: rgb(148 163 184) !important; }
+.ht-uppercase { font-size: 0.6875rem; letter-spacing: 0.05em; text-transform: uppercase; }
+.ht-ctr-good { color: rgb(16 185 129) !important; font-weight: 600; }
+.dark .ht-ctr-good { color: rgb(52 211 153) !important; }
+
+/* Pill badges for placements */
+.ht-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.ht-pill--pre_roll  { background: rgb(16 185 129 / 0.12); color: rgb(52 211 153); }
+.ht-pill--mid_roll  { background: rgb(245 158 11 / 0.12); color: rgb(251 191 36); }
+.ht-pill--post_roll { background: rgb(244 63 94 / 0.12);  color: rgb(251 113 133); }
+.ht-pill--outstream { background: rgb(14 165 233 / 0.12); color: rgb(56 189 248); }
+
+/* ── Dashboard widget grid: more gap so tables don't collide ── */
+.fi-page .fi-wi,
+.fi-page [class*="fi-widgets"] {
+    --widget-gap: 1.25rem;
+}
+
+.fi-wi-widgets-container,
+.fi-page > .grid,
+.fi-page .fi-section ~ .fi-section {
+    gap: 1.25rem !important;
+}
+
+/* Extra breathing room between sibling dashboard table widgets */
+.fi-dashboard-page .grid,
+.fi-page-dashboard .grid {
+    gap: 1.25rem !important;
+}
+
+/* ── Video thumbnail hover preview (replaces title tooltip) ── */
+/* Kill native tooltip on thumbnail img so our preview can take over */
+.fi-ta-image-col img {
+    position: relative;
+    z-index: 1;
+    transition: transform 0.15s ease;
+}
+
+/* Hover: scale thumbnail up 3.5× centered; overflow escapes the cell */
+.fi-ta-image-col {
+    overflow: visible !important;
+}
+
+.fi-ta-image-col:hover img,
+.fi-ta-image-col img:hover {
+    transform: scale(3.5);
+    transform-origin: left center;
+    z-index: 50;
+    box-shadow: 0 20px 50px -10px rgb(0 0 0 / 0.6),
+                0 0 0 2px rgb(99 102 241 / 0.6);
+    border-radius: 0.5rem;
+}
+
+/* Ensure the table row containing a hovered image sits above siblings */
+.fi-ta-row:has(.fi-ta-image-col img:hover) {
+    z-index: 40;
+    position: relative;
+}

@@ -29,6 +29,7 @@ class RevenueChartWidget extends ApexChartWidget
     protected function getOptions(): array
     {
         [$labels, $values] = $this->buildSeries();
+        $hasData = max($values) > 0;
 
         return $this->mergeTheme($this->darkThemeBase(), [
             'chart' => [
@@ -45,7 +46,8 @@ class RevenueChartWidget extends ApexChartWidget
             ],
             'yaxis' => [
                 'min'            => 0,
-                'forceNiceScale' => true,
+                'max'            => $hasData ? null : 100,
+                'forceNiceScale' => $hasData,
                 'labels' => [
                     'style' => ['colors' => '#64748b', 'fontSize' => '11px', 'fontFamily' => 'Inter'],
                 ],

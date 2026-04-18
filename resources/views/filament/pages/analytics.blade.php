@@ -37,39 +37,35 @@
 
     {{-- Ad Performance Table --}}
     @if(count($adStats) > 0)
-        <div class="mt-6 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900/40 shadow-sm">
-            <div class="px-5 py-3 border-b border-gray-200 dark:border-white/10">
-                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Ad Creative Performance</h3>
+        <div class="ht-panel mt-6">
+            <div class="ht-panel__header">
+                <h3>Ad Creative Performance</h3>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+            <div class="ht-panel__body-scroll">
+                <table class="ht-panel__table">
                     <thead>
-                        <tr class="text-left text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-white/10">
-                            <th class="px-4 py-3 font-semibold">Name</th>
-                            <th class="px-4 py-3 font-semibold">Placement</th>
-                            <th class="px-4 py-3 font-semibold">Type</th>
-                            <th class="px-4 py-3 font-semibold text-right">Impressions</th>
-                            <th class="px-4 py-3 font-semibold text-right">Clicks</th>
-                            <th class="px-4 py-3 font-semibold text-right">CTR</th>
+                        <tr>
+                            <th>Name</th>
+                            <th>Placement</th>
+                            <th>Type</th>
+                            <th class="ht-right">Impressions</th>
+                            <th class="ht-right">Clicks</th>
+                            <th class="ht-right">CTR</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-white/5">
+                    <tbody>
                         @foreach($adStats as $ad)
-                            <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition">
-                                <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ $ad['name'] }}</td>
-                                <td class="px-4 py-3">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium
-                                        {{ $ad['placement'] === 'pre_roll'  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : '' }}
-                                        {{ $ad['placement'] === 'mid_roll'  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'       : '' }}
-                                        {{ $ad['placement'] === 'post_roll' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'          : '' }}
-                                        {{ $ad['placement'] === 'outstream' ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400'             : '' }}">
+                            <tr>
+                                <td class="ht-panel__name">{{ $ad['name'] }}</td>
+                                <td>
+                                    <span class="ht-pill ht-pill--{{ $ad['placement'] }}">
                                         {{ ucwords(str_replace('_', ' ', $ad['placement'])) }}
                                     </span>
                                 </td>
-                                <td class="px-4 py-3 text-gray-500 dark:text-gray-400 uppercase text-[11px] tracking-wide">{{ $ad['type'] }}</td>
-                                <td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300 tabular-nums">{{ number_format($ad['impressions']) }}</td>
-                                <td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300 tabular-nums">{{ number_format($ad['clicks']) }}</td>
-                                <td class="px-4 py-3 text-right font-semibold tabular-nums {{ $ad['ctr'] >= 1 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400' }}">
+                                <td class="ht-muted ht-uppercase">{{ $ad['type'] }}</td>
+                                <td class="ht-right ht-num">{{ number_format($ad['impressions']) }}</td>
+                                <td class="ht-right ht-num">{{ number_format($ad['clicks']) }}</td>
+                                <td class="ht-right ht-num {{ $ad['ctr'] >= 1 ? 'ht-ctr-good' : 'ht-muted' }}">
                                     {{ $ad['ctr'] }}%
                                 </td>
                             </tr>
@@ -79,8 +75,10 @@
             </div>
         </div>
     @else
-        <div class="mt-6 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900/40 p-8 text-center text-sm text-gray-400">
-            No ad creative data yet. Enable video ads and impressions will be tracked here.
+        <div class="ht-panel mt-6">
+            <div class="ht-panel__empty">
+                No ad creative data yet. Enable video ads and impressions will be tracked here.
+            </div>
         </div>
     @endif
 </x-filament-panels::page>

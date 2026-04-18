@@ -24,6 +24,7 @@ class UploadsChartWidget extends ApexChartWidget
     protected function getOptions(): array
     {
         [$labels, $values] = $this->buildSeries();
+        $hasData = max($values) > 0;
 
         return $this->mergeTheme($this->darkThemeBase(), [
             'chart' => [
@@ -42,7 +43,10 @@ class UploadsChartWidget extends ApexChartWidget
             'yaxis' => [
                 'labels' => ['formatter' => null],
                 'min'    => 0,
-                'forceNiceScale' => true,
+                // When all-zero, force a visible 0..5 range so the chart still paints an axis.
+                'max'    => $hasData ? null : 5,
+                'tickAmount'     => $hasData ? 5 : 5,
+                'forceNiceScale' => $hasData,
             ],
             'stroke' => [
                 'curve' => 'smooth',

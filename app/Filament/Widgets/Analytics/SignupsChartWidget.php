@@ -23,6 +23,7 @@ class SignupsChartWidget extends ApexChartWidget
     protected function getOptions(): array
     {
         [$labels, $values] = $this->buildSeries();
+        $hasData = max($values) > 0;
 
         return $this->mergeTheme($this->darkThemeBase(), [
             'chart' => [
@@ -39,7 +40,8 @@ class SignupsChartWidget extends ApexChartWidget
             ],
             'yaxis' => [
                 'min'            => 0,
-                'forceNiceScale' => true,
+                'max'            => $hasData ? null : 5,
+                'forceNiceScale' => $hasData,
             ],
             'stroke' => [
                 'curve' => 'smooth',
