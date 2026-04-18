@@ -236,10 +236,10 @@ class VideoResource extends Resource
                     ->getStateUsing(fn (Video $record): ?string => $record->thumbnail_url)
                     ->height(50)
                     ->width(89)
-                    ->extraImgAttributes(fn (Video $record): array => [
-                        'class' => 'rounded object-cover transition-transform hover:scale-[2.5] hover:z-50 hover:shadow-xl hover:relative',
-                        'title' => $record->title,
+                    ->extraImgAttributes([
+                        'class' => 'ht-thumb-hover',
                     ])
+                    ->extraAttributes(['class' => 'ht-thumb-col'])
                     ->defaultImageUrl(url('/icons/icon-192x192.png')),
 
                 Tables\Columns\TextColumn::make('title')

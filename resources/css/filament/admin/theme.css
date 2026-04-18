@@ -587,33 +587,44 @@ kbd {
     gap: 1.25rem !important;
 }
 
-/* ── Video thumbnail hover preview (replaces title tooltip) ── */
-/* Kill native tooltip on thumbnail img so our preview can take over */
-.fi-ta-image-col img {
-    position: relative;
-    z-index: 1;
-    transition: transform 0.15s ease;
-}
-
-/* Hover: scale thumbnail up 3.5× centered; overflow escapes the cell */
-.fi-ta-image-col {
+/* ── Video thumbnail hover preview ──
+   Target our custom classes added via extraAttributes/extraImgAttributes
+   on the VideoResource ImageColumn, plus the outer Filament .fi-ta-image
+   wrapper and the <td> cell so overflow can escape. */
+.ht-thumb-col,
+.fi-ta-image:has(.ht-thumb-hover),
+.fi-ta-cell:has(.ht-thumb-hover) {
     overflow: visible !important;
 }
 
-.fi-ta-image-col:hover img,
-.fi-ta-image-col img:hover {
-    transform: scale(3.5);
+.ht-thumb-hover {
+    position: relative;
+    z-index: 1;
+    border-radius: 0.375rem;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
     transform-origin: left center;
-    z-index: 50;
-    box-shadow: 0 20px 50px -10px rgb(0 0 0 / 0.6),
-                0 0 0 2px rgb(99 102 241 / 0.6);
+    will-change: transform;
+}
+
+.ht-thumb-hover:hover {
+    transform: scale(3.8);
+    z-index: 60;
+    box-shadow: 0 24px 56px -12px rgb(0 0 0 / 0.7),
+                0 0 0 2px rgb(99 102 241 / 0.7);
     border-radius: 0.5rem;
 }
 
-/* Ensure the table row containing a hovered image sits above siblings */
-.fi-ta-row:has(.fi-ta-image-col img:hover) {
-    z-index: 40;
+/* Lift the hovered row above its siblings so the preview isn't clipped */
+.fi-ta-row:has(.ht-thumb-hover:hover) {
+    z-index: 50;
     position: relative;
+}
+
+/* Table content wrapper must also allow overflow for the first ~3 rows
+   where expanded previews would otherwise clip against the scroll container */
+.fi-ta:has(.ht-thumb-hover:hover),
+.fi-ta-ctn:has(.ht-thumb-hover:hover) {
+    overflow: visible !important;
 }
 
 /* ============================================================
@@ -645,12 +656,40 @@ kbd {
 /* ============================================================
    Dashboard outer spacing — generous gaps between welcome banner,
    stats grid, content widgets, and signups widget.
+   Uses dedicated ht-* classes (not Tailwind utilities) so the rules
+   always apply regardless of what utilities Filament's precompiled
+   stylesheet ships.
    ============================================================ */
-.fi-page-dashboard .fi-page-content > .space-y-5 > * + * {
-    margin-top: 1.75rem !important;
+.ht-dashboard-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
 }
-.fi-page-dashboard .fi-page-content .grid {
-    gap: 1.75rem !important;
+
+.ht-dashboard-stack > * + * {
+    margin-top: 0; /* flex gap handles spacing */
+}
+
+.ht-dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+}
+
+@media (min-width: 768px) {
+    .ht-dashboard-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .ht-dashboard-grid > .md\:col-span-2 {
+        grid-column: span 2 / span 2;
+    }
+}
+
+/* Also force nested fi-wi-stats-overview grid (the stats row) to breathe
+   on both axes — prevents horizontally-touching cards. */
+.ht-dashboard-grid .fi-wi-stats-overview,
+.ht-dashboard-grid .fi-wi-stats-overview .grid {
+    gap: 1.25rem !important;
 }
 
 /* ============================================================

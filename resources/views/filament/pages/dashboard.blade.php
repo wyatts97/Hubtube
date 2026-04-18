@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <div class="space-y-7">
+    <div class="ht-dashboard-stack">
 
         {{-- Welcome Banner + Quick Actions --}}
         <div class="ht-welcome-card">
@@ -81,7 +81,7 @@
         @endif
 
         {{-- Widget Grid --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-7">
+        <div class="ht-dashboard-grid">
             @foreach($this->getOrderedWidgets() as $widget)
                 <div class="min-w-0 overflow-x-auto {{ $widget['span'] === 'full' ? 'md:col-span-2' : '' }}">
                     @livewire($widget['class'], [], key($widget['key']))
