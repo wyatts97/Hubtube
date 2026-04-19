@@ -31,6 +31,10 @@ class RevenueChartWidget extends ApexChartWidget
         [$labels, $values] = $this->buildSeries();
         $hasData = max($values) > 0;
 
+        if (! $hasData) {
+            $values[0] = 0.0001;
+        }
+
         return $this->mergeTheme($this->darkThemeBase(), [
             'chart' => [
                 'type'   => 'area',
@@ -44,14 +48,12 @@ class RevenueChartWidget extends ApexChartWidget
                 'categories' => $labels,
                 'tickAmount' => 8,
             ],
-            'yaxis' => array_filter([
-                'min'            => 0,
-                'max'            => $hasData ? null : 100,
-                'forceNiceScale' => $hasData,
+            'yaxis' => [
+                'min' => 0,
                 'labels' => [
                     'style' => ['colors' => '#64748b', 'fontSize' => '11px', 'fontFamily' => 'Inter'],
                 ],
-            ], fn ($v) => $v !== null),
+            ],
             'stroke' => [
                 'curve' => 'smooth',
                 'width' => 2,
