@@ -12,7 +12,7 @@ class SignupsChartWidget extends ApexChartWidget
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'signupsChart';
-    protected static ?string $pollingInterval = '60s';
+    protected static ?string $pollingInterval = null;
     protected static ?int $contentHeight = 260;
 
     protected function getHeading(): ?string

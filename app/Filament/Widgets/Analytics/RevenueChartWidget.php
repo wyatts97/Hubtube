@@ -13,7 +13,7 @@ class RevenueChartWidget extends ApexChartWidget
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'revenueChart';
-    protected static ?string $pollingInterval = '120s';
+    protected static ?string $pollingInterval = null;
     protected static ?int $contentHeight = 260;
 
     protected function getHeading(): ?string

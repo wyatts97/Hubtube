@@ -28,12 +28,9 @@
         @endforeach
     </div>
 
-    {{-- Chart Widgets (2×2 grid, rendered via getHeaderWidgets()) --}}
-    <x-filament-widgets::widgets
-        :widgets="$this->getVisibleHeaderWidgets()"
-        :columns="$this->getHeaderWidgetsColumns()"
-        :data="$this->getWidgetData()"
-    />
+    {{-- Chart widgets are auto-rendered by Filament above the page content
+         via getHeaderWidgets(). Do NOT render them again here — duplicate
+         chart IDs cause ApexCharts 'classList of null' crashes. --}}
 
     {{-- Ad Performance Table --}}
     @if(count($adStats) > 0)

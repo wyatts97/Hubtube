@@ -13,7 +13,7 @@ class UploadsChartWidget extends ApexChartWidget
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'uploadsChart';
-    protected static ?string $pollingInterval = '60s';
+    protected static ?string $pollingInterval = null;
     protected static ?int $contentHeight = 260;
 
     protected function getHeading(): ?string

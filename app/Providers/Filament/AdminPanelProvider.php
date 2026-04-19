@@ -185,8 +185,9 @@ class AdminPanelProvider extends PanelProvider
             )
             ->navigationGroups(static::buildNavigationGroups())
             ->plugins(static::buildPlugins())
+            // Collapsed sidebar becomes a slim icon rail (not fully hidden),
+            // shifting page content left so widgets gain horizontal space.
             ->sidebarCollapsibleOnDesktop()
-            ->sidebarFullyCollapsibleOnDesktop()
             ->spa()
             ->middleware([
                 EncryptCookies::class,
