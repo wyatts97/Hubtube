@@ -1,22 +1,37 @@
-{{-- Reusable unsaved-changes banner for Filament settings pages.
+{{-- Reusable unsaved-changes toast for Filament settings pages.
      Include inside a <form wire:submit="..."> block.
-     The default submit action is "save" but callers can pass a different one via $submitAction. --}}
+     Desktop: fixed bottom-right glass toast. Mobile: centered bottom. --}}
 @php($submitAction = $submitAction ?? 'save')
 <div
-    wire:dirty.class.remove="hidden"
-    wire:dirty.class="flex"
-    class="hidden sticky top-0 z-30 mb-4 items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-sm font-medium backdrop-blur"
+    wire:dirty.class.remove="ht-unsaved-toast--hidden"
+    wire:dirty.class="ht-unsaved-toast--visible"
+    class="ht-unsaved-toast ht-unsaved-toast--hidden"
+    role="status"
+    aria-live="polite"
 >
-    <div class="flex items-center gap-2">
-        <x-heroicon-o-exclamation-triangle class="w-4 h-4" />
-        <span>You have unsaved changes</span>
+    <div class="ht-unsaved-toast__icon">
+        <x-heroicon-m-exclamation-triangle class="w-5 h-5" />
     </div>
-    <x-filament::button type="submit" size="sm" color="warning" icon="heroicon-m-check">
-        Save Now
-    </x-filament::button>
+    <div class="ht-unsaved-toast__text">
+        <span class="ht-unsaved-toast__title">Unsaved changes</span>
+        <span class="ht-unsaved-toast__sub" wire:loading.remove wire:target="{{ $submitAction }}">
+            You have pending edits
+        </span>
+        <span class="ht-unsaved-toast__sub ht-unsaved-toast__sub--saving" wire:loading.flex wire:target="{{ $submitAction }}">
+            <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+            <span>Saving…</span>
+        </span>
+    </div>
+    <button
+        type="submit"
+        class="ht-unsaved-toast__btn"
+        wire:loading.attr="disabled"
+        wire:target="{{ $submitAction }}"
+    >
+        <x-heroicon-m-check class="w-4 h-4" />
+        <span>Save Now</span>
+    </button>
 </div>
-
-<span class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center gap-1.5" wire:loading wire:target="{{ $submitAction }}">
-    <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-    Saving...
-</span>
