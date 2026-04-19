@@ -26,11 +26,18 @@ class UploadsChartWidget extends ApexChartWidget
         [$labels, $values] = $this->buildSeries();
         $hasData = max($values) > 0;
 
+        // When everything is zero, substitute a single synthetic value so the
+        // chart renders an axis instead of blowing up. Avoid fiddling with
+        // yaxis min/max/tickAmount — those trigger a null-formatter crash
+        // inside ApexCharts v5 (getyAxisLabelsCoords → d is not a function).
+        if (! $hasData) {
+            $values[0] = 0.0001;
+        }
+
         return $this->mergeTheme($this->darkThemeBase(), [
             'chart' => [
                 'type'   => 'area',
                 'height' => 260,
-                'sparkline' => ['enabled' => false],
             ],
             'series' => [[
                 'name' => 'Uploads',
@@ -40,13 +47,9 @@ class UploadsChartWidget extends ApexChartWidget
                 'categories' => $labels,
                 'tickAmount' => 8,
             ],
-            'yaxis' => array_filter([
-                'min'            => 0,
-                // When all-zero, force a visible 0..5 range so the chart still paints an axis.
-                'max'            => $hasData ? null : 5,
-                'tickAmount'     => 5,
-                'forceNiceScale' => $hasData,
-            ], fn ($v) => $v !== null),
+            'yaxis' => [
+                'min' => 0,
+            ],
             'stroke' => [
                 'curve' => 'smooth',
                 'width' => 2,
