@@ -25,6 +25,10 @@ class SignupsChartWidget extends ApexChartWidget
         [$labels, $values] = $this->buildSeries();
         $hasData = max($values) > 0;
 
+        if (! $hasData) {
+            $values[0] = 0.0001;
+        }
+
         return $this->mergeTheme($this->darkThemeBase(), [
             'chart' => [
                 'type'   => 'area',
@@ -38,11 +42,9 @@ class SignupsChartWidget extends ApexChartWidget
                 'categories' => $labels,
                 'tickAmount' => 8,
             ],
-            'yaxis' => array_filter([
-                'min'            => 0,
-                'max'            => $hasData ? null : 5,
-                'forceNiceScale' => $hasData,
-            ], fn ($v) => $v !== null),
+            'yaxis' => [
+                'min' => 0,
+            ],
             'stroke' => [
                 'curve' => 'smooth',
                 'width' => 2,
