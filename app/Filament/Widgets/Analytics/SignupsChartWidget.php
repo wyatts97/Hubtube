@@ -38,11 +38,11 @@ class SignupsChartWidget extends ApexChartWidget
                 'categories' => $labels,
                 'tickAmount' => 8,
             ],
-            'yaxis' => [
+            'yaxis' => array_filter([
                 'min'            => 0,
                 'max'            => $hasData ? null : 5,
                 'forceNiceScale' => $hasData,
-            ],
+            ], fn ($v) => $v !== null),
             'stroke' => [
                 'curve' => 'smooth',
                 'width' => 2,

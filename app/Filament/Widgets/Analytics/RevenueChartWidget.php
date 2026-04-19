@@ -44,14 +44,14 @@ class RevenueChartWidget extends ApexChartWidget
                 'categories' => $labels,
                 'tickAmount' => 8,
             ],
-            'yaxis' => [
+            'yaxis' => array_filter([
                 'min'            => 0,
                 'max'            => $hasData ? null : 100,
                 'forceNiceScale' => $hasData,
                 'labels' => [
                     'style' => ['colors' => '#64748b', 'fontSize' => '11px', 'fontFamily' => 'Inter'],
                 ],
-            ],
+            ], fn ($v) => $v !== null),
             'stroke' => [
                 'curve' => 'smooth',
                 'width' => 2,
@@ -69,9 +69,6 @@ class RevenueChartWidget extends ApexChartWidget
             'markers' => ['size' => 0, 'hover' => ['size' => 4]],
             'tooltip' => [
                 'theme' => 'dark',
-                'y' => [
-                    'formatter' => null,
-                ],
             ],
         ]);
     }

@@ -40,14 +40,13 @@ class UploadsChartWidget extends ApexChartWidget
                 'categories' => $labels,
                 'tickAmount' => 8,
             ],
-            'yaxis' => [
-                'labels' => ['formatter' => null],
-                'min'    => 0,
+            'yaxis' => array_filter([
+                'min'            => 0,
                 // When all-zero, force a visible 0..5 range so the chart still paints an axis.
-                'max'    => $hasData ? null : 5,
-                'tickAmount'     => $hasData ? 5 : 5,
+                'max'            => $hasData ? null : 5,
+                'tickAmount'     => 5,
                 'forceNiceScale' => $hasData,
-            ],
+            ], fn ($v) => $v !== null),
             'stroke' => [
                 'curve' => 'smooth',
                 'width' => 2,
