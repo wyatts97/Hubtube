@@ -31,9 +31,6 @@ const previewIsPortrait = ref(Boolean(props.video.is_portrait));
 const placeholderImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'%3E%3Crect fill='%23181818' width='640' height='360'/%3E%3Cpolygon fill='%23333' points='280,130 280,230 360,180'/%3E%3C/svg%3E";
 
 const videoUrl = computed(() => {
-    if (props.video.is_short) {
-        return `/shorts/${props.video.id}`;
-    }
     // Use translated slug for locale-prefixed URLs (SEO: /pt/apertado instead of /pt/wedgied)
     const slug = (isTranslated.value && props.video.translated_slug) ? props.video.translated_slug : props.video.slug;
     return localizedUrl(`/${slug}`);

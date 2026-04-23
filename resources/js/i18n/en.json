@@ -2,8 +2,6 @@
     "nav": {
         "home": "Home",
         "trending": "Trending",
-        "shorts": "Shorts",
-        "live": "Live",
         "feed": "Feed",
         "history": "History",
         "playlists": "Playlists",
@@ -13,8 +11,6 @@
         "upload": "Upload",
         "upload_video": "Video",
         "upload_image": "Image",
-        "upload_short": "Upload Short",
-        "go_live": "Go Live",
         "login": "Login",
         "register": "Register",
         "logout": "Logout",
@@ -113,13 +109,10 @@
     },
     "channel": {
         "videos": "Videos",
-        "shorts": "Shorts",
         "playlists": "Playlists",
         "about": "About",
         "no_videos": "No videos yet",
         "no_videos_desc": "This channel hasn't uploaded any videos",
-        "no_shorts": "No shorts yet",
-        "no_shorts_desc": "This channel hasn't uploaded any shorts",
         "no_playlists": "No playlists yet",
         "no_playlists_desc": "This channel hasn't created any playlists",
         "joined": "Joined {date}",
@@ -247,16 +240,11 @@
         "resend_verification": "Resend Verification Email"
     },
     "home": {
-        "live_now": "Live Now",
         "featured": "Featured",
         "latest": "Latest Videos",
         "popular": "Popular",
         "reached_end": "You've reached the end",
         "loading_more": "Loading more videos..."
-    },
-    "shorts": {
-        "no_shorts": "No shorts yet",
-        "upload_first": "Be the first to upload a short!"
     },
     "report": {
         "title": "Report Video",

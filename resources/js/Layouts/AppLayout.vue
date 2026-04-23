@@ -3,8 +3,8 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { Link, usePage, useForm, router } from '@inertiajs/vue3';
 import { 
     Menu, Search, Upload, Bell, User, LogOut, Settings, Wallet, 
-    Video, Radio, Home, TrendingUp, Zap, ListVideo, History, 
-    ChevronLeft, ChevronRight, Shield, Sun, Moon, Monitor,
+    Video, Home, TrendingUp, Zap, ListVideo, History, 
+    ChevronLeft, ChevronRight, Shield,
     X, Check, CheckCheck, Rss, LayoutDashboard, ChevronDown, ChevronUp, Film,
     Tag, Folder, Star, ExternalLink, Eye, EyeOff, LayoutGrid, Plus,
     ImageIcon, MoreHorizontal
@@ -65,7 +65,7 @@ const mobileMenuItems = computed(() => menuItems.value.mobile || []);
 
 const lucideIconMap = {
     tag: Tag, folder: Folder, star: Star, home: Home, zap: Zap,
-    radio: Radio, 'trending-up': TrendingUp, video: Video, film: Film,
+    'trending-up': TrendingUp, video: Video, film: Film,
     'list-video': ListVideo, history: History, search: Search,
 };
 
@@ -166,7 +166,8 @@ onUnmounted(() => {
     window.removeEventListener('scroll', handleScroll);
 });
 
-const { currentTheme, isDark, setTheme, toggleTheme } = useTheme();
+// Site is dark-only. useTheme() is still called to apply CSS variables on mount.
+useTheme();
 
 // Watch for flash messages and show toasts
 const flash = computed(() => page.props.flash);
@@ -193,9 +194,9 @@ const getIconColor = (navKey) => {
     const navItem = icons[navKey];
     if (navItem?.color) return navItem.color;
     
-    // Check for global icon color (with dark mode variant)
+    // Global icon color (dark mode only)
     if (icons.colorMode === 'global' || icons.colorMode === 'custom') {
-        const color = isDark.value ? (icons.globalColorDark || icons.globalColor) : icons.globalColor;
+        const color = icons.globalColorDark || icons.globalColor;
         if (color) return color;
     }
     
@@ -294,13 +295,13 @@ const handleMobileNavClick = (item) => {
 </script>
 
 <template>
-    <div class="min-h-screen" style="background-color: var(--color-bg-primary);">
+    <div class="min-h-screen bg-bg-primary">
         <!-- Header -->
-        <header class="fixed top-0 left-0 right-0 z-50 w-full" style="background-color: var(--color-bg-secondary); border-bottom: 1px solid var(--color-border);">
+        <header class="fixed top-0 left-0 right-0 z-50 w-full bg-bg-secondary border-b border-border">
             <div class="flex items-center justify-between h-14 px-4 w-full">
                 <!-- Left: Logo & Menu -->
                 <div class="flex items-center gap-4">
-                    <button @click="toggleSidebar" class="p-2 rounded-full hidden lg:flex" style="color: var(--color-text-primary);" :style="{ ':hover': { backgroundColor: 'var(--color-bg-card)' } }" aria-label="Toggle sidebar">
+                    <button @click="toggleSidebar" class="p-2 rounded-full hidden lg:flex text-text-primary" :style="{ ':hover': { backgroundColor: 'var(--color-bg-card)' } }" aria-label="Toggle sidebar">
                         <Menu class="w-5 h-5" />
                     </button>
                     <Link href="/" class="flex items-center">
@@ -334,7 +335,7 @@ const handleMobileNavClick = (item) => {
                             class="input pr-12"
                             aria-label="Search videos"
                         />
-                        <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80" style="color: var(--color-text-muted);" aria-label="Search">
+                        <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80 text-text-muted" aria-label="Search">
                             <Search class="w-5 h-5" />
                         </button>
                     </form>
@@ -349,36 +350,35 @@ const handleMobileNavClick = (item) => {
                         <div class="relative hidden sm:block">
                             <button 
                                 @click="showUploadMenu = !showUploadMenu; showNotifications = false; showUserMenu = false"
-                                class="upload-menu-trigger p-2 rounded-full hover:opacity-80 transition-opacity"
-                                style="color: var(--color-text-secondary);"
+                                class="upload-menu-trigger p-2 rounded-full hover:opacity-80 transition-opacity text-text-secondary"
                                 title="Upload"
                                 aria-label="Upload"
                             >
                                 <Upload class="w-5 h-5" />
                             </button>
-                            <div v-if="showUploadMenu" class="upload-menu-dropdown absolute right-0 mt-2 min-w-34 card p-1 shadow-xl" style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);">
-                                <Link href="/upload" class="flex items-center justify-center gap-2 px-2.5 py-2 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showUploadMenu = false">
-                                    <Film class="w-4 h-4" style="color: var(--color-text-secondary);" />
+                            <div v-if="showUploadMenu" class="upload-menu-dropdown absolute right-0 mt-2 min-w-34 card p-1 shadow-xl bg-bg-card border border-border">
+                                <Link href="/upload" class="flex items-center justify-center gap-2 px-2.5 py-2 rounded-lg hover:opacity-80 transition-opacity text-text-primary" @click="showUploadMenu = false">
+                                    <Film class="w-4 h-4 text-text-secondary" />
                                     <span class="text-sm">{{ t('nav.upload_video') || 'Video' }}</span>
                                 </Link>
-                                <Link href="/image-upload" class="flex items-center justify-center gap-2 px-2.5 py-2 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showUploadMenu = false">
-                                    <ImageIcon class="w-4 h-4" style="color: var(--color-text-secondary);" />
+                                <Link href="/image-upload" class="flex items-center justify-center gap-2 px-2.5 py-2 rounded-lg hover:opacity-80 transition-opacity text-text-primary" @click="showUploadMenu = false">
+                                    <ImageIcon class="w-4 h-4 text-text-secondary" />
                                     <span class="text-sm">{{ t('nav.upload_image') || 'Image' }}</span>
                                 </Link>
                             </div>
                         </div>
 
                         <div class="relative">
-                            <button @click="toggleNotifications" class="notification-trigger p-2 rounded-full relative" style="color: var(--color-text-secondary);" aria-label="Notifications">
+                            <button @click="toggleNotifications" class="notification-trigger p-2 rounded-full relative text-text-secondary" aria-label="Notifications">
                                 <Bell class="w-5 h-5" />
-                                <span v-if="unreadCount > 0" class="absolute top-1 right-1 w-2 h-2 rounded-full" style="background-color: var(--color-accent);"></span>
+                                <span v-if="unreadCount > 0" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent"></span>
                             </button>
 
                             <!-- Notification Dropdown -->
-                            <div v-if="showNotifications" class="notification-dropdown absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto scrollbar-hide card shadow-xl" style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);">
-                                <div class="flex items-center justify-between p-3 border-b" style="border-color: var(--color-border);">
-                                    <h3 class="font-semibold text-sm" style="color: var(--color-text-primary);">{{ t('nav.notifications') || 'Notifications' }}</h3>
-                                    <button v-if="unreadCount > 0" @click="markAllRead" class="text-xs hover:opacity-80" style="color: var(--color-accent);">
+                            <div v-if="showNotifications" class="notification-dropdown absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto scrollbar-hide card shadow-xl bg-bg-card border border-border">
+                                <div class="flex items-center justify-between p-3 border-b border-border">
+                                    <h3 class="font-semibold text-sm text-text-primary">{{ t('nav.notifications') || 'Notifications' }}</h3>
+                                    <button v-if="unreadCount > 0" @click="markAllRead" class="text-xs hover:opacity-80 text-accent">
                                         {{ t('nav.mark_all_read') || 'Mark all read' }}
                                     </button>
                                 </div>
@@ -397,19 +397,19 @@ const handleMobileNavClick = (item) => {
                                             textDecoration: 'none',
                                         }"
                                     >
-                                        <div class="w-8 h-8 rounded-full shrink-0 flex items-center justify-center" style="background-color: var(--color-bg-secondary);">
-                                            <Bell class="w-4 h-4" style="color: var(--color-text-muted);" />
+                                        <div class="w-8 h-8 rounded-full shrink-0 flex items-center justify-center bg-bg-secondary">
+                                            <Bell class="w-4 h-4 text-text-muted" />
                                         </div>
                                         <div class="flex-1 min-w-0">
-                                            <p class="text-sm font-medium" style="color: var(--color-text-primary);">{{ notif.title }}</p>
-                                            <p class="text-xs mt-0.5 line-clamp-2" style="color: var(--color-text-muted);">{{ notif.message }}</p>
+                                            <p class="text-sm font-medium text-text-primary">{{ notif.title }}</p>
+                                            <p class="text-xs mt-0.5 line-clamp-2 text-text-muted">{{ notif.message }}</p>
                                         </div>
-                                        <div v-if="!notif.read_at" class="w-2 h-2 rounded-full shrink-0 mt-2" style="background-color: var(--color-accent);"></div>
+                                        <div v-if="!notif.read_at" class="w-2 h-2 rounded-full shrink-0 mt-2 bg-accent"></div>
                                     </component>
                                 </div>
                                 <div v-else class="p-6 text-center">
-                                    <Bell class="w-8 h-8 mx-auto mb-2" style="color: var(--color-text-muted);" />
-                                    <p class="text-sm" style="color: var(--color-text-secondary);">{{ t('nav.no_notifications') || 'No notifications' }}</p>
+                                    <Bell class="w-8 h-8 mx-auto mb-2 text-text-muted" />
+                                    <p class="text-sm text-text-secondary">{{ t('nav.no_notifications') || 'No notifications' }}</p>
                                 </div>
                             </div>
                         </div>
@@ -421,66 +421,43 @@ const handleMobileNavClick = (item) => {
                                 </div>
                             </button>
 
-                            <div v-if="showUserMenu" class="user-menu-dropdown absolute right-0 mt-2 w-56 card p-2 shadow-xl" style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);">
-                                <div class="px-3 py-2" style="border-bottom: 1px solid var(--color-border);">
-                                    <p class="font-medium" style="color: var(--color-text-primary);">{{ user.username }}</p>
-                                    <p class="text-sm" style="color: var(--color-text-secondary);">{{ user.email }}</p>
+                            <div v-if="showUserMenu" class="user-menu-dropdown absolute right-0 mt-2 w-56 card p-2 shadow-xl bg-bg-card border border-border">
+                                <div class="px-3 py-2 border-b border-border">
+                                    <p class="font-medium text-text-primary">{{ user.username }}</p>
+                                    <p class="text-sm text-text-secondary">{{ user.email }}</p>
                                 </div>
                                 <div class="py-2">
                                     <!-- Admin Panel Link - Only for admins -->
                                     <a 
                                         v-if="user.is_admin" 
                                         href="/admin" 
-                                        class="flex items-center gap-3 px-3 py-2 rounded-lg"
-                                        style="color: var(--color-accent);"
+                                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-accent"
                                     >
                                         <Shield class="w-4 h-4" />
                                         <span>{{ t('nav.admin_panel') || 'Admin Panel' }}</span>
                                     </a>
-                                    <Link href="/dashboard" class="flex items-center gap-3 px-3 py-2 rounded-lg" style="color: var(--color-text-primary);">
+                                    <Link href="/dashboard" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
                                         <LayoutDashboard class="w-4 h-4" />
                                         <span>{{ t('nav.dashboard') || 'Dashboard' }}</span>
                                     </Link>
-                                    <Link :href="`/channel/${user.username}`" class="flex items-center gap-3 px-3 py-2 rounded-lg" style="color: var(--color-text-primary);">
+                                    <Link :href="`/channel/${user.username}`" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
                                         <User class="w-4 h-4" />
                                         <span>{{ t('nav.your_channel') || 'Your Channel' }}</span>
                                     </Link>
-                                    <Link href="/feed" class="flex items-center gap-3 px-3 py-2 rounded-lg" style="color: var(--color-text-primary);">
+                                    <Link href="/feed" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
                                         <Rss class="w-4 h-4" />
                                         <span>{{ t('nav.subscriptions') || 'Subscriptions' }}</span>
                                     </Link>
-                                    <Link v-if="monetizationEnabled" href="/wallet" class="flex items-center gap-3 px-3 py-2 rounded-lg" style="color: var(--color-text-primary);">
+                                    <Link v-if="monetizationEnabled" href="/wallet" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
                                         <Wallet class="w-4 h-4" />
                                         <span>{{ t('nav.wallet') || 'Wallet' }}: ${{ user.wallet_balance }}</span>
                                     </Link>
-                                    <Link href="/settings" class="flex items-center gap-3 px-3 py-2 rounded-lg" style="color: var(--color-text-primary);">
+                                    <Link href="/settings" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
                                         <Settings class="w-4 h-4" />
                                         <span>{{ t('nav.settings') || 'Settings' }}</span>
                                     </Link>
                                 </div>
-                                <!-- Theme Toggle -->
-                                <div v-if="themeSettings.allowToggle" class="py-2" style="border-top: 1px solid var(--color-border);">
-                                    <p class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-secondary);">{{ t('nav.theme') || 'Theme' }}</p>
-                                    <div class="flex gap-1 px-2">
-                                        <button 
-                                            @click="setTheme('light')"
-                                            :class="['flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm', currentTheme === 'light' ? 'bg-primary-600 text-white' : '']"
-                                            :style="currentTheme === 'light' ? { color: '#f59e0b' } : { color: 'var(--color-text-secondary)' }"
-                                            aria-label="Light mode"
-                                        >
-                                            <Sun class="w-4 h-4" />
-                                        </button>
-                                        <button 
-                                            @click="setTheme('dark')"
-                                            :class="['flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm', currentTheme === 'dark' ? 'bg-primary-600 text-white' : '']"
-                                            :style="currentTheme !== 'dark' ? { color: 'var(--color-text-secondary)' } : {}"
-                                            aria-label="Dark mode"
-                                        >
-                                            <Moon class="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="pt-2" style="border-top: 1px solid var(--color-border);">
+                                <div class="pt-2 border-t border-border">
                                     <Link href="/logout" method="post" as="button" class="flex items-center gap-3 px-3 py-2 rounded-lg w-full text-left text-red-400">
                                         <LogOut class="w-4 h-4" />
                                         <span>{{ t('nav.sign_out') || 'Sign Out' }}</span>
@@ -497,7 +474,7 @@ const handleMobileNavClick = (item) => {
             </div>
 
             <!-- Mega Menu Bar (desktop only) -->
-            <div v-if="headerMenuItems.length" class="hidden lg:block border-t mega-menu-area" style="border-color: var(--color-border);">
+            <div v-if="headerMenuItems.length" class="hidden lg:block border-t mega-menu-area border-border">
                 <div class="flex items-center gap-1 px-4 h-10">
                     <template v-for="item in headerMenuItems" :key="item.id">
                         <!-- Divider -->
@@ -507,8 +484,7 @@ const handleMobileNavClick = (item) => {
                         <div v-else-if="(item.type === 'dropdown' || item.is_mega) && item.children?.length" class="relative">
                             <button
                                 @click.stop="toggleMegaMenu(item.id)"
-                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:opacity-80"
-                                style="color: var(--color-text-secondary);"
+                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:opacity-80 text-text-secondary"
                             >
                                 <component v-if="item.icon && getMenuIcon(item.icon)" :is="getMenuIcon(item.icon)" class="w-4 h-4" />
                                 <span>{{ item.label }}</span>
@@ -534,15 +510,14 @@ const handleMobileNavClick = (item) => {
                                             v-if="child.type !== 'divider'"
                                             :href="child.url || '#'"
                                             :target="child.target || '_self'"
-                                            class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:opacity-80"
-                                            style="color: var(--color-text-secondary);"
+                                            class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:opacity-80 text-text-secondary"
                                             @click="closeMegaMenu"
                                         >
                                             <component v-if="child.icon && getMenuIcon(child.icon)" :is="getMenuIcon(child.icon)" class="w-4 h-4 shrink-0" />
                                             <span>{{ child.label }}</span>
                                             <ExternalLink v-if="child.target === '_blank'" class="w-3 h-3 ml-auto opacity-50" />
                                         </Link>
-                                        <div v-else class="border-t my-1" style="border-color: var(--color-border);"></div>
+                                        <div v-else class="border-t my-1 border-border"></div>
                                     </template>
                                 </div>
                             </div>
@@ -553,8 +528,7 @@ const handleMobileNavClick = (item) => {
                             v-else
                             :href="item.url || '#'"
                             :target="item.target || '_self'"
-                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:opacity-80"
-                            style="color: var(--color-text-secondary);"
+                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:opacity-80 text-text-secondary"
                         >
                             <component v-if="item.icon && getMenuIcon(item.icon)" :is="getMenuIcon(item.icon)" class="w-4 h-4" />
                             <span>{{ item.label }}</span>
@@ -588,7 +562,7 @@ const handleMobileNavClick = (item) => {
                             ]"
                             :title="sidebarCollapsed ? item.name : ''"
                             :aria-label="item.name"
-                            style="color: var(--color-text-secondary);"
+                            class="text-text-secondary"
                         >
                             <component 
                                 :is="item.icon" 
@@ -601,11 +575,11 @@ const handleMobileNavClick = (item) => {
                 </ul>
 
                 <template v-if="user && !sidebarCollapsed">
-                    <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
-                        <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2" style="color: var(--color-text-muted);">{{ t('nav.library') || 'Library' }}</h3>
+                    <div class="mt-6 pt-6 border-t border-border">
+                        <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2 text-text-muted">{{ t('nav.library') || 'Library' }}</h3>
                         <ul class="space-y-1">
                             <li v-for="item in libraryNav" :key="item.name">
-                                <Link :href="item.href" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80" style="color: var(--color-text-secondary);">
+                                <Link :href="item.href" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80 text-text-secondary">
                                     <component 
                                         :is="item.icon" 
                                         class="w-5 h-5" 
@@ -619,14 +593,13 @@ const handleMobileNavClick = (item) => {
                 </template>
 
                 <template v-if="user && sidebarCollapsed">
-                    <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
+                    <div class="mt-6 pt-6 border-t border-border">
                         <ul class="space-y-1">
                             <li v-for="item in libraryNav" :key="item.name">
                                 <Link 
                                     :href="item.href" 
-                                    class="flex items-center justify-center px-3 py-2 rounded-lg hover:opacity-80"
+                                    class="flex items-center justify-center px-3 py-2 rounded-lg hover:opacity-80 text-text-secondary"
                                     :title="item.name"
-                                    style="color: var(--color-text-secondary);"
                                 >
                                     <component 
                                         :is="item.icon" 
@@ -640,7 +613,7 @@ const handleMobileNavClick = (item) => {
                 </template>
 
                 <!-- Language Switcher -->
-                <div class="mt-6 pt-6" style="border-top: 1px solid var(--color-border);">
+                <div class="mt-6 pt-6 border-t border-border">
                     <LanguageSwitcher :compact="sidebarCollapsed" />
                 </div>
             </nav>
@@ -667,8 +640,7 @@ const handleMobileNavClick = (item) => {
                 :initial="{ opacity: 0, y: -10 }"
                 :enter="{ opacity: 1, y: 0, transition: { duration: 0.18 } }"
                 :leave="{ opacity: 0, y: -10, transition: { duration: 0.12 } }"
-                class="w-full max-w-lg card p-4 shadow-xl"
-                style="background-color: var(--color-bg-card);"
+                class="w-full max-w-lg card p-4 shadow-xl bg-bg-card"
             >
                 <form @submit.prevent="handleMobileSearch" class="flex items-center gap-2" role="search">
                     <input
@@ -682,7 +654,7 @@ const handleMobileNavClick = (item) => {
                     <button type="submit" class="btn btn-primary p-2" aria-label="Search">
                         <Search class="w-5 h-5" />
                     </button>
-                    <button type="button" @click="showMobileSearch = false" class="p-2 rounded-full" style="color: var(--color-text-secondary);" aria-label="Close search">
+                    <button type="button" @click="showMobileSearch = false" class="p-2 rounded-full text-text-secondary" aria-label="Close search">
                         <X class="w-5 h-5" />
                     </button>
                 </form>
@@ -693,7 +665,7 @@ const handleMobileNavClick = (item) => {
         <footer
             ref="footerRef"
             :class="['transition-all duration-300 py-6 px-4 mt-8', sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-sidebar']"
-            style="border-top: 1px solid var(--color-border);"
+            class="border-t border-border"
         >
             <div class="max-w-6xl mx-auto">
                 <!-- Footer Ad Banner -->
@@ -724,13 +696,13 @@ const handleMobileNavClick = (item) => {
                 </div>
 
                 <!-- Legal Links -->
-                <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs" style="color: var(--color-text-muted);">
-                    <a href="/pages/terms-of-service" class="hover:opacity-80" style="color: var(--color-text-muted);">{{ t('footer.terms') || 'Terms of Service' }}</a>
-                    <a href="/pages/privacy-policy" class="hover:opacity-80" style="color: var(--color-text-muted);">{{ t('footer.privacy') || 'Privacy Policy' }}</a>
-                    <a href="/pages/dmca" class="hover:opacity-80" style="color: var(--color-text-muted);">{{ t('footer.dmca') || 'DMCA' }}</a>
-                    <a href="/pages/community-guidelines" class="hover:opacity-80" style="color: var(--color-text-muted);">{{ t('footer.guidelines') || 'Community Guidelines' }}</a>
-                    <a href="/pages/cookie-policy" class="hover:opacity-80" style="color: var(--color-text-muted);">{{ t('footer.cookies') || 'Cookie Policy' }}</a>
-                    <a href="/contact" class="hover:opacity-80" style="color: var(--color-text-muted);">{{ t('footer.contact') || 'Contact' }}</a>
+                <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-text-muted">
+                    <a href="/pages/terms-of-service" class="hover:opacity-80 text-text-muted">{{ t('footer.terms') || 'Terms of Service' }}</a>
+                    <a href="/pages/privacy-policy" class="hover:opacity-80 text-text-muted">{{ t('footer.privacy') || 'Privacy Policy' }}</a>
+                    <a href="/pages/dmca" class="hover:opacity-80 text-text-muted">{{ t('footer.dmca') || 'DMCA' }}</a>
+                    <a href="/pages/community-guidelines" class="hover:opacity-80 text-text-muted">{{ t('footer.guidelines') || 'Community Guidelines' }}</a>
+                    <a href="/pages/cookie-policy" class="hover:opacity-80 text-text-muted">{{ t('footer.cookies') || 'Cookie Policy' }}</a>
+                    <a href="/contact" class="hover:opacity-80 text-text-muted">{{ t('footer.contact') || 'Contact' }}</a>
                 </div>
             </div>
         </footer>
@@ -743,8 +715,7 @@ const handleMobileNavClick = (item) => {
                 aria-label="Mobile navigation"
             >
                 <div
-                    class="flex justify-between items-center px-3 py-2 rounded-2xl shadow-lg"
-                    style="background-color: var(--color-bg-secondary); border: 1px solid var(--color-border);"
+                    class="flex justify-between items-center px-3 py-2 rounded-2xl shadow-lg bg-bg-secondary border border-border"
                 >
                     <template v-for="item in mobileNavItems" :key="item.name">
                         <!-- Center Upload Button -->
@@ -753,15 +724,15 @@ const handleMobileNavClick = (item) => {
                             <Transition name="fade">
                                 <div
                                     v-if="showMobileUploadMenu"
-                                    class="absolute bottom-full mb-3 rounded-xl shadow-xl p-1.5 w-[120px]"
-                                    style="background-color: var(--color-bg-card); border: 1px solid var(--color-border); left: 50%; transform: translateX(-50%);"
+                                    class="absolute bottom-full mb-3 rounded-xl shadow-xl p-1.5 w-[120px] bg-bg-card border border-border"
+                                    style="left: 50%; transform: translateX(-50%);"
                                 >
-                                    <Link href="/upload" class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showMobileUploadMenu = false">
-                                        <Video class="w-4 h-4 shrink-0" style="color: var(--color-text-secondary);" />
+                                    <Link href="/upload" class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity text-text-primary" @click="showMobileUploadMenu = false">
+                                        <Video class="w-4 h-4 shrink-0 text-text-secondary" />
                                         <span class="text-sm">Video</span>
                                     </Link>
-                                    <Link href="/image-upload" class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity" style="color: var(--color-text-primary);" @click="showMobileUploadMenu = false">
-                                        <ImageIcon class="w-4 h-4 shrink-0" style="color: var(--color-text-secondary);" />
+                                    <Link href="/image-upload" class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity text-text-primary" @click="showMobileUploadMenu = false">
+                                        <ImageIcon class="w-4 h-4 shrink-0 text-text-secondary" />
                                         <span class="text-sm">{{ t('nav.upload_image') || 'Image' }}</span>
                                     </Link>
                                 </div>
@@ -781,18 +752,16 @@ const handleMobileNavClick = (item) => {
                             <Transition name="fade">
                                 <div
                                     v-if="showMobileMoreMenu"
-                                    class="absolute bottom-full mb-3 right-0 rounded-xl shadow-xl p-2 min-w-[160px]"
-                                    style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);"
+                                    class="absolute bottom-full mb-3 right-0 rounded-xl shadow-xl p-2 min-w-[160px] bg-bg-card border border-border"
                                 >
                                     <Link
                                         v-for="moreItem in mobileMoreItems"
                                         :key="moreItem.name"
                                         :href="moreItem.href"
-                                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity"
-                                        style="color: var(--color-text-primary);"
+                                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity text-text-primary"
                                         @click="showMobileMoreMenu = false"
                                     >
-                                        <component :is="moreItem.icon" class="w-4 h-4" style="color: var(--color-text-secondary);" />
+                                        <component :is="moreItem.icon" class="w-4 h-4 text-text-secondary" />
                                         <span class="text-sm">{{ moreItem.name }}</span>
                                     </Link>
                                 </div>
@@ -803,7 +772,7 @@ const handleMobileNavClick = (item) => {
                                 @click="handleMobileNavClick(item)"
                             >
                                 <component :is="item.icon" class="w-5 h-5 transition-colors" :style="{ color: 'var(--color-text-secondary)' }" />
-                                <span class="text-[10px] mt-0.5 transition-colors" style="color: var(--color-text-muted);">{{ item.name }}</span>
+                                <span class="text-[10px] mt-0.5 transition-colors text-text-muted">{{ item.name }}</span>
                             </button>
                         </div>
 
@@ -823,8 +792,7 @@ const handleMobileNavClick = (item) => {
                                 :style="{ color: 'var(--color-text-secondary)' }"
                             />
                             <span
-                                class="text-[10px] mt-0.5 transition-colors"
-                                style="color: var(--color-text-muted);"
+                                class="text-[10px] mt-0.5 transition-colors text-text-muted"
                             >{{ item.name }}</span>
                         </component>
                     </template>
@@ -837,9 +805,9 @@ const handleMobileNavClick = (item) => {
             <Transition name="login-modal">
                 <div v-if="showLoginModal && !user" class="fixed inset-0 z-[9998] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Sign in" @click.self="showLoginModal = false">
                     <div class="fixed inset-0 bg-black/60" style="backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);" @click="showLoginModal = false"></div>
-                    <div class="relative w-full max-w-md rounded-xl shadow-2xl" style="background-color: var(--color-bg-card);">
+                    <div class="relative w-full max-w-md rounded-xl shadow-2xl bg-bg-card">
                         <!-- Close button -->
-                        <button @click="showLoginModal = false" class="absolute top-3 right-3 p-1 rounded-full hover:opacity-80" style="color: var(--color-text-muted);" aria-label="Close login">
+                        <button @click="showLoginModal = false" class="absolute top-3 right-3 p-1 rounded-full hover:opacity-80 text-text-muted" aria-label="Close login">
                             <X class="w-5 h-5" />
                         </button>
 
@@ -847,17 +815,17 @@ const handleMobileNavClick = (item) => {
                             <div class="text-center mb-6">
                                 <Link href="/" class="inline-block">
                                     <img v-if="themeSettings.site_logo" :src="themeSettings.site_logo" alt="Logo" class="h-12 w-auto mx-auto object-contain" />
-                                    <div v-else class="w-12 h-12 rounded-xl flex items-center justify-center mx-auto" style="background-color: var(--color-accent);">
+                                    <div v-else class="w-12 h-12 rounded-xl flex items-center justify-center mx-auto bg-accent">
                                         <span class="text-2xl font-bold text-white">{{ (themeSettings.siteTitle || 'H').charAt(0).toUpperCase() }}</span>
                                     </div>
                                 </Link>
-                                <h2 class="text-xl font-bold mt-3" style="color: var(--color-text-primary);">{{ t('auth.welcome_back') || 'Welcome back' }}</h2>
-                                <p class="text-sm mt-1" style="color: var(--color-text-secondary);">{{ t('auth.sign_in_desc') || 'Sign in to your account' }}</p>
+                                <h2 class="text-xl font-bold mt-3 text-text-primary">{{ t('auth.welcome_back') || 'Welcome back' }}</h2>
+                                <p class="text-sm mt-1 text-text-secondary">{{ t('auth.sign_in_desc') || 'Sign in to your account' }}</p>
                             </div>
 
                             <form @submit.prevent="submitLogin" class="space-y-4">
                                 <div>
-                                    <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
+                                    <label class="block text-sm font-medium mb-1 text-text-secondary">
                                         {{ t('auth.email_or_username') || 'Email or Username' }}
                                     </label>
                                     <input
@@ -871,7 +839,7 @@ const handleMobileNavClick = (item) => {
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
+                                    <label class="block text-sm font-medium mb-1 text-text-secondary">
                                         {{ t('auth.password') || 'Password' }}
                                     </label>
                                     <div class="relative">
@@ -884,7 +852,7 @@ const handleMobileNavClick = (item) => {
                                         <button
                                             type="button"
                                             @click="showLoginPassword = !showLoginPassword"
-                                            class="absolute right-3 top-1/2 -translate-y-1/2" style="color: var(--color-text-secondary);"
+                                            class="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary"
                                             :aria-label="showLoginPassword ? 'Hide password' : 'Show password'"
                                         >
                                             <EyeOff v-if="showLoginPassword" class="w-5 h-5" />
@@ -897,9 +865,9 @@ const handleMobileNavClick = (item) => {
                                 <div class="flex items-center justify-between">
                                     <label class="flex items-center gap-2 cursor-pointer">
                                         <input v-model="loginForm.remember" type="checkbox" class="w-4 h-4 rounded" />
-                                        <span class="text-sm" style="color: var(--color-text-secondary);">{{ t('auth.remember_me') || 'Remember me' }}</span>
+                                        <span class="text-sm text-text-secondary">{{ t('auth.remember_me') || 'Remember me' }}</span>
                                     </label>
-                                    <Link href="/forgot-password" class="text-sm" style="color: var(--color-accent);" @click="showLoginModal = false">
+                                    <Link href="/forgot-password" class="text-sm text-accent" @click="showLoginModal = false">
                                         {{ t('auth.forgot_password') || 'Forgot password?' }}
                                     </Link>
                                 </div>
@@ -915,9 +883,9 @@ const handleMobileNavClick = (item) => {
                             </form>
 
                             <div class="mt-6 text-center">
-                                <p style="color: var(--color-text-secondary);">
+                                <p class="text-text-secondary">
                                     {{ t('auth.no_account') || "Don't have an account?" }}
-                                    <Link href="/register" class="font-medium" style="color: var(--color-accent);" @click="showLoginModal = false">
+                                    <Link href="/register" class="font-medium text-accent" @click="showLoginModal = false">
                                         {{ t('auth.sign_up') || 'Sign up' }}
                                     </Link>
                                 </p>

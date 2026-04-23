@@ -33,8 +33,6 @@ class Notification extends Model
     const TYPE_NEW_COMMENT = 'new_comment';
     const TYPE_COMMENT_REPLY = 'comment_reply';
     const TYPE_VIDEO_LIKE = 'video_like';
-    const TYPE_GIFT_RECEIVED = 'gift_received';
-    const TYPE_LIVE_STARTED = 'live_started';
     const TYPE_WITHDRAWAL_APPROVED = 'withdrawal_approved';
     const TYPE_VIDEO_APPROVED = 'video_approved';
     const TYPE_VIDEO_PROCESSED = 'video_processed';

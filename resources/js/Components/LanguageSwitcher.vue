@@ -55,9 +55,8 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
         <button
             v-if="mobile"
             @click.stop="showDropdown = !showDropdown"
-            class="p-2 rounded-full transition-all"
+            class="p-2 rounded-full transition-all text-text-secondary"
             :class="showDropdown ? 'opacity-100' : 'opacity-70 hover:opacity-100'"
-            style="color: var(--color-text-secondary);"
             :title="currentLocaleData.label"
             aria-label="Change language"
         >
@@ -83,9 +82,8 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
         <button
             v-else
             @click.stop="showDropdown = !showDropdown"
-            class="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg transition-all text-xs"
+            class="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg transition-all text-xs text-text-secondary"
             :class="showDropdown ? 'opacity-100' : 'opacity-70 hover:opacity-100'"
-            style="color: var(--color-text-secondary);"
         >
             <img
                 :src="getFlagUrl(locale)"
@@ -102,12 +100,11 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
         <!-- Dropdown -->
         <div
             v-if="showDropdown"
-            class="absolute z-50 w-48 rounded-lg shadow-2xl overflow-hidden"
+            class="absolute z-50 w-48 rounded-lg shadow-2xl overflow-hidden bg-bg-card border border-border"
             :class="[
                 direction === 'up' ? 'bottom-full mb-1' : 'top-full mt-1',
                 compact ? 'left-full ml-2' : (align === 'right' ? 'right-0' : 'left-0')
             ]"
-            style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);"
         >
             <div class="max-h-72 overflow-y-auto scrollbar-hide">
                 <button
@@ -127,7 +124,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                         class="w-5 h-4 rounded-sm object-cover shrink-0"
                     />
                     <span class="flex-1 truncate">{{ loc.label }}</span>
-                    <Check v-if="loc.code === locale" class="w-3.5 h-3.5 shrink-0" style="color: var(--color-accent);" />
+                    <Check v-if="loc.code === locale" class="w-3.5 h-3.5 shrink-0 text-accent" />
                 </button>
             </div>
         </div>

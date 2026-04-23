@@ -53,13 +53,13 @@ const formatDate = (date) => {
                 <img :src="channel.avatar_url || channel.avatar || '/images/default_avatar.webp'" :alt="channel.username" class="w-full h-full object-cover" />
             </div>
             <div>
-                <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ channel.username }}</h1>
-                <p style="color: var(--color-text-muted);">{{ tSafe('channel.about', 'About') }}</p>
+                <h1 class="text-xl font-bold text-text-primary">{{ channel.username }}</h1>
+                <p class="text-text-muted">{{ tSafe('channel.about', 'About') }}</p>
             </div>
         </div>
 
         <!-- Tabs -->
-        <div class="mb-6" style="border-bottom: 1px solid var(--color-border);">
+        <div class="mb-6 border-b border-border">
             <nav class="flex gap-6 overflow-x-auto scrollbar-hide">
                 <Link
                     v-for="tab in tabs"
@@ -82,38 +82,38 @@ const formatDate = (date) => {
             <!-- Description -->
             <div class="lg:col-span-2">
                 <div class="card p-6">
-                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ tSafe('channel.description', 'Description') }}</h2>
-                    <p v-if="channel.channel?.description" class="whitespace-pre-wrap" style="color: var(--color-text-secondary);">
+                    <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ tSafe('channel.description', 'Description') }}</h2>
+                    <p v-if="channel.channel?.description" class="whitespace-pre-wrap text-text-secondary">
                         {{ channel.channel.description }}
                     </p>
-                    <p v-else style="color: var(--color-text-muted);"></p>
+                    <p v-else class="text-text-muted"></p>
                 </div>
             </div>
 
             <!-- Stats -->
             <div class="space-y-4">
                 <div class="card p-6">
-                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ tSafe('channel.stats', 'Stats') }}</h2>
+                    <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ tSafe('channel.stats', 'Stats') }}</h2>
                     <div class="space-y-4">
                         <div class="flex items-center gap-3">
-                            <Calendar class="w-5 h-5" style="color: var(--color-text-muted);" />
+                            <Calendar class="w-5 h-5 text-text-muted" />
                             <div>
-                                <p class="text-sm" style="color: var(--color-text-muted);">{{ tSafe('channel.joined', 'Joined') }}</p>
-                                <p style="color: var(--color-text-primary);">{{ formatDate(stats.joinedAt) }}</p>
+                                <p class="text-sm text-text-muted">{{ tSafe('channel.joined', 'Joined') }}</p>
+                                <p class="text-text-primary">{{ formatDate(stats.joinedAt) }}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
-                            <Eye class="w-5 h-5" style="color: var(--color-text-muted);" />
+                            <Eye class="w-5 h-5 text-text-muted" />
                             <div>
-                                <p class="text-sm" style="color: var(--color-text-muted);">{{ tSafe('channel.total_views', 'Total Views') }}</p>
-                                <p style="color: var(--color-text-primary);">{{ stats.totalViews?.toLocaleString() || 0 }}</p>
+                                <p class="text-sm text-text-muted">{{ tSafe('channel.total_views', 'Total Views') }}</p>
+                                <p class="text-text-primary">{{ stats.totalViews?.toLocaleString() || 0 }}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
-                            <Video class="w-5 h-5" style="color: var(--color-text-muted);" />
+                            <Video class="w-5 h-5 text-text-muted" />
                             <div>
-                                <p class="text-sm" style="color: var(--color-text-muted);">{{ tSafe('channel.video_count', 'Videos') }}</p>
-                                <p style="color: var(--color-text-primary);">{{ stats.videoCount }}</p>
+                                <p class="text-sm text-text-muted">{{ tSafe('channel.video_count', 'Videos') }}</p>
+                                <p class="text-text-primary">{{ stats.videoCount }}</p>
                             </div>
                         </div>
                     </div>

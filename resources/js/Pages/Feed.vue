@@ -30,16 +30,15 @@ const goToPage = (pageNum) => {
 
     <AppLayout>
         <div class="mb-6">
-            <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('feed.title') || 'Subscriptions' }}</h1>
-            <p class="mt-1" style="color: var(--color-text-secondary);">{{ t('feed.description') || 'Latest videos from channels you follow' }}</p>
+            <h1 class="text-2xl font-bold text-text-primary">{{ t('feed.title') || 'Subscriptions' }}</h1>
+            <p class="mt-1 text-text-secondary">{{ t('feed.description') || 'Latest videos from channels you follow' }}</p>
         </div>
 
         <div
             v-if="videoItems.length"
             v-bind="containerProps"
             :style="[containerProps.style, { height: '70vh' }]"
-            class="rounded-xl border overflow-auto"
-            style="border-color: var(--color-border);"
+            class="rounded-xl border overflow-auto border-border"
         >
             <div v-bind="wrapperProps">
                 <div v-for="row in virtualRows" :key="row.index" :style="gridStyle" class="px-2 pb-4">
@@ -49,9 +48,9 @@ const goToPage = (pageNum) => {
         </div>
 
         <div v-else class="text-center py-16">
-            <Rss class="w-12 h-12 mx-auto mb-4" style="color: var(--color-text-muted);" />
-            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('feed.empty') || 'No videos in your feed yet' }}</p>
-            <p class="mt-1" style="color: var(--color-text-muted);">{{ t('feed.empty_desc') || 'Subscribe to channels to see their latest videos here' }}</p>
+            <Rss class="w-12 h-12 mx-auto mb-4 text-text-muted" />
+            <p class="text-lg text-text-secondary">{{ t('feed.empty') || 'No videos in your feed yet' }}</p>
+            <p class="mt-1 text-text-muted">{{ t('feed.empty_desc') || 'Subscribe to channels to see their latest videos here' }}</p>
         </div>
 
         <Pagination

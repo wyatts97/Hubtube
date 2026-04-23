@@ -56,13 +56,13 @@ const activeList = ref(null);
                 <img :src="channel.avatar_url || channel.avatar || '/images/default_avatar.webp'" :alt="channel.username" class="w-full h-full object-cover" />
             </div>
             <div>
-                <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ channel.username }}</h1>
-                <p style="color: var(--color-text-muted);">{{ t('channel.playlists') || 'Playlists' }}</p>
+                <h1 class="text-xl font-bold text-text-primary">{{ channel.username }}</h1>
+                <p class="text-text-muted">{{ t('channel.playlists') || 'Playlists' }}</p>
             </div>
         </div>
 
         <!-- Channel Tabs -->
-        <div class="mb-6" style="border-bottom: 1px solid var(--color-border);">
+        <div class="mb-6 border-b border-border">
             <nav class="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide -mx-1 px-1">
                 <Link
                     v-for="tab in channelTabs"
@@ -117,18 +117,18 @@ const activeList = ref(null);
                     class="card overflow-hidden hover:ring-2 transition-all"
                     style="--tw-ring-color: var(--color-accent);"
                 >
-                    <div class="aspect-video flex items-center justify-center" style="background-color: var(--color-bg-secondary);">
-                        <ListVideo class="w-12 h-12" style="color: var(--color-text-muted);" />
+                    <div class="aspect-video flex items-center justify-center bg-bg-secondary">
+                        <ListVideo class="w-12 h-12 text-text-muted" />
                     </div>
                     <div class="p-3">
-                        <h3 class="font-medium truncate" style="color: var(--color-text-primary);">{{ playlist.title }}</h3>
-                        <p class="text-sm" style="color: var(--color-text-muted);">{{ playlist.videos_count }} {{ t('common.videos') || 'videos' }}</p>
+                        <h3 class="font-medium truncate text-text-primary">{{ playlist.title }}</h3>
+                        <p class="text-sm text-text-muted">{{ playlist.videos_count }} {{ t('common.videos') || 'videos' }}</p>
                     </div>
                 </Link>
             </div>
             <div v-else class="text-center py-12">
-                <ListVideo class="w-12 h-12 mx-auto mb-3" style="color: var(--color-text-muted);" />
-                <p style="color: var(--color-text-muted);">{{ t('channel.no_playlists') || 'No playlists yet' }}</p>
+                <ListVideo class="w-12 h-12 mx-auto mb-3 text-text-muted" />
+                <p class="text-text-muted">{{ t('channel.no_playlists') || 'No playlists yet' }}</p>
             </div>
         </template>
 
@@ -142,12 +142,12 @@ const activeList = ref(null);
                     class="card overflow-hidden hover:ring-2 transition-all"
                     style="--tw-ring-color: var(--color-accent);"
                 >
-                    <div class="aspect-video flex items-center justify-center" style="background-color: var(--color-bg-secondary);">
-                        <ListVideo class="w-12 h-12" style="color: var(--color-text-muted);" />
+                    <div class="aspect-video flex items-center justify-center bg-bg-secondary">
+                        <ListVideo class="w-12 h-12 text-text-muted" />
                     </div>
                     <div class="p-3">
-                        <h3 class="font-medium truncate" style="color: var(--color-text-primary);">{{ playlist.title }}</h3>
-                        <p class="text-sm" style="color: var(--color-text-muted);">
+                        <h3 class="font-medium truncate text-text-primary">{{ playlist.title }}</h3>
+                        <p class="text-sm text-text-muted">
                             {{ playlist.videos_count }} {{ t('common.videos') || 'videos' }}
                             <span v-if="playlist.user"> • by {{ playlist.user.username }}</span>
                         </p>
@@ -155,8 +155,8 @@ const activeList = ref(null);
                 </Link>
             </div>
             <div v-else class="text-center py-12">
-                <Heart class="w-12 h-12 mx-auto mb-3" style="color: var(--color-text-muted);" />
-                <p style="color: var(--color-text-muted);">{{ t('channel.no_playlists') || 'No favorite playlists yet' }}</p>
+                <Heart class="w-12 h-12 mx-auto mb-3 text-text-muted" />
+                <p class="text-text-muted">{{ t('channel.no_playlists') || 'No favorite playlists yet' }}</p>
             </div>
         </template>
     </AppLayout>

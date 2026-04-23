@@ -39,8 +39,8 @@ const clearHistory = async () => {
     <AppLayout>
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('history.title') || 'Watch History' }}</h1>
-                <p class="mt-1" style="color: var(--color-text-secondary);">{{ t('history.description') || 'Videos you\'ve watched recently' }}</p>
+                <h1 class="text-2xl font-bold text-text-primary">{{ t('history.title') || 'Watch History' }}</h1>
+                <p class="mt-1 text-text-secondary">{{ t('history.description') || 'Videos you\'ve watched recently' }}</p>
             </div>
             <button v-if="videos?.data?.length" @click="clearHistory" class="btn btn-ghost text-red-400 gap-2">
                 <Trash2 class="w-4 h-4" />
@@ -58,9 +58,9 @@ const clearHistory = async () => {
         </div>
 
         <div v-else class="text-center py-12">
-            <History class="w-16 h-16 mx-auto mb-4" style="color: var(--color-text-muted);" />
-            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('history.empty') || 'No watch history yet' }}</p>
-            <p class="mt-2" style="color: var(--color-text-muted);">{{ t('history.empty_desc') || 'Videos you watch will appear here' }}</p>
+            <History class="w-16 h-16 mx-auto mb-4 text-text-muted" />
+            <p class="text-lg text-text-secondary">{{ t('history.empty') || 'No watch history yet' }}</p>
+            <p class="mt-2 text-text-muted">{{ t('history.empty_desc') || 'Videos you watch will appear here' }}</p>
             <Link href="/" class="btn btn-primary mt-4">
                 {{ t('common.browse_videos') || 'Browse Videos' }}
             </Link>

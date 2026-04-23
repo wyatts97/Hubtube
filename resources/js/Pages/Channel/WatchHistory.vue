@@ -47,13 +47,13 @@ const tabs = computed(() => {
                 <img :src="channel.avatar_url || channel.avatar || '/images/default_avatar.webp'" :alt="channel.username" class="w-full h-full object-cover" />
             </div>
             <div>
-                <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ channel.username }}</h1>
-                <p style="color: var(--color-text-muted);">{{ tSafe('channel.recently_watched', 'Recently Watched') }}</p>
+                <h1 class="text-xl font-bold text-text-primary">{{ channel.username }}</h1>
+                <p class="text-text-muted">{{ tSafe('channel.recently_watched', 'Recently Watched') }}</p>
             </div>
         </div>
 
         <!-- Tabs -->
-        <div class="mb-6" style="border-bottom: 1px solid var(--color-border);">
+        <div class="mb-6 border-b border-border">
             <nav class="flex gap-6 overflow-x-auto scrollbar-hide">
                 <Link
                     v-for="tab in tabs"
@@ -78,8 +78,8 @@ const tabs = computed(() => {
         </div>
 
         <div v-else class="text-center py-12">
-            <History class="w-12 h-12 mx-auto mb-3" style="color: var(--color-text-muted);" />
-            <p style="color: var(--color-text-muted);">{{ tSafe('channel.no_watch_history', 'No watch history yet') }}</p>
+            <History class="w-12 h-12 mx-auto mb-3 text-text-muted" />
+            <p class="text-text-muted">{{ tSafe('channel.no_watch_history', 'No watch history yet') }}</p>
         </div>
 
         <!-- Pagination -->

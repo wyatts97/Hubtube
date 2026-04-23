@@ -54,7 +54,7 @@ const deleteGallery = () => {
     <AppLayout>
         <div class="max-w-7xl mx-auto">
             <!-- Back -->
-            <Link href="/galleries" class="inline-flex items-center gap-1.5 mb-4 text-sm hover:opacity-80" style="color: var(--color-text-secondary);">
+            <Link href="/galleries" class="inline-flex items-center gap-1.5 mb-4 text-sm hover:opacity-80 text-text-secondary">
                 <ArrowLeft class="w-4 h-4" />
                 Back to Galleries
             </Link>
@@ -63,8 +63,8 @@ const deleteGallery = () => {
             <div class="card p-5 mb-6">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ gallery.title }}</h1>
-                        <p v-if="gallery.description" class="text-sm mt-1 whitespace-pre-wrap" style="color: var(--color-text-secondary);">
+                        <h1 class="text-2xl font-bold text-text-primary">{{ gallery.title }}</h1>
+                        <p v-if="gallery.description" class="text-sm mt-1 whitespace-pre-wrap text-text-secondary">
                             {{ gallery.description }}
                         </p>
                         <div class="flex items-center gap-4 mt-3">
@@ -72,17 +72,17 @@ const deleteGallery = () => {
                                 <div class="w-6 h-6 avatar">
                                     <img :src="gallery.user.avatar || '/images/default_avatar.webp'" :alt="gallery.user.username" class="w-full h-full object-cover" />
                                 </div>
-                                <span class="text-sm" style="color: var(--color-text-secondary);">{{ gallery.user.username }}</span>
+                                <span class="text-sm text-text-secondary">{{ gallery.user.username }}</span>
                             </Link>
-                            <span class="text-sm flex items-center gap-1" style="color: var(--color-text-muted);">
+                            <span class="text-sm flex items-center gap-1 text-text-muted">
                                 <ImageIcon class="w-3.5 h-3.5" />
                                 {{ gallery.images_count || 0 }} images
                             </span>
-                            <span class="text-sm flex items-center gap-1" style="color: var(--color-text-muted);">
+                            <span class="text-sm flex items-center gap-1 text-text-muted">
                                 <Eye class="w-3.5 h-3.5" />
                                 {{ formatViews(gallery.views_count) }}
                             </span>
-                            <span class="text-sm flex items-center gap-1" style="color: var(--color-text-muted);">
+                            <span class="text-sm flex items-center gap-1 text-text-muted">
                                 <Calendar class="w-3.5 h-3.5" />
                                 {{ formatDate(gallery.created_at) }}
                             </span>
@@ -90,7 +90,7 @@ const deleteGallery = () => {
                     </div>
                     <div class="flex items-center gap-2">
                         <!-- View Mode Toggle -->
-                        <div class="flex items-center rounded-lg overflow-hidden" style="border: 1px solid var(--color-border);">
+                        <div class="flex items-center rounded-lg overflow-hidden border border-border">
                             <button
                                 @click="viewMode = 'grid'"
                                 class="px-3 py-1.5 text-xs font-medium transition-colors"
@@ -109,8 +109,7 @@ const deleteGallery = () => {
                         <button
                             v-if="canEdit"
                             @click="deleteGallery"
-                            class="p-2 rounded-lg text-red-500 hover:opacity-80"
-                            style="background-color: var(--color-bg-secondary); border: 1px solid var(--color-border);"
+                            class="p-2 rounded-lg text-red-500 hover:opacity-80 bg-bg-secondary border border-border"
                             title="Delete Gallery"
                         >
                             <Trash2 class="w-4 h-4" />
@@ -127,7 +126,7 @@ const deleteGallery = () => {
                     class="cursor-pointer group"
                     @click="openLightbox(index)"
                 >
-                    <div class="relative rounded-xl overflow-hidden" style="background-color: var(--color-bg-secondary);">
+                    <div class="relative rounded-xl overflow-hidden bg-bg-secondary">
                         <div class="aspect-square">
                             <img
                                 :src="image.thumbnail_url || image.image_url"
@@ -151,7 +150,7 @@ const deleteGallery = () => {
                     class="cursor-pointer group"
                     @click="openLightbox(index)"
                 >
-                    <div class="rounded-xl overflow-hidden" style="background-color: var(--color-bg-secondary);">
+                    <div class="rounded-xl overflow-hidden bg-bg-secondary">
                         <img
                             :src="image.thumbnail_url || image.image_url"
                             :alt="image.title || 'Image'"
@@ -164,8 +163,8 @@ const deleteGallery = () => {
 
             <!-- Empty State -->
             <div v-else class="text-center py-16">
-                <ImageIcon class="w-12 h-12 mx-auto mb-3" style="color: var(--color-text-muted);" />
-                <p class="text-lg" style="color: var(--color-text-secondary);">This gallery is empty</p>
+                <ImageIcon class="w-12 h-12 mx-auto mb-3 text-text-muted" />
+                <p class="text-lg text-text-secondary">This gallery is empty</p>
             </div>
 
             <!-- Pagination -->
@@ -183,8 +182,7 @@ const deleteGallery = () => {
                     />
                     <span
                         v-else
-                        class="px-3 py-1.5 rounded-lg text-sm"
-                        style="color: var(--color-text-muted);"
+                        class="px-3 py-1.5 rounded-lg text-sm text-text-muted"
                         v-html="link.label"
                     />
                 </template>

@@ -5,13 +5,15 @@ import { ref, computed } from 'vue';
 import { useFetch } from '@/Composables/useFetch';
 import { useI18n } from '@/Composables/useI18n';
 import { useToast } from '@/Composables/useToast';
-import AdSlot from '@/Components/AdSlot.vue';
+import { useVideoGrid } from '@/Composables/useVideoGrid';
+import BannerAd from '@/Components/UI/BannerAd.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { Bell, BellOff, Flag, Loader2, Video, Eye, Calendar } from 'lucide-vue-next';
 
 const { t } = useI18n();
 const toast = useToast();
+const { gridClass } = useVideoGrid();
 
 const props = defineProps({
     channel: Object,
@@ -24,29 +26,8 @@ const props = defineProps({
     bannerAd: { type: Object, default: () => ({}) },
 });
 
-const bannerEnabled = computed(() => !!props.bannerAd?.enabled);
-const desktopBannerHtml = computed(() => {
-    if (props.bannerAd?.image && !props.bannerAd?.code) {
-        const img = `<img src="${props.bannerAd.image}" alt="Ad" style="max-width:728px;height:auto;">`;
-        return props.bannerAd.link ? `<a href="${props.bannerAd.link}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
-    }
-    return props.bannerAd?.code || '';
-});
-const mobileBannerHtml = computed(() => {
-    if (props.bannerAd?.mobileImage && !props.bannerAd?.mobileCode) {
-        const img = `<img src="${props.bannerAd.mobileImage}" alt="Ad" style="max-width:300px;height:auto;">`;
-        return props.bannerAd.mobileLink ? `<a href="${props.bannerAd.mobileLink}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
-    }
-    return props.bannerAd?.mobileCode || props.bannerAd?.code || '';
-});
-
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
-const mobileGrid = computed(() => page.props.theme?.mobileVideoGrid === '2' ? 2 : 1);
-const gridClass = computed(() => mobileGrid.value === 2
-    ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4'
-    : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
-);
 const subscribed = ref(props.isSubscribed);
 const subCount = ref(props.subscriberCount);
 
@@ -113,28 +94,28 @@ const tabs = computed(() => {
             </div>
             
             <div class="flex-1 min-w-0">
-                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold" style="color: var(--color-text-primary);">
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-text-primary">
                     {{ channel.username }}
-                    <span v-if="channel.is_verified" class="ml-2" style="color: var(--color-accent);">✓</span>
+                    <span v-if="channel.is_verified" class="ml-2 text-accent">✓</span>
                 </h1>
-                <p class="mt-1 text-sm sm:text-base" style="color: var(--color-text-secondary);">
+                <p class="mt-1 text-sm sm:text-base text-text-secondary">
                     @{{ channel.username }}
                 </p>
-                <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm" style="color: var(--color-text-muted);">
+                <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-text-muted">
                     <span class="inline-flex items-center gap-1.5">
                         <Video class="w-4 h-4" />
                         {{ videos.total }} {{ t('common.videos') || 'videos' }}
                     </span>
                     <span class="inline-flex items-center gap-1.5">
                         <Bell class="w-4 h-4" />
-                        <span class="font-medium" style="color: var(--color-text-primary);">{{ subCount.toLocaleString() }}</span>&nbsp;{{ t('common.subscribers') || 'subscribers' }}
+                        <span class="font-medium text-text-primary">{{ subCount.toLocaleString() }}</span>&nbsp;{{ t('common.subscribers') || 'subscribers' }}
                     </span>
                     <span v-if="channel.channel?.total_views" class="inline-flex items-center gap-1.5">
                         <Eye class="w-4 h-4" />
                         {{ Number(channel.channel.total_views).toLocaleString() }} {{ t('common.views') || 'views' }}
                     </span>
                 </div>
-                <p v-if="channel.channel?.description" class="mt-2 line-clamp-2" style="color: var(--color-text-secondary);">
+                <p v-if="channel.channel?.description" class="mt-2 line-clamp-2 text-text-secondary">
                     {{ channel.channel.description }}
                 </p>
             </div>
@@ -156,14 +137,13 @@ const tabs = computed(() => {
         </div>
 
         <!-- Tabs -->
-        <div class="mb-4 sm:mb-6" style="border-bottom: 1px solid var(--color-border);">
+        <div class="mb-4 sm:mb-6 border-b border-border">
             <nav class="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide -mx-1 px-1">
                 <Link
                     v-for="tab in tabs"
                     :key="tab.name"
                     :href="tab.href"
-                    class="pb-3 px-1 border-b-2 border-transparent transition-colors hover:opacity-80 whitespace-nowrap shrink-0 text-sm sm:text-base"
-                    style="color: var(--color-text-secondary);"
+                    class="pb-3 px-1 border-b-2 border-transparent transition-colors hover:opacity-80 whitespace-nowrap shrink-0 text-sm sm:text-base text-text-secondary"
                 >
                     {{ tab.name }}
                 </Link>
@@ -171,10 +151,7 @@ const tabs = computed(() => {
         </div>
 
         <!-- Banner Ad -->
-        <div v-if="bannerEnabled && (desktopBannerHtml || mobileBannerHtml)" class="mb-4 flex justify-center">
-            <AdSlot :html="desktopBannerHtml" class="hidden sm:block" />
-            <AdSlot :html="mobileBannerHtml" class="sm:hidden" />
-        </div>
+        <BannerAd :config="bannerAd" />
 
         <!-- Videos Grid -->
         <div v-if="videos.data.length" :class="gridClass">
@@ -186,9 +163,9 @@ const tabs = computed(() => {
         </div>
 
         <div v-else class="text-center py-16">
-            <Video class="w-14 h-14 mx-auto mb-4" style="color: var(--color-text-muted);" />
-            <p class="text-lg font-semibold" style="color: var(--color-text-secondary);">{{ t('channel.no_videos') || 'No videos yet' }}</p>
-            <p class="mt-2 text-sm" style="color: var(--color-text-muted);">{{ t('channel.no_videos_desc') || "This channel hasn't uploaded any videos" }}</p>
+            <Video class="w-14 h-14 mx-auto mb-4 text-text-muted" />
+            <p class="text-lg font-semibold text-text-secondary">{{ t('channel.no_videos') || 'No videos yet' }}</p>
+            <p class="mt-2 text-sm text-text-muted">{{ t('channel.no_videos_desc') || "This channel hasn't uploaded any videos" }}</p>
             <Link v-if="user && user.id === channel.id" href="/upload" class="btn btn-primary mt-5 gap-2">
                 <Video class="w-4 h-4" />
                 {{ t('dashboard.upload_video') || 'Upload Your First Video' }}

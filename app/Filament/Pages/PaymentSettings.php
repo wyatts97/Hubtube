@@ -53,7 +53,6 @@ class PaymentSettings extends Page implements HasForms
             'min_deposit' => Setting::get('min_deposit', 10),
             'min_withdrawal' => Setting::get('min_withdrawal', 50),
             'platform_fee_percent' => Setting::get('platform_fee_percent', 20),
-            'gift_platform_cut' => Setting::get('gift_platform_cut', 20),
         ]);
     }
 
@@ -90,11 +89,6 @@ class PaymentSettings extends Page implements HasForms
                                             ->numeric()
                                             ->suffix('%')
                                             ->helperText('Fee taken from video sales'),
-                                        TextInput::make('gift_platform_cut')
-                                            ->label('Gift Platform Cut')
-                                            ->numeric()
-                                            ->suffix('%')
-                                            ->helperText('Fee taken from live stream gifts'),
                                     ])->columns(2),
                             ]),
                         Tabs\Tab::make('Stripe')

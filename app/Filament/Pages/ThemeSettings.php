@@ -37,7 +37,6 @@ class ThemeSettings extends Page implements HasForms
         'home' => 'Home',
         'trending-up' => 'Trending Up',
         'zap' => 'Zap/Lightning',
-        'radio' => 'Radio/Live',
         'video' => 'Video',
         'play-circle' => 'Play Circle',
         'film' => 'Film',
@@ -114,10 +113,6 @@ class ThemeSettings extends Page implements HasForms
             'site_title_size' => Setting::get('site_title_size', 20),
             'site_title_color' => Setting::get('site_title_color', ''),
             
-            // Theme Mode
-            'theme_mode' => Setting::get('theme_mode', 'dark'),
-            'allow_user_theme_toggle' => Setting::get('allow_user_theme_toggle', true),
-            
             // Dark Mode Colors
             'dark_bg_primary' => Setting::get('dark_bg_primary', '#0a0a0a'),
             'dark_bg_secondary' => Setting::get('dark_bg_secondary', '#171717'),
@@ -127,22 +122,11 @@ class ThemeSettings extends Page implements HasForms
             'dark_text_secondary' => Setting::get('dark_text_secondary', '#a3a3a3'),
             'dark_border_color' => Setting::get('dark_border_color', '#262626'),
             
-            // Light Mode Colors
-            'light_bg_primary' => Setting::get('light_bg_primary', '#ffffff'),
-            'light_bg_secondary' => Setting::get('light_bg_secondary', '#f5f5f5'),
-            'light_bg_card' => Setting::get('light_bg_card', '#ffffff'),
-            'light_accent_color' => Setting::get('light_accent_color', '#dc2626'),
-            'light_text_primary' => Setting::get('light_text_primary', '#171717'),
-            'light_text_secondary' => Setting::get('light_text_secondary', '#525252'),
-            'light_border_color' => Setting::get('light_border_color', '#e5e5e5'),
-            
             // Navigation Icons
             'nav_home_icon' => Setting::get('nav_home_icon', 'home'),
             'nav_home_color' => Setting::get('nav_home_color', ''),
             'nav_trending_icon' => Setting::get('nav_trending_icon', 'trending-up'),
             'nav_trending_color' => Setting::get('nav_trending_color', ''),
-            'nav_live_icon' => Setting::get('nav_live_icon', 'radio'),
-            'nav_live_color' => Setting::get('nav_live_color', ''),
             'nav_playlists_icon' => Setting::get('nav_playlists_icon', 'list-video'),
             'nav_playlists_color' => Setting::get('nav_playlists_color', ''),
             'nav_history_icon' => Setting::get('nav_history_icon', 'history'),
@@ -308,26 +292,6 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
                             ]),
                         
-                        Tabs\Tab::make('Theme Mode')
-                            ->icon('heroicon-o-sun')
-                            ->schema([
-                                Section::make('Default Theme')
-                                    ->description('Configure the default theme mode for your site')
-                                    ->schema([
-                                        Select::make('theme_mode')
-                                            ->label('Default Theme Mode')
-                                            ->options([
-                                                'dark' => 'Dark Mode',
-                                                'light' => 'Light Mode',
-                                                'system' => 'System Preference',
-                                            ])
-                                            ->required(),
-                                        Toggle::make('allow_user_theme_toggle')
-                                            ->label('Allow Users to Toggle Theme')
-                                            ->helperText('Let users switch between light and dark mode'),
-                                    ])->columns(2),
-                            ]),
-                        
                         Tabs\Tab::make('Dark Mode')
                             ->icon('heroicon-o-moon')
                             ->schema([
@@ -355,33 +319,6 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
                             ]),
                         
-                        Tabs\Tab::make('Light Mode')
-                            ->icon('heroicon-o-sun')
-                            ->schema([
-                                Section::make('Light Mode Colors')
-                                    ->description('Customize colors for light mode')
-                                    ->schema([
-                                        Grid::make(3)->schema([
-                                            ColorPicker::make('light_bg_primary')
-                                                ->label('Primary Background'),
-                                            ColorPicker::make('light_bg_secondary')
-                                                ->label('Secondary Background'),
-                                            ColorPicker::make('light_bg_card')
-                                                ->label('Card Background'),
-                                        ]),
-                                        Grid::make(3)->schema([
-                                            ColorPicker::make('light_accent_color')
-                                                ->label('Accent Color'),
-                                            ColorPicker::make('light_text_primary')
-                                                ->label('Primary Text'),
-                                            ColorPicker::make('light_text_secondary')
-                                                ->label('Secondary Text'),
-                                        ]),
-                                        ColorPicker::make('light_border_color')
-                                            ->label('Border Color'),
-                                    ]),
-                            ]),
-                        
                         Tabs\Tab::make('Navigation Icons')
                             ->icon('heroicon-o-squares-2x2')
                             ->schema([
@@ -395,11 +332,8 @@ class ThemeSettings extends Page implements HasForms
                                                 'individual' => 'Individual Colors',
                                             ])
                                             ->reactive(),
-                                        ColorPicker::make('icon_global_color')
-                                            ->label('Global Icon Color (Light Mode)')
-                                            ->visible(fn ($get) => $get('icon_color_mode') === 'global'),
                                         ColorPicker::make('icon_global_color_dark')
-                                            ->label('Global Icon Color (Dark Mode)')
+                                            ->label('Global Icon Color')
                                             ->visible(fn ($get) => $get('icon_color_mode') === 'global'),
                                     ])->columns(3),
                                 
@@ -420,14 +354,6 @@ class ThemeSettings extends Page implements HasForms
                                                 ->options(self::$availableIcons),
                                             ColorPicker::make('nav_trending_color')
                                                 ->label('Trending Icon Color')
-                                                ->visible(fn ($get) => $get('icon_color_mode') === 'individual'),
-                                        ]),
-                                        Grid::make(2)->schema([
-                                            Select::make('nav_live_icon')
-                                                ->label('Live Icon')
-                                                ->options(self::$availableIcons),
-                                            ColorPicker::make('nav_live_color')
-                                                ->label('Live Icon Color')
                                                 ->visible(fn ($get) => $get('icon_color_mode') === 'individual'),
                                         ]),
                                     ]),

@@ -158,7 +158,7 @@ const tabs = computed(() => {
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">
-            <h1 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6" style="color: var(--color-text-primary);">{{ t('settings.title') || 'Settings' }}</h1>
+            <h1 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-text-primary">{{ t('settings.title') || 'Settings' }}</h1>
 
             <div class="flex flex-col md:flex-row gap-4 sm:gap-6">
                 <!-- Sidebar / Horizontal tabs on mobile -->
@@ -185,13 +185,13 @@ const tabs = computed(() => {
                     <div v-if="activeTab === 'profile'" class="space-y-6">
                         <!-- Profile Photo -->
                         <div class="card p-6">
-                            <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ t('settings.profile_images') || 'Profile Photo' }}</h2>
+                            <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.profile_images') || 'Profile Photo' }}</h2>
 
                             <!-- Avatar Upload -->
                             <div>
-                                <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ t('settings.avatar') || 'Avatar' }}</label>
+                                <label class="block text-sm font-medium mb-2 text-text-secondary">{{ t('settings.avatar') || 'Avatar' }}</label>
                                 <div class="flex items-center gap-4">
-                                    <div class="relative w-20 h-20 rounded-full overflow-hidden shrink-0" style="background-color: var(--color-bg-secondary);">
+                                    <div class="relative w-20 h-20 rounded-full overflow-hidden shrink-0 bg-bg-secondary">
                                         <img
                                             :src="avatarPreview || user?.avatar || '/images/default_avatar.webp'"
                                             alt="Avatar"
@@ -203,8 +203,8 @@ const tabs = computed(() => {
                                         </label>
                                     </div>
                                     <div>
-                                        <p class="text-sm" style="color: var(--color-text-secondary);">{{ t('settings.change_avatar') || 'Click to change your avatar' }}</p>
-                                        <p class="text-xs" style="color: var(--color-text-muted);">Max 2MB (JPG, PNG, WebP, GIF)</p>
+                                        <p class="text-sm text-text-secondary">{{ t('settings.change_avatar') || 'Click to change your avatar' }}</p>
+                                        <p class="text-xs text-text-muted">Max 2MB (JPG, PNG, WebP, GIF)</p>
                                         <p v-if="avatarForm.errors.avatar" class="text-red-500 text-sm mt-1">{{ avatarForm.errors.avatar }}</p>
                                         <div v-if="avatarPreview" class="flex items-center gap-2 mt-2">
                                             <button @click="uploadAvatar" :disabled="avatarForm.processing" class="btn btn-primary text-sm">
@@ -219,24 +219,24 @@ const tabs = computed(() => {
                         </div>
 
                         <div class="card p-6">
-                        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ t('settings.profile_settings') || 'Profile Settings' }}</h2>
+                        <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.profile_settings') || 'Profile Settings' }}</h2>
                         <form @submit.prevent="updateProfile" class="space-y-4">
                             <div>
-                                <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('settings.username') || 'Username' }}</label>
+                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.username') || 'Username' }}</label>
                                 <input v-model="profileForm.username" type="text" class="input" />
                                 <p v-if="profileForm.errors.username" class="text-red-500 text-sm mt-1">
                                     {{ profileForm.errors.username }}
                                 </p>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('settings.email') || 'Email' }}</label>
+                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.email') || 'Email' }}</label>
                                 <input v-model="profileForm.email" type="email" class="input" />
                                 <p v-if="profileForm.errors.email" class="text-red-500 text-sm mt-1">
                                     {{ profileForm.errors.email }}
                                 </p>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('settings.bio') || 'Bio' }}</label>
+                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.bio') || 'Bio' }}</label>
                                 <textarea v-model="profileForm.bio" rows="4" class="input resize-none"></textarea>
                             </div>
                             <button type="submit" :disabled="profileForm.processing" class="btn btn-primary">
@@ -249,9 +249,9 @@ const tabs = computed(() => {
                         <div class="card p-6 border border-red-500/20">
                             <div class="flex items-center gap-3 mb-3">
                                 <AlertTriangle class="w-5 h-5 text-red-500" />
-                                <h2 class="text-lg font-semibold" style="color: var(--color-text-primary);">Delete Account</h2>
+                                <h2 class="text-lg font-semibold text-text-primary">Delete Account</h2>
                             </div>
-                            <p class="text-sm mb-4" style="color: var(--color-text-secondary);">
+                            <p class="text-sm mb-4 text-text-secondary">
                                 This action is irreversible. All your data, videos, comments, playlists, and uploads will be permanently deleted.
                             </p>
                             <button
@@ -266,24 +266,24 @@ const tabs = computed(() => {
 
                     <!-- Password Tab -->
                     <div v-if="activeTab === 'password'" class="card p-6">
-                        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ t('settings.change_password') || 'Change Password' }}</h2>
+                        <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.change_password') || 'Change Password' }}</h2>
                         <form @submit.prevent="updatePassword" class="space-y-4">
                             <div>
-                                <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('settings.current_password') || 'Current Password' }}</label>
+                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.current_password') || 'Current Password' }}</label>
                                 <input v-model="passwordForm.current_password" type="password" class="input" />
                                 <p v-if="passwordForm.errors.current_password" class="text-red-500 text-sm mt-1">
                                     {{ passwordForm.errors.current_password }}
                                 </p>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('settings.new_password') || 'New Password' }}</label>
+                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.new_password') || 'New Password' }}</label>
                                 <input v-model="passwordForm.password" type="password" class="input" />
                                 <p v-if="passwordForm.errors.password" class="text-red-500 text-sm mt-1">
                                     {{ passwordForm.errors.password }}
                                 </p>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('settings.confirm_password') || 'Confirm New Password' }}</label>
+                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.confirm_password') || 'Confirm New Password' }}</label>
                                 <input v-model="passwordForm.password_confirmation" type="password" class="input" />
                             </div>
                             <button type="submit" :disabled="passwordForm.processing" class="btn btn-primary">
@@ -294,12 +294,12 @@ const tabs = computed(() => {
 
                     <!-- Notifications Tab -->
                     <div v-if="activeTab === 'notifications'" class="card p-6">
-                        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ t('settings.notification_prefs') || 'Notification Preferences' }}</h2>
+                        <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.notification_prefs') || 'Notification Preferences' }}</h2>
                         <form @submit.prevent="updateNotifications" class="space-y-4">
                             <div v-if="adminNotifs.email_notifications !== false" class="flex items-center justify-between">
                                 <div>
-                                    <p style="color: var(--color-text-primary);">{{ t('settings.email_notifications') || 'Email Notifications' }}</p>
-                                    <p class="text-sm" style="color: var(--color-text-secondary);">{{ t('settings.email_notifications_desc') || 'Receive notifications via email' }}</p>
+                                    <p class="text-text-primary">{{ t('settings.email_notifications') || 'Email Notifications' }}</p>
+                                    <p class="text-sm text-text-secondary">{{ t('settings.email_notifications_desc') || 'Receive notifications via email' }}</p>
                                 </div>
                                 <input 
                                     v-model="notificationForm.email_notifications" 
@@ -309,8 +309,8 @@ const tabs = computed(() => {
                             </div>
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p style="color: var(--color-text-primary);">{{ t('settings.push_notifications') || 'Push Notifications' }}</p>
-                                    <p class="text-sm" style="color: var(--color-text-secondary);">{{ t('settings.push_notifications_desc') || 'Receive push notifications in browser' }}</p>
+                                    <p class="text-text-primary">{{ t('settings.push_notifications') || 'Push Notifications' }}</p>
+                                    <p class="text-sm text-text-secondary">{{ t('settings.push_notifications_desc') || 'Receive push notifications in browser' }}</p>
                                 </div>
                                 <input 
                                     v-model="notificationForm.push_notifications" 
@@ -320,10 +320,10 @@ const tabs = computed(() => {
                             </div>
 
                             <!-- Browser Push Subscription -->
-                            <div v-if="pushSupported" class="flex items-center justify-between p-3 rounded-lg" style="background-color: var(--color-bg-secondary);">
+                            <div v-if="pushSupported" class="flex items-center justify-between p-3 rounded-lg bg-bg-secondary">
                                 <div>
-                                    <p style="color: var(--color-text-primary);">{{ t('settings.browser_push') || 'Browser Push' }}</p>
-                                    <p class="text-sm" style="color: var(--color-text-secondary);">
+                                    <p class="text-text-primary">{{ t('settings.browser_push') || 'Browser Push' }}</p>
+                                    <p class="text-sm text-text-secondary">
                                         {{ pushSubscribed ? 'This browser is receiving push notifications' : 'Enable push notifications for this browser' }}
                                     </p>
                                 </div>
@@ -338,8 +338,8 @@ const tabs = computed(() => {
                             </div>
                             <div v-if="adminNotifs.subscription_notifications !== false" class="flex items-center justify-between">
                                 <div>
-                                    <p style="color: var(--color-text-primary);">{{ t('settings.subscription_updates') || 'Subscription Updates' }}</p>
-                                    <p class="text-sm" style="color: var(--color-text-secondary);">{{ t('settings.subscription_updates_desc') || 'Get notified when channels you subscribe to upload' }}</p>
+                                    <p class="text-text-primary">{{ t('settings.subscription_updates') || 'Subscription Updates' }}</p>
+                                    <p class="text-sm text-text-secondary">{{ t('settings.subscription_updates_desc') || 'Get notified when channels you subscribe to upload' }}</p>
                                 </div>
                                 <input 
                                     v-model="notificationForm.subscription_notifications" 
@@ -355,12 +355,12 @@ const tabs = computed(() => {
 
                     <!-- Privacy Tab -->
                     <div v-if="activeTab === 'privacy'" class="card p-6">
-                        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ t('settings.privacy_settings') || 'Privacy Settings' }}</h2>
+                        <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.privacy_settings') || 'Privacy Settings' }}</h2>
                         <form @submit.prevent="updatePrivacy" class="space-y-4">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p style="color: var(--color-text-primary);">{{ t('settings.show_watch_history') || 'Show Watch History' }}</p>
-                                    <p class="text-sm" style="color: var(--color-text-secondary);">{{ t('settings.show_watch_history_desc') || "Allow others to see what you've watched" }}</p>
+                                    <p class="text-text-primary">{{ t('settings.show_watch_history') || 'Show Watch History' }}</p>
+                                    <p class="text-sm text-text-secondary">{{ t('settings.show_watch_history_desc') || "Allow others to see what you've watched" }}</p>
                                 </div>
                                 <input 
                                     v-model="privacyForm.show_watch_history"
@@ -370,8 +370,8 @@ const tabs = computed(() => {
                             </div>
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p style="color: var(--color-text-primary);">{{ t('settings.show_liked_videos') || 'Show Liked Videos' }}</p>
-                                    <p class="text-sm" style="color: var(--color-text-secondary);">{{ t('settings.show_liked_videos_desc') || "Allow others to see videos you've liked" }}</p>
+                                    <p class="text-text-primary">{{ t('settings.show_liked_videos') || 'Show Liked Videos' }}</p>
+                                    <p class="text-sm text-text-secondary">{{ t('settings.show_liked_videos_desc') || "Allow others to see videos you've liked" }}</p>
                                 </div>
                                 <input 
                                     v-model="privacyForm.show_liked_videos"
@@ -381,8 +381,8 @@ const tabs = computed(() => {
                             </div>
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p style="color: var(--color-text-primary);">{{ t('settings.allow_comments') || 'Allow Comments' }}</p>
-                                    <p class="text-sm" style="color: var(--color-text-secondary);">{{ t('settings.allow_comments_desc') || 'Allow others to comment on your videos by default' }}</p>
+                                    <p class="text-text-primary">{{ t('settings.allow_comments') || 'Allow Comments' }}</p>
+                                    <p class="text-sm text-text-secondary">{{ t('settings.allow_comments_desc') || 'Allow others to comment on your videos by default' }}</p>
                                 </div>
                                 <input 
                                     v-model="privacyForm.allow_comments"
@@ -398,27 +398,27 @@ const tabs = computed(() => {
 
                     <!-- Billing Tab -->
                     <div v-if="activeTab === 'billing'" class="card p-6">
-                        <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ t('settings.billing') || 'Billing & Subscription' }}</h2>
+                        <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.billing') || 'Billing & Subscription' }}</h2>
                         <div class="space-y-4">
-                            <div class="p-4 rounded-lg" style="background-color: var(--color-bg-secondary);">
+                            <div class="p-4 rounded-lg bg-bg-secondary">
                                 <div class="flex items-center justify-between">
                                     <div>
-                                        <p class="font-medium" style="color: var(--color-text-primary);">{{ t('settings.current_plan') || 'Current Plan' }}</p>
-                                        <p style="color: var(--color-text-secondary);">{{ user?.is_pro ? 'Pro' : 'Free' }}</p>
+                                        <p class="font-medium text-text-primary">{{ t('settings.current_plan') || 'Current Plan' }}</p>
+                                        <p class="text-text-secondary">{{ user?.is_pro ? 'Pro' : 'Free' }}</p>
                                     </div>
                                     <button v-if="!user?.is_pro" @click="upgradeToPro" class="btn btn-primary">
                                         {{ t('settings.upgrade_pro') || 'Upgrade to Pro' }}
                                     </button>
-                                    <span v-else class="px-3 py-1 rounded-full text-sm font-medium" style="background-color: var(--color-accent); color: white;">
+                                    <span v-else class="px-3 py-1 rounded-full text-sm font-medium bg-accent" style="color: white;">
                                         Active
                                     </span>
                                 </div>
                             </div>
-                            <div class="p-4 rounded-lg" style="background-color: var(--color-bg-secondary);">
+                            <div class="p-4 rounded-lg bg-bg-secondary">
                                 <div class="flex items-center justify-between">
                                     <div>
-                                        <p class="font-medium mb-2" style="color: var(--color-text-primary);">{{ t('settings.wallet_balance') || 'Wallet Balance' }}</p>
-                                        <p class="text-2xl font-bold" style="color: var(--color-accent);">${{ user?.wallet_balance || '0.00' }}</p>
+                                        <p class="font-medium mb-2 text-text-primary">{{ t('settings.wallet_balance') || 'Wallet Balance' }}</p>
+                                        <p class="text-2xl font-bold text-accent">${{ user?.wallet_balance || '0.00' }}</p>
                                     </div>
                                     <div class="flex gap-2">
                                         <a href="/wallet/deposit" class="btn btn-primary">{{ t('settings.deposit') || 'Deposit' }}</a>
@@ -426,27 +426,27 @@ const tabs = computed(() => {
                                     </div>
                                 </div>
                             </div>
-                            <div class="p-4 rounded-lg" style="background-color: var(--color-bg-secondary);">
-                                <p class="font-medium mb-3" style="color: var(--color-text-primary);">Pro Benefits</p>
-                                <ul class="space-y-2 text-sm" style="color: var(--color-text-secondary);">
+                            <div class="p-4 rounded-lg bg-bg-secondary">
+                                <p class="font-medium mb-3 text-text-primary">Pro Benefits</p>
+                                <ul class="space-y-2 text-sm text-text-secondary">
                                     <li class="flex items-center gap-2">
-                                        <span style="color: var(--color-accent);">✓</span>
+                                        <span class="text-accent">✓</span>
                                         Upload up to 50 videos per day
                                     </li>
                                     <li class="flex items-center gap-2">
-                                        <span style="color: var(--color-accent);">✓</span>
+                                        <span class="text-accent">✓</span>
                                         Upload videos up to 5GB
                                     </li>
                                     <li class="flex items-center gap-2">
-                                        <span style="color: var(--color-accent);">✓</span>
+                                        <span class="text-accent">✓</span>
                                         Edit videos after upload (thumbnails, title, tags)
                                     </li>
                                     <li class="flex items-center gap-2">
-                                        <span style="color: var(--color-accent);">✓</span>
+                                        <span class="text-accent">✓</span>
                                         Priority video processing
                                     </li>
                                     <li class="flex items-center gap-2">
-                                        <span style="color: var(--color-accent);">✓</span>
+                                        <span class="text-accent">✓</span>
                                         Advanced analytics
                                     </li>
                                 </ul>
@@ -462,30 +462,29 @@ const tabs = computed(() => {
         <Teleport to="body">
             <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showDeleteConfirm = false">
                 <div class="fixed inset-0 bg-black/60" @click="showDeleteConfirm = false"></div>
-                <div class="relative w-full max-w-md rounded-xl p-6 shadow-2xl" style="background-color: var(--color-bg-card);">
+                <div class="relative w-full max-w-md rounded-xl p-6 shadow-2xl bg-bg-card">
                     <div class="flex items-center gap-3 mb-4">
                         <div class="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
                             <AlertTriangle class="w-5 h-5 text-red-500" />
                         </div>
                         <div>
-                            <h3 class="text-lg font-semibold" style="color: var(--color-text-primary);">Are you sure?</h3>
-                            <p class="text-sm" style="color: var(--color-text-secondary);">This action is permanent and cannot be undone.</p>
+                            <h3 class="text-lg font-semibold text-text-primary">Are you sure?</h3>
+                            <p class="text-sm text-text-secondary">This action is permanent and cannot be undone.</p>
                         </div>
                     </div>
 
-                    <p class="text-sm mb-4" style="color: var(--color-text-secondary);">
+                    <p class="text-sm mb-4 text-text-secondary">
                         All your videos, comments, playlists, subscriptions, and wallet balance will be permanently deleted.
                         Enter your password to confirm.
                     </p>
 
                     <form @submit.prevent="confirmDeleteAccount">
                         <div class="mb-4">
-                            <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Password</label>
+                            <label class="block text-sm font-medium mb-1 text-text-secondary">Password</label>
                             <input
                                 v-model="deleteForm.password"
                                 type="password"
-                                class="w-full px-3 py-2 rounded-lg border text-sm"
-                                style="background-color: var(--color-bg-secondary); border-color: var(--color-border); color: var(--color-text-primary);"
+                                class="w-full px-3 py-2 rounded-lg border text-sm bg-bg-secondary border-border text-text-primary"
                                 placeholder="Enter your password"
                                 required
                             />
@@ -496,8 +495,7 @@ const tabs = computed(() => {
                             <button
                                 type="button"
                                 @click="showDeleteConfirm = false; deleteForm.reset();"
-                                class="px-4 py-2 rounded-lg text-sm font-medium"
-                                style="color: var(--color-text-secondary); background-color: var(--color-bg-secondary);"
+                                class="px-4 py-2 rounded-lg text-sm font-medium text-text-secondary bg-bg-secondary"
                             >
                                 Cancel
                             </button>

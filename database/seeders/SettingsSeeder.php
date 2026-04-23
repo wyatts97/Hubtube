@@ -35,7 +35,6 @@ class SettingsSeeder extends Seeder
             ['group' => 'payments', 'key' => 'min_deposit', 'value' => '10', 'type' => 'integer', 'is_public' => true],
             ['group' => 'payments', 'key' => 'min_withdrawal', 'value' => '50', 'type' => 'integer', 'is_public' => true],
             ['group' => 'payments', 'key' => 'platform_fee_percent', 'value' => '20', 'type' => 'integer', 'is_public' => false],
-            ['group' => 'payments', 'key' => 'gift_platform_cut', 'value' => '20', 'type' => 'integer', 'is_public' => false],
             ['group' => 'payments', 'key' => 'stripe_enabled', 'value' => '0', 'type' => 'boolean', 'is_public' => false],
             ['group' => 'payments', 'key' => 'paypal_enabled', 'value' => '0', 'type' => 'boolean', 'is_public' => false],
             ['group' => 'payments', 'key' => 'ccbill_enabled', 'value' => '0', 'type' => 'boolean', 'is_public' => false],
@@ -50,13 +49,6 @@ class SettingsSeeder extends Seeder
             ['group' => 'storage', 'key' => 'ffmpeg_path', 'value' => '/usr/bin/ffmpeg', 'type' => 'string', 'is_public' => false],
             ['group' => 'storage', 'key' => 'ffprobe_path', 'value' => '/usr/bin/ffprobe', 'type' => 'string', 'is_public' => false],
             ['group' => 'storage', 'key' => 'ffmpeg_threads', 'value' => '4', 'type' => 'integer', 'is_public' => false],
-            
-            // Streaming
-            ['group' => 'streaming', 'key' => 'live_streaming_enabled', 'value' => '1', 'type' => 'boolean', 'is_public' => true],
-            ['group' => 'streaming', 'key' => 'gifts_enabled', 'value' => '1', 'type' => 'boolean', 'is_public' => true],
-            ['group' => 'streaming', 'key' => 'max_stream_duration', 'value' => '480', 'type' => 'integer', 'is_public' => false],
-            ['group' => 'streaming', 'key' => 'require_verification_to_stream', 'value' => '1', 'type' => 'boolean', 'is_public' => false],
-            ['group' => 'streaming', 'key' => 'agora_token_expiry', 'value' => '86400', 'type' => 'integer', 'is_public' => false],
         ];
 
         foreach ($settings as $setting) {

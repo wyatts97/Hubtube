@@ -124,7 +124,7 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
         </div>
 
         <div class="mb-4 sm:mb-6">
-            <h1 class="text-xl sm:text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('search.title') || 'Search' }}</h1>
+            <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('search.title') || 'Search' }}</h1>
         </div>
 
         <!-- Search Bar -->
@@ -136,14 +136,14 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
                     :placeholder="t('search.placeholder') || 'Search videos, channels, hashtags...'"
                     class="input pr-12"
                 />
-                <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80" style="color: var(--color-text-muted);">
+                <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80 text-text-muted">
                     <SearchIcon class="w-5 h-5" />
                 </button>
             </div>
         </form>
 
         <!-- Tabs -->
-        <div class="flex gap-1 mb-4 sm:mb-6 border-b overflow-x-auto scrollbar-hide" style="border-color: var(--color-border);">
+        <div class="flex gap-1 mb-4 sm:mb-6 border-b overflow-x-auto scrollbar-hide border-border">
             <button
                 v-for="tab in tabs"
                 :key="tab.key"
@@ -160,8 +160,8 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
 
         <!-- Results -->
         <div v-if="query">
-            <p class="text-sm mb-4" style="color: var(--color-text-secondary);">
-                {{ t('common.results_for') || 'Results for' }} "<span class="font-medium" style="color: var(--color-text-primary);">{{ query }}</span>"
+            <p class="text-sm mb-4 text-text-secondary">
+                {{ t('common.results_for') || 'Results for' }} "<span class="font-medium text-text-primary">{{ query }}</span>"
             </p>
 
             <!-- Skeleton Loading -->
@@ -179,8 +179,7 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
                     v-if="videoItems.length"
                     v-bind="containerProps"
                     :style="[containerProps.style, { height: '70vh' }]"
-                    class="rounded-xl border overflow-auto"
-                    style="border-color: var(--color-border);"
+                    class="rounded-xl border overflow-auto border-border"
                 >
                     <div v-bind="wrapperProps">
                         <div v-for="row in virtualRows" :key="row.index" :style="gridStyle" class="px-2 pb-4">
@@ -189,9 +188,9 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
                     </div>
                 </div>
                 <div v-else class="text-center py-12">
-                    <SearchIcon class="w-12 h-12 mx-auto mb-4" style="color: var(--color-text-muted);" />
-                    <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('common.no_videos_found') || 'No videos found' }}</p>
-                    <p class="mt-1" style="color: var(--color-text-muted);">{{ t('common.try_different') || 'Try different keywords' }}</p>
+                    <SearchIcon class="w-12 h-12 mx-auto mb-4 text-text-muted" />
+                    <p class="text-lg text-text-secondary">{{ t('common.no_videos_found') || 'No videos found' }}</p>
+                    <p class="mt-1 text-text-muted">{{ t('common.try_different') || 'Try different keywords' }}</p>
                 </div>
             </template>
 
@@ -204,26 +203,26 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
                         :href="`/channel/${channel.username}`"
                         class="card p-4 flex items-center gap-4 hover:opacity-90 transition-opacity"
                     >
-                        <div class="w-14 h-14 rounded-full overflow-hidden shrink-0" style="background-color: var(--color-bg-secondary);">
+                        <div class="w-14 h-14 rounded-full overflow-hidden shrink-0 bg-bg-secondary">
                             <img :src="channel.avatar_url || channel.avatar || '/images/default_avatar.webp'" :alt="channel.username" class="w-full h-full object-cover" loading="lazy" decoding="async" />
                         </div>
                         <div class="min-w-0">
-                            <h3 class="font-medium truncate" style="color: var(--color-text-primary);">
+                            <h3 class="font-medium truncate text-text-primary">
                                 {{ channel.username }}
                                 <span v-if="channel.is_verified" class="ml-1">✓</span>
                             </h3>
-                            <p class="text-sm" style="color: var(--color-text-secondary);">
+                            <p class="text-sm text-text-secondary">
                                 {{ channel.channel?.name || channel.username }}
                             </p>
-                            <p class="text-sm" style="color: var(--color-text-muted);">
+                            <p class="text-sm text-text-muted">
                                 {{ channel.subscriber_count || 0 }} {{ t('common.subscribers') || 'subscribers' }}
                             </p>
                         </div>
                     </a>
                 </div>
                 <div v-else class="text-center py-12">
-                    <Users class="w-12 h-12 mx-auto mb-4" style="color: var(--color-text-muted);" />
-                    <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('common.no_channels_found') || 'No channels found' }}</p>
+                    <Users class="w-12 h-12 mx-auto mb-4 text-text-muted" />
+                    <p class="text-lg text-text-secondary">{{ t('common.no_channels_found') || 'No channels found' }}</p>
                 </div>
             </template>
 
@@ -235,13 +234,13 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
                         :key="hashtag.id"
                         class="card p-4"
                     >
-                        <h3 class="font-medium" style="color: var(--color-accent);">#{{ hashtag.name }}</h3>
-                        <p class="text-sm mt-1" style="color: var(--color-text-muted);">{{ hashtag.usage_count || 0 }} {{ t('common.videos') || 'videos' }}</p>
+                        <h3 class="font-medium text-accent">#{{ hashtag.name }}</h3>
+                        <p class="text-sm mt-1 text-text-muted">{{ hashtag.usage_count || 0 }} {{ t('common.videos') || 'videos' }}</p>
                     </div>
                 </div>
                 <div v-else class="text-center py-12">
-                    <Hash class="w-12 h-12 mx-auto mb-4" style="color: var(--color-text-muted);" />
-                    <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('common.no_hashtags_found') || 'No hashtags found' }}</p>
+                    <Hash class="w-12 h-12 mx-auto mb-4 text-text-muted" />
+                    <p class="text-lg text-text-secondary">{{ t('common.no_hashtags_found') || 'No hashtags found' }}</p>
                 </div>
             </template>
 
@@ -255,8 +254,8 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
 
         <!-- No Query State -->
         <div v-else class="text-center py-16">
-            <SearchIcon class="w-16 h-16 mx-auto mb-4" style="color: var(--color-text-muted);" />
-            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('common.search_prompt') || 'Search for videos, channels, and more' }}</p>
+            <SearchIcon class="w-16 h-16 mx-auto mb-4 text-text-muted" />
+            <p class="text-lg text-text-secondary">{{ t('common.search_prompt') || 'Search for videos, channels, and more' }}</p>
         </div>
     </AppLayout>
 </template>

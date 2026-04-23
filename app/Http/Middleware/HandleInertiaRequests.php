@@ -112,8 +112,6 @@ class HandleInertiaRequests extends Middleware
             'siteTitleSize' => $this->s('site_title_size', 20),
             'siteTitleColor' => $this->s('site_title_color', ''),
 
-            'mode' => $this->s('theme_mode', 'dark'),
-            'allowToggle' => $this->s('allow_user_theme_toggle', true),
             'dark' => [
                 'bgPrimary' => $this->s('dark_bg_primary', '#0a0a0a'),
                 'bgSecondary' => $this->s('dark_bg_secondary', '#171717'),
@@ -123,23 +121,12 @@ class HandleInertiaRequests extends Middleware
                 'textSecondary' => $this->s('dark_text_secondary', '#a3a3a3'),
                 'border' => $this->s('dark_border_color', '#262626'),
             ],
-            'light' => [
-                'bgPrimary' => $this->s('light_bg_primary', '#ffffff'),
-                'bgSecondary' => $this->s('light_bg_secondary', '#f5f5f5'),
-                'bgCard' => $this->s('light_bg_card', '#ffffff'),
-                'accent' => $this->s('light_accent_color', '#dc2626'),
-                'textPrimary' => $this->s('light_text_primary', '#171717'),
-                'textSecondary' => $this->s('light_text_secondary', '#525252'),
-                'border' => $this->s('light_border_color', '#e5e5e5'),
-            ],
             'icons' => [
                 'colorMode' => $this->s('icon_color_mode', 'inherit'),
                 'globalColor' => $this->s('icon_global_color', ''),
                 'globalColorDark' => $this->s('icon_global_color_dark', ''),
                 'home' => ['icon' => $this->s('nav_home_icon', 'home'), 'color' => $this->s('nav_home_color', '')],
                 'trending' => ['icon' => $this->s('nav_trending_icon', 'trending-up'), 'color' => $this->s('nav_trending_color', '')],
-                'shorts' => ['icon' => $this->s('nav_shorts_icon', 'zap'), 'color' => $this->s('nav_shorts_color', '')],
-                'live' => ['icon' => $this->s('nav_live_icon', 'radio'), 'color' => $this->s('nav_live_color', '')],
                 'playlists' => ['icon' => $this->s('nav_playlists_icon', 'list-video'), 'color' => $this->s('nav_playlists_color', '')],
                 'history' => ['icon' => $this->s('nav_history_icon', 'history'), 'color' => $this->s('nav_history_color', '')],
             ],
@@ -191,7 +178,7 @@ class HandleInertiaRequests extends Middleware
                 'metaColor' => $this->s('video_card_meta_color', ''),
                 'borderRadius' => (int)$this->s('video_card_border_radius', 12),
             ],
-            'mobileVideoGrid' => $this->s('mobile_video_grid', '1'),
+            'mobileVideoGrid' => $this->s('mobile_video_grid', '2'),
         ];
     }
 

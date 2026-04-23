@@ -7,9 +7,12 @@ import VideoCard from '@/Components/VideoCard.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
-import AdSlot from '@/Components/AdSlot.vue';
+import { useVideoGrid } from '@/Composables/useVideoGrid';
+import BannerAd from '@/Components/UI/BannerAd.vue';
+import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
 
 const { t, localizedUrl } = useI18n();
+const { gridClass } = useVideoGrid();
 
 const props = defineProps({
     category: Object,
@@ -21,22 +24,6 @@ const props = defineProps({
     sponsoredCards: { type: Array, default: () => [] },
 });
 
-const bannerEnabled = computed(() => !!props.bannerAd?.enabled);
-const desktopBannerHtml = computed(() => {
-    if (props.bannerAd?.image && !props.bannerAd?.code) {
-        const img = `<img src="${props.bannerAd.image}" alt="Ad" style="max-width:728px;height:auto;">`;
-        return props.bannerAd.link ? `<a href="${props.bannerAd.link}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
-    }
-    return props.bannerAd?.code || '';
-});
-const mobileBannerHtml = computed(() => {
-    if (props.bannerAd?.mobileImage && !props.bannerAd?.mobileCode) {
-        const img = `<img src="${props.bannerAd.mobileImage}" alt="Ad" style="max-width:300px;height:auto;">`;
-        return props.bannerAd.mobileLink ? `<a href="${props.bannerAd.mobileLink}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
-    }
-    return props.bannerAd?.mobileCode || props.bannerAd?.code || '';
-});
-
 const sponsoredFrequency = computed(() => props.sponsoredCards?.[0]?.frequency || 8);
 const getSponsoredCard = (index) => {
     if (!props.sponsoredCards?.length) return null;
@@ -45,14 +32,11 @@ const getSponsoredCard = (index) => {
     return props.sponsoredCards[cardIndex % props.sponsoredCards.length] || null;
 };
 
-const page = usePage();
-const mobileGrid = computed(() => page.props.theme?.mobileVideoGrid === '2' ? 2 : 1);
-const gridClass = computed(() => mobileGrid.value === 2
-    ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4'
-    : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
-);
-
 const displayName = props.translatedName || props.category.name;
+const breadcrumbs = computed(() => [
+    { label: t('categories.title') || 'Categories', href: localizedUrl('/categories') },
+    { label: displayName },
+]);
 const displayDescription = props.translatedDescription || props.category.description;
 
 const goToPage = (pageNum) => {
@@ -64,23 +48,16 @@ const goToPage = (pageNum) => {
     <SeoHead :seo="seo" />
 
     <AppLayout>
-        <!-- Top Ad Banner -->
-        <div v-if="bannerEnabled && (desktopBannerHtml || mobileBannerHtml)" class="mb-4 flex justify-center">
-            <AdSlot :html="desktopBannerHtml" class="hidden sm:block" />
-            <AdSlot :html="mobileBannerHtml" class="sm:hidden" />
-        </div>
+        <BannerAd :config="bannerAd" />
+        <Breadcrumbs :items="breadcrumbs" />
 
         <div class="mb-6">
-            <div class="flex items-center gap-2 mb-1">
-                <Link :href="localizedUrl('/categories')" class="text-sm hover:opacity-80" style="color: var(--color-accent);">{{ t('categories.title') || 'Categories' }}</Link>
-                <span style="color: var(--color-text-muted);">/</span>
+            <div class="flex items-center gap-3 flex-wrap">
+                <h1 class="text-2xl font-bold text-text-primary">{{ displayName }}</h1>
+                <span class="text-sm text-text-muted">•</span>
+                <span class="text-sm text-text-muted">{{ t('categories.video_count', { count: videos.total || 0 }) || `${videos.total || 0} videos` }}</span>
             </div>
-            <div class="flex items-center gap-3">
-                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ displayName }}</h1>
-                <span class="text-sm" style="color: var(--color-text-muted);">•</span>
-                <span class="text-sm" style="color: var(--color-text-muted);">{{ t('categories.video_count', { count: videos.total || 0 }) || `${videos.total || 0} videos` }}</span>
-            </div>
-            <p v-if="displayDescription" class="text-sm mt-1" style="color: var(--color-text-muted);">{{ displayDescription }}</p>
+            <p v-if="displayDescription" class="text-sm mt-1 text-text-muted">{{ displayDescription }}</p>
         </div>
 
         <div v-if="videos.data?.length" :class="gridClass">
@@ -94,7 +71,7 @@ const goToPage = (pageNum) => {
         </div>
 
         <div v-else class="text-center py-12">
-            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('categories.no_videos') || 'No videos in this category yet' }}</p>
+            <p class="text-lg text-text-secondary">{{ t('categories.no_videos') || 'No videos in this category yet' }}</p>
         </div>
 
         <!-- Pagination -->
@@ -122,7 +99,7 @@ const goToPage = (pageNum) => {
                     </button>
                     <span
                         v-else-if="pageNum === videos.current_page - 3 || pageNum === videos.current_page + 3"
-                        style="color: var(--color-text-muted);"
+                        class="text-text-muted"
                     >...</span>
                 </template>
             </div>

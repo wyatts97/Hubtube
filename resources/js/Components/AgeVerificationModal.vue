@@ -131,8 +131,7 @@ const buttonColor = computed(() => ageSettings.value.buttonColor || 'var(--color
                 </div>
 
                 <div 
-                    class="rounded-xl p-8"
-                    style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);"
+                    class="rounded-xl p-8 bg-bg-card border border-border"
                 >
                     <p class="mb-6" :style="{ color: textColor }">
                         {{ disclaimerText.replace('{confirm}', confirmText) }}
@@ -151,8 +150,7 @@ const buttonColor = computed(() => ageSettings.value.buttonColor || 'var(--color
                         <button 
                             @click="decline" 
                             :disabled="isSubmitting" 
-                            class="flex-1 py-3 px-6 rounded-lg font-medium transition-opacity hover:opacity-80"
-                            style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);"
+                            class="flex-1 py-3 px-6 rounded-lg font-medium transition-opacity hover:opacity-80 bg-bg-secondary text-text-primary"
                         >
                             {{ declineText }}
                         </button>

@@ -46,23 +46,23 @@ const providerMeta = {
 <template>
     <Head title="Sign In" />
 
-    <div class="min-h-screen flex items-center justify-center px-4" style="background-color: var(--color-bg-primary);">
+    <div class="min-h-screen flex items-center justify-center px-4 bg-bg-primary">
         <div class="w-full max-w-md">
             <div class="text-center mb-8">
                 <Link href="/" class="inline-flex items-center justify-center">
                     <img v-if="siteLogo" :src="siteLogo" alt="Logo" class="h-12 w-auto object-contain" />
-                    <div v-else class="w-12 h-12 rounded-xl flex items-center justify-center" style="background-color: var(--color-accent);">
+                    <div v-else class="w-12 h-12 rounded-xl flex items-center justify-center bg-accent">
                         <span class="text-2xl font-bold text-white">{{ siteTitle.charAt(0).toUpperCase() }}</span>
                     </div>
                 </Link>
-                <h1 class="text-2xl font-bold mt-4" style="color: var(--color-text-primary);">{{ t('auth.welcome_back') || 'Welcome back' }}</h1>
-                <p class="mt-2" style="color: var(--color-text-secondary);">{{ t('auth.sign_in_desc') || 'Sign in to your account' }}</p>
+                <h1 class="text-2xl font-bold mt-4 text-text-primary">{{ t('auth.welcome_back') || 'Welcome back' }}</h1>
+                <p class="mt-2 text-text-secondary">{{ t('auth.sign_in_desc') || 'Sign in to your account' }}</p>
             </div>
 
             <div class="card p-6">
                 <form @submit.prevent="onSubmit" class="space-y-4">
                     <div>
-                        <label for="login" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
+                        <label for="login" class="block text-sm font-medium mb-1 text-text-secondary">
                             {{ t('auth.email_or_username') || 'Email or Username' }}
                         </label>
                         <input
@@ -77,7 +77,7 @@ const providerMeta = {
                     </div>
 
                     <div>
-                        <label for="password" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
+                        <label for="password" class="block text-sm font-medium mb-1 text-text-secondary">
                             {{ t('auth.password') || 'Password' }}
                         </label>
                         <div class="relative">
@@ -91,7 +91,7 @@ const providerMeta = {
                             <button
                                 type="button"
                                 @click="showPassword = !showPassword"
-                                class="absolute right-3 top-1/2 -translate-y-1/2" style="color: var(--color-text-secondary);"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary"
                             >
                                 <EyeOff v-if="showPassword" class="w-5 h-5" />
                                 <Eye v-else class="w-5 h-5" />
@@ -107,9 +107,9 @@ const providerMeta = {
                                 type="checkbox"
                                 class="w-4 h-4 rounded border-dark-600 bg-dark-800 text-primary-600 focus:ring-primary-500"
                             />
-                            <span class="text-sm" style="color: var(--color-text-secondary);">{{ t('auth.remember_me') || 'Remember me' }}</span>
+                            <span class="text-sm text-text-secondary">{{ t('auth.remember_me') || 'Remember me' }}</span>
                         </label>
-                        <Link href="/forgot-password" class="text-sm" style="color: var(--color-accent);">
+                        <Link href="/forgot-password" class="text-sm text-accent">
                             {{ t('auth.forgot_password') || 'Forgot password?' }}
                         </Link>
                     </div>
@@ -128,7 +128,7 @@ const providerMeta = {
                 <template v-if="socialProviders.length > 0">
                     <div class="mt-6 flex items-center gap-3">
                         <div class="flex-1 h-px" style="background-color: var(--color-border);"></div>
-                        <span class="text-sm shrink-0" style="color: var(--color-text-muted);">{{ t('auth.or') || 'or' }}</span>
+                        <span class="text-sm shrink-0 text-text-muted">{{ t('auth.or') || 'or' }}</span>
                         <div class="flex-1 h-px" style="background-color: var(--color-border);"></div>
                     </div>
 
@@ -137,8 +137,7 @@ const providerMeta = {
                             v-for="provider in socialProviders"
                             :key="provider"
                             :href="`/auth/${provider}/redirect`"
-                            class="flex items-center justify-center gap-3 w-full rounded-lg px-4 py-2.5 text-sm font-medium transition-colors border"
-                            style="border-color: var(--color-border); color: var(--color-text-primary); background-color: var(--color-bg-secondary);"
+                            class="flex items-center justify-center gap-3 w-full rounded-lg px-4 py-2.5 text-sm font-medium transition-colors border border-border text-text-primary bg-bg-secondary"
                             @mouseenter="$event.target.style.backgroundColor = 'var(--color-bg-card)'"
                             @mouseleave="$event.target.style.backgroundColor = 'var(--color-bg-secondary)'"
                         >
@@ -149,9 +148,9 @@ const providerMeta = {
                 </template>
 
                 <div class="mt-6 text-center">
-                    <p style="color: var(--color-text-secondary);">
+                    <p class="text-text-secondary">
                         {{ t('auth.no_account') || "Don't have an account?" }}
-                        <Link href="/register" class="font-medium" style="color: var(--color-accent);">
+                        <Link href="/register" class="font-medium text-accent">
                             {{ t('auth.sign_up') || 'Sign up' }}
                         </Link>
                     </p>

@@ -31,8 +31,8 @@ const retry = () => {
         <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style="background-color: rgba(239, 68, 68, 0.1);">
             <AlertTriangle class="w-6 h-6" style="color: #ef4444;" />
         </div>
-        <h3 class="font-medium mb-1" style="color: var(--color-text-primary);">{{ fallbackTitle }}</h3>
-        <p class="text-sm mb-4" style="color: var(--color-text-muted);">{{ fallbackDescription }}</p>
+        <h3 class="font-medium mb-1 text-text-primary">{{ fallbackTitle }}</h3>
+        <p class="text-sm mb-4 text-text-muted">{{ fallbackDescription }}</p>
         <button @click="retry" class="btn btn-secondary gap-2 text-sm mx-auto">
             <RefreshCw class="w-4 h-4" />
             {{ t('common.try_again') || 'Try Again' }}

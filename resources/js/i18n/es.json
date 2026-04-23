@@ -2,8 +2,6 @@
     "nav": {
         "home": "Inicio",
         "trending": "Tendencias",
-        "shorts": "Shorts",
-        "live": "En Vivo",
         "feed": "Feed",
         "history": "Historial",
         "playlists": "Listas",
@@ -12,8 +10,6 @@
         "search": "Buscar",
         "upload": "Subir",
         "upload_video": "Subir Video",
-        "upload_short": "Subir Short",
-        "go_live": "Transmitir",
         "login": "Iniciar Sesión",
         "register": "Registrarse",
         "logout": "Cerrar Sesión",
@@ -113,13 +109,10 @@
     },
     "channel": {
         "videos": "Videos",
-        "shorts": "Shorts",
         "playlists": "Listas",
         "about": "Acerca de",
         "no_videos": "Aún no hay videos",
         "no_videos_desc": "Este canal no ha subido ningún video",
-        "no_shorts": "Aún no hay shorts",
-        "no_shorts_desc": "Este canal no ha subido ningún short",
         "no_playlists": "Aún no hay listas",
         "no_playlists_desc": "Este canal no ha creado ninguna lista",
         "joined": "Se unió el {date}",
@@ -247,16 +240,11 @@
         "resend_verification": "Reenviar Correo de Verificación"
     },
     "home": {
-        "live_now": "En Vivo Ahora",
         "featured": "Destacados",
         "latest": "Últimos Videos",
         "popular": "Populares",
         "reached_end": "Has llegado al final",
         "loading_more": "Cargando más videos..."
-    },
-    "shorts": {
-        "no_shorts": "Aún no hay shorts",
-        "upload_first": "¡Sé el primero en subir un short!"
     },
     "report": {
         "title": "Reportar Video",

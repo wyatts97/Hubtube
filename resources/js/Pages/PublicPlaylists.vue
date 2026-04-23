@@ -41,8 +41,8 @@ const changeSort = (sort) => {
     <AppLayout>
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div>
-                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ tSafe('playlist.public_playlists', 'Public Playlists') }}</h1>
-                <p class="mt-1" style="color: var(--color-text-secondary);">{{ tSafe('playlist.browse_all', 'Browse playlists from all creators') }}</p>
+                <h1 class="text-2xl font-bold text-text-primary">{{ tSafe('playlist.public_playlists', 'Public Playlists') }}</h1>
+                <p class="mt-1 text-text-secondary">{{ tSafe('playlist.browse_all', 'Browse playlists from all creators') }}</p>
             </div>
 
             <!-- Sort Buttons -->
@@ -66,7 +66,7 @@ const changeSort = (sort) => {
         <!-- Skeleton Loading -->
         <div v-if="isInitialLoad" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <div v-for="i in 8" :key="'skeleton-' + i" class="card overflow-hidden">
-                <div class="aspect-video skeleton" style="background-color: var(--color-bg-secondary);"></div>
+                <div class="aspect-video skeleton bg-bg-secondary"></div>
                 <div class="p-3 space-y-2">
                     <div class="skeleton skeleton-text w-3/4"></div>
                     <div class="skeleton skeleton-text-sm w-1/2"></div>
@@ -83,7 +83,7 @@ const changeSort = (sort) => {
                 class="card overflow-hidden hover:ring-2 transition-all"
                 style="--tw-ring-color: var(--color-accent);"
             >
-                <div class="aspect-video flex items-center justify-center" style="background-color: var(--color-bg-secondary);">
+                <div class="aspect-video flex items-center justify-center bg-bg-secondary">
                     <img
                         v-if="playlist.thumbnail"
                         :src="playlist.thumbnail"
@@ -91,15 +91,15 @@ const changeSort = (sort) => {
                         class="w-full h-full object-cover"
                         loading="lazy"
                     />
-                    <ListVideo v-else class="w-12 h-12" style="color: var(--color-text-muted);" />
+                    <ListVideo v-else class="w-12 h-12 text-text-muted" />
                 </div>
                 <div class="p-3">
-                    <h3 class="font-medium truncate" style="color: var(--color-text-primary);">{{ playlist.title }}</h3>
-                    <p class="text-sm mt-1" style="color: var(--color-text-secondary);">
+                    <h3 class="font-medium truncate text-text-primary">{{ playlist.title }}</h3>
+                    <p class="text-sm mt-1 text-text-secondary">
                         {{ playlist.videos_count || 0 }} {{ tSafe('common.videos', 'videos') }}
                         <span v-if="playlist.user"> &middot; {{ playlist.user.username }}</span>
                     </p>
-                    <p v-if="playlist.favorited_by_count > 0" class="text-xs mt-1 flex items-center gap-1" style="color: var(--color-text-muted);">
+                    <p v-if="playlist.favorited_by_count > 0" class="text-xs mt-1 flex items-center gap-1 text-text-muted">
                         <Heart class="w-3 h-3" />
                         {{ playlist.favorited_by_count }} {{ playlist.favorited_by_count === 1 ? 'favorite' : 'favorites' }}
                     </p>
@@ -109,9 +109,9 @@ const changeSort = (sort) => {
 
         <!-- Empty State -->
         <div v-else class="text-center py-12">
-            <ListVideo class="w-16 h-16 mx-auto mb-4" style="color: var(--color-text-muted);" />
-            <p class="text-lg" style="color: var(--color-text-secondary);">{{ tSafe('playlist.no_public_playlists', 'No playlists yet') }}</p>
-            <p class="mt-2" style="color: var(--color-text-muted);">{{ tSafe('playlist.no_public_playlists_desc', 'Be the first to create a playlist!') }}</p>
+            <ListVideo class="w-16 h-16 mx-auto mb-4 text-text-muted" />
+            <p class="text-lg text-text-secondary">{{ tSafe('playlist.no_public_playlists', 'No playlists yet') }}</p>
+            <p class="mt-2 text-text-muted">{{ tSafe('playlist.no_public_playlists_desc', 'Be the first to create a playlist!') }}</p>
         </div>
 
         <!-- Pagination -->

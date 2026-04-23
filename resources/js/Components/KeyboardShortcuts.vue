@@ -56,34 +56,32 @@ onUnmounted(() => document.removeEventListener('keydown', handleKeydown));
             style="background-color: rgba(0,0,0,0.6);"
             @click.self="show = false"
         >
-            <div class="w-full max-w-lg card p-6 shadow-xl" style="background-color: var(--color-bg-card);">
+            <div class="w-full max-w-lg card p-6 shadow-xl bg-bg-card">
                 <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-lg font-bold flex items-center gap-2" style="color: var(--color-text-primary);">
+                    <h3 class="text-lg font-bold flex items-center gap-2 text-text-primary">
                         <Keyboard class="w-5 h-5" />
                         {{ t('video.keyboard_shortcuts') || 'Keyboard Shortcuts' }}
                     </h3>
                     <button @click="show = false" class="p-1 rounded hover:opacity-70" aria-label="Close keyboard shortcuts">
-                        <X class="w-5 h-5" style="color: var(--color-text-secondary);" />
+                        <X class="w-5 h-5 text-text-secondary" />
                     </button>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
                     <div
                         v-for="shortcut in shortcuts"
                         :key="shortcut.key"
-                        class="flex items-center justify-between py-2"
-                        style="border-bottom: 1px solid var(--color-border);"
+                        class="flex items-center justify-between py-2 border-b border-border"
                     >
-                        <span class="text-sm" style="color: var(--color-text-secondary);">{{ shortcut.description }}</span>
+                        <span class="text-sm text-text-secondary">{{ shortcut.description }}</span>
                         <kbd
-                            class="px-2 py-0.5 rounded text-xs font-mono font-medium ml-3"
-                            style="background-color: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border);"
+                            class="px-2 py-0.5 rounded text-xs font-mono font-medium ml-3 bg-bg-secondary text-text-primary border border-border"
                         >
                             {{ shortcut.key }}
                         </kbd>
                     </div>
                 </div>
-                <p class="text-xs mt-4 text-center" style="color: var(--color-text-muted);">
-                    Press <kbd class="px-1.5 py-0.5 rounded text-xs font-mono" style="background-color: var(--color-bg-secondary); border: 1px solid var(--color-border);">?</kbd> anytime to toggle this guide
+                <p class="text-xs mt-4 text-center text-text-muted">
+                    Press <kbd class="px-1.5 py-0.5 rounded text-xs font-mono bg-bg-secondary border border-border">?</kbd> anytime to toggle this guide
                 </p>
             </div>
         </div>

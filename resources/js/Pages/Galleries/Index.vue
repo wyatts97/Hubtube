@@ -38,11 +38,11 @@ const formatViews = (count) => {
     <AppLayout>
         <div class="mb-5">
             <div class="flex items-center justify-between gap-3 flex-wrap">
-                <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">Galleries</h1>
+                <h1 class="text-xl font-bold text-text-primary">Galleries</h1>
 
                 <div class="flex items-center gap-2">
                     <!-- Sort Buttons -->
-                    <div class="flex items-center rounded-lg overflow-hidden" style="border: 1px solid var(--color-border);">
+                    <div class="flex items-center rounded-lg overflow-hidden border border-border">
                         <button
                             @click="setSort('')"
                             :class="['px-3 py-1.5 text-xs font-medium transition-colors', !sort ? 'text-white' : '']"
@@ -76,7 +76,7 @@ const formatViews = (count) => {
             >
                 <div class="card rounded-xl overflow-hidden">
                     <!-- Cover Image -->
-                    <div class="aspect-video relative" style="background-color: var(--color-bg-secondary);">
+                    <div class="aspect-video relative bg-bg-secondary">
                         <img
                             v-if="gallery.cover_url"
                             :src="gallery.cover_url"
@@ -85,7 +85,7 @@ const formatViews = (count) => {
                             loading="lazy"
                         />
                         <div v-else class="w-full h-full flex items-center justify-center">
-                            <ImageIcon class="w-10 h-10" style="color: var(--color-text-muted);" />
+                            <ImageIcon class="w-10 h-10 text-text-muted" />
                         </div>
                         <div class="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-black/70 text-white">
                             <ImageIcon class="w-3 h-3" />
@@ -94,10 +94,10 @@ const formatViews = (count) => {
                     </div>
                     <!-- Info -->
                     <div class="p-3">
-                        <h3 class="font-medium text-sm line-clamp-1" style="color: var(--color-text-primary);">{{ gallery.title }}</h3>
+                        <h3 class="font-medium text-sm line-clamp-1 text-text-primary">{{ gallery.title }}</h3>
                         <div class="flex items-center gap-3 mt-1">
-                            <span v-if="gallery.user" class="text-xs" style="color: var(--color-text-muted);">{{ gallery.user.username }}</span>
-                            <span class="text-xs flex items-center gap-1" style="color: var(--color-text-muted);">
+                            <span v-if="gallery.user" class="text-xs text-text-muted">{{ gallery.user.username }}</span>
+                            <span class="text-xs flex items-center gap-1 text-text-muted">
                                 <Eye class="w-3 h-3" />
                                 {{ formatViews(gallery.views_count) }}
                             </span>
@@ -108,9 +108,9 @@ const formatViews = (count) => {
         </div>
 
         <div v-else class="text-center py-16">
-            <ImageIcon class="w-12 h-12 mx-auto mb-3" style="color: var(--color-text-muted);" />
-            <p class="text-lg" style="color: var(--color-text-secondary);">No galleries yet</p>
-            <p class="mt-2 text-sm" style="color: var(--color-text-muted);">Be the first to create a gallery!</p>
+            <ImageIcon class="w-12 h-12 mx-auto mb-3 text-text-muted" />
+            <p class="text-lg text-text-secondary">No galleries yet</p>
+            <p class="mt-2 text-sm text-text-muted">Be the first to create a gallery!</p>
             <Link href="/galleries/create" class="btn btn-primary mt-4 inline-flex items-center gap-1.5">
                 <Plus class="w-4 h-4" />
                 Create Gallery
@@ -132,8 +132,7 @@ const formatViews = (count) => {
                 />
                 <span
                     v-else
-                    class="px-3 py-1.5 rounded-lg text-sm"
-                    style="color: var(--color-text-muted);"
+                    class="px-3 py-1.5 rounded-lg text-sm text-text-muted"
                     v-html="link.label"
                 />
             </template>

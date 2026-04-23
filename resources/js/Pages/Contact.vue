@@ -30,8 +30,8 @@ const onSubmit = () => {
 
     <AppLayout>
         <div class="max-w-2xl mx-auto py-8">
-            <h1 class="text-2xl font-bold mb-2" style="color: var(--color-text-primary);">{{ t('contact.title') || 'Contact Us' }}</h1>
-            <p class="mb-8" style="color: var(--color-text-secondary);">
+            <h1 class="text-2xl font-bold mb-2 text-text-primary">{{ t('contact.title') || 'Contact Us' }}</h1>
+            <p class="mb-8 text-text-secondary">
                 Have a question, concern, or feedback? Send us a message and we'll get back to you.
             </p>
 
@@ -49,11 +49,11 @@ const onSubmit = () => {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <!-- Name -->
                     <div>
-                        <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">
-                            {{ t('contact.name') || 'Name' }} <span style="color: var(--color-accent);">*</span>
+                        <label class="block text-sm font-medium mb-1.5 text-text-secondary">
+                            {{ t('contact.name') || 'Name' }} <span class="text-accent">*</span>
                         </label>
                         <div class="relative">
-                            <User class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style="color: var(--color-text-muted);" />
+                            <User class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                             <input
                                 v-model="form.name"
                                 type="text"
@@ -67,11 +67,11 @@ const onSubmit = () => {
 
                     <!-- Email -->
                     <div>
-                        <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">
-                            {{ t('contact.email') || 'Email' }} <span style="color: var(--color-accent);">*</span>
+                        <label class="block text-sm font-medium mb-1.5 text-text-secondary">
+                            {{ t('contact.email') || 'Email' }} <span class="text-accent">*</span>
                         </label>
                         <div class="relative">
-                            <Mail class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style="color: var(--color-text-muted);" />
+                            <Mail class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                             <input
                                 v-model="form.email"
                                 type="email"
@@ -86,7 +86,7 @@ const onSubmit = () => {
 
                 <!-- Subject -->
                 <div>
-                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">
+                    <label class="block text-sm font-medium mb-1.5 text-text-secondary">
                         {{ t('contact.subject') || 'Subject' }}
                     </label>
                     <input
@@ -100,11 +100,11 @@ const onSubmit = () => {
 
                 <!-- Message -->
                 <div>
-                    <label class="block text-sm font-medium mb-1.5" style="color: var(--color-text-secondary);">
-                        {{ t('contact.message') || 'Message' }} <span style="color: var(--color-accent);">*</span>
+                    <label class="block text-sm font-medium mb-1.5 text-text-secondary">
+                        {{ t('contact.message') || 'Message' }} <span class="text-accent">*</span>
                     </label>
                     <div class="relative">
-                        <MessageSquare class="absolute left-3 top-3 w-4 h-4" style="color: var(--color-text-muted);" />
+                        <MessageSquare class="absolute left-3 top-3 w-4 h-4 text-text-muted" />
                         <textarea
                             v-model="form.message"
                             class="input pl-10 w-full"

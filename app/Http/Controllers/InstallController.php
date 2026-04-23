@@ -255,10 +255,9 @@ class InstallController extends Controller
             }
         }
 
-        // 2. Seed categories, gifts, settings
+        // 2. Seed categories and default settings
         try {
             Artisan::call('db:seed', ['--class' => 'CategorySeeder', '--force' => true]);
-            Artisan::call('db:seed', ['--class' => 'GiftSeeder', '--force' => true]);
             Artisan::call('db:seed', ['--class' => 'SettingsSeeder', '--force' => true]);
             Artisan::call('db:seed', ['--class' => 'PageSeeder', '--force' => true]);
             $steps[] = ['label' => 'Seed default data', 'status' => 'success'];

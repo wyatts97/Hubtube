@@ -29,7 +29,6 @@ class VideoFactory extends Factory
             'size' => fake()->numberBetween(1000000, 500000000),
             'privacy' => 'public',
             'status' => 'processed',
-            'is_short' => false,
             'is_featured' => false,
             'is_approved' => true,
             'age_restricted' => false,

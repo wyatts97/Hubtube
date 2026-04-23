@@ -5,18 +5,45 @@
 @source "../../resources/js/**/*.js";
 @source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
 
+/*
+ * HubTube is dark-only. Palette is defined as Tailwind v4 @theme tokens so
+ * utilities like `bg-bg-primary`, `text-text-primary`, `border-border`,
+ * `bg-accent`, `rounded-card`, etc. work natively. The same variables are
+ * re-declared in :root so existing `var(--color-*)` inline styles continue
+ * to work until the scripted migration (1E) completes.
+ */
 @theme {
     --font-sans: 'Inter', system-ui, sans-serif;
+
+    --color-bg-primary: #0a0a0a;
+    --color-bg-secondary: #171717;
+    --color-bg-card: #1f1f1f;
+    --color-bg-hover: #2a2a2a;
+    --color-bg-input: #262626;
+
+    --color-accent: #ef4444;
+
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #a3a3a3;
+    --color-text-muted: #8a8a8a;
+
+    --color-border: #262626;
+
+    --radius-card: 0.5rem;
+    --radius-thumb: 0.75rem;
+    --radius-pill: 9999px;
 }
 
 :root {
+    /* Legacy aliases consumed by inline styles and useTheme.js runtime
+     * overrides. Do not remove until the inline-style migration is complete. */
     --color-bg-primary: #0a0a0a;
     --color-bg-secondary: #171717;
     --color-bg-card: #1f1f1f;
     --color-accent: #ef4444;
     --color-text-primary: #ffffff;
     --color-text-secondary: #a3a3a3;
-    --color-text-muted: #737373;
+    --color-text-muted: #8a8a8a;
     --color-border: #262626;
     --color-input-bg: #262626;
     --color-hover: #2a2a2a;

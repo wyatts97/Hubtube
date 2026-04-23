@@ -44,23 +44,23 @@ const onSubmit = () => {
 <template>
     <Head title="Sign Up" />
 
-    <div class="min-h-screen flex items-center justify-center px-4 py-8" style="background-color: var(--color-bg-primary);">
+    <div class="min-h-screen flex items-center justify-center px-4 py-8 bg-bg-primary">
         <div class="w-full max-w-md">
             <div class="text-center mb-8">
                 <Link href="/" class="inline-flex items-center justify-center">
                     <img v-if="siteLogo" :src="siteLogo" alt="Logo" class="h-12 w-auto object-contain" />
-                    <div v-else class="w-12 h-12 rounded-xl flex items-center justify-center" style="background-color: var(--color-accent);">
+                    <div v-else class="w-12 h-12 rounded-xl flex items-center justify-center bg-accent">
                         <span class="text-2xl font-bold text-white">{{ siteTitle.charAt(0).toUpperCase() }}</span>
                     </div>
                 </Link>
-                <h1 class="text-2xl font-bold mt-4" style="color: var(--color-text-primary);">{{ t('auth.create_account') || 'Create your account' }}</h1>
-                <p class="mt-2" style="color: var(--color-text-secondary);">{{ t('auth.join_community') || 'Join the community today' }}</p>
+                <h1 class="text-2xl font-bold mt-4 text-text-primary">{{ t('auth.create_account') || 'Create your account' }}</h1>
+                <p class="mt-2 text-text-secondary">{{ t('auth.join_community') || 'Join the community today' }}</p>
             </div>
 
             <div class="card p-6">
                 <form @submit.prevent="onSubmit" class="space-y-4">
                     <div>
-                        <label for="username" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
+                        <label for="username" class="block text-sm font-medium mb-1 text-text-secondary">
                             {{ t('settings.username') || 'Username' }}
                         </label>
                         <input
@@ -75,7 +75,7 @@ const onSubmit = () => {
                     </div>
 
                     <div>
-                        <label for="email" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
+                        <label for="email" class="block text-sm font-medium mb-1 text-text-secondary">
                             {{ t('settings.email') || 'Email' }}
                         </label>
                         <input
@@ -89,7 +89,7 @@ const onSubmit = () => {
                     </div>
 
                     <div>
-                        <label for="password" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
+                        <label for="password" class="block text-sm font-medium mb-1 text-text-secondary">
                             {{ t('auth.password') || 'Password' }}
                         </label>
                         <div class="relative">
@@ -103,7 +103,7 @@ const onSubmit = () => {
                             <button
                                 type="button"
                                 @click="showPassword = !showPassword"
-                                class="absolute right-3 top-1/2 -translate-y-1/2" style="color: var(--color-text-secondary);"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary"
                             >
                                 <EyeOff v-if="showPassword" class="w-5 h-5" />
                                 <Eye v-else class="w-5 h-5" />
@@ -113,7 +113,7 @@ const onSubmit = () => {
                     </div>
 
                     <div>
-                        <label for="password_confirmation" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
+                        <label for="password_confirmation" class="block text-sm font-medium mb-1 text-text-secondary">
                             {{ t('settings.confirm_password') || 'Confirm Password' }}
                         </label>
                         <input
@@ -126,11 +126,11 @@ const onSubmit = () => {
                         <p v-if="form.errors.password_confirmation" class="text-red-500 text-sm mt-1">{{ form.errors.password_confirmation }}</p>
                     </div>
 
-                    <div class="text-sm" style="color: var(--color-text-secondary);">
+                    <div class="text-sm text-text-secondary">
                         By signing up, you confirm that you are at least 18 years old and agree to our
-                        <a href="/terms" style="color: var(--color-accent);">Terms of Service</a>
+                        <a href="/terms" class="text-accent">Terms of Service</a>
                         and
-                        <a href="/privacy" style="color: var(--color-accent);">Privacy Policy</a>.
+                        <a href="/privacy" class="text-accent">Privacy Policy</a>.
                     </div>
 
                     <button
@@ -147,7 +147,7 @@ const onSubmit = () => {
                 <template v-if="socialProviders.length > 0">
                     <div class="mt-6 flex items-center gap-3">
                         <div class="flex-1 h-px" style="background-color: var(--color-border);"></div>
-                        <span class="text-sm shrink-0" style="color: var(--color-text-muted);">{{ t('auth.or') || 'or' }}</span>
+                        <span class="text-sm shrink-0 text-text-muted">{{ t('auth.or') || 'or' }}</span>
                         <div class="flex-1 h-px" style="background-color: var(--color-border);"></div>
                     </div>
 
@@ -156,8 +156,7 @@ const onSubmit = () => {
                             v-for="provider in socialProviders"
                             :key="provider"
                             :href="`/auth/${provider}/redirect`"
-                            class="flex items-center justify-center gap-3 w-full rounded-lg px-4 py-2.5 text-sm font-medium transition-colors border"
-                            style="border-color: var(--color-border); color: var(--color-text-primary); background-color: var(--color-bg-secondary);"
+                            class="flex items-center justify-center gap-3 w-full rounded-lg px-4 py-2.5 text-sm font-medium transition-colors border border-border text-text-primary bg-bg-secondary"
                             @mouseenter="$event.target.style.backgroundColor = 'var(--color-bg-card)'"
                             @mouseleave="$event.target.style.backgroundColor = 'var(--color-bg-secondary)'"
                         >
@@ -168,9 +167,9 @@ const onSubmit = () => {
                 </template>
 
                 <div class="mt-6 text-center">
-                    <p style="color: var(--color-text-secondary);">
+                    <p class="text-text-secondary">
                         {{ t('auth.has_account') || 'Already have an account?' }}
-                        <Link href="/login" class="font-medium" style="color: var(--color-accent);">
+                        <Link href="/login" class="font-medium text-accent">
                             {{ t('auth.login') || 'Sign in' }}
                         </Link>
                     </p>

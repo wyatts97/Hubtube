@@ -65,11 +65,11 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside));
     <AppLayout>
         <div class="mb-5">
             <div class="flex items-center justify-between gap-3 flex-wrap">
-                <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">Browse Images</h1>
+                <h1 class="text-xl font-bold text-text-primary">Browse Images</h1>
 
                 <div class="flex items-center gap-2">
                     <!-- Sort Buttons -->
-                    <div class="flex items-center rounded-lg overflow-hidden" style="border: 1px solid var(--color-border);">
+                    <div class="flex items-center rounded-lg overflow-hidden border border-border">
                         <button
                             @click="setSort('')"
                             :class="['px-3 py-1.5 text-xs font-medium transition-colors', !sort ? 'text-white' : '']"
@@ -107,8 +107,7 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside));
                         <!-- Category Dropdown -->
                         <div
                             v-if="showFilters"
-                            class="absolute right-0 top-full mt-2 w-56 rounded-lg shadow-xl z-50 py-1 max-h-80 overflow-y-auto"
-                            style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);"
+                            class="absolute right-0 top-full mt-2 w-56 rounded-lg shadow-xl z-50 py-1 max-h-80 overflow-y-auto bg-bg-card border border-border"
                         >
                             <button
                                 @click="setCategory('')"
@@ -117,7 +116,7 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside));
                             >
                                 All Categories
                             </button>
-                            <div style="border-top: 1px solid var(--color-border); margin: 2px 0;"></div>
+                            <div class="border-t border-border" style="margin: 2px 0;"></div>
                             <button
                                 v-for="cat in categories"
                                 :key="cat.id"
@@ -134,7 +133,7 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside));
 
             <!-- Active Category Chip -->
             <div v-if="activeCategory" class="mt-3 flex items-center gap-2">
-                <span class="text-xs px-3 py-1 rounded-full inline-flex items-center gap-1.5" style="background-color: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border);">
+                <span class="text-xs px-3 py-1 rounded-full inline-flex items-center gap-1.5 bg-bg-secondary text-text-primary border border-border">
                     {{ activeCategory.name }}
                     <button @click="clearCategory" class="hover:opacity-70">
                         <X class="w-3 h-3" />
@@ -148,8 +147,8 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside));
         </div>
 
         <div v-else class="text-center py-16">
-            <p class="text-lg" style="color: var(--color-text-secondary);">No images found</p>
-            <p class="mt-2 text-sm" style="color: var(--color-text-muted);">Try adjusting your filters</p>
+            <p class="text-lg text-text-secondary">No images found</p>
+            <p class="mt-2 text-sm text-text-muted">Try adjusting your filters</p>
         </div>
 
         <!-- Pagination -->
@@ -167,8 +166,7 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside));
                 />
                 <span
                     v-else
-                    class="px-3 py-1.5 rounded-lg text-sm"
-                    style="color: var(--color-text-muted);"
+                    class="px-3 py-1.5 rounded-lg text-sm text-text-muted"
                     v-html="link.label"
                 />
             </template>

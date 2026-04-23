@@ -62,13 +62,12 @@ const getStyles = (type) => {
                         class="w-5 h-5 flex-shrink-0 mt-0.5"
                         :style="{ color: getStyles(toast.type).icon }"
                     />
-                    <p class="flex-1 text-sm" style="color: var(--color-text-primary);">
+                    <p class="flex-1 text-sm text-text-primary">
                         {{ toast.message }}
                     </p>
                     <button 
                         @click="remove(toast.id)"
-                        class="flex-shrink-0 p-1 rounded hover:opacity-70 transition-opacity"
-                        style="color: var(--color-text-secondary);"
+                        class="flex-shrink-0 p-1 rounded hover:opacity-70 transition-opacity text-text-secondary"
                         aria-label="Dismiss notification"
                     >
                         <X class="w-4 h-4" />

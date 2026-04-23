@@ -136,10 +136,10 @@ onUnmounted(() => {
         <!-- Meta row -->
         <div class="flex gap-3 mt-3">
             <div class="flex-1 min-w-0">
-                <h3 class="font-medium text-sm leading-tight line-clamp-2" style="color: var(--color-text-primary);">
+                <h3 class="font-medium text-sm leading-tight line-clamp-2 text-text-primary">
                     {{ ad.name }}
                 </h3>
-                <p class="text-xs mt-1" style="color: var(--color-text-muted);">Sponsored</p>
+                <p class="text-xs mt-1 text-text-muted">Sponsored</p>
             </div>
         </div>
     </div>

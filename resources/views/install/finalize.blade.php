@@ -52,7 +52,7 @@
                 </li>
                 <li class="check-item">
                     <span class="check-icon check-ok">2</span>
-                    <span class="check-label">Seed categories, gifts, and default settings</span>
+                    <span class="check-label">Seed categories and default settings</span>
                 </li>
                 <li class="check-item">
                     <span class="check-icon check-ok">3</span>

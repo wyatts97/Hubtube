@@ -16,7 +16,7 @@ const formatViews = (count) => {
 
 <template>
     <Link :href="`/image/${image.uuid}`" class="group block">
-        <div class="relative rounded-xl overflow-hidden" style="background-color: var(--color-bg-secondary);">
+        <div class="relative rounded-xl overflow-hidden bg-bg-secondary">
             <div class="aspect-square">
                 <img
                     :src="image.thumbnail_url || image.image_url"
@@ -34,10 +34,10 @@ const formatViews = (count) => {
             </div>
         </div>
         <div class="mt-2">
-            <p class="text-sm font-medium line-clamp-2" style="color: var(--color-text-primary);">
+            <p class="text-sm font-medium line-clamp-2 text-text-primary">
                 {{ image.title || 'Untitled' }}
             </p>
-            <p v-if="image.user" class="text-xs mt-0.5" style="color: var(--color-text-muted);">
+            <p v-if="image.user" class="text-xs mt-0.5 text-text-muted">
                 {{ image.user.username }}
             </p>
         </div>

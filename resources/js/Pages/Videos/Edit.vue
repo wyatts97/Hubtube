@@ -149,7 +149,7 @@ const statusColors = {
     <AppLayout>
         <div class="max-w-4xl mx-auto">
             <div class="flex items-center justify-between mb-6">
-                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('video.edit_video') || 'Edit Video' }}</h1>
+                <h1 class="text-2xl font-bold text-text-primary">{{ t('video.edit_video') || 'Edit Video' }}</h1>
                 <span :class="['px-3 py-1 rounded-full text-sm font-medium', statusColors[video.status]]">
                     {{ video.status.charAt(0).toUpperCase() + video.status.slice(1) }}
                 </span>
@@ -159,17 +159,17 @@ const statusColors = {
                 <!-- Processing Status Banner -->
                 <div v-if="videoStatus === 'pending' || videoStatus === 'processing'" class="card p-4">
                     <div class="flex items-center gap-3">
-                        <Loader2 class="w-5 h-5 animate-spin" style="color: var(--color-accent);" />
+                        <Loader2 class="w-5 h-5 animate-spin text-accent" />
                         <div class="flex-1">
-                            <p class="font-medium" style="color: var(--color-text-primary);">
+                            <p class="font-medium text-text-primary">
                                 {{ videoStatus === 'pending' ? 'Waiting to process...' : 'Processing video...' }}
                             </p>
-                            <p class="text-sm mt-0.5" style="color: var(--color-text-muted);">
+                            <p class="text-sm mt-0.5 text-text-muted">
                                 Your video is being processed. Thumbnails will appear below when ready.
                             </p>
                         </div>
                     </div>
-                    <div class="mt-3 w-full rounded-full h-2 overflow-hidden" style="background-color: var(--color-bg-secondary);">
+                    <div class="mt-3 w-full rounded-full h-2 overflow-hidden bg-bg-secondary">
                         <div
                             class="h-full rounded-full transition-all duration-500"
                             :class="videoStatus === 'processing' ? 'animate-pulse' : ''"
@@ -184,8 +184,8 @@ const statusColors = {
                 <!-- Moderation Notice -->
                 <div v-if="requiresModeration && (videoStatus === 'pending' || videoStatus === 'processing')" class="card p-4">
                     <div class="flex items-center gap-3">
-                        <ShieldCheck class="w-5 h-5 shrink-0" style="color: var(--color-text-secondary);" />
-                        <p class="text-sm" style="color: var(--color-text-secondary);">
+                        <ShieldCheck class="w-5 h-5 shrink-0 text-text-secondary" />
+                        <p class="text-sm text-text-secondary">
                             Your video will be posted after moderation and approval.
                         </p>
                     </div>
@@ -194,7 +194,7 @@ const statusColors = {
                 <!-- Video Preview -->
                 <div class="card p-4">
                     <div class="flex flex-col sm:flex-row items-start gap-4">
-                        <div class="w-full sm:w-64 aspect-video rounded-lg overflow-hidden shrink-0" style="background-color: var(--color-bg-secondary);">
+                        <div class="w-full sm:w-64 aspect-video rounded-lg overflow-hidden shrink-0 bg-bg-secondary">
                             <img 
                                 v-if="thumbnailPreview" 
                                 :src="thumbnailPreview" 
@@ -208,16 +208,16 @@ const statusColors = {
                                 preload="metadata"
                                 muted
                             ></video>
-                            <div v-else class="w-full h-full flex items-center justify-center" style="color: var(--color-text-muted);">
+                            <div v-else class="w-full h-full flex items-center justify-center text-text-muted">
                                 No thumbnail
                             </div>
                         </div>
                         <div class="flex-1 w-full">
-                            <p class="font-medium text-lg" style="color: var(--color-text-primary);">{{ video.title }}</p>
-                            <p class="text-sm mt-1" style="color: var(--color-text-muted);">
+                            <p class="font-medium text-lg text-text-primary">{{ video.title }}</p>
+                            <p class="text-sm mt-1 text-text-muted">
                                 {{ video.views_count.toLocaleString() }} views
                             </p>
-                            <p class="text-sm" style="color: var(--color-text-muted);">
+                            <p class="text-sm text-text-muted">
                                 Uploaded {{ new Date(video.created_at).toLocaleDateString() }}
                             </p>
                             <span :class="['mt-2 inline-block px-3 py-1 rounded-full text-xs font-medium', statusColors[videoStatus]]">
@@ -229,11 +229,11 @@ const statusColors = {
 
                 <!-- Thumbnail Selection -->
                 <div class="card p-6">
-                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ t('video.thumbnail') || 'Thumbnail' }}</h2>
+                    <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('video.thumbnail') || 'Thumbnail' }}</h2>
                     
                     <!-- Generated Thumbnails -->
                     <div v-if="generatedThumbnails.length" class="mb-6">
-                        <p class="text-sm mb-2" style="color: var(--color-text-secondary);">Choose from generated thumbnails:</p>
+                        <p class="text-sm mb-2 text-text-secondary">Choose from generated thumbnails:</p>
                         <div class="grid grid-cols-2 gap-3" style="max-width: 32rem;">
                             <button
                                 v-for="(thumb, index) in generatedThumbnails.slice(0, 4)"
@@ -258,28 +258,28 @@ const statusColors = {
                         </div>
                     </div>
                     <div v-else-if="videoStatus === 'pending' || videoStatus === 'processing'" class="mb-6">
-                        <p class="text-sm" style="color: var(--color-text-muted);">
+                        <p class="text-sm text-text-muted">
                             Thumbnails will be generated once processing completes...
                         </p>
                     </div>
 
                     <!-- Custom Upload -->
-                    <div class="pt-4" style="border-top: 1px solid var(--color-border);">
-                        <p class="text-sm mb-3" style="color: var(--color-text-secondary);">Or upload your own image:</p>
+                    <div class="pt-4 border-t border-border">
+                        <p class="text-sm mb-3 text-text-secondary">Or upload your own image:</p>
                         <label class="flex items-center gap-4 cursor-pointer group">
-                            <div class="w-32 aspect-video rounded-lg overflow-hidden shrink-0 group-hover:opacity-80 transition-opacity" style="background-color: var(--color-bg-secondary);">
+                            <div class="w-32 aspect-video rounded-lg overflow-hidden shrink-0 group-hover:opacity-80 transition-opacity bg-bg-secondary">
                                 <img 
                                     v-if="customThumbnailPreview" 
                                     :src="customThumbnailPreview" 
                                     class="w-full h-full object-cover"
                                 />
                                 <div v-else class="w-full h-full flex items-center justify-center">
-                                    <Image class="w-6 h-6" style="color: var(--color-text-muted);" />
+                                    <Image class="w-6 h-6 text-text-muted" />
                                 </div>
                             </div>
                             <div>
                                 <span class="btn btn-secondary text-sm">{{ t('video.upload_thumbnail') || 'Upload Custom Thumbnail' }}</span>
-                                <p class="text-xs mt-1" style="color: var(--color-text-muted);">JPG, PNG or WebP, max 5MB</p>
+                                <p class="text-xs mt-1 text-text-muted">JPG, PNG or WebP, max 5MB</p>
                             </div>
                             <input
                                 type="file"
@@ -294,10 +294,10 @@ const statusColors = {
 
                 <!-- Video Details -->
                 <div class="card p-6 space-y-4">
-                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ t('video.video_details') || 'Video Details' }}</h2>
+                    <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('video.video_details') || 'Video Details' }}</h2>
                     
                     <div>
-                        <label for="title" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('upload.video_title') || 'Title' }}</label>
+                        <label for="title" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('upload.video_title') || 'Title' }}</label>
                         <input
                             id="title"
                             v-model="form.title"
@@ -310,7 +310,7 @@ const statusColors = {
                     </div>
 
                     <div>
-                        <label for="description" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('upload.video_description') || 'Description' }}</label>
+                        <label for="description" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('upload.video_description') || 'Description' }}</label>
                         <textarea
                             id="description"
                             v-model="form.description"
@@ -322,7 +322,7 @@ const statusColors = {
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="category" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('video.category') || 'Category' }}</label>
+                            <label for="category" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('video.category') || 'Category' }}</label>
                             <select id="category" v-model="form.category_id" class="input">
                                 <option value="">Select category</option>
                                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">
@@ -332,7 +332,7 @@ const statusColors = {
                         </div>
 
                         <div>
-                            <label for="privacy" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('video.privacy') || 'Privacy' }}</label>
+                            <label for="privacy" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('video.privacy') || 'Privacy' }}</label>
                             <select id="privacy" v-model="form.privacy" class="input">
                                 <option value="public">Public</option>
                                 <option value="unlisted">Unlisted</option>
@@ -342,12 +342,12 @@ const statusColors = {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('video.tags') || 'Tags' }}</label>
+                        <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('video.tags') || 'Tags' }}</label>
                         <div class="flex flex-wrap gap-2 mb-2">
                             <span
                                 v-for="(tag, index) in form.tags"
                                 :key="index"
-                                class="flex items-center gap-1 px-2 py-1 rounded text-sm" style="background-color: var(--color-bg-secondary); color: var(--color-text-secondary);"
+                                class="flex items-center gap-1 px-2 py-1 rounded text-sm bg-bg-secondary text-text-secondary"
                             >
                                 #{{ tag }}
                                 <button type="button" @click="removeTag(index)" class="hover:text-red-400">
@@ -366,13 +366,12 @@ const statusColors = {
                                 @blur="setTimeout(() => showTagSuggestions = false, 200)"
                                 autocomplete="off"
                             />
-                            <div v-if="showTagSuggestions && filteredTags.length" class="absolute z-50 w-full mt-1 rounded-lg shadow-xl overflow-hidden max-h-48 overflow-y-auto" style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);">
+                            <div v-if="showTagSuggestions && filteredTags.length" class="absolute z-50 w-full mt-1 rounded-lg shadow-xl overflow-hidden max-h-48 overflow-y-auto bg-bg-card border border-border">
                                 <button
                                     v-for="suggestion in filteredTags"
                                     :key="suggestion"
                                     type="button"
-                                    class="w-full text-left px-3 py-2 text-sm hover:opacity-80 transition-opacity"
-                                    style="color: var(--color-text-primary);"
+                                    class="w-full text-left px-3 py-2 text-sm hover:opacity-80 transition-opacity text-text-primary"
                                     @mousedown.prevent="addTag(suggestion)"
                                 >
                                     #{{ suggestion }}
@@ -384,7 +383,7 @@ const statusColors = {
 
                 <!-- Monetization -->
                 <div v-if="page.props.app?.monetization_enabled !== false" class="card p-6 space-y-4">
-                    <h2 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">{{ t('video.monetization') || 'Monetization' }}</h2>
+                    <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('video.monetization') || 'Monetization' }}</h2>
                     
                     <div class="flex items-center gap-3">
                         <input
@@ -393,12 +392,12 @@ const statusColors = {
                             type="checkbox"
                             class="w-4 h-4 rounded bg-dark-700 border-dark-600"
                         />
-                        <label for="monetization" style="color: var(--color-text-secondary);">Enable monetization for this video</label>
+                        <label for="monetization" class="text-text-secondary">Enable monetization for this video</label>
                     </div>
 
                     <div v-if="form.monetization_enabled" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="price" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Purchase Price ($)</label>
+                            <label for="price" class="block text-sm font-medium mb-1 text-text-secondary">Purchase Price ($)</label>
                             <input
                                 id="price"
                                 v-model="form.price"
@@ -412,7 +411,7 @@ const statusColors = {
                         </div>
 
                         <div>
-                            <label for="rent_price" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Rent Price ($)</label>
+                            <label for="rent_price" class="block text-sm font-medium mb-1 text-text-secondary">Rent Price ($)</label>
                             <input
                                 id="rent_price"
                                 v-model="form.rent_price"

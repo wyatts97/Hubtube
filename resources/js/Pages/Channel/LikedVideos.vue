@@ -47,13 +47,13 @@ const tabs = computed(() => {
                 <img :src="channel.avatar_url || channel.avatar || '/images/default_avatar.webp'" :alt="channel.username" class="w-full h-full object-cover" />
             </div>
             <div>
-                <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ channel.username }}</h1>
-                <p style="color: var(--color-text-muted);">{{ tSafe('channel.liked_videos', 'Liked Videos') }}</p>
+                <h1 class="text-xl font-bold text-text-primary">{{ channel.username }}</h1>
+                <p class="text-text-muted">{{ tSafe('channel.liked_videos', 'Liked Videos') }}</p>
             </div>
         </div>
 
         <!-- Tabs -->
-        <div class="mb-6" style="border-bottom: 1px solid var(--color-border);">
+        <div class="mb-6 border-b border-border">
             <nav class="flex gap-6 overflow-x-auto scrollbar-hide">
                 <Link
                     v-for="tab in tabs"
@@ -78,8 +78,8 @@ const tabs = computed(() => {
         </div>
 
         <div v-else class="text-center py-12">
-            <Heart class="w-12 h-12 mx-auto mb-3" style="color: var(--color-text-muted);" />
-            <p style="color: var(--color-text-muted);">{{ t('channel.no_liked_videos') || 'No liked videos yet' }}</p>
+            <Heart class="w-12 h-12 mx-auto mb-3 text-text-muted" />
+            <p class="text-text-muted">{{ t('channel.no_liked_videos') || 'No liked videos yet' }}</p>
         </div>
 
         <!-- Pagination -->

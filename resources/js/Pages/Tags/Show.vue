@@ -6,8 +6,11 @@ import VideoCard from '@/Components/VideoCard.vue';
 import { ChevronLeft, ChevronRight, Hash } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { useI18n } from '@/Composables/useI18n';
+import { useVideoGrid } from '@/Composables/useVideoGrid';
+import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
 
 const { t, localizedUrl } = useI18n();
+const { gridClass } = useVideoGrid();
 
 const props = defineProps({
     tag: String,
@@ -16,12 +19,10 @@ const props = defineProps({
     seo: { type: Object, default: () => ({}) },
 });
 
-const page = usePage();
-const mobileGrid = computed(() => page.props.theme?.mobileVideoGrid === '2' ? 2 : 1);
-const gridClass = computed(() => mobileGrid.value === 2
-    ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4'
-    : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
-);
+const breadcrumbs = computed(() => [
+    { label: t('nav.tags') || 'Tags', href: localizedUrl('/tags') },
+    { label: props.translatedTag || props.tag },
+]);
 
 const displayTag = props.translatedTag || props.tag;
 
@@ -34,16 +35,11 @@ const goToPage = (pageNum) => {
     <SeoHead :seo="seo" />
 
     <AppLayout>
-        <div class="mb-6">
-            <div class="flex items-center gap-2 mb-1">
-                <Link :href="localizedUrl('/tags')" class="text-sm hover:opacity-80" style="color: var(--color-accent);">{{ t('tags.title') || 'Tags' }}</Link>
-                <span style="color: var(--color-text-muted);">/</span>
-            </div>
-            <div class="flex items-center gap-3">
-                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ displayTag }}</h1>
-                <span class="text-sm" style="color: var(--color-text-muted);">•</span>
-                <span class="text-sm" style="color: var(--color-text-muted);">{{ t('tags.video_count', { count: videos.total || 0 }) || `${videos.total || 0} videos` }}</span>
-            </div>
+        <Breadcrumbs :items="breadcrumbs" />
+        <div class="mb-6 flex items-center gap-3">
+            <h1 class="text-2xl font-bold text-text-primary">#{{ displayTag }}</h1>
+            <span class="text-sm text-text-muted">•</span>
+            <span class="text-sm text-text-muted">{{ t('tags.video_count', { count: videos.total || 0 }) || `${videos.total || 0} videos` }}</span>
         </div>
 
         <div v-if="videos.data?.length" :class="gridClass">
@@ -51,8 +47,8 @@ const goToPage = (pageNum) => {
         </div>
 
         <div v-else class="text-center py-12">
-            <Hash class="w-12 h-12 mx-auto mb-3" style="color: var(--color-text-muted);" />
-            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('tags.no_videos') || 'No videos with this tag yet' }}</p>
+            <Hash class="w-12 h-12 mx-auto mb-3 text-text-muted" />
+            <p class="text-lg text-text-secondary">{{ t('tags.no_videos') || 'No videos with this tag yet' }}</p>
         </div>
 
         <!-- Pagination -->
@@ -80,7 +76,7 @@ const goToPage = (pageNum) => {
                     </button>
                     <span
                         v-else-if="pageNum === videos.current_page - 3 || pageNum === videos.current_page + 3"
-                        style="color: var(--color-text-muted);"
+                        class="text-text-muted"
                     >...</span>
                 </template>
             </div>

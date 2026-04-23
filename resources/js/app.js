@@ -1,7 +1,6 @@
 import './bootstrap';
 import '../css/app.css';
 
-import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 import NProgress from 'nprogress';
 
 import { createApp, h } from 'vue';
@@ -9,7 +8,6 @@ import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import { MotionPlugin } from '@vueuse/motion';
-import VueVirtualScroller from 'vue-virtual-scroller';
 import * as Sentry from '@sentry/vue';
 
 const appName = import.meta.env.VITE_APP_NAME || 'HubTube';
@@ -46,9 +44,7 @@ router.on('navigate', (event) => {
     // Dynamically update progress bar color from theme settings
     const theme = event.detail.page.props?.theme;
     if (theme) {
-        const isDark = document.documentElement.classList.contains('dark');
-        const accent = isDark ? theme.dark?.accent : theme.light?.accent;
-        const color = theme.progressBarColor || accent || '#ef4444';
+        const color = theme.progressBarColor || theme.dark?.accent || '#ef4444';
         document.documentElement.style.setProperty('--nprogress-color', color);
     }
 });
@@ -94,7 +90,6 @@ createInertiaApp({
             .use(plugin)
             .use(ZiggyVue)
             .use(MotionPlugin)
-            .use(VueVirtualScroller)
             .mount(el);
     },
     progress: false,

@@ -55,7 +55,7 @@ const tabs = computed(() => {
         </div>
 
         <!-- Tabs -->
-        <div class="mb-6" style="border-bottom: 1px solid var(--color-border);">
+        <div class="mb-6 border-b border-border">
             <nav class="flex gap-6 overflow-x-auto scrollbar-hide">
                 <Link
                     v-for="tab in tabs"

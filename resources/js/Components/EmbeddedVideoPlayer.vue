@@ -77,11 +77,11 @@ const embedUrl = computed(() => {
         
         <!-- Video info (can be hidden when parent renders its own info) -->
         <div v-if="showInfo" class="mt-4">
-            <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">
+            <h1 class="text-xl font-bold text-text-primary">
                 {{ video.title }}
             </h1>
             
-            <div class="flex items-center gap-4 mt-2 text-sm" style="color: var(--color-text-muted);">
+            <div class="flex items-center gap-4 mt-2 text-sm text-text-muted">
                 <span>{{ video.formatted_views || video.views_count?.toLocaleString() }} views</span>
                 <span v-if="video.duration_formatted">{{ video.duration_formatted }}</span>
                 <span class="capitalize">{{ video.source_site }}</span>

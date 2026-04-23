@@ -161,7 +161,7 @@ class TranslationController extends Controller
 
         // Translate video slug if the current path is a video page
         $translatedPath = $currentPath;
-        $knownRoutes = ['/', '/trending', '/shorts', '/search', '/videos', '/live', '/contact',
+        $knownRoutes = ['/', '/trending', '/search', '/videos', '/contact',
             '/categories', '/playlists', '/public-playlists', '/history', '/settings', '/dashboard', '/upload',
             '/login', '/register', '/feed', '/notifications'];
         $knownPrefixes = ['/pages/', '/channel/', '/category/', '/tag/', '/playlist/', '/gallery/', '/image/',

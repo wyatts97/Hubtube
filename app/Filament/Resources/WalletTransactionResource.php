@@ -38,8 +38,6 @@ class WalletTransactionResource extends Resource
                             ->options([
                                 'deposit' => 'Deposit',
                                 'withdrawal' => 'Withdrawal',
-                                'gift_sent' => 'Gift Sent',
-                                'gift_received' => 'Gift Received',
                                 'video_purchase' => 'Video Purchase',
                                 'video_sale' => 'Video Sale',
                                 'subscription' => 'Subscription',
@@ -81,8 +79,8 @@ class WalletTransactionResource extends Resource
                 Tables\Columns\TextColumn::make('type')
                     ->badge()
                     ->color(fn (string $state): string => match (true) {
-                        in_array($state, ['deposit', 'gift_received', 'video_sale']) => 'success',
-                        in_array($state, ['withdrawal', 'gift_sent', 'video_purchase']) => 'danger',
+                        in_array($state, ['deposit', 'video_sale']) => 'success',
+                        in_array($state, ['withdrawal', 'video_purchase']) => 'danger',
                         $state === 'refund' => 'warning',
                         default => 'gray',
                     }),
@@ -109,8 +107,6 @@ class WalletTransactionResource extends Resource
                     ->options([
                         'deposit' => 'Deposit',
                         'withdrawal' => 'Withdrawal',
-                        'gift_sent' => 'Gift Sent',
-                        'gift_received' => 'Gift Received',
                         'video_purchase' => 'Video Purchase',
                         'video_sale' => 'Video Sale',
                     ]),

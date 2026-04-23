@@ -51,7 +51,7 @@ const goToPage = (pageNum) => {
                 </button>
                 <span
                     v-else-if="pageNum === currentPage - 3 || pageNum === currentPage + 3"
-                    style="color: var(--color-text-muted);"
+                    class="text-text-muted"
                 >
                     ...
                 </span>

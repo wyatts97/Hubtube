@@ -61,17 +61,17 @@ const refresh = () => {
         <div class="flex items-center justify-center py-20 px-4">
             <div class="w-full max-w-md text-center">
                 <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style="background-color: color-mix(in srgb, var(--color-accent) 20%, transparent);">
-                    <AlertTriangle class="w-10 h-10" style="color: var(--color-accent);" />
+                    <AlertTriangle class="w-10 h-10 text-accent" />
                 </div>
 
-                <h1 class="text-5xl font-bold mb-2" style="color: var(--color-text-primary);">{{ status }}</h1>
-                <h2 class="text-xl font-semibold mb-4" style="color: var(--color-text-primary);">{{ title }}</h2>
-                <p class="mb-6" style="color: var(--color-text-secondary);">{{ description }}</p>
+                <h1 class="text-5xl font-bold mb-2 text-text-primary">{{ status }}</h1>
+                <h2 class="text-xl font-semibold mb-4 text-text-primary">{{ title }}</h2>
+                <p class="mb-6 text-text-secondary">{{ description }}</p>
 
                 <!-- 404 Countdown -->
-                <div v-if="is404" class="mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm" style="background-color: var(--color-bg-secondary); color: var(--color-text-muted); border: 1px solid var(--color-border);">
+                <div v-if="is404" class="mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-bg-secondary text-text-muted border border-border">
                     <Clock class="w-4 h-4" />
-                    Redirecting to homepage in <span class="font-bold" style="color: var(--color-accent);">{{ countdown }}</span>s
+                    Redirecting to homepage in <span class="font-bold text-accent">{{ countdown }}</span>s
                 </div>
 
                 <div class="flex flex-col sm:flex-row gap-3 justify-center">

@@ -23,15 +23,15 @@ defineProps({
                 <CheckCircle class="w-10 h-10 text-green-500" />
             </div>
 
-            <h1 class="text-2xl font-bold mb-3" style="color: var(--color-text-primary);">
+            <h1 class="text-2xl font-bold mb-3 text-text-primary">
                 {{ t('video.upload_thanks') || 'Thank You for Your Upload!' }}
             </h1>
 
-            <p class="text-lg mb-2" style="color: var(--color-text-secondary);">
-                Your video <strong v-if="videoTitle" style="color: var(--color-text-primary);">"{{ videoTitle }}"</strong> has been received.
+            <p class="text-lg mb-2 text-text-secondary">
+                Your video <strong v-if="videoTitle" class="text-text-primary">"{{ videoTitle }}"</strong> has been received.
             </p>
 
-            <p class="mb-8" style="color: var(--color-text-muted);">
+            <p class="mb-8 text-text-muted">
                 It will be processed and reviewed by a moderator. Once approved, it will be published and visible to everyone. This usually happens within 24 hours.
             </p>
 
@@ -40,7 +40,7 @@ defineProps({
                     <Upload class="w-4 h-4" />
                     {{ t('video.upload_another') || 'Upload Another' }}
                 </Link>
-                <Link href="/" class="btn inline-flex items-center gap-2" style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);">
+                <Link href="/" class="btn inline-flex items-center gap-2 bg-bg-secondary text-text-primary">
                     <Home class="w-4 h-4" />
                     {{ t('errors.go_home') || 'Go Home' }}
                 </Link>

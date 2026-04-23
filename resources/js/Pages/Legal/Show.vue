@@ -17,15 +17,14 @@ const sanitizedContent = computed(() => sanitizeHtml(props.page?.content ?? ''))
     <AppLayout>
         <div class="max-w-4xl mx-auto">
             <div class="card p-6 md:p-10">
-                <h1 class="text-2xl md:text-3xl font-bold mb-2" style="color: var(--color-text-primary);">
+                <h1 class="text-2xl md:text-3xl font-bold mb-2 text-text-primary">
                     {{ page.title }}
                 </h1>
-                <p class="text-sm mb-8" style="color: var(--color-text-muted);">
+                <p class="text-sm mb-8 text-text-muted">
                     Last updated: {{ page.updated_at }}
                 </p>
                 <div
-                    class="prose prose-invert max-w-none legal-content"
-                    style="color: var(--color-text-secondary);"
+                    class="prose prose-invert max-w-none legal-content text-text-secondary"
                     v-html="sanitizedContent"
                 ></div>
             </div>

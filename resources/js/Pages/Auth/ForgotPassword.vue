@@ -24,16 +24,16 @@ const onSubmit = () => {
 <template>
     <Head title="Forgot Password" />
 
-    <div class="min-h-screen flex items-center justify-center px-4" style="background-color: var(--color-bg-primary);">
+    <div class="min-h-screen flex items-center justify-center px-4 bg-bg-primary">
         <div class="w-full max-w-md">
             <div class="text-center mb-8">
                 <Link href="/" class="inline-flex items-center gap-2">
-                    <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background-color: var(--color-accent);">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-accent">
                         <span class="text-2xl font-bold text-white">H</span>
                     </div>
                 </Link>
-                <h1 class="text-2xl font-bold mt-4" style="color: var(--color-text-primary);">{{ t('auth.forgot_password') || 'Forgot Password' }}</h1>
-                <p class="mt-2" style="color: var(--color-text-secondary);">{{ t('auth.forgot_password_desc') || "Enter your email and we'll send you a reset link" }}</p>
+                <h1 class="text-2xl font-bold mt-4 text-text-primary">{{ t('auth.forgot_password') || 'Forgot Password' }}</h1>
+                <p class="mt-2 text-text-secondary">{{ t('auth.forgot_password_desc') || "Enter your email and we'll send you a reset link" }}</p>
             </div>
 
             <div class="card p-6">
@@ -43,7 +43,7 @@ const onSubmit = () => {
 
                 <form @submit.prevent="onSubmit" class="space-y-4">
                     <div>
-                        <label for="email" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">
+                        <label for="email" class="block text-sm font-medium mb-1 text-text-secondary">
                             {{ t('settings.email') || 'Email Address' }}
                         </label>
                         <input
@@ -64,7 +64,7 @@ const onSubmit = () => {
                 </form>
 
                 <div class="mt-6 text-center">
-                    <Link href="/login" class="flex items-center justify-center gap-2 text-sm" style="color: var(--color-text-secondary);">
+                    <Link href="/login" class="flex items-center justify-center gap-2 text-sm text-text-secondary">
                         <ArrowLeft class="w-4 h-4" />
                         {{ t('auth.back_to_login') || 'Back to Sign In' }}
                     </Link>

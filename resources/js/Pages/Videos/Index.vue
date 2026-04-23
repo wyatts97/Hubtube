@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
@@ -7,18 +7,15 @@ import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { Filter, X, ArrowUpDown, Clock, Flame, CalendarDays } from 'lucide-vue-next';
 import AdSlot from '@/Components/AdSlot.vue';
 import OutstreamAd from '@/Components/OutstreamAd.vue';
+import BannerAd from '@/Components/UI/BannerAd.vue';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 import { useI18n } from '@/Composables/useI18n';
+import { useVideoGrid } from '@/Composables/useVideoGrid';
 
 const { t } = useI18n();
 
 const { translateVideos, tr } = useAutoTranslate(['title']);
-const page = usePage();
-const mobileGrid = computed(() => page.props.theme?.mobileVideoGrid === '2' ? 2 : 1);
-const gridClass = computed(() => mobileGrid.value === 2
-    ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4'
-    : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
-);
+const { gridClass } = useVideoGrid();
 
 const props = defineProps({
     videos: Object,
@@ -92,22 +89,6 @@ const withTranslation = (video) => {
     return video;
 };
 
-const bannerEnabled = computed(() => !!props.bannerAd?.enabled);
-const desktopBannerHtml = computed(() => {
-    if (props.bannerAd?.image && !props.bannerAd?.code) {
-        const img = `<img src="${props.bannerAd.image}" alt="Ad" style="max-width:728px;height:auto;">`;
-        return props.bannerAd.link ? `<a href="${props.bannerAd.link}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
-    }
-    return props.bannerAd?.code || '';
-});
-const mobileBannerHtml = computed(() => {
-    if (props.bannerAd?.mobileImage && !props.bannerAd?.mobileCode) {
-        const img = `<img src="${props.bannerAd.mobileImage}" alt="Ad" style="max-width:300px;height:auto;">`;
-        return props.bannerAd.mobileLink ? `<a href="${props.bannerAd.mobileLink}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
-    }
-    return props.bannerAd?.mobileCode || props.bannerAd?.code || '';
-});
-
 const adsEnabled = computed(() => {
     const enabled = props.adSettings?.videoGridEnabled;
     return enabled === true || enabled === 'true' || enabled === 1 || enabled === '1';
@@ -145,18 +126,15 @@ const getOutstreamAd = (index) => {
 
     <AppLayout>
         <!-- Top Ad Banner -->
-        <div v-if="bannerEnabled && (desktopBannerHtml || mobileBannerHtml)" class="mb-4 flex justify-center">
-            <AdSlot :html="desktopBannerHtml" class="hidden sm:block" />
-            <AdSlot :html="mobileBannerHtml" class="sm:hidden" />
-        </div>
+        <BannerAd :config="bannerAd" />
 
         <div class="mb-5">
             <div class="flex items-center justify-between gap-3 flex-wrap">
-                <h1 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ t('common.browse_videos') || 'Browse Videos' }}</h1>
+                <h1 class="text-xl font-bold text-text-primary">{{ t('common.browse_videos') || 'Browse Videos' }}</h1>
 
                 <div class="flex items-center gap-2">
                     <!-- Sort Buttons -->
-                    <div class="flex items-center rounded-lg overflow-hidden" style="border: 1px solid var(--color-border);">
+                    <div class="flex items-center rounded-lg overflow-hidden border border-border">
                         <button
                             @click="setSort('')"
                             :class="['px-3 py-1.5 text-xs font-medium transition-colors', !sort ? 'text-white' : '']"
@@ -194,8 +172,7 @@ const getOutstreamAd = (index) => {
                         <!-- Category Dropdown -->
                         <div
                             v-if="showFilters"
-                            class="absolute right-0 top-full mt-2 w-56 rounded-lg shadow-xl z-50 py-1 max-h-80 overflow-y-auto"
-                            style="background-color: var(--color-bg-card); border: 1px solid var(--color-border);"
+                            class="absolute right-0 top-full mt-2 w-56 rounded-lg shadow-xl z-50 py-1 max-h-80 overflow-y-auto bg-bg-card border border-border"
                         >
                             <button
                                 @click="setCategory('')"
@@ -204,7 +181,7 @@ const getOutstreamAd = (index) => {
                             >
                                 {{ t('categories.all') || 'All Categories' }}
                             </button>
-                            <div style="border-top: 1px solid var(--color-border); margin: 2px 0;"></div>
+                            <div class="border-t border-border" style="margin: 2px 0;"></div>
                             <button
                                 v-for="cat in categories"
                                 :key="cat.id"
@@ -221,7 +198,7 @@ const getOutstreamAd = (index) => {
 
             <!-- Active Category Chip -->
             <div v-if="activeCategory" class="mt-3 flex items-center gap-2">
-                <span class="text-xs px-3 py-1 rounded-full inline-flex items-center gap-1.5" style="background-color: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border);">
+                <span class="text-xs px-3 py-1 rounded-full inline-flex items-center gap-1.5 bg-bg-secondary text-text-primary border border-border">
                     {{ activeCategory.name }}
                     <button @click="clearCategory" class="hover:opacity-70">
                         <X class="w-3 h-3" />
@@ -252,8 +229,8 @@ const getOutstreamAd = (index) => {
         </div>
 
         <div v-else class="text-center py-16">
-            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('common.no_videos_found') || 'No videos found' }}</p>
-            <p class="mt-2 text-sm" style="color: var(--color-text-muted);">{{ t('common.try_different') || 'Try adjusting your filters' }}</p>
+            <p class="text-lg text-text-secondary">{{ t('common.no_videos_found') || 'No videos found' }}</p>
+            <p class="mt-2 text-sm text-text-muted">{{ t('common.try_different') || 'Try adjusting your filters' }}</p>
         </div>
 
         <!-- Pagination -->
@@ -271,8 +248,7 @@ const getOutstreamAd = (index) => {
                 />
                 <span
                     v-else
-                    class="px-3 py-1.5 rounded-lg text-sm"
-                    style="color: var(--color-text-muted);"
+                    class="px-3 py-1.5 rounded-lg text-sm text-text-muted"
                     v-html="link.label"
                 />
             </template>

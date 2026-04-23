@@ -104,7 +104,7 @@ fetchComments();
 
 <template>
     <div class="mt-6">
-        <h3 class="text-lg font-semibold mb-4" style="color: var(--color-text-primary);">
+        <h3 class="text-lg font-semibold mb-4 text-text-primary">
             {{ comments.length }} {{ t('video.comments') || 'Comments' }}
         </h3>
 
@@ -141,8 +141,8 @@ fetchComments();
         </div>
 
         <div v-else class="card p-4 mb-6 text-center">
-            <p style="color: var(--color-text-secondary);">
-                <Link href="/login" class="hover:underline" style="color: var(--color-accent);">{{ t('auth.login') || 'Sign in' }}</Link>
+            <p class="text-text-secondary">
+                <Link href="/login" class="hover:underline text-accent">{{ t('auth.login') || 'Sign in' }}</Link>
             </p>
         </div>
 
@@ -161,12 +161,12 @@ fetchComments();
                 </Link>
                 <div class="flex-1">
                     <div class="flex items-center gap-2">
-                        <Link :href="`/channel/${comment.user?.username}`" class="font-medium hover:opacity-80" style="color: var(--color-text-primary);">
+                        <Link :href="`/channel/${comment.user?.username}`" class="font-medium hover:opacity-80 text-text-primary">
                             {{ comment.user?.username }}
                         </Link>
-                        <span class="text-sm" style="color: var(--color-text-muted);">{{ timeAgo(comment.created_at) }}</span>
+                        <span class="text-sm text-text-muted">{{ timeAgo(comment.created_at) }}</span>
                     </div>
-                    <p class="mt-1 whitespace-pre-wrap" style="color: var(--color-text-secondary);">{{ comment.content }}</p>
+                    <p class="mt-1 whitespace-pre-wrap text-text-secondary">{{ comment.content }}</p>
                     
                     <!-- Comment Actions -->
                     <div class="flex items-center gap-4 mt-2">
@@ -188,8 +188,7 @@ fetchComments();
                         <button 
                             v-if="user"
                             @click="replyingTo = replyingTo === comment.id ? null : comment.id"
-                            class="text-sm hover:opacity-80"
-                            style="color: var(--color-text-muted);"
+                            class="text-sm hover:opacity-80 text-text-muted"
                         >
                             {{ t('video.reply') || 'Reply' }}
                         </button>
@@ -205,7 +204,7 @@ fetchComments();
                     <!-- Reply Input -->
                     <div v-if="replyingTo === comment.id" class="flex gap-3 mt-4">
                         <div class="w-8 h-8 avatar flex-shrink-0">
-                            <div class="w-full h-full flex items-center justify-center text-white text-sm font-medium" style="background-color: var(--color-accent);">
+                            <div class="w-full h-full flex items-center justify-center text-white text-sm font-medium bg-accent">
                                 {{ user.username?.charAt(0)?.toUpperCase() }}
                             </div>
                         </div>
@@ -230,17 +229,17 @@ fetchComments();
                     </div>
 
                     <!-- Replies -->
-                    <div v-if="comment.replies?.length" class="mt-4 space-y-4 pl-4 border-l-2" style="border-color: var(--color-border);">
+                    <div v-if="comment.replies?.length" class="mt-4 space-y-4 pl-4 border-l-2 border-border">
                         <div v-for="reply in comment.replies" :key="reply.id" class="flex gap-3">
                             <div class="w-8 h-8 avatar flex-shrink-0">
                                 <img :src="reply.user?.avatar_url || reply.user?.avatar || '/images/default_avatar.webp'" class="w-full h-full object-cover" />
                             </div>
                             <div class="flex-1">
                                 <div class="flex items-center gap-2">
-                                    <span class="font-medium text-sm" style="color: var(--color-text-primary);">{{ reply.user?.username }}</span>
-                                    <span class="text-xs" style="color: var(--color-text-muted);">{{ timeAgo(reply.created_at) }}</span>
+                                    <span class="font-medium text-sm text-text-primary">{{ reply.user?.username }}</span>
+                                    <span class="text-xs text-text-muted">{{ timeAgo(reply.created_at) }}</span>
                                 </div>
-                                <p class="text-sm mt-1" style="color: var(--color-text-secondary);">{{ reply.content }}</p>
+                                <p class="text-sm mt-1 text-text-secondary">{{ reply.content }}</p>
                             </div>
                         </div>
                     </div>
@@ -248,7 +247,7 @@ fetchComments();
             </div>
 
             <div v-if="!loading && comments.length === 0" class="text-center py-8">
-                <p style="color: var(--color-text-muted);">{{ t('video.no_comments') || 'No comments yet' }}</p>
+                <p class="text-text-muted">{{ t('video.no_comments') || 'No comments yet' }}</p>
             </div>
         </div>
     </div>

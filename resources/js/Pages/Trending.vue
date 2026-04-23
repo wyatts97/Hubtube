@@ -11,12 +11,14 @@ import Pagination from '@/Components/Pagination.vue';
 import AdSlot from '@/Components/AdSlot.vue';
 import { useI18n } from '@/Composables/useI18n';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
+import { useVideoGrid } from '@/Composables/useVideoGrid';
 
 const { t, localizedUrl } = useI18n();
 const { translateVideos, tr } = useAutoTranslate(['title']);
+const { gridClass, mobileGrid } = useVideoGrid();
 
-const isInitialLoad = ref(true);
-onMounted(() => { setTimeout(() => { isInitialLoad.value = false; }, 100); });
+// Server already hydrated via Inertia; skip initial skeleton delay.
+const isInitialLoad = ref(false);
 
 const props = defineProps({
     videos: Object,
@@ -41,11 +43,6 @@ const changePeriod = (period) => {
 
 const page = usePage();
 const infiniteScrollEnabled = computed(() => page.props.app?.infinite_scroll_enabled ?? false);
-const mobileGrid = computed(() => page.props.theme?.mobileVideoGrid === '2' ? 2 : 1);
-const gridClass = computed(() => mobileGrid.value === 2
-    ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4'
-    : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
-);
 
 // Infinite scroll state
 const videoList = ref([...(props.videos?.data || [])]);
@@ -179,8 +176,8 @@ const getSponsoredCard = (index) => {
         <div class="mb-6">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('nav.trending') || 'Trending' }}</h1>
-                    <p class="mt-1" style="color: var(--color-text-secondary);">{{ t('home.popular') || 'Most viewed videos' }}</p>
+                    <h1 class="text-2xl font-bold text-text-primary">{{ t('nav.trending') || 'Trending' }}</h1>
+                    <p class="mt-1 text-text-secondary">{{ t('home.popular') || 'Most viewed videos' }}</p>
                 </div>
                 <div class="flex gap-1 flex-wrap">
                     <button
@@ -219,11 +216,11 @@ const getSponsoredCard = (index) => {
             </div>
             
             <div ref="loadMoreTrigger" class="flex justify-center py-8">
-                <div v-if="loading" class="flex items-center gap-2" style="color: var(--color-text-secondary);">
+                <div v-if="loading" class="flex items-center gap-2 text-text-secondary">
                     <Loader2 class="w-5 h-5 animate-spin" />
                     <span>{{ t('home.loading_more') || 'Loading more videos...' }}</span>
                 </div>
-                <p v-else-if="!hasMore && videoList.length > 0" class="text-sm" style="color: var(--color-text-muted);">
+                <p v-else-if="!hasMore && videoList.length > 0" class="text-sm text-text-muted">
                     {{ t('home.reached_end') || "You've reached the end" }}
                 </p>
             </div>
@@ -243,8 +240,8 @@ const getSponsoredCard = (index) => {
             </div>
 
             <div v-else class="text-center py-12">
-                <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('trending.no_videos') || 'No trending videos yet' }}</p>
-                <p class="mt-2" style="color: var(--color-text-muted);">{{ t('trending.check_back') || 'Check back later for popular content' }}</p>
+                <p class="text-lg text-text-secondary">{{ t('trending.no_videos') || 'No trending videos yet' }}</p>
+                <p class="mt-2 text-text-muted">{{ t('trending.check_back') || 'Check back later for popular content' }}</p>
             </div>
 
             <Pagination

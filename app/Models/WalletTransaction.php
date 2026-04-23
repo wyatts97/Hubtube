@@ -33,8 +33,6 @@ class WalletTransaction extends Model
 
     const TYPE_DEPOSIT = 'deposit';
     const TYPE_WITHDRAWAL = 'withdrawal';
-    const TYPE_GIFT_SENT = 'gift_sent';
-    const TYPE_GIFT_RECEIVED = 'gift_received';
     const TYPE_VIDEO_PURCHASE = 'video_purchase';
     const TYPE_VIDEO_SALE = 'video_sale';
     const TYPE_SUBSCRIPTION = 'subscription';
@@ -61,7 +59,6 @@ class WalletTransaction extends Model
     {
         return $query->whereIn('type', [
             self::TYPE_DEPOSIT,
-            self::TYPE_GIFT_RECEIVED,
             self::TYPE_VIDEO_SALE,
             self::TYPE_SUBSCRIPTION_EARNING,
             self::TYPE_AD_REVENUE,
@@ -73,7 +70,6 @@ class WalletTransaction extends Model
     {
         return $query->whereIn('type', [
             self::TYPE_WITHDRAWAL,
-            self::TYPE_GIFT_SENT,
             self::TYPE_VIDEO_PURCHASE,
             self::TYPE_SUBSCRIPTION,
         ]);
@@ -83,7 +79,6 @@ class WalletTransaction extends Model
     {
         return in_array($this->type, [
             self::TYPE_DEPOSIT,
-            self::TYPE_GIFT_RECEIVED,
             self::TYPE_VIDEO_SALE,
             self::TYPE_SUBSCRIPTION_EARNING,
             self::TYPE_AD_REVENUE,

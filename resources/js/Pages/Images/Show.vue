@@ -60,7 +60,7 @@ const lightboxImages = computed(() => {
     <AppLayout>
         <div class="max-w-6xl mx-auto">
             <!-- Back Button -->
-            <Link href="/images" class="inline-flex items-center gap-1.5 mb-4 text-sm hover:opacity-80" style="color: var(--color-text-secondary);">
+            <Link href="/images" class="inline-flex items-center gap-1.5 mb-4 text-sm hover:opacity-80 text-text-secondary">
                 <ArrowLeft class="w-4 h-4" />
                 Back to Images
             </Link>
@@ -75,8 +75,7 @@ const lightboxImages = computed(() => {
                         <img
                             :src="image.image_url"
                             :alt="image.title || 'Image'"
-                            class="w-full h-auto max-h-[80vh] object-contain"
-                            style="background-color: var(--color-bg-secondary);"
+                            class="w-full h-auto max-h-[80vh] object-contain bg-bg-secondary"
                         />
                         <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
                             <div class="p-3 rounded-full bg-black/60 text-white">
@@ -93,10 +92,10 @@ const lightboxImages = computed(() => {
                 <div class="space-y-4">
                     <!-- Title & Description -->
                     <div class="card p-5">
-                        <h1 class="text-xl font-bold mb-2" style="color: var(--color-text-primary);">
+                        <h1 class="text-xl font-bold mb-2 text-text-primary">
                             {{ image.title || 'Untitled' }}
                         </h1>
-                        <p v-if="image.description" class="text-sm whitespace-pre-wrap" style="color: var(--color-text-secondary);">
+                        <p v-if="image.description" class="text-sm whitespace-pre-wrap text-text-secondary">
                             {{ image.description }}
                         </p>
                     </div>
@@ -108,22 +107,22 @@ const lightboxImages = computed(() => {
                                 <img :src="image.user.avatar || '/images/default_avatar.webp'" :alt="image.user.username" class="w-full h-full object-cover" />
                             </div>
                             <div>
-                                <p class="font-medium text-sm" style="color: var(--color-text-primary);">{{ image.user.username }}</p>
+                                <p class="font-medium text-sm text-text-primary">{{ image.user.username }}</p>
                             </div>
                         </Link>
                     </div>
 
                     <!-- Stats -->
                     <div class="card p-4 space-y-3">
-                        <div class="flex items-center gap-2 text-sm" style="color: var(--color-text-secondary);">
+                        <div class="flex items-center gap-2 text-sm text-text-secondary">
                             <Eye class="w-4 h-4" />
                             <span>{{ formatViews(image.views_count) }} views</span>
                         </div>
-                        <div class="flex items-center gap-2 text-sm" style="color: var(--color-text-secondary);">
+                        <div class="flex items-center gap-2 text-sm text-text-secondary">
                             <Calendar class="w-4 h-4" />
                             <span>{{ formatDate(image.published_at || image.created_at) }}</span>
                         </div>
-                        <div v-if="image.width && image.height" class="text-sm" style="color: var(--color-text-muted);">
+                        <div v-if="image.width && image.height" class="text-sm text-text-muted">
                             {{ image.width }} × {{ image.height }} px — {{ image.formatted_size }}
                         </div>
                     </div>
@@ -131,15 +130,14 @@ const lightboxImages = computed(() => {
                     <!-- Tags -->
                     <div v-if="image.tags && image.tags.length" class="card p-4">
                         <div class="flex items-center gap-1.5 mb-2">
-                            <Tag class="w-4 h-4" style="color: var(--color-text-muted);" />
-                            <span class="text-sm font-medium" style="color: var(--color-text-secondary);">Tags</span>
+                            <Tag class="w-4 h-4 text-text-muted" />
+                            <span class="text-sm font-medium text-text-secondary">Tags</span>
                         </div>
                         <div class="flex flex-wrap gap-1.5">
                             <span
                                 v-for="tag in image.tags"
                                 :key="tag"
-                                class="px-2 py-0.5 rounded text-xs"
-                                style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);"
+                                class="px-2 py-0.5 rounded text-xs bg-bg-secondary text-text-primary"
                             >
                                 #{{ tag }}
                             </span>
@@ -150,8 +148,7 @@ const lightboxImages = computed(() => {
                     <div class="flex gap-2">
                         <button
                             @click="downloadImage"
-                            class="flex-1 btn flex items-center justify-center gap-2"
-                            style="background-color: var(--color-bg-secondary); color: var(--color-text-primary); border: 1px solid var(--color-border);"
+                            class="flex-1 btn flex items-center justify-center gap-2 bg-bg-secondary text-text-primary border border-border"
                         >
                             <Download class="w-4 h-4" />
                             Download
@@ -159,8 +156,7 @@ const lightboxImages = computed(() => {
                         <button
                             v-if="canEdit"
                             @click="deleteImage"
-                            class="btn flex items-center justify-center gap-2 text-red-500"
-                            style="background-color: var(--color-bg-secondary); border: 1px solid var(--color-border);"
+                            class="btn flex items-center justify-center gap-2 text-red-500 bg-bg-secondary border border-border"
                         >
                             <Trash2 class="w-4 h-4" />
                         </button>
@@ -170,7 +166,7 @@ const lightboxImages = computed(() => {
 
             <!-- Related Images -->
             <div v-if="relatedImages && relatedImages.length" class="mt-10">
-                <h2 class="text-lg font-bold mb-4" style="color: var(--color-text-primary);">More Images</h2>
+                <h2 class="text-lg font-bold mb-4 text-text-primary">More Images</h2>
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                     <ImageCard v-for="img in relatedImages" :key="img.id" :image="img" />
                 </div>

@@ -30,14 +30,14 @@ const formatDate = (date) => {
     });
 };
 
+const CREDIT_TYPES = ['deposit', 'video_sale', 'subscription_earning', 'ad_revenue', 'refund'];
+
 const transactionIcon = (type) => {
-    const credits = ['deposit', 'gift_received', 'video_sale', 'subscription_earning', 'ad_revenue', 'refund'];
-    return credits.includes(type) ? ArrowDownLeft : ArrowUpRight;
+    return CREDIT_TYPES.includes(type) ? ArrowDownLeft : ArrowUpRight;
 };
 
 const isCredit = (type) => {
-    const credits = ['deposit', 'gift_received', 'video_sale', 'subscription_earning', 'ad_revenue', 'refund'];
-    return credits.includes(type);
+    return CREDIT_TYPES.includes(type);
 };
 
 const formatType = (type) => {
@@ -51,18 +51,18 @@ const formatType = (type) => {
     <AppLayout>
         <div class="max-w-4xl mx-auto">
             <div class="mb-4 sm:mb-6">
-                <h1 class="text-xl sm:text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('nav.wallet') || 'Wallet' }}</h1>
+                <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('nav.wallet') || 'Wallet' }}</h1>
             </div>
 
             <!-- Balance Card -->
             <div class="card p-4 sm:p-6 mb-4 sm:mb-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium" style="color: var(--color-text-secondary);">{{ t('settings.wallet_balance') || 'Available Balance' }}</p>
-                        <p class="text-2xl sm:text-3xl font-bold mt-1" style="color: var(--color-text-primary);">{{ formatCurrency(balance) }}</p>
+                        <p class="text-sm font-medium text-text-secondary">{{ t('settings.wallet_balance') || 'Available Balance' }}</p>
+                        <p class="text-2xl sm:text-3xl font-bold mt-1 text-text-primary">{{ formatCurrency(balance) }}</p>
                     </div>
-                    <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shrink-0" style="background-color: var(--color-accent); opacity: 0.15;">
-                        <Wallet class="w-6 h-6 sm:w-7 sm:h-7" style="color: var(--color-accent);" />
+                    <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shrink-0 bg-accent" style="opacity: 0.15;">
+                        <Wallet class="w-6 h-6 sm:w-7 sm:h-7 text-accent" />
                     </div>
                 </div>
                 <div class="flex gap-2 sm:gap-3 mt-4 sm:mt-6">
@@ -88,23 +88,22 @@ const formatType = (type) => {
                         {{ t('settings.withdraw') || 'Withdraw' }}
                     </Link>
                 </div>
-                <p v-if="!depositEnabled" class="text-xs mt-3" style="color: var(--color-text-muted);">
+                <p v-if="!depositEnabled" class="text-xs mt-3 text-text-muted">
                     Deposits are temporarily unavailable.
                 </p>
             </div>
 
             <!-- Transactions -->
             <div class="card">
-                <div class="p-4 border-b" style="border-color: var(--color-border);">
-                    <h2 class="font-semibold" style="color: var(--color-text-primary);">{{ t('wallet.transaction_history') || 'Transaction History' }}</h2>
+                <div class="p-4 border-b border-border">
+                    <h2 class="font-semibold text-text-primary">{{ t('wallet.transaction_history') || 'Transaction History' }}</h2>
                 </div>
 
                 <div v-if="transactions.data?.length">
                     <div
                         v-for="tx in transactions.data"
                         :key="tx.id"
-                        class="flex items-center justify-between p-3 sm:p-4 border-b last:border-b-0 gap-3"
-                        style="border-color: var(--color-border);"
+                        class="flex items-center justify-between p-3 sm:p-4 border-b last:border-b-0 gap-3 border-border"
                     >
                         <div class="flex items-center gap-2 sm:gap-3 min-w-0">
                             <div
@@ -118,25 +117,25 @@ const formatType = (type) => {
                                 />
                             </div>
                             <div>
-                                <p class="font-medium text-sm" style="color: var(--color-text-primary);">{{ formatType(tx.type) }}</p>
-                                <p class="text-xs" style="color: var(--color-text-muted);">{{ tx.description || formatType(tx.type) }}</p>
-                                <p class="text-xs mt-0.5" style="color: var(--color-text-muted);">{{ formatDate(tx.created_at) }}</p>
+                                <p class="font-medium text-sm text-text-primary">{{ formatType(tx.type) }}</p>
+                                <p class="text-xs text-text-muted">{{ tx.description || formatType(tx.type) }}</p>
+                                <p class="text-xs mt-0.5 text-text-muted">{{ formatDate(tx.created_at) }}</p>
                             </div>
                         </div>
                         <div class="text-right">
                             <p class="font-semibold text-sm" :style="{ color: isCredit(tx.type) ? '#22c55e' : '#ef4444' }">
                                 {{ isCredit(tx.type) ? '+' : '' }}{{ formatCurrency(tx.amount) }}
                             </p>
-                            <p class="text-xs" style="color: var(--color-text-muted);">Bal: {{ formatCurrency(tx.balance_after) }}</p>
+                            <p class="text-xs text-text-muted">Bal: {{ formatCurrency(tx.balance_after) }}</p>
                         </div>
                     </div>
                 </div>
                 <div v-else class="py-16 text-center">
-                    <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: var(--color-bg-secondary);">
-                        <Wallet class="w-8 h-8" style="color: var(--color-text-muted);" />
+                    <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-bg-secondary">
+                        <Wallet class="w-8 h-8 text-text-muted" />
                     </div>
-                    <p class="font-semibold" style="color: var(--color-text-secondary);">{{ t('wallet.no_transactions') || 'No transactions yet' }}</p>
-                    <p class="text-sm mt-1" style="color: var(--color-text-muted);">{{ t('wallet.no_transactions_desc') || 'Your earnings and payments will appear here' }}</p>
+                    <p class="font-semibold text-text-secondary">{{ t('wallet.no_transactions') || 'No transactions yet' }}</p>
+                    <p class="text-sm mt-1 text-text-muted">{{ t('wallet.no_transactions_desc') || 'Your earnings and payments will appear here' }}</p>
                     <Link href="/upload" class="btn btn-primary mt-5 gap-2">
                         <TrendingUp class="w-4 h-4" />
                         {{ t('dashboard.upload_video') || 'Start Uploading to Earn' }}
@@ -144,7 +143,7 @@ const formatType = (type) => {
                 </div>
 
                 <!-- Pagination -->
-                <div v-if="transactions.last_page > 1" class="flex justify-center items-center gap-2 p-4 border-t" style="border-color: var(--color-border);">
+                <div v-if="transactions.last_page > 1" class="flex justify-center items-center gap-2 p-4 border-t border-border">
                     <Link
                         v-if="transactions.prev_page_url"
                         :href="transactions.prev_page_url"
@@ -153,7 +152,7 @@ const formatType = (type) => {
                     >
                         <ChevronLeft class="w-5 h-5" />
                     </Link>
-                    <span class="text-sm" style="color: var(--color-text-secondary);">
+                    <span class="text-sm text-text-secondary">
                         Page {{ transactions.current_page }} of {{ transactions.last_page }}
                     </span>
                     <Link

@@ -37,22 +37,22 @@ const formatCurrency = (amount) => {
 
     <AppLayout>
         <div class="max-w-lg mx-auto">
-            <Link href="/wallet" class="flex items-center gap-2 mb-6 text-sm hover:opacity-80" style="color: var(--color-text-secondary);">
+            <Link href="/wallet" class="flex items-center gap-2 mb-6 text-sm hover:opacity-80 text-text-secondary">
                 <ArrowLeft class="w-4 h-4" />
                 {{ t('wallet.back_to_wallet') || 'Back to Wallet' }}
             </Link>
 
-            <h1 class="text-2xl font-bold mb-2" style="color: var(--color-text-primary);">{{ t('wallet.deposit_funds') || 'Deposit Funds' }}</h1>
-            <p class="mb-6" style="color: var(--color-text-secondary);">Current balance: {{ formatCurrency(balance) }}</p>
+            <h1 class="text-2xl font-bold mb-2 text-text-primary">{{ t('wallet.deposit_funds') || 'Deposit Funds' }}</h1>
+            <p class="mb-6 text-text-secondary">Current balance: {{ formatCurrency(balance) }}</p>
 
             <div class="card p-6">
-                <div v-if="!depositEnabled" class="mb-4 rounded-lg border p-3 text-sm" style="border-color: var(--color-border); color: var(--color-text-secondary);">
+                <div v-if="!depositEnabled" class="mb-4 rounded-lg border p-3 text-sm border-border text-text-secondary">
                     Deposits are temporarily unavailable.
                 </div>
 
                 <form @submit.prevent="submit" class="space-y-5">
                     <div>
-                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('wallet.amount') || 'Amount (USD)' }}</label>
+                        <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('wallet.amount') || 'Amount (USD)' }}</label>
                         <input
                             v-model="form.amount"
                             type="number"
@@ -68,7 +68,7 @@ const formatCurrency = (amount) => {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ t('wallet.payment_method') || 'Payment Method' }}</label>
+                        <label class="block text-sm font-medium mb-2 text-text-secondary">{{ t('wallet.payment_method') || 'Payment Method' }}</label>
                         <div class="grid grid-cols-2 gap-3">
                             <button
                                 type="button"

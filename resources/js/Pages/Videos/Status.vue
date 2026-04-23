@@ -110,27 +110,27 @@ const isPublished = computed(() => {
 
     <AppLayout>
         <div class="max-w-2xl mx-auto">
-            <h1 class="text-2xl font-bold mb-6" style="color: var(--color-text-primary);">{{ t('video.video_status') || 'Video Status' }}</h1>
+            <h1 class="text-2xl font-bold mb-6 text-text-primary">{{ t('video.video_status') || 'Video Status' }}</h1>
 
             <!-- Video Info Card -->
             <div class="card p-4 mb-6">
                 <div class="flex items-start gap-4">
-                    <div class="w-48 aspect-video rounded-lg overflow-hidden flex-shrink-0" style="background-color: var(--color-bg-secondary);">
+                    <div class="w-48 aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-bg-secondary">
                         <img
                             v-if="thumbnailUrl"
                             :src="thumbnailUrl"
                             :alt="video.title"
                             class="w-full h-full object-cover"
                         />
-                        <div v-else class="w-full h-full flex items-center justify-center" style="color: var(--color-text-muted);">
+                        <div v-else class="w-full h-full flex items-center justify-center text-text-muted">
                             <Loader2 v-if="videoStatus === 'pending' || videoStatus === 'processing'" class="w-8 h-8 animate-spin" />
                             <span v-else class="text-sm">No thumbnail</span>
                         </div>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <h2 class="font-semibold text-lg truncate" style="color: var(--color-text-primary);">{{ video.title }}</h2>
-                        <p v-if="video.description" class="text-sm mt-1 line-clamp-2" style="color: var(--color-text-muted);">{{ video.description }}</p>
-                        <p class="text-sm mt-2" style="color: var(--color-text-muted);">
+                        <h2 class="font-semibold text-lg truncate text-text-primary">{{ video.title }}</h2>
+                        <p v-if="video.description" class="text-sm mt-1 line-clamp-2 text-text-muted">{{ video.description }}</p>
+                        <p class="text-sm mt-2 text-text-muted">
                             Uploaded {{ new Date(video.created_at).toLocaleDateString() }}
                         </p>
                     </div>
@@ -155,7 +155,7 @@ const isPublished = computed(() => {
                         <h3 class="font-semibold text-lg" :style="{ color: statusConfig.color }">
                             {{ statusConfig.title }}
                         </h3>
-                        <p class="mt-1" style="color: var(--color-text-secondary);">
+                        <p class="mt-1 text-text-secondary">
                             {{ statusConfig.description }}
                         </p>
                     </div>
@@ -163,7 +163,7 @@ const isPublished = computed(() => {
 
                 <!-- Progress bar for pending/processing -->
                 <div v-if="videoStatus === 'pending' || videoStatus === 'processing'" class="mt-4">
-                    <div class="w-full rounded-full h-2 overflow-hidden" style="background-color: var(--color-bg-secondary);">
+                    <div class="w-full rounded-full h-2 overflow-hidden bg-bg-secondary">
                         <div
                             class="h-full rounded-full transition-all duration-500"
                             :class="videoStatus === 'processing' ? 'animate-pulse' : ''"
@@ -173,7 +173,7 @@ const isPublished = computed(() => {
                             }"
                         ></div>
                     </div>
-                    <p class="text-xs mt-2" style="color: var(--color-text-muted);">
+                    <p class="text-xs mt-2 text-text-muted">
                         This page updates automatically. You can safely leave and come back later.
                     </p>
                 </div>
@@ -182,8 +182,8 @@ const isPublished = computed(() => {
             <!-- Moderation Notice -->
             <div v-if="videoStatus === 'processed' && !video.is_approved" class="card p-4 mb-6">
                 <div class="flex items-center gap-3">
-                    <ShieldCheck class="w-5 h-5 flex-shrink-0" style="color: var(--color-text-secondary);" />
-                    <p class="text-sm" style="color: var(--color-text-secondary);">
+                    <ShieldCheck class="w-5 h-5 flex-shrink-0 text-text-secondary" />
+                    <p class="text-sm text-text-secondary">
                         Your video will be visible to others after it has been reviewed and approved by a moderator. This usually happens within 24 hours.
                     </p>
                 </div>
@@ -197,8 +197,7 @@ const isPublished = computed(() => {
                         <p class="text-sm font-medium text-green-500">Your video is live!</p>
                         <a
                             :href="`/${video.slug}`"
-                            class="text-sm mt-0.5 inline-flex items-center gap-1 hover:opacity-80"
-                            style="color: var(--color-accent);"
+                            class="text-sm mt-0.5 inline-flex items-center gap-1 hover:opacity-80 text-accent"
                         >
                             <Eye class="w-3.5 h-3.5" />
                             View your video

@@ -29,8 +29,8 @@ const placeholderImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/
 
     <AppLayout>
         <div class="mb-6">
-            <h1 class="text-2xl font-bold" style="color: var(--color-text-primary);">{{ t('tags.title') !== 'tags.title' ? t('tags.title') : 'Tags' }}</h1>
-            <p class="text-sm mt-1" style="color: var(--color-text-muted);">{{ t('tags.browse') !== 'tags.browse' ? t('tags.browse') : 'Browse videos by tag' }}</p>
+            <h1 class="text-2xl font-bold text-text-primary">{{ t('tags.title') !== 'tags.title' ? t('tags.title') : 'Tags' }}</h1>
+            <p class="text-sm mt-1 text-text-muted">{{ t('tags.browse') !== 'tags.browse' ? t('tags.browse') : 'Browse videos by tag' }}</p>
         </div>
 
         <div v-if="tags.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -52,10 +52,9 @@ const placeholderImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/
                 />
                 <div
                     v-else
-                    class="w-full h-full flex items-center justify-center"
-                    style="background-color: var(--color-bg-card);"
+                    class="w-full h-full flex items-center justify-center bg-bg-card"
                 >
-                    <Hash class="w-12 h-12" style="color: var(--color-text-muted);" />
+                    <Hash class="w-12 h-12 text-text-muted" />
                 </div>
 
                 <!-- Dark overlay -->
@@ -75,8 +74,8 @@ const placeholderImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/
         </div>
 
         <div v-else class="text-center py-12">
-            <Hash class="w-12 h-12 mx-auto mb-3" style="color: var(--color-text-muted);" />
-            <p class="text-lg" style="color: var(--color-text-secondary);">{{ t('tags.no_tags') !== 'tags.no_tags' ? t('tags.no_tags') : 'No tags yet' }}</p>
+            <Hash class="w-12 h-12 mx-auto mb-3 text-text-muted" />
+            <p class="text-lg text-text-secondary">{{ t('tags.no_tags') !== 'tags.no_tags' ? t('tags.no_tags') : 'No tags yet' }}</p>
         </div>
     </AppLayout>
 </template>

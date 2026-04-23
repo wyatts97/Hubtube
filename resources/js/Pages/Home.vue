@@ -11,18 +11,14 @@ import Pagination from '@/Components/Pagination.vue';
 import AdSlot from '@/Components/AdSlot.vue';
 import { useI18n } from '@/Composables/useI18n';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
+import { useVideoGrid } from '@/Composables/useVideoGrid';
 
 const { t, localizedUrl } = useI18n();
 const { translateVideos, tr } = useAutoTranslate(['title']);
+const { gridClass, mobileGrid } = useVideoGrid();
 
-// Initial loading state for skeleton display
-const isInitialLoad = ref(true);
-onMounted(() => {
-    // Simulate brief loading for skeleton demo, or remove for instant load
-    setTimeout(() => {
-        isInitialLoad.value = false;
-    }, 100);
-});
+// Server already hydrated the videos via Inertia props — no artificial delay.
+const isInitialLoad = ref(false);
 
 const props = defineProps({
     featuredVideos: Array,
@@ -36,11 +32,6 @@ const props = defineProps({
 
 const page = usePage();
 const infiniteScrollEnabled = computed(() => page.props.app?.infinite_scroll_enabled ?? false);
-const mobileGrid = computed(() => page.props.theme?.mobileVideoGrid === '2' ? 2 : 1);
-const gridClass = computed(() => mobileGrid.value === 2
-    ? 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4'
-    : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
-);
 
 // Auto-translate video titles when viewing in a non-default locale
 onMounted(() => {
@@ -188,7 +179,7 @@ const getSponsoredCard = (index) => {
         <!-- Featured Videos -->
         <section v-if="featuredVideos.length > 0 || isInitialLoad" class="mb-8">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ t('home.featured') || 'Featured' }}</h2>
+                <h2 class="text-xl font-bold text-text-primary">{{ t('home.featured') || 'Featured' }}</h2>
             </div>
             <div :class="gridClass">
                 <template v-if="isInitialLoad">
@@ -203,8 +194,8 @@ const getSponsoredCard = (index) => {
         <!-- Latest Videos -->
         <section class="mb-8">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ t('home.latest') || 'Latest Videos' }}</h2>
-                <a :href="localizedUrl('/videos')" class="text-sm font-medium" style="color: var(--color-accent);">{{ t('common.view_all') || 'View All' }}</a>
+                <h2 class="text-xl font-bold text-text-primary">{{ t('home.latest') || 'Latest Videos' }}</h2>
+                <a :href="localizedUrl('/videos')" class="text-sm font-medium text-accent">{{ t('common.view_all') || 'View All' }}</a>
             </div>
             
             <!-- Skeleton Loading State -->
@@ -235,11 +226,11 @@ const getSponsoredCard = (index) => {
                 
                 <!-- Load More Trigger -->
                 <div ref="loadMoreTrigger" class="flex justify-center py-8">
-                    <div v-if="loading" class="flex items-center gap-2" style="color: var(--color-text-secondary);">
+                    <div v-if="loading" class="flex items-center gap-2 text-text-secondary">
                         <Loader2 class="w-5 h-5 animate-spin" />
                         <span>{{ t('home.loading_more') || 'Loading more videos...' }}</span>
                     </div>
-                    <p v-else-if="!hasMore && videos.length > 0" class="text-sm" style="color: var(--color-text-muted);">
+                    <p v-else-if="!hasMore && videos.length > 0" class="text-sm text-text-muted">
                         {{ t('home.reached_end') || "You've reached the end" }}
                     </p>
                 </div>
@@ -277,8 +268,8 @@ const getSponsoredCard = (index) => {
         <!-- Popular Videos -->
         <section v-if="popularVideos.length > 0 || isInitialLoad" class="mb-8">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold" style="color: var(--color-text-primary);">{{ t('home.popular') || 'Popular' }}</h2>
-                <a :href="localizedUrl('/trending')" class="text-sm font-medium" style="color: var(--color-accent);">{{ t('common.view_all') || 'View All' }}</a>
+                <h2 class="text-xl font-bold text-text-primary">{{ t('home.popular') || 'Popular' }}</h2>
+                <a :href="localizedUrl('/trending')" class="text-sm font-medium text-accent">{{ t('common.view_all') || 'View All' }}</a>
             </div>
             <div :class="gridClass">
                 <template v-if="isInitialLoad">

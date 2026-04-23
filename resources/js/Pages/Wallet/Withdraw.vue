@@ -55,14 +55,14 @@ const availableBalance = () => {
 
     <AppLayout>
         <div class="max-w-lg mx-auto">
-            <Link href="/wallet" class="flex items-center gap-2 mb-6 text-sm hover:opacity-80" style="color: var(--color-text-secondary);">
+            <Link href="/wallet" class="flex items-center gap-2 mb-6 text-sm hover:opacity-80 text-text-secondary">
                 <ArrowLeft class="w-4 h-4" />
                 {{ t('wallet.back_to_wallet') || 'Back to Wallet' }}
             </Link>
 
-            <h1 class="text-2xl font-bold mb-2" style="color: var(--color-text-primary);">{{ t('wallet.withdraw_funds') || 'Withdraw Funds' }}</h1>
-            <p class="mb-1" style="color: var(--color-text-secondary);">Available: {{ formatCurrency(availableBalance()) }}</p>
-            <p v-if="parseFloat(pendingWithdrawals) > 0" class="text-sm mb-6" style="color: var(--color-text-muted);">
+            <h1 class="text-2xl font-bold mb-2 text-text-primary">{{ t('wallet.withdraw_funds') || 'Withdraw Funds' }}</h1>
+            <p class="mb-1 text-text-secondary">Available: {{ formatCurrency(availableBalance()) }}</p>
+            <p v-if="parseFloat(pendingWithdrawals) > 0" class="text-sm mb-6 text-text-muted">
                 Pending withdrawals: {{ formatCurrency(pendingWithdrawals) }}
             </p>
             <p v-else class="mb-6"></p>
@@ -70,7 +70,7 @@ const availableBalance = () => {
             <div class="card p-6">
                 <form @submit.prevent="submit" class="space-y-5">
                     <div>
-                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">{{ t('wallet.amount') || 'Amount (USD)' }}</label>
+                        <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('wallet.amount') || 'Amount (USD)' }}</label>
                         <input
                             v-model="form.amount"
                             type="number"
@@ -85,7 +85,7 @@ const availableBalance = () => {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-2" style="color: var(--color-text-secondary);">{{ t('wallet.payment_method') || 'Payment Method' }}</label>
+                        <label class="block text-sm font-medium mb-2 text-text-secondary">{{ t('wallet.payment_method') || 'Payment Method' }}</label>
                         <div class="grid grid-cols-3 gap-3">
                             <button
                                 type="button"
@@ -125,29 +125,29 @@ const availableBalance = () => {
 
                     <!-- PayPal Details -->
                     <div v-if="form.payment_method === 'paypal'">
-                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">PayPal Email</label>
+                        <label class="block text-sm font-medium mb-1 text-text-secondary">PayPal Email</label>
                         <input v-model="form.payment_details.email" type="email" placeholder="your@email.com" class="input" required />
                     </div>
 
                     <!-- Bank Details -->
                     <template v-if="form.payment_method === 'bank'">
                         <div>
-                            <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Bank Name</label>
+                            <label class="block text-sm font-medium mb-1 text-text-secondary">Bank Name</label>
                             <input v-model="form.payment_details.bank_name" type="text" class="input" required />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Account Number</label>
+                            <label class="block text-sm font-medium mb-1 text-text-secondary">Account Number</label>
                             <input v-model="form.payment_details.account_number" type="text" class="input" required />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Routing Number</label>
+                            <label class="block text-sm font-medium mb-1 text-text-secondary">Routing Number</label>
                             <input v-model="form.payment_details.routing_number" type="text" class="input" required />
                         </div>
                     </template>
 
                     <!-- Crypto Details -->
                     <div v-if="form.payment_method === 'crypto'">
-                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Wallet Address</label>
+                        <label class="block text-sm font-medium mb-1 text-text-secondary">Wallet Address</label>
                         <input v-model="form.payment_details.wallet_address" type="text" placeholder="Enter wallet address" class="input" required />
                     </div>
 
@@ -158,7 +158,7 @@ const availableBalance = () => {
                         <span v-else>{{ t('wallet.request_withdrawal') || 'Request Withdrawal' }}</span>
                     </button>
 
-                    <p class="text-xs text-center" style="color: var(--color-text-muted);">
+                    <p class="text-xs text-center text-text-muted">
                         Withdrawals are processed within 3-5 business days.
                     </p>
                 </form>

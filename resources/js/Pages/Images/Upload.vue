@@ -135,7 +135,7 @@ onUnmounted(() => {
         <div class="max-w-4xl mx-auto">
             <div class="flex items-center gap-3 mb-6">
                 <div>
-                    <h1 class="text-xl sm:text-2xl font-bold" style="color: var(--color-text-primary);">Upload Image</h1>
+                    <h1 class="text-xl sm:text-2xl font-bold text-text-primary">Upload Image</h1>
                 </div>
             </div>
 
@@ -149,11 +149,11 @@ onUnmounted(() => {
                     class="card border-2 border-dashed p-6 sm:p-12 text-center transition-colors"
                     :style="{ borderColor: dragActive ? 'var(--color-accent)' : 'var(--color-border)' }"
                 >
-                    <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background-color: var(--color-bg-secondary);">
-                        <ImageIcon class="w-8 h-8" style="color: var(--color-text-muted);" />
+                    <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-bg-secondary">
+                        <ImageIcon class="w-8 h-8 text-text-muted" />
                     </div>
-                    <p class="text-lg font-medium mb-2" style="color: var(--color-text-primary);">Drag and drop image file</p>
-                    <p class="mb-4" style="color: var(--color-text-muted);">or click to browse</p>
+                    <p class="text-lg font-medium mb-2 text-text-primary">Drag and drop image file</p>
+                    <p class="mb-4 text-text-muted">or click to browse</p>
                     <label class="btn btn-primary cursor-pointer">
                         Select File
                         <input
@@ -163,7 +163,7 @@ onUnmounted(() => {
                             @change="handleFileSelect"
                         />
                     </label>
-                    <p class="text-sm mt-4" style="color: var(--color-text-muted);">
+                    <p class="text-sm mt-4 text-text-muted">
                         Supported formats: JPG, PNG, GIF, WebP, BMP — Max 50MB
                     </p>
                 </div>
@@ -171,25 +171,25 @@ onUnmounted(() => {
                 <!-- Image Preview -->
                 <div v-else class="card p-4">
                     <div class="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-                        <div class="w-full sm:w-48 aspect-square rounded-lg overflow-hidden shrink-0 relative" style="background-color: var(--color-bg-secondary);">
+                        <div class="w-full sm:w-48 aspect-square rounded-lg overflow-hidden shrink-0 relative bg-bg-secondary">
                             <img :src="imagePreview" class="w-full h-full object-cover" />
                         </div>
                         <div class="flex-1 min-w-0 w-full">
                             <div class="flex items-center gap-2">
-                                <FileImage class="w-5 h-5 shrink-0" style="color: var(--color-accent);" />
-                                <p class="font-medium truncate" style="color: var(--color-text-primary);">{{ form.image_file.name }}</p>
+                                <FileImage class="w-5 h-5 shrink-0 text-accent" />
+                                <p class="font-medium truncate text-text-primary">{{ form.image_file.name }}</p>
                             </div>
-                            <p class="text-sm mt-1" style="color: var(--color-text-muted);">
+                            <p class="text-sm mt-1 text-text-muted">
                                 {{ fileSizeFormatted }}
                             </p>
 
                             <!-- Upload Progress Bar -->
                             <div v-if="uploadStatus === 'uploading'" class="mt-3">
                                 <div class="flex items-center justify-between text-sm mb-1">
-                                    <span style="color: var(--color-text-secondary);">Uploading...</span>
-                                    <span style="color: var(--color-accent);">{{ uploadProgress }}%</span>
+                                    <span class="text-text-secondary">Uploading...</span>
+                                    <span class="text-accent">{{ uploadProgress }}%</span>
                                 </div>
-                                <div class="h-2 rounded-full overflow-hidden" style="background-color: var(--color-bg-secondary);">
+                                <div class="h-2 rounded-full overflow-hidden bg-bg-secondary">
                                     <div
                                         class="h-full rounded-full transition-all duration-300 ease-out"
                                         :style="{ width: uploadProgress + '%', backgroundColor: 'var(--color-accent)' }"
@@ -213,10 +213,9 @@ onUnmounted(() => {
                             type="button"
                             @click="removeImage"
                             :disabled="uploadStatus === 'uploading'"
-                            class="p-2 rounded-full hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
-                            style="background-color: var(--color-bg-secondary);"
+                            class="p-2 rounded-full hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed bg-bg-secondary"
                         >
-                            <X class="w-5 h-5" style="color: var(--color-text-muted);" />
+                            <X class="w-5 h-5 text-text-muted" />
                         </button>
                     </div>
                     <p v-if="form.errors.image_file" class="text-red-500 text-sm mt-2">{{ form.errors.image_file }}</p>
@@ -233,7 +232,7 @@ onUnmounted(() => {
                 <!-- Image Details -->
                 <div class="card p-6 space-y-4">
                     <div>
-                        <label for="title" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Title</label>
+                        <label for="title" class="block text-sm font-medium mb-1 text-text-secondary">Title</label>
                         <input
                             id="title"
                             v-model="form.title"
@@ -245,7 +244,7 @@ onUnmounted(() => {
                     </div>
 
                     <div>
-                        <label for="description" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Description</label>
+                        <label for="description" class="block text-sm font-medium mb-1 text-text-secondary">Description</label>
                         <textarea
                             id="description"
                             v-model="form.description"
@@ -257,7 +256,7 @@ onUnmounted(() => {
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="category" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Category</label>
+                            <label for="category" class="block text-sm font-medium mb-1 text-text-secondary">Category</label>
                             <select id="category" v-model="form.category_id" class="input">
                                 <option value="">Select category</option>
                                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">
@@ -267,7 +266,7 @@ onUnmounted(() => {
                         </div>
 
                         <div>
-                            <label for="privacy" class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Privacy</label>
+                            <label for="privacy" class="block text-sm font-medium mb-1 text-text-secondary">Privacy</label>
                             <select id="privacy" v-model="form.privacy" class="input">
                                 <option value="public">Public</option>
                                 <option value="unlisted">Unlisted</option>
@@ -277,13 +276,12 @@ onUnmounted(() => {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-1" style="color: var(--color-text-secondary);">Tags</label>
+                        <label class="block text-sm font-medium mb-1 text-text-secondary">Tags</label>
                         <div class="flex flex-wrap gap-2 mb-2">
                             <span
                                 v-for="(tag, index) in form.tags"
                                 :key="index"
-                                class="flex items-center gap-1 px-2 py-1 rounded text-sm"
-                                style="background-color: var(--color-bg-secondary); color: var(--color-text-primary);"
+                                class="flex items-center gap-1 px-2 py-1 rounded text-sm bg-bg-secondary text-text-primary"
                             >
                                 #{{ tag }}
                                 <button type="button" @click="removeTag(index)" class="hover:text-red-400">
