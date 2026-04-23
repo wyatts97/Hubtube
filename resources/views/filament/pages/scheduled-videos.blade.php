@@ -18,7 +18,7 @@
             <x-filament::section collapsible collapsed heading="Recently Published" icon="heroicon-o-check-circle">
                 <div class="space-y-2">
                     @foreach ($recentlyPublished as $video)
-                        <div class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <div class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                             <div class="flex items-center gap-3">
                                 @if ($video->thumbnail_url)
                                     <img src="{{ $video->thumbnail_url }}" alt="" class="w-12 h-7 rounded object-cover">

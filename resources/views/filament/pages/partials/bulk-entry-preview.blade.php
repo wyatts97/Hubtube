@@ -12,11 +12,11 @@
         <div class="w-32 h-20 shrink-0 rounded bg-gray-900 overflow-hidden relative">
             <video
                 src="{{ $url }}"
-                class="w-full h-full object-cover"
+                class="w-full h-full object-contain"
                 preload="metadata"
                 muted
                 playsinline
-                style="width: 128px; height: 80px; object-fit: cover;"
+                style="width: 300px; height: 300px; object-fit: contain;"
             ></video>
             @if ($sizeMb)
                 <div class="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
