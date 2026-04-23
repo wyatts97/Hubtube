@@ -171,7 +171,7 @@ class BulkVideoUploader extends Page implements HasForms
                                     Storage::disk('public')->delete($path);
                                 }
                                 unset($items[$key]);
-                                $component->state($items);
+                                $component->state(array_values($items));
                             }
                         })
                     )

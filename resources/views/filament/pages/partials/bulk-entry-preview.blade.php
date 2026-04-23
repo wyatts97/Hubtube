@@ -10,15 +10,14 @@
 <div class="flex flex-col items-center gap-2 w-full">
     @if ($exists)
         <div class="w-20 h-14 shrink-0 rounded bg-gray-900 overflow-hidden relative">
-            <img
-                src="{{ $url }}#t=0.1"
-                alt=""
+            <video
+                src="{{ $url }}"
                 class="w-full h-full object-cover"
-                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-            >
-            <div class="absolute inset-0 flex items-center justify-center bg-gray-900 hidden">
-                <x-heroicon-o-video-camera class="w-5 h-5 text-gray-400" />
-            </div>
+                preload="metadata"
+                muted
+                playsinline
+                style="width: 80px; height: 56px; object-fit: cover;"
+            ></video>
             @if ($sizeMb)
                 <div class="absolute bottom-0.5 right-0.5 bg-black/70 text-white text-[9px] px-0.5 py-0.5 rounded">
                     {{ $sizeMb }}
