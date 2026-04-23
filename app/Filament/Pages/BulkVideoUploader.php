@@ -186,49 +186,54 @@ class BulkVideoUploader extends Page implements HasForms
                                     'fileName' => $get('file_name'),
                                 ]
                             ))
-                            ->columnSpanFull(),
-                        TextInput::make('title')
-                            ->required()
-                            ->maxLength(255)
-                            ->placeholder('Enter video title…')
-                            ->columnSpanFull()
-                            ->suffixAction(
-                                FormAction::make('useFilename')
-                                    ->icon('heroicon-o-sparkles')
-                                    ->tooltip('Regenerate title from filename')
-                                    ->action(function (Set $set, Get $get) {
-                                        $name = (string) ($get('file_name') ?? '');
-                                        if ($name !== '') {
-                                            $set('title', $this->titleFromFilename($name));
-                                        }
-                                    })
-                            ),
-                        Textarea::make('description')
-                            ->rows(2)
-                            ->placeholder('Optional description…')
-                            ->columnSpanFull(),
-                        Select::make('category_id')
-                            ->label('Category')
-                            ->options(fn () => Category::active()->orderBy('name')->pluck('name', 'id')->all())
-                            ->searchable()
-                            ->preload()
-                            ->placeholder('— None —'),
-                        Select::make('user_id')
-                            ->label('Assign to User')
-                            ->options(fn () => User::orderBy('username')->pluck('username', 'id')->all())
-                            ->searchable()
-                            ->preload()
-                            ->required(),
-                        TagsInput::make('tags')
-                            ->label('Tags')
-                            ->placeholder('Add tags…')
-                            ->columnSpanFull(),
-                        Toggle::make('age_restricted')
-                            ->label('Age Restricted')
-                            ->inline(false),
-                        Hidden::make('file_path'),
-                        Hidden::make('file_size'),
-                        Hidden::make('file_name'),
+                            ->columnSpan(1),
+                        FormSection::make()
+                            ->hiddenLabel()
+                            ->schema([
+                                TextInput::make('title')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->placeholder('Enter video title…')
+                                    ->columnSpanFull()
+                                    ->suffixAction(
+                                        FormAction::make('useFilename')
+                                            ->icon('heroicon-o-sparkles')
+                                            ->tooltip('Regenerate title from filename')
+                                            ->action(function (Set $set, Get $get) {
+                                                $name = (string) ($get('file_name') ?? '');
+                                                if ($name !== '') {
+                                                    $set('title', $this->titleFromFilename($name));
+                                                }
+                                            })
+                                    ),
+                                Textarea::make('description')
+                                    ->rows(2)
+                                    ->placeholder('Optional description…')
+                                    ->columnSpanFull(),
+                                Select::make('category_id')
+                                    ->label('Category')
+                                    ->options(fn () => Category::active()->orderBy('name')->pluck('name', 'id')->all())
+                                    ->searchable()
+                                    ->preload()
+                                    ->placeholder('— None —'),
+                                Select::make('user_id')
+                                    ->label('Assign to User')
+                                    ->options(fn () => User::orderBy('username')->pluck('username', 'id')->all())
+                                    ->searchable()
+                                    ->preload()
+                                    ->required(),
+                                TagsInput::make('tags')
+                                    ->label('Tags')
+                                    ->placeholder('Add tags…')
+                                    ->columnSpanFull(),
+                                Toggle::make('age_restricted')
+                                    ->label('Age Restricted')
+                                    ->inline(false),
+                                Hidden::make('file_path'),
+                                Hidden::make('file_size'),
+                                Hidden::make('file_name'),
+                            ])
+                            ->columnSpan(1),
                     ])
                     ->columns(2),
             ]);
