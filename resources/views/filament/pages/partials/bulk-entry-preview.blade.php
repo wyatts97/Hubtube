@@ -7,29 +7,26 @@
     $sizeMb = $fileSize ? number_format($fileSize / 1048576, 1) . ' MB' : '';
 @endphp
 
-<div class="flex flex-col items-center gap-2 w-full">
+<div class="flex items-center justify-center w-full h-full">
     @if ($exists)
-        <div class="w-20 h-14 shrink-0 rounded bg-gray-900 overflow-hidden relative">
+        <div class="w-32 h-20 shrink-0 rounded bg-gray-900 overflow-hidden relative">
             <video
                 src="{{ $url }}"
                 class="w-full h-full object-cover"
                 preload="metadata"
                 muted
                 playsinline
-                style="width: 80px; height: 56px; object-fit: cover;"
+                style="width: 128px; height: 80px; object-fit: cover;"
             ></video>
             @if ($sizeMb)
-                <div class="absolute bottom-0.5 right-0.5 bg-black/70 text-white text-[9px] px-0.5 py-0.5 rounded">
+                <div class="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
                     {{ $sizeMb }}
                 </div>
             @endif
         </div>
     @else
-        <div class="w-20 h-14 shrink-0 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-            <x-heroicon-o-video-camera class="w-5 h-5 text-gray-400" />
+        <div class="w-32 h-20 shrink-0 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+            <x-heroicon-o-video-camera class="w-8 h-8 text-gray-400" />
         </div>
     @endif
-    <div class="min-w-0 max-w-full w-full">
-        <p class="text-[9px] text-gray-500 dark:text-gray-400 truncate text-center leading-tight">{{ $fileName }}</p>
-    </div>
 </div>
