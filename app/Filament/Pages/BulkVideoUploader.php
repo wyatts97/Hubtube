@@ -2,17 +2,31 @@
 
 namespace App\Filament\Pages;
 
-use App\Events\VideoUploaded;
+use App\Jobs\CreateBulkVideosJob;
 use App\Models\Category;
 use App\Models\User;
 use App\Models\Video;
 use App\Services\AdminLogger;
-use App\Services\VideoService;
+use App\Services\BulkVideoCreator;
+use Filament\Forms\Components\Actions\Action as FormAction;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Section as FormSection;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -32,37 +46,51 @@ class BulkVideoUploader extends Page implements HasForms
     /** @var array Video metadata entries [{title, description, category_id, tags, user_id, age_restricted, file_path, file_size, file_name}] */
     public array $entries = [];
 
+    /** @var array "Apply to All" bulk-settings form state */
+    public array $bulkSettings = [
+        'category_id' => null,
+        'user_id' => null,
+        'tags' => [],
+        'age_restricted' => true,
+        'add_to_queue' => true,
+    ];
+
     /** @var array Created video IDs for status polling */
     public array $createdVideoIds = [];
 
     /** @var bool Whether we're in the creating/processing phase */
     public bool $isCreating = false;
 
-    // "Apply to All" fields
-    public ?int $bulkCategoryId = null;
-    public ?int $bulkUserId = null;
-    public bool $addToQueue = true;
-    public array $bulkTags = [];
-    public bool $bulkAgeRestricted = true;
+    /** @var string|null Token used to poll CreateBulkVideosJob results from cache */
+    public ?string $bulkToken = null;
+
+    /**
+     * Batches with more entries than this are dispatched to a queue job
+     * instead of being created synchronously inline.
+     */
+    protected const ASYNC_THRESHOLD = 3;
 
     protected function getForms(): array
     {
         return [
             'uploadForm',
+            'bulkSettingsForm',
+            'entriesForm',
         ];
     }
 
     public function mount(): void
     {
-        $this->bulkUserId = auth()->id();
+        $this->bulkSettings['user_id'] = auth()->id();
         $this->uploadForm->fill([]);
+        $this->bulkSettingsForm->fill($this->bulkSettings);
     }
 
     public function uploadForm(Form $form): Form
     {
         return $form
             ->schema([
-            \Filament\Forms\Components\FileUpload::make('video_files')
+            FileUpload::make('video_files')
             ->label('Drop video files here or click to browse')
             ->disk('public')
             ->directory('videos/admin-uploads')
@@ -76,6 +104,134 @@ class BulkVideoUploader extends Page implements HasForms
             ->columnSpanFull(),
         ])
             ->statePath('uploadData');
+    }
+
+    public function bulkSettingsForm(Form $form): Form
+    {
+        return $form
+            ->schema([
+                FormSection::make('Apply to All')
+                    ->description('Defaults applied to each newly added file. Click "Apply to All" to overwrite existing entries.')
+                    ->icon('heroicon-o-adjustments-horizontal')
+                    ->collapsible()
+                    ->schema([
+                        Select::make('category_id')
+                            ->label('Category')
+                            ->options(fn () => Category::active()->orderBy('name')->pluck('name', 'id')->all())
+                            ->searchable()
+                            ->preload()
+                            ->placeholder('— None —'),
+                        Select::make('user_id')
+                            ->label('Assign to User')
+                            ->options(fn () => User::orderBy('username')->pluck('username', 'id')->all())
+                            ->searchable()
+                            ->preload()
+                            ->required(),
+                        TagsInput::make('tags')
+                            ->label('Tags')
+                            ->placeholder('Add tags…')
+                            ->columnSpanFull(),
+                        Toggle::make('age_restricted')
+                            ->label('Age Restricted')
+                            ->inline(false),
+                        Toggle::make('add_to_queue')
+                            ->label('Auto-publish on schedule')
+                            ->helperText('Adds each video to the scheduled-publish queue (skips moderation).')
+                            ->inline(false),
+                    ])
+                    ->columns(2),
+            ])
+            ->statePath('bulkSettings');
+    }
+
+    public function entriesForm(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Repeater::make('entries')
+                    ->hiddenLabel()
+                    ->reorderable(true)
+                    ->reorderableWithDragAndDrop(true)
+                    ->addable(false)
+                    ->cloneable(false)
+                    ->collapsible()
+                    ->collapsed(false)
+                    ->itemLabel(fn (array $state): string =>
+                        trim((string) ($state['title'] ?? '')) !== ''
+                            ? (string) $state['title']
+                            : ((string) ($state['file_name'] ?? 'Video'))
+                    )
+                    ->deleteAction(
+                        fn (FormAction $action) => $action->action(function (array $arguments, Repeater $component) {
+                            $items = $component->getState();
+                            $key = $arguments['item'] ?? null;
+                            if ($key !== null && isset($items[$key])) {
+                                $path = $items[$key]['file_path'] ?? null;
+                                if ($path && Storage::disk('public')->exists($path)) {
+                                    Storage::disk('public')->delete($path);
+                                }
+                                unset($items[$key]);
+                                $component->state($items);
+                            }
+                        })
+                    )
+                    ->schema([
+                        Placeholder::make('preview')
+                            ->hiddenLabel()
+                            ->content(fn (Get $get): View => view(
+                                'filament.pages.partials.bulk-entry-preview',
+                                [
+                                    'filePath' => $get('file_path'),
+                                    'fileSize' => $get('file_size'),
+                                    'fileName' => $get('file_name'),
+                                ]
+                            ))
+                            ->columnSpanFull(),
+                        TextInput::make('title')
+                            ->required()
+                            ->maxLength(255)
+                            ->placeholder('Enter video title…')
+                            ->columnSpanFull()
+                            ->suffixAction(
+                                FormAction::make('useFilename')
+                                    ->icon('heroicon-o-sparkles')
+                                    ->tooltip('Regenerate title from filename')
+                                    ->action(function (Set $set, Get $get) {
+                                        $name = (string) ($get('file_name') ?? '');
+                                        if ($name !== '') {
+                                            $set('title', $this->titleFromFilename($name));
+                                        }
+                                    })
+                            ),
+                        Textarea::make('description')
+                            ->rows(2)
+                            ->placeholder('Optional description…')
+                            ->columnSpanFull(),
+                        Select::make('category_id')
+                            ->label('Category')
+                            ->options(fn () => Category::active()->orderBy('name')->pluck('name', 'id')->all())
+                            ->searchable()
+                            ->preload()
+                            ->placeholder('— None —'),
+                        Select::make('user_id')
+                            ->label('Assign to User')
+                            ->options(fn () => User::orderBy('username')->pluck('username', 'id')->all())
+                            ->searchable()
+                            ->preload()
+                            ->required(),
+                        TagsInput::make('tags')
+                            ->label('Tags')
+                            ->placeholder('Add tags…')
+                            ->columnSpanFull(),
+                        Toggle::make('age_restricted')
+                            ->label('Age Restricted')
+                            ->inline(false),
+                        Hidden::make('file_path'),
+                        Hidden::make('file_size'),
+                        Hidden::make('file_name'),
+                    ])
+                    ->columns(2),
+            ]);
     }
 
     public function addUploadedFiles(): void
@@ -93,13 +249,12 @@ class BulkVideoUploader extends Page implements HasForms
             $originalName = is_array($names) ? ($names[$tempPath] ?? basename($tempPath)) : basename($tempPath);
 
             $this->entries[] = [
-                'title' => '',
+                'title' => $this->titleFromFilename($originalName),
                 'description' => '',
-                'category_id' => $this->bulkCategoryId,
-                'tags' => $this->bulkTags,
-                'tags_input' => '',
-                'user_id' => $this->bulkUserId ?? auth()->id(),
-                'age_restricted' => $this->bulkAgeRestricted,
+                'category_id' => $this->bulkSettings['category_id'] ?? null,
+                'tags' => $this->bulkSettings['tags'] ?? [],
+                'user_id' => $this->bulkSettings['user_id'] ?? auth()->id(),
+                'age_restricted' => (bool) ($this->bulkSettings['age_restricted'] ?? true),
                 'file_path' => $tempPath,
                 'file_size' => Storage::disk('public')->exists($tempPath) ? Storage::disk('public')->size($tempPath) : 0,
                 'file_name' => $originalName,
@@ -112,44 +267,21 @@ class BulkVideoUploader extends Page implements HasForms
         Notification::make()->title(count($paths) . ' file(s) added')->success()->send();
     }
 
-    public function getCategoriesProperty(): \Illuminate\Support\Collection
-    {
-        return Category::active()->orderBy('name')->pluck('name', 'id');
-    }
-
-    public function getUsersProperty(): \Illuminate\Support\Collection
-    {
-        return User::orderBy('username')->pluck('username', 'id');
-    }
-
-
-
-    public function removeEntry(int $index): void
-    {
-        if (isset($this->entries[$index])) {
-            // Delete the temp file
-            $path = $this->entries[$index]['file_path'] ?? null;
-            if ($path && Storage::disk('public')->exists($path)) {
-                Storage::disk('public')->delete($path);
-            }
-            unset($this->entries[$index]);
-            $this->entries = array_values($this->entries);
-        }
-    }
-
     public function applyBulkSettings(): void
     {
+        $settings = $this->bulkSettingsForm->getState();
+
         foreach ($this->entries as &$entry) {
-            if ($this->bulkCategoryId) {
-                $entry['category_id'] = $this->bulkCategoryId;
+            if (!empty($settings['category_id'])) {
+                $entry['category_id'] = $settings['category_id'];
             }
-            if ($this->bulkUserId) {
-                $entry['user_id'] = $this->bulkUserId;
+            if (!empty($settings['user_id'])) {
+                $entry['user_id'] = $settings['user_id'];
             }
-            if (!empty($this->bulkTags)) {
-                $entry['tags'] = $this->bulkTags;
+            if (!empty($settings['tags'])) {
+                $entry['tags'] = $settings['tags'];
             }
-            $entry['age_restricted'] = $this->bulkAgeRestricted;
+            $entry['age_restricted'] = (bool) ($settings['age_restricted'] ?? true);
         }
         unset($entry);
 
@@ -176,100 +308,89 @@ class BulkVideoUploader extends Page implements HasForms
 
         $this->isCreating = true;
         $this->createdVideoIds = [];
+        $this->bulkToken = null;
 
-        // Determine current max queue order
-        $maxOrder = Video::max('queue_order') ?? 0;
+        $addToQueue = (bool) ($this->bulkSettings['add_to_queue'] ?? true);
+        $actorId = (int) (auth()->id() ?? 0);
+        $count = count($this->entries);
 
-        foreach ($this->entries as $index => $entry) {
-            if ($this->addToQueue) {
-                $maxOrder++;
-                $entry['queue_order'] = $maxOrder;
-            }
+        if ($count <= self::ASYNC_THRESHOLD) {
+            // Small batch — create synchronously for immediate feedback.
+            $this->createdVideoIds = app(BulkVideoCreator::class)
+                ->createMany($this->entries, $addToQueue, $actorId);
 
-            $video = $this->createSingleVideo($entry);
-            if ($video) {
-                $this->createdVideoIds[] = $video->id;
-            }
+            AdminLogger::settingsSaved('Bulk Video Upload', [
+                'created_' . count($this->createdVideoIds) . '_videos',
+                'mode_sync',
+            ]);
+
+            Notification::make()
+                ->title('Created ' . count($this->createdVideoIds) . ' video(s) — processing will begin shortly')
+                ->success()
+                ->send();
+        } else {
+            // Larger batch — dispatch and poll the cache for the result.
+            $this->bulkToken = (string) Str::uuid();
+            CreateBulkVideosJob::dispatch(
+                $this->entries,
+                $addToQueue,
+                $actorId,
+                $this->bulkToken,
+            );
+
+            AdminLogger::settingsSaved('Bulk Video Upload', [
+                "queued_{$count}_videos",
+                'mode_async',
+            ]);
+
+            Notification::make()
+                ->title("Queued {$count} video(s) — creating them in the background…")
+                ->success()
+                ->send();
         }
 
-        if ($this->addToQueue) {
-            app(VideoService::class)->recalculateScheduleQueue();
-        }
-
-        $count = count($this->createdVideoIds);
         $this->entries = [];
-
-        AdminLogger::settingsSaved('Bulk Video Upload', ["created_{$count}_videos"]);
-
-        Notification::make()
-            ->title("Created {$count} video(s) — processing will begin shortly")
-            ->success()
-            ->send();
     }
 
-    protected function createSingleVideo(array $entry): ?Video
+    /**
+     * Called by wire:poll while an async CreateBulkVideosJob is running.
+     * Hydrates $createdVideoIds from the cache entry written by the job.
+     */
+    public function pollBulkResults(): void
     {
-        $title = trim($entry['title']);
-        $slug = $this->generateUniqueSlug($title);
-        $tempPath = $entry['file_path'];
-        $extension = pathinfo($tempPath, PATHINFO_EXTENSION) ?: 'mp4';
-
-        // Move from temp to final location
-        $directory = "videos/{$slug}";
-        $filename = Str::slug($title, '_') . '.' . $extension;
-        $newPath = "{$directory}/{$filename}";
-
-        if (!Storage::disk('public')->exists($tempPath)) {
-            return null;
+        if (!$this->bulkToken) {
+            return;
         }
 
-        Storage::disk('public')->makeDirectory($directory);
-        Storage::disk('public')->move($tempPath, $newPath);
+        $actorId = (int) (auth()->id() ?? 0);
+        $key = CreateBulkVideosJob::cacheKey($actorId, $this->bulkToken);
+        $payload = \Illuminate\Support\Facades\Cache::get($key);
 
-        // Parse tags from comma-separated input
-        $tags = $entry['tags'] ?? [];
-        if (!empty($entry['tags_input'])) {
-            $parsedTags = array_map('trim', explode(',', $entry['tags_input']));
-            $parsedTags = array_filter($parsedTags, fn($t) => !empty($t));
-            $tags = array_merge($tags, $parsedTags);
-            $tags = array_unique($tags);
+        if (!is_array($payload)) {
+            return;
         }
 
-        $video = Video::create([
-            'user_id' => $entry['user_id'] ?? auth()->id(),
-            'uuid' => (string)Str::uuid(),
-            'title' => $title,
-            'slug' => $slug,
-            'description' => $entry['description'] ?? null,
-            'category_id' => $entry['category_id'] ?: null,
-            'privacy' => 'public',
-            'age_restricted' => $entry['age_restricted'] ?? true,
-            'tags' => $tags,
-            'status' => 'pending',
-            'video_path' => $newPath,
-            'storage_disk' => 'public',
-            'size' => Storage::disk('public')->size($newPath),
-            'is_approved' => isset($entry['queue_order']),
-            'queue_order' => $entry['queue_order'] ?? null,
-            'requires_schedule' => isset($entry['queue_order']),
-            'published_at' => null,
-        ]);
+        $ids = $payload['created_ids'] ?? [];
+        if (is_array($ids) && !empty($ids)) {
+            $this->createdVideoIds = array_values(array_unique(array_merge($this->createdVideoIds, $ids)));
+        }
 
-        event(new VideoUploaded($video));
-
-        return $video;
+        if (($payload['status'] ?? null) === 'done' || ($payload['status'] ?? null) === 'failed') {
+            $this->bulkToken = null;
+            \Illuminate\Support\Facades\Cache::forget($key);
+        }
     }
 
-    protected function generateUniqueSlug(string $title): string
+    /**
+     * Turn a raw uploaded filename into a presentable default title.
+     * "My_Cool-Video.final v2.mp4" -> "My Cool Video Final V2"
+     */
+    protected function titleFromFilename(string $name): string
     {
-        $baseSlug = Str::slug($title) ?: 'video';
-        $slug = $baseSlug;
-        $suffix = 2;
-        while (Video::withTrashed()->where('slug', $slug)->exists()) {
-            $slug = $baseSlug . '-' . $suffix;
-            $suffix++;
-        }
-        return $slug;
+        $base = pathinfo($name, PATHINFO_FILENAME);
+        $clean = preg_replace('/[_\-.]+/', ' ', $base) ?? $base;
+        $clean = preg_replace('/\s+/', ' ', trim($clean)) ?? $clean;
+        return $clean === '' ? '' : Str::title($clean);
     }
 
     public function getCreatedVideosProperty(): \Illuminate\Database\Eloquent\Collection

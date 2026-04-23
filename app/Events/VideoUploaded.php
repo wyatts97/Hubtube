@@ -12,6 +12,7 @@ class VideoUploaded
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
-        public Video $video
+        public Video $video,
+        public bool $suppressNotifications = false,
     ) {}
 }

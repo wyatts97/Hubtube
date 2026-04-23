@@ -19,7 +19,8 @@ class VideoProcessed implements ShouldBroadcast
     public bool $afterCommit = true;
 
     public function __construct(
-        public Video $video
+        public Video $video,
+        public bool $suppressNotifications = false,
     ) {}
 
     public function broadcastWhen(): bool

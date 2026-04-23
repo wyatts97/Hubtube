@@ -61,6 +61,7 @@ class Video extends Model
         'published_at',
         'scheduled_at',
         'requires_schedule',
+        'suppress_notifications',
         'queue_order',
         'processing_started_at',
         'processing_completed_at',
@@ -104,6 +105,7 @@ class Video extends Model
             'processing_started_at' => 'datetime',
             'processing_completed_at' => 'datetime',
             'requires_schedule' => 'boolean',
+            'suppress_notifications' => 'boolean',
         ];
     }
 

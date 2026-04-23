@@ -15,148 +15,20 @@
 
             {{-- Apply to All Bar --}}
             @if (count($entries) > 0)
-                <x-filament::section heading="Apply to All" icon="heroicon-o-adjustments-horizontal" collapsible>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
-                            <select wire:model="bulkCategoryId" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm">
-                                <option value="">— None —</option>
-                                @foreach ($this->categories as $id => $name)
-                                    <option value="{{ $id }}">{{ $name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assign to User</label>
-                            <select wire:model="bulkUserId" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm">
-                                @foreach ($this->users as $id => $username)
-                                    <option value="{{ $id }}">{{ $username }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Schedule Publishing</label>
-                            <label class="flex items-center gap-2 mt-2">
-                                <input type="checkbox" wire:model.live="addToQueue" class="rounded border-gray-300 dark:border-gray-600">
-                                <span class="text-sm text-gray-600 dark:text-gray-400">Auto-publish on schedule (skip moderation)</span>
-                            </label>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Age Restricted</label>
-                            <label class="flex items-center gap-2 mt-2">
-                                <input type="checkbox" wire:model="bulkAgeRestricted" class="rounded border-gray-300 dark:border-gray-600">
-                                <span class="text-sm text-gray-600 dark:text-gray-400">Yes</span>
-                            </label>
-                        </div>
-                        <div class="flex items-end">
-                            <x-filament::button wire:click="applyBulkSettings" icon="heroicon-o-check" color="gray" size="sm">
-                                Apply to All
-                            </x-filament::button>
-                        </div>
+                <form wire:submit.prevent="applyBulkSettings">
+                    {{ $this->bulkSettingsForm }}
+                    <div class="mt-3">
+                        <x-filament::button type="submit" icon="heroicon-o-check" color="gray" size="sm">
+                            Apply to All Entries
+                        </x-filament::button>
                     </div>
-                </x-filament::section>
+                </form>
             @endif
 
             {{-- Video Entries --}}
             @if (count($entries) > 0)
                 <x-filament::section heading="Video Queue ({{ count($entries) }})" icon="heroicon-o-queue-list">
-                    <div class="space-y-4">
-                        @foreach ($entries as $index => $entry)
-                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4" wire:key="entry-{{ $index }}">
-                                <div class="flex gap-4">
-                                    {{-- Video Thumbnail Preview --}}
-                                    <div class="flex-shrink-0">
-                                        @if (!empty($entry['file_path']) && \Illuminate\Support\Facades\Storage::disk('public')->exists($entry['file_path']))
-                                            <div class="w-32 h-20 rounded-lg bg-gray-900 overflow-hidden relative">
-                                                <video
-                                                    src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($entry['file_path']) }}"
-                                                    class="w-full h-full object-cover"
-                                                    preload="metadata"
-                                                    muted
-                                                ></video>
-                                                <div class="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
-                                                    {{ $entry['file_size'] ? number_format($entry['file_size'] / 1048576, 1) . ' MB' : '' }}
-                                                </div>
-                                            </div>
-                                        @else
-                                            <div class="w-32 h-20 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                                <x-heroicon-o-video-camera class="w-8 h-8 text-gray-400" />
-                                            </div>
-                                        @endif
-                                    </div>
-
-                                    {{-- Metadata fields --}}
-                                    <div class="flex-1 space-y-3">
-                                        {{-- File name header --}}
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $entry['file_name'] }}</p>
-
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <div class="md:col-span-2">
-                                                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Title *</label>
-                                                <input
-                                                    type="text"
-                                                    wire:model.blur="entries.{{ $index }}.title"
-                                                    placeholder="Enter video title..."
-                                                    class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm"
-                                                />
-                                            </div>
-                                            <div class="md:col-span-2">
-                                                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Description</label>
-                                                <textarea
-                                                    wire:model.blur="entries.{{ $index }}.description"
-                                                    rows="2"
-                                                    placeholder="Optional description..."
-                                                    class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm"
-                                                ></textarea>
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Category</label>
-                                                <select
-                                                    wire:model="entries.{{ $index }}.category_id"
-                                                    class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm"
-                                                >
-                                                    <option value="">— None —</option>
-                                                    @foreach ($this->categories as $id => $name)
-                                                        <option value="{{ $id }}">{{ $name }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Assign to User</label>
-                                                <select
-                                                    wire:model="entries.{{ $index }}.user_id"
-                                                    class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm"
-                                                >
-                                                    @foreach ($this->users as $id => $username)
-                                                        <option value="{{ $id }}">{{ $username }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                            <div class="md:col-span-2">
-                                                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Tags</label>
-                                                <input
-                                                    type="text"
-                                                    wire:model.blur="entries.{{ $index }}.tags_input"
-                                                    placeholder="tag1, tag2, tag3..."
-                                                    class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white text-sm"
-                                                />
-                                                <p class="text-xs text-gray-400 mt-0.5">Separate tags with commas</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {{-- Remove button --}}
-                                    <x-filament::icon-button
-                                        wire:click="removeEntry({{ $index }})"
-                                        icon="heroicon-o-x-mark"
-                                        color="danger"
-                                        size="sm"
-                                        tooltip="Remove"
-                                    />
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
+                    {{ $this->entriesForm }}
 
                     <div class="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
                         <x-filament::button
@@ -173,9 +45,13 @@
         @endif
 
         {{-- Processing Status --}}
-        @if (!empty($createdVideoIds))
+        @if (!empty($createdVideoIds) || $this->bulkToken)
             <x-filament::section heading="Processing Status" icon="heroicon-o-cpu-chip"
                 description="Videos are being processed. Once complete, scheduled videos will auto-publish at their scheduled time.">
+                {{-- Poll for async job results when a token is present --}}
+                @if ($this->bulkToken)
+                    <div wire:poll.3s="pollBulkResults"></div>
+                @endif
                 <div wire:poll.5s class="space-y-3">
                     @foreach ($this->createdVideos as $video)
                         <div class="flex items-center justify-between py-3 px-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900" wire:key="proc-{{ $video->id }}">

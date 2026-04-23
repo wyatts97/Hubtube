@@ -13,6 +13,12 @@ class NotifyVideoProcessed
         $video = $event->video;
         $video->refresh();
 
+        // Suppress notifications entirely for bulk-uploaded videos (flag persists on the model
+        // so scheduled publishes also stay silent).
+        if ($event->suppressNotifications || $video->suppress_notifications) {
+            return;
+        }
+
         // Only notify when the video is actually live.
         if (
             !$video->published_at ||

@@ -47,7 +47,7 @@ class PublishScheduledVideos extends Command
                 ->exists();
 
             if (!$alreadyNotified) {
-                event(new VideoProcessed($video));
+                event(new VideoProcessed($video, suppressNotifications: (bool) $video->suppress_notifications));
             }
         }
 

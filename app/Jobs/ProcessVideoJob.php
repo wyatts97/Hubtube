@@ -135,6 +135,13 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
             return;
         }
 
+        // Bulk-uploaded videos flag themselves to suppress all email/in-app notifications.
+        // Broadcast still fires (for the uploader polling UI) — NotifyVideoProcessed bails.
+        if ($this->video->suppress_notifications) {
+            event(new VideoProcessed($this->video, suppressNotifications: true));
+            return;
+        }
+
         // Prevent duplicate notifications on job retries
         $exists = Notification::where('user_id', $this->video->user_id)
             ->where('type', 'video_processed')

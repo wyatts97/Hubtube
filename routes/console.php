@@ -14,6 +14,7 @@ Schedule::command('sanctum:prune-expired --hours=24')->daily();
 Schedule::command('videos:prune-deleted --days=30')->daily();
 Schedule::command('storage:cleanup')->daily();
 Schedule::command('uploads:cleanup-chunks --hours=24')->daily();
+Schedule::command('videos:prune-bulk-temp')->dailyAt('03:15')->withoutOverlapping();
 
 // Publish scheduled videos every minute so they go live on time
 Schedule::command('videos:publish-scheduled')->everyMinute();
