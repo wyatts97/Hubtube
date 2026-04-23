@@ -65,6 +65,36 @@ Route::get('/admin/flush-cache', function () {
     return redirect('/admin');
 })->middleware(['web', 'auth'])->name('admin.flush-cache');
 
+// Admin: Export single activity log entry
+Route::get('/admin/activity-log/export/{id}', function ($id) {
+    if (!auth()->check() || !auth()->user()->is_admin) {
+        abort(403);
+    }
+
+    $record = \Spatie\Activitylog\Models\Activity::with(['causer', 'subject'])->findOrFail($id);
+
+    $data = [
+        'id' => $record->id,
+        'timestamp' => $record->created_at?->format('Y-m-d H:i:s'),
+        'level' => $record->log_name,
+        'causer_type' => $record->causer_type,
+        'causer_id' => $record->causer_id,
+        'causer_label' => $record->causer?->username ?? 'System',
+        'subject_type' => $record->subject_type,
+        'subject_id' => $record->subject_id,
+        'description' => $record->description,
+        'properties' => $record->properties,
+    ];
+
+    $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    $filename = 'activity-log-' . $record->id . '-' . now()->format('Y-m-d') . '.json';
+
+    return response($json, 200, [
+        'Content-Type' => 'application/json',
+        'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+    ]);
+})->middleware(['web', 'auth'])->name('admin.activity-log.export');
+
 // Sitemap & Robots (outside age verification)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/sitemap_index.xml', [SitemapController::class, 'index'])->name('sitemap.index');
