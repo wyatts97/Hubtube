@@ -48,7 +48,7 @@ class SearchController extends Controller
         ]);
     }
 
-    private function searchVideos(string $query)
+    private function searchVideos(?string $query)
     {
         if (empty($query)) {
             return collect();
@@ -78,7 +78,7 @@ class SearchController extends Controller
             ->paginate(24);
     }
 
-    private function searchChannels(string $query)
+    private function searchChannels(?string $query)
     {
         if (empty($query)) {
             return collect();
@@ -95,7 +95,7 @@ class SearchController extends Controller
             ->paginate(24);
     }
 
-    private function searchHashtags(string $query)
+    private function searchHashtags(?string $query)
     {
         if (empty($query)) {
             return collect();
