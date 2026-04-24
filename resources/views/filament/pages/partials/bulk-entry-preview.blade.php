@@ -25,7 +25,7 @@
             @endif
         </div>
     @else
-        <div class="w-32 h-20 shrink-0 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+        <div class="w-32 h-20 shrink-0 rounded bg-gray-200 dark:bg-gray-900 flex items-center justify-center">
             <x-heroicon-o-video-camera class="w-8 h-8 text-gray-400" />
         </div>
     @endif
