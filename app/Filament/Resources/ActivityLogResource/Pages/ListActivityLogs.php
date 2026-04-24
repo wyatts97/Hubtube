@@ -21,26 +21,35 @@ class ListActivityLogs extends ListRecords
 
             'errors' => Tab::make('Errors')
                 ->icon('heroicon-m-exclamation-triangle')
-                ->modifyQueryUsing(fn (Builder $q) => $q->where('log_name', 'error'))
+                ->query(fn () => Activity::query()->where('log_name', 'error'))
                 ->badge(fn () => $this->safeCount(['error']))
                 ->badgeColor('danger'),
 
             'auth' => Tab::make('Auth')
                 ->icon('heroicon-m-shield-check')
-                ->modifyQueryUsing(fn (Builder $q) => $q->where('log_name', 'auth'))
+                ->query(fn () => Activity::query()->where('log_name', 'auth'))
                 ->badge(fn () => $this->safeCount(['auth']))
                 ->badgeColor('warning'),
 
             'admin' => Tab::make('Admin')
                 ->icon('heroicon-m-wrench-screwdriver')
-                ->modifyQueryUsing(fn (Builder $q) => $q->where('log_name', 'admin'))
+                ->query(fn () => Activity::query()->where('log_name', 'admin'))
                 ->badge(fn () => $this->safeCount(['admin']))
                 ->badgeColor('info'),
 
             'system' => Tab::make('System')
                 ->icon('heroicon-m-cog-6-tooth')
-                ->modifyQueryUsing(fn (Builder $q) => $q->where('log_name', 'system')),
+                ->query(fn () => Activity::query()->where('log_name', 'system')),
         ];
+    }
+
+    public function getModel(): string
+    {
+        try {
+            return parent::getModel();
+        } catch (\Throwable) {
+            return Activity::class;
+        }
     }
 
     public function getTableQuery(): \Illuminate\Database\Eloquent\Builder

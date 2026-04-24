@@ -32,6 +32,29 @@ class ActivityLogResource extends Resource
 
     protected static ?int $navigationSort = 98;
 
+    public static function getModel(): string
+    {
+        if (!class_exists(Activity::class)) {
+            throw new \RuntimeException('Activity model not found - Spatie activitylog package may not be installed');
+        }
+        return parent::getModel();
+    }
+
+    public static function canViewAny(): bool
+    {
+        try {
+            if (!class_exists(Activity::class)) {
+                return false;
+            }
+            // Test if the Activity model can be loaded and queried
+            \Spatie\Activitylog\Models\Activity::query()->limit(1)->get();
+            return parent::canViewAny();
+        } catch (\Throwable) {
+            // If the activity_log table doesn't exist or model can't load, hide the resource
+            return false;
+        }
+    }
+
     public static function getNavigationBadge(): ?string
     {
         try {
@@ -90,19 +113,19 @@ class ActivityLogResource extends Resource
 
                 Tables\Columns\TextColumn::make('causer_label')
                     ->label('Causer')
-                    ->state(fn (Activity $record): string => static::resolveCauserLabel($record))
+                    ->state(fn ($record): string => $record ? static::resolveCauserLabel($record) : '—')
                     ->icon('heroicon-m-user')
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('subject_label')
                     ->label('Subject')
-                    ->state(fn (Activity $record): string => static::resolveSubjectLabel($record))
+                    ->state(fn ($record): string => $record ? static::resolveSubjectLabel($record) : '—')
                     ->icon('heroicon-m-document')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\IconColumn::make('has_trace')
                     ->label('Trace')
-                    ->state(fn (Activity $record): bool => static::recordHasStackTrace($record))
+                    ->state(fn ($record): bool => $record ? static::recordHasStackTrace($record) : false)
                     ->boolean()
                     ->trueIcon('heroicon-m-bug-ant')
                     ->falseIcon('heroicon-m-minus')
