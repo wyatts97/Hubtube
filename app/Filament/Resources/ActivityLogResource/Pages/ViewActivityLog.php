@@ -3,13 +3,11 @@
 namespace App\Filament\Resources\ActivityLogResource\Pages;
 
 use App\Filament\Resources\ActivityLogResource;
-use Filament\Resources\Pages\ViewRecord;
-use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Components\Section;
-use Filament\Infolists\Infolist;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Blade;
+use Filament\Resources\Pages\ViewRecord;
+use Spatie\Activitylog\Models\Activity;
 
 class ViewActivityLog extends ViewRecord
 {
@@ -17,230 +15,187 @@ class ViewActivityLog extends ViewRecord
 
     protected static string $view = 'filament.resources.activity-log-resource.pages.view-activity-log';
 
-    public function infolist(Infolist $infolist): Infolist
+    public function getTitle(): string
     {
-        return $infolist
-            ->schema([
-                Section::make('Log Entry Details')
-                    ->schema([
-                        TextEntry::make('created_at')
-                            ->label('Timestamp')
-                            ->dateTime('M d, Y H:i:s')
-                            ->icon('heroicon-m-calendar'),
-
-                        TextEntry::make('log_name')
-                            ->label('Level')
-                            ->badge()
-                            ->color(fn (string $state): string => match ($state) {
-                                'error' => 'danger',
-                                'auth' => 'warning',
-                                'admin' => 'info',
-                                'system' => 'gray',
-                                default => 'gray',
-                            }),
-
-                        TextEntry::make('causer_display')
-                            ->label('Causer')
-                            ->default(fn ($record) => $this->resolveCauserLabel($record))
-                            ->icon('heroicon-m-user'),
-
-                        TextEntry::make('subject_display')
-                            ->label('Subject')
-                            ->default(fn ($record) => $this->resolveSubjectLabel($record))
-                            ->icon('heroicon-m-document'),
-                    ])
-                    ->columns(4),
-
-                Section::make('Description')
-                    ->schema([
-                        TextEntry::make('description')
-                            ->hiddenLabel()
-                            ->columnSpanFull()
-                            ->extraAttributes(['class' => 'text-base leading-relaxed']),
-                    ]),
-
-                Section::make('Context')
-                    ->collapsible()
-                    ->schema([
-                        TextEntry::make('properties')
-                            ->hiddenLabel()
-                            ->columnSpanFull()
-                            ->formatStateUsing(fn ($state) => $this->formatContextJson($state))
-                            ->extraAttributes(['class' => 'font-mono text-sm'])
-                            ->html(),
-                    ]),
-
-                Section::make('Stack Trace')
-                    ->collapsible()
-                    ->collapsed(fn ($record) => empty($this->extractStackTrace($record)) || $this->extractStackTrace($record) === 'N/A')
-                    ->schema([
-                        TextEntry::make('stack_trace')
-                            ->hiddenLabel()
-                            ->columnSpanFull()
-                            ->default(fn ($record) => $this->extractStackTrace($record))
-                            ->formatStateUsing(fn ($state) => $this->formatStackTrace($state))
-                            ->extraAttributes(['class' => 'font-mono text-xs'])
-                            ->html(),
-                    ]),
-            ]);
+        return 'Log Entry #' . $this->record->id;
     }
 
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('copy')
+            Action::make('copyAll')
                 ->label('Copy Full Log')
-                ->icon('heroicon-m-clipboard')
+                ->icon('heroicon-m-clipboard-document')
                 ->color('gray')
                 ->action(function () {
-                    $this->dispatch('log-copied');
+                    $this->dispatch('copy-to-clipboard', text: $this->buildFullLogText());
                     Notification::make()
                         ->title('Log entry copied to clipboard')
                         ->success()
                         ->send();
-                })
-                ->extraAttributes([
-                    'x-data' => '',
-                    'x-on:click' => '
-                        const fullLog = document.getElementById("full-log-content").innerText;
-                        navigator.clipboard.writeText(fullLog).then(() => {
-                            $dispatch("log-copied");
-                        });
-                    ',
-                ]),
+                }),
 
-            Action::make('export')
-                ->label('Export JSON')
+            ActionGroup::make([
+                Action::make('exportJson')
+                    ->label('Export as JSON')
+                    ->icon('heroicon-m-code-bracket')
+                    ->url(fn () => route('admin.logs.export-entry', ['id' => $this->record->id, 'format' => 'json']))
+                    ->openUrlInNewTab(),
+                Action::make('exportCsv')
+                    ->label('Export as CSV')
+                    ->icon('heroicon-m-table-cells')
+                    ->url(fn () => route('admin.logs.export-entry', ['id' => $this->record->id, 'format' => 'csv']))
+                    ->openUrlInNewTab(),
+                Action::make('exportTxt')
+                    ->label('Export as TXT')
+                    ->icon('heroicon-m-document-text')
+                    ->url(fn () => route('admin.logs.export-entry', ['id' => $this->record->id, 'format' => 'txt']))
+                    ->openUrlInNewTab(),
+            ])
+                ->label('Export')
                 ->icon('heroicon-m-arrow-down-tray')
-                ->color('gray')
-                ->url(fn () => route('admin.activity-log.export', ['id' => $this->record->id])),
+                ->button()
+                ->color('gray'),
 
             Action::make('delete')
                 ->label('Delete')
                 ->icon('heroicon-m-trash')
                 ->color('danger')
                 ->requiresConfirmation()
-                ->action(fn () => $this->deleteRecord()),
+                ->action(function () {
+                    $id = $this->record->id;
+                    $this->record->delete();
+                    Notification::make()->title("Log entry #{$id} deleted")->success()->send();
+                    $this->redirect(ActivityLogResource::getUrl('index'));
+                }),
         ];
     }
 
-    private function resolveCauserLabel($record): string
+    /**
+     * Plain-text full log used by the "Copy Full Log" button.
+     */
+    public function buildFullLogText(): string
     {
+        /** @var Activity $record */
+        $record = $this->record;
+        $ctx = $this->contextJson();
+        $trace = $this->stackTraceText();
+
+        return implode("\n", [
+            'Log Entry #' . $record->id,
+            str_repeat('=', 40),
+            'Timestamp:   ' . ($record->created_at?->format('Y-m-d H:i:s') ?? 'N/A'),
+            'Level:       ' . ($record->log_name ?? 'n/a'),
+            'Causer:      ' . $this->causerLabel(),
+            'Subject:     ' . $this->subjectLabel(),
+            '',
+            'Description:',
+            (string) $record->description,
+            '',
+            'Context:',
+            $ctx,
+            '',
+            'Stack Trace:',
+            $trace,
+        ]);
+    }
+
+    public function causerLabel(): string
+    {
+        $record = $this->record;
         if (!$record->causer) {
             return 'System';
         }
-
         if (isset($record->causer->username) && $record->causer->username) {
             return $record->causer->username;
         }
-
         return class_basename($record->causer_type) . ' #' . $record->causer_id;
     }
 
-    private function resolveSubjectLabel($record): string
+    public function subjectLabel(): string
     {
+        $record = $this->record;
         if (!$record->subject_type || !$record->subject_id) {
             return '—';
         }
-
         return class_basename($record->subject_type) . ' #' . $record->subject_id;
     }
 
-    private function formatContextJson($properties): string
+    /**
+     * Pretty-printed JSON of properties (minus 'trace' which is shown separately).
+     */
+    public function contextJson(): string
     {
-        if (empty($properties)) {
-            return '<pre class="bg-gray-900 text-gray-300 p-4 rounded-lg overflow-x-auto">{}</pre>';
+        $props = $this->normalizeProperties($this->record->properties);
+        if (empty($props)) {
+            return '{}';
         }
+        // Strip trace-like keys, rendered separately
+        unset($props['trace'], $props['stack_trace'], $props['stack']);
 
-        if (is_object($properties) && method_exists($properties, 'toArray')) {
-            $properties = $properties->toArray();
-        }
-
-        $json = json_encode($properties, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
-        // Syntax highlighting for JSON
-        $highlighted = $this->highlightJson($json);
-
-        return '<pre class="bg-gray-900 text-gray-300 p-4 rounded-lg overflow-x-auto">' . $highlighted . '</pre>';
+        $encoded = json_encode($props, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        return $encoded === false ? var_export($props, true) : $encoded;
     }
 
-    private function highlightJson(string $json): string
+    /**
+     * Get the raw stack trace (handles string, array, or nested-array shapes).
+     */
+    public function stackTraceText(): string
     {
-        $json = htmlspecialchars($json, ENT_QUOTES, 'UTF-8');
+        $props = $this->normalizeProperties($this->record->properties);
+        $trace = $props['trace'] ?? $props['stack_trace'] ?? $props['stack'] ?? null;
 
-        // Key highlighting (cyan)
-        $json = preg_replace('/&quot;([\w_]+)&quot;:/', '<span class="text-cyan-400">"$1"</span>:', $json);
-
-        // String values (green)
-        $json = preg_replace('/: &quot;([^&]*)&quot;/', ': <span class="text-green-400">"$1"</span>', $json);
-
-        // Numbers (yellow)
-        $json = preg_replace('/: (\d+)(,?)$/m', ': <span class="text-yellow-400">$1</span>$2', $json);
-
-        // Booleans/null (purple)
-        $json = preg_replace('/: (true|false|null)/', ': <span class="text-purple-400">$1</span>', $json);
-
-        return $json;
-    }
-
-    private function extractStackTrace($record): string
-    {
-        $properties = $record->properties;
-
-        if (is_object($properties) && method_exists($properties, 'toArray')) {
-            $properties = $properties->toArray();
+        if ($trace === null || $trace === '') {
+            return '';
         }
 
-        if (!is_array($properties)) {
-            return 'N/A';
+        if (is_string($trace)) {
+            return $trace;
         }
 
-        return (string) ($properties['trace'] ?? $properties['stack_trace'] ?? $properties['stack'] ?? 'N/A');
-    }
-
-    private function formatStackTrace(string $trace): string
-    {
-        if ($trace === 'N/A' || empty($trace)) {
-            return '<p class="text-gray-500 italic">No stack trace available</p>';
-        }
-
-        // Format PHP stack trace with line numbers
-        $lines = explode("\n", $trace);
-        $formatted = [];
-        $lineNumber = 1;
-
-        foreach ($lines as $line) {
-            if (empty(trim($line))) {
-                continue;
+        if (is_array($trace)) {
+            // Could be array of strings (each frame) or array of frame dicts
+            $lines = [];
+            foreach ($trace as $i => $frame) {
+                if (is_string($frame)) {
+                    $lines[] = $frame;
+                } elseif (is_array($frame)) {
+                    $file = $frame['file'] ?? '?';
+                    $line = $frame['line'] ?? '?';
+                    $fn = $frame['function'] ?? '?';
+                    $class = $frame['class'] ?? null;
+                    $callable = $class ? "{$class}::{$fn}" : $fn;
+                    $lines[] = "#{$i} {$file}({$line}): {$callable}()";
+                } else {
+                    $lines[] = "#{$i} " . var_export($frame, true);
+                }
             }
-
-            // Highlight file paths and line numbers
-            $line = htmlspecialchars($line, ENT_QUOTES, 'UTF-8');
-            $line = preg_replace(
-                '/(\/[^\s]+\.php)(\(\d+\))?/',
-                '<span class="text-yellow-400">$1</span><span class="text-blue-400">$2</span>',
-                $line
-            );
-            $line = preg_replace(
-                '/#\d+/',
-                '<span class="text-purple-400">$0</span>',
-                $line
-            );
-
-            $formatted[] = '<div class="flex gap-3 py-1 hover:bg-gray-800/50 rounded">' .
-                '<span class="text-gray-600 w-8 text-right select-none">' . $lineNumber . '</span>' .
-                '<span class="flex-1">' . $line . '</span>' .
-                '</div>';
-            $lineNumber++;
+            return implode("\n", $lines);
         }
 
-        return '<div class="bg-gray-900 text-gray-300 p-4 rounded-lg overflow-x-auto">' .
-            implode("", $formatted) .
-            '</div>';
+        return (string) $trace;
     }
 
-    public function getTitle(): string
+    public function hasStackTrace(): bool
     {
-        return 'Log Entry #' . $this->record->id;
+        return $this->stackTraceText() !== '';
+    }
+
+    private function normalizeProperties(mixed $props): array
+    {
+        if (empty($props)) {
+            return [];
+        }
+        if (is_object($props) && method_exists($props, 'toArray')) {
+            return $props->toArray();
+        }
+        if (is_array($props)) {
+            return $props;
+        }
+        if (is_string($props)) {
+            $decoded = json_decode($props, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+        return [];
     }
 }

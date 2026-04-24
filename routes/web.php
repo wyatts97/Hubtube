@@ -65,35 +65,83 @@ Route::get('/admin/flush-cache', function () {
     return redirect('/admin');
 })->middleware(['web', 'auth'])->name('admin.flush-cache');
 
-// Admin: Export single activity log entry
-Route::get('/admin/activity-log/export/{id}', function ($id) {
+// ── Admin Logs: export, download, clear ─────────────────────────
+
+/** Guard: only authenticated admins. */
+$adminOnly = function () {
     if (!auth()->check() || !auth()->user()->is_admin) {
         abort(403);
     }
+};
+
+// Export a single activity log entry (json | csv | txt)
+Route::get('/admin/logs/export/{id}', function ($id) use ($adminOnly) {
+    $adminOnly();
 
     $record = \Spatie\Activitylog\Models\Activity::with(['causer', 'subject'])->findOrFail($id);
+    $format = strtolower((string) request()->query('format', 'json'));
+    if (!in_array($format, ['json', 'csv', 'txt'], true)) {
+        abort(400, 'Unsupported format');
+    }
 
-    $data = [
+    $causerLabel = $record->causer?->username ?? ($record->causer_type ? class_basename($record->causer_type) . ' #' . $record->causer_id : 'System');
+    $subjectLabel = $record->subject_type ? class_basename($record->subject_type) . ' #' . $record->subject_id : '—';
+
+    $props = $record->properties;
+    if (is_object($props) && method_exists($props, 'toArray')) {
+        $props = $props->toArray();
+    }
+
+    $row = [
         'id' => $record->id,
         'timestamp' => $record->created_at?->format('Y-m-d H:i:s'),
         'level' => $record->log_name,
-        'causer_type' => $record->causer_type,
-        'causer_id' => $record->causer_id,
-        'causer_label' => $record->causer?->username ?? 'System',
-        'subject_type' => $record->subject_type,
-        'subject_id' => $record->subject_id,
-        'description' => $record->description,
-        'properties' => $record->properties,
+        'causer' => $causerLabel,
+        'subject' => $subjectLabel,
+        'description' => (string) $record->description,
+        'context' => $props,
     ];
 
-    $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-    $filename = 'activity-log-' . $record->id . '-' . now()->format('Y-m-d') . '.json';
+    $filename = "activity-log-{$record->id}-" . now()->format('Y-m-d') . ".{$format}";
 
-    return response($json, 200, [
-        'Content-Type' => 'application/json',
-        'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-    ]);
-})->middleware(['web', 'auth'])->name('admin.activity-log.export');
+    return match ($format) {
+        'json' => response()->streamDownload(fn () => print(json_encode($row, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
+            $filename, ['Content-Type' => 'application/json']),
+
+        'csv' => response()->streamDownload(function () use ($row) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['id', 'timestamp', 'level', 'causer', 'subject', 'description', 'context']);
+            fputcsv($out, [
+                $row['id'], $row['timestamp'], $row['level'], $row['causer'], $row['subject'],
+                $row['description'],
+                is_array($row['context']) ? json_encode($row['context'], JSON_UNESCAPED_SLASHES) : (string) $row['context'],
+            ]);
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv']),
+
+        'txt' => response()->streamDownload(function () use ($row) {
+            echo "Log Entry #{$row['id']}\n";
+            echo str_repeat('=', 40) . "\n";
+            echo "Timestamp:   {$row['timestamp']}\n";
+            echo "Level:       {$row['level']}\n";
+            echo "Causer:      {$row['causer']}\n";
+            echo "Subject:     {$row['subject']}\n\n";
+            echo "Description:\n{$row['description']}\n\n";
+            echo "Context:\n" . (is_array($row['context']) ? json_encode($row['context'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) : (string) $row['context']) . "\n";
+        }, $filename, ['Content-Type' => 'text/plain']),
+    };
+})->middleware(['web', 'auth'])->name('admin.logs.export-entry');
+
+// Download a raw Laravel log file
+Route::get('/admin/logs/file/{filename}/download', function (string $filename) use ($adminOnly) {
+    $adminOnly();
+    $filename = basename($filename); // prevent traversal
+    $path = storage_path('logs/' . $filename);
+    if (!is_file($path)) {
+        abort(404);
+    }
+    return response()->download($path, $filename, ['Content-Type' => 'text/plain']);
+})->where('filename', '[A-Za-z0-9._-]+')->middleware(['web', 'auth'])->name('admin.logs.download-file');
 
 // Sitemap & Robots (outside age verification)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');

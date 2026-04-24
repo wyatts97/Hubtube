@@ -2,180 +2,226 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
-use SplFileInfo;
+use SplFileObject;
 
+/**
+ * LogViewerService
+ *
+ * Streams/parses storage/logs/*.log files safely for huge files.
+ * Supports level filtering, free-text search, tail mode, and pagination.
+ */
 class LogViewerService
 {
+    private const CACHE_TTL = 10; // seconds
+
     /**
-     * Get all Laravel log files with their metadata.
-     *
-     * @return array
+     * Get metadata for every .log file in storage/logs, newest first.
      */
     public function getLogFiles(): array
     {
-        $logPath = storage_path('logs');
-        $files = [];
-
-        if (!is_dir($logPath)) {
-            return $files;
-        }
-
-        $logFiles = File::files($logPath);
-
-        foreach ($logFiles as $file) {
-            if ($file->getExtension() !== 'log') {
-                continue;
+        return Cache::remember('log_viewer:files', self::CACHE_TTL, function () {
+            $logPath = storage_path('logs');
+            if (!is_dir($logPath)) {
+                return [];
             }
 
-            $files[] = [
-                'name' => $file->getFilename(),
-                'path' => $file->getPathname(),
-                'size' => $this->formatBytes($file->getSize()),
-                'size_bytes' => $file->getSize(),
-                'modified' => date('Y-m-d H:i:s', $file->getMTime()),
-                'modified_at' => $file->getMTime(),
-            ];
-        }
+            $files = [];
+            foreach (File::files($logPath) as $file) {
+                if ($file->getExtension() !== 'log') {
+                    continue;
+                }
+                $files[] = [
+                    'name' => $file->getFilename(),
+                    'path' => $file->getPathname(),
+                    'size_bytes' => $file->getSize(),
+                    'size' => $this->formatBytes($file->getSize()),
+                    'modified_at' => $file->getMTime(),
+                    'modified' => date('Y-m-d H:i:s', $file->getMTime()),
+                ];
+            }
 
-        // Sort by modification time, newest first
-        usort($files, fn ($a, $b) => $b['modified_at'] <=> $a['modified_at']);
-
-        return $files;
+            usort($files, fn ($a, $b) => $b['modified_at'] <=> $a['modified_at']);
+            return $files;
+        });
     }
 
     /**
-     * Parse a Laravel log file and extract entries.
+     * Parse a log file into structured entries.
      *
-     * @param string $filename
-     * @param int $limit
-     * @param string|null $level Filter by log level (debug, info, warning, error, critical, alert, emergency)
-     * @return array
+     * @param string      $filename   Filename inside storage/logs/
+     * @param int|null    $limit      Max entries to return (null = all)
+     * @param string|null $level      Filter by level (lowercase)
+     * @param string|null $search     Free-text search against message
+     * @param bool        $tail       If true, read from end of file (tail-N)
+     * @return array<int, array{timestamp:string,environment:string,level:string,level_color:string,message:string,context:string,trace:string}>
      */
-    public function parseLogFile(string $filename, int $limit = 100, ?string $level = null): array
-    {
-        $logPath = storage_path('logs/' . $filename);
-
-        if (!File::exists($logPath)) {
+    public function parseLogFile(
+        string $filename,
+        ?int $limit = 500,
+        ?string $level = null,
+        ?string $search = null,
+        bool $tail = true,
+    ): array {
+        $path = storage_path('logs/' . basename($filename));
+        if (!File::exists($path)) {
             return [];
         }
 
-        $content = File::get($logPath);
-        $entries = $this->extractLogEntries($content, $level);
+        $entries = $this->readEntries($path, $tail ? ($limit ?? 500) : null);
 
-        // Limit results
-        return array_slice($entries, 0, $limit);
-    }
-
-    /**
-     * Tail a log file (get last N lines).
-     *
-     * @param string $filename
-     * @param int $lines
-     * @return array
-     */
-    public function tailLogFile(string $filename, int $lines = 50): array
-    {
-        $logPath = storage_path('logs/' . $filename);
-
-        if (!File::exists($logPath)) {
-            return [];
+        // Apply filters
+        if ($level !== null && $level !== '') {
+            $level = strtolower($level);
+            $entries = array_values(array_filter($entries, fn ($e) => $e['level'] === $level));
         }
 
-        $content = File::get($logPath);
-        $entries = $this->extractLogEntries($content);
+        if ($search !== null && $search !== '') {
+            $needle = mb_strtolower($search);
+            $entries = array_values(array_filter($entries, fn ($e) =>
+                str_contains(mb_strtolower($e['message']), $needle)
+                || str_contains(mb_strtolower($e['context']), $needle)
+                || str_contains(mb_strtolower($e['trace']), $needle)
+            ));
+        }
 
-        // Get last N entries
-        return array_slice($entries, -$lines);
+        if ($limit !== null && count($entries) > $limit) {
+            $entries = array_slice($entries, 0, $limit);
+        }
+
+        return $entries;
     }
 
     /**
-     * Search logs for a specific term.
-     *
-     * @param string $search
-     * @param int $limit
-     * @param string|null $level
-     * @return array
+     * Search across all log files.
      */
-    public function searchLogs(string $search, int $limit = 100, ?string $level = null): array
+    public function searchLogs(string $search, int $limit = 200, ?string $level = null): array
     {
-        $files = $this->getLogFiles();
         $results = [];
-
-        foreach ($files as $file) {
-            $entries = $this->parseLogFile($file['name'], 1000, $level);
-
-            foreach ($entries as $entry) {
-                if (stripos($entry['message'], $search) !== false ||
-                    stripos($entry['context'], $search) !== false) {
-                    $results[] = array_merge($entry, ['file' => $file['name']]);
-
-                    if (count($results) >= $limit) {
-                        return $results;
-                    }
+        foreach ($this->getLogFiles() as $file) {
+            $matches = $this->parseLogFile($file['name'], $limit, $level, $search, true);
+            foreach ($matches as $m) {
+                $m['file'] = $file['name'];
+                $results[] = $m;
+                if (count($results) >= $limit) {
+                    return $results;
                 }
             }
         }
-
         return $results;
     }
 
     /**
-     * Extract log entries from raw log content using regex.
-     *
-     * @param string $content
-     * @param string|null $levelFilter
-     * @return array
+     * Read entries from a log file, streaming. If $tailLimit is set,
+     * only the last ~$tailLimit entries are returned (efficient for huge files).
      */
-    private function extractLogEntries(string $content, ?string $levelFilter = null): array
+    private function readEntries(string $path, ?int $tailLimit = null): array
     {
         $entries = [];
+        $current = null;
+        $pattern = '/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s+([^.]+)\.(\w+):\s*(.*)$/';
 
-        // Laravel log format: [YYYY-MM-DD HH:MM:SS] environment.LEVEL: message {context}
-        // Pattern matches both single-line and multi-line log entries
-        $pattern = '/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s+(\w+)\.(\w+):\s+(.+?)(?=\[\d{4}-\d{2}-\d{2}|$)/s';
+        // For tail mode, we need to read entries from the end.
+        // Strategy: read the file line-by-line into a capped deque-like array,
+        // keyed by entry (not line), discarding older entries when limit exceeded.
+        $keep = $tailLimit !== null ? max($tailLimit * 4, 500) : PHP_INT_MAX; // buffer extra so filters still have room
 
-        preg_match_all($pattern, $content, $matches, PREG_SET_ORDER);
-
-        foreach ($matches as $match) {
-            $timestamp = $match[1];
-            $environment = $match[2];
-            $level = strtolower($match[3]);
-            $message = trim($match[4]);
-
-            // Extract context (JSON at end) if present
-            $context = '';
-            if (preg_match('/(\{.*\}|\[.*\])$/s', $message, $contextMatch)) {
-                $context = $contextMatch[1];
-                $message = trim(substr($message, 0, -strlen($context)));
-            }
-
-            // Apply level filter
-            if ($levelFilter && $level !== strtolower($levelFilter)) {
-                continue;
-            }
-
-            $entries[] = [
-                'timestamp' => $timestamp,
-                'environment' => $environment,
-                'level' => $level,
-                'level_color' => $this->getLevelColor($level),
-                'message' => $message,
-                'context' => $context,
-            ];
+        try {
+            $file = new SplFileObject($path, 'r');
+        } catch (\Throwable $e) {
+            return [];
         }
 
-        // Reverse to show newest first
-        return array_reverse($entries);
+        while (!$file->eof()) {
+            $line = $file->fgets();
+            if ($line === false) {
+                break;
+            }
+
+            if (preg_match($pattern, $line, $m)) {
+                if ($current !== null) {
+                    $entries[] = $this->finalizeEntry($current);
+                    if ($tailLimit !== null && count($entries) > $keep) {
+                        // drop oldest to stay within buffer
+                        $entries = array_slice($entries, -$keep);
+                    }
+                }
+                $level = strtolower($m[3]);
+                $current = [
+                    'timestamp' => $m[1],
+                    'environment' => $m[2],
+                    'level' => $level,
+                    'level_color' => $this->getLevelColor($level),
+                    'message' => rtrim($m[4], "\r\n"),
+                    'raw_rest' => '',
+                ];
+            } elseif ($current !== null) {
+                // continuation of previous entry (multi-line exception body)
+                $current['raw_rest'] .= $line;
+            }
+        }
+
+        if ($current !== null) {
+            $entries[] = $this->finalizeEntry($current);
+        }
+
+        // Newest first
+        $entries = array_reverse($entries);
+
+        if ($tailLimit !== null && count($entries) > $tailLimit * 4) {
+            $entries = array_slice($entries, 0, $tailLimit * 4);
+        }
+
+        return $entries;
     }
 
     /**
-     * Get color for log level.
-     *
-     * @param string $level
-     * @return string
+     * Split the raw continuation into context (trailing JSON) and trace (stack).
      */
+    private function finalizeEntry(array $entry): array
+    {
+        $rest = $entry['raw_rest'];
+        unset($entry['raw_rest']);
+        $entry['context'] = '';
+        $entry['trace'] = '';
+
+        $rest = trim($rest);
+        if ($rest === '') {
+            return $entry;
+        }
+
+        // Laravel exception logs look like:
+        //   message {"context":"json"}
+        //   [stacktrace]
+        //   #0 /path/to/File.php(123): method()
+        //   ...
+        //   "}
+        // The context JSON may actually be inline on the message line, so first
+        // try to lift trailing JSON off the message itself.
+        if (preg_match('/^(.*?)(\{.*\}|\[.*\])\s*$/s', $entry['message'], $mm)) {
+            $entry['message'] = rtrim($mm[1]);
+            $entry['context'] = $mm[2];
+        }
+
+        // Split rest: before "[stacktrace]" marker → append to context,
+        // after → trace.
+        if (str_contains($rest, '[stacktrace]')) {
+            [$ctxPart, $tracePart] = explode('[stacktrace]', $rest, 2);
+            $entry['context'] = trim($entry['context'] . "\n" . $ctxPart);
+            $entry['trace'] = trim($tracePart);
+        } else {
+            // No explicit marker. If lines start with '#N ' assume trace.
+            if (preg_match('/^#\d+\s/m', $rest)) {
+                $entry['trace'] = $rest;
+            } else {
+                $entry['context'] = trim($entry['context'] . "\n" . $rest);
+            }
+        }
+
+        return $entry;
+    }
+
     private function getLevelColor(string $level): string
     {
         return match ($level) {
@@ -187,77 +233,40 @@ class LogViewerService
         };
     }
 
-    /**
-     * Format bytes to human readable string.
-     *
-     * @param int $bytes
-     * @return string
-     */
+    public function deleteLogFile(string $filename): bool
+    {
+        $path = storage_path('logs/' . basename($filename));
+        if (!File::exists($path)) {
+            return false;
+        }
+        Cache::forget('log_viewer:files');
+        return File::delete($path);
+    }
+
+    public function clearLogFile(string $filename): bool
+    {
+        $path = storage_path('logs/' . basename($filename));
+        if (!File::exists($path)) {
+            return false;
+        }
+        Cache::forget('log_viewer:files');
+        return File::put($path, '') !== false;
+    }
+
+    public function getFilePath(string $filename): ?string
+    {
+        $path = storage_path('logs/' . basename($filename));
+        return File::exists($path) ? $path : null;
+    }
+
     private function formatBytes(int $bytes): string
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-
-        for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
+        $i = 0;
+        while ($bytes >= 1024 && $i < count($units) - 1) {
             $bytes /= 1024;
+            $i++;
         }
-
         return round($bytes, 2) . ' ' . $units[$i];
-    }
-
-    /**
-     * Delete a log file.
-     *
-     * @param string $filename
-     * @return bool
-     */
-    public function deleteLogFile(string $filename): bool
-    {
-        $logPath = storage_path('logs/' . $filename);
-
-        if (!File::exists($logPath)) {
-            return false;
-        }
-
-        return File::delete($logPath);
-    }
-
-    /**
-     * Clear (truncate) a log file.
-     *
-     * @param string $filename
-     * @return bool
-     */
-    public function clearLogFile(string $filename): bool
-    {
-        $logPath = storage_path('logs/' . $filename);
-
-        if (!File::exists($logPath)) {
-            return false;
-        }
-
-        return File::put($logPath, '') !== false;
-    }
-
-    /**
-     * Download a log file.
-     *
-     * @param string $filename
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse|null
-     */
-    public function downloadLogFile(string $filename)
-    {
-        $logPath = storage_path('logs/' . $filename);
-
-        if (!File::exists($logPath)) {
-            return null;
-        }
-
-        return response()->streamDownload(function () use ($logPath) {
-            $stream = fopen($logPath, 'r');
-            fpassthru($stream);
-            fclose($stream);
-        }, $filename, [
-            'Content-Type' => 'text/plain',
-        ]);
     }
 }
