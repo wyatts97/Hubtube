@@ -1371,7 +1371,23 @@ kbd {
     letter-spacing: 0.05em;
     color: rgb(161 161 170);
 }
-.ht-log-select,
+.ht-log-select {
+    width: 100%;
+    padding: 0.5rem 2.25rem 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    background: rgb(24 24 27);
+    border: 1px solid rgb(63 63 70);
+    color: rgb(228 228 231);
+    font-size: 0.875rem;
+    line-height: 1.4;
+    transition: border-color 0.15s ease;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236b7280'%3E%3Cpath fill-rule='evenodd' d='M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
+    background-size: 1.1rem;
+}
 .ht-log-input {
     width: 100%;
     padding: 0.5rem 0.75rem;

@@ -27,3 +27,4 @@ TODO-PLAN.md
 .env
 .env.example
 MARCH12THUPDATES.md
+*.log

@@ -43,6 +43,15 @@ class ListActivityLogs extends ListRecords
         ];
     }
 
+    public function getTableQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        try {
+            return parent::getTableQuery();
+        } catch (\Throwable) {
+            return Activity::query()->whereRaw('0 = 1');
+        }
+    }
+
     protected function getHeaderActions(): array
     {
         return [
