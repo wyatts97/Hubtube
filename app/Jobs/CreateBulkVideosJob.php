@@ -22,7 +22,6 @@ class CreateBulkVideosJob implements ShouldQueue
 
     public int $timeout = 600;
     public int $tries = 1;
-    public string $queue = 'default';
 
     public function __construct(
         public array $entries,
