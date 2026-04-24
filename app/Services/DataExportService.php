@@ -19,7 +19,7 @@ class DataExportService
      */
     public function exportUsers(string $format): string
     {
-        $users = User::with('profile')->get();
+        $users = User::all();
         $filename = "users_export_{$format}_" . now()->format('Y-m-d_H-i-s');
 
         switch ($format) {
