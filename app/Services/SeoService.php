@@ -458,7 +458,7 @@ class SeoService
     /**
      * Generate SEO data for search results.
      */
-    public function forSearch(string $query): array
+    public function forSearch(?string $query): array
     {
         $vars = ['query' => $query, 'site_name' => $this->siteName()];
         $title = $this->template($this->s('seo_search_title', 'Search Results for "{query}" | {site_name}'), $vars);
