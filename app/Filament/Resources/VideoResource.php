@@ -109,6 +109,7 @@ class VideoResource extends Resource
     {
         return $form
             ->schema([
+                // Create-only: upload new video file
                 Forms\Components\Section::make('Video File')
                     ->schema([
                         Forms\Components\FileUpload::make('video_file')
@@ -123,100 +124,120 @@ class VideoResource extends Resource
                     ])
                     ->visibleOn('create'),
 
-                Forms\Components\Section::make('Video Details')
-                    ->schema([
-                        Forms\Components\TextInput::make('title')
-                            ->required()
-                            ->maxLength(200)
-                            ->columnSpanFull(),
-                        Forms\Components\Textarea::make('description')
-                            ->rows(4)
-                            ->columnSpanFull(),
-                        Forms\Components\Select::make('user_id')
-                            ->label('Uploader')
-                            ->relationship('user', 'username')
-                            ->required()
-                            ->searchable()
-                            ->preload(),
-                        Forms\Components\Select::make('category_id')
-                            ->relationship('category', 'name')
-                            ->searchable()
-                            ->preload(),
-                        Forms\Components\Select::make('status')
-                            ->options([
-                                'pending_download' => 'Pending Download',
-                                'downloading' => 'Downloading',
-                                'download_failed' => 'Download Failed',
-                                'pending' => 'Pending',
-                                'processing' => 'Processing',
-                                'processed' => 'Published',
-                                'failed' => 'Failed',
-                            ])
-                            ->default('pending')
-                            ->required()
-                            ->hiddenOn('create'),
-                        Forms\Components\TagsInput::make('tags')
-                            ->separator(',')
-                            ->columnSpanFull(),
-                        Forms\Components\DateTimePicker::make('scheduled_at')
-                            ->label('Schedule Publish')
-                            ->helperText('Leave empty to publish immediately when approved. Set a future date/time to auto-publish.')
-                            ->native(false)
-                            ->minDate(now())
+                // Tabbed layout for compact edit view
+                Forms\Components\Tabs::make('VideoEdit')
+                    ->columnSpanFull()
+                    ->persistTabInQueryString('tab')
+                    ->tabs([
+                        Forms\Components\Tabs\Tab::make('Details')
+                            ->icon('heroicon-m-document-text')
+                            ->schema([
+                                Forms\Components\View::make('filament.resources.video-resource.components.views-sparkline')
+                                    ->visibleOn('edit')
+                                    ->columnSpanFull(),
+                                Forms\Components\TextInput::make('title')
+                                    ->required()
+                                    ->maxLength(200)
+                                    ->columnSpanFull(),
+                                Forms\Components\Textarea::make('description')
+                                    ->rows(4)
+                                    ->columnSpanFull(),
+                                Forms\Components\Select::make('user_id')
+                                    ->label('Uploader')
+                                    ->relationship('user', 'username')
+                                    ->required()
+                                    ->searchable()
+                                    ->preload(),
+                                Forms\Components\Select::make('category_id')
+                                    ->relationship('category', 'name')
+                                    ->searchable()
+                                    ->preload(),
+                                Forms\Components\Select::make('status')
+                                    ->options([
+                                        'pending_download' => 'Pending Download',
+                                        'downloading' => 'Downloading',
+                                        'download_failed' => 'Download Failed',
+                                        'pending' => 'Pending',
+                                        'processing' => 'Processing',
+                                        'processed' => 'Published',
+                                        'failed' => 'Failed',
+                                    ])
+                                    ->default('pending')
+                                    ->required()
+                                    ->hiddenOn('create'),
+                                Forms\Components\DateTimePicker::make('scheduled_at')
+                                    ->label('Schedule Publish')
+                                    ->helperText('Leave empty to publish when approved. Set a future date/time to auto-publish.')
+                                    ->native(false)
+                                    ->minDate(now())
+                                    ->hiddenOn('create'),
+                                Forms\Components\TagsInput::make('tags')
+                                    ->separator(',')
+                                    ->columnSpanFull(),
+                            ])->columns(2),
+
+                        Forms\Components\Tabs\Tab::make('Moderation')
+                            ->icon('heroicon-m-shield-check')
+                            ->schema([
+                                Forms\Components\Toggle::make('is_approved')
+                                    ->label('Approved')
+                                    ->helperText('Video is visible to the public'),
+                                Forms\Components\Toggle::make('is_featured')
+                                    ->label('Featured')
+                                    ->helperText('Show in featured sections'),
+                                Forms\Components\Toggle::make('age_restricted')
+                                    ->label('Age Restricted')
+                                    ->default(true),
+                                Forms\Components\Toggle::make('monetization_enabled')
+                                    ->label('Monetization')
+                                    ->visible(fn () => (bool) Setting::get('monetization_enabled', true)),
+                            ])->columns(2),
+
+                        Forms\Components\Tabs\Tab::make('Pricing')
+                            ->icon('heroicon-m-currency-dollar')
+                            ->visible(fn () => (bool) Setting::get('monetization_enabled', true))
+                            ->schema([
+                                Forms\Components\TextInput::make('price')
+                                    ->label('Purchase Price')
+                                    ->numeric()
+                                    ->prefix('$')
+                                    ->default(0),
+                                Forms\Components\TextInput::make('rent_price')
+                                    ->label('Rental Price')
+                                    ->numeric()
+                                    ->prefix('$')
+                                    ->default(0),
+                            ])->columns(2),
+
+                        Forms\Components\Tabs\Tab::make('Technical')
+                            ->icon('heroicon-m-cog-6-tooth')
                             ->hiddenOn('create')
-                            ->columnSpanFull(),
-                    ])->columns(2),
+                            ->schema([
+                                Forms\Components\TextInput::make('video_path')
+                                    ->disabled()
+                                    ->columnSpanFull(),
+                                Forms\Components\TextInput::make('storage_disk')
+                                    ->disabled(),
+                                Forms\Components\TextInput::make('duration')
+                                    ->disabled()
+                                    ->suffix('seconds'),
+                                Forms\Components\TextInput::make('size')
+                                    ->disabled()
+                                    ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—'),
+                                Forms\Components\TextInput::make('failure_reason')
+                                    ->disabled()
+                                    ->visible(fn ($record) => $record?->status === 'failed')
+                                    ->columnSpanFull(),
+                            ])->columns(2),
 
-                Forms\Components\Section::make('Moderation & Flags')
-                    ->schema([
-                        Forms\Components\Toggle::make('is_approved')
-                            ->label('Approved')
-                            ->helperText('Video is visible to the public'),
-                        Forms\Components\Toggle::make('is_featured')
-                            ->label('Featured')
-                            ->helperText('Show in featured sections'),
-                        Forms\Components\Toggle::make('age_restricted')
-                            ->label('Age Restricted')
-                            ->default(true),
-                        Forms\Components\Toggle::make('monetization_enabled')
-                            ->label('Monetization')
-                            ->visible(fn () => (bool) Setting::get('monetization_enabled', true)),
-                    ])->columns(3),
-
-                Forms\Components\Section::make('Pricing')
-                    ->schema([
-                        Forms\Components\TextInput::make('price')
-                            ->numeric()
-                            ->prefix('$')
-                            ->default(0),
-                        Forms\Components\TextInput::make('rent_price')
-                            ->numeric()
-                            ->prefix('$')
-                            ->default(0),
-                    ])->columns(2)
-                    ->collapsed()
-                    ->visible(fn () => (bool) Setting::get('monetization_enabled', true)),
-
-                Forms\Components\Section::make('Technical Info')
-                    ->schema([
-                        Forms\Components\TextInput::make('video_path')
-                            ->disabled()
-                            ->columnSpanFull(),
-                        Forms\Components\TextInput::make('storage_disk')
-                            ->disabled(),
-                        Forms\Components\TextInput::make('duration')
-                            ->disabled()
-                            ->suffix('seconds'),
-                        Forms\Components\TextInput::make('size')
-                            ->disabled()
-                            ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—'),
-                        Forms\Components\TextInput::make('failure_reason')
-                            ->disabled()
-                            ->visible(fn ($record) => $record?->status === 'failed')
-                            ->columnSpanFull(),
-                    ])->columns(3)
-                    ->hiddenOn('create')
-                    ->collapsed(),
+                        Forms\Components\Tabs\Tab::make('Activity')
+                            ->icon('heroicon-m-clipboard-document-list')
+                            ->hiddenOn('create')
+                            ->schema([
+                                Forms\Components\View::make('filament.resources.video-resource.components.activity-log')
+                                    ->columnSpanFull(),
+                            ]),
+                    ]),
             ]);
     }
 

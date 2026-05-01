@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Jobs\ProcessVideoJob;
 use App\Models\Setting;
 use App\Models\Video;
 use App\Services\FfmpegService;
@@ -21,9 +22,15 @@ class VideoPreviewManager extends Component
     public ?string $videoUrl = null;
     public ?string $hlsUrl = null;
     public ?string $currentThumbnail = null;
+    public ?string $currentThumbnailUrl = null;
     public array $thumbnails = [];
     public $customThumbnail = null;
+    public $replacementVideo = null;
     public bool $isCapturing = false;
+    public bool $isReplacing = false;
+    public bool $isPortrait = false;
+    public array $stats = [];
+    public array $shareUrls = [];
 
     public function mount(int $videoId): void
     {
@@ -39,15 +46,34 @@ class VideoPreviewManager extends Component
         // Use the admin streaming route for Range request support (enables seekbar scrubbing)
         // storage_disk is null or 'public' for locally stored videos
         $disk = $video->storage_disk ?? 'public';
+        $streamUrl = null;
         if ($video->video_path && $disk === 'public') {
             $normalizedPath = ltrim(str_replace('\\', '/', $video->video_path), '/');
-            $this->videoUrl = route('admin.video-stream') . '?path=' . rawurlencode($normalizedPath);
+            $streamUrl = route('admin.video-stream') . '?path=' . rawurlencode($normalizedPath);
+            $this->videoUrl = $streamUrl;
         } else {
             $this->videoUrl = $video->video_url;
         }
         $this->hlsUrl = $video->hls_playlist_url;
         $this->currentThumbnail = $video->thumbnail;
+        $this->currentThumbnailUrl = $video->thumbnail_url ?? null;
         $this->thumbnails = $video->getAvailableThumbnails();
+        $this->isPortrait = (bool) ($video->is_portrait ?? false);
+
+        $this->stats = [
+            'views'    => (int) $video->views_count,
+            'likes'    => (int) $video->likes_count,
+            'duration' => $video->formatted_duration ?: '—',
+            'size'     => $video->size ? number_format($video->size / 1048576, 1) . ' MB' : '—',
+            'disk'     => $disk,
+            'status'   => $video->status,
+        ];
+
+        $this->shareUrls = [
+            'public' => $video->slug ? url('/' . $video->slug) : null,
+            'stream' => $streamUrl ?: $video->video_url,
+            'source' => $video->video_path,
+        ];
     }
 
     public function selectThumbnail(string $path): void
@@ -192,6 +218,57 @@ class VideoPreviewManager extends Component
                 ->send();
         } finally {
             $this->isCapturing = false;
+        }
+    }
+
+    public function replaceSourceVideo(): void
+    {
+        $this->validate([
+            'replacementVideo' => 'required|file|mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm|max:5242880',
+        ]);
+
+        $video = Video::find($this->videoId);
+        if (!$video) return;
+
+        $this->isReplacing = true;
+
+        try {
+            $directory = 'videos/admin-uploads';
+            $extension = $this->replacementVideo->getClientOriginalExtension() ?: 'mp4';
+            $filename = Str::random(24) . '.' . $extension;
+            $path = $this->replacementVideo->storeAs($directory, $filename, 'public');
+
+            $video->update([
+                'video_path'         => $path,
+                'storage_disk'       => 'public',
+                'status'             => 'pending',
+                'hls_playlist_url'   => null,
+                'failure_reason'     => null,
+            ]);
+
+            ProcessVideoJob::dispatch($video)->onQueue('video-processing');
+
+            $this->replacementVideo = null;
+            $this->loadVideoData();
+
+            Notification::make()
+                ->title('Source video replaced')
+                ->body('Re-processing has been queued. The new file will be transcoded shortly.')
+                ->success()
+                ->send();
+        } catch (\Throwable $e) {
+            Log::error('Replace source video failed', [
+                'video_id' => $this->videoId,
+                'error'    => $e->getMessage(),
+            ]);
+
+            Notification::make()
+                ->title('Replace failed')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        } finally {
+            $this->isReplacing = false;
         }
     }
 

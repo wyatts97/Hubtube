@@ -1,4 +1,4 @@
-<div class="space-y-6">
+<div class="space-y-4">
     @once
         <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
         <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js" defer></script>
@@ -54,21 +54,33 @@
             }
         }"
     >
-        <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-            <div class="fi-section-header flex items-center gap-3 px-6 py-4">
-                <h3 class="fi-section-header-heading text-base font-semibold leading-6 text-gray-950 dark:text-white">
+        <div class="fi-section rounded-xl bg-gray-900 shadow-sm ring-1 ring-white/10">
+            <div class="fi-section-header flex items-center justify-between gap-3 px-5 py-3 border-b border-white/5">
+                <h3 class="fi-section-header-heading text-sm font-semibold leading-6 text-white flex items-center gap-2">
+                    <x-heroicon-m-play-circle class="h-5 w-5 text-primary-400" />
                     Video Preview
                 </h3>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-white/5 text-gray-300 font-mono">{{ $stats['status'] ?? '' }}</span>
             </div>
-            <div class="fi-section-content px-6 pb-6">
-                <div wire:ignore class="relative rounded-lg overflow-hidden bg-black" style="max-height: 480px;">
+            <div class="fi-section-content px-5 py-4">
+                <div wire:ignore
+                    class="relative rounded-lg overflow-hidden bg-black mx-auto"
+                    @if($isPortrait)
+                        style="aspect-ratio: 9 / 16; max-width: 320px;"
+                    @else
+                        style="aspect-ratio: 16 / 9; max-width: 100%;"
+                    @endif
+                >
                     <video
                         x-ref="videoPlayer"
-                        class="w-full"
-                        style="max-height: 480px;"
-                        preload="auto"
+                        class="w-full h-full"
+                        controls
+                        preload="metadata"
                         playsinline
                         crossorigin="anonymous"
+                        @if($currentThumbnailUrl)
+                        poster="{{ $currentThumbnailUrl }}"
+                        @endif
                         @if($videoUrl)
                         src="{{ $videoUrl }}"
                         @endif
@@ -76,138 +88,217 @@
                     </video>
                 </div>
 
+                {{-- Mini stats row --}}
+                <div class="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 text-gray-300">
+                        <x-heroicon-m-eye class="h-3.5 w-3.5" /> {{ number_format($stats['views'] ?? 0) }} views
+                    </span>
+                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 text-gray-300">
+                        <x-heroicon-m-hand-thumb-up class="h-3.5 w-3.5" /> {{ number_format($stats['likes'] ?? 0) }}
+                    </span>
+                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 text-gray-300">
+                        <x-heroicon-m-clock class="h-3.5 w-3.5" /> {{ $stats['duration'] ?? '—' }}
+                    </span>
+                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 text-gray-300">
+                        <x-heroicon-m-circle-stack class="h-3.5 w-3.5" /> {{ $stats['size'] ?? '—' }}
+                    </span>
+                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 text-gray-300">
+                        <x-heroicon-m-server class="h-3.5 w-3.5" /> {{ $stats['disk'] ?? '—' }}
+                    </span>
+                </div>
+
                 {{-- Cloud-only warning --}}
                 <template x-if="isCloudOnly">
-                    <div class="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-4 py-2.5">
-                        <x-heroicon-m-exclamation-triangle class="h-5 w-5 text-amber-500 shrink-0" />
-                        <p class="text-sm text-amber-700 dark:text-amber-400">
-                            The original video file has been offloaded to cloud storage and deleted locally. Frame capture via FFmpeg is not available.
+                    <div class="mt-3 flex items-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2">
+                        <x-heroicon-m-exclamation-triangle class="h-4 w-4 text-amber-400 shrink-0" />
+                        <p class="text-xs text-amber-300">
+                            Original file offloaded to cloud. Frame capture via FFmpeg unavailable.
                         </p>
                     </div>
                 </template>
 
-                {{-- Capture Frame Button --}}
-                <div class="mt-4 flex items-center gap-3">
+                {{-- Action Row: Capture Frame + Copy URLs + Replace Source --}}
+                <div class="mt-3 flex flex-wrap items-center gap-2">
                     <button
                         type="button"
                         x-on:click="$wire.captureFrame(currentTime)"
-                        class="fi-btn relative inline-flex items-center justify-center gap-1.5 font-semibold outline-none transition duration-75 focus-visible:ring-2 rounded-lg px-3 py-2 text-sm bg-primary-600 text-white shadow-sm hover:bg-primary-500 dark:bg-primary-500 dark:hover:bg-primary-400 focus-visible:ring-primary-500/50 dark:focus-visible:ring-primary-400/50"
+                        class="fi-btn inline-flex items-center gap-1.5 font-semibold rounded-lg px-3 py-1.5 text-xs bg-primary-500 text-white hover:bg-primary-400 transition"
                         :disabled="!duration || $wire.isCapturing || isCloudOnly"
                         :class="{ 'opacity-50 cursor-not-allowed': isCloudOnly }"
                     >
-                        <template x-if="$wire.isCapturing">
-                            <x-filament::loading-indicator class="h-4 w-4" />
-                        </template>
-                        <template x-if="!$wire.isCapturing">
-                            <x-heroicon-m-camera class="h-4 w-4" />
-                        </template>
-                        <span>Capture Frame as Thumbnail</span>
+                        <template x-if="$wire.isCapturing"><x-filament::loading-indicator class="h-4 w-4" /></template>
+                        <template x-if="!$wire.isCapturing"><x-heroicon-m-camera class="h-4 w-4" /></template>
+                        <span>Capture Frame</span>
                     </button>
-                    <span class="text-sm text-gray-500 dark:text-gray-400" x-show="duration > 0">
-                        Current position: <span x-text="formatTime(currentTime)"></span> / <span x-text="formatTime(duration)"></span>
+
+                    <span class="text-xs text-gray-400 font-mono" x-show="duration > 0">
+                        <span x-text="formatTime(currentTime)"></span> / <span x-text="formatTime(duration)"></span>
                     </span>
+
+                    <div class="ml-auto flex items-center gap-1.5"
+                         x-data="{
+                            copied: null,
+                            copy(key, text) {
+                                if (!text) return;
+                                navigator.clipboard.writeText(text).then(() => {
+                                    this.copied = key;
+                                    setTimeout(() => this.copied = null, 1500);
+                                });
+                            }
+                         }"
+                    >
+                        @if($shareUrls['public'] ?? false)
+                        <button type="button" x-on:click="copy('public', @js($shareUrls['public']))"
+                            class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-white/5 hover:bg-white/10 text-gray-300 transition"
+                            title="Copy public URL">
+                            <x-heroicon-m-link class="h-3.5 w-3.5" />
+                            <span x-text="copied === 'public' ? 'Copied!' : 'Public'"></span>
+                        </button>
+                        @endif
+                        @if($shareUrls['stream'] ?? false)
+                        <button type="button" x-on:click="copy('stream', @js($shareUrls['stream']))"
+                            class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-white/5 hover:bg-white/10 text-gray-300 transition"
+                            title="Copy direct stream URL">
+                            <x-heroicon-m-arrow-top-right-on-square class="h-3.5 w-3.5" />
+                            <span x-text="copied === 'stream' ? 'Copied!' : 'Stream'"></span>
+                        </button>
+                        @endif
+                        @if($shareUrls['source'] ?? false)
+                        <button type="button" x-on:click="copy('source', @js($shareUrls['source']))"
+                            class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-white/5 hover:bg-white/10 text-gray-300 transition font-mono"
+                            title="Copy source path">
+                            <x-heroicon-m-document-duplicate class="h-3.5 w-3.5" />
+                            <span x-text="copied === 'source' ? 'Copied!' : 'Path'"></span>
+                        </button>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     @else
-    <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
+    <div class="fi-section rounded-xl bg-gray-900 shadow-sm ring-1 ring-white/10">
         <div class="fi-section-content px-6 py-8 text-center">
-            <x-heroicon-o-video-camera class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
-            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No video file available for preview.</p>
+            <x-heroicon-o-video-camera class="mx-auto h-12 w-12 text-gray-500" />
+            <p class="mt-2 text-sm text-gray-400">No video file available for preview.</p>
         </div>
     </div>
     @endif
 
-    {{-- Thumbnail Management --}}
-    <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-        <div class="fi-section-header flex items-center gap-3 px-6 py-4">
-            <h3 class="fi-section-header-heading text-base font-semibold leading-6 text-gray-950 dark:text-white">
+    {{-- Thumbnails --}}
+    <div class="fi-section rounded-xl bg-gray-900 shadow-sm ring-1 ring-white/10"
+         x-data="{ showUpload: false }">
+        <div class="fi-section-header flex items-center justify-between gap-3 px-5 py-3 border-b border-white/5">
+            <h3 class="text-sm font-semibold leading-6 text-white flex items-center gap-2">
+                <x-heroicon-m-photo class="h-5 w-5 text-primary-400" />
                 Thumbnails
+                @if(count($thumbnails) > 0)
+                    <span class="text-xs font-normal text-gray-400">({{ count($thumbnails) }})</span>
+                @endif
             </h3>
-            <p class="fi-section-header-description text-sm text-gray-500 dark:text-gray-400">
-                Click a thumbnail to set it as the active one, or upload a custom image.
-            </p>
+            <button type="button" x-on:click="showUpload = !showUpload"
+                class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-white/5 hover:bg-white/10 text-gray-300 transition">
+                <x-heroicon-m-arrow-up-tray class="h-3.5 w-3.5" />
+                <span x-text="showUpload ? 'Hide upload' : 'Upload custom'"></span>
+            </button>
         </div>
-        <div class="fi-section-content px-6 pb-6">
-            {{-- Thumbnail Grid --}}
+        <div class="fi-section-content px-5 py-4">
             @if(count($thumbnails) > 0)
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-6">
+            <div class="flex gap-2 overflow-x-auto snap-x pb-2" style="scrollbar-width: thin;">
                 @foreach($thumbnails as $thumb)
-                <button
-                    type="button"
-                    wire:click="selectThumbnail('{{ $thumb['path'] }}')"
-                    class="group relative rounded-lg overflow-hidden border-2 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 {{ $thumb['is_active'] ? 'border-primary-500 ring-2 ring-primary-500/30' : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-600' }}"
-                >
-                    <div class="aspect-video bg-gray-100 dark:bg-gray-800">
-                        <img
-                            src="{{ $thumb['url'] }}"
-                            alt="Thumbnail"
-                            class="w-full h-full object-cover"
-                            loading="lazy"
-                        />
-                    </div>
+                <button type="button" wire:click="selectThumbnail('{{ $thumb['path'] }}')"
+                    class="shrink-0 snap-start relative rounded-lg overflow-hidden border-2 transition-all focus:outline-none {{ $thumb['is_active'] ? 'border-primary-500 ring-2 ring-primary-500/40' : 'border-transparent hover:border-primary-500/50' }}"
+                    style="width: 140px; height: 80px;">
+                    <img src="{{ $thumb['url'] }}" alt="Thumbnail" class="w-full h-full object-cover" loading="lazy" />
                     @if($thumb['is_active'])
-                    <div class="absolute inset-0 bg-primary-500/10 flex items-center justify-center">
-                        <span class="bg-primary-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow">
-                            Active
-                        </span>
-                    </div>
-                    @else
-                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                        <span class="bg-white/90 dark:bg-gray-800/90 text-gray-700 dark:text-gray-200 text-xs font-medium px-2 py-1 rounded-full shadow">
-                            Set as active
-                        </span>
-                    </div>
+                    <span class="absolute bottom-1 right-1 bg-primary-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Active</span>
                     @endif
                 </button>
                 @endforeach
             </div>
             @else
-            <div class="mb-6 text-center py-6 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
-                <x-heroicon-o-photo class="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500" />
-                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No generated thumbnails found.</p>
+            <div class="text-center py-4 rounded-lg border border-dashed border-gray-700">
+                <p class="text-xs text-gray-500">No generated thumbnails found.</p>
             </div>
             @endif
 
-            {{-- Custom Upload --}}
+            {{-- Collapsible custom upload --}}
+            <div x-show="showUpload" x-cloak x-transition class="mt-3">
+                <div
+                    x-data="{ isDragging: false }"
+                    x-on:dragover.prevent="isDragging = true"
+                    x-on:dragleave.prevent="isDragging = false"
+                    x-on:drop.prevent="isDragging = false; $refs.fileInput.files = $event.dataTransfer.files; $refs.fileInput.dispatchEvent(new Event('change'))"
+                    class="relative rounded-lg border-2 border-dashed transition-colors p-4 text-center"
+                    :class="isDragging ? 'border-primary-500 bg-primary-500/10' : 'border-gray-700 hover:border-gray-500'"
+                >
+                    <input x-ref="fileInput" type="file" accept="image/*" wire:model="customThumbnail" class="sr-only" id="custom-thumb-upload" />
+                    <label for="custom-thumb-upload" class="cursor-pointer">
+                        <x-heroicon-o-cloud-arrow-up class="mx-auto h-6 w-6 text-gray-500" />
+                        <p class="mt-1 text-xs font-medium text-gray-300">
+                            Drop image or <span class="text-primary-400 underline">browse</span>
+                        </p>
+                        <p class="text-[11px] text-gray-500">PNG/JPG/WebP · up to 5MB · 1280×720 recommended</p>
+                    </label>
+                    @if($customThumbnail)
+                    <div class="mt-3 flex items-center justify-center gap-3">
+                        <img src="{{ $customThumbnail->temporaryUrl() }}" alt="Preview" class="h-14 rounded shadow" />
+                        <button type="button" wire:click="uploadCustomThumbnail"
+                            class="fi-btn inline-flex items-center gap-1.5 font-semibold rounded-lg px-3 py-1.5 text-xs bg-success-500 text-white hover:bg-success-400">
+                            <x-heroicon-m-check class="h-4 w-4" />
+                            <span>Set as Thumbnail</span>
+                        </button>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Replace Source Video --}}
+    <div class="fi-section rounded-xl bg-gray-900 shadow-sm ring-1 ring-white/10"
+         x-data="{ showReplace: false }">
+        <div class="fi-section-header flex items-center justify-between gap-3 px-5 py-3 border-b border-white/5">
+            <h3 class="text-sm font-semibold leading-6 text-white flex items-center gap-2">
+                <x-heroicon-m-arrow-path class="h-5 w-5 text-primary-400" />
+                Replace Source Video
+            </h3>
+            <button type="button" x-on:click="showReplace = !showReplace"
+                class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-white/5 hover:bg-white/10 text-gray-300 transition">
+                <span x-text="showReplace ? 'Cancel' : 'Replace file'"></span>
+            </button>
+        </div>
+        <div x-show="showReplace" x-cloak x-transition class="fi-section-content px-5 py-4">
+            <div class="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 mb-3 flex items-start gap-2">
+                <x-heroicon-m-exclamation-triangle class="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                <p class="text-xs text-amber-300">
+                    Uploading a replacement will overwrite the current source, reset status to <strong>pending</strong>, and re-queue transcoding. HLS variants will be regenerated.
+                </p>
+            </div>
             <div
                 x-data="{ isDragging: false }"
                 x-on:dragover.prevent="isDragging = true"
                 x-on:dragleave.prevent="isDragging = false"
-                x-on:drop.prevent="isDragging = false; $refs.fileInput.files = $event.dataTransfer.files; $refs.fileInput.dispatchEvent(new Event('change'))"
-                class="relative rounded-lg border-2 border-dashed transition-colors p-6 text-center"
-                :class="isDragging ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10' : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'"
+                x-on:drop.prevent="isDragging = false; $refs.videoFileInput.files = $event.dataTransfer.files; $refs.videoFileInput.dispatchEvent(new Event('change'))"
+                class="relative rounded-lg border-2 border-dashed transition-colors p-4 text-center"
+                :class="isDragging ? 'border-primary-500 bg-primary-500/10' : 'border-gray-700 hover:border-gray-500'"
             >
-                <input
-                    x-ref="fileInput"
-                    type="file"
-                    accept="image/*"
-                    wire:model="customThumbnail"
-                    class="sr-only"
-                    id="custom-thumb-upload"
-                />
-                <label for="custom-thumb-upload" class="cursor-pointer">
-                    <x-heroicon-o-cloud-arrow-up class="mx-auto h-10 w-10 text-gray-400 dark:text-gray-500" />
-                    <p class="mt-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Drop an image here or <span class="text-primary-600 dark:text-primary-400 underline">browse</span>
+                <input x-ref="videoFileInput" type="file" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm" wire:model="replacementVideo" class="sr-only" id="replace-video-upload" />
+                <label for="replace-video-upload" class="cursor-pointer">
+                    <x-heroicon-o-film class="mx-auto h-6 w-6 text-gray-500" />
+                    <p class="mt-1 text-xs font-medium text-gray-300">
+                        Drop video or <span class="text-primary-400 underline">browse</span>
                     </p>
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        PNG, JPG, WebP up to 5MB. Recommended: 1280×720 (16:9)
-                    </p>
+                    <p class="text-[11px] text-gray-500">MP4, MOV, AVI, MKV, WebM · up to 5GB</p>
                 </label>
-
-                {{-- Upload preview --}}
-                @if($customThumbnail)
-                <div class="mt-4 flex items-center justify-center gap-4">
-                    <img src="{{ $customThumbnail->temporaryUrl() }}" alt="Preview" class="h-20 rounded-lg shadow" />
-                    <button
-                        type="button"
-                        wire:click="uploadCustomThumbnail"
-                        class="fi-btn relative inline-flex items-center justify-center gap-1.5 font-semibold outline-none transition duration-75 focus-visible:ring-2 rounded-lg px-3 py-2 text-sm bg-success-600 text-white shadow-sm hover:bg-success-500 dark:bg-success-500 dark:hover:bg-success-400"
-                    >
-                        <x-heroicon-m-check class="h-4 w-4" />
-                        <span>Set as Thumbnail</span>
+                @if($replacementVideo)
+                <div class="mt-3 flex items-center justify-center gap-3">
+                    <span class="text-xs text-gray-300 font-mono truncate max-w-[240px]">{{ $replacementVideo->getClientOriginalName() }}</span>
+                    <button type="button" wire:click="replaceSourceVideo"
+                        wire:loading.attr="disabled" wire:target="replaceSourceVideo,replacementVideo"
+                        class="fi-btn inline-flex items-center gap-1.5 font-semibold rounded-lg px-3 py-1.5 text-xs bg-danger-500 text-white hover:bg-danger-400 disabled:opacity-50">
+                        <x-heroicon-m-arrow-path class="h-4 w-4" wire:loading.class="animate-spin" wire:target="replaceSourceVideo" />
+                        <span>Replace & Re-process</span>
                     </button>
                 </div>
                 @endif
