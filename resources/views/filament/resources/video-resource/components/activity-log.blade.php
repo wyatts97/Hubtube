@@ -129,7 +129,29 @@
             @foreach($events as $event)
                 <li class="mb-3 ml-4">
                     <span class="absolute -left-2 flex h-5 w-5 items-center justify-center rounded-full ring-1 ring-white dark:ring-gray-900 {{ $toneClasses[$event['tone']] ?? $toneClasses['gray'] }}">
-                        @svg($event['icon'], 'h-3 w-3')
+                        @switch($event['icon'])
+                            @case('heroicon-m-arrow-up-tray')
+                                <x-heroicon-m-arrow-up-tray class="h-3 w-3" />
+                                @break
+                            @case('heroicon-m-globe-alt')
+                                <x-heroicon-m-globe-alt class="h-3 w-3" />
+                                @break
+                            @case('heroicon-m-check-circle')
+                                <x-heroicon-m-check-circle class="h-3 w-3" />
+                                @break
+                            @case('heroicon-m-clock')
+                                <x-heroicon-m-clock class="h-3 w-3" />
+                                @break
+                            @case('heroicon-m-x-circle')
+                                <x-heroicon-m-x-circle class="h-3 w-3" />
+                                @break
+                            @case('heroicon-m-calendar')
+                                <x-heroicon-m-calendar class="h-3 w-3" />
+                                @break
+                            @case('heroicon-m-pencil-square')
+                                <x-heroicon-m-pencil-square class="h-3 w-3" />
+                                @break
+                        @endswitch
                     </span>
                     <div class="flex items-start justify-between gap-3">
                         <div>
