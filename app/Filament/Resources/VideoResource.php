@@ -132,9 +132,6 @@ class VideoResource extends Resource
                         Forms\Components\Tabs\Tab::make('Details')
                             ->icon('heroicon-m-document-text')
                             ->schema([
-                                Forms\Components\View::make('filament.resources.video-resource.components.views-sparkline')
-                                    ->visibleOn('edit')
-                                    ->columnSpanFull(),
                                 Forms\Components\TextInput::make('title')
                                     ->required()
                                     ->maxLength(200)
