@@ -7,7 +7,7 @@
             /* Let Plyr size itself from the video's intrinsic ratio. Cap height so tall
                portrait videos don't overflow the edit viewport. */
             .ht-plyr-wrapper { width: 100%; margin: 0 auto; }
-            .ht-plyr-wrapper.is-portrait { max-width: 360px; }
+            .ht-plyr-wrapper.is-portrait { max-width: 480px; }
             .ht-plyr-wrapper .plyr { max-height: 70vh; }
             .ht-plyr-wrapper .plyr video { max-height: 70vh; }
         </style>
@@ -23,7 +23,7 @@
     <x-filament::section icon="heroicon-m-play-circle" icon-color="primary">
         <x-slot name="heading">Video Preview</x-slot>
         <x-slot name="headerEnd">
-            <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-mono text-gray-700 dark:bg-white/5 dark:text-gray-300">{{ $stats['status'] ?? '' }}</span>
+            <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-mono text-gray-700 dark:bg-white/5 dark:text-white">{{ $stats['status'] ?? '' }}</span>
         </x-slot>
 
         <div
@@ -96,19 +96,19 @@
 
             {{-- Mini stats row --}}
             <div class="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-gray-300">
+                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-white">
                     <x-heroicon-m-eye class="h-3.5 w-3.5" /> {{ number_format($stats['views'] ?? 0) }} views
                 </span>
-                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-gray-300">
+                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-white">
                     <x-heroicon-m-hand-thumb-up class="h-3.5 w-3.5" /> {{ number_format($stats['likes'] ?? 0) }}
                 </span>
-                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-gray-300">
+                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-white">
                     <x-heroicon-m-clock class="h-3.5 w-3.5" /> {{ $stats['duration'] ?? '—' }}
                 </span>
-                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-gray-300">
+                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-white">
                     <x-heroicon-m-circle-stack class="h-3.5 w-3.5" /> {{ $stats['size'] ?? '—' }}
                 </span>
-                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-gray-300">
+                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-white">
                     <x-heroicon-m-server class="h-3.5 w-3.5" /> {{ $stats['disk'] ?? '—' }}
                 </span>
             </div>
@@ -155,7 +155,7 @@
                 >
                     @if($shareUrls['public'] ?? false)
                     <button type="button" x-on:click="copy('public', @js($shareUrls['public']))"
-                        class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 hover:bg-gray-100 dark:bg-white/5 dark:ring-white/10 dark:text-gray-300 dark:hover:bg-white/10 transition"
+                        class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 hover:bg-gray-100 dark:bg-white/5 dark:ring-white/10 dark:text-white dark:hover:bg-white/10 transition"
                         title="Copy public URL">
                         <x-heroicon-m-link class="h-3.5 w-3.5" />
                         <span x-text="copied === 'public' ? 'Copied!' : 'Public'"></span>
@@ -163,7 +163,7 @@
                     @endif
                     @if($shareUrls['stream'] ?? false)
                     <button type="button" x-on:click="copy('stream', @js($shareUrls['stream']))"
-                        class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 hover:bg-gray-100 dark:bg-white/5 dark:ring-white/10 dark:text-gray-300 dark:hover:bg-white/10 transition"
+                        class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 hover:bg-gray-100 dark:bg-white/5 dark:ring-white/10 dark:text-white dark:hover:bg-white/10 transition"
                         title="Copy direct stream URL">
                         <x-heroicon-m-arrow-top-right-on-square class="h-3.5 w-3.5" />
                         <span x-text="copied === 'stream' ? 'Copied!' : 'Stream'"></span>
@@ -171,7 +171,7 @@
                     @endif
                     @if($shareUrls['source'] ?? false)
                     <button type="button" x-on:click="copy('source', @js($shareUrls['source']))"
-                        class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 hover:bg-gray-100 dark:bg-white/5 dark:ring-white/10 dark:text-gray-300 dark:hover:bg-white/10 transition font-mono"
+                        class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 hover:bg-gray-100 dark:bg-white/5 dark:ring-white/10 dark:text-white dark:hover:bg-white/10 transition font-mono"
                         title="Copy source path">
                         <x-heroicon-m-document-duplicate class="h-3.5 w-3.5" />
                         <span x-text="copied === 'source' ? 'Copied!' : 'Path'"></span>

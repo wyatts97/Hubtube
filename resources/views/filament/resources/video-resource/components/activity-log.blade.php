@@ -128,8 +128,8 @@
         <ol class="relative border-l border-gray-200 dark:border-white/10 ml-2">
             @foreach($events as $event)
                 <li class="mb-3 ml-4">
-                    <span class="absolute -left-2 flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-white dark:ring-gray-900 {{ $toneClasses[$event['tone']] ?? $toneClasses['gray'] }}">
-                        <x-dynamic-component :component="$event['icon']" class="h-2.5 w-2.5" />
+                    <span class="absolute -left-2 flex h-5 w-5 items-center justify-center rounded-full ring-1 ring-white dark:ring-gray-900 {{ $toneClasses[$event['tone']] ?? $toneClasses['gray'] }}">
+                        @svg($event['icon'], 'h-3 w-3')
                     </span>
                     <div class="flex items-start justify-between gap-3">
                         <div>
