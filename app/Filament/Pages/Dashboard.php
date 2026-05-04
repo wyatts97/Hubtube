@@ -50,12 +50,19 @@ class Dashboard extends BaseDashboard
      */
     public static function allWidgetDefinitions(): array
     {
-        return [
+        $defs = [
             ['key' => 'stats',           'label' => 'Stats Overview',    'class' => StatsOverview::class,      'span' => 'full'],
+        ];
+
+        if (class_exists(\Awcodes\Overlook\Widgets\OverlookWidget::class)) {
+            $defs[] = ['key' => 'overlook', 'label' => 'Resource Overview', 'class' => \Awcodes\Overlook\Widgets\OverlookWidget::class, 'span' => 'full'];
+        }
+
+        return array_merge($defs, [
             ['key' => 'trending',        'label' => 'Trending Videos',   'class' => TrendingVideosTable::class, 'span' => '1'],
             ['key' => 'recent_uploads',  'label' => 'Recent Uploads',   'class' => RecentUploadsTable::class,  'span' => '1'],
             ['key' => 'recent_signups',  'label' => 'Recent Signups',   'class' => RecentSignupsTable::class,  'span' => 'full'],
-        ];
+        ]);
     }
 
     /**

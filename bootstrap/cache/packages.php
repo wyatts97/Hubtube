@@ -6,11 +6,39 @@
       'EloquentSerialize' => 'AnourValar\\EloquentSerialize\\Facades\\EloquentSerializeFacade',
     ),
   ),
+  'asmit/resized-column' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Asmit\\ResizedColumn\\ResizedColumnServiceProvider',
+    ),
+  ),
+  'awcodes/filament-badgeable-column' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Awcodes\\FilamentBadgeableColumn\\BadgeableColumnServiceProvider',
+    ),
+  ),
+  'awcodes/filament-quick-create' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Awcodes\\FilamentQuickCreate\\QuickCreateServiceProvider',
+    ),
+  ),
   'awcodes/filament-tiptap-editor' => 
   array (
     'providers' => 
     array (
       0 => 'FilamentTiptapEditor\\FilamentTiptapEditorServiceProvider',
+    ),
+  ),
+  'awcodes/overlook' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Awcodes\\Overlook\\OverlookServiceProvider',
     ),
   ),
   'beyondcode/laravel-query-detector' => 
@@ -43,6 +71,18 @@
     'providers' => 
     array (
       0 => 'BladeUI\\Icons\\BladeIconsServiceProvider',
+    ),
+  ),
+  'croustibat/filament-jobs-monitor' => 
+  array (
+    'aliases' => 
+    array (
+      'QueueMonitor' => 'Croustibat\\FilamentJobsMonitor\\QueueMonitorProvider\\Facade',
+    ),
+    'providers' => 
+    array (
+      0 => 'Croustibat\\FilamentJobsMonitor\\FilamentJobsMonitorServiceProvider',
+      1 => 'Croustibat\\FilamentJobsMonitor\\QueueMonitorProvider',
     ),
   ),
   'filament/actions' => 
@@ -235,6 +275,17 @@
     'providers' => 
     array (
       0 => 'pxlrbt\\FilamentSpotlight\\SpotlightServiceProvider',
+    ),
+  ),
+  'rmsramos/activitylog' => 
+  array (
+    'aliases' => 
+    array (
+      'Activitylog' => 'Rmsramos\\Activitylog\\Facades\\Activitylog',
+    ),
+    'providers' => 
+    array (
+      0 => 'Rmsramos\\Activitylog\\ActivitylogServiceProvider',
     ),
   ),
   'ryangjchandler/blade-capture-directive' => 

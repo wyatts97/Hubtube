@@ -55,6 +55,46 @@ class AdminPanelProvider extends PanelProvider
 
         // Tiptap rich-text editor (no plugin class needed; used via field in PageResource)
 
+        // Spatie activity-log UI (replaces custom ActivityLogResource)
+        if (class_exists(\Rmsramos\Activitylog\ActivitylogPlugin::class)) {
+            $plugins[] = \Rmsramos\Activitylog\ActivitylogPlugin::make()
+                ->navigationGroup('Tools')
+                ->navigationIcon('heroicon-o-document-text')
+                ->navigationSort(98)
+                ->label('Log')
+                ->pluralLabel('Logs');
+        }
+
+        // Queue / failed-job monitor (replaces custom FailedJobs page)
+        if (class_exists(\Croustibat\FilamentJobsMonitor\FilamentJobsMonitorPlugin::class)) {
+            $plugins[] = \Croustibat\FilamentJobsMonitor\FilamentJobsMonitorPlugin::make();
+        }
+
+        // Global "+" quick-create in topbar for all resources
+        if (class_exists(\Awcodes\FilamentQuickCreate\QuickCreatePlugin::class)) {
+            $plugins[] = \Awcodes\FilamentQuickCreate\QuickCreatePlugin::make()
+                ->sortBy('label')
+                ->excludes([
+                    \Croustibat\FilamentJobsMonitor\Resources\QueueMonitorResource::class,
+                    \Rmsramos\Activitylog\Resources\ActivitylogResource::class,
+                ]);
+        }
+
+        // User-resizable table columns (persisted per user)
+        if (class_exists(\Asmit\ResizedColumn\ResizedColumnPlugin::class)) {
+            $plugins[] = \Asmit\ResizedColumn\ResizedColumnPlugin::make();
+        }
+
+        // Overlook — resource overview widget (used via Dashboard widget list)
+        if (class_exists(\Awcodes\Overlook\OverlookPlugin::class)) {
+            $plugins[] = \Awcodes\Overlook\OverlookPlugin::make()
+                ->alphabetical()
+                ->excludes([
+                    \Croustibat\FilamentJobsMonitor\Resources\QueueMonitorResource::class,
+                    \Rmsramos\Activitylog\Resources\ActivitylogResource::class,
+                ]);
+        }
+
         return $plugins;
     }
 
