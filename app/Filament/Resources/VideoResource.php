@@ -264,25 +264,7 @@ class VideoResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->html()
-                    ->formatStateUsing(function (Video $record, string $state): string {
-                        $title = e(\Illuminate\Support\Str::limit($state ?? '', 50));
-                        $badgeClasses = 'ml-2 inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset align-middle';
-                        $badges = [];
-                        if ($record->is_featured) {
-                            $badges[] = '<span class="' . $badgeClasses . ' bg-amber-400/10 text-amber-600 dark:text-amber-400 ring-amber-400/30">Featured</span>';
-                        }
-                        if ($record->is_portrait) {
-                            $badges[] = '<span class="' . $badgeClasses . ' bg-sky-400/10 text-sky-600 dark:text-sky-400 ring-sky-400/30">Portrait</span>';
-                        }
-                        if ($record->monetization_enabled && ((float) ($record->price ?? 0) > 0 || (float) ($record->rent_price ?? 0) > 0)) {
-                            $badges[] = '<span class="' . $badgeClasses . ' bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 ring-emerald-400/30">Paid</span>';
-                        }
-                        if ($record->age_restricted) {
-                            $badges[] = '<span class="' . $badgeClasses . ' bg-rose-400/10 text-rose-600 dark:text-rose-400 ring-rose-400/30">18+</span>';
-                        }
-                        return $title . implode('', $badges);
-                    })
+                    ->limit(50)
                     ->description(fn (Video $record): string => $record->formatted_duration ?: '—'),
 
                 Tables\Columns\TextColumn::make('user.username')
