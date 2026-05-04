@@ -9,7 +9,6 @@
         "ext-redis": "*",
         "abraham/twitteroauth": "^7.0",
         "asmit/resized-column": "*",
-        "awcodes/filament-badgeable-column": "2.0",
         "awcodes/filament-quick-create": "*",
         "awcodes/filament-tiptap-editor": "^3.5",
         "awcodes/overlook": "^2.2",

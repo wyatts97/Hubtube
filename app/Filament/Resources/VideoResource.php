@@ -11,8 +11,6 @@ use App\Events\VideoProcessed;
 use App\Models\Notification as AppNotification;
 use App\Services\EmailService;
 use App\Services\VideoService;
-use Awcodes\FilamentBadgeableColumn\Components\Badge;
-use Awcodes\FilamentBadgeableColumn\Components\BadgeableColumn;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists;
@@ -262,26 +260,30 @@ class VideoResource extends Resource
                     ->extraAttributes(['class' => 'ht-thumb-col'])
                     ->defaultImageUrl(url('/icons/icon-192x192.png')),
 
-                BadgeableColumn::make('title')
+                Tables\Columns\TextColumn::make('title')
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->limit(50)
-                    ->description(fn (Video $record): string => $record->formatted_duration ?: '—')
-                    ->suffixBadges(fn (Video $record): array => array_filter([
-                        $record->is_featured
-                            ? Badge::make('featured')->label('Featured')->color('warning')
-                            : null,
-                        $record->is_portrait
-                            ? Badge::make('portrait')->label('Portrait')->color('info')
-                            : null,
-                        ($record->monetization_enabled && (($record->price ?? 0) > 0 || ($record->rent_price ?? 0) > 0))
-                            ? Badge::make('paid')->label('Paid')->color('success')
-                            : null,
-                        $record->age_restricted
-                            ? Badge::make('age')->label('18+')->color('danger')
-                            : null,
-                    ])),
+                    ->html()
+                    ->formatStateUsing(function (Video $record, string $state): string {
+                        $title = e(\Illuminate\Support\Str::limit($state ?? '', 50));
+                        $badgeClasses = 'ml-2 inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset align-middle';
+                        $badges = [];
+                        if ($record->is_featured) {
+                            $badges[] = '<span class="' . $badgeClasses . ' bg-amber-400/10 text-amber-600 dark:text-amber-400 ring-amber-400/30">Featured</span>';
+                        }
+                        if ($record->is_portrait) {
+                            $badges[] = '<span class="' . $badgeClasses . ' bg-sky-400/10 text-sky-600 dark:text-sky-400 ring-sky-400/30">Portrait</span>';
+                        }
+                        if ($record->monetization_enabled && ((float) ($record->price ?? 0) > 0 || (float) ($record->rent_price ?? 0) > 0)) {
+                            $badges[] = '<span class="' . $badgeClasses . ' bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 ring-emerald-400/30">Paid</span>';
+                        }
+                        if ($record->age_restricted) {
+                            $badges[] = '<span class="' . $badgeClasses . ' bg-rose-400/10 text-rose-600 dark:text-rose-400 ring-rose-400/30">18+</span>';
+                        }
+                        return $title . implode('', $badges);
+                    })
+                    ->description(fn (Video $record): string => $record->formatted_duration ?: '—'),
 
                 Tables\Columns\TextColumn::make('user.username')
                     ->label('Uploader')
