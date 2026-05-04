@@ -11,6 +11,8 @@ use App\Events\VideoProcessed;
 use App\Models\Notification as AppNotification;
 use App\Services\EmailService;
 use App\Services\VideoService;
+use Awcodes\FilamentBadgeableColumn\Components\Badge;
+use Awcodes\FilamentBadgeableColumn\Components\BadgeableColumn;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists;
@@ -260,12 +262,26 @@ class VideoResource extends Resource
                     ->extraAttributes(['class' => 'ht-thumb-col'])
                     ->defaultImageUrl(url('/icons/icon-192x192.png')),
 
-                Tables\Columns\TextColumn::make('title')
+                BadgeableColumn::make('title')
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
                     ->limit(50)
-                    ->description(fn (Video $record): string => $record->formatted_duration ?: '—'),
+                    ->description(fn (Video $record): string => $record->formatted_duration ?: '—')
+                    ->suffixBadges(fn (Video $record): array => array_filter([
+                        $record->is_featured
+                            ? Badge::make('featured')->label('Featured')->color('warning')
+                            : null,
+                        $record->is_portrait
+                            ? Badge::make('portrait')->label('Portrait')->color('info')
+                            : null,
+                        ($record->monetization_enabled && (($record->price ?? 0) > 0 || ($record->rent_price ?? 0) > 0))
+                            ? Badge::make('paid')->label('Paid')->color('success')
+                            : null,
+                        $record->age_restricted
+                            ? Badge::make('age')->label('18+')->color('danger')
+                            : null,
+                    ])),
 
                 Tables\Columns\TextColumn::make('user.username')
                     ->label('Uploader')
