@@ -94,6 +94,13 @@ class HandleInertiaRequests extends Middleware
             'videos_per_page' => $this->s('videos_per_page', 24),
             'monetization_enabled' => (bool)$this->s('monetization_enabled', true),
             'currency' => $this->s('currency', 'USD'),
+            'upload' => [
+                'allowed_extensions' => array_values((array) config('hubtube.video.allowed_extensions', [
+                    'mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wmv',
+                ])),
+                'max_size_free' => (int) $this->s('max_upload_size_free', 500),
+                'max_size_pro' => (int) $this->s('max_upload_size_pro', 5000),
+            ],
             'interstitial' => [
                 'enabled'    => (bool) $this->s('custom_interstitial_enabled', false),
                 'code'       => (string) $this->s('custom_interstitial_code', ''),

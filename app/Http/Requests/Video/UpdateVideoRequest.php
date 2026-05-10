@@ -18,6 +18,10 @@ class UpdateVideoRequest extends FormRequest
         if ($rawTags !== null) {
             $this->merge(['tags' => Video::normalizeTagsInput($rawTags)]);
         }
+
+        // Privacy is managed exclusively in the Filament admin panel.
+        // Strip any client-supplied value so users cannot change it.
+        $this->offsetUnset('privacy');
     }
 
     public function rules(): array
@@ -26,7 +30,6 @@ class UpdateVideoRequest extends FormRequest
             'title' => 'sometimes|required|string|max:200',
             'description' => 'nullable|string|max:5000',
             'category_id' => 'nullable|exists:categories,id',
-            'privacy' => 'sometimes|required|in:public,private,unlisted',
             'age_restricted' => 'boolean',
             'tags' => 'nullable|array|max:20',
             'tags.*' => 'string|max:50',

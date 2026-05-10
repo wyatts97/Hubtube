@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Video\FinalizeVideoRequest;
 use App\Http\Requests\Video\StoreVideoRequest;
 use App\Models\Playlist;
 use App\Http\Requests\Video\UpdateVideoRequest;
@@ -425,6 +426,97 @@ class VideoController extends Controller
             'uploadId' => $uploadId,
             'extension' => $extension,
         ]);
+    }
+
+    /**
+     * Finalize a chunked upload: validates metadata, wraps the assembled file
+     * as an UploadedFile, and hands it off to VideoService::create().
+     */
+    public function finalize(FinalizeVideoRequest $request): JsonResponse|RedirectResponse
+    {
+        if (!$request->user()->canUpload()) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'error' => 'You have reached your daily upload limit. Please try again tomorrow.',
+                    'limit_reached' => true,
+                ], 429);
+            }
+            return back()->withErrors(['upload' => 'You have reached your daily upload limit. Please try again tomorrow.']);
+        }
+
+        $data = $request->validated();
+        $uploadId = preg_replace('/[^a-zA-Z0-9_-]/', '', $data['upload_id']);
+        $extension = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $data['extension']));
+        $assembledPath = storage_path("app/chunks/{$uploadId}.{$extension}");
+
+        if (!is_file($assembledPath)) {
+            $msg = 'The uploaded file could not be found. Please re-upload.';
+            if ($request->wantsJson()) {
+                return response()->json(['error' => $msg], 422);
+            }
+            return back()->withErrors(['video_file' => $msg]);
+        }
+
+        // Validate against the user's max upload size as a final defense.
+        $maxBytes = (int) ($request->user()->max_video_size ?? 0);
+        if ($maxBytes > 0 && filesize($assembledPath) > $maxBytes) {
+            @unlink($assembledPath);
+            $msg = 'Video file exceeds your maximum upload size.';
+            if ($request->wantsJson()) {
+                return response()->json(['error' => $msg], 422);
+            }
+            return back()->withErrors(['video_file' => $msg]);
+        }
+
+        $originalName = $data['original_filename'] ?? ('video.' . $extension);
+        $mime = function_exists('mime_content_type')
+            ? (mime_content_type($assembledPath) ?: 'video/mp4')
+            : 'video/mp4';
+
+        $uploadedFile = new \Illuminate\Http\UploadedFile(
+            $assembledPath,
+            $originalName,
+            $mime,
+            null,
+            true // mark as test/already-moved so Laravel doesn't reject it
+        );
+
+        $video = $this->videoService->create([
+            'title' => $data['title'],
+            'description' => $data['description'],
+            'category_id' => $data['category_id'],
+            'privacy' => 'public',
+            'age_restricted' => $data['age_restricted'] ?? true,
+            'tags' => $data['tags'] ?? [],
+            'video_file' => $uploadedFile,
+            'scheduled_at' => $data['scheduled_at'] ?? null,
+        ], $request->user());
+
+        // Clean up the temp assembled file (VideoService copied/moved it into storage).
+        if (is_file($assembledPath)) {
+            @unlink($assembledPath);
+        }
+
+        EmailService::sendToAdmin('admin-new-video', [
+            'username' => $request->user()->username,
+            'video_title' => $video->title,
+            'video_url' => url("/{$video->slug}"),
+        ]);
+
+        $redirectUrl = $request->user()->canEditVideo()
+            ? route('videos.edit', $video)
+            : route('videos.upload-success', ['title' => $video->title]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status' => 'ok',
+                'video_id' => $video->id,
+                'redirect' => $redirectUrl,
+            ]);
+        }
+
+        return redirect($redirectUrl)
+            ->with('success', 'Video uploaded! Processing will begin shortly.');
     }
 
     public function edit(Video $video): Response

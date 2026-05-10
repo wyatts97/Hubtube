@@ -370,6 +370,7 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/upload/success', [VideoController::class, 'uploadSuccess'])->name('videos.upload-success');
         Route::post('/upload', [VideoController::class, 'store'])->middleware('throttle:10,1')->name('videos.store');
         Route::post('/upload/chunk', [VideoController::class, 'uploadChunk'])->middleware('throttle:300,1')->name('videos.upload-chunk');
+        Route::post('/upload/finalize', [VideoController::class, 'finalize'])->middleware('throttle:10,1')->name('videos.upload-finalize');
         Route::get('/videos/{video}/edit', [VideoController::class, 'edit'])->name('videos.edit');
         Route::get('/videos/{video}/status', [VideoController::class, 'status'])->name('videos.status');
         Route::get('/videos/{video}/processing-status', [VideoController::class, 'processingStatus'])->name('videos.processing-status');

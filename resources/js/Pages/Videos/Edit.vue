@@ -24,7 +24,6 @@ const form = useForm({
     title: props.video.title,
     description: props.video.description || '',
     category_id: props.video.category_id || '',
-    privacy: props.video.privacy,
     age_restricted: props.video.age_restricted,
     tags: props.video.tags || [],
     monetization_enabled: props.video.monetization_enabled,
@@ -320,25 +319,14 @@ const statusColors = {
                         ></textarea>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="category" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('video.category') || 'Category' }}</label>
-                            <select id="category" v-model="form.category_id" class="input">
-                                <option value="">Select category</option>
-                                <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                                    {{ cat.name }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label for="privacy" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('video.privacy') || 'Privacy' }}</label>
-                            <select id="privacy" v-model="form.privacy" class="input">
-                                <option value="public">Public</option>
-                                <option value="unlisted">Unlisted</option>
-                                <option value="private">Private</option>
-                            </select>
-                        </div>
+                    <div>
+                        <label for="category" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('video.category') || 'Category' }}</label>
+                        <select id="category" v-model="form.category_id" class="input">
+                            <option value="">Select category</option>
+                            <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                                {{ cat.name }}
+                            </option>
+                        </select>
                     </div>
 
                     <div>
