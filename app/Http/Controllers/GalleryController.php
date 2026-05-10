@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Gallery;
 use App\Models\Image;
+use App\Services\SeoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -13,6 +14,10 @@ use Inertia\Response;
 
 class GalleryController extends Controller
 {
+    public function __construct(
+        protected SeoService $seoService,
+    ) {}
+
     public function index(Request $request): Response
     {
         $galleries = Gallery::query()
@@ -29,6 +34,9 @@ class GalleryController extends Controller
         return Inertia::render('Galleries/Index', [
             'galleries' => $galleries,
             'filters' => $request->only(['sort']),
+            'seo' => $this->seoService->forGalleriesIndex(
+                $request->sort ? (string) $request->sort : null,
+            ),
         ]);
     }
 
@@ -50,6 +58,7 @@ class GalleryController extends Controller
             'gallery' => $gallery,
             'images' => $images,
             'canEdit' => auth()->check() && (auth()->id() === $gallery->user_id || auth()->user()->is_admin),
+            'seo' => $this->seoService->forGallery($gallery),
         ]);
     }
 

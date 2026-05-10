@@ -56,6 +56,7 @@ class PlaylistController extends Controller
         return Inertia::render('PublicPlaylists', [
             'playlists' => $query->paginate(24),
             'currentSort' => $sort,
+            'seo' => $this->seoService->forPublicPlaylists($sort),
         ]);
     }
 

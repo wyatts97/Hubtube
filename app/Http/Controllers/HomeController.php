@@ -194,6 +194,7 @@ class HomeController extends Controller
 
         return Inertia::render('Categories/Index', [
             'categories' => $categories,
+            'seo' => $this->seoService->forCategoriesIndex(),
         ]);
     }
 
@@ -297,6 +298,7 @@ class HomeController extends Controller
 
         return Inertia::render('Tags/Index', [
             'tags' => $tags,
+            'seo' => $this->seoService->forTagsIndex(),
         ]);
     }
 

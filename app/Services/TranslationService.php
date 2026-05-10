@@ -182,7 +182,9 @@ class TranslationService
 
         // Generate translated slug for title fields
         if ($field === 'title') {
-            $data['translated_slug'] = Str::slug($translated);
+            $data['translated_slug'] = $this->generateUniqueTranslatedSlug(
+                $modelClass, $modelId, $targetLocale, $translated, $originalValue
+            );
         }
 
         Translation::updateOrCreate(
@@ -272,7 +274,9 @@ class TranslationService
                     ];
 
                     if ($field === 'title') {
-                        $slug = Str::slug($translatedValue);
+                        $slug = $this->generateUniqueTranslatedSlug(
+                            $modelClass, $id, $targetLocale, $translatedValue, $item[$field]
+                        );
                         $data['translated_slug'] = $slug;
                         $translated['translated_slug'] = $slug;
                     }
@@ -327,6 +331,9 @@ class TranslationService
 
     /**
      * Get all available translated slugs for a model (for hreflang tags).
+     *
+     * Returns URL map keyed by locale: ['en' => 'https://…', 'es' => 'https://…/es/…'].
+     * Includes only the default locale + locales that have a confirmed translated slug.
      */
     public function getAlternateUrls(string $modelClass, int $modelId, string $originalSlug): array
     {
@@ -338,17 +345,142 @@ class TranslationService
             ->toArray();
 
         $defaultLocale = static::getDefaultLocale();
+        $enabled = static::getEnabledLocales();
         $urls = [];
 
         // Default locale uses original slug
-        $urls[$defaultLocale] = url("/{$originalSlug}");
+        if (in_array($defaultLocale, $enabled, true)) {
+            $urls[$defaultLocale] = url("/{$originalSlug}");
+        }
 
-        // Translated locales use /{locale}/{translated_slug}
+        // Translated locales use /{locale}/{translated_slug}, only if enabled
         foreach ($translations as $locale => $slug) {
+            if (!in_array($locale, $enabled, true) || $locale === $defaultLocale) {
+                continue;
+            }
             $urls[$locale] = url("/{$locale}/{$slug}");
         }
 
         return $urls;
+    }
+
+    /**
+     * Generate a slug for a translated value, ensuring uniqueness across the same
+     * model type + locale combination.
+     *
+     * Falls back to a transliterated/original slug for non-Latin scripts where
+     * Str::slug returns an empty string.
+     */
+    public function generateUniqueTranslatedSlug(
+        string $modelClass,
+        int $modelId,
+        string $locale,
+        string $translatedValue,
+        ?string $originalValue = null,
+    ): string {
+        $base = Str::slug($translatedValue);
+
+        // Non-Latin scripts (zh, ja, ko, ar, he, ru, hi, th) often produce empty slugs.
+        // Fall back to a transliteration using PHP's intl/iconv, then to original-slug-{locale}.
+        if ($base === '') {
+            $base = Str::slug($translatedValue, '-', 'en');
+        }
+        if ($base === '' && function_exists('transliterator_transliterate')) {
+            $tx = @transliterator_transliterate('Any-Latin; Latin-ASCII; [^A-Za-z0-9]+ Remove', $translatedValue);
+            if (is_string($tx) && trim($tx) !== '') {
+                $base = Str::slug($tx);
+            }
+        }
+        if ($base === '' && $originalValue !== null) {
+            $base = Str::slug($originalValue);
+        }
+        if ($base === '') {
+            $base = $locale . '-' . $modelId;
+        }
+
+        $base = mb_substr($base, 0, 200);
+
+        // Walk through suffixes until a free slug is found within the same model+locale scope.
+        $slug = $base;
+        $suffix = 1;
+        while (
+            Translation::where('translatable_type', $modelClass)
+                ->where('locale', $locale)
+                ->where('field', 'title')
+                ->where('translated_slug', $slug)
+                ->where('translatable_id', '!=', $modelId)
+                ->exists()
+        ) {
+            $suffix++;
+            $slug = $base . '-' . $suffix;
+            if ($suffix > 50) {
+                $slug = $base . '-' . $modelId;
+                break;
+            }
+        }
+
+        return $slug;
+    }
+
+    /**
+     * Map a 2-letter locale code to a region-aware BCP 47 hreflang code
+     * (e.g. 'pt' → 'pt-BR', 'zh' → 'zh-CN'). Falls back to the input
+     * unchanged when no region mapping is known.
+     */
+    public static function toHreflang(string $locale): string
+    {
+        $map = [
+            'en' => 'en',     'es' => 'es',     'fr' => 'fr',     'de' => 'de',
+            'pt' => 'pt-BR',  'it' => 'it',     'nl' => 'nl',     'ru' => 'ru',
+            'ja' => 'ja',     'ko' => 'ko',     'zh' => 'zh-CN',  'ar' => 'ar',
+            'hi' => 'hi',     'tr' => 'tr',     'pl' => 'pl',     'sv' => 'sv',
+            'da' => 'da',     'no' => 'nb',     'fi' => 'fi',     'cs' => 'cs',
+            'th' => 'th',     'vi' => 'vi',     'id' => 'id',     'ms' => 'ms',
+            'ro' => 'ro',     'uk' => 'uk',     'el' => 'el',     'hu' => 'hu',
+            'he' => 'he',     'bg' => 'bg',     'hr' => 'hr',     'sk' => 'sk',
+            'sr' => 'sr',     'lt' => 'lt',     'lv' => 'lv',     'et' => 'et',
+            'fil' => 'fil-PH',
+        ];
+        return $map[$locale] ?? $locale;
+    }
+
+    /**
+     * Build a validated hreflang map for a non-video page path.
+     *
+     * Returns ['hreflang' => 'url'] including 'x-default'. Skips locales that
+     * resolve to identical URLs (which would produce duplicate hreflang entries
+     * Google rejects).
+     */
+    public static function hreflangMapForPath(string $path): array
+    {
+        $enabled = static::getEnabledLocales();
+        if (count($enabled) <= 1) {
+            return [];
+        }
+
+        $defaultLocale = static::getDefaultLocale();
+        $cleanPath = ltrim($path, '/');
+
+        $map = [];
+        $defaultUrl = url('/' . $cleanPath);
+        $map['x-default'] = $defaultUrl;
+
+        $seen = [$defaultUrl => true];
+
+        foreach ($enabled as $locale) {
+            $href = $locale === $defaultLocale
+                ? $defaultUrl
+                : url('/' . $locale . ($cleanPath ? '/' . $cleanPath : ''));
+
+            // Avoid emitting duplicate hreflang entries pointing at the same URL.
+            $tag = static::toHreflang($locale);
+            if (!isset($seen[$href]) || $tag === $locale) {
+                $map[$tag] = $href;
+                $seen[$href] = true;
+            }
+        }
+
+        return $map;
     }
 
     /**

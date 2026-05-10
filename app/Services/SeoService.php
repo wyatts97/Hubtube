@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Gallery;
+use App\Models\Image;
+use App\Models\Page;
 use App\Models\Playlist;
 use App\Models\Setting;
 use App\Models\Video;
@@ -479,6 +482,324 @@ class SeoService
         $description = $this->truncate("Watch videos tagged with #{$tag} on {$this->siteName()}.");
 
         $seo = $this->baseMeta($title, $description, "/tag/{$tag}");
+        static::$currentSeo = $seo;
+        return $seo;
+    }
+
+    /**
+     * Generate SEO data for the videos browse index page (/videos).
+     */
+    public function forVideosIndex(?string $category = null, ?string $sort = null): array
+    {
+        $vars = ['site_name' => $this->siteName()];
+        $title = $this->template($this->s('seo_videos_index_title', 'All Videos | {site_name}'), $vars);
+        $description = $this->truncate($this->template(
+            $this->s('seo_videos_index_description', 'Browse all videos on {site_name}.'),
+            $vars
+        ));
+
+        $seo = $this->baseMeta($title, $description, '/videos');
+        $seo['og']['type'] = 'website';
+
+        // Filtered/sorted views shouldn't dilute the canonical /videos page
+        if ($category || ($sort && $sort !== 'newest')) {
+            $seo['robots'] = 'noindex, follow';
+        }
+
+        if ($this->s('seo_schema_enabled', true)) {
+            $seo['schema'][] = [
+                '@context' => 'https://schema.org',
+                '@type' => 'CollectionPage',
+                'name' => $title,
+                'description' => $description,
+                'url' => url('/videos'),
+            ];
+        }
+
+        static::$currentSeo = $seo;
+        return $seo;
+    }
+
+    /**
+     * Generate SEO data for the categories index page (/categories).
+     */
+    public function forCategoriesIndex(): array
+    {
+        $vars = ['site_name' => $this->siteName()];
+        $title = $this->template($this->s('seo_categories_index_title', 'All Categories | {site_name}'), $vars);
+        $description = $this->truncate($this->template(
+            $this->s('seo_categories_index_description', 'Browse video categories on {site_name}.'),
+            $vars
+        ));
+
+        $seo = $this->baseMeta($title, $description, '/categories');
+        $seo['og']['type'] = 'website';
+
+        if ($this->s('seo_schema_enabled', true)) {
+            $seo['schema'][] = [
+                '@context' => 'https://schema.org',
+                '@type' => 'CollectionPage',
+                'name' => $title,
+                'description' => $description,
+                'url' => url('/categories'),
+            ];
+        }
+
+        static::$currentSeo = $seo;
+        return $seo;
+    }
+
+    /**
+     * Generate SEO data for the tags index page (/tags).
+     */
+    public function forTagsIndex(): array
+    {
+        $vars = ['site_name' => $this->siteName()];
+        $title = $this->template($this->s('seo_tags_index_title', 'All Tags | {site_name}'), $vars);
+        $description = $this->truncate($this->template(
+            $this->s('seo_tags_index_description', 'Browse all video tags on {site_name}.'),
+            $vars
+        ));
+
+        $seo = $this->baseMeta($title, $description, '/tags');
+        $seo['og']['type'] = 'website';
+
+        static::$currentSeo = $seo;
+        return $seo;
+    }
+
+    /**
+     * Generate SEO data for the images browse index (/images).
+     */
+    public function forImagesIndex(?string $category = null, ?string $sort = null): array
+    {
+        $vars = ['site_name' => $this->siteName()];
+        $title = $this->template($this->s('seo_images_index_title', 'Photos | {site_name}'), $vars);
+        $description = $this->truncate($this->template(
+            $this->s('seo_images_index_description', 'Browse photos uploaded to {site_name}.'),
+            $vars
+        ));
+
+        $seo = $this->baseMeta($title, $description, '/images');
+        $seo['og']['type'] = 'website';
+
+        if ($category || ($sort && $sort !== 'newest')) {
+            $seo['robots'] = 'noindex, follow';
+        }
+
+        static::$currentSeo = $seo;
+        return $seo;
+    }
+
+    /**
+     * Generate SEO data for an image detail page (/image/{uuid}).
+     */
+    public function forImage(Image $image): array
+    {
+        $title = $image->title ?: ('Photo ' . $image->uuid);
+        $vars = [
+            'title' => $title,
+            'site_name' => $this->siteName(),
+            'uploader' => $image->user?->username ?? 'Unknown',
+        ];
+
+        $titleStr = $this->template('{title} | {site_name}', $vars);
+        $descRaw = $image->description ?: $this->template('View photo "{title}" on {site_name}.', $vars);
+        $description = $this->truncate($descRaw);
+
+        $canonicalPath = "/image/{$image->uuid}";
+        $seo = $this->baseMeta($titleStr, $description, $canonicalPath);
+
+        $imageUrl = null;
+        if ($image->file_path) {
+            $imageUrl = StorageManager::permanentUrl($image->file_path, $image->storage_disk ?? 'public');
+        }
+
+        if ($imageUrl) {
+            $seo['og']['type'] = 'article';
+            $seo['og']['image'] = $imageUrl;
+            $seo['twitter']['image'] = $imageUrl;
+            $seo['twitter']['card'] = 'summary_large_image';
+        }
+
+        // noindex non-public/unapproved images
+        if (
+            (isset($image->privacy) && $image->privacy !== 'public')
+            || (isset($image->is_approved) && !$image->is_approved)
+        ) {
+            $seo['robots'] = 'noindex, nofollow';
+        }
+
+        if ($this->s('seo_schema_enabled', true) && $imageUrl) {
+            $schema = [
+                '@context' => 'https://schema.org',
+                '@type' => 'ImageObject',
+                'name' => $title,
+                'description' => $description,
+                'contentUrl' => $imageUrl,
+                'url' => url($canonicalPath),
+                'uploadDate' => ($image->created_at ?? now())->toIso8601String(),
+            ];
+            if ($image->user) {
+                $schema['author'] = [
+                    '@type' => 'Person',
+                    'name' => $image->user->username,
+                    'url' => url("/channel/{$image->user->username}"),
+                ];
+            }
+            if (!empty($image->width) && !empty($image->height)) {
+                $schema['width'] = (int) $image->width;
+                $schema['height'] = (int) $image->height;
+            }
+            $seo['schema'][] = $schema;
+        }
+
+        static::$currentSeo = $seo;
+        return $seo;
+    }
+
+    /**
+     * Generate SEO data for the galleries browse index (/galleries).
+     */
+    public function forGalleriesIndex(?string $sort = null): array
+    {
+        $vars = ['site_name' => $this->siteName()];
+        $title = $this->template($this->s('seo_galleries_index_title', 'Photo Galleries | {site_name}'), $vars);
+        $description = $this->truncate($this->template(
+            $this->s('seo_galleries_index_description', 'Browse photo galleries on {site_name}.'),
+            $vars
+        ));
+
+        $seo = $this->baseMeta($title, $description, '/galleries');
+        $seo['og']['type'] = 'website';
+
+        if ($sort && $sort !== 'newest') {
+            $seo['robots'] = 'noindex, follow';
+        }
+
+        static::$currentSeo = $seo;
+        return $seo;
+    }
+
+    /**
+     * Generate SEO data for a gallery detail page (/gallery/{slug}).
+     */
+    public function forGallery(Gallery $gallery): array
+    {
+        $vars = [
+            'title' => $gallery->title,
+            'site_name' => $this->siteName(),
+            'creator' => $gallery->user?->username ?? 'Unknown',
+            'image_count' => number_format($gallery->images_count ?? 0),
+        ];
+
+        $title = $this->template('{title} - Gallery | {site_name}', $vars);
+        $descRaw = $gallery->description
+            ?: $this->template('Browse {image_count} photos in the "{title}" gallery by {creator} on {site_name}.', $vars);
+        $description = $this->truncate($descRaw);
+
+        $canonicalPath = "/gallery/{$gallery->slug}";
+        $seo = $this->baseMeta($title, $description, $canonicalPath);
+        $seo['og']['type'] = 'website';
+
+        $coverImage = $gallery->relationLoaded('coverImage')
+            ? $gallery->coverImage
+            : $gallery->coverImage()->first();
+
+        if ($coverImage && $coverImage->file_path) {
+            $coverUrl = StorageManager::permanentUrl(
+                $coverImage->thumbnail_path ?: $coverImage->file_path,
+                $coverImage->storage_disk ?? 'public'
+            );
+            if ($coverUrl) {
+                $seo['og']['image'] = $coverUrl;
+                $seo['twitter']['image'] = $coverUrl;
+                $seo['twitter']['card'] = 'summary_large_image';
+            }
+        }
+
+        if (isset($gallery->privacy) && $gallery->privacy !== 'public') {
+            $seo['robots'] = 'noindex, nofollow';
+        }
+
+        if ($this->s('seo_schema_enabled', true)) {
+            $schema = [
+                '@context' => 'https://schema.org',
+                '@type' => 'ImageGallery',
+                'name' => $gallery->title,
+                'description' => $description,
+                'url' => url($canonicalPath),
+                'numberOfItems' => (int) ($gallery->images_count ?? 0),
+            ];
+            if ($gallery->user) {
+                $schema['author'] = [
+                    '@type' => 'Person',
+                    'name' => $gallery->user->username,
+                    'url' => url("/channel/{$gallery->user->username}"),
+                ];
+            }
+            $seo['schema'][] = $schema;
+        }
+
+        static::$currentSeo = $seo;
+        return $seo;
+    }
+
+    /**
+     * Generate SEO data for the public playlists index (/public-playlists).
+     */
+    public function forPublicPlaylists(?string $sort = null): array
+    {
+        $vars = ['site_name' => $this->siteName()];
+        $title = $this->template($this->s('seo_public_playlists_title', 'Public Playlists | {site_name}'), $vars);
+        $description = $this->truncate($this->template(
+            $this->s('seo_public_playlists_description', 'Discover community-created public playlists on {site_name}.'),
+            $vars
+        ));
+
+        $seo = $this->baseMeta($title, $description, '/public-playlists');
+        $seo['og']['type'] = 'website';
+
+        if ($sort && $sort !== 'newest') {
+            $seo['robots'] = 'noindex, follow';
+        }
+
+        static::$currentSeo = $seo;
+        return $seo;
+    }
+
+    /**
+     * Generate SEO data for a static/legal page (/pages/{slug}).
+     */
+    public function forPage(Page $page, ?string $translatedTitle = null, ?string $translatedContent = null): array
+    {
+        $title = $translatedTitle ?: $page->title;
+        $vars = [
+            'title' => $title,
+            'site_name' => $this->siteName(),
+        ];
+
+        $titleStr = $this->template('{title} | {site_name}', $vars);
+
+        $body = $translatedContent ?: ($page->content ?? '');
+        $description = $this->truncate(strip_tags($body) ?: $title);
+
+        $canonicalPath = "/pages/{$page->slug}";
+        $seo = $this->baseMeta($titleStr, $description, $canonicalPath);
+        $seo['og']['type'] = 'article';
+
+        // Legal/static pages rarely change — let crawlers index them
+        if ($this->s('seo_schema_enabled', true)) {
+            $seo['schema'][] = [
+                '@context' => 'https://schema.org',
+                '@type' => 'WebPage',
+                'name' => $title,
+                'description' => $description,
+                'url' => url($canonicalPath),
+                'dateModified' => $page->updated_at?->toIso8601String(),
+            ];
+        }
+
         static::$currentSeo = $seo;
         return $seo;
     }

@@ -198,6 +198,31 @@ class Video extends Model
             $video->setAttribute('tags', empty($normalizedTags) ? null : $normalizedTags);
         });
 
+        // Invalidate cached translations when title or description changes so
+        // stale translated slugs/text don't keep serving the old value.
+        static::updated(function (Video $video) {
+            $stale = [];
+            if ($video->wasChanged('title')) {
+                $stale[] = 'title';
+            }
+            if ($video->wasChanged('description')) {
+                $stale[] = 'description';
+            }
+            if (!empty($stale)) {
+                try {
+                    \App\Models\Translation::where('translatable_type', static::class)
+                        ->where('translatable_id', $video->id)
+                        ->whereIn('field', $stale)
+                        ->delete();
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::debug('Translation invalidation failed', [
+                        'video_id' => $video->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        });
+
         static::deleting(function (Video $video) {
             // Skip storage cleanup for embedded videos (no local files)
             if ($video->is_embedded) {

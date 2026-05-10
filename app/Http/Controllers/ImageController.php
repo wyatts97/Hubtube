@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Image;
 use App\Models\Setting;
 use App\Services\ImageService;
+use App\Services\SeoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -16,6 +17,7 @@ class ImageController extends Controller
 {
     public function __construct(
         protected ImageService $imageService,
+        protected SeoService $seoService,
     ) {}
 
     public function index(Request $request): Response
@@ -40,6 +42,10 @@ class ImageController extends Controller
             'images' => $images,
             'categories' => Category::active()->get(),
             'filters' => $request->only(['category', 'sort']),
+            'seo' => $this->seoService->forImagesIndex(
+                $request->category ? (string) $request->category : null,
+                $request->sort ? (string) $request->sort : null,
+            ),
         ]);
     }
 
@@ -71,6 +77,7 @@ class ImageController extends Controller
             'image' => $image,
             'relatedImages' => $relatedImages,
             'canEdit' => $isOwner,
+            'seo' => $this->seoService->forImage($image),
         ]);
     }
 

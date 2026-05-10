@@ -146,10 +146,35 @@ Route::get('/admin/logs/file/{filename}/download', function (string $filename) u
 // Sitemap & Robots (outside age verification)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/sitemap_index.xml', [SitemapController::class, 'index'])->name('sitemap.index');
+
+// Per-content-type child sitemaps (referenced by the sitemap index above)
+Route::get('/sitemap-pages.xml', [SitemapController::class, 'pages'])->name('sitemap.pages');
+Route::get('/sitemap-categories.xml', [SitemapController::class, 'categories'])->name('sitemap.categories');
+Route::get('/sitemap-tags.xml', [SitemapController::class, 'tags'])->name('sitemap.tags');
+Route::get('/sitemap-channels.xml', [SitemapController::class, 'channels'])->name('sitemap.channels');
+Route::get('/sitemap-videos.xml', [SitemapController::class, 'videos'])->name('sitemap.videos');
+Route::get('/sitemap-videos-{page}.xml', [SitemapController::class, 'videos'])
+    ->where('page', '[0-9]+')->name('sitemap.videos.page');
+Route::get('/sitemap-images.xml', [SitemapController::class, 'images'])->name('sitemap.images');
+Route::get('/sitemap-galleries.xml', [SitemapController::class, 'galleries'])->name('sitemap.galleries');
+Route::get('/sitemap-playlists.xml', [SitemapController::class, 'playlists'])->name('sitemap.playlists');
 Route::get('/robots.txt', function () {
     $content = \App\Models\Setting::get('seo_robots_txt', "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nSitemap: " . url('/sitemap.xml'));
     return response($content, 200, ['Content-Type' => 'text/plain']);
 })->name('robots.txt');
+
+// IndexNow key verification file. Engines fetch /{key}.txt and expect
+// the file body to be exactly the key value.
+Route::get('/{indexnow_key}.txt', function (string $indexnow_key) {
+    if (!\App\Models\Setting::get('indexnow_enabled', false)) {
+        abort(404);
+    }
+    $configured = (string) \App\Models\Setting::get('indexnow_key', '');
+    if ($configured === '' || !hash_equals($configured, $indexnow_key)) {
+        abort(404);
+    }
+    return response($configured, 200, ['Content-Type' => 'text/plain']);
+})->where('indexnow_key', '[A-Za-z0-9\-]{8,128}')->name('indexnow.key');
 
 // Offline page for PWA
 Route::get('/offline', fn () => view('offline'))->name('offline');

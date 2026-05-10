@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Page;
+use App\Services\SeoService;
 use App\Services\TranslationService;
 use Illuminate\Support\Facades\App;
 use Inertia\Inertia;
@@ -10,6 +11,10 @@ use Inertia\Response;
 
 class PageController extends Controller
 {
+    public function __construct(
+        protected SeoService $seoService,
+    ) {}
+
     public function show(Page $page): Response
     {
         if (!$page->is_published) {
@@ -58,6 +63,7 @@ class PageController extends Controller
                 'content' => $content,
                 'updated_at' => $page->updated_at->toDateString(),
             ],
+            'seo' => $this->seoService->forPage($page, $title, $content),
         ]);
     }
 

@@ -204,57 +204,64 @@
         }
     </style>
 
-    {{-- hreflang tags for multi-language SEO (with translated video slugs) --}}
+    {{-- hreflang tags for multi-language SEO.
+         Only emits alternates that actually resolve to distinct URLs, and uses
+         region-aware BCP 47 codes (pt-BR, zh-CN, …) where appropriate. --}}
     @php
         $enabledLangs = \App\Services\TranslationService::getEnabledLocales();
         $defaultLang = \App\Services\TranslationService::getDefaultLocale();
         $currentPath = request()->path();
-        // Strip locale prefix from current path if present
         $cleanPath = preg_replace('#^[a-z]{2,3}(/|$)#', '', $currentPath);
         $cleanPath = $cleanPath ?: '/';
 
-        // For video pages, look up translated slugs so each hreflang points to the correct translated URL
-        $videoAlternates = null;
+        $hreflangMap = [];
+
         if (count($enabledLangs) > 1) {
             $route = request()->route();
             $routeName = $route?->getName();
+            $videoModel = null;
+
             // Detect video show pages (both default and locale-prefixed)
             if (in_array($routeName, ['videos.show', 'locale.videos.show'])) {
                 $video = $route->parameter('video') ?? null;
                 $slug = $route->parameter('slug') ?? null;
-                $videoModel = null;
                 if ($video instanceof \App\Models\Video) {
                     $videoModel = $video;
                 } elseif ($slug) {
                     $videoModel = \App\Models\Video::where('slug', $slug)->first()
                         ?? \App\Models\Video::whereHas('translations', fn($q) => $q->where('translated_slug', $slug))->first();
                 }
-                if ($videoModel) {
-                    $translationService = app(\App\Services\TranslationService::class);
-                    $videoAlternates = $translationService->getAlternateUrls(\App\Models\Video::class, $videoModel->id, $videoModel->slug);
+            }
+
+            if ($videoModel) {
+                // Video page: only emit hreflang for locales with confirmed translated slugs (plus default)
+                $translationService = app(\App\Services\TranslationService::class);
+                $alternates = $translationService->getAlternateUrls(
+                    \App\Models\Video::class,
+                    $videoModel->id,
+                    $videoModel->slug,
+                );
+                $defaultUrl = $alternates[$defaultLang] ?? url('/' . $videoModel->slug);
+                $hreflangMap['x-default'] = $defaultUrl;
+                $seen = [$defaultUrl => true];
+                foreach ($alternates as $lang => $href) {
+                    $tag = \App\Services\TranslationService::toHreflang($lang);
+                    if (!isset($seen[$href])) {
+                        $hreflangMap[$tag] = $href;
+                        $seen[$href] = true;
+                    } elseif ($lang === $defaultLang) {
+                        $hreflangMap[$tag] = $href;
+                    }
                 }
+            } else {
+                // Non-video page: shared path structure across locales
+                $hreflangMap = \App\Services\TranslationService::hreflangMapForPath('/' . $cleanPath);
             }
         }
     @endphp
-    @if(count($enabledLangs) > 1)
-        @if($videoAlternates)
-            {{-- Video page: use translated slugs for each language --}}
-            <link rel="alternate" hreflang="x-default" href="{{ $videoAlternates[$defaultLang] ?? url($cleanPath) }}" />
-            @foreach($enabledLangs as $lang)
-                <link rel="alternate" hreflang="{{ $lang }}" href="{{ $videoAlternates[$lang] ?? url($lang . '/' . $cleanPath) }}" />
-            @endforeach
-        @else
-            {{-- Non-video pages: same path structure across locales --}}
-            <link rel="alternate" hreflang="x-default" href="{{ url($cleanPath) }}" />
-            @foreach($enabledLangs as $lang)
-                @if($lang === $defaultLang)
-                    <link rel="alternate" hreflang="{{ $lang }}" href="{{ url($cleanPath) }}" />
-                @else
-                    <link rel="alternate" hreflang="{{ $lang }}" href="{{ url($lang . '/' . $cleanPath) }}" />
-                @endif
-            @endforeach
-        @endif
-    @endif
+    @foreach($hreflangMap as $hl => $href)
+        <link rel="alternate" hreflang="{{ $hl }}" href="{{ $href }}" />
+    @endforeach
 
     {{-- Google Analytics --}}
     @php $gaId = \App\Models\Setting::get('google_analytics_id', ''); @endphp

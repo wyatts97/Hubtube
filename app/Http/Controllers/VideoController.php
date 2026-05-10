@@ -61,6 +61,10 @@ class VideoController extends Controller
             'videos' => $videos,
             'categories' => Category::active()->get(),
             'filters' => $request->only(['category', 'sort']),
+            'seo' => $this->seoService->forVideosIndex(
+                $request->category ? (string) $request->category : null,
+                $request->sort ? (string) $request->sort : null,
+            ),
             'bannerAd' => [
                 'enabled' => (bool) Setting::get('browse_banner_ad_enabled', false),
                 'code' => (string) Setting::get('browse_banner_ad_html', ''),
