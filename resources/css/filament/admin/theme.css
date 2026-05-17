@@ -190,11 +190,11 @@
 }
 
 /* ── Login Page ── */
-.fi-simple-page {
+.fi-login-page {
     background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #2d1b4e 100%);
 }
 
-.fi-simple-main-ctn {
+.fi-login-page .fi-simple-main-ctn {
     backdrop-filter: blur(16px);
 }
 
