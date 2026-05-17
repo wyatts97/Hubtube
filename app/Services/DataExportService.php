@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Image;
 use App\Models\User;
 use App\Models\Video;
+use App\Services\StorageManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Zip;
@@ -55,30 +56,13 @@ class DataExportService
         foreach ($videos as $video) {
             $videoDir = "videos/{$video->id}/";
             $zip->addEmptyDir($videoDir);
+            $disk = $video->storage_disk ?? 'public';
 
             // Video file
-            if ($video->video_path && Storage::disk('public')->exists($video->video_path)) {
-                $videoContent = Storage::disk('public')->get($video->video_path);
-                $zip->addFromString($videoDir . basename($video->video_path), $videoContent);
-            }
+            $this->addFileToZip($zip, $video->video_path, $disk, $videoDir . basename($video->video_path));
 
             // Thumbnail
-            if ($video->thumbnail_url && Storage::disk('public')->exists($video->thumbnail_url)) {
-                $thumbContent = Storage::disk('public')->get($video->thumbnail_url);
-                $zip->addFromString($videoDir . basename($video->thumbnail_url), $thumbContent);
-            }
-
-            // Sprite
-            if ($video->sprite_url && Storage::disk('public')->exists($video->sprite_url)) {
-                $spriteContent = Storage::disk('public')->get($video->sprite_url);
-                $zip->addFromString($videoDir . basename($video->sprite_url), $spriteContent);
-            }
-
-            // HLS playlist
-            if ($video->hls_playlist_path && Storage::disk('public')->exists($video->hls_playlist_path)) {
-                $hlsContent = Storage::disk('public')->get($video->hls_playlist_path);
-                $zip->addFromString($videoDir . basename($video->hls_playlist_path), $hlsContent);
-            }
+            $this->addFileToZip($zip, $video->thumbnail, $disk, $videoDir . basename($video->thumbnail));
         }
 
         $zip->close();
@@ -107,23 +91,71 @@ class DataExportService
         foreach ($images as $image) {
             $imageDir = "images/{$image->uuid}/";
             $zip->addEmptyDir($imageDir);
+            $disk = $image->storage_disk ?? 'public';
 
             // Original file
-            if ($image->file_path && Storage::disk('public')->exists($image->file_path)) {
-                $fileContent = Storage::disk('public')->get($image->file_path);
-                $zip->addFromString($imageDir . basename($image->file_path), $fileContent);
-            }
+            $this->addFileToZip($zip, $image->file_path, $disk, $imageDir . basename($image->file_path));
 
             // Thumbnail
-            if ($image->thumbnail_path && Storage::disk('public')->exists($image->thumbnail_path)) {
-                $thumbContent = Storage::disk('public')->get($image->thumbnail_path);
-                $zip->addFromString($imageDir . basename($image->thumbnail_path), $thumbContent);
-            }
+            $this->addFileToZip($zip, $image->thumbnail_path, $disk, $imageDir . basename($image->thumbnail_path));
         }
 
         $zip->close();
 
         return "exports/{$filename}";
+    }
+
+    /**
+     * Add a file to the ZIP archive using the correct disk.
+     * Uses addFile() for local disks (memory efficient) and streams for cloud disks.
+     */
+    private function addFileToZip(\ZipArchive $zip, ?string $path, string $disk, string $zipPath): void
+    {
+        if (!$path) {
+            return;
+        }
+
+        try {
+            if (!StorageManager::exists($path, $disk)) {
+                return;
+            }
+        } catch (\Throwable $e) {
+            return;
+        }
+
+        $localPath = null;
+
+        if (in_array($disk, ['public', 'local'])) {
+            try {
+                $localPath = Storage::disk($disk)->path($path);
+            } catch (\Throwable $e) {
+                $localPath = null;
+            }
+        }
+
+        if ($localPath && file_exists($localPath)) {
+            $zip->addFile($localPath, $zipPath);
+            return;
+        }
+
+        // Cloud disk: stream to a temporary file
+        try {
+            $stream = Storage::disk($disk)->readStream($path);
+            if (!$stream) {
+                return;
+            }
+
+            $tempFile = tempnam(sys_get_temp_dir(), 'ht_export_');
+            $dest = fopen($tempFile, 'w');
+            stream_copy_to_stream($stream, $dest);
+            fclose($stream);
+            fclose($dest);
+
+            $zip->addFile($tempFile, $zipPath);
+            unlink($tempFile);
+        } catch (\Throwable $e) {
+            // Silently skip files that can't be read from cloud storage
+        }
     }
 
     /**
