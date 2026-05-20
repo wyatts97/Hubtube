@@ -116,59 +116,11 @@
     color: var(--ed-brass);
 }
 
-/* ── Sections / Cards — Corner brackets + border ── */
+/* ── Sections / Cards ── */
 .fi-section {
-    position: relative;
     border-radius: var(--ed-radius);
     background-color: var(--ed-surface-card);
     border: 1px solid var(--ed-border-mid);
-    overflow: visible;
-}
-
-/* Corner bracket ::before */
-.fi-section::before,
-.fi-wi-stats-overview-stat::before {
-    content: "";
-    position: absolute;
-    top: var(--ed-cb-offset);
-    left: var(--ed-cb-offset);
-    right: var(--ed-cb-offset);
-    bottom: var(--ed-cb-offset);
-    border: var(--ed-cb-weight) solid var(--ed-cb-color);
-    border-radius: 0;
-    pointer-events: none;
-    z-index: 1;
-    -webkit-mask-image:
-        linear-gradient(#000, #000),
-        linear-gradient(#000, #000),
-        linear-gradient(#000, #000),
-        linear-gradient(#000, #000);
-    -webkit-mask-position: 0 0, 100% 0, 0 100%, 100% 100%;
-    -webkit-mask-size: var(--ed-cb-size) var(--ed-cb-size);
-    -webkit-mask-repeat: no-repeat;
-    mask-image:
-        linear-gradient(#000, #000),
-        linear-gradient(#000, #000),
-        linear-gradient(#000, #000),
-        linear-gradient(#000, #000);
-    mask-position: 0 0, 100% 0, 0 100%, 100% 100%;
-    mask-size: var(--ed-cb-size) var(--ed-cb-size);
-    mask-repeat: no-repeat;
-}
-
-/* Outer border ::after */
-.fi-section::after,
-.fi-wi-stats-overview-stat::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border: 1px solid var(--ed-border-mid);
-    border-radius: var(--ed-radius);
-    pointer-events: none;
-    z-index: 0;
 }
 
 .fi-section-header {
@@ -188,21 +140,29 @@
     background-color: var(--ed-surface-card);
     border: 1px solid var(--ed-border-mid);
     transition: transform var(--ed-transition), box-shadow var(--ed-transition-slow), border-color var(--ed-transition);
-    overflow: visible;
 }
 
 /* Brass gradient top-border accent */
 .fi-wi-stats-overview-stat::before {
-    --ed-cb-color: rgba(201, 164, 58, 0.22);
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--ed-brass), transparent);
+    opacity: 0.5;
+    pointer-events: none;
 }
 
 .fi-wi-stats-overview-stat:hover {
     transform: translateY(-2px);
     box-shadow: var(--ed-shadow-lg);
+    border-color: var(--ed-border-ornate) !important;
 }
 
 .fi-wi-stats-overview-stat:hover::before {
-    --ed-cb-color: rgba(201, 164, 58, 0.35);
+    opacity: 1;
 }
 
 /* Remove default hover ring */
@@ -214,13 +174,6 @@
     outline: none !important;
     --tw-ring-shadow: 0 0 transparent !important;
     --tw-ring-offset-shadow: 0 0 transparent !important;
-}
-
-.fi-wi-stats-overview-stat {
-    border-color: var(--ed-border) !important;
-}
-.fi-wi-stats-overview-stat:hover {
-    border-color: var(--ed-border-ornate) !important;
 }
 
 /* Numeric tabular alignment on stat values */
@@ -361,6 +314,7 @@
 
 /* ── Modal — heavy brass top-border ── */
 .fi-modal-window {
+    position: relative;
     border-radius: var(--ed-radius);
     background-color: var(--ed-surface-card);
     border: 1px solid var(--ed-border-mid);
