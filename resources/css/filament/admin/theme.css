@@ -1168,3 +1168,36 @@
     font-family: ui-monospace, Menlo, monospace;
 }
 .ht-log-detail__meta .ht-log-copy-btn--solid { margin-left: auto; }
+
+/* ============================================================
+   Structural fixes for Filament v4 widget compatibility
+   (Not aesthetic overrides — prevents icons/charts from
+   blowing out their containers when default CSS is missing.)
+   ============================================================ */
+
+/* Stat cards must clip overflow so sparkline charts don't spill */
+.fi-wi-stats-overview-stat {
+    min-height: 8rem;
+    overflow: hidden;
+}
+
+/* Overlook widget decorative icons must stay constrained */
+.overlook-icon.fi-icon,
+.overlook-icon svg {
+    width: auto !important;
+    height: 6rem !important;
+}
+
+/* Prevent any stray SVG from exceeding its widget container */
+.ht-dashboard-stack svg,
+.ht-dashboard-grid svg {
+    max-width: 100%;
+}
+
+/* Ensure moderation-banner and alert icons stay small */
+.ht-moderation-banner svg,
+.ht-unsaved-toast svg {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+    flex-shrink: 0;
+}
