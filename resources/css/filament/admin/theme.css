@@ -1168,5 +1168,3 @@
     font-family: ui-monospace, Menlo, monospace;
 }
 .ht-log-detail__meta .ht-log-copy-btn--solid { margin-left: auto; }
-
-@import "../../../../vendor/spykapps/theme-edinburgh/resources/css/edinburgh.css";

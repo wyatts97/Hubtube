@@ -208,7 +208,20 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<style>' . file_get_contents(resource_path('css/filament/admin/theme.css')) . '</style>',
+                function (): string {
+                    $edinburghPath = base_path('vendor/spykapps/theme-edinburgh/resources/css/edinburgh.css');
+                    $themePath = resource_path('css/filament/admin/theme.css');
+
+                    $css = '';
+                    if (file_exists($edinburghPath)) {
+                        $css .= file_get_contents($edinburghPath);
+                    }
+                    if (file_exists($themePath)) {
+                        $css .= file_get_contents($themePath);
+                    }
+
+                    return '<style>' . $css . '</style>';
+                },
             )
             ->navigationGroups(static::buildNavigationGroups())
             ->plugins(static::buildPlugins())
