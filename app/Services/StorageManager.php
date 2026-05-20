@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Throwable;
 use App\Models\Setting;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
@@ -154,7 +155,7 @@ class StorageManager
         if (Setting::get('cloud_storage_public_bucket', false)) {
             try {
                 return static::disk($diskName)->url($path);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 Log::warning('StorageManager: failed to generate public URL', [
                     'disk' => $diskName,
                     'path' => $path,
@@ -191,7 +192,7 @@ class StorageManager
         // For cloud disks, build a permanent URL from the endpoint + bucket + path
         try {
             return static::disk($diskName)->url($path);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return asset('storage/' . $path);
         }
     }
@@ -210,7 +211,7 @@ class StorageManager
 
         try {
             return static::disk($diskName)->temporaryUrl($path, now()->addMinutes($minutes));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('StorageManager: temporaryUrl failed, falling back to plain URL', [
                 'disk' => $diskName,
                 'path' => $path,
@@ -219,7 +220,7 @@ class StorageManager
             // Fall back to plain disk URL (not url() to avoid circular reference)
             try {
                 return static::disk($diskName)->url($path);
-            } catch (\Throwable $e2) {
+            } catch (Throwable $e2) {
                 return asset('storage/' . $path);
             }
         }
@@ -269,7 +270,7 @@ class StorageManager
             $disk->delete($testFile);
 
             return ['success' => true, 'message' => "Successfully connected to {$diskName} storage."];
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return [
                 'success' => false,
                 'message' => "Connection failed: {$e->getMessage()}",
@@ -296,7 +297,7 @@ class StorageManager
         try {
             $disk = static::disk($diskName);
             return $disk->putFile($directory, $file, 'public');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('StorageManager: putFile failed', [
                 'disk' => $diskName,
                 'directory' => $directory,
@@ -316,7 +317,7 @@ class StorageManager
         try {
             $disk = static::disk($diskName);
             return $disk->put($path, $contents, 'public');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('StorageManager: put failed', [
                 'disk' => $diskName,
                 'path' => $path,
@@ -335,7 +336,7 @@ class StorageManager
 
         try {
             return static::disk($diskName)->delete($path);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('StorageManager: delete failed', [
                 'disk' => $diskName,
                 'path' => $path,
@@ -354,7 +355,7 @@ class StorageManager
 
         try {
             return static::disk($diskName)->deleteDirectory($path);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('StorageManager: deleteDirectory failed', [
                 'disk' => $diskName,
                 'path' => $path,
@@ -373,7 +374,7 @@ class StorageManager
 
         try {
             return static::disk($diskName)->exists($path);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return false;
         }
     }
@@ -387,7 +388,7 @@ class StorageManager
 
         try {
             return static::disk($diskName)->allFiles($directory);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return [];
         }
     }
@@ -424,7 +425,7 @@ class StorageManager
             }
 
             return null;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('StorageManager: localPath download failed', [
                 'disk' => $diskName,
                 'path' => $storagePath,
@@ -461,7 +462,7 @@ class StorageManager
             }
 
             return $result;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('StorageManager: uploadLocalFile failed', [
                 'disk' => $diskName,
                 'localPath' => $localPath,

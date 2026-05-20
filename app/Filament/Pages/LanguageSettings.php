@@ -2,6 +2,17 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\CreateAction;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteBulkAction;
+use Exception;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use App\Services\TranslationService;
@@ -11,13 +22,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Tables;
@@ -31,11 +40,11 @@ class LanguageSettings extends Page implements HasForms, HasTable
     use InteractsWithForms;
     use InteractsWithTable;
 
-    protected static ?string $navigationIcon = 'heroicon-o-language';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-language';
     protected static ?string $navigationLabel = 'Languages';
-    protected static ?string $navigationGroup = 'Appearance';
+    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 8;
-    protected static string $view = 'filament.pages.language-settings';
+    protected string $view = 'filament.pages.language-settings';
 
     public ?array $data = [];
 
@@ -60,15 +69,15 @@ class LanguageSettings extends Page implements HasForms, HasTable
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
         $languageOptions = [];
         foreach (TranslationService::LANGUAGES as $code => $lang) {
             $languageOptions[$code] = "{$lang['flag']} {$lang['native']} ({$lang['name']})";
         }
 
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Section::make('Translation Settings')
                     ->description('Enable multi-language support for your site. When enabled, a language switcher appears in the sidebar and content is auto-translated.')
                     ->schema([
@@ -162,7 +171,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
             ->description('Fix or replace words/phrases that Google Translate gets wrong. Overrides apply to both dynamic content and static UI translations.')
             ->defaultSort('locale')
             ->columns([
-                Tables\Columns\TextColumn::make('locale')
+                TextColumn::make('locale')
                     ->label('Language')
                     ->formatStateUsing(function (string $state) {
                         if ($state === '*') return 'All';
@@ -172,47 +181,47 @@ class LanguageSettings extends Page implements HasForms, HasTable
                     ->badge()
                     ->color(fn (string $state) => $state === '*' ? 'purple' : 'gray'),
 
-                Tables\Columns\TextColumn::make('original_text')
+                TextColumn::make('original_text')
                     ->label('Wrong Text')
                     ->color('danger')
                     ->searchable()
                     ->limit(50),
 
-                Tables\Columns\TextColumn::make('replacement_text')
+                TextColumn::make('replacement_text')
                     ->label('Correct Text')
                     ->color('success')
                     ->searchable()
                     ->limit(50),
 
-                Tables\Columns\TextColumn::make('notes')
+                TextColumn::make('notes')
                     ->color('gray')
                     ->limit(30)
                     ->placeholder('—')
                     ->toggleable(),
 
-                Tables\Columns\ToggleColumn::make('is_active')
+                ToggleColumn::make('is_active')
                     ->label('Active'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('locale')
+                SelectFilter::make('locale')
                     ->label('Language')
                     ->options(fn () => $this->getLocaleOptions()),
             ])
-            ->actions([
-                Tables\Actions\EditAction::make()
-                    ->form(fn () => $this->overrideFormSchema())
+            ->recordActions([
+                EditAction::make()
+                    ->schema(fn () => $this->overrideFormSchema())
                     ->mutateRecordDataUsing(function (array $data): array {
                         $data['case_sensitive'] = (bool) ($data['case_sensitive'] ?? false);
                         return $data;
                     }),
 
-                Tables\Actions\DeleteAction::make(),
+                DeleteAction::make(),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
+                CreateAction::make()
                     ->label('Add Override')
                     ->model(TranslationOverride::class)
-                    ->form(fn () => $this->overrideFormSchema())
+                    ->schema(fn () => $this->overrideFormSchema())
                     ->using(function (array $data): TranslationOverride {
                         $exists = TranslationOverride::where('locale', $data['locale'])
                             ->where('original_text', $data['original_text'])
@@ -229,7 +238,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
                         return TranslationOverride::create($data);
                     }),
 
-                Tables\Actions\Action::make('clearCache')
+                Action::make('clearCache')
                     ->label('Clear Translation Cache')
                     ->icon('heroicon-o-trash')
                     ->color('danger')
@@ -239,8 +248,8 @@ class LanguageSettings extends Page implements HasForms, HasTable
                         $this->clearTranslationCache();
                     }),
             ])
-            ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(),
+            ->toolbarActions([
+                DeleteBulkAction::make(),
             ])
             ->emptyStateHeading('No translation overrides')
             ->emptyStateDescription('Add overrides to fix words that Google Translate gets wrong.')
@@ -289,7 +298,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
         try {
             Cache::flush();
             DB::table('translations')->truncate();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Tables may not exist yet
         }
 
@@ -352,7 +361,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
                         ->danger()
                         ->send();
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->generationOutput = "Error: {$e->getMessage()}";
                 $this->regenerating = false;
                 $this->regenerationStep = '';
@@ -393,7 +402,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
                         ->warning()
                         ->send();
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->generationOutput .= "\n\nBuild Error: {$e->getMessage()}";
                 $this->regenerating = false;
                 $this->regenerationStep = '';

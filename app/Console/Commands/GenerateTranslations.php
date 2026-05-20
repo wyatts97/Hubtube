@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use Exception;
 use App\Models\TranslationOverride;
 use App\Services\TranslationService;
 use Illuminate\Console\Command;
@@ -185,7 +186,7 @@ class GenerateTranslations extends Command
             if ($translated === null) {
                 $translated = $text;
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->warn("  Failed to translate key: {$key} — {$e->getMessage()}");
             $translated = $text;
         }

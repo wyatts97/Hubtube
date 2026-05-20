@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Setting;
 use App\Models\Comment;
 use App\Models\Video;
 use Illuminate\Http\JsonResponse;
@@ -31,7 +32,7 @@ class CommentController extends Controller
             'parent_id' => 'nullable|exists:comments,id',
         ]);
 
-        $requiresApproval = (bool) \App\Models\Setting::get('comments_require_approval', false);
+        $requiresApproval = (bool) Setting::get('comments_require_approval', false);
         $comment = $video->comments()->create([
             'user_id' => $request->user()->id,
             'content' => $validated['content'],

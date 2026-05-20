@@ -2,6 +2,8 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Actions\Action;
+use App\Events\VideoProcessed;
 use App\Models\Setting;
 use App\Models\Video;
 use App\Services\AdminLogger;
@@ -9,7 +11,6 @@ use App\Services\VideoService;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TimePicker;
 use Filament\Pages\Page;
-use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -22,11 +23,11 @@ class ScheduledVideos extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static ?string $navigationIcon = 'heroicon-o-clock';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-clock';
     protected static ?string $navigationLabel = 'Scheduled';
-    protected static ?string $navigationGroup = 'Content';
+    protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 6;
-    protected static string $view = 'filament.pages.scheduled-videos';
+    protected string $view = 'filament.pages.scheduled-videos';
 
     public static function getNavigationBadge(): ?string
     {
@@ -45,10 +46,10 @@ class ScheduledVideos extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\Action::make('configureSchedule')
+            Action::make('configureSchedule')
             ->label('Schedule Settings')
             ->icon('heroicon-o-cog-6-tooth')
-            ->form([
+            ->schema([
                 Select::make('posts_per_day')
                 ->label('Posts Per Day')
                 ->options([
@@ -74,7 +75,7 @@ class ScheduledVideos extends Page implements HasTable
             app(VideoService::class)->recalculateScheduleQueue();
         }),
 
-            \Filament\Actions\Action::make('recalculate')
+            Action::make('recalculate')
             ->label('Recalculate Times')
             ->icon('heroicon-o-arrow-path')
             ->color('warning')
@@ -124,7 +125,7 @@ class ScheduledVideos extends Page implements HasTable
             ->color(fn(string $state) => $state === 'processed' ? 'success' : 'warning')
             ->formatStateUsing(fn(string $state) => $state === 'processed' ? 'Ready' : ucfirst($state)),
         ])
-            ->actions([
+            ->recordActions([
             Action::make('publishNow')
             ->label('Publish Now')
             ->icon('heroicon-o-rocket-launch')
@@ -146,7 +147,7 @@ class ScheduledVideos extends Page implements HasTable
                 ->where('data->video_id', $record->id)
                 ->exists();
             if (!$alreadyNotified) {
-                event(new \App\Events\VideoProcessed($record));
+                event(new VideoProcessed($record));
             }
 
             Notification::make()->title('Video published immediately')->success()->send();

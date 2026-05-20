@@ -2,15 +2,15 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
 use App\Models\Setting;
 use App\Services\AdminLogger;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
@@ -19,11 +19,11 @@ class PwaSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-device-phone-mobile';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-device-phone-mobile';
     protected static ?string $navigationLabel = 'PWA & Push';
-    protected static ?string $navigationGroup = 'System';
+    protected static string | \UnitEnum | null $navigationGroup = 'System';
     protected static ?int $navigationSort = 5;
-    protected static string $view = 'filament.pages.pwa-settings';
+    protected string $view = 'filament.pages.pwa-settings';
 
     public ?array $data = [];
 
@@ -43,10 +43,10 @@ class PwaSettings extends Page implements HasForms
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Section::make('Progressive Web App (PWA)')
                     ->description('Configure PWA settings for installability on mobile devices')
                     ->schema([

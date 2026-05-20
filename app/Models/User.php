@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\EmailService;
+use Illuminate\Support\Facades\URL;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -237,19 +239,19 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
             return;
         }
 
-        if (!\App\Services\EmailService::isMailConfigured()) {
+        if (!EmailService::isMailConfigured()) {
             // Fall back to Laravel's default if mail isn't configured via admin panel
             parent::sendEmailVerificationNotification();
             return;
         }
 
-        $verifyUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+        $verifyUrl = URL::temporarySignedRoute(
             'verification.verify',
             now()->addMinutes(60),
             ['id' => $this->getKey(), 'hash' => sha1($this->getEmailForVerification())]
         );
 
-        \App\Services\EmailService::sendToUser('verify-email', $this->email, [
+        EmailService::sendToUser('verify-email', $this->email, [
             'username' => $this->username ?? 'there',
             'verify_url' => $verifyUrl,
         ]);
@@ -266,14 +268,14 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
             return;
         }
 
-        if (!\App\Services\EmailService::isMailConfigured()) {
+        if (!EmailService::isMailConfigured()) {
             parent::sendPasswordResetNotification($token);
             return;
         }
 
         $resetUrl = url(route('password.reset', ['token' => $token, 'email' => $this->email], false));
 
-        \App\Services\EmailService::sendToUser('reset-password', $this->email, [
+        EmailService::sendToUser('reset-password', $this->email, [
             'username' => $this->username ?? 'there',
             'reset_url' => $resetUrl,
             'expiry_minutes' => config('auth.passwords.users.expire', 60),

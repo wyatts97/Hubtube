@@ -2,10 +2,26 @@
 
 namespace App\Filament\Resources;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Actions\ViewAction;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\BulkAction;
+use Filament\Actions\DeleteBulkAction;
+use App\Filament\Resources\ContactMessageResource\Pages\ListContactMessages;
+use App\Filament\Resources\ContactMessageResource\Pages\ViewContactMessage;
 use App\Filament\Resources\ContactMessageResource\Pages;
 use App\Models\ContactMessage;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -16,9 +32,9 @@ use Illuminate\Database\Eloquent\Collection;
 class ContactMessageResource extends Resource
 {
     protected static ?string $model = ContactMessage::class;
-    protected static ?string $navigationIcon = 'heroicon-o-envelope';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-envelope';
     protected static ?string $navigationLabel = 'Contact & Reports';
-    protected static ?string $navigationGroup = 'Users & Messages';
+    protected static string | \UnitEnum | null $navigationGroup = 'Users & Messages';
     protected static ?int $navigationSort = 2;
 
     public static function getNavigationBadge(): ?string
@@ -31,28 +47,28 @@ class ContactMessageResource extends Resource
         return 'danger';
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                Forms\Components\Section::make('Message Details')
+        return $schema
+            ->components([
+                Section::make('Message Details')
                     ->schema([
-                        Forms\Components\TextInput::make('type')
+                        TextInput::make('type')
                             ->disabled()
                             ->formatStateUsing(fn ($state) => ucfirst($state ?? 'contact')),
-                        Forms\Components\TextInput::make('name')
+                        TextInput::make('name')
                             ->label(fn ($record) => $record?->type === 'report' ? 'Reporter' : 'Name')
                             ->disabled(),
-                        Forms\Components\TextInput::make('email')
+                        TextInput::make('email')
                             ->disabled(),
-                        Forms\Components\TextInput::make('subject')
+                        TextInput::make('subject')
                             ->disabled()
                             ->columnSpanFull(),
-                        Forms\Components\Textarea::make('message')
+                        Textarea::make('message')
                             ->disabled()
                             ->rows(8)
                             ->columnSpanFull(),
-                        Forms\Components\Toggle::make('is_read')
+                        Toggle::make('is_read')
                             ->label('Mark as Read'),
                     ])->columns(3),
             ]);
@@ -63,7 +79,7 @@ class ContactMessageResource extends Resource
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
-                Tables\Columns\IconColumn::make('is_read')
+                IconColumn::make('is_read')
                     ->boolean()
                     ->label('')
                     ->trueIcon('heroicon-o-envelope-open')
@@ -72,7 +88,7 @@ class ContactMessageResource extends Resource
                     ->falseColor('danger')
                     ->grow(false),
 
-                Tables\Columns\TextColumn::make('type')
+                TextColumn::make('type')
                     ->badge()
                     ->formatStateUsing(fn ($state) => ucfirst($state ?? 'contact'))
                     ->color(fn ($state) => match ($state) {
@@ -81,13 +97,13 @@ class ContactMessageResource extends Resource
                     })
                     ->grow(false),
 
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->label('From')
                     ->searchable()
                     ->sortable()
                     ->weight(fn (ContactMessage $record) => $record->is_read ? 'normal' : 'bold'),
 
-                Tables\Columns\TextColumn::make('email')
+                TextColumn::make('email')
                     ->searchable()
                     ->sortable()
                     ->icon('heroicon-m-envelope')
@@ -95,19 +111,19 @@ class ContactMessageResource extends Resource
                     ->copyable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('subject')
+                TextColumn::make('subject')
                     ->searchable()
                     ->limit(50)
                     ->placeholder('(no subject)')
                     ->weight(fn (ContactMessage $record) => $record->is_read ? 'normal' : 'bold'),
 
-                Tables\Columns\TextColumn::make('message')
+                TextColumn::make('message')
                     ->limit(60)
                     ->size('sm')
                     ->color('gray')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->label('Received')
                     ->since()
                     ->sortable()
@@ -116,41 +132,41 @@ class ContactMessageResource extends Resource
                     ->tooltip(fn (ContactMessage $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('type')
+                SelectFilter::make('type')
                     ->options([
                         'contact' => 'Contact',
                         'report' => 'Report',
                     ])
                     ->label('Type'),
 
-                Tables\Filters\TernaryFilter::make('is_read')
+                TernaryFilter::make('is_read')
                     ->label('Read Status')
                     ->trueLabel('Read')
                     ->falseLabel('Unread'),
             ])
-            ->actions([
-                Tables\Actions\ViewAction::make(),
+            ->recordActions([
+                ViewAction::make(),
 
-                Tables\Actions\Action::make('toggle_read')
+                Action::make('toggle_read')
                     ->icon(fn (ContactMessage $record) => $record->is_read ? 'heroicon-o-envelope' : 'heroicon-o-envelope-open')
                     ->label(fn (ContactMessage $record) => $record->is_read ? 'Mark Unread' : 'Mark Read')
                     ->action(fn (ContactMessage $record) => $record->update(['is_read' => !$record->is_read])),
 
-                Tables\Actions\DeleteAction::make(),
+                DeleteAction::make(),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('mark_read')
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    BulkAction::make('mark_read')
                         ->icon('heroicon-o-envelope-open')
                         ->action(fn (Collection $records) => $records->each(fn ($r) => $r->update(['is_read' => true])))
                         ->deselectRecordsAfterCompletion(),
 
-                    Tables\Actions\BulkAction::make('mark_unread')
+                    BulkAction::make('mark_unread')
                         ->icon('heroicon-o-envelope')
                         ->action(fn (Collection $records) => $records->each(fn ($r) => $r->update(['is_read' => false])))
                         ->deselectRecordsAfterCompletion(),
 
-                    Tables\Actions\DeleteBulkAction::make(),
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->striped();
@@ -159,8 +175,8 @@ class ContactMessageResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListContactMessages::route('/'),
-            'view' => Pages\ViewContactMessage::route('/{record}'),
+            'index' => ListContactMessages::route('/'),
+            'view' => ViewContactMessage::route('/{record}'),
         ];
     }
 

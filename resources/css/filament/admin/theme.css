@@ -1,216 +1,7 @@
 /*
- * HubTube Admin Theme
- * Custom Filament 3 panel overrides for a modern, branded admin experience.
+ * HubTube Admin Theme — Custom components only.
+ * Generic Filament aesthetics are handled by the Edinburgh theme.
  */
-
-/* ── Sidebar Polish ── */
-.fi-sidebar {
-    backdrop-filter: blur(12px);
-}
-
-.fi-sidebar-nav-groups {
-    gap: 0.25rem;
-}
-
-.fi-sidebar-group-label {
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    opacity: 0.5;
-}
-
-.fi-sidebar-item-label {
-    font-size: 0.8125rem;
-    font-weight: 500;
-}
-
-.fi-sidebar-item-icon {
-    width: 1.125rem;
-    height: 1.125rem;
-}
-
-/* Active sidebar item */
-.fi-sidebar-item-active .fi-sidebar-item-label {
-    font-weight: 600;
-}
-
-/* ── Top Bar ── */
-.fi-topbar {
-    border-bottom-width: 1px;
-}
-
-/* ── Cards / Sections ── */
-.fi-section {
-    border-radius: 0.75rem;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.03);
-}
-
-.fi-section-header {
-    padding: 1rem 1.25rem;
-}
-
-.fi-section-content {
-    padding: 1rem 1.25rem;
-}
-
-/* ── Stat Widgets ── */
-.fi-wi-stats-overview-stat {
-    position: relative;
-    border-radius: 0.875rem;
-    min-height: 10.5rem;
-    padding: 1.25rem !important;
-    transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-    overflow: hidden;
-}
-
-/* Subtle gradient top-border accent */
-.fi-wi-stats-overview-stat::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, rgb(99 102 241 / 0.5), transparent);
-    opacity: 0.5;
-    pointer-events: none;
-}
-
-.fi-wi-stats-overview-stat:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 28px -12px rgb(0 0 0 / 0.35);
-}
-
-.fi-wi-stats-overview-stat:hover::before {
-    opacity: 1;
-}
-
-/* Kill Filament's default hover ring/border on stat cards — keep only the
-   gradient top accent and the translateY "rise" animation. */
-.fi-wi-stats-overview-stat,
-.fi-wi-stats-overview-stat:hover,
-.fi-wi-stats-overview-stat:focus,
-.fi-wi-stats-overview-stat:focus-within,
-.fi-wi-stats-overview-stat:focus-visible {
-    outline: none !important;
-    --tw-ring-shadow: 0 0 transparent !important;
-    --tw-ring-offset-shadow: 0 0 transparent !important;
-}
-
-.dark .fi-wi-stats-overview-stat {
-    border-color: rgb(255 255 255 / 0.06) !important;
-}
-.dark .fi-wi-stats-overview-stat:hover {
-    border-color: rgb(255 255 255 / 0.06) !important;
-}
-
-/* Numeric tabular alignment on stat values */
-.fi-wi-stats-overview-stat-value {
-    font-variant-numeric: tabular-nums;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-}
-
-.fi-wi-stats-overview-stat-description {
-    font-size: 0.75rem;
-    line-height: 1.35;
-}
-
-/* ── Tables ── */
-.fi-ta-header-cell {
-    font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
-}
-
-.fi-ta-cell {
-    font-size: 0.875rem;
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
-}
-
-/* Rounder table container */
-.fi-ta {
-    border-radius: 0.875rem;
-    overflow: hidden;
-}
-
-/* Stripe contrast on dark */
-.dark .fi-ta-row:nth-child(even) {
-    background-color: rgb(255 255 255 / 0.015);
-}
-
-.fi-ta-row:nth-child(even) {
-    background-color: rgb(0 0 0 / 0.02);
-}
-
-/* Row hover */
-.fi-ta-row:hover {
-    background-color: rgb(99 102 241 / 0.04);
-}
-.dark .fi-ta-row:hover {
-    background-color: rgb(99 102 241 / 0.06);
-}
-
-/* ── Form Fields ── */
-.fi-fo-field-wrp label {
-    font-size: 0.8125rem;
-    font-weight: 600;
-}
-
-/* ── Buttons ── */
-.fi-btn {
-    border-radius: 0.5rem;
-    font-weight: 600;
-    font-size: 0.8125rem;
-    letter-spacing: 0.01em;
-}
-
-/* ── Badges ── */
-.fi-badge {
-    border-radius: 9999px;
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-}
-
-/* ── Tabs ── */
-.fi-tabs-item-label {
-    font-size: 0.8125rem;
-    font-weight: 600;
-}
-
-/* ── Modal ── */
-.fi-modal-window {
-    border-radius: 1rem;
-}
-
-/* ── Login Page ── */
-.fi-login-page {
-    background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #2d1b4e 100%);
-}
-
-.fi-login-page .fi-simple-main-ctn {
-    backdrop-filter: blur(16px);
-}
-
-/* Dark mode: slightly elevated cards */
-.dark .fi-section {
-    box-shadow: 0 1px 3px rgb(0 0 0 / 0.15), 0 0 0 1px rgb(255 255 255 / 0.03);
-}
-
-.dark .fi-wi-stats-overview-stat:hover {
-    box-shadow: 0 4px 16px rgb(0 0 0 / 0.25);
-}
-
-/* ── Notification toasts ── */
-.fi-no {
-    border-radius: 0.75rem;
-}
 
 /* ── Custom: Pending moderation alert banner ── */
 .ht-moderation-banner {
@@ -340,112 +131,6 @@
     border-radius: 0.625rem !important;
 }
 
-/* ── Dashboard grid breathing room ── */
-.fi-wi {
-    border-radius: 0.875rem !important;
-}
-
-/* ── Typography sweep (Phase F) ── */
-
-/* Page headings */
-.fi-header-heading {
-    font-size: 1.5rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    line-height: 1.2;
-}
-
-.fi-header-subheading {
-    font-size: 0.875rem;
-    color: rgb(107 114 128);
-    margin-top: 0.25rem;
-}
-
-.dark .fi-header-subheading {
-    color: rgb(148 163 184);
-}
-
-/* Section headings inside forms/pages */
-.fi-section-header-heading {
-    font-size: 1rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-}
-
-.fi-section-header-description {
-    font-size: 0.8125rem;
-    color: rgb(107 114 128);
-}
-
-.dark .fi-section-header-description {
-    color: rgb(148 163 184);
-}
-
-/* Sidebar – slightly wider for long labels like "Users & Messages" */
-.fi-sidebar {
-    width: 16rem;
-}
-
-/* Dark mode sidebar background gets a subtle gradient */
-.dark .fi-sidebar {
-    background: linear-gradient(180deg, rgb(24 24 27 / 0.95), rgb(18 18 20 / 0.95));
-}
-
-/* Badges inside tables: tighter vertical padding */
-.fi-ta .fi-badge {
-    padding: 0.125rem 0.625rem;
-}
-
-/* Pagination controls */
-.fi-pagination {
-    padding: 0.75rem 1rem;
-}
-
-/* Modal heading sizing */
-.fi-modal-heading {
-    font-size: 1.125rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-}
-
-/* Main page background subtle gradient on dark */
-.dark .fi-main {
-    background: radial-gradient(ellipse at top, rgb(30 27 75 / 0.15), transparent 60%),
-                rgb(9 9 11);
-}
-
-/* Improve the system status bar at the top of the page */
-.fi-topbar {
-    backdrop-filter: blur(8px);
-}
-
-.dark .fi-topbar {
-    background-color: rgb(24 24 27 / 0.85);
-    border-bottom-color: rgb(255 255 255 / 0.06);
-}
-
-/* Kbd key styling used in welcome banner */
-kbd {
-    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace;
-}
-
-/* Tabs – cleaner underline */
-.fi-tabs-item {
-    border-radius: 0.5rem 0.5rem 0 0;
-}
-
-/* Forms: fieldset collapsible header */
-.fi-fo-fieldset-label {
-    font-weight: 600;
-    font-size: 0.8125rem;
-    letter-spacing: 0.01em;
-}
-
-/* Breadcrumbs */
-.fi-breadcrumbs-item {
-    font-size: 0.8125rem;
-}
-
 /* ── ht-panel: dark-native card used on Analytics page ── */
 .ht-panel {
     border-radius: 0.875rem;
@@ -569,24 +254,6 @@ kbd {
 .ht-pill--post_roll { background: rgb(244 63 94 / 0.12);  color: rgb(251 113 133); }
 .ht-pill--outstream { background: rgb(14 165 233 / 0.12); color: rgb(56 189 248); }
 
-/* ── Dashboard widget grid: more gap so tables don't collide ── */
-.fi-page .fi-wi,
-.fi-page [class*="fi-widgets"] {
-    --widget-gap: 1.25rem;
-}
-
-.fi-wi-widgets-container,
-.fi-page > .grid,
-.fi-page .fi-section ~ .fi-section {
-    gap: 1.25rem !important;
-}
-
-/* Extra breathing room between sibling dashboard table widgets */
-.fi-dashboard-page .grid,
-.fi-page-dashboard .grid {
-    gap: 1.25rem !important;
-}
-
 /* ── Video thumbnail hover preview ──
    Target our custom classes added via extraAttributes/extraImgAttributes
    on the VideoResource ImageColumn, plus the outer Filament .fi-ta-image
@@ -625,32 +292,6 @@ kbd {
 .fi-ta:has(.ht-thumb-hover:hover),
 .fi-ta-ctn:has(.ht-thumb-hover:hover) {
     overflow: visible !important;
-}
-
-/* ============================================================
-   /videos page (and similar resource tables): neutralize any
-   white hover ring on the outer section/card. Keep row hover tint.
-   ============================================================ */
-.fi-resource-list-records-page .fi-section,
-.fi-resource-list-records-page .fi-ta,
-.fi-page-dashboard .fi-section,
-.fi-page-dashboard .fi-wi {
-    transition: border-color 0.15s ease, box-shadow 0.2s ease;
-}
-
-.fi-resource-list-records-page .fi-section:hover,
-.fi-resource-list-records-page .fi-ta:hover,
-.fi-page-dashboard .fi-wi:hover {
-    outline: none !important;
-    --tw-ring-shadow: 0 0 transparent !important;
-    --tw-ring-offset-shadow: 0 0 transparent !important;
-}
-
-.dark .fi-resource-list-records-page .fi-section,
-.dark .fi-resource-list-records-page .fi-section:hover,
-.dark .fi-resource-list-records-page .fi-ta,
-.dark .fi-resource-list-records-page .fi-ta:hover {
-    border-color: rgb(255 255 255 / 0.06) !important;
 }
 
 /* ============================================================
@@ -1477,6 +1118,7 @@ kbd {
 .ht-log-table__msg {
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     word-break: break-word;
@@ -1526,3 +1168,5 @@ kbd {
     font-family: ui-monospace, Menlo, monospace;
 }
 .ht-log-detail__meta .ht-log-copy-btn--solid { margin-left: auto; }
+
+@import "../../../../vendor/spykapps/theme-edinburgh/resources/css/edinburgh.css";

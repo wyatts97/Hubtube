@@ -2,10 +2,20 @@
 
 namespace App\Filament\Resources;
 
+use Filament\Schemas\Schema;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Toggle;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Actions\EditAction;
+use App\Filament\Resources\PageResource\Pages\ListPages;
+use App\Filament\Resources\PageResource\Pages\CreatePage;
+use App\Filament\Resources\PageResource\Pages\EditPage;
 use App\Filament\Resources\PageResource\Pages;
 use App\Models\Page;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -15,41 +25,35 @@ use Illuminate\Support\Str;
 class PageResource extends Resource
 {
     protected static ?string $model = Page::class;
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-text';
     protected static ?string $navigationLabel = 'Legal Pages';
-    protected static ?string $navigationGroup = 'System';
+    protected static string | \UnitEnum | null $navigationGroup = 'System';
     protected static ?int $navigationSort = 10;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('title')
+        return $schema
+            ->components([
+                TextInput::make('title')
                     ->required()
                     ->maxLength(255)
                     ->live(onBlur: true)
-                    ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('slug', Str::slug($state))),
-                Forms\Components\TextInput::make('slug')
+                    ->afterStateUpdated(fn ($state, Set $set) => $set('slug', Str::slug($state))),
+                TextInput::make('slug')
                     ->required()
                     ->maxLength(255)
                     ->unique(ignoreRecord: true)
                     ->helperText('URL path: /pages/{slug}'),
-                (class_exists(\FilamentTiptapEditor\TiptapEditor::class)
-                    ? \FilamentTiptapEditor\TiptapEditor::make('content')
-                        ->profile('default')
-                        ->required()
-                        ->columnSpanFull()
-                    : Forms\Components\RichEditor::make('content')
-                        ->required()
-                        ->columnSpanFull()
-                        ->toolbarButtons([
-                            'bold', 'italic', 'underline', 'strike',
-                            'h2', 'h3', 'bulletList', 'orderedList',
-                            'link', 'blockquote', 'horizontalRule',
-                            'undo', 'redo',
-                        ])
-                ),
-                Forms\Components\Toggle::make('is_published')
+                RichEditor::make('content')
+                    ->required()
+                    ->columnSpanFull()
+                    ->toolbarButtons([
+                        'bold', 'italic', 'underline', 'strike',
+                        'h2', 'h3', 'bulletList', 'orderedList',
+                        'link', 'blockquote', 'horizontalRule',
+                        'undo', 'redo',
+                    ]),
+                Toggle::make('is_published')
                     ->default(true)
                     ->helperText('Unpublished pages return a 404.'),
             ]);
@@ -59,34 +63,34 @@ class PageResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('title')
+                TextColumn::make('title')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('slug')
+                TextColumn::make('slug')
                     ->searchable()
                     ->copyable()
                     ->prefix('/pages/'),
-                Tables\Columns\IconColumn::make('is_published')
+                IconColumn::make('is_published')
                     ->boolean()
                     ->label('Published'),
-                Tables\Columns\TextColumn::make('updated_at')
+                TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->label('Last Updated'),
             ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
+            ->recordActions([
+                EditAction::make(),
             ])
-            ->bulkActions([])
+            ->toolbarActions([])
             ->striped();
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListPages::route('/'),
-            'create' => Pages\CreatePage::route('/create'),
-            'edit' => Pages\EditPage::route('/{record}/edit'),
+            'index' => ListPages::route('/'),
+            'create' => CreatePage::route('/create'),
+            'edit' => EditPage::route('/{record}/edit'),
         ];
     }
 }

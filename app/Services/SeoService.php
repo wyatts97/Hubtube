@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Exception;
 use App\Models\Gallery;
 use App\Models\Image;
 use App\Models\Page;
@@ -34,7 +35,7 @@ class SeoService
         if (empty($this->settings)) {
             try {
                 $this->settings = Setting::getAll();
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->settings = [];
             }
         }

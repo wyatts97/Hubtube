@@ -15,7 +15,7 @@ class RecentUploadsTable extends Widget
 {
     protected static bool $isDiscovered = false;
 
-    protected static string $view = 'filament.widgets.recent-uploads-table';
+    protected string $view = 'filament.widgets.recent-uploads-table';
 
     protected int|string|array $columnSpan = 1;
 
@@ -32,7 +32,7 @@ class RecentUploadsTable extends Widget
 
     public function render(): View
     {
-        return view(static::$view, [
+        return view($this->view, [
             'videos' => $this->getVideos(),
         ]);
     }

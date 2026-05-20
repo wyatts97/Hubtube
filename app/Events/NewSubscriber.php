@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use Throwable;
 use App\Models\Subscription;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -39,7 +40,7 @@ class NewSubscriber implements ShouldBroadcast
         return true;
     }
 
-    public function failed(\Throwable $e): void
+    public function failed(Throwable $e): void
     {
         Log::warning('NewSubscriber broadcast failed (Reverb may be down): ' . $e->getMessage());
     }

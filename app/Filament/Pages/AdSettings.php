@@ -2,20 +2,20 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Grid;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Tabs;
-use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Storage;
@@ -25,11 +25,11 @@ class AdSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-currency-dollar';
     protected static ?string $navigationLabel = 'Ad Settings';
-    protected static ?string $navigationGroup = 'Appearance';
+    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 2;
-    protected static string $view = 'filament.pages.ad-settings';
+    protected string $view = 'filament.pages.ad-settings';
 
     public ?array $data = [];
 
@@ -125,10 +125,10 @@ class AdSettings extends Page implements HasForms
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Tabs::make('Ad Settings')->tabs([
 
                     Tab::make('Video Roll Ads')

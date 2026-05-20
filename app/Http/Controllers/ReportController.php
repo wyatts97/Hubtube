@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Video;
+use App\Models\Comment;
+use App\Models\User;
 use App\Models\ContactMessage;
 use App\Models\Report;
 use App\Services\EmailService;
@@ -20,9 +23,9 @@ class ReportController extends Controller
         ]);
 
         $typeMap = [
-            'video' => \App\Models\Video::class,
-            'comment' => \App\Models\Comment::class,
-            'user' => \App\Models\User::class,
+            'video' => Video::class,
+            'comment' => Comment::class,
+            'user' => User::class,
         ];
 
         $morphType = $typeMap[$validated['reportable_type']] ?? null;

@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
+use Throwable;
+use Illuminate\Support\Facades\Log;
 use App\Models\Page;
 use App\Services\SeoService;
 use App\Services\TranslationService;
@@ -29,7 +32,7 @@ class PageController extends Controller
         $defaultLocale = 'en';
         try {
             $defaultLocale = TranslationService::getDefaultLocale();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // DB may not be ready
         }
 
@@ -47,9 +50,9 @@ class PageController extends Controller
                     Page::class, $page->id, 'content', $content, $locale
                 );
                 $content = $translatedContent ?: $content;
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Translation failed — fall back to original content
-                \Illuminate\Support\Facades\Log::warning('Page translation failed: ' . $e->getMessage(), [
+                Log::warning('Page translation failed: ' . $e->getMessage(), [
                     'page_id' => $page->id,
                     'locale' => $locale,
                 ]);

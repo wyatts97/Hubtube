@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Throwable;
 use App\Mail\TemplateMail;
 use App\Models\EmailTemplate;
 use App\Models\Setting;
@@ -36,7 +37,7 @@ class EmailService
         try {
             Mail::to($toEmail)->sendNow(new TemplateMail($templateSlug, $data));
             return true;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error("EmailService: failed to send '{$templateSlug}' to {$toEmail}: {$e->getMessage()}");
             return false;
         }
@@ -73,7 +74,7 @@ class EmailService
         try {
             Mail::to($adminEmail)->sendNow(new TemplateMail($templateSlug, $data, $replyTo, $replyToName));
             return true;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error("EmailService: failed to send admin notification '{$templateSlug}': {$e->getMessage()}");
             return false;
         }

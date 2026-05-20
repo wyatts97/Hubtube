@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources\ImageResource\Pages;
 
+use Filament\Schemas\Components\Tabs\Tab;
 use App\Filament\Resources\ImageResource;
 use App\Models\Image;
-use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
 

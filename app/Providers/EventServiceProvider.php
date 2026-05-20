@@ -2,6 +2,16 @@
 
 namespace App\Providers;
 
+use App\Events\VideoUploaded;
+use App\Listeners\ProcessVideoUpload;
+use App\Events\VideoProcessed;
+use App\Listeners\NotifyVideoProcessed;
+use App\Listeners\TweetNewVideoListener;
+use App\Listeners\SubmitVideoToIndexNowListener;
+use App\Events\NewSubscriber;
+use App\Listeners\NotifyChannelOfNewSubscriber;
+use SocialiteProviders\Manager\SocialiteWasCalled;
+use SocialiteProviders\Reddit\RedditExtendSocialite;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -12,19 +22,19 @@ class EventServiceProvider extends ServiceProvider
         Registered::class => [
             SendEmailVerificationNotification::class,
         ],
-        \App\Events\VideoUploaded::class => [
-            \App\Listeners\ProcessVideoUpload::class,
+        VideoUploaded::class => [
+            ProcessVideoUpload::class,
         ],
-        \App\Events\VideoProcessed::class => [
-            \App\Listeners\NotifyVideoProcessed::class,
-            \App\Listeners\TweetNewVideoListener::class,
-            \App\Listeners\SubmitVideoToIndexNowListener::class,
+        VideoProcessed::class => [
+            NotifyVideoProcessed::class,
+            TweetNewVideoListener::class,
+            SubmitVideoToIndexNowListener::class,
         ],
-        \App\Events\NewSubscriber::class => [
-            \App\Listeners\NotifyChannelOfNewSubscriber::class,
+        NewSubscriber::class => [
+            NotifyChannelOfNewSubscriber::class,
         ],
-        \SocialiteProviders\Manager\SocialiteWasCalled::class => [
-            \SocialiteProviders\Reddit\RedditExtendSocialite::class . '@handle',
+        SocialiteWasCalled::class => [
+            RedditExtendSocialite::class . '@handle',
         ],
     ];
 

@@ -2,10 +2,28 @@
 
 namespace App\Filament\Resources;
 
+use Illuminate\Database\Eloquent\Model;
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Toggle;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Actions\Action;
+use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use App\Filament\Resources\UserResource\Pages\ListUsers;
+use App\Filament\Resources\UserResource\Pages\CreateUser;
+use App\Filament\Resources\UserResource\Pages\EditUser;
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -16,8 +34,8 @@ use Illuminate\Support\Facades\Hash;
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
-    protected static ?string $navigationIcon = 'heroicon-o-users';
-    protected static ?string $navigationGroup = 'Users & Messages';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-users';
+    protected static string | \UnitEnum | null $navigationGroup = 'Users & Messages';
     protected static ?int $navigationSort = 1;
     protected static ?string $recordTitleAttribute = 'username';
 
@@ -26,7 +44,7 @@ class UserResource extends Resource
         return ['username', 'email'];
     }
 
-    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    public static function getGlobalSearchResultDetails(Model $record): array
     {
         return [
             'Email' => $record->email,
@@ -34,51 +52,51 @@ class UserResource extends Resource
         ];
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                Forms\Components\Section::make('User Information')
+        return $schema
+            ->components([
+                Section::make('User Information')
                     ->schema([
-                        Forms\Components\TextInput::make('username')
+                        TextInput::make('username')
                             ->required()
                             ->maxLength(32)
                             ->unique(ignoreRecord: true),
-                        Forms\Components\TextInput::make('email')
+                        TextInput::make('email')
                             ->email()
                             ->required()
                             ->unique(ignoreRecord: true),
-                        Forms\Components\TextInput::make('password')
+                        TextInput::make('password')
                             ->password()
                             ->required(fn (string $operation): bool => $operation === 'create')
                             ->dehydrateStateUsing(fn ($state) => $state ? Hash::make($state) : null)
                             ->dehydrated(fn ($state) => filled($state))
                             ->helperText(fn (string $operation): ?string => $operation === 'edit' ? 'Leave blank to keep current password' : null),
-                        Forms\Components\TextInput::make('first_name')
+                        TextInput::make('first_name')
                             ->maxLength(50),
-                        Forms\Components\TextInput::make('last_name')
+                        TextInput::make('last_name')
                             ->maxLength(50),
-                        Forms\Components\Textarea::make('bio')
+                        Textarea::make('bio')
                             ->rows(3),
-                        Forms\Components\Select::make('gender')
+                        Select::make('gender')
                             ->options([
                                 'male' => 'Male',
                                 'female' => 'Female',
                                 'other' => 'Other',
                             ]),
-                        Forms\Components\TextInput::make('country')
+                        TextInput::make('country')
                             ->maxLength(2),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Account Status')
+                Section::make('Account Status')
                     ->schema([
-                        Forms\Components\Toggle::make('is_verified')
+                        Toggle::make('is_verified')
                             ->label('Verified'),
-                        Forms\Components\Toggle::make('is_pro')
+                        Toggle::make('is_pro')
                             ->label('Pro User'),
-                        Forms\Components\Toggle::make('is_admin')
+                        Toggle::make('is_admin')
                             ->label('Administrator'),
-                        Forms\Components\TextInput::make('wallet_balance')
+                        TextInput::make('wallet_balance')
                             ->numeric()
                             ->prefix('$')
                             ->disabled(),
@@ -90,7 +108,7 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('avatar')
+                ImageColumn::make('avatar')
                     ->circular()
                     ->getStateUsing(function ($record) {
                         $avatar = $record->avatar;
@@ -105,22 +123,22 @@ class UserResource extends Resource
                         return url($avatar);
                     })
                     ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->username ?? '?') . '&background=6366f1&color=fff&size=80'),
-                Tables\Columns\TextColumn::make('username')
+                TextColumn::make('username')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('email')
+                TextColumn::make('email')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\IconColumn::make('is_verified')
+                IconColumn::make('is_verified')
                     ->boolean()
                     ->label('Verified'),
-                Tables\Columns\IconColumn::make('is_pro')
+                IconColumn::make('is_pro')
                     ->boolean()
                     ->label('Pro'),
-                Tables\Columns\IconColumn::make('is_admin')
+                IconColumn::make('is_admin')
                     ->boolean()
                     ->label('Admin'),
-                Tables\Columns\TextColumn::make('videos_count')
+                TextColumn::make('videos_count')
                     ->counts('videos')
                     ->label('Videos')
                     ->numeric()
@@ -128,12 +146,12 @@ class UserResource extends Resource
                     ->icon('heroicon-m-video-camera')
                     ->iconColor('gray'),
 
-                Tables\Columns\TextColumn::make('wallet_balance')
+                TextColumn::make('wallet_balance')
                     ->money('USD')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->label('Joined')
                     ->since()
                     ->sortable()
@@ -141,7 +159,7 @@ class UserResource extends Resource
                     ->color('gray')
                     ->tooltip(fn (User $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
 
-                Tables\Columns\TextColumn::make('updated_at')
+                TextColumn::make('updated_at')
                     ->label('Last Active')
                     ->since()
                     ->sortable()
@@ -150,44 +168,44 @@ class UserResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_verified'),
-                Tables\Filters\TernaryFilter::make('is_pro'),
-                Tables\Filters\TernaryFilter::make('is_admin'),
+                TernaryFilter::make('is_verified'),
+                TernaryFilter::make('is_pro'),
+                TernaryFilter::make('is_admin'),
             ])
-            ->actions([
-                Tables\Actions\Action::make('verify')
+            ->recordActions([
+                Action::make('verify')
                     ->icon('heroicon-o-check-badge')
                     ->color('success')
                     ->requiresConfirmation()
                     ->action(fn (User $record) => $record->forceFill(['is_verified' => true])->save())
                     ->visible(fn (User $record) => !$record->is_verified),
-                Tables\Actions\Action::make('unverify')
+                Action::make('unverify')
                     ->icon('heroicon-o-x-circle')
                     ->color('warning')
                     ->requiresConfirmation()
                     ->action(fn (User $record) => $record->forceFill(['is_verified' => false])->save())
                     ->visible(fn (User $record) => $record->is_verified),
 
-                Tables\Actions\Action::make('toggle_pro')
+                Action::make('toggle_pro')
                     ->icon(fn (User $record) => $record->is_pro ? 'heroicon-o-x-circle' : 'heroicon-o-star')
                     ->color(fn (User $record) => $record->is_pro ? 'gray' : 'warning')
                     ->label(fn (User $record) => $record->is_pro ? 'Revoke Pro' : 'Grant Pro')
                     ->requiresConfirmation()
                     ->action(fn (User $record) => $record->forceFill(['is_pro' => !$record->is_pro])->save()),
 
-                Tables\Actions\Action::make('view_videos')
+                Action::make('view_videos')
                     ->icon('heroicon-o-video-camera')
                     ->color('info')
                     ->label('Videos')
                     ->url(fn (User $record): string => route('filament.admin.resources.videos.index') . '?tableFilters[user_id][value]=' . $record->id)
                     ->visible(fn (User $record) => $record->videos_count > 0 || true),
 
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->striped()
@@ -203,9 +221,9 @@ class UserResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListUsers::route('/'),
-            'create' => Pages\CreateUser::route('/create'),
-            'edit' => Pages\EditUser::route('/{record}/edit'),
+            'index' => ListUsers::route('/'),
+            'create' => CreateUser::route('/create'),
+            'edit' => EditUser::route('/{record}/edit'),
         ];
     }
 }

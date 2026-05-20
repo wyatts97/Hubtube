@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use Throwable;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Storage;
@@ -13,11 +14,11 @@ class MediaLibrary extends Page
 {
     use WithFileUploads;
 
-    protected static ?string $navigationIcon = 'heroicon-o-photo';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-photo';
     protected static ?string $navigationLabel = 'Media Library';
-    protected static ?string $navigationGroup = 'Appearance';
+    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 99;
-    protected static string $view = 'filament.pages.media-library';
+    protected string $view = 'filament.pages.media-library';
 
     public string $activeTab = 'images';
 
@@ -166,7 +167,7 @@ class MediaLibrary extends Page
             $seconds = (int) round((float) trim($output ?? ''));
             if ($seconds <= 0) return null;
             return sprintf('%d:%02d', intdiv($seconds, 60), $seconds % 60);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return null;
         }
     }

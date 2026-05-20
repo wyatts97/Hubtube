@@ -2,10 +2,31 @@
 
 namespace App\Filament\Resources;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\EditAction;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\BulkAction;
+use Filament\Actions\DeleteBulkAction;
+use App\Filament\Resources\ImageResource\Pages\ListImages;
+use App\Filament\Resources\ImageResource\Pages\EditImage;
 use App\Filament\Resources\ImageResource\Pages;
 use App\Models\Image;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -16,8 +37,8 @@ use Illuminate\Database\Eloquent\Collection;
 class ImageResource extends Resource
 {
     protected static ?string $model = Image::class;
-    protected static ?string $navigationIcon = 'heroicon-o-photo';
-    protected static ?string $navigationGroup = 'Content';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-photo';
+    protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 3;
 
     public static function getNavigationBadge(): ?string
@@ -30,29 +51,29 @@ class ImageResource extends Resource
         return 'warning';
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                Forms\Components\Section::make('Image Details')
+        return $schema
+            ->components([
+                Section::make('Image Details')
                     ->schema([
-                        Forms\Components\TextInput::make('title')
+                        TextInput::make('title')
                             ->maxLength(200)
                             ->columnSpanFull(),
-                        Forms\Components\Textarea::make('description')
+                        Textarea::make('description')
                             ->rows(3)
                             ->columnSpanFull(),
-                        Forms\Components\Select::make('user_id')
+                        Select::make('user_id')
                             ->label('Uploader')
                             ->relationship('user', 'username')
                             ->required()
                             ->searchable()
                             ->preload(),
-                        Forms\Components\Select::make('category_id')
+                        Select::make('category_id')
                             ->relationship('category', 'name')
                             ->searchable()
                             ->preload(),
-                        Forms\Components\Select::make('privacy')
+                        Select::make('privacy')
                             ->options([
                                 'public' => 'Public',
                                 'private' => 'Private',
@@ -60,37 +81,37 @@ class ImageResource extends Resource
                             ])
                             ->default('public')
                             ->required(),
-                        Forms\Components\TagsInput::make('tags')
+                        TagsInput::make('tags')
                             ->separator(',')
                             ->columnSpanFull(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Moderation')
+                Section::make('Moderation')
                     ->schema([
-                        Forms\Components\Toggle::make('is_approved')
+                        Toggle::make('is_approved')
                             ->label('Approved')
                             ->helperText('Image is visible to the public'),
                     ]),
 
-                Forms\Components\Section::make('Technical Info')
+                Section::make('Technical Info')
                     ->schema([
-                        Forms\Components\TextInput::make('file_path')
+                        TextInput::make('file_path')
                             ->disabled()
                             ->columnSpanFull(),
-                        Forms\Components\TextInput::make('storage_disk')
+                        TextInput::make('storage_disk')
                             ->disabled(),
-                        Forms\Components\TextInput::make('mime_type')
+                        TextInput::make('mime_type')
                             ->disabled(),
-                        Forms\Components\TextInput::make('width')
+                        TextInput::make('width')
                             ->disabled()
                             ->suffix('px'),
-                        Forms\Components\TextInput::make('height')
+                        TextInput::make('height')
                             ->disabled()
                             ->suffix('px'),
-                        Forms\Components\TextInput::make('file_size')
+                        TextInput::make('file_size')
                             ->disabled()
                             ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 2) . ' MB' : '—'),
-                        Forms\Components\Toggle::make('is_animated')
+                        Toggle::make('is_animated')
                             ->disabled(),
                     ])->columns(3)
                     ->collapsed(),
@@ -102,40 +123,40 @@ class ImageResource extends Resource
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
-                Tables\Columns\ImageColumn::make('thumbnail_display')
+                ImageColumn::make('thumbnail_display')
                     ->label('Preview')
                     ->getStateUsing(fn (Image $record): ?string => $record->thumbnail_url)
                     ->height(50)
                     ->width(50)
                     ->extraImgAttributes(['class' => 'rounded object-cover']),
 
-                Tables\Columns\TextColumn::make('title')
+                TextColumn::make('title')
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
                     ->limit(50)
                     ->placeholder('Untitled'),
 
-                Tables\Columns\TextColumn::make('user.username')
+                TextColumn::make('user.username')
                     ->label('Uploader')
                     ->searchable()
                     ->sortable()
                     ->icon('heroicon-m-user')
                     ->size('sm'),
 
-                Tables\Columns\TextColumn::make('mime_type')
+                TextColumn::make('mime_type')
                     ->label('Type')
                     ->size('sm')
                     ->badge()
                     ->color('gray'),
 
-                Tables\Columns\TextColumn::make('dimensions')
+                TextColumn::make('dimensions')
                     ->label('Size')
                     ->getStateUsing(fn (Image $record): string => "{$record->width}×{$record->height}")
                     ->size('sm')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\IconColumn::make('is_approved')
+                IconColumn::make('is_approved')
                     ->boolean()
                     ->label('Approved')
                     ->trueIcon('heroicon-o-check-circle')
@@ -143,7 +164,7 @@ class ImageResource extends Resource
                     ->trueColor('success')
                     ->falseColor('danger'),
 
-                Tables\Columns\IconColumn::make('is_animated')
+                IconColumn::make('is_animated')
                     ->boolean()
                     ->label('Animated')
                     ->trueIcon('heroicon-o-gif')
@@ -152,20 +173,20 @@ class ImageResource extends Resource
                     ->falseColor('gray')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('views_count')
+                TextColumn::make('views_count')
                     ->label('Views')
                     ->numeric()
                     ->sortable()
                     ->icon('heroicon-m-eye')
                     ->iconColor('gray'),
 
-                Tables\Columns\TextColumn::make('file_size')
+                TextColumn::make('file_size')
                     ->label('File Size')
                     ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('privacy')
+                TextColumn::make('privacy')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'public' => 'success',
@@ -175,7 +196,7 @@ class ImageResource extends Resource
                     })
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->label('Uploaded')
                     ->since()
                     ->sortable()
@@ -183,70 +204,70 @@ class ImageResource extends Resource
                     ->color('gray'),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_approved')
+                TernaryFilter::make('is_approved')
                     ->label('Approved'),
 
-                Tables\Filters\SelectFilter::make('privacy')
+                SelectFilter::make('privacy')
                     ->options([
                         'public' => 'Public',
                         'private' => 'Private',
                         'unlisted' => 'Unlisted',
                     ]),
 
-                Tables\Filters\SelectFilter::make('user_id')
+                SelectFilter::make('user_id')
                     ->label('Uploader')
                     ->relationship('user', 'username')
                     ->searchable()
                     ->preload(),
 
-                Tables\Filters\TernaryFilter::make('is_animated')
+                TernaryFilter::make('is_animated')
                     ->label('Animated'),
-            ], layout: Tables\Enums\FiltersLayout::AboveContentCollapsible)
-            ->actions([
-                Tables\Actions\ActionGroup::make([
-                    Tables\Actions\EditAction::make(),
+            ], layout: FiltersLayout::AboveContentCollapsible)
+            ->recordActions([
+                ActionGroup::make([
+                    EditAction::make(),
 
-                    Tables\Actions\Action::make('approve')
+                    Action::make('approve')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
                         ->action(fn (Image $record) => $record->update(['is_approved' => true]))
                         ->visible(fn (Image $record) => !$record->is_approved),
 
-                    Tables\Actions\Action::make('unapprove')
+                    Action::make('unapprove')
                         ->icon('heroicon-o-x-circle')
                         ->color('warning')
                         ->requiresConfirmation()
                         ->action(fn (Image $record) => $record->update(['is_approved' => false]))
                         ->visible(fn (Image $record) => $record->is_approved),
 
-                    Tables\Actions\Action::make('view_frontend')
+                    Action::make('view_frontend')
                         ->icon('heroicon-o-eye')
                         ->color('gray')
                         ->url(fn (Image $record): string => "/image/{$record->uuid}")
                         ->openUrlInNewTab()
                         ->visible(fn (Image $record) => $record->is_approved),
 
-                    Tables\Actions\DeleteAction::make(),
+                    DeleteAction::make(),
                 ]),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('approve')
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    BulkAction::make('approve')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
                         ->action(fn (Collection $records) => $records->each(fn (Image $i) => $i->update(['is_approved' => true])))
                         ->deselectRecordsAfterCompletion(),
 
-                    Tables\Actions\BulkAction::make('unapprove')
+                    BulkAction::make('unapprove')
                         ->icon('heroicon-o-x-circle')
                         ->color('warning')
                         ->requiresConfirmation()
                         ->action(fn (Collection $records) => $records->each(fn (Image $i) => $i->update(['is_approved' => false])))
                         ->deselectRecordsAfterCompletion(),
 
-                    Tables\Actions\DeleteBulkAction::make(),
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->striped()
@@ -261,8 +282,8 @@ class ImageResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListImages::route('/'),
-            'edit' => Pages\EditImage::route('/{record}/edit'),
+            'index' => ListImages::route('/'),
+            'edit' => EditImage::route('/{record}/edit'),
         ];
     }
 }

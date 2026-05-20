@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use Throwable;
 use App\Events\VideoProcessed;
 use App\Models\SearchIndexSubmission;
 use App\Models\Setting;
@@ -59,7 +60,7 @@ class SubmitVideoToIndexNowListener implements ShouldQueue
                         }
                     }
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 Log::debug('IndexNow: failed to resolve alternate URLs', [
                     'video_id' => $video->id,
                     'error' => $e->getMessage(),
@@ -73,7 +74,7 @@ class SubmitVideoToIndexNowListener implements ShouldQueue
                 Video::class,
                 $video->id,
             );
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('IndexNow: video submission failed', [
                 'video_id' => $video->id,
                 'error' => $e->getMessage(),

@@ -2,11 +2,27 @@
 
 namespace App\Filament\Resources;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Toggle;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Filters\Filter;
+use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use App\Filament\Resources\MenuItemResource\Pages\ListMenuItems;
+use App\Filament\Resources\MenuItemResource\Pages\CreateMenuItem;
+use App\Filament\Resources\MenuItemResource\Pages\EditMenuItem;
 use App\Filament\Resources\MenuItemResource\Pages;
 use App\Models\MenuItem;
 use App\Models\Category;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -15,23 +31,23 @@ use Filament\Tables\Table;
 class MenuItemResource extends Resource
 {
     protected static ?string $model = MenuItem::class;
-    protected static ?string $navigationIcon = 'heroicon-o-bars-3';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-bars-3';
     protected static ?string $navigationLabel = 'Menu Builder';
-    protected static ?string $navigationGroup = 'Appearance';
+    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 3;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                Forms\Components\Section::make('Menu Item')
+        return $schema
+            ->components([
+                Section::make('Menu Item')
                     ->schema([
-                        Forms\Components\TextInput::make('label')
+                        TextInput::make('label')
                             ->required()
                             ->maxLength(100)
                             ->helperText('Display text for this menu item'),
 
-                        Forms\Components\Select::make('type')
+                        Select::make('type')
                             ->options([
                                 'link' => 'Custom Link',
                                 'category' => 'Category Page',
@@ -44,7 +60,7 @@ class MenuItemResource extends Resource
                             ->reactive()
                             ->helperText('Category and Tag types auto-generate their URL'),
 
-                        Forms\Components\TextInput::make('url')
+                        TextInput::make('url')
                             ->label(fn ($get) => match ($get('type')) {
                                 'category' => 'Category Slug',
                                 'tag' => 'Tag Name',
@@ -81,27 +97,27 @@ class MenuItemResource extends Resource
                             }),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Appearance & Behavior')
+                Section::make('Appearance & Behavior')
                     ->schema([
-                        Forms\Components\Select::make('target')
+                        Select::make('target')
                             ->options([
                                 '_self' => 'Same Window',
                                 '_blank' => 'New Tab',
                             ])
                             ->default('_self'),
 
-                        Forms\Components\TextInput::make('icon')
+                        TextInput::make('icon')
                             ->placeholder('e.g. tag, folder, star')
                             ->helperText('Lucide icon name (optional)'),
 
-                        Forms\Components\Select::make('parent_id')
+                        Select::make('parent_id')
                             ->label('Parent Menu Item')
                             ->relationship('parent', 'label', fn ($query) => $query->topLevel()->orderBy('sort_order'))
                             ->searchable()
                             ->nullable()
                             ->helperText('Leave empty for top-level item'),
 
-                        Forms\Components\Select::make('location')
+                        Select::make('location')
                             ->options([
                                 'header' => 'Desktop Header Only',
                                 'mobile' => 'Mobile Sidebar Only',
@@ -110,12 +126,12 @@ class MenuItemResource extends Resource
                             ->default('both')
                             ->required(),
 
-                        Forms\Components\Toggle::make('is_mega')
+                        Toggle::make('is_mega')
                             ->label('Mega Menu')
                             ->helperText('Display children in a multi-column dropdown (top-level only)')
                             ->visible(fn ($get) => !$get('parent_id')),
 
-                        Forms\Components\TextInput::make('mega_columns')
+                        TextInput::make('mega_columns')
                             ->label('Mega Menu Columns')
                             ->numeric()
                             ->default(4)
@@ -123,11 +139,11 @@ class MenuItemResource extends Resource
                             ->maxValue(6)
                             ->visible(fn ($get) => $get('is_mega') && !$get('parent_id')),
 
-                        Forms\Components\TextInput::make('sort_order')
+                        TextInput::make('sort_order')
                             ->numeric()
                             ->default(0),
 
-                        Forms\Components\Toggle::make('is_active')
+                        Toggle::make('is_active')
                             ->default(true),
                     ])->columns(2),
             ]);
@@ -138,11 +154,11 @@ class MenuItemResource extends Resource
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with('parent'))
             ->columns([
-                Tables\Columns\TextColumn::make('label')
+                TextColumn::make('label')
                     ->searchable()
                     ->sortable()
                     ->description(fn (MenuItem $record) => $record->parent ? "↳ Child of: {$record->parent->label}" : null),
-                Tables\Columns\TextColumn::make('type')
+                TextColumn::make('type')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'link' => 'primary',
@@ -152,38 +168,38 @@ class MenuItemResource extends Resource
                         'divider' => 'gray',
                         default => 'gray',
                     }),
-                Tables\Columns\TextColumn::make('url')
+                TextColumn::make('url')
                     ->limit(40),
-                Tables\Columns\TextColumn::make('location')
+                TextColumn::make('location')
                     ->badge(),
-                Tables\Columns\IconColumn::make('is_mega')
+                IconColumn::make('is_mega')
                     ->label('Mega')
                     ->boolean(),
-                Tables\Columns\IconColumn::make('is_active')
+                IconColumn::make('is_active')
                     ->boolean(),
-                Tables\Columns\TextColumn::make('sort_order')
+                TextColumn::make('sort_order')
                     ->sortable(),
             ])
             ->defaultSort('sort_order')
             ->filters([
-                Tables\Filters\SelectFilter::make('location')
+                SelectFilter::make('location')
                     ->options([
                         'header' => 'Header',
                         'mobile' => 'Mobile',
                         'both' => 'Both',
                     ]),
-                Tables\Filters\TernaryFilter::make('is_active'),
-                Tables\Filters\Filter::make('top_level')
+                TernaryFilter::make('is_active'),
+                Filter::make('top_level')
                     ->label('Top Level Only')
                     ->query(fn ($query) => $query->whereNull('parent_id')),
             ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+            ->recordActions([
+                EditAction::make(),
+                DeleteAction::make(),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->reorderable('sort_order')
@@ -193,9 +209,9 @@ class MenuItemResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListMenuItems::route('/'),
-            'create' => Pages\CreateMenuItem::route('/create'),
-            'edit' => Pages\EditMenuItem::route('/{record}/edit'),
+            'index' => ListMenuItems::route('/'),
+            'create' => CreateMenuItem::route('/create'),
+            'edit' => EditMenuItem::route('/{record}/edit'),
         ];
     }
 }

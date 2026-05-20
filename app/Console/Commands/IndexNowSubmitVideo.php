@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use Throwable;
 use App\Models\Video;
 use App\Services\IndexNowService;
 use App\Services\TranslationService;
@@ -39,7 +40,7 @@ class IndexNowSubmitVideo extends Command
                     $urls[] = $altUrl;
                 }
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // Ignore — submit primary only
         }
 

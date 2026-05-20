@@ -2,6 +2,9 @@
 
 namespace App\Jobs;
 
+use Exception;
+use RuntimeException;
+use Throwable;
 use App\Events\VideoProcessed;
 use App\Models\Setting;
 use App\Models\Video;
@@ -86,7 +89,7 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
 
             $this->notifyOnce();
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Video processing failed', [
                 'video_id' => $this->video->id,
                 'error' => $e->getMessage(),
@@ -461,7 +464,7 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
         $ffprobe = $this->getFFprobePath();
         
         if (!file_exists($path)) {
-            throw new \RuntimeException("Video file not found: {$path}");
+            throw new RuntimeException("Video file not found: {$path}");
         }
 
         $cmd = "{$ffprobe} -v quiet -print_format json -show_format -show_streams " . escapeshellarg($path);
@@ -469,13 +472,13 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
         [$exitCode, $output] = $this->runCommand($cmd);
         
         if ($exitCode !== 0 || empty($output)) {
-            throw new \RuntimeException("FFprobe failed (exit code {$exitCode}): " . substr($output, 0, 500));
+            throw new RuntimeException("FFprobe failed (exit code {$exitCode}): " . substr($output, 0, 500));
         }
 
         $info = json_decode($output, true);
         
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \RuntimeException('Failed to parse FFprobe output: ' . json_last_error_msg());
+            throw new RuntimeException('Failed to parse FFprobe output: ' . json_last_error_msg());
         }
 
         $duration = 0;
@@ -900,7 +903,7 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
                 'exit_code' => $exitCode,
                 'output' => substr($result, 0, 500),
             ]);
-            throw new \RuntimeException("FFmpeg transcoding failed for {$quality} (exit code {$exitCode})");
+            throw new RuntimeException("FFmpeg transcoding failed for {$quality} (exit code {$exitCode})");
         }
     }
 
@@ -1317,7 +1320,7 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
         return [$exitCode, trim($stdout . "\n" . $stderr)];
     }
 
-    public function failed(\Throwable $exception): void
+    public function failed(Throwable $exception): void
     {
         Log::error('Video processing job failed permanently', [
             'video_id' => $this->video->id,

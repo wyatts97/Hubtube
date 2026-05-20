@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\TagResource\Pages;
 
+use Filament\Actions\DeleteAction;
 use App\Filament\Resources\TagResource;
 use App\Services\TagSyncService;
 use Filament\Actions;
@@ -33,7 +34,7 @@ class EditTag extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make()
+            DeleteAction::make()
                 ->before(fn () => app(TagSyncService::class)->deleteTag($this->record)),
         ];
     }

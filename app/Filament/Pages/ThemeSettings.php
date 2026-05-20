@@ -2,21 +2,23 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\View;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
@@ -25,11 +27,11 @@ class ThemeSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-paint-brush';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-paint-brush';
     protected static ?string $navigationLabel = 'Theme & Appearance';
-    protected static ?string $navigationGroup = 'Appearance';
+    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 1;
-    protected static string $view = 'filament.pages.site-settings';
+    protected string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
 
@@ -185,13 +187,13 @@ class ThemeSettings extends Page implements HasForms
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Tabs::make('Theme Settings')
                     ->tabs([
-                        Tabs\Tab::make('Identity & Appearance')
+                        Tab::make('Identity & Appearance')
                             ->icon('heroicon-o-identification')
                             ->schema([
                                 Section::make('Site Information')
@@ -280,7 +282,7 @@ class ThemeSettings extends Page implements HasForms
                                         ]),
                                         Section::make('Preview')
                                             ->schema([
-                                                \Filament\Forms\Components\View::make('filament.components.site-title-preview'),
+                                                View::make('filament.components.site-title-preview'),
                                             ]),
                                     ]),
 
@@ -292,7 +294,7 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
                             ]),
                         
-                        Tabs\Tab::make('Dark Mode')
+                        Tab::make('Dark Mode')
                             ->icon('heroicon-o-moon')
                             ->schema([
                                 Section::make('Dark Mode Colors')
@@ -319,7 +321,7 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
                             ]),
                         
-                        Tabs\Tab::make('Navigation Icons')
+                        Tab::make('Navigation Icons')
                             ->icon('heroicon-o-squares-2x2')
                             ->schema([
                                 Section::make('Global Icon Settings')
@@ -379,7 +381,7 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
                             ]),
                         
-                        Tabs\Tab::make('Category Pages')
+                        Tab::make('Category Pages')
                             ->icon('heroicon-o-rectangle-group')
                             ->schema([
                                 Section::make('Category Title Typography')
@@ -413,7 +415,7 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
                             ]),
 
-                        Tabs\Tab::make('Video Cards')
+                        Tab::make('Video Cards')
                             ->icon('heroicon-o-rectangle-stack')
                             ->schema([
                                 Section::make('Visibility')
@@ -511,7 +513,7 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
                             ]),
 
-                        Tabs\Tab::make('Age Verification')
+                        Tab::make('Age Verification')
                             ->icon('heroicon-o-shield-check')
                             ->schema([
                                 Section::make('Overlay Settings')
@@ -568,12 +570,12 @@ class ThemeSettings extends Page implements HasForms
                                             ->label('Header Text')
                                             ->default('Age Verification Required')
                                             ->columnSpanFull(),
-                                        \Filament\Forms\Components\Textarea::make('age_description_text')
+                                        Textarea::make('age_description_text')
                                             ->label('Description Text')
                                             ->default('This website contains age-restricted content. You must be at least 18 years old to enter.')
                                             ->rows(2)
                                             ->columnSpanFull(),
-                                        \Filament\Forms\Components\Textarea::make('age_disclaimer_text')
+                                        Textarea::make('age_disclaimer_text')
                                             ->label('Disclaimer Text')
                                             ->default('By clicking "{confirm}", you confirm that you are at least 18 years of age and consent to viewing adult content.')
                                             ->helperText('Use {confirm} to insert the confirm button text')

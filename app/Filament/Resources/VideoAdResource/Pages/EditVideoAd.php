@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\VideoAdResource\Pages;
 
+use Filament\Actions\DeleteAction;
 use App\Filament\Resources\VideoAdResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
@@ -14,7 +15,7 @@ class EditVideoAd extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make()
+            DeleteAction::make()
                 ->after(function () {
                     $record = $this->getRecord();
                     if ($record->file_path && Storage::disk('public')->exists($record->file_path)) {

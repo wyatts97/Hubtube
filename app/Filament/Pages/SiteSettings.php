@@ -2,22 +2,26 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\FileUpload;
+use Filament\Schemas\Components\Actions;
+use Filament\Actions\Action;
+use Filament\Forms\Components\TagsInput;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use App\Services\FfmpegService;
 use App\Services\WatermarkService;
-use Filament\Forms\Components\Actions;
-use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Log;
@@ -30,11 +34,11 @@ class SiteSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-cog-6-tooth';
     protected static ?string $navigationLabel = 'Site Settings';
-    protected static ?string $navigationGroup = 'System';
+    protected static string | \UnitEnum | null $navigationGroup = 'System';
     protected static ?int $navigationSort = 1;
-    protected static string $view = 'filament.pages.site-settings';
+    protected string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
     public ?string $watermarkPreviewUrl = null;
@@ -290,13 +294,13 @@ class SiteSettings extends Page implements HasForms
             ->send();
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Tabs::make('Settings')
                     ->tabs([
-                        Tabs\Tab::make('General')
+                        Tab::make('General')
                             ->schema([
                                 Section::make('Site Status')
                                     ->schema([
@@ -324,7 +328,7 @@ class SiteSettings extends Page implements HasForms
                                             ->helperText('Number of videos to show per page or load'),
                                     ])->columns(2),
                             ]),
-                        Tabs\Tab::make('Users')
+                        Tab::make('Users')
                             ->schema([
                                 Section::make('Registration')
                                     ->schema([
@@ -341,7 +345,7 @@ class SiteSettings extends Page implements HasForms
                                             ->maxValue(21),
                                     ])->columns(2),
                             ]),
-                        Tabs\Tab::make('Videos')
+                        Tab::make('Videos')
                             ->schema([
                                 Section::make('Upload Limits')
                                     ->schema([
@@ -449,7 +453,7 @@ class SiteSettings extends Page implements HasForms
                                             ->helperText('Create multiple resolution versions of uploaded videos')
                                             ->default(true)
                                             ->reactive(),
-                                        \Filament\Forms\Components\CheckboxList::make('enabled_resolutions')
+                                        CheckboxList::make('enabled_resolutions')
                                             ->label('Enabled Resolutions')
                                             ->options([
                                                 '240p' => '240p (426x240) - Low bandwidth',
@@ -489,7 +493,7 @@ class SiteSettings extends Page implements HasForms
                                             ->description('Upload a video clip to preview how your watermark will look on real content. The entire video will be processed so you can test time interval settings.')
                                             ->collapsible()
                                             ->schema([
-                                                \Filament\Forms\Components\FileUpload::make('watermark_test_video')
+                                                FileUpload::make('watermark_test_video')
                                                     ->label('Test Video')
                                                     ->acceptedFileTypes(['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'])
                                                     ->directory('watermarks')
@@ -553,7 +557,7 @@ class SiteSettings extends Page implements HasForms
                                             ->collapsible()
                                             ->collapsed()
                                             ->schema([
-                                                \Filament\Forms\Components\FileUpload::make('watermark_image')
+                                                FileUpload::make('watermark_image')
                                                     ->label('Watermark Image')
                                                     ->image()
                                                     ->directory('watermarks')
@@ -726,7 +730,7 @@ class SiteSettings extends Page implements HasForms
                                             ->label('Auto-Approve All Videos')
                                             ->helperText('When enabled, ALL uploaded videos are auto-approved. When disabled, only users listed below get auto-approval.')
                                             ->reactive(),
-                                        \Filament\Forms\Components\TagsInput::make('video_auto_approve_usernames')
+                                        TagsInput::make('video_auto_approve_usernames')
                                             ->label('Auto-Approve Users')
                                             ->helperText('Enter usernames of trusted users whose videos should be auto-approved. These users bypass moderation even when global auto-approve is off.')
                                             ->placeholder('Add a username...')
@@ -737,7 +741,7 @@ class SiteSettings extends Page implements HasForms
                                             ->label('Comments Require Approval'),
                                     ])->columns(2),
                             ]),
-                        Tabs\Tab::make('Analytics')
+                        Tab::make('Analytics')
                             ->schema([
                                 Section::make('Tracking')
                                     ->schema([

@@ -2,6 +2,9 @@
 
 namespace App\Filament\Pages;
 
+use Throwable;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 use App\Models\User;
 use App\Models\Video;
 use App\Services\FfmpegService;
@@ -12,11 +15,11 @@ use Filament\Pages\Page;
 
 class ArchiveImporter extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-folder-open';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-folder-open';
     protected static ?string $navigationLabel = 'Archive Import';
-    protected static ?string $navigationGroup = 'Tools';
+    protected static string | \UnitEnum | null $navigationGroup = 'Tools';
     protected static ?int $navigationSort = 98;
-    protected static string $view = 'filament.pages.archive-importer';
+    protected string $view = 'filament.pages.archive-importer';
 
     /**
      * Hide this page from navigation - the archive import tool has served its purpose.
@@ -174,7 +177,7 @@ class ArchiveImporter extends Page
                 ->success()
                 ->send();
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->isScanning = false;
             Notification::make()->title('Scan Error')->body($e->getMessage())->danger()->send();
         }
@@ -238,7 +241,7 @@ class ArchiveImporter extends Page
         $this->processedCount++;
 
         $logEntry = [
-            'title' => \Illuminate\Support\Str::limit($video['title'], 50),
+            'title' => Str::limit($video['title'], 50),
             'status' => $result['status'],
             'message' => $result['message'],
         ];
@@ -342,7 +345,7 @@ class ArchiveImporter extends Page
     public function fixSeekability(): void
     {
         $ffmpegPath = FfmpegService::ffmpegPath();
-        $videos = \App\Models\Video::where('source_site', 'wedgietube_archive')
+        $videos = Video::where('source_site', 'wedgietube_archive')
             ->whereNotNull('video_path')
             ->get();
 
@@ -351,7 +354,7 @@ class ArchiveImporter extends Page
 
         foreach ($videos as $video) {
             $disk = $video->storage_disk ?? 'public';
-            $filePath = \Illuminate\Support\Facades\Storage::disk($disk)->path($video->video_path);
+            $filePath = Storage::disk($disk)->path($video->video_path);
 
             if (!file_exists($filePath)) {
                 $failed++;

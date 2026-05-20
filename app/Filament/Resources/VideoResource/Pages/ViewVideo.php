@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\VideoResource\Pages;
 
+use Filament\Actions\EditAction;
+use Filament\Actions\Action;
 use App\Filament\Resources\VideoResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
@@ -13,9 +15,9 @@ class ViewVideo extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\EditAction::make(),
+            EditAction::make(),
 
-            Actions\Action::make('view_frontend')
+            Action::make('view_frontend')
                 ->label('View on Site')
                 ->icon('heroicon-o-eye')
                 ->color('gray')

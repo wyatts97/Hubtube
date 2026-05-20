@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
+use App\Models\Page;
 use App\Models\Translation;
 use App\Models\Video;
 use App\Services\TranslationService;
@@ -38,9 +40,9 @@ class TranslationController extends Controller
         }
 
         $modelMap = [
-            'video' => \App\Models\Video::class,
-            'category' => \App\Models\Category::class,
-            'page' => \App\Models\Page::class,
+            'video' => Video::class,
+            'category' => Category::class,
+            'page' => Page::class,
         ];
 
         $modelClass = $modelMap[$validated['type']] ?? null;
@@ -94,7 +96,7 @@ class TranslationController extends Controller
             return response()->json(['error' => 'Invalid locale'], 422);
         }
 
-        $modelClass = \App\Models\Video::class;
+        $modelClass = Video::class;
         $models = Video::whereIn('id', $validated['ids'])->get();
 
         $items = $models->map(function ($model) use ($validated) {

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Exception;
 use App\Models\Setting;
 use App\Models\Translation;
 use App\Models\TranslationOverride;
@@ -142,7 +143,7 @@ class TranslationService
             $translated = TranslationOverride::applyOverrides($translated, $targetLocale);
 
             return $translated;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning("Translation failed: {$e->getMessage()}", [
                 'text' => Str::limit($text, 100),
                 'target' => $targetLocale,
@@ -500,7 +501,7 @@ class TranslationService
             foreach ($strings as $key => $value) {
                 try {
                     $result[$key] = $this->translateText($value, $targetLocale, $defaultLocale);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $result[$key] = $value;
                 }
             }

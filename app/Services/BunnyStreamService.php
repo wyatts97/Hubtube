@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Throwable;
+use App\Jobs\ProcessVideoJob;
 use App\Models\Setting;
 use App\Models\Video;
 use App\Services\FfmpegService;
@@ -87,7 +89,7 @@ class BunnyStreamService
             }
 
             return ['success' => false, 'error' => 'API returned status ' . $response->status()];
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
@@ -114,7 +116,7 @@ class BunnyStreamService
                 'body' => $response->body(),
             ]);
             return null;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('Bunny Stream list videos error', ['error' => $e->getMessage()]);
             return null;
         }
@@ -135,7 +137,7 @@ class BunnyStreamService
             }
 
             return null;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('Bunny Stream get video error', ['videoId' => $videoId, 'error' => $e->getMessage()]);
             return null;
         }
@@ -162,7 +164,7 @@ class BunnyStreamService
                 'body' => substr($response->body(), 0, 500),
             ]);
             return null;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('Bunny Stream play data error', ['videoId' => $videoId, 'error' => $e->getMessage()]);
             return null;
         }
@@ -265,7 +267,7 @@ class BunnyStreamService
 
             Log::warning('Bunny download: file empty after write', ['path' => $storagePath]);
             return null;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('Bunny download error', [
                 'url' => $url,
                 'path' => $storagePath,
@@ -319,7 +321,7 @@ class BunnyStreamService
                 ]);
                 return null;
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('BunnyStreamService HLS: playlist check error', ['error' => $e->getMessage()]);
             return null;
         }
@@ -362,7 +364,7 @@ class BunnyStreamService
             Log::info('BunnyStreamService HLS: ffmpeg success', [
                 'output_size' => filesize($outputFile),
             ]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('BunnyStreamService HLS: ffmpeg error', ['error' => $e->getMessage()]);
             $this->cleanupTempDir($tempDir);
             return null;
@@ -537,7 +539,7 @@ class BunnyStreamService
         ]);
 
         // 7. Dispatch ProcessVideoJob for full processing pipeline
-        \App\Jobs\ProcessVideoJob::dispatch($video);
+        ProcessVideoJob::dispatch($video);
 
         Log::info('BunnyStreamService: download completed, ProcessVideoJob dispatched', [
             'video_id' => $video->id,

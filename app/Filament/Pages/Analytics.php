@@ -13,11 +13,11 @@ use Filament\Pages\Page;
 
 class Analytics extends Page
 {
-    protected static ?string $navigationIcon  = 'heroicon-o-chart-bar';
+    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-chart-bar';
     protected static ?string $navigationLabel = 'Analytics';
-    protected static ?string $navigationGroup = 'Overview';
+    protected static string | \UnitEnum | null $navigationGroup = 'Overview';
     protected static ?int    $navigationSort  = 2;
-    protected static string  $view            = 'filament.pages.analytics';
+    protected string  $view            = 'filament.pages.analytics';
 
     /**
      * Host the ApexChart widgets in a 2-column grid.

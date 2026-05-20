@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -78,7 +79,7 @@ class ThumbnailProxyController extends Controller
                         'content_type' => $response->header('Content-Type', 'image/jpeg'),
                     ];
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Silent fail
             }
 

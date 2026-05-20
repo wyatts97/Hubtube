@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use Throwable;
 use App\Events\VideoProcessed;
 use App\Services\TwitterService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -36,7 +37,7 @@ class TweetNewVideoListener implements ShouldQueue
         try {
             $service = app(TwitterService::class);
             $service->tweetNewVideo($video);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('TweetNewVideoListener: Failed to tweet', [
                 'video_id' => $video->id,
                 'error' => $e->getMessage(),

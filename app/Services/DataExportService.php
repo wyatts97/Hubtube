@@ -2,6 +2,10 @@
 
 namespace App\Services;
 
+use InvalidArgumentException;
+use ZipArchive;
+use RuntimeException;
+use Throwable;
 use App\Models\Image;
 use App\Models\User;
 use App\Models\Video;
@@ -31,7 +35,7 @@ class DataExportService
             case 'sql':
                 return $this->exportUsersToSql($users, $filename);
             default:
-                throw new \InvalidArgumentException("Unsupported format: {$format}");
+                throw new InvalidArgumentException("Unsupported format: {$format}");
         }
     }
 
@@ -44,9 +48,9 @@ class DataExportService
         $filename = "videos_export_" . now()->format('Y-m-d_H-i-s') . '.zip';
         $tempPath = Storage::disk($this->tempDisk)->path('exports/' . $filename);
 
-        $zip = new \ZipArchive();
-        if ($zip->open($tempPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            throw new \RuntimeException("Failed to create ZIP file");
+        $zip = new ZipArchive();
+        if ($zip->open($tempPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            throw new RuntimeException("Failed to create ZIP file");
         }
 
         // Add metadata JSON
@@ -79,9 +83,9 @@ class DataExportService
         $filename = "images_export_" . now()->format('Y-m-d_H-i-s') . '.zip';
         $tempPath = Storage::disk($this->tempDisk)->path('exports/' . $filename);
 
-        $zip = new \ZipArchive();
-        if ($zip->open($tempPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            throw new \RuntimeException("Failed to create ZIP file");
+        $zip = new ZipArchive();
+        if ($zip->open($tempPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            throw new RuntimeException("Failed to create ZIP file");
         }
 
         // Add metadata JSON
@@ -109,7 +113,7 @@ class DataExportService
      * Add a file to the ZIP archive using the correct disk.
      * Uses addFile() for local disks (memory efficient) and streams for cloud disks.
      */
-    private function addFileToZip(\ZipArchive $zip, ?string $path, string $disk, string $zipPath): void
+    private function addFileToZip(ZipArchive $zip, ?string $path, string $disk, string $zipPath): void
     {
         if (!$path) {
             return;
@@ -119,7 +123,7 @@ class DataExportService
             if (!StorageManager::exists($path, $disk)) {
                 return;
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return;
         }
 
@@ -128,7 +132,7 @@ class DataExportService
         if (in_array($disk, ['public', 'local'])) {
             try {
                 $localPath = Storage::disk($disk)->path($path);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $localPath = null;
             }
         }
@@ -153,7 +157,7 @@ class DataExportService
 
             $zip->addFile($tempFile, $zipPath);
             unlink($tempFile);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Silently skip files that can't be read from cloud storage
         }
     }

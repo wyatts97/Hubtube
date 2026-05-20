@@ -2,9 +2,12 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Schemas\Components\Section;
+use Throwable;
+use ZipArchive;
+use RuntimeException;
 use App\Services\DataExportService;
 use Filament\Forms\Components\Checkbox;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -18,11 +21,11 @@ class DataExport extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-arrow-down-tray';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-arrow-down-tray';
     protected static ?string $navigationLabel = 'Data Export';
-    protected static ?string $navigationGroup = 'Tools';
+    protected static string | \UnitEnum | null $navigationGroup = 'Tools';
     protected static ?int $navigationSort = 99;
-    protected static string $view = 'filament.pages.data-export';
+    protected string $view = 'filament.pages.data-export';
 
     public ?array $data = [];
 
@@ -135,7 +138,7 @@ class DataExport extends Page implements HasForms
             // If multiple files, create a master ZIP
             return $this->createMasterZip($exportedFiles);
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Notification::make()
                 ->title('Export failed')
                 ->body($e->getMessage())
@@ -150,9 +153,9 @@ class DataExport extends Page implements HasForms
         $filename = "hubtube_export_" . now()->format('Y-m-d_H-i-s') . '.zip';
         $tempPath = Storage::disk('local')->path('exports/' . $filename);
 
-        $zip = new \ZipArchive();
-        if ($zip->open($tempPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            throw new \RuntimeException("Failed to create master ZIP file");
+        $zip = new ZipArchive();
+        if ($zip->open($tempPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            throw new RuntimeException("Failed to create master ZIP file");
         }
 
         foreach ($files as $file) {

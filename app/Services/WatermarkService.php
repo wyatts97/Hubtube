@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use RecursiveIteratorIterator;
+use RecursiveDirectoryIterator;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Storage;
 
@@ -41,7 +43,7 @@ class WatermarkService
             ];
             foreach ($dirs as $dir) {
                 if (!is_dir($dir)) continue;
-                $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir));
+                $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir));
                 foreach ($iterator as $file) {
                     if (preg_match('/\.(ttf|otf)$/i', $file->getFilename())) {
                         $name = pathinfo($file->getFilename(), PATHINFO_FILENAME);

@@ -2,10 +2,21 @@
 
 namespace App\Filament\Resources;
 
+use Filament\Schemas\Schema;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
+use App\Services\TagSyncService;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use App\Filament\Resources\TagResource\Pages\ListTags;
+use App\Filament\Resources\TagResource\Pages\EditTag;
 use App\Filament\Resources\TagResource\Pages;
 use App\Models\Hashtag;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -16,11 +27,11 @@ class TagResource extends Resource
 {
     protected static ?string $model = Hashtag::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-hashtag';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-hashtag';
 
     protected static ?string $navigationLabel = 'Tags';
 
-    protected static ?string $navigationGroup = 'Content';
+    protected static string | \UnitEnum | null $navigationGroup = 'Content';
 
     protected static ?int $navigationSort = 2;
 
@@ -38,20 +49,20 @@ class TagResource extends Resource
             ->withCount('videos');
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('name')
+        return $schema
+            ->components([
+                TextInput::make('name')
                     ->required()
                     ->maxLength(100)
                     ->live(onBlur: true)
-                    ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('slug', Str::slug((string) $state))),
-                Forms\Components\TextInput::make('slug')
+                    ->afterStateUpdated(fn ($state, Set $set) => $set('slug', Str::slug((string) $state))),
+                TextInput::make('slug')
                     ->required()
                     ->maxLength(100)
                     ->unique(ignoreRecord: true),
-                Forms\Components\TextInput::make('usage_count')
+                TextInput::make('usage_count')
                     ->numeric()
                     ->disabled()
                     ->dehydrated(false),
@@ -62,40 +73,40 @@ class TagResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('slug')
+                TextColumn::make('slug')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('videos_count')
+                TextColumn::make('videos_count')
                     ->label('Videos')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('usage_count')
+                TextColumn::make('usage_count')
                     ->label('Usage')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('updated_at')
+                TextColumn::make('updated_at')
                     ->dateTime()
                     ->label('Updated')
                     ->sortable(),
             ])
             ->filters([
-                Tables\Filters\Filter::make('high_usage')
+                Filter::make('high_usage')
                     ->label('High Usage (10+)')
                     ->query(fn (Builder $query): Builder => $query->where('usage_count', '>=', 10)),
             ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make()
+            ->recordActions([
+                EditAction::make(),
+                DeleteAction::make()
                     ->before(function (Hashtag $record): void {
-                        app(\App\Services\TagSyncService::class)->deleteTag($record);
+                        app(TagSyncService::class)->deleteTag($record);
                     }),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make()
                         ->before(function ($records): void {
-                            $sync = app(\App\Services\TagSyncService::class);
+                            $sync = app(TagSyncService::class);
                             foreach ($records as $record) {
                                 $sync->deleteTag($record);
                             }
@@ -108,8 +119,8 @@ class TagResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListTags::route('/'),
-            'edit' => Pages\EditTag::route('/{record}/edit'),
+            'index' => ListTags::route('/'),
+            'edit' => EditTag::route('/{record}/edit'),
         ];
     }
 }

@@ -2,12 +2,25 @@
 
 namespace App\Filament\Resources;
 
+use App\Models\Setting;
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Textarea;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Actions\Action;
+use Filament\Actions\EditAction;
+use App\Filament\Resources\WithdrawalRequestResource\Pages\ListWithdrawalRequests;
+use App\Filament\Resources\WithdrawalRequestResource\Pages\EditWithdrawalRequest;
 use App\Filament\Resources\WithdrawalRequestResource\Pages;
 use App\Models\WalletTransaction;
 use App\Models\WithdrawalRequest;
 use App\Services\EmailService;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -18,15 +31,15 @@ class WithdrawalRequestResource extends Resource
 {
     protected static ?string $model = WithdrawalRequest::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-arrow-up-tray';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-arrow-up-tray';
 
-    protected static ?string $navigationGroup = 'Monetization';
+    protected static string | \UnitEnum | null $navigationGroup = 'Monetization';
 
     protected static ?int $navigationSort = 2;
 
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) \App\Models\Setting::get('monetization_enabled', true);
+        return (bool) Setting::get('monetization_enabled', true);
     }
 
     public static function getNavigationBadge(): ?string
@@ -41,31 +54,31 @@ class WithdrawalRequestResource extends Resource
         return 'warning';
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                Forms\Components\Section::make('Request Details')
+        return $schema
+            ->components([
+                Section::make('Request Details')
                     ->schema([
-                        Forms\Components\Select::make('user_id')
+                        Select::make('user_id')
                             ->relationship('user', 'username')
                             ->disabled(),
-                        Forms\Components\TextInput::make('amount')
+                        TextInput::make('amount')
                             ->prefix('$')
                             ->numeric()
                             ->disabled(),
-                        Forms\Components\TextInput::make('currency')
+                        TextInput::make('currency')
                             ->disabled(),
-                        Forms\Components\TextInput::make('payment_method')
+                        TextInput::make('payment_method')
                             ->disabled(),
-                        Forms\Components\KeyValue::make('payment_details')
+                        KeyValue::make('payment_details')
                             ->disabled()
                             ->columnSpanFull(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Processing')
+                Section::make('Processing')
                     ->schema([
-                        Forms\Components\Select::make('status')
+                        Select::make('status')
                             ->options([
                                 WithdrawalRequest::STATUS_PENDING => 'Pending',
                                 WithdrawalRequest::STATUS_PROCESSING => 'Processing',
@@ -73,14 +86,14 @@ class WithdrawalRequestResource extends Resource
                                 WithdrawalRequest::STATUS_REJECTED => 'Rejected',
                             ])
                             ->disabled(),
-                        Forms\Components\Select::make('processed_by')
+                        Select::make('processed_by')
                             ->relationship('processedBy', 'username')
                             ->disabled(),
-                        Forms\Components\DateTimePicker::make('processed_at')
+                        DateTimePicker::make('processed_at')
                             ->disabled(),
-                        Forms\Components\TextInput::make('transaction_id')
+                        TextInput::make('transaction_id')
                             ->disabled(),
-                        Forms\Components\Textarea::make('notes')
+                        Textarea::make('notes')
                             ->rows(4)
                             ->disabled()
                             ->columnSpanFull(),
@@ -93,17 +106,17 @@ class WithdrawalRequestResource extends Resource
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
-                Tables\Columns\TextColumn::make('id')
+                TextColumn::make('id')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('user.username')
+                TextColumn::make('user.username')
                     ->label('User')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('amount')
+                TextColumn::make('amount')
                     ->money('USD')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('payment_method')
+                TextColumn::make('payment_method')
                     ->badge(),
-                Tables\Columns\TextColumn::make('status')
+                TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         WithdrawalRequest::STATUS_PENDING => 'warning',
@@ -112,36 +125,36 @@ class WithdrawalRequestResource extends Resource
                         WithdrawalRequest::STATUS_REJECTED => 'danger',
                         default => 'gray',
                     }),
-                Tables\Columns\TextColumn::make('processedBy.username')
+                TextColumn::make('processedBy.username')
                     ->label('Processed By')
                     ->placeholder('-'),
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable(),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('status')
+                SelectFilter::make('status')
                     ->options([
                         WithdrawalRequest::STATUS_PENDING => 'Pending',
                         WithdrawalRequest::STATUS_PROCESSING => 'Processing',
                         WithdrawalRequest::STATUS_COMPLETED => 'Completed',
                         WithdrawalRequest::STATUS_REJECTED => 'Rejected',
                     ]),
-                Tables\Filters\SelectFilter::make('payment_method')
+                SelectFilter::make('payment_method')
                     ->options([
                         'paypal' => 'PayPal',
                         'bank' => 'Bank',
                         'crypto' => 'Crypto',
                     ]),
             ])
-            ->actions([
-                Tables\Actions\Action::make('approve')
+            ->recordActions([
+                Action::make('approve')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->visible(fn (WithdrawalRequest $record) => $record->status === WithdrawalRequest::STATUS_PENDING)
                     ->requiresConfirmation()
-                    ->form([
-                        Forms\Components\TextInput::make('transaction_id')
+                    ->schema([
+                        TextInput::make('transaction_id')
                             ->label('External Transaction ID')
                             ->maxLength(255),
                     ])
@@ -171,13 +184,13 @@ class WithdrawalRequestResource extends Resource
                         }
                     }),
 
-                Tables\Actions\Action::make('reject')
+                Action::make('reject')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->visible(fn (WithdrawalRequest $record) => $record->status === WithdrawalRequest::STATUS_PENDING)
                     ->requiresConfirmation()
-                    ->form([
-                        Forms\Components\Textarea::make('notes')
+                    ->schema([
+                        Textarea::make('notes')
                             ->label('Rejection reason')
                             ->rows(3)
                             ->required(),
@@ -208,17 +221,17 @@ class WithdrawalRequestResource extends Resource
                         }
                     }),
 
-                Tables\Actions\EditAction::make(),
+                EditAction::make(),
             ])
-            ->bulkActions([])
+            ->toolbarActions([])
             ->striped();
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListWithdrawalRequests::route('/'),
-            'edit' => Pages\EditWithdrawalRequest::route('/{record}/edit'),
+            'index' => ListWithdrawalRequests::route('/'),
+            'edit' => EditWithdrawalRequest::route('/{record}/edit'),
         ];
     }
 

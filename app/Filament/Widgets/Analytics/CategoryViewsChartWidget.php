@@ -11,7 +11,6 @@ class CategoryViewsChartWidget extends ApexChartWidget
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'categoryViewsChart';
-    protected static ?string $pollingInterval = null;
     protected static ?int $contentHeight = 260;
 
     protected function getHeading(): ?string

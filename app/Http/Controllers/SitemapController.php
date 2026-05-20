@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Throwable;
+use Carbon\Carbon;
 use App\Models\Category;
 use App\Models\Gallery;
 use App\Models\Image;
@@ -122,7 +124,7 @@ class SitemapController extends Controller
                     '0.5'
                 );
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // Pages table may not exist yet
         }
 
@@ -411,9 +413,9 @@ class SitemapController extends Controller
         try {
             $val = (clone $query)->max('updated_at');
             if ($val) {
-                return \Carbon\Carbon::parse($val)->toW3cString();
+                return Carbon::parse($val)->toW3cString();
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // Table may be missing — fall through
         }
         return now()->toW3cString();

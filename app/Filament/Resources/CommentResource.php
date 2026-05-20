@@ -2,10 +2,25 @@
 
 namespace App\Filament\Resources;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Actions\EditAction;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\BulkAction;
+use App\Filament\Resources\CommentResource\Pages\ListComments;
+use App\Filament\Resources\CommentResource\Pages\EditComment;
 use App\Filament\Resources\CommentResource\Pages;
 use App\Models\Comment;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -14,8 +29,8 @@ use Filament\Tables\Table;
 class CommentResource extends Resource
 {
     protected static ?string $model = Comment::class;
-    protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left-right';
-    protected static ?string $navigationGroup = 'Content';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-chat-bubble-left-right';
+    protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 4;
     protected static ?string $recordTitleAttribute = 'content';
 
@@ -29,32 +44,32 @@ class CommentResource extends Resource
         return 'warning';
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                Forms\Components\Section::make('Comment Details')
+        return $schema
+            ->components([
+                Section::make('Comment Details')
                     ->schema([
-                        Forms\Components\Select::make('user_id')
+                        Select::make('user_id')
                             ->relationship('user', 'username')
                             ->required()
                             ->searchable()
                             ->disabled(),
-                        Forms\Components\Select::make('video_id')
+                        Select::make('video_id')
                             ->relationship('video', 'title')
                             ->required()
                             ->searchable()
                             ->disabled(),
-                        Forms\Components\Textarea::make('content')
+                        Textarea::make('content')
                             ->required()
                             ->maxLength(5000)
                             ->columnSpanFull(),
                     ])->columns(2),
-                Forms\Components\Section::make('Status')
+                Section::make('Status')
                     ->schema([
-                        Forms\Components\Toggle::make('is_approved')
+                        Toggle::make('is_approved')
                             ->label('Approved'),
-                        Forms\Components\Toggle::make('is_pinned')
+                        Toggle::make('is_pinned')
                             ->label('Pinned'),
                     ])->columns(2),
             ]);
@@ -66,14 +81,14 @@ class CommentResource extends Resource
             ->modifyQueryUsing(fn ($query) => $query->with(['user', 'video' => fn ($q) => $q->withTrashed()]))
             ->defaultSort('created_at', 'desc')
             ->columns([
-                Tables\Columns\TextColumn::make('user.username')
+                TextColumn::make('user.username')
                     ->label('User')
                     ->searchable()
                     ->icon('heroicon-m-user')
                     ->iconColor('gray')
                     ->weight('semibold')
                     ->grow(false),
-                Tables\Columns\TextColumn::make('video.title')
+                TextColumn::make('video.title')
                     ->label('Video')
                     ->limit(30)
                     ->placeholder('(deleted)')
@@ -82,19 +97,19 @@ class CommentResource extends Resource
                     ->searchable()
                     ->color('gray')
                     ->size('sm'),
-                Tables\Columns\TextColumn::make('content')
+                TextColumn::make('content')
                     ->label('Comment')
                     ->wrap()
                     ->limit(120)
                     ->searchable(),
-                Tables\Columns\TextColumn::make('moderation_status')
+                TextColumn::make('moderation_status')
                     ->label('Status')
                     ->badge()
                     ->alignCenter()
                     ->getStateUsing(fn (Comment $record): string => $record->is_approved ? 'Approved' : 'Pending')
                     ->color(fn (string $state): string => $state === 'Approved' ? 'success' : 'warning')
                     ->icon(fn (string $state): string => $state === 'Approved' ? 'heroicon-m-check-circle' : 'heroicon-m-clock'),
-                Tables\Columns\IconColumn::make('is_pinned')
+                IconColumn::make('is_pinned')
                     ->label('Pinned')
                     ->alignCenter()
                     ->boolean()
@@ -103,13 +118,13 @@ class CommentResource extends Resource
                     ->trueColor('warning')
                     ->falseColor('gray')
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('likes_count')
+                TextColumn::make('likes_count')
                     ->label('Likes')
                     ->numeric()
                     ->sortable()
                     ->alignRight()
                     ->toggleable(isToggledHiddenByDefault: false),
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->label('Posted')
                     ->since()
                     ->sortable()
@@ -118,22 +133,22 @@ class CommentResource extends Resource
                     ->tooltip(fn (Comment $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_approved'),
-                Tables\Filters\TernaryFilter::make('is_pinned'),
+                TernaryFilter::make('is_approved'),
+                TernaryFilter::make('is_pinned'),
             ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('approve')
+            ->recordActions([
+                EditAction::make(),
+                Action::make('approve')
                     ->icon('heroicon-o-check')
                     ->color('success')
                     ->action(fn (Comment $record) => $record->update(['is_approved' => true]))
                     ->visible(fn (Comment $record) => !$record->is_approved),
-                Tables\Actions\DeleteAction::make(),
+                DeleteAction::make(),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\BulkAction::make('approve')
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                    BulkAction::make('approve')
                         ->icon('heroicon-o-check')
                         ->action(fn ($records) => $records->each->update(['is_approved' => true])),
                 ]),
@@ -144,8 +159,8 @@ class CommentResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListComments::route('/'),
-            'edit' => Pages\EditComment::route('/{record}/edit'),
+            'index' => ListComments::route('/'),
+            'edit' => EditComment::route('/{record}/edit'),
         ];
     }
 }

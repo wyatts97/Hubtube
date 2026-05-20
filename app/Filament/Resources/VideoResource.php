@@ -2,6 +2,44 @@
 
 namespace App\Filament\Resources;
 
+use Illuminate\Database\Eloquent\Model;
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Infolists\Components\ViewEntry;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Forms\Components\FileUpload;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\View;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Filters\Filter;
+use Filament\Forms\Components\DatePicker;
+use Carbon\Carbon;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\ViewAction;
+use Filament\Actions\EditAction;
+use App\Jobs\ProcessVideoJob;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\BulkAction;
+use Filament\Actions\DeleteBulkAction;
+use App\Filament\Resources\VideoResource\Widgets\VideoStatsOverview;
+use App\Filament\Resources\VideoResource\Pages\ListVideos;
+use App\Filament\Resources\VideoResource\Pages\CreateVideo;
+use App\Filament\Resources\VideoResource\Pages\ViewVideo;
+use App\Filament\Resources\VideoResource\Pages\EditVideo;
 use App\Filament\Resources\VideoResource\Pages;
 use App\Models\Category;
 use App\Models\Setting;
@@ -12,9 +50,7 @@ use App\Models\Notification as AppNotification;
 use App\Services\EmailService;
 use App\Services\VideoService;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Infolists;
-use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -25,8 +61,8 @@ use Illuminate\Database\Eloquent\Collection;
 class VideoResource extends Resource
 {
     protected static ?string $model = Video::class;
-    protected static ?string $navigationIcon = 'heroicon-o-video-camera';
-    protected static ?string $navigationGroup = 'Content';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-video-camera';
+    protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 1;
     protected static ?string $recordTitleAttribute = 'title';
 
@@ -35,7 +71,7 @@ class VideoResource extends Resource
         return ['title', 'slug', 'user.username'];
     }
 
-    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    public static function getGlobalSearchResultDetails(Model $record): array
     {
         return [
             'Uploader' => $record->user?->username ?? '—',
@@ -62,25 +98,25 @@ class VideoResource extends Resource
         return 'warning';
     }
 
-    public static function infolist(Infolist $infolist): Infolist
+    public static function infolist(Schema $schema): Schema
     {
-        return $infolist
-            ->schema([
-                Infolists\Components\Section::make('Video Preview')
+        return $schema
+            ->components([
+                Section::make('Video Preview')
                     ->schema([
-                        Infolists\Components\ViewEntry::make('video_player')
+                        ViewEntry::make('video_player')
                             ->view('filament.resources.video-resource.components.video-player-infolist')
                             ->columnSpanFull(),
                     ])
                     ->visible(fn (Video $record) => $record->video_path || $record->video_url)
                     ->collapsible(),
 
-                Infolists\Components\Section::make('Details')
+                Section::make('Details')
                     ->schema([
-                        Infolists\Components\TextEntry::make('title'),
-                        Infolists\Components\TextEntry::make('user.username')
+                        TextEntry::make('title'),
+                        TextEntry::make('user.username')
                             ->label('Uploader'),
-                        Infolists\Components\TextEntry::make('status')
+                        TextEntry::make('status')
                             ->badge()
                             ->color(fn (string $state): string => match ($state) {
                                 'processed' => 'success',
@@ -89,30 +125,30 @@ class VideoResource extends Resource
                                 'failed' => 'danger',
                                 default => 'gray',
                             }),
-                        Infolists\Components\TextEntry::make('category.name')
+                        TextEntry::make('category.name')
                             ->label('Category')
                             ->default('—'),
-                        Infolists\Components\TextEntry::make('views_count')
+                        TextEntry::make('views_count')
                             ->label('Views')
                             ->numeric(),
-                        Infolists\Components\TextEntry::make('formatted_duration')
+                        TextEntry::make('formatted_duration')
                             ->label('Duration')
                             ->default('—'),
-                        Infolists\Components\TextEntry::make('description')
+                        TextEntry::make('description')
                             ->columnSpanFull()
                             ->default('No description'),
                     ])->columns(3),
             ]);
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 // Create-only: upload new video file
-                Forms\Components\Section::make('Video File')
+                Section::make('Video File')
                     ->schema([
-                        Forms\Components\FileUpload::make('video_file')
+                        FileUpload::make('video_file')
                             ->label('Video File')
                             ->disk('public')
                             ->directory('videos/admin-uploads')
@@ -125,31 +161,31 @@ class VideoResource extends Resource
                     ->visibleOn('create'),
 
                 // Tabbed layout for compact edit view
-                Forms\Components\Tabs::make('VideoEdit')
+                Tabs::make('VideoEdit')
                     ->columnSpanFull()
                     ->persistTabInQueryString('tab')
                     ->tabs([
-                        Forms\Components\Tabs\Tab::make('Details')
+                        Tab::make('Details')
                             ->icon('heroicon-m-document-text')
                             ->schema([
-                                Forms\Components\TextInput::make('title')
+                                TextInput::make('title')
                                     ->required()
                                     ->maxLength(200)
                                     ->columnSpanFull(),
-                                Forms\Components\Textarea::make('description')
+                                Textarea::make('description')
                                     ->rows(4)
                                     ->columnSpanFull(),
-                                Forms\Components\Select::make('user_id')
+                                Select::make('user_id')
                                     ->label('Uploader')
                                     ->relationship('user', 'username')
                                     ->required()
                                     ->searchable()
                                     ->preload(),
-                                Forms\Components\Select::make('category_id')
+                                Select::make('category_id')
                                     ->relationship('category', 'name')
                                     ->searchable()
                                     ->preload(),
-                                Forms\Components\Select::make('status')
+                                Select::make('status')
                                     ->options([
                                         'pending_download' => 'Pending Download',
                                         'downloading' => 'Downloading',
@@ -162,76 +198,76 @@ class VideoResource extends Resource
                                     ->default('pending')
                                     ->required()
                                     ->hiddenOn('create'),
-                                Forms\Components\DateTimePicker::make('scheduled_at')
+                                DateTimePicker::make('scheduled_at')
                                     ->label('Schedule Publish')
                                     ->helperText('Leave empty to publish when approved. Set a future date/time to auto-publish.')
                                     ->native(false)
                                     ->minDate(now())
                                     ->hiddenOn('create'),
-                                Forms\Components\TagsInput::make('tags')
+                                TagsInput::make('tags')
                                     ->separator(',')
                                     ->columnSpanFull(),
                             ])->columns(2),
 
-                        Forms\Components\Tabs\Tab::make('Moderation')
+                        Tab::make('Moderation')
                             ->icon('heroicon-m-shield-check')
                             ->schema([
-                                Forms\Components\Toggle::make('is_approved')
+                                Toggle::make('is_approved')
                                     ->label('Approved')
                                     ->helperText('Video is visible to the public'),
-                                Forms\Components\Toggle::make('is_featured')
+                                Toggle::make('is_featured')
                                     ->label('Featured')
                                     ->helperText('Show in featured sections'),
-                                Forms\Components\Toggle::make('age_restricted')
+                                Toggle::make('age_restricted')
                                     ->label('Age Restricted')
                                     ->default(true),
-                                Forms\Components\Toggle::make('monetization_enabled')
+                                Toggle::make('monetization_enabled')
                                     ->label('Monetization')
                                     ->visible(fn () => (bool) Setting::get('monetization_enabled', true)),
                             ])->columns(2),
 
-                        Forms\Components\Tabs\Tab::make('Pricing')
+                        Tab::make('Pricing')
                             ->icon('heroicon-m-currency-dollar')
                             ->visible(fn () => (bool) Setting::get('monetization_enabled', true))
                             ->schema([
-                                Forms\Components\TextInput::make('price')
+                                TextInput::make('price')
                                     ->label('Purchase Price')
                                     ->numeric()
                                     ->prefix('$')
                                     ->default(0),
-                                Forms\Components\TextInput::make('rent_price')
+                                TextInput::make('rent_price')
                                     ->label('Rental Price')
                                     ->numeric()
                                     ->prefix('$')
                                     ->default(0),
                             ])->columns(2),
 
-                        Forms\Components\Tabs\Tab::make('Technical')
+                        Tab::make('Technical')
                             ->icon('heroicon-m-cog-6-tooth')
                             ->hiddenOn('create')
                             ->schema([
-                                Forms\Components\TextInput::make('video_path')
+                                TextInput::make('video_path')
                                     ->disabled()
                                     ->columnSpanFull(),
-                                Forms\Components\TextInput::make('storage_disk')
+                                TextInput::make('storage_disk')
                                     ->disabled(),
-                                Forms\Components\TextInput::make('duration')
+                                TextInput::make('duration')
                                     ->disabled()
                                     ->suffix('seconds'),
-                                Forms\Components\TextInput::make('size')
+                                TextInput::make('size')
                                     ->disabled()
                                     ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—'),
-                                Forms\Components\TextInput::make('failure_reason')
+                                TextInput::make('failure_reason')
                                     ->disabled()
                                     ->visible(fn ($record) => $record?->status === 'failed')
                                     ->columnSpanFull(),
                             ])->columns(2),
 
-                        Forms\Components\Tabs\Tab::make('Activity')
+                        Tab::make('Activity')
                             ->icon('heroicon-m-clipboard-document-list')
                             ->hiddenOn('create')
                             ->schema([
-                                Forms\Components\View::make('filament.resources.video-resource.components.activity-log')
+                                View::make('filament.resources.video-resource.components.activity-log')
                                     ->columnSpanFull(),
                             ]),
                     ]),
@@ -249,7 +285,7 @@ class VideoResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->poll('15s')
             ->columns([
-                Tables\Columns\ImageColumn::make('thumbnail_display')
+                ImageColumn::make('thumbnail_display')
                     ->label('Thumbnail')
                     ->getStateUsing(fn (Video $record): ?string => $record->thumbnail_url)
                     ->height(50)
@@ -260,28 +296,28 @@ class VideoResource extends Resource
                     ->extraAttributes(['class' => 'ht-thumb-col'])
                     ->defaultImageUrl(url('/icons/icon-192x192.png')),
 
-                Tables\Columns\TextColumn::make('title')
+                TextColumn::make('title')
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
                     ->limit(50)
                     ->description(fn (Video $record): string => $record->formatted_duration ?: '—'),
 
-                Tables\Columns\TextColumn::make('user.username')
+                TextColumn::make('user.username')
                     ->label('Uploader')
                     ->searchable()
                     ->sortable()
                     ->icon('heroicon-m-user')
                     ->size('sm'),
 
-                Tables\Columns\TextColumn::make('category.name')
+                TextColumn::make('category.name')
                     ->label('Category')
                     ->sortable()
                     ->size('sm')
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('status')
+                TextColumn::make('status')
                     ->badge()
                     ->formatStateUsing(fn (string $state, Video $record): string => match (true) {
                         $state === 'processed' && $record->is_approved && $record->published_at => 'Published',
@@ -307,7 +343,7 @@ class VideoResource extends Resource
 
                 // Hidden by default — Status badge above already communicates approved/needs-moderation.
                 // Still available via the column toggle for admins who want a standalone flag.
-                Tables\Columns\IconColumn::make('is_approved')
+                IconColumn::make('is_approved')
                     ->boolean()
                     ->label('Approved')
                     ->alignCenter()
@@ -317,7 +353,7 @@ class VideoResource extends Resource
                     ->falseColor('warning')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\IconColumn::make('is_featured')
+                IconColumn::make('is_featured')
                     ->boolean()
                     ->label('Featured')
                     ->alignCenter()
@@ -327,7 +363,7 @@ class VideoResource extends Resource
                     ->falseColor('gray')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('views_count')
+                TextColumn::make('views_count')
                     ->label('Views')
                     ->numeric()
                     ->sortable()
@@ -335,7 +371,7 @@ class VideoResource extends Resource
                     ->icon('heroicon-m-eye')
                     ->iconColor('gray'),
 
-                Tables\Columns\TextColumn::make('likes_count')
+                TextColumn::make('likes_count')
                     ->label('Likes')
                     ->numeric()
                     ->sortable()
@@ -343,13 +379,13 @@ class VideoResource extends Resource
                     ->iconColor('gray')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('size')
+                TextColumn::make('size')
                     ->label('Size')
                     ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->label('Uploaded')
                     ->since()
                     ->sortable()
@@ -358,7 +394,7 @@ class VideoResource extends Resource
                     ->tooltip(fn (Video $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('status')
+                SelectFilter::make('status')
                     ->options([
                         'pending_download' => 'Pending Download',
                         'downloading' => 'Downloading',
@@ -369,34 +405,34 @@ class VideoResource extends Resource
                         'failed' => 'Failed',
                     ]),
 
-                Tables\Filters\TernaryFilter::make('is_approved')
+                TernaryFilter::make('is_approved')
                     ->label('Approved'),
 
-                Tables\Filters\TernaryFilter::make('is_featured')
+                TernaryFilter::make('is_featured')
                     ->label('Featured'),
 
-                Tables\Filters\SelectFilter::make('category_id')
+                SelectFilter::make('category_id')
                     ->label('Category')
                     ->relationship('category', 'name')
                     ->searchable()
                     ->preload(),
 
-                Tables\Filters\SelectFilter::make('user_id')
+                SelectFilter::make('user_id')
                     ->label('Uploader')
                     ->relationship('user', 'username')
                     ->searchable()
                     ->preload(),
 
-                Tables\Filters\Filter::make('needs_moderation')
+                Filter::make('needs_moderation')
                     ->label('Needs Moderation')
                     ->query(fn (Builder $query): Builder => $query->where('is_approved', false)->where('status', 'processed'))
                     ->toggle(),
 
-                Tables\Filters\Filter::make('created_at')
-                    ->form([
-                        Forms\Components\DatePicker::make('from')
+                Filter::make('created_at')
+                    ->schema([
+                        DatePicker::make('from')
                             ->label('From'),
-                        Forms\Components\DatePicker::make('until')
+                        DatePicker::make('until')
                             ->label('Until'),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
@@ -407,17 +443,17 @@ class VideoResource extends Resource
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
                         if ($data['from'] ?? null) {
-                            $indicators['from'] = 'From ' . \Carbon\Carbon::parse($data['from'])->toFormattedDateString();
+                            $indicators['from'] = 'From ' . Carbon::parse($data['from'])->toFormattedDateString();
                         }
                         if ($data['until'] ?? null) {
-                            $indicators['until'] = 'Until ' . \Carbon\Carbon::parse($data['until'])->toFormattedDateString();
+                            $indicators['until'] = 'Until ' . Carbon::parse($data['until'])->toFormattedDateString();
                         }
                         return $indicators;
                     }),
-            ], layout: Tables\Enums\FiltersLayout::AboveContentCollapsible)
-            ->actions([
+            ], layout: FiltersLayout::AboveContentCollapsible)
+            ->recordActions([
                 // Always-visible approve button for videos needing moderation
-                Tables\Actions\Action::make('quickApprove')
+                Action::make('quickApprove')
                     ->label('Approve')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
@@ -446,11 +482,11 @@ class VideoResource extends Resource
                     })
                     ->visible(fn (Video $record) => !$record->is_approved && $record->status === 'processed'),
 
-                Tables\Actions\ActionGroup::make([
-                    Tables\Actions\ViewAction::make(),
-                    Tables\Actions\EditAction::make(),
+                ActionGroup::make([
+                    ViewAction::make(),
+                    EditAction::make(),
 
-                    Tables\Actions\Action::make('approve')
+                    Action::make('approve')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
@@ -479,7 +515,7 @@ class VideoResource extends Resource
                         })
                         ->visible(fn (Video $record) => !$record->is_approved && $record->status === 'processed'),
 
-                    Tables\Actions\Action::make('unpublish')
+                    Action::make('unpublish')
                         ->label('Unpublish')
                         ->icon('heroicon-o-eye-slash')
                         ->color('warning')
@@ -493,14 +529,14 @@ class VideoResource extends Resource
                         })
                         ->visible(fn (Video $record) => $record->is_approved && $record->status === 'processed'),
 
-                    Tables\Actions\Action::make('reject')
+                    Action::make('reject')
                         ->label('Reject')
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
                         ->modalHeading('Reject Video')
                         ->modalDescription('Select a reason for rejecting this video. The uploader will be notified by email.')
-                        ->form([
-                            Forms\Components\Select::make('rejection_reason')
+                        ->schema([
+                            Select::make('rejection_reason')
                                 ->label('Reason for Rejection')
                                 ->required()
                                 ->options([
@@ -513,7 +549,7 @@ class VideoResource extends Resource
                                     'Duplicate Content' => 'Duplicate Content',
                                     'Other' => 'Other (specify below)',
                                 ]),
-                            Forms\Components\Textarea::make('custom_reason')
+                            Textarea::make('custom_reason')
                                 ->label('Additional Details (optional)')
                                 ->rows(3)
                                 ->placeholder('Provide any additional context for the uploader...'),
@@ -542,13 +578,13 @@ class VideoResource extends Resource
                         })
                         ->visible(fn (Video $record) => !$record->is_approved && $record->status === 'processed'),
 
-                    Tables\Actions\Action::make('feature')
+                    Action::make('feature')
                         ->icon('heroicon-o-star')
                         ->color('warning')
                         ->action(fn (Video $record) => $record->update(['is_featured' => !$record->is_featured]))
                         ->label(fn (Video $record) => $record->is_featured ? 'Unfeature' : 'Feature'),
 
-                    Tables\Actions\Action::make('addToSchedule')
+                    Action::make('addToSchedule')
                         ->label('Add to Schedule')
                         ->icon('heroicon-o-calendar')
                         ->color('info')
@@ -566,7 +602,7 @@ class VideoResource extends Resource
                         })
                         ->visible(fn (Video $record) => $record->status === 'processed' && is_null($record->queue_order)),
 
-                    Tables\Actions\Action::make('removeFromSchedule')
+                    Action::make('removeFromSchedule')
                         ->label('Remove from Schedule')
                         ->icon('heroicon-o-calendar-days')
                         ->color('danger')
@@ -581,30 +617,30 @@ class VideoResource extends Resource
                         })
                         ->visible(fn (Video $record) => !is_null($record->queue_order)),
 
-                    Tables\Actions\Action::make('reprocess')
+                    Action::make('reprocess')
                         ->icon('heroicon-o-arrow-path')
                         ->color('info')
                         ->requiresConfirmation()
                         ->modalDescription('This will re-dispatch the video processing job. Existing transcoded files will be skipped.')
                         ->action(function (Video $record) {
                             $record->update(['status' => 'pending']);
-                            \App\Jobs\ProcessVideoJob::dispatch($record)->onQueue('video-processing');
+                            ProcessVideoJob::dispatch($record)->onQueue('video-processing');
                         })
                         ->visible(fn (Video $record) => in_array($record->status, ['failed', 'processing'])),
 
-                    Tables\Actions\Action::make('view_frontend')
+                    Action::make('view_frontend')
                         ->icon('heroicon-o-eye')
                         ->color('gray')
                         ->url(fn (Video $record): string => url('/' . $record->slug))
                         ->openUrlInNewTab()
                         ->visible(fn (Video $record) => $record->status === 'processed' && $record->is_approved),
 
-                    Tables\Actions\DeleteAction::make(),
+                    DeleteAction::make(),
                 ]),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('approve')
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    BulkAction::make('approve')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
@@ -627,26 +663,26 @@ class VideoResource extends Resource
                         })
                         ->deselectRecordsAfterCompletion(),
 
-                    Tables\Actions\BulkAction::make('unapprove')
+                    BulkAction::make('unapprove')
                         ->icon('heroicon-o-x-circle')
                         ->color('warning')
                         ->requiresConfirmation()
                         ->action(fn (Collection $records) => $records->each(fn (Video $v) => $v->update(['is_approved' => false])))
                         ->deselectRecordsAfterCompletion(),
 
-                    Tables\Actions\BulkAction::make('feature')
+                    BulkAction::make('feature')
                         ->icon('heroicon-o-star')
                         ->color('warning')
                         ->action(fn (Collection $records) => $records->each(fn (Video $v) => $v->update(['is_featured' => true])))
                         ->deselectRecordsAfterCompletion(),
 
-                    Tables\Actions\BulkAction::make('unfeature')
+                    BulkAction::make('unfeature')
                         ->icon('heroicon-o-star')
                         ->color('gray')
                         ->action(fn (Collection $records) => $records->each(fn (Video $v) => $v->update(['is_featured' => false])))
                         ->deselectRecordsAfterCompletion(),
 
-                    Tables\Actions\BulkAction::make('addToSchedule')
+                    BulkAction::make('addToSchedule')
                         ->label('Add to Schedule')
                         ->icon('heroicon-o-calendar')
                         ->color('info')
@@ -668,7 +704,7 @@ class VideoResource extends Resource
                         })
                         ->deselectRecordsAfterCompletion(),
 
-                    Tables\Actions\DeleteBulkAction::make(),
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->striped()
@@ -678,7 +714,7 @@ class VideoResource extends Resource
             ->emptyStateHeading('No videos yet')
             ->emptyStateDescription('Upload your first video to get started.')
             ->emptyStateActions([
-                Tables\Actions\Action::make('create')
+                Action::make('create')
                     ->label('Upload Video')
                     ->icon('heroicon-m-arrow-up-tray')
                     ->url(route('filament.admin.resources.videos.create'))
@@ -689,7 +725,7 @@ class VideoResource extends Resource
     public static function getWidgets(): array
     {
         return [
-            VideoResource\Widgets\VideoStatsOverview::class,
+            VideoStatsOverview::class,
         ];
     }
 
@@ -701,10 +737,10 @@ class VideoResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListVideos::route('/'),
-            'create' => Pages\CreateVideo::route('/create'),
-            'view' => Pages\ViewVideo::route('/{record}'),
-            'edit' => Pages\EditVideo::route('/{record}/edit'),
+            'index' => ListVideos::route('/'),
+            'create' => CreateVideo::route('/create'),
+            'view' => ViewVideo::route('/{record}'),
+            'edit' => EditVideo::route('/{record}/edit'),
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use RuntimeException;
 use App\Models\User;
 use App\Services\AdminLogger;
 use App\Services\WordPressPasswordHasher;
@@ -48,7 +49,7 @@ class LoginRequest extends FormRequest
 
                 return;
             }
-        } catch (\RuntimeException) {
+        } catch (RuntimeException) {
             // Non-bcrypt hash detected — fall through to WordPress auth
         }
 

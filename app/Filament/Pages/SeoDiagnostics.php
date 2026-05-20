@@ -2,6 +2,12 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Actions;
+use Filament\Actions\Action;
 use App\Models\Category;
 use App\Models\Setting;
 use App\Models\Translation;
@@ -9,16 +15,11 @@ use App\Models\Video;
 use App\Services\AdminLogger;
 use App\Services\TranslationService;
 use App\Services\VideoDescriptionTemplate;
-use Filament\Forms\Components\Actions;
-use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\HtmlString;
@@ -27,11 +28,11 @@ class SeoDiagnostics extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-clipboard-document-check';
     protected static ?string $navigationLabel = 'SEO Diagnostics';
-    protected static ?string $navigationGroup = 'Appearance';
+    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 5;
-    protected static string $view = 'filament.pages.site-settings';
+    protected string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
 
@@ -48,13 +49,13 @@ class SeoDiagnostics extends Page implements HasForms
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Tabs::make('SEO Diagnostics')
                     ->tabs([
-                        Tabs\Tab::make('Overview')
+                        Tab::make('Overview')
                             ->icon('heroicon-o-chart-bar')
                             ->schema([
                                 Section::make('Content health')
@@ -82,7 +83,7 @@ class SeoDiagnostics extends Page implements HasForms
                                     ]),
                             ]),
 
-                        Tabs\Tab::make('Default Descriptions')
+                        Tab::make('Default Descriptions')
                             ->icon('heroicon-o-document-text')
                             ->schema([
                                 Placeholder::make('description_help')

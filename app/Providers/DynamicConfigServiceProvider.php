@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Throwable;
 use App\Models\Setting;
 use Illuminate\Support\ServiceProvider;
 
@@ -18,7 +19,7 @@ class DynamicConfigServiceProvider extends ServiceProvider
         // Only apply if the settings table exists (skip during migrations)
         try {
             $this->applyMailConfig();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Table doesn't exist yet (fresh install, pre-migration) — skip silently
         }
     }

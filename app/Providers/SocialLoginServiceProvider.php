@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Throwable;
 use App\Models\Setting;
 use Illuminate\Support\ServiceProvider;
 
@@ -16,7 +17,7 @@ class SocialLoginServiceProvider extends ServiceProvider
     {
         try {
             $this->configureSocialProviders();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Database may not be available during boot (e.g. fresh install)
         }
     }

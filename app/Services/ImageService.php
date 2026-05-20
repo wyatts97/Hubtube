@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Throwable;
+use kornrunner\Blurhash\Blurhash;
 use App\Models\Image;
 use App\Models\Setting;
 use Illuminate\Http\UploadedFile;
@@ -120,7 +122,7 @@ class ImageService
             }
 
             return $thumbPath;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('ImageService: thumbnail generation failed', ['error' => $e->getMessage()]);
             return null;
         }
@@ -151,7 +153,7 @@ class ImageService
                 } else {
                     StorageManager::put($variantPath, (string) $encoded, $disk);
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 Log::warning("ImageService: {$name} variant generation failed", ['error' => $e->getMessage()]);
             }
         }
@@ -170,7 +172,7 @@ class ImageService
             } else {
                 StorageManager::put($webpPath, (string) $encoded, $disk);
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('ImageService: WebP generation failed', ['error' => $e->getMessage()]);
         }
     }
@@ -194,8 +196,8 @@ class ImageService
                 $pixels[] = $row;
             }
 
-            return \kornrunner\Blurhash\Blurhash::encode($pixels, 4, 3);
-        } catch (\Throwable $e) {
+            return Blurhash::encode($pixels, 4, 3);
+        } catch (Throwable $e) {
             Log::warning('ImageService: blurhash generation failed', ['error' => $e->getMessage()]);
             return null;
         }
@@ -211,7 +213,7 @@ class ImageService
                 file_put_contents($fullPath, (string) $encoded);
             }
             // For cloud disks, EXIF is already stripped during variant generation
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('ImageService: EXIF stripping failed', ['error' => $e->getMessage()]);
         }
     }
@@ -244,7 +246,7 @@ class ImageService
 
             @unlink($tempPath);
             return $thumbPath;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('ImageService: animated thumbnail generation failed', ['error' => $e->getMessage()]);
             return null;
         }

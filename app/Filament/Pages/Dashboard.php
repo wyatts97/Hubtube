@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use Awcodes\Overlook\Widgets\OverlookWidget;
 use App\Filament\Widgets\RecentSignupsTable;
 use App\Filament\Widgets\RecentUploadsTable;
 use App\Filament\Widgets\StatsOverview;
@@ -12,8 +13,8 @@ use Filament\Pages\Dashboard as BaseDashboard;
 
 class Dashboard extends BaseDashboard
 {
-    protected static string $view = 'filament.pages.dashboard';
-    protected static ?string $navigationGroup = 'Overview';
+    protected string $view = 'filament.pages.dashboard';
+    protected static string | \UnitEnum | null $navigationGroup = 'Overview';
 
     public function getGreeting(): string
     {
@@ -54,8 +55,8 @@ class Dashboard extends BaseDashboard
             ['key' => 'stats',           'label' => 'Stats Overview',    'class' => StatsOverview::class,      'span' => 'full'],
         ];
 
-        if (class_exists(\Awcodes\Overlook\Widgets\OverlookWidget::class)) {
-            $defs[] = ['key' => 'overlook', 'label' => 'Resource Overview', 'class' => \Awcodes\Overlook\Widgets\OverlookWidget::class, 'span' => 'full'];
+        if (class_exists(OverlookWidget::class)) {
+            $defs[] = ['key' => 'overlook', 'label' => 'Resource Overview', 'class' => OverlookWidget::class, 'span' => 'full'];
         }
 
         return array_merge($defs, [
@@ -163,7 +164,7 @@ class Dashboard extends BaseDashboard
         return $result;
     }
 
-    public function getColumns(): int|string|array
+    public function getColumns(): int|array
     {
         return 2;
     }

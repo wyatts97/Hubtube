@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use Exception;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Models\SocialAccount;
@@ -42,7 +43,7 @@ class SocialLoginController extends Controller
 
         try {
             $socialUser = Socialite::driver($this->resolveDriverName($provider))->user();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning("Social login callback failed for {$provider}", ['error' => $e->getMessage()]);
             return redirect()->route('login')->with('error', 'Authentication failed. Please try again.');
         }

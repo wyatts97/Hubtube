@@ -2,20 +2,21 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Actions;
+use Filament\Actions\Action;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use App\Services\StorageManager;
-use Filament\Forms\Components\Actions;
-use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
@@ -24,11 +25,11 @@ class StorageSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-cloud';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-cloud';
     protected static ?string $navigationLabel = 'Storage & CDN';
-    protected static ?string $navigationGroup = 'System';
+    protected static string | \UnitEnum | null $navigationGroup = 'System';
     protected static ?int $navigationSort = 2;
-    protected static string $view = 'filament.pages.site-settings';
+    protected string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
     public ?string $connectionStatus = null;
@@ -76,13 +77,13 @@ class StorageSettings extends Page implements HasForms
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Tabs::make('Storage Settings')
                     ->tabs([
-                        Tabs\Tab::make('General')
+                        Tab::make('General')
                             ->schema([
                                 Section::make('Cloud Offloading')
                                     ->description('When enabled, videos are processed locally with FFmpeg then automatically uploaded to your configured cloud storage. The video\'s storage_disk is updated after a successful upload.')
@@ -141,7 +142,7 @@ class StorageSettings extends Page implements HasForms
                                             ->placeholder('https://cdn.yourdomain.com'),
                                     ])->columns(2),
                             ]),
-                        Tabs\Tab::make('Wasabi')
+                        Tab::make('Wasabi')
                             ->schema([
                                 Section::make('Wasabi Cloud Storage')
                                     ->description('S3-compatible object storage with no egress fees. Endpoint auto-resolves from region.')
@@ -199,7 +200,7 @@ class StorageSettings extends Page implements HasForms
                                         ])->columnSpanFull(),
                                     ])->columns(2),
                             ]),
-                        Tabs\Tab::make('Backblaze B2')
+                        Tab::make('Backblaze B2')
                             ->schema([
                                 Section::make('Backblaze B2 Storage')
                                     ->schema([
@@ -222,7 +223,7 @@ class StorageSettings extends Page implements HasForms
                                             ->placeholder('https://s3.us-west-001.backblazeb2.com'),
                                     ])->columns(2),
                             ]),
-                        Tabs\Tab::make('Amazon S3')
+                        Tab::make('Amazon S3')
                             ->schema([
                                 Section::make('Amazon S3 Storage')
                                     ->schema([
@@ -243,7 +244,7 @@ class StorageSettings extends Page implements HasForms
                                             ->label('Bucket Name'),
                                     ])->columns(2),
                             ]),
-                        Tabs\Tab::make('BunnyCDN')
+                        Tab::make('BunnyCDN')
                             ->schema([
                                 Section::make('BunnyCDN')
                                     ->schema([
@@ -257,7 +258,7 @@ class StorageSettings extends Page implements HasForms
                                             ->revealable(),
                                     ])->columns(2),
                             ]),
-                        Tabs\Tab::make('FFmpeg')
+                        Tab::make('FFmpeg')
                             ->schema([
                                 Section::make('Video Processing')
                                     ->schema([

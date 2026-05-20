@@ -2,6 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use PDO;
+use Exception;
+use DateTimeZone;
+use App\Models\User;
+use App\Models\Channel;
+use Redis;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -59,11 +65,11 @@ class InstallController extends Controller
         // Test the connection — PDO always uses 'mysql' driver for both MySQL and MariaDB
         try {
             $dsn = "mysql:host={$validated['db_host']};port={$validated['db_port']}";
-            $pdo = new \PDO($dsn, $validated['db_username'], $password, [
-                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
-                \PDO::ATTR_TIMEOUT => 5,
+            $pdo = new PDO($dsn, $validated['db_username'], $password, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_TIMEOUT => 5,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return back()
                 ->withInput($request->except('db_password'))
                 ->with('db_password_value', $password)
@@ -75,7 +81,7 @@ class InstallController extends Controller
             $dbName = $validated['db_database'];
             $pdo->exec("CREATE DATABASE IF NOT EXISTS `{$dbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
             $pdo->exec("USE `{$dbName}`");
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return back()
                 ->withInput($request->except('db_password'))
                 ->with('db_password_value', $password)
@@ -98,7 +104,7 @@ class InstallController extends Controller
         // Clear config cache so Laravel picks up the new DB settings
         try {
             Artisan::call('config:clear');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Ignore — config cache may not exist
         }
 
@@ -123,7 +129,7 @@ class InstallController extends Controller
             'mail_encryption' => env('MAIL_ENCRYPTION', 'tls'),
         ];
 
-        $timezones = \DateTimeZone::listIdentifiers();
+        $timezones = DateTimeZone::listIdentifiers();
 
         return view('install.application', compact('current', 'timezones'));
     }
@@ -239,13 +245,13 @@ class InstallController extends Controller
         try {
             Artisan::call('migrate', ['--force' => true]);
             $steps[] = ['label' => 'Database migrations', 'status' => 'success'];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // If table already exists, try migrate:fresh (only safe during installation)
             if (str_contains($e->getMessage(), 'already exists')) {
                 try {
                     Artisan::call('migrate:fresh', ['--force' => true]);
                     $steps[] = ['label' => 'Database migrations', 'status' => 'success', 'message' => 'Ran fresh migration (previous tables were cleared)'];
-                } catch (\Exception $e2) {
+                } catch (Exception $e2) {
                     $steps[] = ['label' => 'Database migrations', 'status' => 'error', 'message' => $e2->getMessage()];
                     return view('install.finalize', ['adminData' => $adminData, 'steps' => $steps, 'failed' => true]);
                 }
@@ -261,16 +267,16 @@ class InstallController extends Controller
             Artisan::call('db:seed', ['--class' => 'SettingsSeeder', '--force' => true]);
             Artisan::call('db:seed', ['--class' => 'PageSeeder', '--force' => true]);
             $steps[] = ['label' => 'Seed default data', 'status' => 'success'];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $steps[] = ['label' => 'Seed default data', 'status' => 'error', 'message' => $e->getMessage()];
             return view('install.finalize', ['adminData' => $adminData, 'steps' => $steps, 'failed' => true]);
         }
 
         // 3. Create admin user
         try {
-            $admin = \App\Models\User::where('email', $adminData['email'])->first();
+            $admin = User::where('email', $adminData['email'])->first();
             if (!$admin) {
-                $admin = new \App\Models\User();
+                $admin = new User();
                 $admin->forceFill([
                     'username' => $adminData['username'],
                     'email' => $adminData['email'],
@@ -284,7 +290,7 @@ class InstallController extends Controller
             }
 
             // Create channel for admin
-            \App\Models\Channel::firstOrCreate(
+            Channel::firstOrCreate(
                 ['user_id' => $admin->id],
                 [
                     'name' => $adminData['username'],
@@ -294,7 +300,7 @@ class InstallController extends Controller
             );
 
             $steps[] = ['label' => 'Create admin account', 'status' => 'success'];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $steps[] = ['label' => 'Create admin account', 'status' => 'error', 'message' => $e->getMessage()];
             return view('install.finalize', ['adminData' => $adminData, 'steps' => $steps, 'failed' => true]);
         }
@@ -303,7 +309,7 @@ class InstallController extends Controller
         try {
             Artisan::call('storage:link', ['--force' => true]);
             $steps[] = ['label' => 'Create storage link', 'status' => 'success'];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $steps[] = ['label' => 'Create storage link', 'status' => 'warning', 'message' => $e->getMessage()];
         }
 
@@ -316,7 +322,7 @@ class InstallController extends Controller
                 'status' => $hasFilament ? 'success' : 'warning',
                 'message' => $hasFilament ? null : 'Filament assets may need manual publishing. Run: php artisan filament:assets',
             ];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $steps[] = ['label' => 'Publish admin panel assets', 'status' => 'warning', 'message' => $e->getMessage()];
         }
 
@@ -327,7 +333,7 @@ class InstallController extends Controller
             Artisan::call('view:clear');
             Artisan::call('route:clear');
             $steps[] = ['label' => 'Clear caches', 'status' => 'success'];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $steps[] = ['label' => 'Clear caches', 'status' => 'warning', 'message' => $e->getMessage()];
         }
 
@@ -357,7 +363,7 @@ class InstallController extends Controller
             File::copy(base_path('.env.example'), base_path('.env'));
             try {
                 Artisan::call('key:generate', ['--force' => true]);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Will be generated later
             }
         }
@@ -366,7 +372,7 @@ class InstallController extends Controller
         if (File::exists(base_path('.env')) && empty(env('APP_KEY'))) {
             try {
                 Artisan::call('key:generate', ['--force' => true]);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Will be generated later
             }
         }
@@ -474,21 +480,21 @@ class InstallController extends Controller
         $mysqlAvailable = false;
         $mysqlVersion = '';
         try {
-            $pdo = new \PDO(
+            $pdo = new PDO(
                 'mysql:host=' . env('DB_HOST', '127.0.0.1') . ';port=' . env('DB_PORT', '3306'),
                 env('DB_USERNAME', 'root'),
                 env('DB_PASSWORD', ''),
-                [\PDO::ATTR_TIMEOUT => 2]
+                [PDO::ATTR_TIMEOUT => 2]
             );
             $mysqlAvailable = true;
-            $mysqlVersion = $pdo->getAttribute(\PDO::ATTR_SERVER_VERSION);
-        } catch (\Exception $e) {
+            $mysqlVersion = $pdo->getAttribute(PDO::ATTR_SERVER_VERSION);
+        } catch (Exception $e) {
             // Also try connecting without credentials (socket auth)
             try {
-                $pdo = new \PDO('mysql:host=127.0.0.1;port=3306', 'root', '', [\PDO::ATTR_TIMEOUT => 2]);
+                $pdo = new PDO('mysql:host=127.0.0.1;port=3306', 'root', '', [PDO::ATTR_TIMEOUT => 2]);
                 $mysqlAvailable = true;
-                $mysqlVersion = $pdo->getAttribute(\PDO::ATTR_SERVER_VERSION);
-            } catch (\Exception $e2) {
+                $mysqlVersion = $pdo->getAttribute(PDO::ATTR_SERVER_VERSION);
+            } catch (Exception $e2) {
                 $mysqlAvailable = false;
             }
         }
@@ -498,7 +504,7 @@ class InstallController extends Controller
         $redisNeedsAuth = false;
         $redisPassword = env('REDIS_PASSWORD');
         try {
-            $redis = new \Redis();
+            $redis = new Redis();
             $connected = @$redis->connect(
                 env('REDIS_HOST', '127.0.0.1'),
                 (int) env('REDIS_PORT', 6379),
@@ -509,7 +515,7 @@ class InstallController extends Controller
                 try {
                     $redis->ping();
                     $redisAvailable = true;
-                } catch (\Exception $authEx) {
+                } catch (Exception $authEx) {
                     if (str_contains($authEx->getMessage(), 'NOAUTH') || str_contains($authEx->getMessage(), 'AUTH')) {
                         $redisNeedsAuth = true;
                         // Auto-detect Redis password from common config locations
@@ -523,7 +529,7 @@ class InstallController extends Controller
                                 // Auto-fix .env with detected password
                                 $this->ensureEnvWritable();
                                 $this->updateEnv(['REDIS_PASSWORD' => $detectedPassword]);
-                            } catch (\Exception $e2) {
+                            } catch (Exception $e2) {
                                 $redisAvailable = false;
                             }
                         }
@@ -531,7 +537,7 @@ class InstallController extends Controller
                 }
                 $redis->close();
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $redisAvailable = false;
         }
 
@@ -649,7 +655,7 @@ class InstallController extends Controller
         try {
             Artisan::call('filament:assets');
             $results[] = 'Filament assets published';
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $results[] = 'Filament assets failed: ' . $e->getMessage();
         }
 
@@ -657,21 +663,21 @@ class InstallController extends Controller
         try {
             Artisan::call('vendor:publish', ['--tag' => 'livewire:assets', '--force' => true]);
             $results[] = 'Livewire assets published';
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Livewire may serve assets via route instead of published files
         }
 
         // Publish Laravel assets
         try {
             Artisan::call('vendor:publish', ['--tag' => 'laravel-assets', '--force' => true]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Non-critical
         }
 
         // Filament icons
         try {
             Artisan::call('icons:cache');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Non-critical
         }
 

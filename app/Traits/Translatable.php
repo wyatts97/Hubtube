@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Translation;
 use App\Services\TranslationService;
 
@@ -17,7 +18,7 @@ trait Translatable
     /**
      * Relationship to all translation records for this model.
      */
-    public function translations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function translations(): HasMany
     {
         return $this->hasMany(Translation::class, 'translatable_id')
             ->where('translatable_type', static::class);

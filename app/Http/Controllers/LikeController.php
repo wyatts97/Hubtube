@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Database\QueryException;
 use App\Models\Like;
 use App\Models\Video;
 use Illuminate\Http\JsonResponse;
@@ -102,7 +103,7 @@ class LikeController extends Controller
         for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
             try {
                 return DB::transaction($callback);
-            } catch (\Illuminate\Database\QueryException $e) {
+            } catch (QueryException $e) {
                 // Check if it's a deadlock (SQLSTATE 40001)
                 if ($e->getCode() === '40001' && $attempt < $maxAttempts) {
                     // Exponential backoff: 100ms, 200ms, 400ms

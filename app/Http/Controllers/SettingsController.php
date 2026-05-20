@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Throwable;
+use RuntimeException;
 use App\Services\WordPressPasswordHasher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -68,7 +70,7 @@ class SettingsController extends Controller
             $relativePath = "avatars/{$user->id}/avatar.webp";
             Storage::disk('public')->put($relativePath, $webp);
             $path = $relativePath;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('Avatar WebP conversion failed, using original', ['error' => $e->getMessage()]);
             $path = $request->file('avatar')->store("avatars/{$user->id}", 'public');
         }
@@ -236,7 +238,7 @@ class SettingsController extends Controller
             Log::info('User account deleted', ['user_id' => $user->id, 'username' => $user->username]);
 
             return redirect()->route('home')->with('success', 'Your account has been permanently deleted.');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             DB::rollBack();
             Log::error('Account deletion failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
 
@@ -250,7 +252,7 @@ class SettingsController extends Controller
             if (Hash::check($plainPassword, $user->password)) {
                 return true;
             }
-        } catch (\RuntimeException) {
+        } catch (RuntimeException) {
             // Non-bcrypt hash, fall through to WP hasher check.
         }
 

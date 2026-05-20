@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use Exception;
 use App\Models\MenuItem;
 use App\Models\Setting;
 use App\Services\TranslationService;
@@ -71,7 +72,7 @@ class HandleInertiaRequests extends Middleware
             try {
                 $this->cachedSettings = Setting::getAll();
             }
-            catch (\Exception $e) {
+            catch (Exception $e) {
                 $this->cachedSettings = [];
             }
         }
@@ -224,7 +225,7 @@ class HandleInertiaRequests extends Middleware
                 'translations' => $translations,
             ];
         }
-        catch (\Exception $e) {
+        catch (Exception $e) {
             return [
                 'current' => 'en',
                 'default' => 'en',
@@ -266,7 +267,7 @@ class HandleInertiaRequests extends Middleware
                 'mobile' => $items->merge($mobileOnly)->sortBy('sort_order')->values()->toArray(),
             ];
         }
-        catch (\Exception $e) {
+        catch (Exception $e) {
             // Table may not exist yet (pre-migration)
             return ['header' => [], 'mobile' => []];
         }

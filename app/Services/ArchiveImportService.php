@@ -2,6 +2,11 @@
 
 namespace App\Services;
 
+use RuntimeException;
+use RecursiveIteratorIterator;
+use RecursiveDirectoryIterator;
+use Carbon\Carbon;
+use Throwable;
 use App\Models\Category;
 use App\Models\Hashtag;
 use App\Models\Video;
@@ -77,7 +82,7 @@ class ArchiveImportService
 
         $handle = fopen($filePath, 'r');
         if (!$handle) {
-            throw new \RuntimeException("Cannot open SQL file: {$filePath}");
+            throw new RuntimeException("Cannot open SQL file: {$filePath}");
         }
 
         $targetTables = ['posts', 'postmeta', 'terms', 'term_taxonomy', 'term_relationships'];
@@ -416,8 +421,8 @@ class ArchiveImportService
         $otherCount = 0;
         $totalSize = 0;
 
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($this->archivePath, \RecursiveDirectoryIterator::SKIP_DOTS)
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($this->archivePath, RecursiveDirectoryIterator::SKIP_DOTS)
         );
 
         foreach ($iterator as $file) {
@@ -583,7 +588,7 @@ class ArchiveImportService
                 }
             }
 
-            $publishedAt = $video['post_date'] ? \Carbon\Carbon::parse($video['post_date']) : now();
+            $publishedAt = $video['post_date'] ? Carbon::parse($video['post_date']) : now();
 
             // Create the video record as a NATIVE video (not embedded)
             $createdVideo = Video::create([
@@ -619,7 +624,7 @@ class ArchiveImportService
 
             return ['status' => 'imported', 'message' => "Imported: {$video['title']}"];
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning("Archive Import error for WP post {$video['wp_id']}: {$e->getMessage()}");
             return ['status' => 'error', 'message' => $e->getMessage()];
         }

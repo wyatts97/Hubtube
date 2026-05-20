@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use Exception;
 use App\Models\Video;
 use App\Services\FfmpegService;
 use Illuminate\Console\Command;
@@ -44,7 +45,7 @@ class BackfillPortraitFlag extends Command
                     }
                     $updated++;
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->error("  Error checking #{$video->id}: {$e->getMessage()}");
                 $errors++;
             }

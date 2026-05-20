@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use RuntimeException;
+use Throwable;
 use Abraham\TwitterOAuth\TwitterOAuth;
 use App\Models\Setting;
 use App\Models\Video;
@@ -25,7 +27,7 @@ class TwitterService
         $accessTokenSecret = Setting::getDecrypted('twitter_api_access_token_secret', '');
 
         if (empty($consumerKey) || empty($consumerSecret) || empty($accessToken) || empty($accessTokenSecret)) {
-            throw new \RuntimeException('Twitter API credentials are not configured. Go to Admin → Social Networks → Twitter Auto-Post.');
+            throw new RuntimeException('Twitter API credentials are not configured. Go to Admin → Social Networks → Twitter Auto-Post.');
         }
 
         $this->connection = new TwitterOAuth(
@@ -49,7 +51,7 @@ class TwitterService
             $accessTokenSecret = Setting::getDecrypted('twitter_api_access_token_secret', '');
 
             return !empty($consumerKey) && !empty($consumerSecret) && !empty($accessToken) && !empty($accessTokenSecret);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return false;
         }
     }
@@ -169,7 +171,7 @@ class TwitterService
             ]);
 
             return null;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('TwitterService: Exception posting tweet', [
                 'error' => $e->getMessage(),
                 'video_id' => $video->id,
@@ -197,7 +199,7 @@ class TwitterService
             'response' => json_encode($response),
         ]);
 
-        throw new \RuntimeException(
+        throw new RuntimeException(
             'Twitter API returned HTTP ' . $connection->getLastHttpCode() . '. Check your API credentials and permissions.'
         );
     }

@@ -2,6 +2,8 @@
 
 namespace App\Livewire;
 
+use RuntimeException;
+use Throwable;
 use App\Jobs\ProcessVideoJob;
 use App\Models\Setting;
 use App\Models\Video;
@@ -156,7 +158,7 @@ class VideoPreviewManager extends Component
             $localPath = StorageManager::localPath($video->video_path, $disk);
 
             if (!$localPath || !file_exists($localPath)) {
-                throw new \RuntimeException('Could not access video file locally. The file may have been moved or deleted.');
+                throw new RuntimeException('Could not access video file locally. The file may have been moved or deleted.');
             }
 
             $ffmpeg = FfmpegService::ffmpegPath();
@@ -186,7 +188,7 @@ class VideoPreviewManager extends Component
             exec($cmd, $output, $exitCode);
 
             if ($exitCode !== 0 || !file_exists($outputPath)) {
-                throw new \RuntimeException('FFmpeg frame capture failed (exit code ' . $exitCode . ')');
+                throw new RuntimeException('FFmpeg frame capture failed (exit code ' . $exitCode . ')');
             }
 
             $storagePath = "{$videoDir}/{$outputFilename}";
@@ -204,7 +206,7 @@ class VideoPreviewManager extends Component
                 ->title('Frame captured and set as thumbnail')
                 ->success()
                 ->send();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('Frame capture failed', [
                 'video_id' => $this->videoId,
                 'timestamp' => $timestamp,
@@ -256,7 +258,7 @@ class VideoPreviewManager extends Component
                 ->body('Re-processing has been queued. The new file will be transcoded shortly.')
                 ->success()
                 ->send();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('Replace source video failed', [
                 'video_id' => $this->videoId,
                 'error'    => $e->getMessage(),

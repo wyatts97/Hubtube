@@ -2,25 +2,23 @@
 
 namespace App\Filament\Resources\VideoResource\Pages;
 
+use Filament\Actions\CreateAction;
+use Filament\Schemas\Components\Tabs\Tab;
 use App\Filament\Resources\VideoResource;
 use App\Filament\Resources\VideoResource\Widgets\VideoStatsOverview;
 use App\Models\Video;
-use Asmit\ResizedColumn\HasResizableColumn;
 use Filament\Actions;
-use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
 
 class ListVideos extends ListRecords
 {
-    use HasResizableColumn;
-
     protected static string $resource = VideoResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 

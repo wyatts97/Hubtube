@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Facades\Cache;
+use Throwable;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use App\Services\StorageManager;
 use App\Traits\Translatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -167,7 +171,7 @@ class Video extends Model
     {
         // Flush homepage, trending, category, and related-video caches when a video changes
         $flushCaches = function (Video $video) {
-            $cache = \Illuminate\Support\Facades\Cache::class;
+            $cache = Cache::class;
             // Home caches
             $cache::forget('home:featured');
             $cache::forget('home:popular');
@@ -210,12 +214,12 @@ class Video extends Model
             }
             if (!empty($stale)) {
                 try {
-                    \App\Models\Translation::where('translatable_type', static::class)
+                    Translation::where('translatable_type', static::class)
                         ->where('translatable_id', $video->id)
                         ->whereIn('field', $stale)
                         ->delete();
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::debug('Translation invalidation failed', [
+                } catch (Throwable $e) {
+                    Log::debug('Translation invalidation failed', [
                         'video_id' => $video->id,
                         'error' => $e->getMessage(),
                     ]);
@@ -499,7 +503,7 @@ class Video extends Model
 
         $disk = $this->storage_disk ?? 'public';
         $videoDir = "videos/{$this->slug}";
-        $slugTitle = \Illuminate\Support\Str::slug($this->title, '_') ?: 'video';
+        $slugTitle = Str::slug($this->title, '_') ?: 'video';
         $thumbnails = [];
 
         // Check for numbered thumbnails (_thumb_0, _thumb_1, etc.)

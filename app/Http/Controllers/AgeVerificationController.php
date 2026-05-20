@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
+use Log;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
@@ -21,15 +23,15 @@ class AgeVerificationController extends Controller
         try {
             $request->session()->put('age_verified', true);
             $request->session()->save();
-        } catch (\Exception $e) {
-            \Log::error('Session save failed: ' . $e->getMessage());
+        } catch (Exception $e) {
+            Log::error('Session save failed: ' . $e->getMessage());
         }
 
         // Get intended URL or default to home
         $intended = route('home');
         try {
             $intended = $request->session()->get('url.intended', route('home'));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Use default
         }
         
@@ -45,7 +47,7 @@ class AgeVerificationController extends Controller
             false               // httpOnly (false = allow JS access)
         );
 
-        \Log::debug('Age verification confirmed, redirecting to: ' . $intended);
+        Log::debug('Age verification confirmed, redirecting to: ' . $intended);
         
         return redirect($intended)->withCookie($cookie);
     }

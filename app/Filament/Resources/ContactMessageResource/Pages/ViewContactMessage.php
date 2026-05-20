@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\ContactMessageResource\Pages;
 
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use App\Filament\Resources\ContactMessageResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
@@ -13,12 +15,12 @@ class ViewContactMessage extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('toggle_read')
+            Action::make('toggle_read')
                 ->icon(fn () => $this->record->is_read ? 'heroicon-o-envelope' : 'heroicon-o-envelope-open')
                 ->label(fn () => $this->record->is_read ? 'Mark Unread' : 'Mark Read')
                 ->action(fn () => $this->record->update(['is_read' => !$this->record->is_read])),
 
-            Actions\DeleteAction::make(),
+            DeleteAction::make(),
         ];
     }
 

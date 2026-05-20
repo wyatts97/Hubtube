@@ -2,10 +2,19 @@
 
 namespace App\Filament\Resources;
 
+use App\Models\Setting;
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Actions\ViewAction;
+use App\Filament\Resources\WalletTransactionResource\Pages\ListWalletTransactions;
 use App\Filament\Resources\WalletTransactionResource\Pages;
 use App\Models\WalletTransaction;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -14,27 +23,27 @@ use Filament\Tables\Table;
 class WalletTransactionResource extends Resource
 {
     protected static ?string $model = WalletTransaction::class;
-    protected static ?string $navigationIcon = 'heroicon-o-banknotes';
-    protected static ?string $navigationGroup = 'Monetization';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-banknotes';
+    protected static string | \UnitEnum | null $navigationGroup = 'Monetization';
     protected static ?int $navigationSort = 1;
 
     public static function shouldRegisterNavigation(): bool
     {
-        return (bool) \App\Models\Setting::get('monetization_enabled', true);
+        return (bool) Setting::get('monetization_enabled', true);
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                Forms\Components\Section::make('Transaction Details')
+        return $schema
+            ->components([
+                Section::make('Transaction Details')
                     ->schema([
-                        Forms\Components\Select::make('user_id')
+                        Select::make('user_id')
                             ->relationship('user', 'username')
                             ->required()
                             ->searchable()
                             ->disabled(),
-                        Forms\Components\Select::make('type')
+                        Select::make('type')
                             ->options([
                                 'deposit' => 'Deposit',
                                 'withdrawal' => 'Withdrawal',
@@ -44,21 +53,21 @@ class WalletTransactionResource extends Resource
                                 'refund' => 'Refund',
                             ])
                             ->disabled(),
-                        Forms\Components\TextInput::make('amount')
+                        TextInput::make('amount')
                             ->numeric()
                             ->prefix('$')
                             ->disabled(),
-                        Forms\Components\TextInput::make('balance_after')
+                        TextInput::make('balance_after')
                             ->numeric()
                             ->prefix('$')
                             ->disabled(),
-                        Forms\Components\Textarea::make('description')
+                        Textarea::make('description')
                             ->disabled()
                             ->columnSpanFull(),
                     ])->columns(2),
-                Forms\Components\Section::make('Status')
+                Section::make('Status')
                     ->schema([
-                        Forms\Components\Select::make('status')
+                        Select::make('status')
                             ->options([
                                 'pending' => 'Pending',
                                 'completed' => 'Completed',
@@ -73,10 +82,10 @@ class WalletTransactionResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('user.username')
+                TextColumn::make('user.username')
                     ->label('User')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('type')
+                TextColumn::make('type')
                     ->badge()
                     ->color(fn (string $state): string => match (true) {
                         in_array($state, ['deposit', 'video_sale']) => 'success',
@@ -84,12 +93,12 @@ class WalletTransactionResource extends Resource
                         $state === 'refund' => 'warning',
                         default => 'gray',
                     }),
-                Tables\Columns\TextColumn::make('amount')
+                TextColumn::make('amount')
                     ->money('USD')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('balance_after')
+                TextColumn::make('balance_after')
                     ->money('USD'),
-                Tables\Columns\TextColumn::make('status')
+                TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'pending' => 'warning',
@@ -98,19 +107,19 @@ class WalletTransactionResource extends Resource
                         'cancelled' => 'gray',
                         default => 'gray',
                     }),
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable(),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('type')
+                SelectFilter::make('type')
                     ->options([
                         'deposit' => 'Deposit',
                         'withdrawal' => 'Withdrawal',
                         'video_purchase' => 'Video Purchase',
                         'video_sale' => 'Video Sale',
                     ]),
-                Tables\Filters\SelectFilter::make('status')
+                SelectFilter::make('status')
                     ->options([
                         'pending' => 'Pending',
                         'completed' => 'Completed',
@@ -118,17 +127,17 @@ class WalletTransactionResource extends Resource
                         'cancelled' => 'Cancelled',
                     ]),
             ])
-            ->actions([
-                Tables\Actions\ViewAction::make(),
+            ->recordActions([
+                ViewAction::make(),
             ])
-            ->bulkActions([])
+            ->toolbarActions([])
             ->striped();
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListWalletTransactions::route('/'),
+            'index' => ListWalletTransactions::route('/'),
         ];
     }
 

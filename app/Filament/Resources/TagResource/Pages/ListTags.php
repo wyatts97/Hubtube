@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\TagResource\Pages;
 
+use Filament\Actions\Action;
 use App\Filament\Resources\TagResource;
 use App\Services\TagSyncService;
 use Filament\Actions;
@@ -15,7 +16,7 @@ class ListTags extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('syncFromVideos')
+            Action::make('syncFromVideos')
                 ->label('Sync From Videos')
                 ->icon('heroicon-o-arrow-path')
                 ->requiresConfirmation()

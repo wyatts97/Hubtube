@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use Exception;
 use App\Services\TranslationService;
 use Closure;
 use Illuminate\Http\Request;
@@ -15,7 +16,7 @@ class SetLocale
     {
         try {
             $defaultLocale = TranslationService::getDefaultLocale();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // DB may not be available yet (install, migrations)
             return $next($request);
         }

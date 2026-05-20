@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\VideoAd;
+use App\Models\Hashtag;
+use Illuminate\Http\UploadedFile;
 use App\Http\Requests\Video\FinalizeVideoRequest;
 use App\Http\Requests\Video\StoreVideoRequest;
 use App\Models\Playlist;
@@ -83,7 +86,7 @@ class VideoController extends Controller
                 'outstreamFrequency' => (int) Setting::get('video_outstream_ad_frequency', 6),
             ],
             'outstreamAds' => (bool) Setting::get('video_outstream_ad_enabled', false)
-                ? \App\Models\VideoAd::getAdsForPlacement('outstream', null, auth()->user()?->is_pro ? 'pro' : (auth()->check() ? 'default' : 'guest'), false)
+                ? VideoAd::getAdsForPlacement('outstream', null, auth()->user()?->is_pro ? 'pro' : (auth()->check() ? 'default' : 'guest'), false)
                 : [],
             'sponsoredCards' => SponsoredCard::getForPage(
                 'browse',
@@ -106,7 +109,7 @@ class VideoController extends Controller
         // If not found, try translated slug
         if (!$video) {
             $currentLocale = app()->getLocale();
-            $translationService = app(\App\Services\TranslationService::class);
+            $translationService = app(TranslationService::class);
             $videoId = $translationService->findByTranslatedSlug(Video::class, $slug, $currentLocale);
             if ($videoId) {
                 $video = Video::find($videoId);
@@ -294,7 +297,7 @@ class VideoController extends Controller
             ]);
         }
 
-        $existingTags = \App\Models\Hashtag::orderByDesc('usage_count')
+        $existingTags = Hashtag::orderByDesc('usage_count')
             ->limit(200)
             ->pluck('name')
             ->toArray();
@@ -473,7 +476,7 @@ class VideoController extends Controller
             ? (mime_content_type($assembledPath) ?: 'video/mp4')
             : 'video/mp4';
 
-        $uploadedFile = new \Illuminate\Http\UploadedFile(
+        $uploadedFile = new UploadedFile(
             $assembledPath,
             $originalName,
             $mime,
@@ -523,7 +526,7 @@ class VideoController extends Controller
     {
         $this->authorize('update', $video);
 
-        $existingTags = \App\Models\Hashtag::orderByDesc('usage_count')
+        $existingTags = Hashtag::orderByDesc('usage_count')
             ->limit(200)
             ->pluck('name')
             ->toArray();

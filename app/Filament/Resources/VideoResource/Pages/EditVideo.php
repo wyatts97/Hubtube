@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\VideoResource\Pages;
 
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use App\Events\VideoProcessed;
 use App\Filament\Resources\VideoResource;
 use App\Jobs\ProcessVideoJob;
@@ -13,12 +15,12 @@ class EditVideo extends EditRecord
 {
     protected static string $resource = VideoResource::class;
 
-    protected static string $view = 'filament.resources.video-resource.pages.edit-video';
+    protected string $view = 'filament.resources.video-resource.pages.edit-video';
 
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('view_frontend')
+            Action::make('view_frontend')
                 ->label('View on Site')
                 ->icon('heroicon-o-eye')
                 ->color('gray')
@@ -26,7 +28,7 @@ class EditVideo extends EditRecord
                 ->openUrlInNewTab()
                 ->visible(fn () => $this->record->status === 'processed' && $this->record->is_approved),
 
-            Actions\Action::make('approve')
+            Action::make('approve')
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
                 ->requiresConfirmation()
@@ -47,7 +49,7 @@ class EditVideo extends EditRecord
                 })
                 ->visible(fn () => !$this->record->is_approved && $this->record->status === 'processed'),
 
-            Actions\Action::make('reprocess')
+            Action::make('reprocess')
                 ->icon('heroicon-o-arrow-path')
                 ->color('info')
                 ->requiresConfirmation()
@@ -58,7 +60,7 @@ class EditVideo extends EditRecord
                 })
                 ->visible(fn () => in_array($this->record->status, ['failed', 'processing'])),
 
-            Actions\DeleteAction::make(),
+            DeleteAction::make(),
         ];
     }
 }

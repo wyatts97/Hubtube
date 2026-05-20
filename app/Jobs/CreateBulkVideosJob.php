@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use Throwable;
 use App\Services\BulkVideoCreator;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -48,7 +49,7 @@ class CreateBulkVideosJob implements ShouldQueue
                 'created_ids' => $createdIds,
                 'total' => count($this->entries),
             ], now()->addHours(6));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('CreateBulkVideosJob failed', [
                 'actor_id' => $this->actorId,
                 'token' => $this->token,

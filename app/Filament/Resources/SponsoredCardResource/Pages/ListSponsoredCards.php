@@ -2,6 +2,13 @@
 
 namespace App\Filament\Resources\SponsoredCardResource\Pages;
 
+use Filament\Actions\Action;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\Select;
+use Filament\Actions\CreateAction;
+use Exception;
 use App\Filament\Resources\SponsoredCardResource;
 use App\Models\SponsoredCard;
 use Filament\Actions;
@@ -18,26 +25,26 @@ class ListSponsoredCards extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('import_csv')
+            Action::make('import_csv')
                 ->label('Import CSV')
                 ->icon('heroicon-o-arrow-up-tray')
                 ->color('gray')
-                ->form([
-                    Forms\Components\FileUpload::make('csv_file')
+                ->schema([
+                    FileUpload::make('csv_file')
                         ->label('CSV File')
                         ->acceptedFileTypes(['text/csv', 'application/csv', 'text/plain'])
                         ->required()
                         ->disk('local')
                         ->directory('temp-imports')
                         ->visibility('private'),
-                    Forms\Components\TextInput::make('ribbon_text')
+                    TextInput::make('ribbon_text')
                         ->label('Ribbon Text for All')
                         ->placeholder('e.g. "Clip", "Video", "Product"')
                         ->helperText('Text shown after "Featured" on the ribbon'),
-                    Forms\Components\Toggle::make('is_active')
+                    Toggle::make('is_active')
                         ->label('Set All as Active')
                         ->default(true),
-                    Forms\Components\Select::make('target_pages')
+                    Select::make('target_pages')
                         ->label('Target Pages')
                         ->multiple()
                         ->options([
@@ -52,7 +59,7 @@ class ListSponsoredCards extends ListRecords
                 ->action(function (array $data): void {
                     $this->importCsv($data);
                 }),
-            Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 
@@ -163,7 +170,7 @@ class ListSponsoredCards extends ListRecords
                 ->success()
                 ->send();
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title('Import Failed')
                 ->body('Error: ' . $e->getMessage())

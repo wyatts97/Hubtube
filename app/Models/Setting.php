@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
@@ -107,7 +108,7 @@ class Setting extends Model
         if ($setting->type === 'encrypted') {
             try {
                 return Crypt::decryptString($setting->value);
-            } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            } catch (DecryptException $e) {
                 // Value may have been stored before encryption was added — return raw
                 return (string) $setting->value;
             }

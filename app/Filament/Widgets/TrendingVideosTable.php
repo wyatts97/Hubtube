@@ -16,7 +16,7 @@ class TrendingVideosTable extends Widget
 {
     protected static bool $isDiscovered = false;
 
-    protected static string $view = 'filament.widgets.trending-videos-table';
+    protected string $view = 'filament.widgets.trending-videos-table';
 
     protected int|string|array $columnSpan = 1;
 
@@ -76,7 +76,7 @@ class TrendingVideosTable extends Widget
 
     public function render(): View
     {
-        return view(static::$view, [
+        return view($this->view, [
             'videos'      => $this->getVideos(),
             'heading'     => $this->getHeading(),
             'periodLabel' => $this->getPeriodLabel(),

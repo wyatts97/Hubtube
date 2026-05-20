@@ -2,6 +2,10 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Section;
 use App\Models\SearchIndexSubmission;
 use App\Models\Setting;
 use App\Models\Video;
@@ -9,13 +13,10 @@ use App\Services\AdminLogger;
 use App\Services\IndexNowService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\HtmlString;
@@ -24,11 +25,11 @@ class SearchIndexingSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-magnifying-glass-circle';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-magnifying-glass-circle';
     protected static ?string $navigationLabel = 'Search Indexing';
-    protected static ?string $navigationGroup = 'Appearance';
+    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 5;
-    protected static string $view = 'filament.pages.site-settings';
+    protected string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
 
@@ -44,13 +45,13 @@ class SearchIndexingSettings extends Page implements HasForms
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Tabs::make('Search Indexing')
                     ->tabs([
-                        Tabs\Tab::make('IndexNow')
+                        Tab::make('IndexNow')
                             ->icon('heroicon-o-bolt')
                             ->schema([
                                 Placeholder::make('indexnow_intro')

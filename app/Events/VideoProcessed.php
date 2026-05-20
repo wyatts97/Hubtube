@@ -2,6 +2,8 @@
 
 namespace App\Events;
 
+use Throwable;
+use Illuminate\Support\Facades\Log;
 use App\Models\Video;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
@@ -35,9 +37,9 @@ class VideoProcessed implements ShouldBroadcast
         return true;
     }
 
-    public function failed(\Throwable $e): void
+    public function failed(Throwable $e): void
     {
-        \Illuminate\Support\Facades\Log::warning('VideoProcessed broadcast failed (Reverb may be down): ' . $e->getMessage());
+        Log::warning('VideoProcessed broadcast failed (Reverb may be down): ' . $e->getMessage());
     }
 
     public function broadcastOn(): array

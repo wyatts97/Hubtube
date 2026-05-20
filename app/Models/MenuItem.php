@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -63,7 +64,7 @@ class MenuItem extends Model
     /**
      * Get the full menu tree for a location, with children eager-loaded.
      */
-    public static function getMenuTree(string $location = 'header'): \Illuminate\Database\Eloquent\Collection
+    public static function getMenuTree(string $location = 'header'): Collection
     {
         return static::query()
             ->with(['children' => fn ($q) => $q->active()->orderBy('sort_order')])

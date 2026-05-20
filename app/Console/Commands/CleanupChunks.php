@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use RecursiveIteratorIterator;
+use RecursiveDirectoryIterator;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -60,9 +62,9 @@ class CleanupChunks extends Command
 
     protected function removeDirectory(string $dir): void
     {
-        $items = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST
+        $items = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
         );
 
         foreach ($items as $item) {

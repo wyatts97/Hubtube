@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Throwable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use SplFileObject;
@@ -129,7 +130,7 @@ class LogViewerService
 
         try {
             $file = new SplFileObject($path, 'r');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return [];
         }
 

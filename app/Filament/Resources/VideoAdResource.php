@@ -2,19 +2,31 @@
 
 namespace App\Filament\Resources;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Grid;
+use Filament\Tables\Columns\TextColumn;
+use Illuminate\Support\Str;
+use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use App\Filament\Resources\VideoAdResource\Pages\ListVideoAds;
+use App\Filament\Resources\VideoAdResource\Pages\CreateVideoAd;
+use App\Filament\Resources\VideoAdResource\Pages\EditVideoAd;
 use App\Filament\Resources\VideoAdResource\Pages;
 use App\Models\Category;
 use App\Models\VideoAd;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -25,15 +37,15 @@ use Illuminate\Support\HtmlString;
 class VideoAdResource extends Resource
 {
     protected static ?string $model = VideoAd::class;
-    protected static ?string $navigationIcon = 'heroicon-o-film';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-film';
     protected static ?string $navigationLabel = 'Ad Creatives';
-    protected static ?string $navigationGroup = 'Appearance';
+    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 3;
     protected static ?string $recordTitleAttribute = 'name';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
+        return $schema->components([
             Section::make('Creative Details')->schema([
                 Grid::make(2)->schema([
                     TextInput::make('name')
@@ -196,12 +208,12 @@ class VideoAdResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                TextColumn::make('name')
                     ->weight('bold')
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('type')
+                TextColumn::make('type')
                     ->badge()
                     ->formatStateUsing(fn (string $state) => strtoupper($state))
                     ->color(fn (string $state): string => match ($state) {
@@ -212,7 +224,7 @@ class VideoAdResource extends Resource
                         default => 'gray',
                     }),
 
-                Tables\Columns\TextColumn::make('placement')
+                TextColumn::make('placement')
                     ->badge()
                     ->formatStateUsing(fn (string $state) => ucwords(str_replace('_', '-', $state)))
                     ->color(fn (string $state): string => match ($state) {
@@ -222,7 +234,7 @@ class VideoAdResource extends Resource
                         default     => 'gray',
                     }),
 
-                Tables\Columns\TextColumn::make('content')
+                TextColumn::make('content')
                     ->label('Source')
                     ->formatStateUsing(function (string $state, VideoAd $record): string {
                         if ($record->type === 'mp4' && $record->file_path) {
@@ -231,16 +243,16 @@ class VideoAdResource extends Resource
                         if ($record->type === 'html') {
                             return '🖥 HTML script (' . strlen($state) . ' chars)';
                         }
-                        return \Illuminate\Support\Str::limit($state, 50);
+                        return Str::limit($state, 50);
                     })
                     ->color('gray')
                     ->size('sm'),
 
-                Tables\Columns\TextColumn::make('weight')
+                TextColumn::make('weight')
                     ->alignCenter()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('category_ids')
+                TextColumn::make('category_ids')
                     ->label('Targeting')
                     ->formatStateUsing(function ($state, VideoAd $record): string {
                         $cats  = ($record->category_ids && count($record->category_ids))
@@ -254,49 +266,49 @@ class VideoAdResource extends Resource
                     ->color('gray')
                     ->size('sm'),
 
-                Tables\Columns\TextColumn::make('impressions_count')
+                TextColumn::make('impressions_count')
                     ->label('Impressions')
                     ->numeric()
                     ->sortable()
                     ->alignCenter(),
 
-                Tables\Columns\TextColumn::make('clicks_count')
+                TextColumn::make('clicks_count')
                     ->label('Clicks')
                     ->numeric()
                     ->sortable()
                     ->alignCenter(),
 
-                Tables\Columns\ToggleColumn::make('is_active')
+                ToggleColumn::make('is_active')
                     ->label('Active'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('type')
+                SelectFilter::make('type')
                     ->options([
                         'mp4'   => 'MP4',
                         'vast'  => 'VAST',
                         'vpaid' => 'VPAID',
                         'html'  => 'HTML',
                     ]),
-                Tables\Filters\SelectFilter::make('placement')
+                SelectFilter::make('placement')
                     ->options([
                         'pre_roll'  => 'Pre-Roll',
                         'mid_roll'  => 'Mid-Roll',
                         'post_roll' => 'Post-Roll',
                     ]),
-                Tables\Filters\TernaryFilter::make('is_active')->label('Active'),
+                TernaryFilter::make('is_active')->label('Active'),
             ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make()
+            ->recordActions([
+                EditAction::make(),
+                DeleteAction::make()
                     ->after(function (VideoAd $record) {
                         if ($record->file_path && Storage::disk('public')->exists($record->file_path)) {
                             Storage::disk('public')->delete($record->file_path);
                         }
                     }),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make()
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make()
                         ->after(function ($records) {
                             foreach ($records as $record) {
                                 if ($record->file_path && Storage::disk('public')->exists($record->file_path)) {
@@ -322,9 +334,9 @@ class VideoAdResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListVideoAds::route('/'),
-            'create' => Pages\CreateVideoAd::route('/create'),
-            'edit'   => Pages\EditVideoAd::route('/{record}/edit'),
+            'index'  => ListVideoAds::route('/'),
+            'create' => CreateVideoAd::route('/create'),
+            'edit'   => EditVideoAd::route('/{record}/edit'),
         ];
     }
 }

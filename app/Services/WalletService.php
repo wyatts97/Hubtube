@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Exception;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use Illuminate\Database\Eloquent\Model;
@@ -46,7 +47,7 @@ class WalletService
             $user->lockForUpdate();
 
             if ($user->wallet_balance < $amount) {
-                throw new \Exception('Insufficient balance');
+                throw new Exception('Insufficient balance');
             }
 
             $newBalance = $user->wallet_balance - $amount;

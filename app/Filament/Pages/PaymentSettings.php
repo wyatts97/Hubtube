@@ -2,15 +2,16 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Section;
 use App\Models\Setting;
 use App\Services\AdminLogger;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
@@ -19,11 +20,11 @@ class PaymentSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-credit-card';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-credit-card';
     protected static ?string $navigationLabel = 'Payment Gateways';
-    protected static ?string $navigationGroup = 'Monetization';
+    protected static string | \UnitEnum | null $navigationGroup = 'Monetization';
     protected static ?int $navigationSort = 3;
-    protected static string $view = 'filament.pages.site-settings';
+    protected string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
 
@@ -56,13 +57,13 @@ class PaymentSettings extends Page implements HasForms
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Tabs::make('Payment Settings')
                     ->tabs([
-                        Tabs\Tab::make('General')
+                        Tab::make('General')
                             ->schema([
                                 Section::make('Monetization')
                                     ->schema([
@@ -91,7 +92,7 @@ class PaymentSettings extends Page implements HasForms
                                             ->helperText('Fee taken from video sales'),
                                     ])->columns(2),
                             ]),
-                        Tabs\Tab::make('Stripe')
+                        Tab::make('Stripe')
                             ->schema([
                                 Section::make('Stripe Configuration')
                                     ->schema([
@@ -111,7 +112,7 @@ class PaymentSettings extends Page implements HasForms
                                             ->revealable(),
                                     ])->columns(2),
                             ]),
-                        Tabs\Tab::make('PayPal')
+                        Tab::make('PayPal')
                             ->schema([
                                 Section::make('PayPal Configuration')
                                     ->schema([
@@ -129,7 +130,7 @@ class PaymentSettings extends Page implements HasForms
                                             ->revealable(),
                                     ])->columns(2),
                             ]),
-                        Tabs\Tab::make('CCBill')
+                        Tab::make('CCBill')
                             ->schema([
                                 Section::make('CCBill Configuration')
                                     ->description('Adult-friendly payment processor')

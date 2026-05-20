@@ -2,18 +2,23 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Actions\Action;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Database\Eloquent\Collection;
 use App\Jobs\CreateBulkVideosJob;
 use App\Models\Category;
 use App\Models\User;
 use App\Models\Video;
 use App\Services\AdminLogger;
 use App\Services\BulkVideoCreator;
-use Filament\Forms\Components\Actions\Action as FormAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Section as FormSection;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
@@ -21,9 +26,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
-use Filament\Forms\Get;
-use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Contracts\View\View;
@@ -34,11 +36,11 @@ class BulkVideoUploader extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-arrow-up-tray';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-arrow-up-tray';
     protected static ?string $navigationLabel = 'Bulk Upload';
-    protected static ?string $navigationGroup = 'Content';
+    protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 7;
-    protected static string $view = 'filament.pages.bulk-video-uploader';
+    protected string $view = 'filament.pages.bulk-video-uploader';
 
     /** @var array File upload form state */
     public ?array $uploadData = [];
@@ -86,10 +88,10 @@ class BulkVideoUploader extends Page implements HasForms
         $this->bulkSettingsForm->fill($this->bulkSettings);
     }
 
-    public function uploadForm(Form $form): Form
+    public function uploadForm(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
             FileUpload::make('video_files')
             ->label('Drop video files here or click to browse')
             ->disk('public')
@@ -106,11 +108,11 @@ class BulkVideoUploader extends Page implements HasForms
             ->statePath('uploadData');
     }
 
-    public function bulkSettingsForm(Form $form): Form
+    public function bulkSettingsForm(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                FormSection::make('Apply to All')
+        return $schema
+            ->components([
+                Section::make('Apply to All')
                     ->description('Defaults applied to each newly added file. Click "Apply to All" to overwrite existing entries.')
                     ->icon('heroicon-o-adjustments-horizontal')
                     ->collapsible()
@@ -144,10 +146,10 @@ class BulkVideoUploader extends Page implements HasForms
             ->statePath('bulkSettings');
     }
 
-    public function entriesForm(Form $form): Form
+    public function entriesForm(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Repeater::make('entries')
                     ->hiddenLabel()
                     ->reorderable(true)
@@ -162,7 +164,7 @@ class BulkVideoUploader extends Page implements HasForms
                             : ((string) ($state['file_name'] ?? 'Video'))
                     )
                     ->deleteAction(
-                        fn (FormAction $action) => $action->action(function (array $arguments, Repeater $component) {
+                        fn (Action $action) => $action->action(function (array $arguments, Repeater $component) {
                             $items = $component->getState();
                             $key = $arguments['item'] ?? null;
                             if ($key !== null && isset($items[$key])) {
@@ -187,7 +189,7 @@ class BulkVideoUploader extends Page implements HasForms
                                 ]
                             ))
                             ->columnSpan(1),
-                        FormSection::make()
+                        Section::make()
                             ->hiddenLabel()
                             ->schema([
                                 TextInput::make('title')
@@ -196,7 +198,7 @@ class BulkVideoUploader extends Page implements HasForms
                                     ->placeholder('Enter video title…')
                                     ->columnSpanFull()
                                     ->suffixAction(
-                                        FormAction::make('useFilename')
+                                        Action::make('useFilename')
                                             ->icon('heroicon-o-sparkles')
                                             ->tooltip('Regenerate title from filename')
                                             ->action(function (Set $set, Get $get) {
@@ -369,7 +371,7 @@ class BulkVideoUploader extends Page implements HasForms
 
         $actorId = (int) (auth()->id() ?? 0);
         $key = CreateBulkVideosJob::cacheKey($actorId, $this->bulkToken);
-        $payload = \Illuminate\Support\Facades\Cache::get($key);
+        $payload = Cache::get($key);
 
         if (!is_array($payload)) {
             return;
@@ -382,7 +384,7 @@ class BulkVideoUploader extends Page implements HasForms
 
         if (($payload['status'] ?? null) === 'done' || ($payload['status'] ?? null) === 'failed') {
             $this->bulkToken = null;
-            \Illuminate\Support\Facades\Cache::forget($key);
+            Cache::forget($key);
         }
     }
 
@@ -398,10 +400,10 @@ class BulkVideoUploader extends Page implements HasForms
         return $clean === '' ? '' : Str::title($clean);
     }
 
-    public function getCreatedVideosProperty(): \Illuminate\Database\Eloquent\Collection
+    public function getCreatedVideosProperty(): Collection
     {
         if (empty($this->createdVideoIds)) {
-            return new \Illuminate\Database\Eloquent\Collection();
+            return new Collection();
         }
 
         return Video::with('user', 'category')

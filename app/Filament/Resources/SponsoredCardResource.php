@@ -2,11 +2,27 @@
 
 namespace App\Filament\Resources;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\FileUpload;
+use Filament\Schemas\Components\Grid;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Toggle;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use App\Filament\Resources\SponsoredCardResource\Pages\ListSponsoredCards;
+use App\Filament\Resources\SponsoredCardResource\Pages\CreateSponsoredCard;
+use App\Filament\Resources\SponsoredCardResource\Pages\EditSponsoredCard;
 use App\Filament\Resources\SponsoredCardResource\Pages;
 use App\Models\Category;
 use App\Models\SponsoredCard;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -15,81 +31,81 @@ use Filament\Tables\Table;
 class SponsoredCardResource extends Resource
 {
     protected static ?string $model = SponsoredCard::class;
-    protected static ?string $navigationIcon = 'heroicon-o-megaphone';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-megaphone';
     protected static ?string $navigationLabel = 'Sponsored Cards';
-    protected static ?string $navigationGroup = 'Appearance';
+    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 3;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                Forms\Components\Section::make('Creative')
+        return $schema
+            ->components([
+                Section::make('Creative')
                     ->schema([
-                        Forms\Components\TextInput::make('external_id')
+                        TextInput::make('external_id')
                             ->label('External ID')
                             ->maxLength(100)
                             ->placeholder('Optional external reference ID'),
-                        Forms\Components\TextInput::make('title')
+                        TextInput::make('title')
                             ->required()
                             ->maxLength(255)
                             ->placeholder('e.g. Check out our new product!'),
-                        Forms\Components\TextInput::make('click_url')
+                        TextInput::make('click_url')
                             ->label('Click-Through URL')
                             ->required()
                             ->url()
                             ->maxLength(2048)
                             ->placeholder('https://example.com/landing-page'),
-                        Forms\Components\FileUpload::make('thumbnail_url')
+                        FileUpload::make('thumbnail_url')
                             ->label('Thumbnail Image')
                             ->image()
                             ->disk('public')
                             ->directory('sponsored')
                             ->visibility('public')
                             ->helperText('Recommended: 640×360 (16:9). Can also use external URL.'),
-                        Forms\Components\TextInput::make('description')
+                        TextInput::make('description')
                             ->maxLength(255)
                             ->placeholder('Optional short description shown below the title'),
-                        Forms\Components\TextInput::make('studio')
+                        TextInput::make('studio')
                             ->maxLength(255)
                             ->placeholder('Studio or brand name'),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Pricing & Ribbon')
+                Section::make('Pricing & Ribbon')
                     ->schema([
-                        Forms\Components\Grid::make(3)->schema([
-                            Forms\Components\TextInput::make('price')
+                        Grid::make(3)->schema([
+                            TextInput::make('price')
                                 ->label('Price')
                                 ->numeric()
                                 ->prefix('$')
                                 ->step(0.01)
                                 ->placeholder('9.99'),
-                            Forms\Components\TextInput::make('sale_price')
+                            TextInput::make('sale_price')
                                 ->label('Sale Price')
                                 ->numeric()
                                 ->prefix('$')
                                 ->step(0.01)
                                 ->placeholder('7.99')
                                 ->helperText('Leave empty if not on sale'),
-                            Forms\Components\TextInput::make('duration')
+                            TextInput::make('duration')
                                 ->label('Duration (seconds)')
                                 ->numeric()
                                 ->placeholder('300'),
                         ]),
-                        Forms\Components\TextInput::make('ribbon_text')
+                        TextInput::make('ribbon_text')
                             ->label('Ribbon Text')
                             ->maxLength(50)
                             ->placeholder('e.g. "Product", "Video", "Clip"')
                             ->helperText('Text shown after "Featured" on the ribbon (e.g. "Featured Product")'),
                     ]),
 
-                Forms\Components\Section::make('Preview Images')
+                Section::make('Preview Images')
                     ->description('Multiple images that cycle on hover (like video card previews)')
                     ->schema([
-                        Forms\Components\Repeater::make('preview_images')
+                        Repeater::make('preview_images')
                             ->label('Preview Images')
                             ->simple(
-                                Forms\Components\TextInput::make('url')
+                                TextInput::make('url')
                                     ->label('Image URL')
                                     ->url()
                                     ->placeholder('https://example.com/preview1.jpg')
@@ -100,9 +116,9 @@ class SponsoredCardResource extends Resource
                             ->defaultItems(0),
                     ])->collapsed(),
 
-                Forms\Components\Section::make('Targeting & Display')
+                Section::make('Targeting & Display')
                     ->schema([
-                        Forms\Components\CheckboxList::make('target_pages')
+                        CheckboxList::make('target_pages')
                             ->label('Show on Pages')
                             ->options([
                                 'home' => 'Home',
@@ -114,33 +130,33 @@ class SponsoredCardResource extends Resource
                             ->helperText('Leave empty to show on all pages')
                             ->columns(3),
 
-                        Forms\Components\Grid::make(3)->schema([
-                            Forms\Components\TextInput::make('frequency')
+                        Grid::make(3)->schema([
+                            TextInput::make('frequency')
                                 ->label('Frequency (1 per N videos)')
                                 ->numeric()
                                 ->default(8)
                                 ->minValue(2)
                                 ->maxValue(50)
                                 ->helperText('Insert 1 sponsored card every N videos'),
-                            Forms\Components\TextInput::make('weight')
+                            TextInput::make('weight')
                                 ->label('Weight / Priority')
                                 ->numeric()
                                 ->default(1)
                                 ->minValue(1)
                                 ->maxValue(100)
                                 ->helperText('Higher = more likely when multiple cards compete'),
-                            Forms\Components\Toggle::make('is_active')
+                            Toggle::make('is_active')
                                 ->label('Active')
                                 ->default(true),
                         ]),
 
-                        Forms\Components\Grid::make(2)->schema([
-                            Forms\Components\CheckboxList::make('category_ids')
+                        Grid::make(2)->schema([
+                            CheckboxList::make('category_ids')
                                 ->label('Target Categories')
                                 ->options(fn () => Category::active()->orderBy('name')->pluck('name', 'id')->toArray())
                                 ->helperText('Leave empty for all categories')
                                 ->columns(2),
-                            Forms\Components\CheckboxList::make('target_roles')
+                            CheckboxList::make('target_roles')
                                 ->label('Target User Roles')
                                 ->options([
                                     'guest' => 'Guests (not logged in)',
@@ -158,7 +174,7 @@ class SponsoredCardResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('thumb_display')
+                ImageColumn::make('thumb_display')
                     ->label('Thumb')
                     ->getStateUsing(function ($record): ?string {
                         $thumb = $record->thumbnail_url;
@@ -178,18 +194,18 @@ class SponsoredCardResource extends Resource
                     ->size(60)
                     ->defaultImageUrl(url('/images/placeholder.jpg')),
 
-                Tables\Columns\TextColumn::make('title')
+                TextColumn::make('title')
                     ->searchable()
                     ->weight('bold')
                     ->limit(40),
 
-                Tables\Columns\TextColumn::make('click_url')
+                TextColumn::make('click_url')
                     ->label('URL')
                     ->limit(30)
                     ->color('gray')
                     ->copyable(),
 
-                Tables\Columns\TextColumn::make('target_pages')
+                TextColumn::make('target_pages')
                     ->label('Pages')
                     ->formatStateUsing(function ($state): string {
                         if (empty($state) || !is_array($state)) return 'All';
@@ -198,47 +214,47 @@ class SponsoredCardResource extends Resource
                     ->badge()
                     ->color('gray'),
 
-                Tables\Columns\TextColumn::make('frequency')
+                TextColumn::make('frequency')
                     ->label('Every N')
                     ->alignCenter(),
 
-                Tables\Columns\TextColumn::make('weight')
+                TextColumn::make('weight')
                     ->alignCenter(),
 
-                Tables\Columns\TextColumn::make('clicks_count')
+                TextColumn::make('clicks_count')
                     ->label('Clicks')
                     ->numeric()
                     ->sortable()
                     ->alignCenter(),
 
-                Tables\Columns\IconColumn::make('is_active')
+                IconColumn::make('is_active')
                     ->label('Active')
                     ->boolean(),
 
-                Tables\Columns\TextColumn::make('price')
+                TextColumn::make('price')
                     ->money('USD')
                     ->sortable()
                     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('ribbon_text')
+                TextColumn::make('ribbon_text')
                     ->label('Ribbon')
                     ->badge()
                     ->color('danger')
                     ->formatStateUsing(fn ($state) => $state ? "Featured {$state}" : null)
                     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->dateTime('M j, Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('created_at', 'desc')
-            ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+            ->recordActions([
+                EditAction::make(),
+                DeleteAction::make(),
             ])
-            ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(),
+            ->toolbarActions([
+                DeleteBulkAction::make(),
             ])
             ->emptyStateHeading('No sponsored cards')
             ->emptyStateDescription('Create native in-feed ads that look like video cards with a "Sponsored" badge.')
@@ -249,9 +265,9 @@ class SponsoredCardResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListSponsoredCards::route('/'),
-            'create' => Pages\CreateSponsoredCard::route('/create'),
-            'edit' => Pages\EditSponsoredCard::route('/{record}/edit'),
+            'index' => ListSponsoredCards::route('/'),
+            'create' => CreateSponsoredCard::route('/create'),
+            'edit' => EditSponsoredCard::route('/{record}/edit'),
         ];
     }
 }

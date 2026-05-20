@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\DB;
+use Exception;
 use App\Models\Setting;
 use App\Services\FfmpegService;
 use App\Models\Video;
@@ -65,8 +67,8 @@ class SystemStatusBar
     {
         $failedCount = 0;
         try {
-            $failedCount = \Illuminate\Support\Facades\DB::table('failed_jobs')->count();
-        } catch (\Exception $e) {
+            $failedCount = DB::table('failed_jobs')->count();
+        } catch (Exception $e) {
             // Table may not exist
         }
 

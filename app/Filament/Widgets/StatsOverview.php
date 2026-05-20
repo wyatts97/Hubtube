@@ -2,6 +2,8 @@
 
 namespace App\Filament\Widgets;
 
+use Illuminate\Support\Str;
+use Throwable;
 use App\Models\Comment;
 use App\Models\Setting;
 use App\Models\User;
@@ -61,7 +63,7 @@ class StatsOverview extends BaseWidget
             // We can't track historical view snapshots, so show top video's views instead
             $topVideo = Video::orderByDesc('views_count')->first();
             $topVideoLabel = $topVideo
-                ? \Illuminate\Support\Str::limit($topVideo->title, 25) . ' (' . number_format($topVideo->views_count) . ')'
+                ? Str::limit($topVideo->title, 25) . ' (' . number_format($topVideo->views_count) . ')'
                 : 'No videos yet';
 
             // ── Comments (7-day sparkline) ──
@@ -202,7 +204,7 @@ class StatsOverview extends BaseWidget
             }
 
             return $stats;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return [];
         }
     }

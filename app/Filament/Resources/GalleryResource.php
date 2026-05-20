@@ -2,10 +2,25 @@
 
 namespace App\Filament\Resources;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Select;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\EditAction;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use App\Filament\Resources\GalleryResource\Pages\ListGalleries;
+use App\Filament\Resources\GalleryResource\Pages\EditGallery;
 use App\Filament\Resources\GalleryResource\Pages;
 use App\Models\Gallery;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -15,33 +30,33 @@ use Illuminate\Database\Eloquent\Collection;
 class GalleryResource extends Resource
 {
     protected static ?string $model = Gallery::class;
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-group';
-    protected static ?string $navigationGroup = 'Content';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-group';
+    protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 3;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
-                Forms\Components\Section::make('Gallery Details')
+        return $schema
+            ->components([
+                Section::make('Gallery Details')
                     ->schema([
-                        Forms\Components\TextInput::make('title')
+                        TextInput::make('title')
                             ->required()
                             ->maxLength(200)
                             ->columnSpanFull(),
-                        Forms\Components\TextInput::make('slug')
+                        TextInput::make('slug')
                             ->disabled()
                             ->hiddenOn('create'),
-                        Forms\Components\Textarea::make('description')
+                        Textarea::make('description')
                             ->rows(3)
                             ->columnSpanFull(),
-                        Forms\Components\Select::make('user_id')
+                        Select::make('user_id')
                             ->label('Owner')
                             ->relationship('user', 'username')
                             ->required()
                             ->searchable()
                             ->preload(),
-                        Forms\Components\Select::make('privacy')
+                        Select::make('privacy')
                             ->options([
                                 'public' => 'Public',
                                 'private' => 'Private',
@@ -49,7 +64,7 @@ class GalleryResource extends Resource
                             ])
                             ->default('public')
                             ->required(),
-                        Forms\Components\Select::make('sort_order')
+                        Select::make('sort_order')
                             ->options([
                                 'manual' => 'Manual',
                                 'newest' => 'Newest First',
@@ -65,41 +80,41 @@ class GalleryResource extends Resource
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
-                Tables\Columns\ImageColumn::make('cover_display')
+                ImageColumn::make('cover_display')
                     ->label('Cover')
                     ->getStateUsing(fn (Gallery $record): ?string => $record->cover_url)
                     ->height(50)
                     ->width(50)
                     ->extraImgAttributes(['class' => 'rounded object-cover']),
 
-                Tables\Columns\TextColumn::make('title')
+                TextColumn::make('title')
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
                     ->limit(50),
 
-                Tables\Columns\TextColumn::make('user.username')
+                TextColumn::make('user.username')
                     ->label('Owner')
                     ->searchable()
                     ->sortable()
                     ->icon('heroicon-m-user')
                     ->size('sm'),
 
-                Tables\Columns\TextColumn::make('images_count')
+                TextColumn::make('images_count')
                     ->label('Images')
                     ->numeric()
                     ->sortable()
                     ->icon('heroicon-m-photo')
                     ->iconColor('gray'),
 
-                Tables\Columns\TextColumn::make('views_count')
+                TextColumn::make('views_count')
                     ->label('Views')
                     ->numeric()
                     ->sortable()
                     ->icon('heroicon-m-eye')
                     ->iconColor('gray'),
 
-                Tables\Columns\TextColumn::make('privacy')
+                TextColumn::make('privacy')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'public' => 'success',
@@ -108,7 +123,7 @@ class GalleryResource extends Resource
                         default => 'gray',
                     }),
 
-                Tables\Columns\TextColumn::make('created_at')
+                TextColumn::make('created_at')
                     ->label('Created')
                     ->since()
                     ->sortable()
@@ -116,35 +131,35 @@ class GalleryResource extends Resource
                     ->color('gray'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('privacy')
+                SelectFilter::make('privacy')
                     ->options([
                         'public' => 'Public',
                         'private' => 'Private',
                         'unlisted' => 'Unlisted',
                     ]),
 
-                Tables\Filters\SelectFilter::make('user_id')
+                SelectFilter::make('user_id')
                     ->label('Owner')
                     ->relationship('user', 'username')
                     ->searchable()
                     ->preload(),
             ])
-            ->actions([
-                Tables\Actions\ActionGroup::make([
-                    Tables\Actions\EditAction::make(),
+            ->recordActions([
+                ActionGroup::make([
+                    EditAction::make(),
 
-                    Tables\Actions\Action::make('view_frontend')
+                    Action::make('view_frontend')
                         ->icon('heroicon-o-eye')
                         ->color('gray')
                         ->url(fn (Gallery $record): string => "/gallery/{$record->slug}")
                         ->openUrlInNewTab(),
 
-                    Tables\Actions\DeleteAction::make(),
+                    DeleteAction::make(),
                 ]),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->striped()
@@ -159,8 +174,8 @@ class GalleryResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListGalleries::route('/'),
-            'edit' => Pages\EditGallery::route('/{record}/edit'),
+            'index' => ListGalleries::route('/'),
+            'edit' => EditGallery::route('/{record}/edit'),
         ];
     }
 }

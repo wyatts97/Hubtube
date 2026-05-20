@@ -2,20 +2,23 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Actions;
+use Filament\Actions\Action;
+use Illuminate\Mail\MailManager;
+use Throwable;
 use App\Mail\TemplateMail;
 use App\Models\EmailTemplate;
 use App\Models\Setting;
 use App\Services\AdminLogger;
-use Filament\Forms\Components\Actions;
-use Filament\Forms\Components\Actions\Action;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Mail;
@@ -25,11 +28,11 @@ class IntegrationSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-puzzle-piece';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-puzzle-piece';
     protected static ?string $navigationLabel = 'Services & Email';
-    protected static ?string $navigationGroup = 'Integrations';
+    protected static string | \UnitEnum | null $navigationGroup = 'Integrations';
     protected static ?int $navigationSort = 1;
-    protected static string $view = 'filament.pages.integration-settings';
+    protected string $view = 'filament.pages.integration-settings';
 
     public ?array $data = [];
 
@@ -62,13 +65,13 @@ class IntegrationSettings extends Page implements HasForms
         $this->loadEmailTemplates();
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Tabs::make('Integration Settings')
                     ->tabs([
-                        Tabs\Tab::make('Bunny Stream')
+                        Tab::make('Bunny Stream')
                             ->icon('heroicon-o-cloud')
                             ->schema([
                                 Section::make('Bunny Stream')
@@ -90,7 +93,7 @@ class IntegrationSettings extends Page implements HasForms
                                             ->helperText('For signed URL authentication. Leave empty if not using token auth.'),
                                     ])->columns(2),
                             ]),
-                        Tabs\Tab::make('Email / SMTP')
+                        Tab::make('Email / SMTP')
                             ->icon('heroicon-o-envelope')
                             ->schema([
                                 Section::make('Mail Server Configuration')
@@ -239,7 +242,7 @@ class IntegrationSettings extends Page implements HasForms
         // with the updated config instead of reusing the boot-time .env transport.
         app()->forgetInstance('mail.manager');
         app()->forgetInstance('mailer');
-        app(\Illuminate\Mail\MailManager::class)->forgetMailers();
+        app(MailManager::class)->forgetMailers();
     }
 
     public function sendTestEmail(): void
@@ -259,7 +262,7 @@ class IntegrationSettings extends Page implements HasForms
                 ->body("Check your inbox at {$to}")
                 ->success()
                 ->send();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Notification::make()
                 ->title('Email sending failed')
                 ->body($e->getMessage())
@@ -413,7 +416,7 @@ class IntegrationSettings extends Page implements HasForms
                 ->body("Check your inbox at {$to}")
                 ->success()
                 ->send();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Notification::make()
                 ->title('Email sending failed')
                 ->body($e->getMessage())

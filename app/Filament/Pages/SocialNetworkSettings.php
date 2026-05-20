@@ -2,20 +2,23 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Actions;
+use Filament\Actions\Action;
+use App\Services\TwitterService;
+use Throwable;
 use App\Models\Setting;
 use App\Services\AdminLogger;
-use Filament\Forms\Components\Actions;
-use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
@@ -24,13 +27,13 @@ class SocialNetworkSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-share';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-share';
     protected static ?string $navigationLabel = 'Social Networks';
-    protected static ?string $navigationGroup = 'Integrations';
+    protected static string | \UnitEnum | null $navigationGroup = 'Integrations';
     protected static ?int $navigationSort = 2;
     protected static ?string $title = 'Social Networks';
     protected static ?string $slug = 'social-networks';
-    protected static string $view = 'filament.pages.social-network-settings';
+    protected string $view = 'filament.pages.social-network-settings';
 
     public ?array $data = [];
 
@@ -70,13 +73,13 @@ class SocialNetworkSettings extends Page implements HasForms
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Tabs::make('Social Network Settings')
                     ->tabs([
-                        Tabs\Tab::make('Social Login')
+                        Tab::make('Social Login')
                             ->icon('heroicon-o-arrow-right-on-rectangle')
                             ->schema([
                                 Placeholder::make('social_login_info')
@@ -145,7 +148,7 @@ class SocialNetworkSettings extends Page implements HasForms
                                     ])->columns(2),
                             ]),
 
-                        Tabs\Tab::make('Twitter Auto-Post')
+                        Tab::make('Twitter Auto-Post')
                             ->icon('heroicon-o-megaphone')
                             ->schema([
                                 Placeholder::make('twitter_api_info')
@@ -312,7 +315,7 @@ class SocialNetworkSettings extends Page implements HasForms
         $this->save();
 
         try {
-            $service = app(\App\Services\TwitterService::class);
+            $service = app(TwitterService::class);
             $result = $service->sendTestTweet();
 
             if ($result) {
@@ -328,7 +331,7 @@ class SocialNetworkSettings extends Page implements HasForms
                     ->danger()
                     ->send();
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Notification::make()
                 ->title('Tweet failed')
                 ->body($e->getMessage())

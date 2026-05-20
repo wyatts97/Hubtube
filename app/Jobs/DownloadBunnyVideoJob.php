@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use Throwable;
 use App\Models\Video;
 use App\Services\BunnyStreamService;
 use Illuminate\Bus\Queueable;
@@ -37,7 +38,7 @@ class DownloadBunnyVideoJob implements ShouldQueue
         }
     }
 
-    public function failed(\Throwable $exception): void
+    public function failed(Throwable $exception): void
     {
         Log::error('DownloadBunnyVideo: job failed permanently', [
             'video_id' => $this->video->id,

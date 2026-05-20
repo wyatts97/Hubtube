@@ -2,10 +2,12 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Section;
 use App\Models\Setting;
 use App\Services\AdminLogger;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -13,7 +15,6 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\HtmlString;
@@ -23,11 +24,11 @@ class SeoSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-magnifying-glass';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-magnifying-glass';
     protected static ?string $navigationLabel = 'SEO Settings';
-    protected static ?string $navigationGroup = 'Appearance';
+    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 4;
-    protected static string $view = 'filament.pages.site-settings';
+    protected string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
 
@@ -100,13 +101,13 @@ class SeoSettings extends Page implements HasForms
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Tabs::make('SEO Settings')
                     ->tabs([
-                        Tabs\Tab::make('Global SEO')
+                        Tab::make('Global SEO')
                             ->icon('heroicon-o-globe-alt')
                             ->schema([
                                 Section::make('Site Meta Tags')
@@ -174,7 +175,7 @@ class SeoSettings extends Page implements HasForms
                                     ])->columns(2),
                             ]),
 
-                        Tabs\Tab::make('Search Engines')
+                        Tab::make('Search Engines')
                             ->icon('heroicon-o-check-badge')
                             ->schema([
                                 Section::make('Verification Codes')
@@ -218,7 +219,7 @@ class SeoSettings extends Page implements HasForms
                                     ])->columns(2),
                             ]),
 
-                        Tabs\Tab::make('Video SEO')
+                        Tab::make('Video SEO')
                             ->icon('heroicon-o-play')
                             ->schema([
                                 Placeholder::make('video_seo_info')
@@ -275,7 +276,7 @@ class SeoSettings extends Page implements HasForms
                                     ]),
                             ]),
 
-                        Tabs\Tab::make('Page Templates')
+                        Tab::make('Page Templates')
                             ->icon('heroicon-o-document-text')
                             ->schema([
                                 Section::make('Homepage')
@@ -330,7 +331,7 @@ class SeoSettings extends Page implements HasForms
                                     ])->columns(2),
                             ]),
 
-                        Tabs\Tab::make('Structured Data')
+                        Tab::make('Structured Data')
                             ->icon('heroicon-o-code-bracket')
                             ->schema([
                                 Placeholder::make('schema_info')
@@ -367,7 +368,7 @@ class SeoSettings extends Page implements HasForms
                                     ])->columns(2),
                             ]),
 
-                        Tabs\Tab::make('Sitemap')
+                        Tab::make('Sitemap')
                             ->icon('heroicon-o-map')
                             ->schema([
                                 Section::make('Sitemap URLs')

@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use Throwable;
+use Exception;
 use App\Models\Setting;
 use Closure;
 use Illuminate\Http\Request;
@@ -14,7 +16,7 @@ class AgeVerification
     {
         try {
             $required = (bool) Setting::get('age_verification_required', true);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return $next($request);
         }
 
@@ -60,7 +62,7 @@ class AgeVerification
             if ($request->session()->get('age_verified', false)) {
                 return true;
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Session might not be available
         }
 

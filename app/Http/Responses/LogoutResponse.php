@@ -2,11 +2,10 @@
 
 namespace App\Http\Responses;
 
-use Filament\Http\Responses\Auth\Contracts\LogoutResponse as LogoutResponseContract;
 use Illuminate\Http\RedirectResponse;
 use Livewire\Features\SupportRedirects\Redirector;
 
-class LogoutResponse implements LogoutResponseContract
+class LogoutResponse implements \Filament\Auth\Http\Responses\Contracts\LogoutResponse
 {
     public function toResponse($request): RedirectResponse | Redirector
     {
