@@ -166,7 +166,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandName($brandName)
             ->font('Inter')
             ->colors([
-                'primary' => Color::Indigo,
+                'primary' => Color::hex('#c9a43a'),
                 'danger'  => Color::Rose,
                 'warning' => Color::Amber,
                 'success' => Color::Emerald,

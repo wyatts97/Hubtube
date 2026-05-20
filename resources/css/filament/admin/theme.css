@@ -1,11 +1,68 @@
 /*
- * HubTube Admin Theme
- * Custom Filament 3 panel overrides for a modern, branded admin experience.
+ * HubTube Admin Theme — Edinburgh Edition
+ * Regal stone-gray & brass aesthetic for Filament v3.
+ * Inspired by Edinburgh's Old Town: warm sandstone, aged brass, heavy borders.
  */
 
-/* ── Sidebar Polish ── */
+/* ═══════════════════════════════════════════════════════════════
+   CSS Custom Properties — Edinburgh Palette
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+    --ed-radius:    3px;
+    --ed-radius-sm: 2px;
+    --ed-transition:      160ms ease-out;
+    --ed-transition-slow: 280ms ease-out;
+
+    --ed-shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.5);
+    --ed-shadow-md:   0 4px 16px -4px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.02);
+    --ed-shadow-lg:   0 16px 48px -12px rgb(0 0 0 / 0.7), 0 6px 16px -6px rgb(0 0 0 / 0.5);
+    --ed-shadow-inset: inset 0 2px 4px rgb(0 0 0 / 0.3);
+
+    --ed-border:      rgb(255 255 255 / 0.05);
+    --ed-border-mid:  rgb(255 255 255 / 0.08);
+    --ed-border-heavy: rgb(255 255 255 / 0.12);
+    --ed-border-ornate: rgb(201 164 58 / 0.15);
+
+    --ed-surface:      #13110e;
+    --ed-surface-dim:  #0d0c0a;
+    --ed-surface-card: #1a1815;
+    --ed-surface-inset: #0a0908;
+    --ed-surface-deep: #070605;
+
+    --ed-brass:        #c9a43a;
+    --ed-brass-hover:  #b89430;
+    --ed-brass-light:  #daba5e;
+    --ed-brass-dim:    rgba(201, 164, 58, 0.06);
+    --ed-brass-ring:   rgba(201, 164, 58, 0.15);
+    --ed-brass-glow:   rgba(201, 164, 58, 0.25);
+
+    --ed-slate:        #d4cfc4;
+    --ed-slate-dim:    #8e887c;
+    --ed-slate-muted:  #5a554c;
+    --ed-slate-faint:  #3a3630;
+
+    --ed-body-bg:      #0d0c0a;
+
+    /* Corner bracket vars */
+    --ed-cb-color:   rgba(201, 164, 58, 0.18);
+    --ed-cb-size:    22px;
+    --ed-cb-weight:  1px;
+    --ed-cb-offset:  7px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Core Filament Overrides
+   ═══════════════════════════════════════════════════════════════ */
+
+.fi-body {
+    background-color: var(--ed-body-bg);
+    color: var(--ed-slate);
+}
+
+/* ── Sidebar — Gradient stone with brass left-border indicators ── */
 .fi-sidebar {
-    backdrop-filter: blur(12px);
+    background: linear-gradient(180deg, rgba(19, 17, 14, 0.95), rgba(13, 12, 10, 0.95));
+    border-right: 1px solid var(--ed-border);
 }
 
 .fi-sidebar-nav-groups {
@@ -15,35 +72,103 @@
 .fi-sidebar-group-label {
     font-size: 0.65rem;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    opacity: 0.5;
+    color: var(--ed-slate-muted);
 }
 
 .fi-sidebar-item-label {
     font-size: 0.8125rem;
     font-weight: 500;
+    color: var(--ed-slate-dim);
 }
 
 .fi-sidebar-item-icon {
     width: 1.125rem;
     height: 1.125rem;
+    color: var(--ed-slate-muted);
 }
 
-/* Active sidebar item */
+/* Active sidebar item — brass left border instead of background fill */
+.fi-sidebar-item-active {
+    border-left: 3px solid var(--ed-brass);
+    background: linear-gradient(90deg, var(--ed-brass-dim), transparent 80%);
+}
+
 .fi-sidebar-item-active .fi-sidebar-item-label {
     font-weight: 600;
+    color: var(--ed-brass);
+}
+
+.fi-sidebar-item-active .fi-sidebar-item-icon {
+    color: var(--ed-brass);
 }
 
 /* ── Top Bar ── */
 .fi-topbar {
-    border-bottom-width: 1px;
+    background-color: rgba(19, 17, 14, 0.85);
+    border-bottom: 1px solid var(--ed-border);
+    backdrop-filter: blur(8px);
 }
 
-/* ── Cards / Sections ── */
+.fi-topbar-item-active a,
+.fi-topbar-item-active button {
+    color: var(--ed-brass);
+}
+
+/* ── Sections / Cards — Corner brackets + border ── */
 .fi-section {
-    border-radius: 0.75rem;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.03);
+    position: relative;
+    border-radius: var(--ed-radius);
+    background-color: var(--ed-surface-card);
+    border: 1px solid var(--ed-border-mid);
+    overflow: visible;
+}
+
+/* Corner bracket ::before */
+.fi-section::before,
+.fi-wi-stats-overview-stat::before {
+    content: "";
+    position: absolute;
+    top: var(--ed-cb-offset);
+    left: var(--ed-cb-offset);
+    right: var(--ed-cb-offset);
+    bottom: var(--ed-cb-offset);
+    border: var(--ed-cb-weight) solid var(--ed-cb-color);
+    border-radius: 0;
+    pointer-events: none;
+    z-index: 1;
+    -webkit-mask-image:
+        linear-gradient(#000, #000),
+        linear-gradient(#000, #000),
+        linear-gradient(#000, #000),
+        linear-gradient(#000, #000);
+    -webkit-mask-position: 0 0, 100% 0, 0 100%, 100% 100%;
+    -webkit-mask-size: var(--ed-cb-size) var(--ed-cb-size);
+    -webkit-mask-repeat: no-repeat;
+    mask-image:
+        linear-gradient(#000, #000),
+        linear-gradient(#000, #000),
+        linear-gradient(#000, #000),
+        linear-gradient(#000, #000);
+    mask-position: 0 0, 100% 0, 0 100%, 100% 100%;
+    mask-size: var(--ed-cb-size) var(--ed-cb-size);
+    mask-repeat: no-repeat;
+}
+
+/* Outer border ::after */
+.fi-section::after,
+.fi-wi-stats-overview-stat::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 1px solid var(--ed-border-mid);
+    border-radius: var(--ed-radius);
+    pointer-events: none;
+    z-index: 0;
 }
 
 .fi-section-header {
@@ -57,37 +182,30 @@
 /* ── Stat Widgets ── */
 .fi-wi-stats-overview-stat {
     position: relative;
-    border-radius: 0.875rem;
+    border-radius: var(--ed-radius);
     min-height: 10.5rem;
     padding: 1.25rem !important;
-    transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-    overflow: hidden;
+    background-color: var(--ed-surface-card);
+    border: 1px solid var(--ed-border-mid);
+    transition: transform var(--ed-transition), box-shadow var(--ed-transition-slow), border-color var(--ed-transition);
+    overflow: visible;
 }
 
-/* Subtle gradient top-border accent */
+/* Brass gradient top-border accent */
 .fi-wi-stats-overview-stat::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, rgb(99 102 241 / 0.5), transparent);
-    opacity: 0.5;
-    pointer-events: none;
+    --ed-cb-color: rgba(201, 164, 58, 0.22);
 }
 
 .fi-wi-stats-overview-stat:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 28px -12px rgb(0 0 0 / 0.35);
+    box-shadow: var(--ed-shadow-lg);
 }
 
 .fi-wi-stats-overview-stat:hover::before {
-    opacity: 1;
+    --ed-cb-color: rgba(201, 164, 58, 0.35);
 }
 
-/* Kill Filament's default hover ring/border on stat cards — keep only the
-   gradient top accent and the translateY "rise" animation. */
+/* Remove default hover ring */
 .fi-wi-stats-overview-stat,
 .fi-wi-stats-overview-stat:hover,
 .fi-wi-stats-overview-stat:focus,
@@ -98,11 +216,11 @@
     --tw-ring-offset-shadow: 0 0 transparent !important;
 }
 
-.dark .fi-wi-stats-overview-stat {
-    border-color: rgb(255 255 255 / 0.06) !important;
+.fi-wi-stats-overview-stat {
+    border-color: var(--ed-border) !important;
 }
-.dark .fi-wi-stats-overview-stat:hover {
-    border-color: rgb(255 255 255 / 0.06) !important;
+.fi-wi-stats-overview-stat:hover {
+    border-color: var(--ed-border-ornate) !important;
 }
 
 /* Numeric tabular alignment on stat values */
@@ -110,14 +228,26 @@
     font-variant-numeric: tabular-nums;
     font-weight: 700;
     letter-spacing: -0.01em;
+    color: var(--ed-slate);
 }
 
 .fi-wi-stats-overview-stat-description {
     font-size: 0.75rem;
     line-height: 1.35;
+    color: var(--ed-slate-dim);
+}
+
+.fi-wi-stats-overview-stat-chart {
+    border-radius: var(--ed-radius);
 }
 
 /* ── Tables ── */
+.fi-ta {
+    border-radius: var(--ed-radius);
+    overflow: hidden;
+    border: 1px solid var(--ed-border);
+}
+
 .fi-ta-header-cell {
     font-size: 0.6875rem;
     font-weight: 700;
@@ -125,49 +255,85 @@
     text-transform: uppercase;
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
+    background-color: var(--ed-surface-dim);
+    color: var(--ed-slate-dim);
+    border-bottom: 2px solid var(--ed-border-heavy);
 }
 
 .fi-ta-cell {
     font-size: 0.875rem;
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
-}
-
-/* Rounder table container */
-.fi-ta {
-    border-radius: 0.875rem;
-    overflow: hidden;
-}
-
-/* Stripe contrast on dark */
-.dark .fi-ta-row:nth-child(even) {
-    background-color: rgb(255 255 255 / 0.015);
+    color: var(--ed-slate-dim);
 }
 
 .fi-ta-row:nth-child(even) {
-    background-color: rgb(0 0 0 / 0.02);
+    background-color: rgb(255 255 255 / 0.015);
 }
 
-/* Row hover */
 .fi-ta-row:hover {
-    background-color: rgb(99 102 241 / 0.04);
-}
-.dark .fi-ta-row:hover {
-    background-color: rgb(99 102 241 / 0.06);
+    background-color: var(--ed-brass-dim);
 }
 
 /* ── Form Fields ── */
 .fi-fo-field-wrp label {
     font-size: 0.8125rem;
     font-weight: 600;
+    color: var(--ed-slate);
+}
+
+.fi-fo-text-input,
+.fi-fo-select-input,
+.fi-fo-textarea {
+    background-color: var(--ed-surface-inset);
+    border: 1px solid var(--ed-border);
+    border-radius: var(--ed-radius-sm);
+    box-shadow: var(--ed-shadow-inset);
+    color: var(--ed-slate);
+    transition: border-color var(--ed-transition), box-shadow var(--ed-transition);
+}
+
+.fi-fo-text-input:focus,
+.fi-fo-select-input:focus,
+.fi-fo-textarea:focus {
+    border-color: var(--ed-brass);
+    box-shadow: 0 0 0 3px var(--ed-brass-ring), var(--ed-shadow-inset);
+    outline: none;
 }
 
 /* ── Buttons ── */
 .fi-btn {
-    border-radius: 0.5rem;
+    border-radius: var(--ed-radius-sm);
     font-weight: 600;
     font-size: 0.8125rem;
     letter-spacing: 0.01em;
+    transition: all var(--ed-transition);
+}
+
+/* Primary button — polished brass gradient */
+.fi-btn-color-primary {
+    background: linear-gradient(135deg, var(--ed-brass) 0%, var(--ed-brass-hover) 100%);
+    color: #0d0c0a;
+    border: 1px solid rgba(201, 164, 58, 0.4);
+    box-shadow: 0 0 12px -4px var(--ed-brass-glow), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+
+.fi-btn-color-primary:hover {
+    background: linear-gradient(135deg, var(--ed-brass-light) 0%, var(--ed-brass) 100%);
+    box-shadow: 0 0 16px -2px var(--ed-brass-glow), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+/* Secondary / outline buttons */
+.fi-btn-color-secondary {
+    background-color: var(--ed-surface-card);
+    border: 1px solid var(--ed-border-mid);
+    color: var(--ed-slate);
+}
+
+.fi-btn-color-secondary:hover {
+    border-color: var(--ed-brass);
+    color: var(--ed-brass);
+    background-color: var(--ed-brass-dim);
 }
 
 /* ── Badges ── */
@@ -182,34 +348,69 @@
 .fi-tabs-item-label {
     font-size: 0.8125rem;
     font-weight: 600;
+    color: var(--ed-slate-dim);
 }
 
-/* ── Modal ── */
+.fi-tabs-item-active .fi-tabs-item-label {
+    color: var(--ed-brass);
+}
+
+.fi-tabs-item-active {
+    border-bottom: 2px solid var(--ed-brass);
+}
+
+/* ── Modal — heavy brass top-border ── */
 .fi-modal-window {
-    border-radius: 1rem;
+    border-radius: var(--ed-radius);
+    background-color: var(--ed-surface-card);
+    border: 1px solid var(--ed-border-mid);
+    box-shadow: var(--ed-shadow-lg);
 }
 
-/* ── Login Page ── */
+.fi-modal-window::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--ed-brass), transparent);
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.fi-modal-heading {
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ed-slate);
+}
+
+/* ── Login Page — stone-dark gradient ── */
 .fi-login-page {
-    background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #2d1b4e 100%);
+    background: linear-gradient(135deg, #0a0908 0%, #13110e 50%, #1a1815 100%);
 }
 
 .fi-login-page .fi-simple-main-ctn {
-    backdrop-filter: blur(16px);
-}
-
-/* Dark mode: slightly elevated cards */
-.dark .fi-section {
-    box-shadow: 0 1px 3px rgb(0 0 0 / 0.15), 0 0 0 1px rgb(255 255 255 / 0.03);
-}
-
-.dark .fi-wi-stats-overview-stat:hover {
-    box-shadow: 0 4px 16px rgb(0 0 0 / 0.25);
+    background-color: var(--ed-surface-card);
+    border: 1px solid var(--ed-border-mid);
+    border-radius: var(--ed-radius);
+    box-shadow: var(--ed-shadow-lg);
 }
 
 /* ── Notification toasts ── */
 .fi-no {
-    border-radius: 0.75rem;
+    border-radius: var(--ed-radius);
+    background-color: var(--ed-surface-card);
+    border: 1px solid var(--ed-border-mid);
+}
+
+/* ── Dropdown panels ── */
+.fi-dropdown-panel {
+    background-color: var(--ed-surface-card);
+    border: 1px solid var(--ed-border-mid);
+    border-radius: var(--ed-radius);
+    box-shadow: var(--ed-shadow-md);
 }
 
 /* ── Custom: Pending moderation alert banner ── */
@@ -240,9 +441,9 @@
     align-items: center;
     padding: 1.25rem 1.5rem;
     border-radius: 0.875rem;
-    background: linear-gradient(135deg, rgb(99 102 241 / 0.08), rgb(168 85 247 / 0.08));
-    border: 1px solid rgb(99 102 241 / 0.15);
-    box-shadow: 0 0 0 1px rgb(99 102 241 / 0.04), 0 8px 32px -12px rgb(99 102 241 / 0.18);
+    background: linear-gradient(135deg, rgba(201, 164, 58, 0.08), rgba(184, 148, 48, 0.08));
+    border: 1px solid rgba(201, 164, 58, 0.15);
+    box-shadow: 0 0 0 1px rgba(201, 164, 58, 0.04), 0 8px 32px -12px rgba(201, 164, 58, 0.18);
 }
 
 @media (min-width: 768px) {
@@ -252,9 +453,9 @@
 }
 
 .dark .ht-welcome-card {
-    background: linear-gradient(135deg, rgb(99 102 241 / 0.12), rgb(168 85 247 / 0.1));
-    border-color: rgb(99 102 241 / 0.2);
-    box-shadow: 0 0 0 1px rgb(99 102 241 / 0.08), 0 12px 40px -16px rgb(99 102 241 / 0.3);
+    background: linear-gradient(135deg, rgba(201, 164, 58, 0.12), rgba(184, 148, 48, 0.1));
+    border-color: rgba(201, 164, 58, 0.2);
+    box-shadow: 0 0 0 1px rgba(201, 164, 58, 0.08), 0 12px 40px -16px rgba(201, 164, 58, 0.3);
 }
 
 /* ── Custom: Quick action buttons row ── */
@@ -316,14 +517,14 @@
     flex-shrink: 0;
 }
 
-/* Tint variants */
-.ht-tint-indigo  { background: rgb(99 102 241 / 0.1);  color: rgb(129 140 248); }
+/* Tint variants — brass & stone palette */
+.ht-tint-indigo  { background: rgba(201, 164, 58, 0.1);  color: #daba5e; }
 .ht-tint-emerald { background: rgb(16 185 129 / 0.1);  color: rgb(52 211 153); }
 .ht-tint-sky     { background: rgb(14 165 233 / 0.1);  color: rgb(56 189 248); }
 .ht-tint-amber   { background: rgb(245 158 11 / 0.1);  color: rgb(251 191 36); }
 .ht-tint-rose    { background: rgb(244 63 94 / 0.1);   color: rgb(251 113 133); }
 
-.ht-summary-card[data-tint="indigo"]::before  { background: linear-gradient(90deg, transparent, rgb(99 102 241 / 0.7), transparent); }
+.ht-summary-card[data-tint="indigo"]::before  { background: linear-gradient(90deg, transparent, rgba(201, 164, 58, 0.7), transparent); }
 .ht-summary-card[data-tint="emerald"]::before { background: linear-gradient(90deg, transparent, rgb(16 185 129 / 0.7), transparent); }
 .ht-summary-card[data-tint="sky"]::before     { background: linear-gradient(90deg, transparent, rgb(14 165 233 / 0.7), transparent); }
 .ht-summary-card[data-tint="amber"]::before   { background: linear-gradient(90deg, transparent, rgb(245 158 11 / 0.7), transparent); }
@@ -529,11 +730,11 @@ kbd {
 }
 
 .ht-panel__table tbody tr:hover td {
-    background: rgb(99 102 241 / 0.04);
+    background: rgba(201, 164, 58, 0.04);
 }
 
 .dark .ht-panel__table tbody tr:hover td {
-    background: rgb(99 102 241 / 0.07);
+    background: rgba(201, 164, 58, 0.07);
 }
 
 .ht-panel__name {
@@ -610,7 +811,7 @@ kbd {
     transform: scale(3.8);
     z-index: 60;
     box-shadow: 0 24px 56px -12px rgb(0 0 0 / 0.7),
-                0 0 0 2px rgb(99 102 241 / 0.7);
+                0 0 0 2px rgba(201, 164, 58, 0.7);
     border-radius: 0.5rem;
 }
 
@@ -718,7 +919,7 @@ kbd {
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent, rgb(99 102 241 / 0.65), rgb(168 85 247 / 0.45), transparent);
+    background: linear-gradient(90deg, transparent, rgba(201, 164, 58, 0.65), rgba(184, 148, 48, 0.45), transparent);
     opacity: 0.8;
     pointer-events: none;
     z-index: 2;
@@ -771,14 +972,14 @@ kbd {
     gap: 0.25rem;
     font-size: 0.75rem;
     font-weight: 600;
-    color: rgb(99 102 241);
+    color: #c9a43a;
     padding: 0.25rem 0.5rem;
     border-radius: 0.375rem;
     transition: background 0.15s ease, color 0.15s ease;
 }
 .ht-vidwidget__link:hover {
-    background: rgb(99 102 241 / 0.1);
-    color: rgb(129 140 248);
+    background: rgba(201, 164, 58, 0.1);
+    color: #daba5e;
 }
 
 .ht-vidwidget__filter {
@@ -804,13 +1005,13 @@ kbd {
     border-color: rgb(255 255 255 / 0.08);
 }
 .ht-vidwidget__filter-btn:hover {
-    color: rgb(99 102 241);
-    border-color: rgb(99 102 241 / 0.3);
+    color: #c9a43a;
+    border-color: rgba(201, 164, 58, 0.3);
 }
 .dark .ht-vidwidget__filter-btn:hover {
-    color: rgb(129 140 248);
-    background: rgb(99 102 241 / 0.1);
-    border-color: rgb(99 102 241 / 0.3);
+    color: #daba5e;
+    background: rgba(201, 164, 58, 0.1);
+    border-color: rgba(201, 164, 58, 0.3);
 }
 .ht-vidwidget__filter-menu {
     position: absolute;
@@ -846,19 +1047,19 @@ kbd {
     color: rgb(209 213 219);
 }
 .ht-vidwidget__filter-item:hover {
-    background: rgb(99 102 241 / 0.1);
-    color: rgb(99 102 241);
+    background: rgba(201, 164, 58, 0.1);
+    color: #c9a43a;
 }
 .dark .ht-vidwidget__filter-item:hover {
-    color: rgb(165 180 252);
+    color: #daba5e;
 }
 .ht-vidwidget__filter-item.is-active {
-    background: rgb(99 102 241 / 0.15);
-    color: rgb(99 102 241);
+    background: rgba(201, 164, 58, 0.15);
+    color: #c9a43a;
     font-weight: 600;
 }
 .dark .ht-vidwidget__filter-item.is-active {
-    color: rgb(165 180 252);
+    color: #daba5e;
 }
 
 .ht-vidwidget__body {
@@ -888,10 +1089,10 @@ kbd {
     transition: background 0.15s ease, transform 0.15s ease;
 }
 .ht-vidrow:hover {
-    background: rgb(99 102 241 / 0.06);
+    background: rgba(201, 164, 58, 0.06);
 }
 .dark .ht-vidrow:hover {
-    background: rgb(99 102 241 / 0.1);
+    background: rgba(201, 164, 58, 0.1);
 }
 
 .ht-vidrow__rank {
@@ -1006,8 +1207,8 @@ kbd {
 }
 .ht-vidstat--views { color: rgb(56 189 248); }
 .dark .ht-vidstat--views { color: rgb(125 211 252); }
-.ht-vidstat--likes { color: rgb(168 85 247); }
-.dark .ht-vidstat--likes { color: rgb(196 181 253); }
+.ht-vidstat--likes { color: #c9a43a; }
+.dark .ht-vidstat--likes { color: #daba5e; }
 
 /* Status pills */
 .ht-vidpill {
