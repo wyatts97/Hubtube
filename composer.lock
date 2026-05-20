@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3ece54330f06eb6f809b4f601b9ffc23",
+    "content-hash": "01c86d9e1369cf965d52a8ec829b69ea",
     "packages": [
         {
             "name": "abraham/twitteroauth",
@@ -6187,6 +6187,65 @@
             "time": "2024-09-09T07:06:30+00:00"
         },
         {
+            "name": "openplain/filament-shadcn-theme",
+            "version": "v1.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/openplain/filament-shadcn-theme.git",
+                "reference": "e4918c8a34d6089326af25d21ff26ed069f0d05a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/openplain/filament-shadcn-theme/zipball/e4918c8a34d6089326af25d21ff26ed069f0d05a",
+                "reference": "e4918c8a34d6089326af25d21ff26ed069f0d05a",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^4.0|^5.0",
+                "php": "^8.2|^8.3|^8.4"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Openplain\\FilamentShadcnTheme\\FilamentShadcnThemeServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Openplain\\FilamentShadcnTheme\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Openplain",
+                    "email": "hello@openplain.dev"
+                }
+            ],
+            "description": "Shadcn UI theme for Filament - Beautiful color themes with the iconic Shadcn design system",
+            "homepage": "https://github.com/openplain/filament-shadcn-theme",
+            "keywords": [
+                "colors",
+                "dark-mode",
+                "filament",
+                "filament-theme",
+                "light-mode",
+                "shadcn",
+                "shadcn-ui",
+                "theme"
+            ],
+            "support": {
+                "issues": "https://github.com/openplain/filament-shadcn-theme/issues",
+                "source": "https://github.com/openplain/filament-shadcn-theme/tree/v1.1.0"
+            },
+            "time": "2026-01-19T14:22:59+00:00"
+        },
+        {
             "name": "openspout/openspout",
             "version": "v4.32.0",
             "source": {
@@ -9243,64 +9302,6 @@
                 }
             ],
             "time": "2026-01-12T07:42:22+00:00"
-        },
-        {
-            "name": "spykapps/theme-edinburgh",
-            "version": "v1.0.3",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/SpykApp/theme-edinburgh.git",
-                "reference": "a0c76a12f237e03913b03747e5daae10a8c2c3f8"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/SpykApp/theme-edinburgh/zipball/a0c76a12f237e03913b03747e5daae10a8c2c3f8",
-                "reference": "a0c76a12f237e03913b03747e5daae10a8c2c3f8",
-                "shasum": ""
-            },
-            "require": {
-                "filament/filament": "^4.0|^5.0",
-                "php": "^8.1",
-                "spatie/laravel-package-tools": "^1.16"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "SpyApp\\ThemeEdinburgh\\ThemeEdinburghServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "SpyApp\\ThemeEdinburgh\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Spykapps",
-                    "email": "hello@spykapps.com"
-                }
-            ],
-            "description": "A royal Filament theme inspired by Edinburgh's Old Town — stone-gray surfaces, brass accents, heavy borders, and ornate details.",
-            "homepage": "https://spykapps.com/theme-edinburgh",
-            "keywords": [
-                "edinburgh",
-                "filament",
-                "filament-plugin",
-                "laravel",
-                "spykapps",
-                "theme"
-            ],
-            "support": {
-                "issues": "https://github.com/SpykApp/theme-edinburgh/issues",
-                "source": "https://github.com/SpykApp/theme-edinburgh/tree/v1.0.3"
-            },
-            "time": "2026-03-12T07:52:19+00:00"
         },
         {
             "name": "stichoza/google-translate-php",

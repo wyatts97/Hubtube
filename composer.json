@@ -28,7 +28,7 @@
         "league/flysystem-aws-s3-v3": "^3.0",
         "leandrocfe/filament-apex-charts": "^4.0",
         "meilisearch/meilisearch-php": "^1.6",
-        "spykapps/theme-edinburgh": "^1.0",
+        "openplain/filament-shadcn-theme": "^1.0",
         "sentry/sentry-laravel": "^4.20",
         "socialiteproviders/reddit": "^4.2",
         "spatie/laravel-activitylog": "^4.8",

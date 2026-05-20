@@ -7,7 +7,6 @@ use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Croustibat\FilamentJobsMonitor\FilamentJobsMonitorPlugin;
 use Awcodes\Overlook\OverlookPlugin;
 use Croustibat\FilamentJobsMonitor\Resources\QueueMonitorResource;
-use SpyApp\ThemeEdinburgh\ThemeEdinburghPlugin;
 use Throwable;
 use App\Filament\Pages\Dashboard;
 use App\Services\SystemStatusBar;
@@ -22,6 +21,7 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Openplain\FilamentShadcnTheme\Color as ShadcnColor;
 use Filament\View\PanelsRenderHook;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -67,11 +67,6 @@ class AdminPanelProvider extends PanelProvider
                 ->excludes([
                     QueueMonitorResource::class,
                 ]);
-        }
-
-        // Edinburgh theme — stone-gray palette, brass accents, heavy borders
-        if (class_exists(ThemeEdinburghPlugin::class)) {
-            $plugins[] = ThemeEdinburghPlugin::make();
         }
 
         return $plugins;
@@ -145,12 +140,12 @@ class AdminPanelProvider extends PanelProvider
             ->brandName($brandName)
             ->font('Inter')
             ->colors([
-                'primary' => Color::Indigo,
-                'danger'  => Color::Rose,
-                'warning' => Color::Amber,
-                'success' => Color::Emerald,
-                'info'    => Color::Sky,
-                'gray'    => Color::Zinc,
+                'primary' => ShadcnColor::Default,
+                'danger'  => ShadcnColor::Red,
+                'warning' => ShadcnColor::Yellow,
+                'success' => ShadcnColor::Green,
+                'info'    => ShadcnColor::Blue,
+                'gray'    => ShadcnColor::Default,
             ])
             ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
             ->globalSearchFieldKeyBindingSuffix();
@@ -208,20 +203,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                function (): string {
-                    $edinburghPath = base_path('vendor/spykapps/theme-edinburgh/resources/css/edinburgh.css');
-                    $themePath = resource_path('css/filament/admin/theme.css');
-
-                    $css = '';
-                    if (file_exists($edinburghPath)) {
-                        $css .= file_get_contents($edinburghPath);
-                    }
-                    if (file_exists($themePath)) {
-                        $css .= file_get_contents($themePath);
-                    }
-
-                    return '<style>' . $css . '</style>';
-                },
+                fn (): string => '<style>' . file_get_contents(resource_path('css/filament/admin/theme.css')) . '</style>',
             )
             ->navigationGroups(static::buildNavigationGroups())
             ->plugins(static::buildPlugins())
