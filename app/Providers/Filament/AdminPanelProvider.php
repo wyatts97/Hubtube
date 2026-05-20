@@ -195,6 +195,11 @@ class AdminPanelProvider extends PanelProvider
                     ->url('/')
                     ->icon('heroicon-o-globe-alt'),
                 MenuItem::make()
+                    ->label('Pulse')
+                    ->url('/pulse')
+                    ->icon('heroicon-o-chart-bar')
+                    ->openUrlInNewTab(),
+                MenuItem::make()
                     ->label('Flush Cache')
                     ->icon('heroicon-o-arrow-path')
                     ->url('/admin/flush-cache')
