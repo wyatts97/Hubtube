@@ -32,6 +32,8 @@ use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Muazzam\SlickScrollbar\SlickScrollbarPlugin;
+
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -67,6 +69,10 @@ class AdminPanelProvider extends PanelProvider
                 ->excludes([
                     QueueMonitorResource::class,
                 ]);
+        }
+
+        if (class_exists(SlickScrollbarPlugin::class)) {
+            $plugins[] = SlickScrollbarPlugin::make();
         }
 
         return $plugins;
