@@ -1,53 +1,6 @@
 <x-filament-panels::page>
     <div class="ht-dashboard-stack">
 
-        {{-- Welcome Banner + Quick Actions --}}
-        <div class="ht-welcome-card">
-            <div class="min-w-0">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">{{ $this->getGreeting() }}</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2 flex-wrap">
-                    <span>{{ now()->format('l, F j, Y') }}</span>
-                    <span class="hidden md:inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
-                        <span class="mx-1">·</span>
-                        Press
-                        <kbd class="px-1.5 py-0.5 rounded border border-gray-300 dark:border-white/10 bg-white dark:bg-gray-800 font-mono text-[10px] text-gray-600 dark:text-gray-300">Ctrl</kbd>
-                        <span class="text-gray-300 dark:text-gray-600">+</span>
-                        <kbd class="px-1.5 py-0.5 rounded border border-gray-300 dark:border-white/10 bg-white dark:bg-gray-800 font-mono text-[10px] text-gray-600 dark:text-gray-300">K</kbd>
-                        to search
-                    </span>
-                </p>
-            </div>
-            <div class="ht-quick-actions">
-                <x-filament::button
-                    tag="a"
-                    href="{{ route('filament.admin.resources.videos.create') }}"
-                    icon="heroicon-o-arrow-up-tray"
-                    size="sm"
-                >
-                    Upload Video
-                </x-filament::button>
-                <x-filament::button
-                    tag="a"
-                    href="/"
-                    target="_blank"
-                    icon="heroicon-o-globe-alt"
-                    color="gray"
-                    size="sm"
-                >
-                    View Site
-                </x-filament::button>
-                <x-filament::button
-                    tag="a"
-                    href="{{ route('filament.admin.pages.analytics') }}"
-                    icon="heroicon-o-chart-bar"
-                    color="gray"
-                    size="sm"
-                >
-                    Analytics
-                </x-filament::button>
-            </div>
-        </div>
-
         {{-- Moderation Alert Banner --}}
         @if($this->getPendingModerationCount() > 0)
             <a href="{{ route('filament.admin.resources.videos.index') }}?tableFilters[needs_moderation][isActive]=true" class="ht-moderation-banner hover:opacity-90 transition-opacity">

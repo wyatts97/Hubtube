@@ -146,9 +146,7 @@ class AdminPanelProvider extends PanelProvider
                 'success' => ShadcnColor::Green,
                 'info'    => ShadcnColor::Blue,
                 'gray'    => ShadcnColor::Default,
-            ])
-            ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
-            ->globalSearchFieldKeyBindingSuffix();
+            ]);
 
         if ($faviconUrl) {
             $builder = $builder->favicon($faviconUrl);
