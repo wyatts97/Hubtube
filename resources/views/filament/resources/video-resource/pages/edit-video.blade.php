@@ -1,10 +1,4 @@
-<x-filament-panels::page
-    @class([
-        'fi-resource-edit-record-page',
-        'fi-resource-' . str_replace('/', '-', $this->getResource()::getSlug()),
-        'fi-resource-record-' . $record->getKey(),
-    ])
->
+<x-filament-panels::page>
     <style>
         .ht-edit-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
         @media (min-width: 1280px) {
@@ -16,8 +10,8 @@
 
     <div class="ht-edit-grid">
         <div class="ht-edit-left">
-            @if($record->status === 'processed' || $record->video_path)
-                <livewire:video-preview-manager :video-id="$record->id" wire:key="video-preview-{{ $record->id }}" />
+            @if($this->record->status === 'processed' || $this->record->video_path)
+                <livewire:video-preview-manager :video-id="$this->record->id" wire:key="video-preview-{{ $this->record->id }}" />
             @else
                 <div class="fi-section rounded-xl bg-gray-900 shadow-sm ring-1 ring-white/10">
                     <div class="px-6 py-8 text-center">
@@ -29,50 +23,7 @@
         </div>
 
         <div class="ht-edit-right">
-            @capture($form)
-                <x-filament-panels::form
-                    id="form"
-                    :wire:key="$this->getId() . '.forms.' . $this->getFormStatePath()"
-                    wire:submit="save"
-                >
-                    {{ $this->form }}
-
-                    <x-filament-panels::form.actions
-                        :actions="$this->getCachedFormActions()"
-                        :full-width="$this->hasFullWidthFormActions()"
-                    />
-                </x-filament-panels::form>
-            @endcapture
-
-            @php
-                $relationManagers = $this->getRelationManagers();
-                $hasCombinedRelationManagerTabsWithContent = $this->hasCombinedRelationManagerTabsWithContent();
-            @endphp
-
-            @if ((! $hasCombinedRelationManagerTabsWithContent) || (! count($relationManagers)))
-                {{ $form() }}
-            @endif
-
-            @if (count($relationManagers))
-                <x-filament-panels::resources.relation-managers
-                    :active-locale="isset($activeLocale) ? $activeLocale : null"
-                    :active-manager="$this->activeRelationManager ?? ($hasCombinedRelationManagerTabsWithContent ? null : array_key_first($relationManagers))"
-                    :content-tab-label="$this->getContentTabLabel()"
-                    :content-tab-icon="$this->getContentTabIcon()"
-                    :content-tab-position="$this->getContentTabPosition()"
-                    :managers="$relationManagers"
-                    :owner-record="$record"
-                    :page-class="static::class"
-                >
-                    @if ($hasCombinedRelationManagerTabsWithContent)
-                        <x-slot name="content">
-                            {{ $form() }}
-                        </x-slot>
-                    @endif
-                </x-filament-panels::resources.relation-managers>
-            @endif
+            {{ $this->content }}
         </div>
     </div>
-
-    <x-filament-panels::page.unsaved-data-changes-alert />
 </x-filament-panels::page>
