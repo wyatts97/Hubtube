@@ -174,7 +174,7 @@ class UserResource extends Resource
             ])
             ->recordActions([
                 Action::make('verify')
-                    ->icon('phosphor-check-badge')
+                    ->icon('phosphor-check-circle')
                     ->color('success')
                     ->requiresConfirmation()
                     ->action(fn (User $record) => $record->forceFill(['is_verified' => true])->save())

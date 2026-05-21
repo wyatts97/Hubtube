@@ -47,7 +47,7 @@
     @if (empty($files))
         <x-filament::section>
             <div class="ht-log-empty-state">
-                <x-phosphor-document class="ht-log-empty-state__icon" />
+                <x-phosphor-file class="ht-log-empty-state__icon" />
                 <h3 class="ht-log-empty-state__title">No log files yet</h3>
                 <p class="ht-log-empty-state__text">
                     Laravel will create files in <code>storage/logs/</code> once something is logged.
@@ -156,7 +156,7 @@
                                         <div class="ht-log-table__msg">{{ $entry['message'] }}</div>
                                         @if (!empty($entry['trace']))
                                             <span class="ht-log-table__trace-hint">
-                                                <x-phosphor-bug-ant class="w-3.5 h-3.5" />
+                                                <x-phosphor-bug class="w-3.5 h-3.5" />
                                                 stack trace
                                             </span>
                                         @endif
@@ -187,7 +187,7 @@
                             color="gray"
                             wire:click="prevPage"
                             :disabled="$this->page <= 1"
-                            icon="phosphor-chevron-left">
+                            icon="phosphor-caret-left">
                             Previous
                         </x-filament::button>
                         <x-filament::button
@@ -195,7 +195,7 @@
                             color="gray"
                             wire:click="nextPage"
                             :disabled="$this->page >= $this->totalPages"
-                            icon="phosphor-chevron-right"
+                            icon="phosphor-caret-right"
                             icon-position="after">
                             Next
                         </x-filament::button>

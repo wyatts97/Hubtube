@@ -275,7 +275,7 @@
                             color="success"
                             size="lg"
                         >
-                            <x-phosphor-arrow-down-tray class="w-5 h-5 mr-2" />
+                            <x-phosphor-tray-arrow-down class="w-5 h-5 mr-2" />
                             Import {{ $totalImportable }} Videos
                         </x-filament::button>
 
@@ -289,7 +289,7 @@
                                 size="lg"
                             >
                                 <span wire:loading.remove wire:target="fixSeekability">
-                                    <x-phosphor-forward class="w-4 h-4 mr-1" />
+                                    <x-phosphor-arrow-right class="w-4 h-4 mr-1" />
                                     Fix Seekability ({{ $alreadyImported }})
                                 </span>
                                 <span wire:loading wire:target="fixSeekability" class="flex items-center gap-2">
@@ -372,7 +372,7 @@
                                 @elseif($log['status'] === 'skipped')
                                     <x-phosphor-minus-circle class="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
                                 @else
-                                    <x-phosphor-exclamation-circle class="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                                    <x-phosphor-warning-circle class="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
                                 @endif
                                 <span class="text-gray-700 dark:text-gray-300 truncate">{{ $log['title'] }}</span>
                                 <span class="text-gray-400 dark:text-gray-500 ml-auto flex-shrink-0">{{ $log['status'] }}</span>
@@ -415,7 +415,7 @@
                 @if(!empty($importErrors))
                     <div class="mb-6">
                         <h4 class="text-sm font-medium text-red-600 dark:text-red-400 mb-2">
-                            <x-phosphor-exclamation-circle class="w-4 h-4 inline mr-1" />
+                            <x-phosphor-warning-circle class="w-4 h-4 inline mr-1" />
                             Error Log ({{ count($importErrors) }} errors):
                         </h4>
                         <div class="max-h-64 overflow-y-auto border border-red-200 dark:border-red-800 rounded-lg">

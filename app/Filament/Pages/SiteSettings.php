@@ -34,7 +34,7 @@ class SiteSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-cog-6-tooth';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-gear';
     protected static ?string $navigationLabel = 'Site Settings';
     protected static string | \UnitEnum | null $navigationGroup = 'System';
     protected static ?int $navigationSort = 1;

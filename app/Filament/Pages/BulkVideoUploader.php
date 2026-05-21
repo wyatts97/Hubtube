@@ -36,7 +36,7 @@ class BulkVideoUploader extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-arrow-up-tray';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-tray-arrow-up';
     protected static ?string $navigationLabel = 'Bulk Upload';
     protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 7;
@@ -114,7 +114,7 @@ class BulkVideoUploader extends Page implements HasForms
             ->components([
                 Section::make('Apply to All')
                     ->description('Defaults applied to each newly added file. Click "Apply to All" to overwrite existing entries.')
-                    ->icon('phosphor-adjustments-horizontal')
+                    ->icon('phosphor-sliders-horizontal')
                     ->collapsible()
                     ->schema([
                         Select::make('category_id')
@@ -199,7 +199,7 @@ class BulkVideoUploader extends Page implements HasForms
                                     ->columnSpanFull()
                                     ->suffixAction(
                                         Action::make('useFilename')
-                                            ->icon('phosphor-sparkles')
+                                            ->icon('phosphor-sparkle')
                                             ->tooltip('Regenerate title from filename')
                                             ->action(function (Set $set, Get $get) {
                                                 $name = (string) ($get('file_name') ?? '');

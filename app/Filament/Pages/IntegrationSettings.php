@@ -153,7 +153,7 @@ class IntegrationSettings extends Page implements HasForms
                                         Actions::make([
                                             Action::make('sendTestEmail')
                                                 ->label('Send Test Email')
-                                                ->icon('phosphor-paper-airplane')
+                                                ->icon('phosphor-paper-plane-right')
                                                 ->color('gray')
                                                 ->action(function () {
                                                     $this->sendTestEmail();

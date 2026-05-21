@@ -13,7 +13,7 @@
                 tag="a"
                 href="{{ route('filament.admin.resources.video-ads.index') }}"
                 color="gray"
-                icon="phosphor-film">
+                icon="phosphor-film-strip">
                 Manage Video Ad Creatives
             </x-filament::button>
         </div>

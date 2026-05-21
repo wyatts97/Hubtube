@@ -48,7 +48,7 @@ class ScheduledVideos extends Page implements HasTable
         return [
             Action::make('configureSchedule')
             ->label('Schedule Settings')
-            ->icon('phosphor-cog-6-tooth')
+            ->icon('phosphor-gear')
             ->schema([
                 Select::make('posts_per_day')
                 ->label('Posts Per Day')

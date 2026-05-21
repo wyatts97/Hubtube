@@ -25,7 +25,7 @@ class SearchIndexingSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-magnifying-glass-circle';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-magnifying-glass-plus';
     protected static ?string $navigationLabel = 'Search Indexing';
     protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 5;
@@ -52,7 +52,7 @@ class SearchIndexingSettings extends Page implements HasForms
                 Tabs::make('Search Indexing')
                     ->tabs([
                         Tab::make('IndexNow')
-                            ->icon('phosphor-bolt')
+                            ->icon('phosphor-lightning')
                             ->schema([
                                 Placeholder::make('indexnow_intro')
                                     ->content(new HtmlString(
@@ -180,7 +180,7 @@ class SearchIndexingSettings extends Page implements HasForms
                 }),
             Action::make('submitRecent')
                 ->label('Submit Recent Videos')
-                ->icon('phosphor-paper-airplane')
+                ->icon('phosphor-paper-plane-right')
                 ->color('primary')
                 ->requiresConfirmation()
                 ->modalDescription('Submit the last 50 public videos published in the past 7 days to IndexNow.')

@@ -40,7 +40,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
     use InteractsWithForms;
     use InteractsWithTable;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-language';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-translate';
     protected static ?string $navigationLabel = 'Languages';
     protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 8;
@@ -253,7 +253,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
             ])
             ->emptyStateHeading('No translation overrides')
             ->emptyStateDescription('Add overrides to fix words that Google Translate gets wrong.')
-            ->emptyStateIcon('phosphor-language')
+            ->emptyStateIcon('phosphor-translate')
             ->striped();
     }
 

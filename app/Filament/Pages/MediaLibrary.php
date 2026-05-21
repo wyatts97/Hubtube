@@ -14,7 +14,7 @@ class MediaLibrary extends Page
 {
     use WithFileUploads;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-photo';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-image';
     protected static ?string $navigationLabel = 'Media Library';
     protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 99;

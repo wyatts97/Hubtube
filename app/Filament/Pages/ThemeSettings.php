@@ -194,7 +194,7 @@ class ThemeSettings extends Page implements HasForms
                 Tabs::make('Theme Settings')
                     ->tabs([
                         Tab::make('Identity & Appearance')
-                            ->icon('phosphor-identification')
+                            ->icon('phosphor-identification-card')
                             ->schema([
                                 Section::make('Site Information')
                                     ->schema([
@@ -322,7 +322,7 @@ class ThemeSettings extends Page implements HasForms
                             ]),
                         
                         Tab::make('Navigation Icons')
-                            ->icon('phosphor-squares-2x2')
+                            ->icon('phosphor-squares-four')
                             ->schema([
                                 Section::make('Global Icon Settings')
                                     ->schema([
@@ -382,7 +382,7 @@ class ThemeSettings extends Page implements HasForms
                             ]),
                         
                         Tab::make('Category Pages')
-                            ->icon('phosphor-rectangle-group')
+                            ->icon('phosphor-squares-four')
                             ->schema([
                                 Section::make('Category Title Typography')
                                     ->description('Customize how category names appear as overlays on the category browse page thumbnails')
@@ -416,7 +416,7 @@ class ThemeSettings extends Page implements HasForms
                             ]),
 
                         Tab::make('Video Cards')
-                            ->icon('phosphor-rectangle-stack')
+                            ->icon('phosphor-stack')
                             ->schema([
                                 Section::make('Visibility')
                                     ->description('Choose which elements to show on video cards across the site')

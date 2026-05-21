@@ -28,7 +28,7 @@ class SeoDiagnostics extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-clipboard-text-check';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-clipboard-text';
     protected static ?string $navigationLabel = 'SEO Diagnostics';
     protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 5;
@@ -172,7 +172,7 @@ class SeoDiagnostics extends Page implements HasForms
 
                                     Action::make('applyToMissing')
                                         ->label('Apply to videos missing a description')
-                                        ->icon('phosphor-sparkles')
+                                        ->icon('phosphor-sparkle')
                                         ->color('success')
                                         ->requiresConfirmation()
                                         ->modalHeading('Apply default description?')

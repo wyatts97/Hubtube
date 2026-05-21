@@ -80,7 +80,7 @@ class SocialNetworkSettings extends Page implements HasForms
                 Tabs::make('Social Network Settings')
                     ->tabs([
                         Tab::make('Social Login')
-                            ->icon('phosphor-arrow-right-on-rectangle')
+                            ->icon('phosphor-sign-in')
                             ->schema([
                                 Placeholder::make('social_login_info')
                                     ->content('Enable OAuth2 social login for your users. Each provider requires a Client ID and Client Secret from the respective developer console.')
@@ -88,7 +88,7 @@ class SocialNetworkSettings extends Page implements HasForms
 
                                 Section::make('Google')
                                     ->description('Create credentials at console.cloud.google.com → APIs & Services → Credentials. Set the redirect URI to: ' . url('/auth/google/callback'))
-                                    ->icon('phosphor-globe-alt')
+                                    ->icon('phosphor-globe-hemisphere-west')
                                     ->collapsible()
                                     ->schema([
                                         Toggle::make('social_login_google_enabled')
@@ -109,7 +109,7 @@ class SocialNetworkSettings extends Page implements HasForms
 
                                 Section::make('Twitter / X')
                                     ->description('Create an app at developer.x.com. Enable OAuth 2.0 with PKCE. Set the redirect URI to: ' . url('/auth/twitter/callback'))
-                                    ->icon('phosphor-chat-bubble-left-right')
+                                    ->icon('phosphor-chat-text')
                                     ->collapsible()
                                     ->schema([
                                         Toggle::make('social_login_twitter_enabled')
@@ -129,7 +129,7 @@ class SocialNetworkSettings extends Page implements HasForms
 
                                 Section::make('Reddit')
                                     ->description('Create an app at reddit.com/prefs/apps (type: web app). Set the redirect URI to: ' . url('/auth/reddit/callback'))
-                                    ->icon('phosphor-chat-bubble-bottom-center-text')
+                                    ->icon('phosphor-chat-circle-text')
                                     ->collapsible()
                                     ->schema([
                                         Toggle::make('social_login_reddit_enabled')
@@ -184,7 +184,7 @@ class SocialNetworkSettings extends Page implements HasForms
                                     ])->columns(2),
 
                                 Section::make('Auto-Tweet Settings')
-                                    ->icon('phosphor-cog-6-tooth')
+                                    ->icon('phosphor-gear')
                                     ->schema([
                                         Toggle::make('twitter_auto_tweet_new_enabled')
                                             ->label('Auto-tweet when a new video is published')
@@ -234,7 +234,7 @@ class SocialNetworkSettings extends Page implements HasForms
                                         Actions::make([
                                             Action::make('sendTestTweet')
                                                 ->label('Send Test Tweet')
-                                                ->icon('phosphor-paper-airplane')
+                                                ->icon('phosphor-paper-plane-right')
                                                 ->color('gray')
                                                 ->requiresConfirmation()
                                                 ->modalHeading('Send Test Tweet')

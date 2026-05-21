@@ -26,7 +26,7 @@
                 @endif
                 @if($this->getFailedCount() > 0)
                     <a href="{{ route('filament.admin.resources.videos.index') }}?tableFilters[status][value]=failed" class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/15 hover:opacity-80 transition-opacity">
-                        <x-phosphor-exclamation-circle class="w-3.5 h-3.5" />
+                        <x-phosphor-warning-circle class="w-3.5 h-3.5" />
                         {{ $this->getFailedCount() }} failed — view
                     </a>
                 @endif

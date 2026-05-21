@@ -21,7 +21,7 @@ class DataExport extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-arrow-down-tray';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-tray-arrow-down';
     protected static ?string $navigationLabel = 'Data Export';
     protected static string | \UnitEnum | null $navigationGroup = 'Tools';
     protected static ?int $navigationSort = 99;

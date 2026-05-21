@@ -31,7 +31,7 @@ use Filament\Tables\Table;
 class MenuItemResource extends Resource
 {
     protected static ?string $model = MenuItem::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-bars-3';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-list';
     protected static ?string $navigationLabel = 'Menu Builder';
     protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 3;

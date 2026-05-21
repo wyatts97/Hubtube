@@ -243,7 +243,7 @@ class VideoResource extends Resource
                             ])->columns(2),
 
                         Tab::make('Technical')
-                            ->icon('phosphor-cog-6-tooth')
+                            ->icon('phosphor-gear')
                             ->hiddenOn('create')
                             ->schema([
                                 TextInput::make('video_path')
@@ -716,7 +716,7 @@ class VideoResource extends Resource
             ->emptyStateActions([
                 Action::make('create')
                     ->label('Upload Video')
-                    ->icon('phosphor-arrow-up-tray')
+                    ->icon('phosphor-tray-arrow-up')
                     ->url(route('filament.admin.resources.videos.create'))
                     ->button(),
             ]);

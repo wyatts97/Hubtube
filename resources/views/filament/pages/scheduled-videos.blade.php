@@ -1,6 +1,6 @@
 <x-filament-panels::page>
     <div class="space-y-6">
-        <x-filament::section heading="Scheduled Draft Queue" icon="phosphor-queue-list" description="Drag and drop rows to reorder your videos. The system will automatically recalculate their publish times based on your Schedule Settings.">
+        <x-filament::section heading="Scheduled Draft Queue" icon="phosphor-list-numbers" description="Drag and drop rows to reorder your videos. The system will automatically recalculate their publish times based on your Schedule Settings.">
             {{ $this->table }}
         </x-filament::section>
 

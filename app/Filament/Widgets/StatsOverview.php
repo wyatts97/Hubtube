@@ -167,7 +167,7 @@ class StatsOverview extends BaseWidget
                 // Row 2
                 Stat::make('Comments', number_format($totalComments))
                     ->description("+{$comments7d} this week")
-                    ->descriptionIcon('phosphor-chat-bubble-left-right')
+                    ->descriptionIcon('phosphor-chat-text')
                     ->chart($commentChart)
                     ->chartColor('gray')
                     ->color('gray')
@@ -176,7 +176,7 @@ class StatsOverview extends BaseWidget
 
                 Stat::make('Video Storage', $storageLabel)
                     ->description(number_format($totalVideos) . ' files on disk')
-                    ->descriptionIcon('phosphor-server-stack')
+                    ->descriptionIcon('phosphor-hard-drives')
                     ->chart($storageChart)
                     ->chartColor('gray')
                     ->color('gray'),
@@ -186,7 +186,7 @@ class StatsOverview extends BaseWidget
                         ($pendingCount > 0 ? "{$pendingCount} queued" : 'No queue') .
                         ($failedCount > 0 ? " · {$failedCount} failed" : '')
                     )
-                    ->descriptionIcon('phosphor-cog-6-tooth')
+                    ->descriptionIcon('phosphor-gear')
                     ->chart($processChart)
                     ->chartColor($failedCount > 0 ? 'danger' : 'gray')
                     ->color($failedCount > 0 ? 'danger' : ($processingCount > 0 ? 'info' : 'gray')),
@@ -198,7 +198,7 @@ class StatsOverview extends BaseWidget
                 array_splice($stats, 3, 0, [
                     Stat::make('Revenue', '$' . number_format($totalRevenue, 2))
                         ->description('$' . number_format($revenue7d, 2) . ' this week · $' . number_format($revenue30d, 2) . ' this month')
-                        ->descriptionIcon('phosphor-banknotes')
+                        ->descriptionIcon('phosphor-currency-dollar')
                         ->color('warning'),
                 ]);
             }

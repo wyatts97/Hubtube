@@ -108,7 +108,7 @@ class SeoSettings extends Page implements HasForms
                 Tabs::make('SEO Settings')
                     ->tabs([
                         Tab::make('Global SEO')
-                            ->icon('phosphor-globe-alt')
+                            ->icon('phosphor-globe-hemisphere-west')
                             ->schema([
                                 Section::make('Site Meta Tags')
                                     ->description('Default meta tags applied to all pages unless overridden.')
@@ -176,7 +176,7 @@ class SeoSettings extends Page implements HasForms
                             ]),
 
                         Tab::make('Search Engines')
-                            ->icon('phosphor-check-badge')
+                            ->icon('phosphor-check-circle')
                             ->schema([
                                 Section::make('Verification Codes')
                                     ->description('Paste the verification meta tag content value from each search engine\'s webmaster tools.')
@@ -332,7 +332,7 @@ class SeoSettings extends Page implements HasForms
                             ]),
 
                         Tab::make('Structured Data')
-                            ->icon('phosphor-code-bracket')
+                            ->icon('phosphor-code')
                             ->schema([
                                 Placeholder::make('schema_info')
                                     ->content(new HtmlString(
@@ -369,7 +369,7 @@ class SeoSettings extends Page implements HasForms
                             ]),
 
                         Tab::make('Sitemap')
-                            ->icon('phosphor-map')
+                            ->icon('phosphor-map-trifold')
                             ->schema([
                                 Section::make('Sitemap URLs')
                                     ->description('Submit these URLs to Google Search Console and Bing Webmaster Tools.')

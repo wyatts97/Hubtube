@@ -16,7 +16,7 @@ class ListImages extends ListRecords
     {
         return [
             'all' => Tab::make('All Images')
-                ->icon('phosphor-photo')
+                ->icon('phosphor-image')
                 ->badge(Image::count()),
 
             'moderation' => Tab::make('Needs Moderation')

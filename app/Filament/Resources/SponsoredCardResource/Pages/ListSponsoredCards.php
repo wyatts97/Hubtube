@@ -27,7 +27,7 @@ class ListSponsoredCards extends ListRecords
         return [
             Action::make('import_csv')
                 ->label('Import CSV')
-                ->icon('phosphor-arrow-up-tray')
+                ->icon('phosphor-tray-arrow-up')
                 ->color('gray')
                 ->schema([
                     FileUpload::make('csv_file')

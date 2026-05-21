@@ -28,7 +28,7 @@
                     class="ht-vidwidget__filter-btn">
                 <x-phosphor-funnel class="w-3.5 h-3.5" />
                 <span>{{ $periodLabel }}</span>
-                <x-phosphor-chevron-down class="w-3 h-3 opacity-60" />
+                <x-phosphor-caret-down class="w-3 h-3 opacity-60" />
             </button>
             <div x-show="open"
                  x-transition
@@ -62,7 +62,7 @@
                              decoding="async">
                     @else
                         <div class="ht-vidrow__thumb-fallback">
-                            <x-phosphor-film class="w-5 h-5" />
+                            <x-phosphor-film-strip class="w-5 h-5" />
                         </div>
                     @endif
                     <span class="ht-vidrow__play">

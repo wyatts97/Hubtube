@@ -106,10 +106,10 @@
                     <x-phosphor-clock class="h-3.5 w-3.5" /> {{ $stats['duration'] ?? '—' }}
                 </span>
                 <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-white">
-                    <x-phosphor-circle-stack class="h-3.5 w-3.5" /> {{ $stats['size'] ?? '—' }}
+                    <x-phosphor-circles-three class="h-3.5 w-3.5" /> {{ $stats['size'] ?? '—' }}
                 </span>
                 <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-white">
-                    <x-phosphor-server class="h-3.5 w-3.5" /> {{ $stats['disk'] ?? '—' }}
+                    <x-phosphor-hard-drives class="h-3.5 w-3.5" /> {{ $stats['disk'] ?? '—' }}
                 </span>
             </div>
 
@@ -173,7 +173,7 @@
                     <button type="button" x-on:click="copy('source', @js($shareUrls['source']))"
                         class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 hover:bg-gray-100 dark:bg-white/5 dark:ring-white/10 dark:text-white dark:hover:bg-white/10 transition font-mono"
                         title="Copy source path">
-                        <x-phosphor-document-duplicate class="h-3.5 w-3.5" />
+                        <x-phosphor-files class="h-3.5 w-3.5" />
                         <span x-text="copied === 'source' ? 'Copied!' : 'Path'"></span>
                     </button>
                     @endif
@@ -201,7 +201,7 @@
             <x-slot name="headerEnd">
                 <button type="button" x-on:click.stop="showUpload = !showUpload"
                     class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 hover:bg-gray-100 dark:bg-white/5 dark:ring-white/10 dark:text-gray-300 dark:hover:bg-white/10 transition">
-                    <x-phosphor-arrow-up-tray class="h-3.5 w-3.5" />
+                    <x-phosphor-tray-arrow-up class="h-3.5 w-3.5" />
                     <span x-text="showUpload ? 'Hide upload' : 'Upload custom'"></span>
                 </button>
             </x-slot>
@@ -279,7 +279,7 @@
             >
                 <input x-ref="videoFileInput" type="file" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm" wire:model="replacementVideo" class="sr-only" id="replace-video-upload" />
                 <label for="replace-video-upload" class="cursor-pointer">
-                    <x-phosphor-film class="mx-auto h-6 w-6 text-gray-400 dark:text-gray-500" />
+                    <x-phosphor-film-strip class="mx-auto h-6 w-6 text-gray-400 dark:text-gray-500" />
                     <p class="mt-1 text-xs font-medium text-gray-700 dark:text-gray-300">
                         Drop video or <span class="text-primary-600 dark:text-primary-400 underline">browse</span>
                     </p>

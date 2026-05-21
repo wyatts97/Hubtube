@@ -29,7 +29,7 @@ use Filament\Tables\Table;
 class CommentResource extends Resource
 {
     protected static ?string $model = Comment::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-chat-bubble-left-right';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-chat-text';
     protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 4;
     protected static ?string $recordTitleAttribute = 'content';

@@ -142,7 +142,7 @@
             </div>
             @else
             <div class="mb-6 text-center py-6 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
-                <x-phosphor-photo class="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500" />
+                <x-phosphor-image class="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500" />
                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No generated thumbnails found.</p>
             </div>
             @endif

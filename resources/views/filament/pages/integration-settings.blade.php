@@ -54,7 +54,7 @@
                             @if (!$template['is_active'])
                                 <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">Disabled</span>
                             @endif
-                            <x-phosphor-chevron-down class="w-4 h-4 text-gray-400 transition-transform {{ $expandedTemplate === $template['id'] ? 'rotate-180' : '' }}" />
+                            <x-phosphor-caret-down class="w-4 h-4 text-gray-400 transition-transform {{ $expandedTemplate === $template['id'] ? 'rotate-180' : '' }}" />
                         </div>
                     </div>
 
@@ -117,7 +117,7 @@
                                     wire:loading.attr="disabled"
                                     class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                                 >
-                                    <x-phosphor-paper-airplane class="w-4 h-4" />
+                                    <x-phosphor-paper-plane-right class="w-4 h-4" />
                                     Send Test
                                 </button>
                             </div>

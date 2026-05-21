@@ -28,14 +28,14 @@
             wire:click="$set('activeTab', 'images')"
             style="display:flex;align-items:center;gap:8px;padding:10px 16px;font-size:14px;font-weight:500;border:none;border-bottom:2px solid {{ $activeTab === 'images' ? 'var(--color-primary-500,#f43f5e)' : 'transparent' }};color:{{ $activeTab === 'images' ? 'var(--color-primary-400,#fb7185)' : '#a1a1aa' }};background:transparent;cursor:pointer;margin-bottom:-1px;transition:color 0.15s;"
         >
-            <x-phosphor-photo style="width:16px;height:16px;" />
+            <x-phosphor-image style="width:16px;height:16px;" />
             Images
         </button>
         <button
             wire:click="$set('activeTab', 'videos')"
             style="display:flex;align-items:center;gap:8px;padding:10px 16px;font-size:14px;font-weight:500;border:none;border-bottom:2px solid {{ $activeTab === 'videos' ? 'var(--color-primary-500,#f43f5e)' : 'transparent' }};color:{{ $activeTab === 'videos' ? 'var(--color-primary-400,#fb7185)' : '#a1a1aa' }};background:transparent;cursor:pointer;margin-bottom:-1px;transition:color 0.15s;"
         >
-            <x-phosphor-film style="width:16px;height:16px;" />
+            <x-phosphor-film-strip style="width:16px;height:16px;" />
             Ad Videos
         </button>
     </div>
@@ -58,7 +58,7 @@
                 <label class="flex flex-col items-center justify-center gap-2 py-6 px-4 cursor-pointer">
                     <input type="file" wire:model="uploadedImages" multiple accept="image/*"
                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <x-phosphor-arrow-up-tray class="w-6 h-6 text-zinc-400" />
+                    <x-phosphor-tray-arrow-up class="w-6 h-6 text-zinc-400" />
                     <span class="text-sm font-medium" style="color:#d4d4d8;">Drop images here or <span class="text-primary-400 underline">click to browse</span></span>
                     <span class="text-xs" style="color:#71717a;">JPG, PNG, GIF, WebP, SVG, ICO  max 10 MB</span>
                 </label>
@@ -75,7 +75,7 @@
             @if ($uploadedImages)
                 <div class="mt-3 flex items-center gap-3" wire:loading.remove wire:target="uploadedImages">
                     <span class="text-sm" style="color:#a1a1aa;">{{ count($uploadedImages) }} file(s) ready</span>
-                    <x-filament::button wire:click="uploadImages" size="sm" icon="phosphor-arrow-up-tray">
+                    <x-filament::button wire:click="uploadImages" size="sm" icon="phosphor-tray-arrow-up">
                         Upload Now
                     </x-filament::button>
                 </div>
@@ -97,7 +97,7 @@
 
             @if (empty($images))
                 <div class="flex flex-col items-center justify-center py-10 text-center gap-2">
-                    <x-phosphor-photo class="w-8 h-8" style="color:#52525b;" />
+                    <x-phosphor-image class="w-8 h-8" style="color:#52525b;" />
                     <p class="text-sm" style="color:#a1a1aa;">No images yet</p>
                     <p class="text-xs" style="color:#52525b;">Upload banner images, logos, and other static assets above.</p>
                 </div>
@@ -151,7 +151,7 @@
                 <label class="flex flex-col items-center justify-center gap-2 py-6 px-4 cursor-pointer">
                     <input type="file" wire:model="uploadedVideos" multiple accept="video/mp4,video/webm,video/quicktime"
                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <x-phosphor-arrow-up-tray class="w-6 h-6 text-zinc-400" />
+                    <x-phosphor-tray-arrow-up class="w-6 h-6 text-zinc-400" />
                     <span class="text-sm font-medium" style="color:#d4d4d8;">Drop videos here or <span class="text-primary-400 underline">click to browse</span></span>
                     <span class="text-xs" style="color:#71717a;">MP4, WebM, MOV  max 200 MB</span>
                 </label>
@@ -168,7 +168,7 @@
             @if ($uploadedVideos)
                 <div class="mt-3 flex items-center gap-3" wire:loading.remove wire:target="uploadedVideos">
                     <span class="text-sm" style="color:#a1a1aa;">{{ count($uploadedVideos) }} file(s) ready</span>
-                    <x-filament::button wire:click="uploadVideos" size="sm" icon="phosphor-arrow-up-tray">
+                    <x-filament::button wire:click="uploadVideos" size="sm" icon="phosphor-tray-arrow-up">
                         Upload Now
                     </x-filament::button>
                 </div>
@@ -190,7 +190,7 @@
 
             @if (empty($videos))
                 <div class="flex flex-col items-center justify-center py-10 text-center gap-2">
-                    <x-phosphor-film class="w-8 h-8" style="color:#52525b;" />
+                    <x-phosphor-film-strip class="w-8 h-8" style="color:#52525b;" />
                     <p class="text-sm" style="color:#a1a1aa;">No ad videos yet</p>
                     <p class="text-xs" style="color:#52525b;">Upload MP4 ad creatives above, then copy the URL into Appearance  Ad Creatives.</p>
                 </div>

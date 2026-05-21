@@ -31,7 +31,7 @@ class WithdrawalRequestResource extends Resource
 {
     protected static ?string $model = WithdrawalRequest::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-arrow-up-tray';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-tray-arrow-up';
 
     protected static string | \UnitEnum | null $navigationGroup = 'Monetization';
 

@@ -17,7 +17,7 @@
     <div class="ht-vidwidget__header">
         <div class="flex items-center gap-2">
             <span class="ht-vidwidget__icon ht-vidwidget__icon--recent">
-                <x-phosphor-arrow-up-tray class="w-4 h-4" />
+                <x-phosphor-tray-arrow-up class="w-4 h-4" />
             </span>
             <h3 class="ht-vidwidget__title">Recent Uploads</h3>
         </div>
@@ -42,7 +42,7 @@
                              decoding="async">
                     @else
                         <div class="ht-vidrow__thumb-fallback">
-                            <x-phosphor-film class="w-5 h-5" />
+                            <x-phosphor-film-strip class="w-5 h-5" />
                         </div>
                     @endif
                 </div>
@@ -70,7 +70,7 @@
             </a>
         @empty
             <div class="ht-vidwidget__empty">
-                <x-phosphor-arrow-up-tray class="w-6 h-6 mx-auto mb-2 opacity-40" />
+                <x-phosphor-tray-arrow-up class="w-6 h-6 mx-auto mb-2 opacity-40" />
                 No uploads yet.
             </div>
         @endforelse

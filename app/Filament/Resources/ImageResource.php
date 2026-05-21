@@ -37,7 +37,7 @@ use Illuminate\Database\Eloquent\Collection;
 class ImageResource extends Resource
 {
     protected static ?string $model = Image::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-photo';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-image';
     protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 3;
 

@@ -27,7 +27,7 @@ class TagResource extends Resource
 {
     protected static ?string $model = Hashtag::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-hashtag';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-hash';
 
     protected static ?string $navigationLabel = 'Tags';
 

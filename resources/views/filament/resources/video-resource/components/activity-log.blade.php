@@ -18,7 +18,7 @@
     $events = collect();
 
     $events->push([
-        'icon'  => 'phosphor-arrow-up-tray',
+        'icon'  => 'phosphor-tray-arrow-up',
         'tone'  => 'info',
         'title' => 'Uploaded',
         'meta'  => optional($record->user)->username ? "by {$record->user->username}" : null,
@@ -27,7 +27,7 @@
 
     if ($record->published_at) {
         $events->push([
-            'icon'  => 'phosphor-globe-alt',
+            'icon'  => 'phosphor-globe-hemisphere-west',
             'tone'  => 'success',
             'title' => 'Published',
             'meta'  => null,
@@ -74,7 +74,7 @@
     }
 
     $events->push([
-        'icon'  => 'phosphor-pencil-square',
+        'icon'  => 'phosphor-note-pencil',
         'tone'  => 'gray',
         'title' => 'Last updated',
         'meta'  => null,

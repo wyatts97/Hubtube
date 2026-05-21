@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\Collection;
 class GalleryResource extends Resource
 {
     protected static ?string $model = Gallery::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-rectangle-group';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-squares-four';
     protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 3;
 
@@ -104,7 +104,7 @@ class GalleryResource extends Resource
                     ->label('Images')
                     ->numeric()
                     ->sortable()
-                    ->icon('phosphor-photo')
+                    ->icon('phosphor-image')
                     ->iconColor('gray'),
 
                 TextColumn::make('views_count')
