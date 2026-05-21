@@ -24,7 +24,7 @@
                 wire:loading.attr="disabled"
                 class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
             >
-                <x-phosphor-arrows-clockwise class="w-4 h-4" wire:loading.class="animate-spin" wire:target="seedTemplates" />
+                <x-phosphor-arrows-clockwise class="w-4 h-4" style="width:16px;height:16px;" wire:loading.class="animate-spin" wire:target="seedTemplates" />
                 Reset to Defaults
             </button>
         </div>
@@ -54,7 +54,7 @@
                             @if (!$template['is_active'])
                                 <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">Disabled</span>
                             @endif
-                            <x-phosphor-caret-down class="w-4 h-4 text-gray-400 transition-transform {{ $expandedTemplate === $template['id'] ? 'rotate-180' : '' }}" />
+                            <x-phosphor-caret-down class="w-4 h-4 text-gray-400 transition-transform {{ $expandedTemplate === $template['id'] ? 'rotate-180' : '' }}" style="width:16px;height:16px;" />
                         </div>
                     </div>
 
@@ -101,7 +101,7 @@
                                     wire:loading.attr="disabled"
                                     class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition"
                                 >
-                                    <x-phosphor-check class="w-4 h-4" />
+                                    <x-phosphor-check class="w-4 h-4" style="width:16px;height:16px;" />
                                     Save Template
                                 </button>
                                 <button
@@ -109,7 +109,7 @@
                                     wire:loading.attr="disabled"
                                     class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                                 >
-                                    <x-phosphor-eye class="w-4 h-4" />
+                                    <x-phosphor-eye class="w-4 h-4" style="width:16px;height:16px;" />
                                     Preview
                                 </button>
                                 <button
@@ -117,7 +117,7 @@
                                     wire:loading.attr="disabled"
                                     class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                                 >
-                                    <x-phosphor-paper-plane-right class="w-4 h-4" />
+                                    <x-phosphor-paper-plane-right class="w-4 h-4" style="width:16px;height:16px;" />
                                     Send Test
                                 </button>
                             </div>
@@ -140,7 +140,7 @@
                 <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                     <h3 class="font-medium text-gray-900 dark:text-white">Email Preview</h3>
                     <button wire:click="$set('previewHtml', null)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <x-phosphor-x class="w-5 h-5" />
+                        <x-phosphor-x class="w-5 h-5" style="width:20px;height:20px;" />
                     </button>
                 </div>
                 <div class="overflow-auto max-h-[70vh]">

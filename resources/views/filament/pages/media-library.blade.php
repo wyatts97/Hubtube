@@ -7,7 +7,7 @@
         <div style="background:#27272a;border:1px solid #3f3f46;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.5);padding:24px;max-width:360px;width:100%;margin:0 16px;">
             <div class="flex flex-col items-center gap-3 text-center">
                 <div class="w-10 h-10 rounded-full bg-danger-500/20 flex items-center justify-center">
-                    <x-phosphor-trash class="w-5 h-5 text-danger-400" />
+                    <x-phosphor-trash class="w-5 h-5 text-danger-400" style="width:20px;height:20px;" />
                 </div>
                 <div>
                     <p class="text-sm font-semibold text-white">Delete File?</p>
@@ -58,7 +58,7 @@
                 <label class="flex flex-col items-center justify-center gap-2 py-6 px-4 cursor-pointer">
                     <input type="file" wire:model="uploadedImages" multiple accept="image/*"
                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <x-phosphor-tray-arrow-up class="w-6 h-6 text-zinc-400" />
+                    <x-phosphor-tray-arrow-up class="w-6 h-6 text-zinc-400" style="width:24px;height:24px;" />
                     <span class="text-sm font-medium" style="color:#d4d4d8;">Drop images here or <span class="text-primary-400 underline">click to browse</span></span>
                     <span class="text-xs" style="color:#71717a;">JPG, PNG, GIF, WebP, SVG, ICO  max 10 MB</span>
                 </label>
@@ -97,7 +97,7 @@
 
             @if (empty($images))
                 <div class="flex flex-col items-center justify-center py-10 text-center gap-2">
-                    <x-phosphor-image class="w-8 h-8" style="color:#52525b;" />
+                    <x-phosphor-image class="w-8 h-8" style="width:32px;height:32px;color:#52525b;" />
                     <p class="text-sm" style="color:#a1a1aa;">No images yet</p>
                     <p class="text-xs" style="color:#52525b;">Upload banner images, logos, and other static assets above.</p>
                 </div>
@@ -151,7 +151,7 @@
                 <label class="flex flex-col items-center justify-center gap-2 py-6 px-4 cursor-pointer">
                     <input type="file" wire:model="uploadedVideos" multiple accept="video/mp4,video/webm,video/quicktime"
                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <x-phosphor-tray-arrow-up class="w-6 h-6 text-zinc-400" />
+                    <x-phosphor-tray-arrow-up class="w-6 h-6 text-zinc-400" style="width:24px;height:24px;" />
                     <span class="text-sm font-medium" style="color:#d4d4d8;">Drop videos here or <span class="text-primary-400 underline">click to browse</span></span>
                     <span class="text-xs" style="color:#71717a;">MP4, WebM, MOV  max 200 MB</span>
                 </label>
@@ -190,7 +190,7 @@
 
             @if (empty($videos))
                 <div class="flex flex-col items-center justify-center py-10 text-center gap-2">
-                    <x-phosphor-film-strip class="w-8 h-8" style="color:#52525b;" />
+                    <x-phosphor-film-strip class="w-8 h-8" style="width:32px;height:32px;color:#52525b;" />
                     <p class="text-sm" style="color:#a1a1aa;">No ad videos yet</p>
                     <p class="text-xs" style="color:#52525b;">Upload MP4 ad creatives above, then copy the URL into Appearance  Ad Creatives.</p>
                 </div>
