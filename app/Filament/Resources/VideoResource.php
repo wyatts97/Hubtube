@@ -604,7 +604,7 @@ class VideoResource extends Resource
 
                     Action::make('removeFromSchedule')
                         ->label('Remove from Schedule')
-                        ->icon('phosphor-calendar-days')
+                        ->icon('phosphor-calendar')
                         ->color('danger')
                         ->requiresConfirmation()
                         ->action(function (Video $record) {
