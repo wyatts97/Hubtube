@@ -15,7 +15,7 @@
             @else
                 <div class="fi-section rounded-xl bg-gray-900 shadow-sm ring-1 ring-white/10">
                     <div class="px-6 py-8 text-center">
-                        <x-heroicon-o-video-camera class="mx-auto h-12 w-12 text-gray-500" />
+                        <x-phosphor-video-camera class="mx-auto h-12 w-12 text-gray-500" />
                         <p class="mt-2 text-sm text-gray-400">No video file available for preview yet.</p>
                     </div>
                 </div>

@@ -97,26 +97,26 @@
             {{-- Mini stats row --}}
             <div class="mt-3 flex flex-wrap items-center gap-2 text-xs">
                 <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-white">
-                    <x-heroicon-m-eye class="h-3.5 w-3.5" /> {{ number_format($stats['views'] ?? 0) }} views
+                    <x-phosphor-eye class="h-3.5 w-3.5" /> {{ number_format($stats['views'] ?? 0) }} views
                 </span>
                 <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-white">
-                    <x-heroicon-m-hand-thumb-up class="h-3.5 w-3.5" /> {{ number_format($stats['likes'] ?? 0) }}
+                    <x-phosphor-thumbs-up class="h-3.5 w-3.5" /> {{ number_format($stats['likes'] ?? 0) }}
                 </span>
                 <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-white">
-                    <x-heroicon-m-clock class="h-3.5 w-3.5" /> {{ $stats['duration'] ?? '—' }}
+                    <x-phosphor-clock class="h-3.5 w-3.5" /> {{ $stats['duration'] ?? '—' }}
                 </span>
                 <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-white">
-                    <x-heroicon-m-circle-stack class="h-3.5 w-3.5" /> {{ $stats['size'] ?? '—' }}
+                    <x-phosphor-circle-stack class="h-3.5 w-3.5" /> {{ $stats['size'] ?? '—' }}
                 </span>
                 <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-white">
-                    <x-heroicon-m-server class="h-3.5 w-3.5" /> {{ $stats['disk'] ?? '—' }}
+                    <x-phosphor-server class="h-3.5 w-3.5" /> {{ $stats['disk'] ?? '—' }}
                 </span>
             </div>
 
             {{-- Cloud-only warning --}}
             <template x-if="isCloudOnly">
                 <div class="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 ring-1 ring-amber-500/20 px-3 py-2 dark:bg-amber-500/10">
-                    <x-heroicon-m-exclamation-triangle class="h-4 w-4 text-amber-500 shrink-0" />
+                    <x-phosphor-warning class="h-4 w-4 text-amber-500 shrink-0" />
                     <p class="text-xs text-amber-700 dark:text-amber-300">
                         Original file offloaded to cloud. Frame capture via FFmpeg unavailable.
                     </p>
@@ -133,7 +133,7 @@
                     :class="{ 'opacity-50 cursor-not-allowed': isCloudOnly }"
                 >
                     <template x-if="$wire.isCapturing"><x-filament::loading-indicator class="h-4 w-4" /></template>
-                    <template x-if="!$wire.isCapturing"><x-heroicon-m-camera class="h-4 w-4" /></template>
+                    <template x-if="!$wire.isCapturing"><x-phosphor-camera class="h-4 w-4" /></template>
                     <span>Capture Frame</span>
                 </button>
 
@@ -157,7 +157,7 @@
                     <button type="button" x-on:click="copy('public', @js($shareUrls['public']))"
                         class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 hover:bg-gray-100 dark:bg-white/5 dark:ring-white/10 dark:text-white dark:hover:bg-white/10 transition"
                         title="Copy public URL">
-                        <x-heroicon-m-link class="h-3.5 w-3.5" />
+                        <x-phosphor-link class="h-3.5 w-3.5" />
                         <span x-text="copied === 'public' ? 'Copied!' : 'Public'"></span>
                     </button>
                     @endif
@@ -165,7 +165,7 @@
                     <button type="button" x-on:click="copy('stream', @js($shareUrls['stream']))"
                         class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 hover:bg-gray-100 dark:bg-white/5 dark:ring-white/10 dark:text-white dark:hover:bg-white/10 transition"
                         title="Copy direct stream URL">
-                        <x-heroicon-m-arrow-top-right-on-square class="h-3.5 w-3.5" />
+                        <x-phosphor-arrow-square-out class="h-3.5 w-3.5" />
                         <span x-text="copied === 'stream' ? 'Copied!' : 'Stream'"></span>
                     </button>
                     @endif
@@ -173,7 +173,7 @@
                     <button type="button" x-on:click="copy('source', @js($shareUrls['source']))"
                         class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 hover:bg-gray-100 dark:bg-white/5 dark:ring-white/10 dark:text-white dark:hover:bg-white/10 transition font-mono"
                         title="Copy source path">
-                        <x-heroicon-m-document-duplicate class="h-3.5 w-3.5" />
+                        <x-phosphor-document-duplicate class="h-3.5 w-3.5" />
                         <span x-text="copied === 'source' ? 'Copied!' : 'Path'"></span>
                     </button>
                     @endif
@@ -201,7 +201,7 @@
             <x-slot name="headerEnd">
                 <button type="button" x-on:click.stop="showUpload = !showUpload"
                     class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 hover:bg-gray-100 dark:bg-white/5 dark:ring-white/10 dark:text-gray-300 dark:hover:bg-white/10 transition">
-                    <x-heroicon-m-arrow-up-tray class="h-3.5 w-3.5" />
+                    <x-phosphor-arrow-up-tray class="h-3.5 w-3.5" />
                     <span x-text="showUpload ? 'Hide upload' : 'Upload custom'"></span>
                 </button>
             </x-slot>
@@ -236,7 +236,7 @@
                 >
                     <input x-ref="fileInput" type="file" accept="image/*" wire:model="customThumbnail" class="sr-only" id="custom-thumb-upload" />
                     <label for="custom-thumb-upload" class="cursor-pointer">
-                        <x-heroicon-o-cloud-arrow-up class="mx-auto h-6 w-6 text-gray-400 dark:text-gray-500" />
+                        <x-phosphor-cloud-arrow-up class="mx-auto h-6 w-6 text-gray-400 dark:text-gray-500" />
                         <p class="mt-1 text-xs font-medium text-gray-700 dark:text-gray-300">
                             Drop image or <span class="text-primary-600 dark:text-primary-400 underline">browse</span>
                         </p>
@@ -247,7 +247,7 @@
                         <img src="{{ $customThumbnail->temporaryUrl() }}" alt="Preview" class="h-14 rounded shadow" />
                         <button type="button" wire:click="uploadCustomThumbnail"
                             class="fi-btn inline-flex items-center gap-1.5 font-semibold rounded-lg px-3 py-1.5 text-xs bg-success-600 text-white hover:bg-success-500 dark:bg-success-500 dark:hover:bg-success-400">
-                            <x-heroicon-m-check class="h-4 w-4" />
+                            <x-phosphor-check class="h-4 w-4" />
                             <span>Set as Thumbnail</span>
                         </button>
                     </div>
@@ -264,7 +264,7 @@
             <x-slot name="description">Upload a new file to overwrite the current source and re-process.</x-slot>
 
             <div class="rounded-lg bg-amber-50 ring-1 ring-amber-500/20 dark:bg-amber-500/10 px-3 py-2 mb-3 flex items-start gap-2">
-                <x-heroicon-m-exclamation-triangle class="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                <x-phosphor-warning class="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                 <p class="text-xs text-amber-700 dark:text-amber-300">
                     Uploading a replacement will overwrite the current source, reset status to <strong>pending</strong>, and re-queue transcoding. HLS variants will be regenerated.
                 </p>
@@ -279,7 +279,7 @@
             >
                 <input x-ref="videoFileInput" type="file" accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm" wire:model="replacementVideo" class="sr-only" id="replace-video-upload" />
                 <label for="replace-video-upload" class="cursor-pointer">
-                    <x-heroicon-o-film class="mx-auto h-6 w-6 text-gray-400 dark:text-gray-500" />
+                    <x-phosphor-film class="mx-auto h-6 w-6 text-gray-400 dark:text-gray-500" />
                     <p class="mt-1 text-xs font-medium text-gray-700 dark:text-gray-300">
                         Drop video or <span class="text-primary-600 dark:text-primary-400 underline">browse</span>
                     </p>
@@ -291,7 +291,7 @@
                     <button type="button" wire:click="replaceSourceVideo"
                         wire:loading.attr="disabled" wire:target="replaceSourceVideo,replacementVideo"
                         class="fi-btn inline-flex items-center gap-1.5 font-semibold rounded-lg px-3 py-1.5 text-xs bg-danger-600 text-white hover:bg-danger-500 dark:bg-danger-500 dark:hover:bg-danger-400 disabled:opacity-50">
-                        <x-heroicon-m-arrow-path class="h-4 w-4" wire:loading.class="animate-spin" wire:target="replaceSourceVideo" />
+                        <x-phosphor-arrows-clockwise class="h-4 w-4" wire:loading.class="animate-spin" wire:target="replaceSourceVideo" />
                         <span>Replace & Re-process</span>
                     </button>
                 </div>

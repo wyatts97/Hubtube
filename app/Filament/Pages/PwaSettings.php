@@ -19,7 +19,7 @@ class PwaSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-device-phone-mobile';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-device-phone-mobile';
     protected static ?string $navigationLabel = 'PWA & Push';
     protected static string | \UnitEnum | null $navigationGroup = 'System';
     protected static ?int $navigationSort = 5;

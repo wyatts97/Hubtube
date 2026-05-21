@@ -34,7 +34,7 @@ class SiteSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-cog-6-tooth';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-cog-6-tooth';
     protected static ?string $navigationLabel = 'Site Settings';
     protected static string | \UnitEnum | null $navigationGroup = 'System';
     protected static ?int $navigationSort = 1;
@@ -523,12 +523,12 @@ class SiteSettings extends Page implements HasForms
                                                 Actions::make([
                                                     Action::make('generateWatermarkPreview')
                                                         ->label('Apply Watermark & Preview')
-                                                        ->icon('heroicon-o-play')
+                                                        ->icon('phosphor-play')
                                                         ->color('primary')
                                                         ->action(fn () => $this->generateWatermarkPreview()),
                                                     Action::make('deleteWatermarkTestFiles')
                                                         ->label('Delete Test Files')
-                                                        ->icon('heroicon-o-trash')
+                                                        ->icon('phosphor-trash')
                                                         ->color('danger')
                                                         ->requiresConfirmation()
                                                         ->modalHeading('Delete watermark test files?')

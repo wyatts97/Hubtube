@@ -18,7 +18,7 @@ class ListTags extends ListRecords
         return [
             Action::make('syncFromVideos')
                 ->label('Sync From Videos')
-                ->icon('heroicon-o-arrow-path')
+                ->icon('phosphor-arrows-clockwise')
                 ->requiresConfirmation()
                 ->action(function (): void {
                     app(TagSyncService::class)->syncAllFromVideoJson();

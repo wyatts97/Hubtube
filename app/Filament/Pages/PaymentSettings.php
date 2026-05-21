@@ -20,7 +20,7 @@ class PaymentSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-credit-card';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-credit-card';
     protected static ?string $navigationLabel = 'Payment Gateways';
     protected static string | \UnitEnum | null $navigationGroup = 'Monetization';
     protected static ?int $navigationSort = 3;

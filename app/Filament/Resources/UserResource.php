@@ -34,7 +34,7 @@ use Illuminate\Support\Facades\Hash;
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-users';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-users';
     protected static string | \UnitEnum | null $navigationGroup = 'Users & Messages';
     protected static ?int $navigationSort = 1;
     protected static ?string $recordTitleAttribute = 'username';
@@ -143,7 +143,7 @@ class UserResource extends Resource
                     ->label('Videos')
                     ->numeric()
                     ->sortable()
-                    ->icon('heroicon-m-video-camera')
+                    ->icon('phosphor-video-camera')
                     ->iconColor('gray'),
 
                 TextColumn::make('wallet_balance')
@@ -174,27 +174,27 @@ class UserResource extends Resource
             ])
             ->recordActions([
                 Action::make('verify')
-                    ->icon('heroicon-o-check-badge')
+                    ->icon('phosphor-check-badge')
                     ->color('success')
                     ->requiresConfirmation()
                     ->action(fn (User $record) => $record->forceFill(['is_verified' => true])->save())
                     ->visible(fn (User $record) => !$record->is_verified),
                 Action::make('unverify')
-                    ->icon('heroicon-o-x-circle')
+                    ->icon('phosphor-x-circle')
                     ->color('warning')
                     ->requiresConfirmation()
                     ->action(fn (User $record) => $record->forceFill(['is_verified' => false])->save())
                     ->visible(fn (User $record) => $record->is_verified),
 
                 Action::make('toggle_pro')
-                    ->icon(fn (User $record) => $record->is_pro ? 'heroicon-o-x-circle' : 'heroicon-o-star')
+                    ->icon(fn (User $record) => $record->is_pro ? 'phosphor-x-circle' : 'phosphor-star')
                     ->color(fn (User $record) => $record->is_pro ? 'gray' : 'warning')
                     ->label(fn (User $record) => $record->is_pro ? 'Revoke Pro' : 'Grant Pro')
                     ->requiresConfirmation()
                     ->action(fn (User $record) => $record->forceFill(['is_pro' => !$record->is_pro])->save()),
 
                 Action::make('view_videos')
-                    ->icon('heroicon-o-video-camera')
+                    ->icon('phosphor-video-camera')
                     ->color('info')
                     ->label('Videos')
                     ->url(fn (User $record): string => route('filament.admin.resources.videos.index') . '?tableFilters[user_id][value]=' . $record->id)

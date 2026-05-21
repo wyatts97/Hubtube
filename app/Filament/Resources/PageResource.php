@@ -25,7 +25,7 @@ use Illuminate\Support\Str;
 class PageResource extends Resource
 {
     protected static ?string $model = Page::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-document-text';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-file-text';
     protected static ?string $navigationLabel = 'Legal Pages';
     protected static string | \UnitEnum | null $navigationGroup = 'System';
     protected static ?int $navigationSort = 10;

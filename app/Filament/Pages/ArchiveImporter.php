@@ -15,7 +15,7 @@ use Filament\Pages\Page;
 
 class ArchiveImporter extends Page
 {
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-folder-open';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-folder-open';
     protected static ?string $navigationLabel = 'Archive Import';
     protected static string | \UnitEnum | null $navigationGroup = 'Tools';
     protected static ?int $navigationSort = 98;

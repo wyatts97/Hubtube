@@ -12,7 +12,7 @@
                 {{-- FTP Instructions --}}
                 <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-4">
                     <div class="flex items-start gap-3">
-                        <x-heroicon-m-information-circle class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                        <x-phosphor-info class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                         <div class="text-sm text-blue-700 dark:text-blue-300">
                             <p class="font-medium mb-1">Upload these files via FTP/SFTP:</p>
                             <ol class="list-decimal list-inside space-y-1 text-blue-600 dark:text-blue-400">
@@ -26,10 +26,10 @@
                 {{-- Detection Status --}}
                 <div class="flex items-center gap-3 p-3 rounded-lg border mb-4 {{ $archiveDetected ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' }}">
                     @if($archiveDetected)
-                        <x-heroicon-m-check-circle class="w-5 h-5 text-green-500 flex-shrink-0" />
+                        <x-phosphor-check-circle class="w-5 h-5 text-green-500 flex-shrink-0" />
                         <span class="text-sm text-green-700 dark:text-green-300">{{ $archiveStatus }}</span>
                     @else
-                        <x-heroicon-m-exclamation-triangle class="w-5 h-5 text-yellow-500 flex-shrink-0" />
+                        <x-phosphor-warning class="w-5 h-5 text-yellow-500 flex-shrink-0" />
                         <span class="text-sm text-yellow-700 dark:text-yellow-300">{{ $archiveStatus }}</span>
                     @endif
                 </div>
@@ -63,13 +63,13 @@
 
                 <div class="flex items-center gap-3">
                     <x-filament::button wire:click="checkArchive" color="gray" size="sm">
-                        <x-heroicon-m-arrow-path class="w-4 h-4 mr-1" />
+                        <x-phosphor-arrows-clockwise class="w-4 h-4 mr-1" />
                         Re-check Files
                     </x-filament::button>
 
                     <x-filament::button wire:click="scanArchive" wire:loading.attr="disabled" wire:target="scanArchive" :disabled="!$archiveDetected">
                         <span wire:loading.remove wire:target="scanArchive">
-                            <x-heroicon-m-magnifying-glass class="w-4 h-4 mr-1.5" />
+                            <x-phosphor-magnifying-glass class="w-4 h-4 mr-1.5" />
                             Scan &amp; Analyze
                         </span>
                         <span wire:loading wire:target="scanArchive" class="flex items-center gap-2">
@@ -80,7 +80,7 @@
                 </div>
             @else
                 <div class="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                    <x-heroicon-m-check-circle class="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <x-phosphor-check-circle class="w-5 h-5 text-green-500 flex-shrink-0" />
                     <div class="text-sm text-green-700 dark:text-green-300">
                         <strong>Archive:</strong> <code class="text-xs">{{ $archivePath }}</code><br>
                         <strong>SQL:</strong> <code class="text-xs">{{ $sqlFilePath }}</code>
@@ -160,7 +160,7 @@
                 @if($alreadyImported > 0)
                     <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-6">
                         <div class="flex items-center gap-2">
-                            <x-heroicon-m-information-circle class="w-5 h-5 text-blue-500 flex-shrink-0" />
+                            <x-phosphor-info class="w-5 h-5 text-blue-500 flex-shrink-0" />
                             <span class="text-sm text-blue-700 dark:text-blue-300">
                                 <strong>{{ $alreadyImported }}</strong> videos have already been imported from a previous run. Duplicates will be automatically skipped.
                             </span>
@@ -196,11 +196,11 @@
                                         <td class="px-3 py-2 text-center">
                                             @if(!empty($video['video_found']))
                                                 <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-                                                    <x-heroicon-m-check class="w-3 h-3 mr-0.5" /> Found
+                                                    <x-phosphor-check class="w-3 h-3 mr-0.5" /> Found
                                                 </span>
                                             @elseif($video['video_rel_path'])
                                                 <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
-                                                    <x-heroicon-m-x-mark class="w-3 h-3 mr-0.5" /> Missing
+                                                    <x-phosphor-x class="w-3 h-3 mr-0.5" /> Missing
                                                 </span>
                                             @else
                                                 <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
@@ -211,11 +211,11 @@
                                         <td class="px-3 py-2 text-center">
                                             @if(!empty($video['thumb_found']))
                                                 <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-                                                    <x-heroicon-m-check class="w-3 h-3" />
+                                                    <x-phosphor-check class="w-3 h-3" />
                                                 </span>
                                             @elseif($video['thumbnail_rel_path'])
                                                 <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">
-                                                    <x-heroicon-m-x-mark class="w-3 h-3" />
+                                                    <x-phosphor-x class="w-3 h-3" />
                                                 </span>
                                             @else
                                                 <span class="text-gray-400 text-xs">-</span>
@@ -252,7 +252,7 @@
 
                     <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
                         <div class="flex items-start gap-3">
-                            <x-heroicon-m-exclamation-triangle class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                            <x-phosphor-warning class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
                             <div>
                                 <p class="text-sm font-medium text-yellow-700 dark:text-yellow-300">Before importing:</p>
                                 <ul class="text-sm text-yellow-600 dark:text-yellow-400 mt-1 list-disc list-inside space-y-0.5">
@@ -275,7 +275,7 @@
                             color="success"
                             size="lg"
                         >
-                            <x-heroicon-m-arrow-down-tray class="w-5 h-5 mr-2" />
+                            <x-phosphor-arrow-down-tray class="w-5 h-5 mr-2" />
                             Import {{ $totalImportable }} Videos
                         </x-filament::button>
 
@@ -289,7 +289,7 @@
                                 size="lg"
                             >
                                 <span wire:loading.remove wire:target="fixSeekability">
-                                    <x-heroicon-m-forward class="w-4 h-4 mr-1" />
+                                    <x-phosphor-forward class="w-4 h-4 mr-1" />
                                     Fix Seekability ({{ $alreadyImported }})
                                 </span>
                                 <span wire:loading wire:target="fixSeekability" class="flex items-center gap-2">
@@ -306,13 +306,13 @@
                                 color="danger"
                                 size="lg"
                             >
-                                <x-heroicon-m-trash class="w-4 h-4 mr-1" />
+                                <x-phosphor-trash class="w-4 h-4 mr-1" />
                                 Purge Previous Import ({{ $alreadyImported }})
                             </x-filament::button>
                         @endif
 
                         <x-filament::button wire:click="resetAll" color="gray" size="lg">
-                            <x-heroicon-m-arrow-path class="w-4 h-4 mr-1" />
+                            <x-phosphor-arrows-clockwise class="w-4 h-4 mr-1" />
                             Start Over
                         </x-filament::button>
                     </div>
@@ -326,7 +326,7 @@
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Importing Videos...</h3>
                     <x-filament::button wire:click="stopImport" color="danger" size="sm">
-                        <x-heroicon-m-stop class="w-4 h-4 mr-1" />
+                        <x-phosphor-stop class="w-4 h-4 mr-1" />
                         Stop
                     </x-filament::button>
                 </div>
@@ -368,11 +368,11 @@
                         @foreach($importLog as $log)
                             <div class="flex items-center gap-2 text-xs">
                                 @if($log['status'] === 'imported')
-                                    <x-heroicon-m-check-circle class="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                                    <x-phosphor-check-circle class="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
                                 @elseif($log['status'] === 'skipped')
-                                    <x-heroicon-m-minus-circle class="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
+                                    <x-phosphor-minus-circle class="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
                                 @else
-                                    <x-heroicon-m-exclamation-circle class="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                                    <x-phosphor-exclamation-circle class="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
                                 @endif
                                 <span class="text-gray-700 dark:text-gray-300 truncate">{{ $log['title'] }}</span>
                                 <span class="text-gray-400 dark:text-gray-500 ml-auto flex-shrink-0">{{ $log['status'] }}</span>
@@ -388,7 +388,7 @@
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
                 <div class="text-center mb-6">
                     <div class="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
-                        <x-heroicon-m-check-circle class="w-10 h-10 text-green-500" />
+                        <x-phosphor-check-circle class="w-10 h-10 text-green-500" />
                     </div>
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white">Import Complete!</h3>
                     <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -415,7 +415,7 @@
                 @if(!empty($importErrors))
                     <div class="mb-6">
                         <h4 class="text-sm font-medium text-red-600 dark:text-red-400 mb-2">
-                            <x-heroicon-m-exclamation-circle class="w-4 h-4 inline mr-1" />
+                            <x-phosphor-exclamation-circle class="w-4 h-4 inline mr-1" />
                             Error Log ({{ count($importErrors) }} errors):
                         </h4>
                         <div class="max-h-64 overflow-y-auto border border-red-200 dark:border-red-800 rounded-lg">
@@ -443,7 +443,7 @@
 
                 <div class="flex items-center gap-4 justify-center">
                     <x-filament::button wire:click="resetAll" color="gray">
-                        <x-heroicon-m-arrow-path class="w-4 h-4 mr-1.5" />
+                        <x-phosphor-arrows-clockwise class="w-4 h-4 mr-1.5" />
                         Import Another Archive
                     </x-filament::button>
                 </div>
@@ -495,7 +495,7 @@
 
                 <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                     <p class="text-xs text-blue-600 dark:text-blue-400">
-                        <x-heroicon-m-information-circle class="w-4 h-4 inline mr-1" />
+                        <x-phosphor-info class="w-4 h-4 inline mr-1" />
                         <strong>For production:</strong> Upload the WTARCHIVE directory and SQL file to the server, then enter the server paths here.
                         Videos are imported as native MP4s — no video processing or encoding is performed.
                     </p>

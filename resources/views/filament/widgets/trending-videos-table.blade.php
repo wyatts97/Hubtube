@@ -16,7 +16,7 @@
     <div class="ht-vidwidget__header">
         <div class="flex items-center gap-2">
             <span class="ht-vidwidget__icon ht-vidwidget__icon--trending">
-                <x-heroicon-m-fire class="w-4 h-4" />
+                <x-phosphor-fire class="w-4 h-4" />
             </span>
             <h3 class="ht-vidwidget__title">{{ $heading }}</h3>
         </div>
@@ -26,9 +26,9 @@
                     @click="open = !open"
                     @click.away="open = false"
                     class="ht-vidwidget__filter-btn">
-                <x-heroicon-m-funnel class="w-3.5 h-3.5" />
+                <x-phosphor-funnel class="w-3.5 h-3.5" />
                 <span>{{ $periodLabel }}</span>
-                <x-heroicon-m-chevron-down class="w-3 h-3 opacity-60" />
+                <x-phosphor-chevron-down class="w-3 h-3 opacity-60" />
             </button>
             <div x-show="open"
                  x-transition
@@ -62,11 +62,11 @@
                              decoding="async">
                     @else
                         <div class="ht-vidrow__thumb-fallback">
-                            <x-heroicon-o-film class="w-5 h-5" />
+                            <x-phosphor-film class="w-5 h-5" />
                         </div>
                     @endif
                     <span class="ht-vidrow__play">
-                        <x-heroicon-s-play class="w-3.5 h-3.5" />
+                        <x-phosphor-play class="w-3.5 h-3.5" />
                     </span>
                 </div>
 
@@ -81,18 +81,18 @@
 
                 <div class="ht-vidrow__stats">
                     <span class="ht-vidstat ht-vidstat--views">
-                        <x-heroicon-m-eye class="w-3 h-3" />
+                        <x-phosphor-eye class="w-3 h-3" />
                         {{ number_format($video->views_count ?? 0) }}
                     </span>
                     <span class="ht-vidstat ht-vidstat--likes">
-                        <x-heroicon-m-hand-thumb-up class="w-3 h-3" />
+                        <x-phosphor-thumbs-up class="w-3 h-3" />
                         {{ number_format($video->likes_count ?? 0) }}
                     </span>
                 </div>
             </a>
         @empty
             <div class="ht-vidwidget__empty">
-                <x-heroicon-o-fire class="w-6 h-6 mx-auto mb-2 opacity-40" />
+                <x-phosphor-fire class="w-6 h-6 mx-auto mb-2 opacity-40" />
                 No trending videos for this period yet.
             </div>
         @endforelse

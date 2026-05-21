@@ -28,7 +28,7 @@ class IntegrationSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-puzzle-piece';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-puzzle-piece';
     protected static ?string $navigationLabel = 'Services & Email';
     protected static string | \UnitEnum | null $navigationGroup = 'Integrations';
     protected static ?int $navigationSort = 1;
@@ -72,7 +72,7 @@ class IntegrationSettings extends Page implements HasForms
                 Tabs::make('Integration Settings')
                     ->tabs([
                         Tab::make('Bunny Stream')
-                            ->icon('heroicon-o-cloud')
+                            ->icon('phosphor-cloud')
                             ->schema([
                                 Section::make('Bunny Stream')
                                     ->description('Used for migrating embedded Bunny Stream videos to local/cloud storage.')
@@ -94,7 +94,7 @@ class IntegrationSettings extends Page implements HasForms
                                     ])->columns(2),
                             ]),
                         Tab::make('Email / SMTP')
-                            ->icon('heroicon-o-envelope')
+                            ->icon('phosphor-envelope')
                             ->schema([
                                 Section::make('Mail Server Configuration')
                                     ->description('Works with any SMTP server: Gmail, Mailgun, SendGrid, BillionMail (self-hosted), or any other provider. Set the host and port to match your mail server.')
@@ -153,7 +153,7 @@ class IntegrationSettings extends Page implements HasForms
                                         Actions::make([
                                             Action::make('sendTestEmail')
                                                 ->label('Send Test Email')
-                                                ->icon('heroicon-o-paper-airplane')
+                                                ->icon('phosphor-paper-airplane')
                                                 ->color('gray')
                                                 ->action(function () {
                                                     $this->sendTestEmail();

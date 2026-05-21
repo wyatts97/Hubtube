@@ -22,14 +22,14 @@ class EditVideo extends EditRecord
         return [
             Action::make('view_frontend')
                 ->label('View on Site')
-                ->icon('heroicon-o-eye')
+                ->icon('phosphor-eye')
                 ->color('gray')
                 ->url(fn () => url('/' . $this->record->slug))
                 ->openUrlInNewTab()
                 ->visible(fn () => $this->record->status === 'processed' && $this->record->is_approved),
 
             Action::make('approve')
-                ->icon('heroicon-o-check-circle')
+                ->icon('phosphor-check-circle')
                 ->color('success')
                 ->requiresConfirmation()
                 ->action(function () {
@@ -50,7 +50,7 @@ class EditVideo extends EditRecord
                 ->visible(fn () => !$this->record->is_approved && $this->record->status === 'processed'),
 
             Action::make('reprocess')
-                ->icon('heroicon-o-arrow-path')
+                ->icon('phosphor-arrows-clockwise')
                 ->color('info')
                 ->requiresConfirmation()
                 ->modalDescription('This will re-dispatch the video processing job. Existing transcoded files will be skipped.')

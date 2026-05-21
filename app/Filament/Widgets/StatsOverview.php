@@ -139,7 +139,7 @@ class StatsOverview extends BaseWidget
                 // Row 1
                 Stat::make('Total Users', number_format($totalUsers))
                     ->description("+{$users24h} today · +{$users7d} this week · +{$users30d} this month")
-                    ->descriptionIcon('heroicon-m-users')
+                    ->descriptionIcon('phosphor-users')
                     ->chart($userChart)
                     ->chartColor('primary')
                     ->color('primary')
@@ -148,7 +148,7 @@ class StatsOverview extends BaseWidget
 
                 Stat::make('Total Videos', number_format($totalVideos))
                     ->description("+{$videos24h} today · +{$videos7d} this week · +{$videos30d} this month")
-                    ->descriptionIcon('heroicon-m-video-camera')
+                    ->descriptionIcon('phosphor-video-camera')
                     ->chart($videoChart)
                     ->chartColor('success')
                     ->color('success')
@@ -157,7 +157,7 @@ class StatsOverview extends BaseWidget
 
                 Stat::make('Total Views', number_format($totalViews))
                     ->description("Top: {$topVideoLabel}")
-                    ->descriptionIcon('heroicon-m-eye')
+                    ->descriptionIcon('phosphor-eye')
                     ->chart($viewChart)
                     ->chartColor('info')
                     ->color('info')
@@ -167,7 +167,7 @@ class StatsOverview extends BaseWidget
                 // Row 2
                 Stat::make('Comments', number_format($totalComments))
                     ->description("+{$comments7d} this week")
-                    ->descriptionIcon('heroicon-m-chat-bubble-left-right')
+                    ->descriptionIcon('phosphor-chat-bubble-left-right')
                     ->chart($commentChart)
                     ->chartColor('gray')
                     ->color('gray')
@@ -176,7 +176,7 @@ class StatsOverview extends BaseWidget
 
                 Stat::make('Video Storage', $storageLabel)
                     ->description(number_format($totalVideos) . ' files on disk')
-                    ->descriptionIcon('heroicon-m-server-stack')
+                    ->descriptionIcon('phosphor-server-stack')
                     ->chart($storageChart)
                     ->chartColor('gray')
                     ->color('gray'),
@@ -186,7 +186,7 @@ class StatsOverview extends BaseWidget
                         ($pendingCount > 0 ? "{$pendingCount} queued" : 'No queue') .
                         ($failedCount > 0 ? " · {$failedCount} failed" : '')
                     )
-                    ->descriptionIcon('heroicon-m-cog-6-tooth')
+                    ->descriptionIcon('phosphor-cog-6-tooth')
                     ->chart($processChart)
                     ->chartColor($failedCount > 0 ? 'danger' : 'gray')
                     ->color($failedCount > 0 ? 'danger' : ($processingCount > 0 ? 'info' : 'gray')),
@@ -198,7 +198,7 @@ class StatsOverview extends BaseWidget
                 array_splice($stats, 3, 0, [
                     Stat::make('Revenue', '$' . number_format($totalRevenue, 2))
                         ->description('$' . number_format($revenue7d, 2) . ' this week · $' . number_format($revenue30d, 2) . ' this month')
-                        ->descriptionIcon('heroicon-m-banknotes')
+                        ->descriptionIcon('phosphor-banknotes')
                         ->color('warning'),
                 ]);
             }

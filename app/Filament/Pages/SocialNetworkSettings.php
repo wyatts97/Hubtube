@@ -27,7 +27,7 @@ class SocialNetworkSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-share';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-share';
     protected static ?string $navigationLabel = 'Social Networks';
     protected static string | \UnitEnum | null $navigationGroup = 'Integrations';
     protected static ?int $navigationSort = 2;
@@ -80,7 +80,7 @@ class SocialNetworkSettings extends Page implements HasForms
                 Tabs::make('Social Network Settings')
                     ->tabs([
                         Tab::make('Social Login')
-                            ->icon('heroicon-o-arrow-right-on-rectangle')
+                            ->icon('phosphor-arrow-right-on-rectangle')
                             ->schema([
                                 Placeholder::make('social_login_info')
                                     ->content('Enable OAuth2 social login for your users. Each provider requires a Client ID and Client Secret from the respective developer console.')
@@ -88,7 +88,7 @@ class SocialNetworkSettings extends Page implements HasForms
 
                                 Section::make('Google')
                                     ->description('Create credentials at console.cloud.google.com → APIs & Services → Credentials. Set the redirect URI to: ' . url('/auth/google/callback'))
-                                    ->icon('heroicon-o-globe-alt')
+                                    ->icon('phosphor-globe-alt')
                                     ->collapsible()
                                     ->schema([
                                         Toggle::make('social_login_google_enabled')
@@ -109,7 +109,7 @@ class SocialNetworkSettings extends Page implements HasForms
 
                                 Section::make('Twitter / X')
                                     ->description('Create an app at developer.x.com. Enable OAuth 2.0 with PKCE. Set the redirect URI to: ' . url('/auth/twitter/callback'))
-                                    ->icon('heroicon-o-chat-bubble-left-right')
+                                    ->icon('phosphor-chat-bubble-left-right')
                                     ->collapsible()
                                     ->schema([
                                         Toggle::make('social_login_twitter_enabled')
@@ -129,7 +129,7 @@ class SocialNetworkSettings extends Page implements HasForms
 
                                 Section::make('Reddit')
                                     ->description('Create an app at reddit.com/prefs/apps (type: web app). Set the redirect URI to: ' . url('/auth/reddit/callback'))
-                                    ->icon('heroicon-o-chat-bubble-bottom-center-text')
+                                    ->icon('phosphor-chat-bubble-bottom-center-text')
                                     ->collapsible()
                                     ->schema([
                                         Toggle::make('social_login_reddit_enabled')
@@ -149,7 +149,7 @@ class SocialNetworkSettings extends Page implements HasForms
                             ]),
 
                         Tab::make('Twitter Auto-Post')
-                            ->icon('heroicon-o-megaphone')
+                            ->icon('phosphor-megaphone')
                             ->schema([
                                 Placeholder::make('twitter_api_info')
                                     ->content('Automatically tweet when a new video is published and/or schedule periodic tweets of older videos. Requires Twitter API v2 credentials with tweet write permissions (OAuth 1.0a User Context).')
@@ -157,7 +157,7 @@ class SocialNetworkSettings extends Page implements HasForms
 
                                 Section::make('API Credentials')
                                     ->description('From developer.x.com → Your App → Keys and Tokens. These are the OAuth 1.0a keys used for posting tweets on behalf of your account.')
-                                    ->icon('heroicon-o-key')
+                                    ->icon('phosphor-key')
                                     ->collapsible()
                                     ->schema([
                                         TextInput::make('twitter_api_consumer_key')
@@ -184,7 +184,7 @@ class SocialNetworkSettings extends Page implements HasForms
                                     ])->columns(2),
 
                                 Section::make('Auto-Tweet Settings')
-                                    ->icon('heroicon-o-cog-6-tooth')
+                                    ->icon('phosphor-cog-6-tooth')
                                     ->schema([
                                         Toggle::make('twitter_auto_tweet_new_enabled')
                                             ->label('Auto-tweet when a new video is published')
@@ -220,7 +220,7 @@ class SocialNetworkSettings extends Page implements HasForms
                                     ])->columns(2),
 
                                 Section::make('Tweet Template')
-                                    ->icon('heroicon-o-document-text')
+                                    ->icon('phosphor-file-text')
                                     ->schema([
                                         Textarea::make('twitter_tweet_template')
                                             ->label('Tweet Template')
@@ -234,7 +234,7 @@ class SocialNetworkSettings extends Page implements HasForms
                                         Actions::make([
                                             Action::make('sendTestTweet')
                                                 ->label('Send Test Tweet')
-                                                ->icon('heroicon-o-paper-airplane')
+                                                ->icon('phosphor-paper-airplane')
                                                 ->color('gray')
                                                 ->requiresConfirmation()
                                                 ->modalHeading('Send Test Tweet')

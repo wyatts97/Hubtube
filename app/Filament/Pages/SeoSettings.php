@@ -24,7 +24,7 @@ class SeoSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-magnifying-glass';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-magnifying-glass';
     protected static ?string $navigationLabel = 'SEO Settings';
     protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 4;
@@ -108,7 +108,7 @@ class SeoSettings extends Page implements HasForms
                 Tabs::make('SEO Settings')
                     ->tabs([
                         Tab::make('Global SEO')
-                            ->icon('heroicon-o-globe-alt')
+                            ->icon('phosphor-globe-alt')
                             ->schema([
                                 Section::make('Site Meta Tags')
                                     ->description('Default meta tags applied to all pages unless overridden.')
@@ -176,7 +176,7 @@ class SeoSettings extends Page implements HasForms
                             ]),
 
                         Tab::make('Search Engines')
-                            ->icon('heroicon-o-check-badge')
+                            ->icon('phosphor-check-badge')
                             ->schema([
                                 Section::make('Verification Codes')
                                     ->description('Paste the verification meta tag content value from each search engine\'s webmaster tools.')
@@ -220,7 +220,7 @@ class SeoSettings extends Page implements HasForms
                             ]),
 
                         Tab::make('Video SEO')
-                            ->icon('heroicon-o-play')
+                            ->icon('phosphor-play')
                             ->schema([
                                 Placeholder::make('video_seo_info')
                                     ->content(new HtmlString(
@@ -277,7 +277,7 @@ class SeoSettings extends Page implements HasForms
                             ]),
 
                         Tab::make('Page Templates')
-                            ->icon('heroicon-o-document-text')
+                            ->icon('phosphor-file-text')
                             ->schema([
                                 Section::make('Homepage')
                                     ->schema([
@@ -332,7 +332,7 @@ class SeoSettings extends Page implements HasForms
                             ]),
 
                         Tab::make('Structured Data')
-                            ->icon('heroicon-o-code-bracket')
+                            ->icon('phosphor-code-bracket')
                             ->schema([
                                 Placeholder::make('schema_info')
                                     ->content(new HtmlString(
@@ -369,7 +369,7 @@ class SeoSettings extends Page implements HasForms
                             ]),
 
                         Tab::make('Sitemap')
-                            ->icon('heroicon-o-map')
+                            ->icon('phosphor-map')
                             ->schema([
                                 Section::make('Sitemap URLs')
                                     ->description('Submit these URLs to Google Search Console and Bing Webmaster Tools.')

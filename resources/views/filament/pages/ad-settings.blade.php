@@ -5,7 +5,7 @@
         {{ $this->form }}
 
         <div class="mt-6 flex items-center gap-4">
-            <x-filament::button type="submit" icon="heroicon-m-check">
+            <x-filament::button type="submit" icon="phosphor-check">
                 Save Ad Settings
             </x-filament::button>
 
@@ -13,7 +13,7 @@
                 tag="a"
                 href="{{ route('filament.admin.resources.video-ads.index') }}"
                 color="gray"
-                icon="heroicon-o-film">
+                icon="phosphor-film">
                 Manage Video Ad Creatives
             </x-filament::button>
         </div>

@@ -61,7 +61,7 @@ use Illuminate\Database\Eloquent\Collection;
 class VideoResource extends Resource
 {
     protected static ?string $model = Video::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-video-camera';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-video-camera';
     protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 1;
     protected static ?string $recordTitleAttribute = 'title';
@@ -166,7 +166,7 @@ class VideoResource extends Resource
                     ->persistTabInQueryString('tab')
                     ->tabs([
                         Tab::make('Details')
-                            ->icon('heroicon-m-document-text')
+                            ->icon('phosphor-file-text')
                             ->schema([
                                 TextInput::make('title')
                                     ->required()
@@ -210,7 +210,7 @@ class VideoResource extends Resource
                             ])->columns(2),
 
                         Tab::make('Moderation')
-                            ->icon('heroicon-m-shield-check')
+                            ->icon('phosphor-shield-check')
                             ->schema([
                                 Toggle::make('is_approved')
                                     ->label('Approved')
@@ -227,7 +227,7 @@ class VideoResource extends Resource
                             ])->columns(2),
 
                         Tab::make('Pricing')
-                            ->icon('heroicon-m-currency-dollar')
+                            ->icon('phosphor-currency-dollar')
                             ->visible(fn () => (bool) Setting::get('monetization_enabled', true))
                             ->schema([
                                 TextInput::make('price')
@@ -243,7 +243,7 @@ class VideoResource extends Resource
                             ])->columns(2),
 
                         Tab::make('Technical')
-                            ->icon('heroicon-m-cog-6-tooth')
+                            ->icon('phosphor-cog-6-tooth')
                             ->hiddenOn('create')
                             ->schema([
                                 TextInput::make('video_path')
@@ -264,7 +264,7 @@ class VideoResource extends Resource
                             ])->columns(2),
 
                         Tab::make('Activity')
-                            ->icon('heroicon-m-clipboard-document-list')
+                            ->icon('phosphor-clipboard-text')
                             ->hiddenOn('create')
                             ->schema([
                                 View::make('filament.resources.video-resource.components.activity-log')
@@ -307,7 +307,7 @@ class VideoResource extends Resource
                     ->label('Uploader')
                     ->searchable()
                     ->sortable()
-                    ->icon('heroicon-m-user')
+                    ->icon('phosphor-user')
                     ->size('sm'),
 
                 TextColumn::make('category.name')
@@ -347,8 +347,8 @@ class VideoResource extends Resource
                     ->boolean()
                     ->label('Approved')
                     ->alignCenter()
-                    ->trueIcon('heroicon-m-check-circle')
-                    ->falseIcon('heroicon-m-clock')
+                    ->trueIcon('phosphor-check-circle')
+                    ->falseIcon('phosphor-clock')
                     ->trueColor('success')
                     ->falseColor('warning')
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -357,8 +357,8 @@ class VideoResource extends Resource
                     ->boolean()
                     ->label('Featured')
                     ->alignCenter()
-                    ->trueIcon('heroicon-s-star')
-                    ->falseIcon('heroicon-o-star')
+                    ->trueIcon('phosphor-star')
+                    ->falseIcon('phosphor-star')
                     ->trueColor('warning')
                     ->falseColor('gray')
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -368,14 +368,14 @@ class VideoResource extends Resource
                     ->numeric()
                     ->sortable()
                     ->alignRight()
-                    ->icon('heroicon-m-eye')
+                    ->icon('phosphor-eye')
                     ->iconColor('gray'),
 
                 TextColumn::make('likes_count')
                     ->label('Likes')
                     ->numeric()
                     ->sortable()
-                    ->icon('heroicon-m-hand-thumb-up')
+                    ->icon('phosphor-thumbs-up')
                     ->iconColor('gray')
                     ->toggleable(isToggledHiddenByDefault: true),
 
@@ -455,7 +455,7 @@ class VideoResource extends Resource
                 // Always-visible approve button for videos needing moderation
                 Action::make('quickApprove')
                     ->label('Approve')
-                    ->icon('heroicon-o-check-circle')
+                    ->icon('phosphor-check-circle')
                     ->color('success')
                     ->button()
                     ->requiresConfirmation()
@@ -487,7 +487,7 @@ class VideoResource extends Resource
                     EditAction::make(),
 
                     Action::make('approve')
-                        ->icon('heroicon-o-check-circle')
+                        ->icon('phosphor-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
                         ->action(function (Video $record) {
@@ -517,7 +517,7 @@ class VideoResource extends Resource
 
                     Action::make('unpublish')
                         ->label('Unpublish')
-                        ->icon('heroicon-o-eye-slash')
+                        ->icon('phosphor-eye-slash')
                         ->color('warning')
                         ->requiresConfirmation()
                         ->modalHeading('Unpublish Video')
@@ -531,7 +531,7 @@ class VideoResource extends Resource
 
                     Action::make('reject')
                         ->label('Reject')
-                        ->icon('heroicon-o-x-circle')
+                        ->icon('phosphor-x-circle')
                         ->color('danger')
                         ->modalHeading('Reject Video')
                         ->modalDescription('Select a reason for rejecting this video. The uploader will be notified by email.')
@@ -579,14 +579,14 @@ class VideoResource extends Resource
                         ->visible(fn (Video $record) => !$record->is_approved && $record->status === 'processed'),
 
                     Action::make('feature')
-                        ->icon('heroicon-o-star')
+                        ->icon('phosphor-star')
                         ->color('warning')
                         ->action(fn (Video $record) => $record->update(['is_featured' => !$record->is_featured]))
                         ->label(fn (Video $record) => $record->is_featured ? 'Unfeature' : 'Feature'),
 
                     Action::make('addToSchedule')
                         ->label('Add to Schedule')
-                        ->icon('heroicon-o-calendar')
+                        ->icon('phosphor-calendar')
                         ->color('info')
                         ->requiresConfirmation()
                         ->modalDescription('This will add the video to the publishing schedule. It will be auto-approved and published at the scheduled time.')
@@ -604,7 +604,7 @@ class VideoResource extends Resource
 
                     Action::make('removeFromSchedule')
                         ->label('Remove from Schedule')
-                        ->icon('heroicon-o-calendar-days')
+                        ->icon('phosphor-calendar-days')
                         ->color('danger')
                         ->requiresConfirmation()
                         ->action(function (Video $record) {
@@ -618,7 +618,7 @@ class VideoResource extends Resource
                         ->visible(fn (Video $record) => !is_null($record->queue_order)),
 
                     Action::make('reprocess')
-                        ->icon('heroicon-o-arrow-path')
+                        ->icon('phosphor-arrows-clockwise')
                         ->color('info')
                         ->requiresConfirmation()
                         ->modalDescription('This will re-dispatch the video processing job. Existing transcoded files will be skipped.')
@@ -629,7 +629,7 @@ class VideoResource extends Resource
                         ->visible(fn (Video $record) => in_array($record->status, ['failed', 'processing'])),
 
                     Action::make('view_frontend')
-                        ->icon('heroicon-o-eye')
+                        ->icon('phosphor-eye')
                         ->color('gray')
                         ->url(fn (Video $record): string => url('/' . $record->slug))
                         ->openUrlInNewTab()
@@ -641,7 +641,7 @@ class VideoResource extends Resource
             ->toolbarActions([
                 BulkActionGroup::make([
                     BulkAction::make('approve')
-                        ->icon('heroicon-o-check-circle')
+                        ->icon('phosphor-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
                         ->action(function (Collection $records) {
@@ -664,27 +664,27 @@ class VideoResource extends Resource
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('unapprove')
-                        ->icon('heroicon-o-x-circle')
+                        ->icon('phosphor-x-circle')
                         ->color('warning')
                         ->requiresConfirmation()
                         ->action(fn (Collection $records) => $records->each(fn (Video $v) => $v->update(['is_approved' => false])))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('feature')
-                        ->icon('heroicon-o-star')
+                        ->icon('phosphor-star')
                         ->color('warning')
                         ->action(fn (Collection $records) => $records->each(fn (Video $v) => $v->update(['is_featured' => true])))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('unfeature')
-                        ->icon('heroicon-o-star')
+                        ->icon('phosphor-star')
                         ->color('gray')
                         ->action(fn (Collection $records) => $records->each(fn (Video $v) => $v->update(['is_featured' => false])))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('addToSchedule')
                         ->label('Add to Schedule')
-                        ->icon('heroicon-o-calendar')
+                        ->icon('phosphor-calendar')
                         ->color('info')
                         ->requiresConfirmation()
                         ->action(function (Collection $records) {
@@ -710,13 +710,13 @@ class VideoResource extends Resource
             ->striped()
             ->paginated([10, 25, 50, 100])
             ->recordUrl(fn (Video $record): string => route('filament.admin.resources.videos.edit', $record))
-            ->emptyStateIcon('heroicon-o-video-camera')
+            ->emptyStateIcon('phosphor-video-camera')
             ->emptyStateHeading('No videos yet')
             ->emptyStateDescription('Upload your first video to get started.')
             ->emptyStateActions([
                 Action::make('create')
                     ->label('Upload Video')
-                    ->icon('heroicon-m-arrow-up-tray')
+                    ->icon('phosphor-arrow-up-tray')
                     ->url(route('filament.admin.resources.videos.create'))
                     ->button(),
             ]);

@@ -13,7 +13,7 @@ use Filament\Pages\Page;
 
 class Analytics extends Page
 {
-    protected static string | \BackedEnum | null $navigationIcon  = 'heroicon-o-chart-bar';
+    protected static string | \BackedEnum | null $navigationIcon  = 'phosphor-chart-bar';
     protected static ?string $navigationLabel = 'Analytics';
     protected static string | \UnitEnum | null $navigationGroup = 'Overview';
     protected static ?int    $navigationSort  = 2;

@@ -25,7 +25,7 @@ class StorageSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-cloud';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-cloud';
     protected static ?string $navigationLabel = 'Storage & CDN';
     protected static string | \UnitEnum | null $navigationGroup = 'System';
     protected static ?int $navigationSort = 2;
@@ -192,7 +192,7 @@ class StorageSettings extends Page implements HasForms
                                         Actions::make([
                                             Action::make('testWasabiConnection')
                                                 ->label('Test Connection')
-                                                ->icon('heroicon-o-signal')
+                                                ->icon('phosphor-signal')
                                                 ->color('gray')
                                                 ->action(function () {
                                                     $this->testStorageConnection('wasabi');

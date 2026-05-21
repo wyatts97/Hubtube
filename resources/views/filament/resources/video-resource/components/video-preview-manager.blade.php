@@ -8,7 +8,7 @@
 @else
     <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
         <div class="fi-section-content px-6 py-8 text-center">
-            <x-heroicon-o-video-camera class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+            <x-phosphor-video-camera class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
             <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No video available for preview.</p>
         </div>
     </div>
@@ -77,7 +77,7 @@
                         :disabled="!duration || $wire.isCapturing"
                     >
                         <x-filament::loading-indicator x-show="$wire.isCapturing" class="h-4 w-4" />
-                        <x-heroicon-m-camera x-show="!$wire.isCapturing" class="h-4 w-4" />
+                        <x-phosphor-camera x-show="!$wire.isCapturing" class="h-4 w-4" />
                         <span>Capture Frame as Thumbnail</span>
                     </button>
                     <span class="text-sm text-gray-500 dark:text-gray-400" x-show="duration > 0">
@@ -90,7 +90,7 @@
     @else
     <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
         <div class="fi-section-content px-6 py-8 text-center">
-            <x-heroicon-o-video-camera class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+            <x-phosphor-video-camera class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
             <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No video file available for preview.</p>
         </div>
     </div>
@@ -142,7 +142,7 @@
             </div>
             @else
             <div class="mb-6 text-center py-6 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
-                <x-heroicon-o-photo class="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500" />
+                <x-phosphor-photo class="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500" />
                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No generated thumbnails found.</p>
             </div>
             @endif
@@ -165,7 +165,7 @@
                     id="custom-thumb-upload"
                 />
                 <label for="custom-thumb-upload" class="cursor-pointer">
-                    <x-heroicon-o-cloud-arrow-up class="mx-auto h-10 w-10 text-gray-400 dark:text-gray-500" />
+                    <x-phosphor-cloud-arrow-up class="mx-auto h-10 w-10 text-gray-400 dark:text-gray-500" />
                     <p class="mt-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                         Drop an image here or <span class="text-primary-600 dark:text-primary-400 underline">browse</span>
                     </p>
@@ -184,7 +184,7 @@
                         class="fi-btn fi-btn-size-md relative grid-flow-col items-center justify-center font-semibold outline-none transition duration-75 focus-visible:ring-2 rounded-lg fi-btn-color-success fi-color-custom bg-custom-600 text-white shadow-sm hover:bg-custom-500 dark:bg-custom-500 dark:hover:bg-custom-400 gap-1.5 px-3 py-2 text-sm inline-grid"
                         style="--c-400: var(--success-400); --c-500: var(--success-500); --c-600: var(--success-600);"
                     >
-                        <x-heroicon-m-check class="h-4 w-4" />
+                        <x-phosphor-check class="h-4 w-4" />
                         <span>Set as Thumbnail</span>
                     </button>
                 </div>

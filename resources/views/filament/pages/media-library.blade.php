@@ -7,7 +7,7 @@
         <div style="background:#27272a;border:1px solid #3f3f46;border-radius:12px;box-shadow:0 25px 50px rgba(0,0,0,0.5);padding:24px;max-width:360px;width:100%;margin:0 16px;">
             <div class="flex flex-col items-center gap-3 text-center">
                 <div class="w-10 h-10 rounded-full bg-danger-500/20 flex items-center justify-center">
-                    <x-heroicon-o-trash class="w-5 h-5 text-danger-400" />
+                    <x-phosphor-trash class="w-5 h-5 text-danger-400" />
                 </div>
                 <div>
                     <p class="text-sm font-semibold text-white">Delete File?</p>
@@ -28,14 +28,14 @@
             wire:click="$set('activeTab', 'images')"
             style="display:flex;align-items:center;gap:8px;padding:10px 16px;font-size:14px;font-weight:500;border:none;border-bottom:2px solid {{ $activeTab === 'images' ? 'var(--color-primary-500,#f43f5e)' : 'transparent' }};color:{{ $activeTab === 'images' ? 'var(--color-primary-400,#fb7185)' : '#a1a1aa' }};background:transparent;cursor:pointer;margin-bottom:-1px;transition:color 0.15s;"
         >
-            <x-heroicon-o-photo style="width:16px;height:16px;" />
+            <x-phosphor-photo style="width:16px;height:16px;" />
             Images
         </button>
         <button
             wire:click="$set('activeTab', 'videos')"
             style="display:flex;align-items:center;gap:8px;padding:10px 16px;font-size:14px;font-weight:500;border:none;border-bottom:2px solid {{ $activeTab === 'videos' ? 'var(--color-primary-500,#f43f5e)' : 'transparent' }};color:{{ $activeTab === 'videos' ? 'var(--color-primary-400,#fb7185)' : '#a1a1aa' }};background:transparent;cursor:pointer;margin-bottom:-1px;transition:color 0.15s;"
         >
-            <x-heroicon-o-film style="width:16px;height:16px;" />
+            <x-phosphor-film style="width:16px;height:16px;" />
             Ad Videos
         </button>
     </div>
@@ -58,7 +58,7 @@
                 <label class="flex flex-col items-center justify-center gap-2 py-6 px-4 cursor-pointer">
                     <input type="file" wire:model="uploadedImages" multiple accept="image/*"
                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <x-heroicon-o-arrow-up-tray class="w-6 h-6 text-zinc-400" />
+                    <x-phosphor-arrow-up-tray class="w-6 h-6 text-zinc-400" />
                     <span class="text-sm font-medium" style="color:#d4d4d8;">Drop images here or <span class="text-primary-400 underline">click to browse</span></span>
                     <span class="text-xs" style="color:#71717a;">JPG, PNG, GIF, WebP, SVG, ICO  max 10 MB</span>
                 </label>
@@ -75,7 +75,7 @@
             @if ($uploadedImages)
                 <div class="mt-3 flex items-center gap-3" wire:loading.remove wire:target="uploadedImages">
                     <span class="text-sm" style="color:#a1a1aa;">{{ count($uploadedImages) }} file(s) ready</span>
-                    <x-filament::button wire:click="uploadImages" size="sm" icon="heroicon-o-arrow-up-tray">
+                    <x-filament::button wire:click="uploadImages" size="sm" icon="phosphor-arrow-up-tray">
                         Upload Now
                     </x-filament::button>
                 </div>
@@ -97,7 +97,7 @@
 
             @if (empty($images))
                 <div class="flex flex-col items-center justify-center py-10 text-center gap-2">
-                    <x-heroicon-o-photo class="w-8 h-8" style="color:#52525b;" />
+                    <x-phosphor-photo class="w-8 h-8" style="color:#52525b;" />
                     <p class="text-sm" style="color:#a1a1aa;">No images yet</p>
                     <p class="text-xs" style="color:#52525b;">Upload banner images, logos, and other static assets above.</p>
                 </div>
@@ -122,7 +122,7 @@
                                     style="padding:4px 6px;background:#27272a;color:#a1a1aa;border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;"
                                     onmouseenter="this.style.background='rgba(127,29,29,0.4)';this.style.color='#f87171'" onmouseleave="this.style.background='#27272a';this.style.color='#a1a1aa'"
                                     title="Delete">
-                                    <x-heroicon-o-trash style="width:13px;height:13px;" />
+                                    <x-phosphor-trash style="width:13px;height:13px;" />
                                 </button>
                             </div>
                         </div>
@@ -151,7 +151,7 @@
                 <label class="flex flex-col items-center justify-center gap-2 py-6 px-4 cursor-pointer">
                     <input type="file" wire:model="uploadedVideos" multiple accept="video/mp4,video/webm,video/quicktime"
                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                    <x-heroicon-o-arrow-up-tray class="w-6 h-6 text-zinc-400" />
+                    <x-phosphor-arrow-up-tray class="w-6 h-6 text-zinc-400" />
                     <span class="text-sm font-medium" style="color:#d4d4d8;">Drop videos here or <span class="text-primary-400 underline">click to browse</span></span>
                     <span class="text-xs" style="color:#71717a;">MP4, WebM, MOV  max 200 MB</span>
                 </label>
@@ -168,7 +168,7 @@
             @if ($uploadedVideos)
                 <div class="mt-3 flex items-center gap-3" wire:loading.remove wire:target="uploadedVideos">
                     <span class="text-sm" style="color:#a1a1aa;">{{ count($uploadedVideos) }} file(s) ready</span>
-                    <x-filament::button wire:click="uploadVideos" size="sm" icon="heroicon-o-arrow-up-tray">
+                    <x-filament::button wire:click="uploadVideos" size="sm" icon="phosphor-arrow-up-tray">
                         Upload Now
                     </x-filament::button>
                 </div>
@@ -190,7 +190,7 @@
 
             @if (empty($videos))
                 <div class="flex flex-col items-center justify-center py-10 text-center gap-2">
-                    <x-heroicon-o-film class="w-8 h-8" style="color:#52525b;" />
+                    <x-phosphor-film class="w-8 h-8" style="color:#52525b;" />
                     <p class="text-sm" style="color:#a1a1aa;">No ad videos yet</p>
                     <p class="text-xs" style="color:#52525b;">Upload MP4 ad creatives above, then copy the URL into Appearance  Ad Creatives.</p>
                 </div>
@@ -206,7 +206,7 @@
                             @endif
                             <div class="opacity-0 group-hover:opacity-100 transition-opacity" style="position:absolute;inset:0;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
                                 <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;">
-                                    <x-heroicon-s-play style="width:16px;height:16px;color:#fff;margin-left:2px;" />
+                                    <x-phosphor-play style="width:16px;height:16px;color:#fff;margin-left:2px;" />
                                 </div>
                             </div>
                         </div>
@@ -226,7 +226,7 @@
                                     onmouseenter="this.style.background='rgba(127,29,29,0.4)';this.style.color='#f87171'" onmouseleave="this.style.background='#27272a';this.style.color='#a1a1aa'"
                                     title="Delete"
                                 >
-                                    <x-heroicon-o-trash style="width:14px;height:14px;" />
+                                    <x-phosphor-trash style="width:14px;height:14px;" />
                                 </button>
                             </div>
                         </div>

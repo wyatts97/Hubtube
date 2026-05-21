@@ -10,7 +10,7 @@
     aria-live="polite"
 >
     <div class="ht-unsaved-toast__icon">
-        <x-heroicon-m-exclamation-triangle class="w-5 h-5" />
+        <x-phosphor-warning class="w-5 h-5" />
     </div>
     <div class="ht-unsaved-toast__text">
         <span class="ht-unsaved-toast__title">Unsaved changes</span>
@@ -31,7 +31,7 @@
         wire:loading.attr="disabled"
         wire:target="{{ $submitAction }}"
     >
-        <x-heroicon-m-check class="w-4 h-4" />
+        <x-phosphor-check class="w-4 h-4" />
         <span>Save Now</span>
     </button>
 </div>

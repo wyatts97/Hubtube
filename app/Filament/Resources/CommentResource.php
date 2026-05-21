@@ -29,7 +29,7 @@ use Filament\Tables\Table;
 class CommentResource extends Resource
 {
     protected static ?string $model = Comment::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-chat-bubble-left-right';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-chat-bubble-left-right';
     protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 4;
     protected static ?string $recordTitleAttribute = 'content';
@@ -84,7 +84,7 @@ class CommentResource extends Resource
                 TextColumn::make('user.username')
                     ->label('User')
                     ->searchable()
-                    ->icon('heroicon-m-user')
+                    ->icon('phosphor-user')
                     ->iconColor('gray')
                     ->weight('semibold')
                     ->grow(false),
@@ -108,13 +108,13 @@ class CommentResource extends Resource
                     ->alignCenter()
                     ->getStateUsing(fn (Comment $record): string => $record->is_approved ? 'Approved' : 'Pending')
                     ->color(fn (string $state): string => $state === 'Approved' ? 'success' : 'warning')
-                    ->icon(fn (string $state): string => $state === 'Approved' ? 'heroicon-m-check-circle' : 'heroicon-m-clock'),
+                    ->icon(fn (string $state): string => $state === 'Approved' ? 'phosphor-check-circle' : 'phosphor-clock'),
                 IconColumn::make('is_pinned')
                     ->label('Pinned')
                     ->alignCenter()
                     ->boolean()
-                    ->trueIcon('heroicon-s-bookmark')
-                    ->falseIcon('heroicon-o-bookmark')
+                    ->trueIcon('phosphor-bookmark')
+                    ->falseIcon('phosphor-bookmark')
                     ->trueColor('warning')
                     ->falseColor('gray')
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -139,7 +139,7 @@ class CommentResource extends Resource
             ->recordActions([
                 EditAction::make(),
                 Action::make('approve')
-                    ->icon('heroicon-o-check')
+                    ->icon('phosphor-check')
                     ->color('success')
                     ->action(fn (Comment $record) => $record->update(['is_approved' => true]))
                     ->visible(fn (Comment $record) => !$record->is_approved),
@@ -149,7 +149,7 @@ class CommentResource extends Resource
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                     BulkAction::make('approve')
-                        ->icon('heroicon-o-check')
+                        ->icon('phosphor-check')
                         ->action(fn ($records) => $records->each->update(['is_approved' => true])),
                 ]),
             ])

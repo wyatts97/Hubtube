@@ -27,7 +27,7 @@ class ThemeSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-paint-brush';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-paint-brush';
     protected static ?string $navigationLabel = 'Theme & Appearance';
     protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 1;
@@ -194,7 +194,7 @@ class ThemeSettings extends Page implements HasForms
                 Tabs::make('Theme Settings')
                     ->tabs([
                         Tab::make('Identity & Appearance')
-                            ->icon('heroicon-o-identification')
+                            ->icon('phosphor-identification')
                             ->schema([
                                 Section::make('Site Information')
                                     ->schema([
@@ -295,7 +295,7 @@ class ThemeSettings extends Page implements HasForms
                             ]),
                         
                         Tab::make('Dark Mode')
-                            ->icon('heroicon-o-moon')
+                            ->icon('phosphor-moon')
                             ->schema([
                                 Section::make('Dark Mode Colors')
                                     ->description('Customize colors for dark mode')
@@ -322,7 +322,7 @@ class ThemeSettings extends Page implements HasForms
                             ]),
                         
                         Tab::make('Navigation Icons')
-                            ->icon('heroicon-o-squares-2x2')
+                            ->icon('phosphor-squares-2x2')
                             ->schema([
                                 Section::make('Global Icon Settings')
                                     ->schema([
@@ -382,7 +382,7 @@ class ThemeSettings extends Page implements HasForms
                             ]),
                         
                         Tab::make('Category Pages')
-                            ->icon('heroicon-o-rectangle-group')
+                            ->icon('phosphor-rectangle-group')
                             ->schema([
                                 Section::make('Category Title Typography')
                                     ->description('Customize how category names appear as overlays on the category browse page thumbnails')
@@ -416,7 +416,7 @@ class ThemeSettings extends Page implements HasForms
                             ]),
 
                         Tab::make('Video Cards')
-                            ->icon('heroicon-o-rectangle-stack')
+                            ->icon('phosphor-rectangle-stack')
                             ->schema([
                                 Section::make('Visibility')
                                     ->description('Choose which elements to show on video cards across the site')
@@ -514,7 +514,7 @@ class ThemeSettings extends Page implements HasForms
                             ]),
 
                         Tab::make('Age Verification')
-                            ->icon('heroicon-o-shield-check')
+                            ->icon('phosphor-shield-check')
                             ->schema([
                                 Section::make('Overlay Settings')
                                     ->description('Customize the modal overlay appearance')

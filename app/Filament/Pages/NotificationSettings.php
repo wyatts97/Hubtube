@@ -18,7 +18,7 @@ class NotificationSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-bell';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-bell';
     protected static ?string $navigationLabel = 'Notifications';
     protected static string | \UnitEnum | null $navigationGroup = 'Users & Messages';
     protected static ?int $navigationSort = 3;

@@ -31,7 +31,7 @@ use Filament\Tables\Table;
 class SponsoredCardResource extends Resource
 {
     protected static ?string $model = SponsoredCard::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-megaphone';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-megaphone';
     protected static ?string $navigationLabel = 'Sponsored Cards';
     protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 3;
@@ -258,7 +258,7 @@ class SponsoredCardResource extends Resource
             ])
             ->emptyStateHeading('No sponsored cards')
             ->emptyStateDescription('Create native in-feed ads that look like video cards with a "Sponsored" badge.')
-            ->emptyStateIcon('heroicon-o-megaphone')
+            ->emptyStateIcon('phosphor-megaphone')
             ->striped();
     }
 

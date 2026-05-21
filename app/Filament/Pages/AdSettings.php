@@ -25,7 +25,7 @@ class AdSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-currency-dollar';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-currency-dollar';
     protected static ?string $navigationLabel = 'Ad Settings';
     protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 2;
@@ -132,7 +132,7 @@ class AdSettings extends Page implements HasForms
                 Tabs::make('Ad Settings')->tabs([
 
                     Tab::make('Video Roll Ads')
-                        ->icon('heroicon-o-play')
+                        ->icon('phosphor-play')
                         ->schema([
                             Section::make('Pre-Roll, Mid-Roll & Post-Roll Settings')
                                 ->description('Configure video ads that play before, during, and after video content. VAST/VPAID ads use Google IMA SDK  the ad network controls skip. Manage individual ad creatives under Appearance  Ad Creatives.')
@@ -179,42 +179,42 @@ class AdSettings extends Page implements HasForms
                         ]),
 
                     Tab::make('Banner Ads')
-                        ->icon('heroicon-o-rectangle-group')
+                        ->icon('phosphor-rectangle-group')
                         ->schema([
                             Grid::make(2)->schema([
                                 Section::make('Above Video Player')
                                     ->description('728x90 desktop  300x100 mobile')
-                                    ->icon('heroicon-o-arrow-up')
+                                    ->icon('phosphor-arrow-up')
                                     ->collapsible()->collapsed()
                                     ->schema(self::bannerAdFields('banner_above_player', 'Enable Above-Player Banner')),
                                 Section::make('Below Video Player')
                                     ->description('728x90 desktop  300x100 mobile')
-                                    ->icon('heroicon-o-arrow-down')
+                                    ->icon('phosphor-arrow-down')
                                     ->collapsible()->collapsed()
                                     ->schema(self::bannerAdFields('banner_below_player', 'Enable Below-Player Banner')),
                                 Section::make('Browse Page Banner')
                                     ->description('Banner at the top of the Browse Videos page')
-                                    ->icon('heroicon-o-squares-2x2')
+                                    ->icon('phosphor-squares-2x2')
                                     ->collapsible()->collapsed()
                                     ->schema(self::bannerAdFields('browse_banner_ad', 'Enable Browse Page Banner')),
                                 Section::make('Search Results Banner')
                                     ->description('Banner at the top of search results')
-                                    ->icon('heroicon-o-magnifying-glass')
+                                    ->icon('phosphor-magnifying-glass')
                                     ->collapsible()->collapsed()
                                     ->schema(self::bannerAdFields('search_banner_ad', 'Enable Search Results Banner')),
                                 Section::make('Channel Page Banner')
                                     ->description('Banner below the channel header, above videos')
-                                    ->icon('heroicon-o-user')
+                                    ->icon('phosphor-user')
                                     ->collapsible()->collapsed()
                                     ->schema(self::bannerAdFields('channel_banner_ad', 'Enable Channel Page Banner')),
                                 Section::make('Category Page Banner')
                                     ->description('Banner at the top of category listing pages')
-                                    ->icon('heroicon-o-tag')
+                                    ->icon('phosphor-tag')
                                     ->collapsible()->collapsed()
                                     ->schema(self::bannerAdFields('category_banner_ad', 'Enable Category Page Banner')),
                                 Section::make('Video Grid Ads')
                                     ->description('Injected between video cards on browsing pages. Recommended: 300x250')
-                                    ->icon('heroicon-o-squares-2x2')
+                                    ->icon('phosphor-squares-2x2')
                                     ->collapsible()->collapsed()
                                     ->schema([
                                         Toggle::make('video_grid_ad_enabled')->label('Enable Video Grid Ads')->live(),
@@ -232,7 +232,7 @@ class AdSettings extends Page implements HasForms
                                     ]),
                                 Section::make('Video Page Sidebar Ad')
                                     ->description('Ad above related videos on watch pages. Recommended: 300x250 or 300x600')
-                                    ->icon('heroicon-o-rectangle-stack')
+                                    ->icon('phosphor-rectangle-stack')
                                     ->collapsible()->collapsed()
                                     ->schema([
                                         Toggle::make('video_sidebar_ad_enabled')->label('Enable Sidebar Ad')->live(),
@@ -246,7 +246,7 @@ class AdSettings extends Page implements HasForms
                                     ]),
                                 Section::make('Footer Ad Banner')
                                     ->description('Ad banner above the footer legal links on every page')
-                                    ->icon('heroicon-o-bars-arrow-down')
+                                    ->icon('phosphor-bars-arrow-down')
                                     ->collapsible()->collapsed()
                                     ->schema([
                                         Toggle::make('footer_ad_enabled')->label('Enable Footer Ad Banner')->live(),
@@ -262,12 +262,12 @@ class AdSettings extends Page implements HasForms
                         ]),
 
                     Tab::make('Script Ads')
-                        ->icon('heroicon-o-code-bracket')
+                        ->icon('phosphor-code-bracket')
                         ->schema([
                             Grid::make(2)->schema([
                                 Section::make('Popunder Ad')
                                     ->description('Full-page popunder that opens in a new tab/window. Injected site-wide on every page load.')
-                                    ->icon('heroicon-o-window')
+                                    ->icon('phosphor-window')
                                     ->collapsible()->collapsed()
                                     ->schema([
                                         Toggle::make('custom_popunder_enabled')->label('Enable Popunder Ad')->live(),
@@ -283,7 +283,7 @@ class AdSettings extends Page implements HasForms
                                     ]),
                                 Section::make('Interstitial / Full-Page Ad')
                                     ->description('Full-screen interstitial ad overlay shown on page transitions. Controlled by the Vue AdInterstitial component using sessionStorage page-view tracking.')
-                                    ->icon('heroicon-o-arrows-pointing-out')
+                                    ->icon('phosphor-arrows-pointing-out')
                                     ->collapsible()->collapsed()
                                     ->schema([
                                         Toggle::make('custom_interstitial_enabled')->label('Enable Interstitial Ad')->live(),
@@ -312,7 +312,7 @@ class AdSettings extends Page implements HasForms
 
                                 Section::make('Outstream Video Ads (In Video Grid)')
                                     ->description('Native muted autoplay video ads that appear inline within the video grid. Manage ad creatives under Appearance → Ad Creatives with placement set to "Outstream".')
-                                    ->icon('heroicon-o-play-circle')
+                                    ->icon('phosphor-play-circle')
                                     ->collapsible()->collapsed()
                                     ->schema([
                                         Toggle::make('video_outstream_ad_enabled')->label('Enable Outstream Ads')->live(),
@@ -324,7 +324,7 @@ class AdSettings extends Page implements HasForms
                                     ]),
                                 Section::make('Sticky Banner / Video Slider Ad')
                                     ->description('Sticky banner fixed at the bottom of the viewport.')
-                                    ->icon('heroicon-o-bars-arrow-down')
+                                    ->icon('phosphor-bars-arrow-down')
                                     ->collapsible()->collapsed()
                                     ->schema([
                                         Toggle::make('custom_sticky_banner_enabled')->label('Enable Sticky Banner Ad')->live(),

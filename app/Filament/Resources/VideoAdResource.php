@@ -37,7 +37,7 @@ use Illuminate\Support\HtmlString;
 class VideoAdResource extends Resource
 {
     protected static ?string $model = VideoAd::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-film';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-film';
     protected static ?string $navigationLabel = 'Ad Creatives';
     protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 3;
@@ -320,7 +320,7 @@ class VideoAdResource extends Resource
             ])
             ->emptyStateHeading('No ad creatives yet')
             ->emptyStateDescription('Create your first video ad creative to start serving pre-roll, mid-roll, or post-roll ads.')
-            ->emptyStateIcon('heroicon-o-film')
+            ->emptyStateIcon('phosphor-film')
             ->striped();
     }
 

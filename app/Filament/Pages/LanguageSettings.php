@@ -40,7 +40,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
     use InteractsWithForms;
     use InteractsWithTable;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-language';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-language';
     protected static ?string $navigationLabel = 'Languages';
     protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 8;
@@ -240,7 +240,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
 
                 Action::make('clearCache')
                     ->label('Clear Translation Cache')
-                    ->icon('heroicon-o-trash')
+                    ->icon('phosphor-trash')
                     ->color('danger')
                     ->requiresConfirmation()
                     ->modalDescription('This will delete ALL cached translations. They will be re-translated (with overrides applied) on next request.')
@@ -253,7 +253,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
             ])
             ->emptyStateHeading('No translation overrides')
             ->emptyStateDescription('Add overrides to fix words that Google Translate gets wrong.')
-            ->emptyStateIcon('heroicon-o-language')
+            ->emptyStateIcon('phosphor-language')
             ->striped();
     }
 

@@ -31,7 +31,7 @@ class WithdrawalRequestResource extends Resource
 {
     protected static ?string $model = WithdrawalRequest::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-arrow-up-tray';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-arrow-up-tray';
 
     protected static string | \UnitEnum | null $navigationGroup = 'Monetization';
 
@@ -149,7 +149,7 @@ class WithdrawalRequestResource extends Resource
             ])
             ->recordActions([
                 Action::make('approve')
-                    ->icon('heroicon-o-check-circle')
+                    ->icon('phosphor-check-circle')
                     ->color('success')
                     ->visible(fn (WithdrawalRequest $record) => $record->status === WithdrawalRequest::STATUS_PENDING)
                     ->requiresConfirmation()
@@ -185,7 +185,7 @@ class WithdrawalRequestResource extends Resource
                     }),
 
                 Action::make('reject')
-                    ->icon('heroicon-o-x-circle')
+                    ->icon('phosphor-x-circle')
                     ->color('danger')
                     ->visible(fn (WithdrawalRequest $record) => $record->status === WithdrawalRequest::STATUS_PENDING)
                     ->requiresConfirmation()

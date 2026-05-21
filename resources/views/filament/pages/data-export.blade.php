@@ -5,7 +5,7 @@
         {{ $this->form }}
 
         <div class="mt-6 flex items-center gap-3">
-            <x-filament::button type="submit" icon="heroicon-m-arrow-down-tray">
+            <x-filament::button type="submit" icon="phosphor-arrow-down-tray">
                 Export Data
             </x-filament::button>
         </div>

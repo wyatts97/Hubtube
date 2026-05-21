@@ -25,7 +25,7 @@
         </div>
     @else
         <div class="w-full aspect-video rounded-lg bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
-            <x-heroicon-o-video-camera class="w-12 h-12 text-gray-400" />
+            <x-phosphor-video-camera class="w-12 h-12 text-gray-400" />
         </div>
     @endif
 </div>

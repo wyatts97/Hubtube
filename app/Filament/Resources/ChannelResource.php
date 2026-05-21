@@ -45,7 +45,7 @@ class ChannelResource extends Resource
         ];
     }
     protected static ?string $model = Channel::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-tv';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-tv';
     protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 3;
 
@@ -125,7 +125,7 @@ class ChannelResource extends Resource
             ->recordActions([
                 EditAction::make(),
                 Action::make('verify')
-                    ->icon('heroicon-o-check-badge')
+                    ->icon('phosphor-check-badge')
                     ->color('success')
                     ->action(fn (Channel $record) => $record->update(['is_verified' => true]))
                     ->visible(fn (Channel $record) => !$record->is_verified),

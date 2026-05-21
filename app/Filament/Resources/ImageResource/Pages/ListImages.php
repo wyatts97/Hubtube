@@ -16,17 +16,17 @@ class ListImages extends ListRecords
     {
         return [
             'all' => Tab::make('All Images')
-                ->icon('heroicon-o-photo')
+                ->icon('phosphor-photo')
                 ->badge(Image::count()),
 
             'moderation' => Tab::make('Needs Moderation')
-                ->icon('heroicon-o-shield-check')
+                ->icon('phosphor-shield-check')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('is_approved', false))
                 ->badge(Image::where('is_approved', false)->count() ?: null)
                 ->badgeColor('warning'),
 
             'animated' => Tab::make('Animated')
-                ->icon('heroicon-o-play')
+                ->icon('phosphor-play')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('is_animated', true)),
         ];
     }

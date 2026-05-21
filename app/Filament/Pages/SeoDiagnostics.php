@@ -28,7 +28,7 @@ class SeoDiagnostics extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-clipboard-document-check';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-clipboard-text-check';
     protected static ?string $navigationLabel = 'SEO Diagnostics';
     protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
     protected static ?int $navigationSort = 5;
@@ -56,7 +56,7 @@ class SeoDiagnostics extends Page implements HasForms
                 Tabs::make('SEO Diagnostics')
                     ->tabs([
                         Tab::make('Overview')
-                            ->icon('heroicon-o-chart-bar')
+                            ->icon('phosphor-chart-bar')
                             ->schema([
                                 Section::make('Content health')
                                     ->description('Counts of videos and metadata coverage that affect search visibility.')
@@ -84,7 +84,7 @@ class SeoDiagnostics extends Page implements HasForms
                             ]),
 
                         Tab::make('Default Descriptions')
-                            ->icon('heroicon-o-document-text')
+                            ->icon('phosphor-file-text')
                             ->schema([
                                 Placeholder::make('description_help')
                                     ->label('')
@@ -154,7 +154,7 @@ class SeoDiagnostics extends Page implements HasForms
                                 Actions::make([
                                     Action::make('previewMissing')
                                         ->label('Refresh preview / count')
-                                        ->icon('heroicon-o-arrow-path')
+                                        ->icon('phosphor-arrows-clockwise')
                                         ->color('gray')
                                         ->action(function () {
                                             // Form is reactive — just notify so the user knows it refreshed.
@@ -166,13 +166,13 @@ class SeoDiagnostics extends Page implements HasForms
 
                                     Action::make('saveTemplate')
                                         ->label('Save Template')
-                                        ->icon('heroicon-o-check')
+                                        ->icon('phosphor-check')
                                         ->color('primary')
                                         ->action(fn () => $this->saveTemplate()),
 
                                     Action::make('applyToMissing')
                                         ->label('Apply to videos missing a description')
-                                        ->icon('heroicon-o-sparkles')
+                                        ->icon('phosphor-sparkles')
                                         ->color('success')
                                         ->requiresConfirmation()
                                         ->modalHeading('Apply default description?')
@@ -182,7 +182,7 @@ class SeoDiagnostics extends Page implements HasForms
 
                                     Action::make('dryRun')
                                         ->label('Dry run')
-                                        ->icon('heroicon-o-eye')
+                                        ->icon('phosphor-eye')
                                         ->color('warning')
                                         ->action(fn () => $this->applyToMissing(true)),
                                 ])->columnSpanFull(),

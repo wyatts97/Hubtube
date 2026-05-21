@@ -32,6 +32,7 @@ use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Filafly\Icons\Phosphor\PhosphorIcons;
 use Muazzam\SlickScrollbar\SlickScrollbarPlugin;
 
 
@@ -78,20 +79,22 @@ class AdminPanelProvider extends PanelProvider
                 ->hoverColor('rgb(220 38 38)');
         }
 
+        $plugins[] = PhosphorIcons::make()->regular();
+
         return $plugins;
     }
 
     protected static function buildNavigationGroups(): array
     {
         $groups = [
-            ['key' => 'Overview',         'collapsed' => false, 'icon' => 'heroicon-o-squares-2x2'],
-            ['key' => 'Content',          'collapsed' => false, 'icon' => 'heroicon-o-video-camera'],
-            ['key' => 'Users & Messages', 'collapsed' => false, 'icon' => 'heroicon-o-users'],
-            ['key' => 'Monetization',     'collapsed' => false, 'icon' => 'heroicon-o-banknotes'],
-            ['key' => 'Appearance',       'collapsed' => false, 'icon' => 'heroicon-o-paint-brush'],
-            ['key' => 'Integrations',     'collapsed' => true,  'icon' => 'heroicon-o-puzzle-piece'],
-            ['key' => 'System',           'collapsed' => true,  'icon' => 'heroicon-o-cog-6-tooth'],
-            ['key' => 'Tools',            'collapsed' => true,  'icon' => 'heroicon-o-wrench-screwdriver'],
+            ['key' => 'Overview',         'collapsed' => false, 'icon' => 'phosphor-squares-four'],
+            ['key' => 'Content',          'collapsed' => false, 'icon' => 'phosphor-video-camera'],
+            ['key' => 'Users & Messages', 'collapsed' => false, 'icon' => 'phosphor-users'],
+            ['key' => 'Monetization',     'collapsed' => false, 'icon' => 'phosphor-currency-dollar'],
+            ['key' => 'Appearance',       'collapsed' => false, 'icon' => 'phosphor-paint-brush'],
+            ['key' => 'Integrations',     'collapsed' => true,  'icon' => 'phosphor-puzzle-piece'],
+            ['key' => 'System',           'collapsed' => true,  'icon' => 'phosphor-gear'],
+            ['key' => 'Tools',            'collapsed' => true,  'icon' => 'phosphor-wrench'],
         ];
 
         return array_map(function (array $g) {
@@ -174,15 +177,15 @@ class AdminPanelProvider extends PanelProvider
                 MenuItem::make()
                     ->label('View Site')
                     ->url('/')
-                    ->icon('heroicon-o-globe-alt'),
+                    ->icon('phosphor-globe'),
                 MenuItem::make()
                     ->label('Pulse')
                     ->url('/pulse')
-                    ->icon('heroicon-o-chart-bar')
+                    ->icon('phosphor-chart-bar')
                     ->openUrlInNewTab(),
                 MenuItem::make()
                     ->label('Flush Cache')
-                    ->icon('heroicon-o-arrow-path')
+                    ->icon('phosphor-arrows-clockwise')
                     ->url('/admin/flush-cache')
                     ->color('warning'),
             ])

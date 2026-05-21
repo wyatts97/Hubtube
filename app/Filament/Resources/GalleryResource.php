@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\Collection;
 class GalleryResource extends Resource
 {
     protected static ?string $model = Gallery::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-group';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-rectangle-group';
     protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 3;
 
@@ -97,21 +97,21 @@ class GalleryResource extends Resource
                     ->label('Owner')
                     ->searchable()
                     ->sortable()
-                    ->icon('heroicon-m-user')
+                    ->icon('phosphor-user')
                     ->size('sm'),
 
                 TextColumn::make('images_count')
                     ->label('Images')
                     ->numeric()
                     ->sortable()
-                    ->icon('heroicon-m-photo')
+                    ->icon('phosphor-photo')
                     ->iconColor('gray'),
 
                 TextColumn::make('views_count')
                     ->label('Views')
                     ->numeric()
                     ->sortable()
-                    ->icon('heroicon-m-eye')
+                    ->icon('phosphor-eye')
                     ->iconColor('gray'),
 
                 TextColumn::make('privacy')
@@ -149,7 +149,7 @@ class GalleryResource extends Resource
                     EditAction::make(),
 
                     Action::make('view_frontend')
-                        ->icon('heroicon-o-eye')
+                        ->icon('phosphor-eye')
                         ->color('gray')
                         ->url(fn (Gallery $record): string => "/gallery/{$record->slug}")
                         ->openUrlInNewTab(),

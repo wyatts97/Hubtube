@@ -47,7 +47,7 @@
     @if (empty($files))
         <x-filament::section>
             <div class="ht-log-empty-state">
-                <x-heroicon-o-document class="ht-log-empty-state__icon" />
+                <x-phosphor-document class="ht-log-empty-state__icon" />
                 <h3 class="ht-log-empty-state__title">No log files yet</h3>
                 <p class="ht-log-empty-state__text">
                     Laravel will create files in <code>storage/logs/</code> once something is logged.
@@ -156,7 +156,7 @@
                                         <div class="ht-log-table__msg">{{ $entry['message'] }}</div>
                                         @if (!empty($entry['trace']))
                                             <span class="ht-log-table__trace-hint">
-                                                <x-heroicon-m-bug-ant class="w-3.5 h-3.5" />
+                                                <x-phosphor-bug-ant class="w-3.5 h-3.5" />
                                                 stack trace
                                             </span>
                                         @endif
@@ -167,7 +167,7 @@
                                                 data-copy-text="{{ e($entry['timestamp'] . ' [' . $entry['level'] . '] ' . $entry['message']) }}"
                                                 wire:click.stop=""
                                                 title="Copy line">
-                                            <x-heroicon-m-clipboard class="w-4 h-4" />
+                                            <x-phosphor-clipboard class="w-4 h-4" />
                                         </button>
                                     </td>
                                 </tr>
@@ -187,7 +187,7 @@
                             color="gray"
                             wire:click="prevPage"
                             :disabled="$this->page <= 1"
-                            icon="heroicon-m-chevron-left">
+                            icon="phosphor-chevron-left">
                             Previous
                         </x-filament::button>
                         <x-filament::button
@@ -195,7 +195,7 @@
                             color="gray"
                             wire:click="nextPage"
                             :disabled="$this->page >= $this->totalPages"
-                            icon="heroicon-m-chevron-right"
+                            icon="phosphor-chevron-right"
                             icon-position="after">
                             Next
                         </x-filament::button>
@@ -238,7 +238,7 @@
                             class="ht-log-copy-btn ht-log-copy-btn--solid"
                             data-copy-text="{{ e($fullText) }}"
                             title="Copy full entry">
-                        <x-heroicon-m-clipboard-document class="w-4 h-4" />
+                        <x-phosphor-clipboard-text class="w-4 h-4" />
                         <span class="ht-log-copy-btn__label">Copy Full Entry</span>
                     </button>
                 </div>
@@ -249,7 +249,7 @@
                             class="ht-log-copy-btn"
                             data-copy-target="#app-log-message"
                             title="Copy message">
-                        <x-heroicon-m-clipboard class="w-4 h-4" />
+                        <x-phosphor-clipboard class="w-4 h-4" />
                         <span class="ht-log-copy-btn__label">Copy</span>
                     </button>
                     <div class="ht-log-block__label">Message</div>
@@ -263,7 +263,7 @@
                                 class="ht-log-copy-btn"
                                 data-copy-target="#app-log-context"
                                 title="Copy context">
-                            <x-heroicon-m-clipboard class="w-4 h-4" />
+                            <x-phosphor-clipboard class="w-4 h-4" />
                             <span class="ht-log-copy-btn__label">Copy</span>
                         </button>
                         <div class="ht-log-block__label">Context</div>
@@ -278,7 +278,7 @@
                                 class="ht-log-copy-btn"
                                 data-copy-target="#app-log-trace"
                                 title="Copy stack trace">
-                            <x-heroicon-m-clipboard class="w-4 h-4" />
+                            <x-phosphor-clipboard class="w-4 h-4" />
                             <span class="ht-log-copy-btn__label">Copy</span>
                         </button>
                         <div class="ht-log-block__label">Stack Trace</div>

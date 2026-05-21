@@ -91,7 +91,7 @@
                     class="ht-log-copy-btn"
                     data-copy-target="#log-description"
                     title="Copy description">
-                <x-heroicon-m-clipboard class="w-4 h-4" />
+                <x-phosphor-clipboard class="w-4 h-4" />
                 <span class="ht-log-copy-btn__label">Copy</span>
             </button>
             <div id="log-description" class="ht-log-text">{{ $record->description }}</div>
@@ -108,7 +108,7 @@
                     class="ht-log-copy-btn"
                     data-copy-target="#log-context"
                     title="Copy context JSON">
-                <x-heroicon-m-clipboard class="w-4 h-4" />
+                <x-phosphor-clipboard class="w-4 h-4" />
                 <span class="ht-log-copy-btn__label">Copy</span>
             </button>
             <pre id="log-context" class="ht-log-code ht-log-code--json">{{ $contextJson }}</pre>
@@ -132,7 +132,7 @@
                         class="ht-log-copy-btn"
                         data-copy-target="#log-trace"
                         title="Copy stack trace">
-                    <x-heroicon-m-clipboard class="w-4 h-4" />
+                    <x-phosphor-clipboard class="w-4 h-4" />
                     <span class="ht-log-copy-btn__label">Copy</span>
                 </button>
                 <pre id="log-trace" class="ht-log-code ht-log-code--trace">{{ $trace }}</pre>

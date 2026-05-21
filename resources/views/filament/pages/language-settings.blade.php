@@ -23,14 +23,14 @@
     <x-filament::section class="mt-8" heading="Generate Translations" description="Sync new keys or fully regenerate all translation files.">
         <div class="flex flex-wrap items-center gap-5">
             @if($this->regenerating)
-                <x-filament::button disabled color="gray" size="sm" icon="heroicon-o-arrow-path">
+                <x-filament::button disabled color="gray" size="sm" icon="phosphor-arrows-clockwise">
                     {{ $this->regenerationStatus }}
                 </x-filament::button>
             @else
-                <x-filament::button wire:click="syncTranslations" color="primary" size="sm" icon="heroicon-o-arrow-path">
+                <x-filament::button wire:click="syncTranslations" color="primary" size="sm" icon="phosphor-arrows-clockwise">
                     Sync New Keys &amp; Rebuild
                 </x-filament::button>
-                <x-filament::button wire:click="regenerateTranslations" color="warning" size="sm" icon="heroicon-o-arrow-path">
+                <x-filament::button wire:click="regenerateTranslations" color="warning" size="sm" icon="phosphor-arrows-clockwise">
                     Full Regenerate &amp; Rebuild
                 </x-filament::button>
             @endif

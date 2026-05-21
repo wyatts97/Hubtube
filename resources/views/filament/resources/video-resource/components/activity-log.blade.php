@@ -18,7 +18,7 @@
     $events = collect();
 
     $events->push([
-        'icon'  => 'heroicon-m-arrow-up-tray',
+        'icon'  => 'phosphor-arrow-up-tray',
         'tone'  => 'info',
         'title' => 'Uploaded',
         'meta'  => optional($record->user)->username ? "by {$record->user->username}" : null,
@@ -27,7 +27,7 @@
 
     if ($record->published_at) {
         $events->push([
-            'icon'  => 'heroicon-m-globe-alt',
+            'icon'  => 'phosphor-globe-alt',
             'tone'  => 'success',
             'title' => 'Published',
             'meta'  => null,
@@ -37,7 +37,7 @@
 
     if ($record->is_approved) {
         $events->push([
-            'icon'  => 'heroicon-m-check-circle',
+            'icon'  => 'phosphor-check-circle',
             'tone'  => 'success',
             'title' => 'Approved',
             'meta'  => null,
@@ -45,7 +45,7 @@
         ]);
     } elseif ($record->status === 'processed') {
         $events->push([
-            'icon'  => 'heroicon-m-clock',
+            'icon'  => 'phosphor-clock',
             'tone'  => 'warning',
             'title' => 'Awaiting moderation',
             'meta'  => null,
@@ -55,7 +55,7 @@
 
     if ($record->failure_reason) {
         $events->push([
-            'icon'  => 'heroicon-m-x-circle',
+            'icon'  => 'phosphor-x-circle',
             'tone'  => 'danger',
             'title' => $record->status === 'failed' ? 'Processing failed' : 'Rejected',
             'meta'  => \Illuminate\Support\Str::limit($record->failure_reason, 120),
@@ -65,7 +65,7 @@
 
     if ($record->scheduled_at) {
         $events->push([
-            'icon'  => 'heroicon-m-calendar',
+            'icon'  => 'phosphor-calendar',
             'tone'  => 'info',
             'title' => 'Scheduled for ' . $record->scheduled_at->format('M j, Y g:i A'),
             'meta'  => null,
@@ -74,7 +74,7 @@
     }
 
     $events->push([
-        'icon'  => 'heroicon-m-pencil-square',
+        'icon'  => 'phosphor-pencil-square',
         'tone'  => 'gray',
         'title' => 'Last updated',
         'meta'  => null,

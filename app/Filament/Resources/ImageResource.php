@@ -37,7 +37,7 @@ use Illuminate\Database\Eloquent\Collection;
 class ImageResource extends Resource
 {
     protected static ?string $model = Image::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-photo';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-photo';
     protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 3;
 
@@ -141,7 +141,7 @@ class ImageResource extends Resource
                     ->label('Uploader')
                     ->searchable()
                     ->sortable()
-                    ->icon('heroicon-m-user')
+                    ->icon('phosphor-user')
                     ->size('sm'),
 
                 TextColumn::make('mime_type')
@@ -159,16 +159,16 @@ class ImageResource extends Resource
                 IconColumn::make('is_approved')
                     ->boolean()
                     ->label('Approved')
-                    ->trueIcon('heroicon-o-check-circle')
-                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueIcon('phosphor-check-circle')
+                    ->falseIcon('phosphor-x-circle')
                     ->trueColor('success')
                     ->falseColor('danger'),
 
                 IconColumn::make('is_animated')
                     ->boolean()
                     ->label('Animated')
-                    ->trueIcon('heroicon-o-gif')
-                    ->falseIcon('heroicon-o-minus')
+                    ->trueIcon('phosphor-gif')
+                    ->falseIcon('phosphor-minus')
                     ->trueColor('info')
                     ->falseColor('gray')
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -177,7 +177,7 @@ class ImageResource extends Resource
                     ->label('Views')
                     ->numeric()
                     ->sortable()
-                    ->icon('heroicon-m-eye')
+                    ->icon('phosphor-eye')
                     ->iconColor('gray'),
 
                 TextColumn::make('file_size')
@@ -228,21 +228,21 @@ class ImageResource extends Resource
                     EditAction::make(),
 
                     Action::make('approve')
-                        ->icon('heroicon-o-check-circle')
+                        ->icon('phosphor-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
                         ->action(fn (Image $record) => $record->update(['is_approved' => true]))
                         ->visible(fn (Image $record) => !$record->is_approved),
 
                     Action::make('unapprove')
-                        ->icon('heroicon-o-x-circle')
+                        ->icon('phosphor-x-circle')
                         ->color('warning')
                         ->requiresConfirmation()
                         ->action(fn (Image $record) => $record->update(['is_approved' => false]))
                         ->visible(fn (Image $record) => $record->is_approved),
 
                     Action::make('view_frontend')
-                        ->icon('heroicon-o-eye')
+                        ->icon('phosphor-eye')
                         ->color('gray')
                         ->url(fn (Image $record): string => "/image/{$record->uuid}")
                         ->openUrlInNewTab()
@@ -254,14 +254,14 @@ class ImageResource extends Resource
             ->toolbarActions([
                 BulkActionGroup::make([
                     BulkAction::make('approve')
-                        ->icon('heroicon-o-check-circle')
+                        ->icon('phosphor-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
                         ->action(fn (Collection $records) => $records->each(fn (Image $i) => $i->update(['is_approved' => true])))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('unapprove')
-                        ->icon('heroicon-o-x-circle')
+                        ->icon('phosphor-x-circle')
                         ->color('warning')
                         ->requiresConfirmation()
                         ->action(fn (Collection $records) => $records->each(fn (Image $i) => $i->update(['is_approved' => false])))

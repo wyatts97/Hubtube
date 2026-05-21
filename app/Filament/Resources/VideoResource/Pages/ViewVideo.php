@@ -19,7 +19,7 @@ class ViewVideo extends ViewRecord
 
             Action::make('view_frontend')
                 ->label('View on Site')
-                ->icon('heroicon-o-eye')
+                ->icon('phosphor-eye')
                 ->color('gray')
                 ->url(fn () => url('/' . $this->record->slug))
                 ->openUrlInNewTab()

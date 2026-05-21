@@ -5,7 +5,7 @@
         {{ $this->form }}
 
         <div class="mt-6 flex items-center gap-3">
-            <x-filament::button type="submit" icon="heroicon-m-check">
+            <x-filament::button type="submit" icon="phosphor-check">
                 Save Settings
             </x-filament::button>
         </div>

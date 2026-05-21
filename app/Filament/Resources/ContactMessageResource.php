@@ -32,7 +32,7 @@ use Illuminate\Database\Eloquent\Collection;
 class ContactMessageResource extends Resource
 {
     protected static ?string $model = ContactMessage::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-envelope';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-envelope';
     protected static ?string $navigationLabel = 'Contact & Reports';
     protected static string | \UnitEnum | null $navigationGroup = 'Users & Messages';
     protected static ?int $navigationSort = 2;
@@ -82,8 +82,8 @@ class ContactMessageResource extends Resource
                 IconColumn::make('is_read')
                     ->boolean()
                     ->label('')
-                    ->trueIcon('heroicon-o-envelope-open')
-                    ->falseIcon('heroicon-o-envelope')
+                    ->trueIcon('phosphor-envelope-open')
+                    ->falseIcon('phosphor-envelope')
                     ->trueColor('gray')
                     ->falseColor('danger')
                     ->grow(false),
@@ -106,7 +106,7 @@ class ContactMessageResource extends Resource
                 TextColumn::make('email')
                     ->searchable()
                     ->sortable()
-                    ->icon('heroicon-m-envelope')
+                    ->icon('phosphor-envelope')
                     ->size('sm')
                     ->copyable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -148,7 +148,7 @@ class ContactMessageResource extends Resource
                 ViewAction::make(),
 
                 Action::make('toggle_read')
-                    ->icon(fn (ContactMessage $record) => $record->is_read ? 'heroicon-o-envelope' : 'heroicon-o-envelope-open')
+                    ->icon(fn (ContactMessage $record) => $record->is_read ? 'phosphor-envelope' : 'phosphor-envelope-open')
                     ->label(fn (ContactMessage $record) => $record->is_read ? 'Mark Unread' : 'Mark Read')
                     ->action(fn (ContactMessage $record) => $record->update(['is_read' => !$record->is_read])),
 
@@ -157,12 +157,12 @@ class ContactMessageResource extends Resource
             ->toolbarActions([
                 BulkActionGroup::make([
                     BulkAction::make('mark_read')
-                        ->icon('heroicon-o-envelope-open')
+                        ->icon('phosphor-envelope-open')
                         ->action(fn (Collection $records) => $records->each(fn ($r) => $r->update(['is_read' => true])))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('mark_unread')
-                        ->icon('heroicon-o-envelope')
+                        ->icon('phosphor-envelope')
                         ->action(fn (Collection $records) => $records->each(fn ($r) => $r->update(['is_read' => false])))
                         ->deselectRecordsAfterCompletion(),
 

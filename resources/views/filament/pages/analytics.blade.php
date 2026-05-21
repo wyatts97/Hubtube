@@ -10,10 +10,10 @@
     {{-- Summary Cards --}}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         @foreach ([
-            ['label' => 'Total Videos',   'value' => number_format($summary['total_videos']),      'sub' => '+'.number_format($summary['videos_this_week']).' this week',                         'icon' => 'heroicon-o-film',              'tint' => 'indigo'],
-            ['label' => 'Total Users',    'value' => number_format($summary['total_users']),       'sub' => '+'.number_format($summary['users_this_week']).' this week',                          'icon' => 'heroicon-o-users',             'tint' => 'emerald'],
-            ['label' => 'Total Views',    'value' => number_format($summary['total_views']),       'sub' => 'All time',                                                                           'icon' => 'heroicon-o-eye',               'tint' => 'sky'],
-            ['label' => 'Ad Impressions', 'value' => number_format($summary['total_impressions']), 'sub' => number_format($summary['total_clicks']).' clicks · '.$overallCtr.'% CTR',             'icon' => 'heroicon-o-cursor-arrow-rays', 'tint' => 'amber'],
+            ['label' => 'Total Videos',   'value' => number_format($summary['total_videos']),      'sub' => '+'.number_format($summary['videos_this_week']).' this week',                         'icon' => 'phosphor-film',              'tint' => 'indigo'],
+            ['label' => 'Total Users',    'value' => number_format($summary['total_users']),       'sub' => '+'.number_format($summary['users_this_week']).' this week',                          'icon' => 'phosphor-users',             'tint' => 'emerald'],
+            ['label' => 'Total Views',    'value' => number_format($summary['total_views']),       'sub' => 'All time',                                                                           'icon' => 'phosphor-eye',               'tint' => 'sky'],
+            ['label' => 'Ad Impressions', 'value' => number_format($summary['total_impressions']), 'sub' => number_format($summary['total_clicks']).' clicks · '.$overallCtr.'% CTR',             'icon' => 'phosphor-cursor-arrow-rays', 'tint' => 'amber'],
         ] as $card)
         <div class="ht-summary-card" data-tint="{{ $card['tint'] }}">
             <div class="ht-summary-card__icon ht-tint-{{ $card['tint'] }}">

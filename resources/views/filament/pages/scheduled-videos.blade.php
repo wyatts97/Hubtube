@@ -1,6 +1,6 @@
 <x-filament-panels::page>
     <div class="space-y-6">
-        <x-filament::section heading="Scheduled Draft Queue" icon="heroicon-o-queue-list" description="Drag and drop rows to reorder your videos. The system will automatically recalculate their publish times based on your Schedule Settings.">
+        <x-filament::section heading="Scheduled Draft Queue" icon="phosphor-queue-list" description="Drag and drop rows to reorder your videos. The system will automatically recalculate their publish times based on your Schedule Settings.">
             {{ $this->table }}
         </x-filament::section>
 
@@ -15,7 +15,7 @@
         @endphp
 
         @if ($recentlyPublished->isNotEmpty())
-            <x-filament::section collapsible collapsed heading="Recently Published" icon="heroicon-o-check-circle">
+            <x-filament::section collapsible collapsed heading="Recently Published" icon="phosphor-check-circle">
                 <div class="space-y-2">
                     @foreach ($recentlyPublished as $video)
                         <div class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">

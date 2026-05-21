@@ -3,11 +3,11 @@
 
         {{-- Upload Zone --}}
         @if (!$isCreating)
-            <x-filament::section heading="Upload Videos" icon="heroicon-o-arrow-up-tray"
+            <x-filament::section heading="Upload Videos" icon="phosphor-arrow-up-tray"
                 description="Select multiple video files to upload. After uploading, fill in the details for each video below.">
                 <form wire:submit="addUploadedFiles" class="space-y-4">
                     {{ $this->uploadForm }}
-                    <x-filament::button type="submit" icon="heroicon-o-plus-circle">
+                    <x-filament::button type="submit" icon="phosphor-plus-circle">
                         Add to Queue
                     </x-filament::button>
                 </form>
@@ -18,7 +18,7 @@
                 <form wire:submit.prevent="applyBulkSettings">
                     {{ $this->bulkSettingsForm }}
                     <div class="mt-3">
-                        <x-filament::button type="submit" icon="heroicon-o-check" color="gray" size="sm">
+                        <x-filament::button type="submit" icon="phosphor-check" color="gray" size="sm">
                             Apply to All Entries
                         </x-filament::button>
                     </div>
@@ -27,14 +27,14 @@
 
             {{-- Video Entries --}}
             @if (count($entries) > 0)
-                <x-filament::section heading="Video Queue ({{ count($entries) }})" icon="heroicon-o-queue-list">
+                <x-filament::section heading="Video Queue ({{ count($entries) }})" icon="phosphor-queue-list">
                     {{ $this->entriesForm }}
 
                     <div class="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
                         <x-filament::button
                             wire:click="createAllVideos"
                             wire:confirm="Create {{ count($entries) }} video(s)? They will be queued for processing."
-                            icon="heroicon-o-rocket-launch"
+                            icon="phosphor-rocket-launch"
                             size="lg"
                         >
                             Create {{ count($entries) }} Video(s)
@@ -46,7 +46,7 @@
 
         {{-- Processing Status --}}
         @if (!empty($createdVideoIds) || $this->bulkToken)
-            <x-filament::section heading="Processing Status" icon="heroicon-o-cpu-chip"
+            <x-filament::section heading="Processing Status" icon="phosphor-cpu-chip"
                 description="Videos are being processed. Once complete, scheduled videos will auto-publish at their scheduled time.">
                 {{-- Poll for async job results when a token is present --}}
                 @if ($this->bulkToken)
@@ -60,7 +60,7 @@
                                     <img src="{{ $video->thumbnail_url }}" alt="" class="w-16 h-9 rounded object-cover shrink-0">
                                 @else
                                     <div class="w-16 h-9 rounded bg-gray-200 dark:bg-gray-700 shrink-0 flex items-center justify-center">
-                                        <x-heroicon-o-video-camera class="w-4 h-4 text-gray-400" />
+                                        <x-phosphor-video-camera class="w-4 h-4 text-gray-400" />
                                     </div>
                                 @endif
                                 <div>
@@ -71,7 +71,7 @@
                             <div class="flex items-center gap-3">
                                 @if ($video->status === 'processed')
                                     @if ($video->scheduled_at)
-                                        <x-filament::badge color="info" icon="heroicon-o-clock">
+                                        <x-filament::badge color="info" icon="phosphor-clock">
                                             Scheduled: {{ $video->scheduled_at->format('M j, g:i A') }}
                                         </x-filament::badge>
                                     @elseif ($video->is_approved)
@@ -132,7 +132,7 @@
                     <div class="pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
                         <x-filament::button
                             wire:click="$set('createdVideoIds', []); $set('isCreating', false)"
-                            icon="heroicon-o-plus"
+                            icon="phosphor-plus"
                             color="gray"
                         >
                             Upload More Videos

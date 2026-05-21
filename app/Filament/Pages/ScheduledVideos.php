@@ -23,7 +23,7 @@ class ScheduledVideos extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-clock';
+    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-clock';
     protected static ?string $navigationLabel = 'Scheduled';
     protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 6;
@@ -48,7 +48,7 @@ class ScheduledVideos extends Page implements HasTable
         return [
             Action::make('configureSchedule')
             ->label('Schedule Settings')
-            ->icon('heroicon-o-cog-6-tooth')
+            ->icon('phosphor-cog-6-tooth')
             ->schema([
                 Select::make('posts_per_day')
                 ->label('Posts Per Day')
@@ -77,7 +77,7 @@ class ScheduledVideos extends Page implements HasTable
 
             Action::make('recalculate')
             ->label('Recalculate Times')
-            ->icon('heroicon-o-arrow-path')
+            ->icon('phosphor-arrows-clockwise')
             ->color('warning')
             ->action(function () {
             app(VideoService::class)->recalculateScheduleQueue();
@@ -128,7 +128,7 @@ class ScheduledVideos extends Page implements HasTable
             ->recordActions([
             Action::make('publishNow')
             ->label('Publish Now')
-            ->icon('heroicon-o-rocket-launch')
+            ->icon('phosphor-rocket-launch')
             ->color('success')
             ->requiresConfirmation()
             ->action(function (Video $record) {
@@ -154,7 +154,7 @@ class ScheduledVideos extends Page implements HasTable
         }),
             Action::make('removeFromQueue')
             ->label('Remove')
-            ->icon('heroicon-o-x-circle')
+            ->icon('phosphor-x-circle')
             ->color('danger')
             ->action(function (Video $record) {
             $record->update([
