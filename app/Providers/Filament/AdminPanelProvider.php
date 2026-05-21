@@ -72,7 +72,10 @@ class AdminPanelProvider extends PanelProvider
         }
 
         if (class_exists(SlickScrollbarPlugin::class)) {
-            $plugins[] = SlickScrollbarPlugin::make();
+            $plugins[] = SlickScrollbarPlugin::make()
+                ->size('6px')
+                ->color('#ef4444')
+                ->hoverColor('rgb(220 38 38)');
         }
 
         return $plugins;

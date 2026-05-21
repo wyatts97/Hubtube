@@ -20,7 +20,7 @@
         $isCloudOnly = $video && $video->storage_disk && $video->storage_disk !== 'public'
             && \App\Models\Setting::get('cloud_offloading_delete_local', false);
     @endphp
-    <x-filament::section icon="heroicon-m-play-circle" icon-color="primary">
+    <x-filament::section>
         <x-slot name="heading">Video Preview</x-slot>
         <x-slot name="headerEnd">
             <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-mono text-gray-700 dark:bg-white/5 dark:text-white">{{ $stats['status'] ?? '' }}</span>
@@ -182,7 +182,7 @@
         </div>
     </x-filament::section>
     @else
-    <x-filament::section icon="heroicon-m-video-camera">
+    <x-filament::section>
         <x-slot name="heading">No Video</x-slot>
         <p class="text-sm text-gray-500 dark:text-gray-400">No video file available for preview.</p>
     </x-filament::section>
@@ -190,7 +190,7 @@
 
     {{-- Thumbnails --}}
     <div x-data="{ showUpload: false }">
-        <x-filament::section icon="heroicon-m-photo" icon-color="primary" collapsible>
+        <x-filament::section collapsible>
             <x-slot name="heading">
                 Thumbnails
                 @if(count($thumbnails) > 0)
@@ -259,7 +259,7 @@
 
     {{-- Replace Source Video --}}
     <div x-data="{ showReplace: false }">
-        <x-filament::section icon="heroicon-m-arrow-path" icon-color="primary" collapsible collapsed>
+        <x-filament::section collapsible collapsed>
             <x-slot name="heading">Replace Source Video</x-slot>
             <x-slot name="description">Upload a new file to overwrite the current source and re-process.</x-slot>
 
