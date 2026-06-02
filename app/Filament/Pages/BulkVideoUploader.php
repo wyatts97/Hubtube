@@ -139,7 +139,7 @@ class BulkVideoUploader extends Page implements HasForms
                             ->content(fn ($component): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(view(
                                 'filament.components.popular-tag-pills',
                                 [
-                                    'tagsPath' => rtrim($component->getStatePath(), '.') . '.tags',
+                                    'tagsPath' => $component->getContainer()->getStatePath() . '.tags',
                                     'tags' => \App\Models\Hashtag::orderByDesc('usage_count')->limit(20)->pluck('name')->toArray(),
                                 ]
                             )->render())),
@@ -244,7 +244,7 @@ class BulkVideoUploader extends Page implements HasForms
                                     ->content(fn ($component): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(view(
                                         'filament.components.popular-tag-pills',
                                         [
-                                            'tagsPath' => rtrim($component->getStatePath(), '.') . '.tags',
+                                            'tagsPath' => $component->getContainer()->getStatePath() . '.tags',
                                             'tags' => \App\Models\Hashtag::orderByDesc('usage_count')->limit(20)->pluck('name')->toArray(),
                                         ]
                                     )->render())),
