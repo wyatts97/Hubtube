@@ -224,19 +224,11 @@ class IntegrationSettings extends Page implements HasForms
             'mail.from.name' => $data['mail_from_name'] ?? config('app.name'),
         ]);
 
-        // SSL peer verification toggle (important for self-hosted mail servers)
-        $verifyPeer = $data['mail_verify_peer'] ?? true;
-        if (!$verifyPeer) {
-            config([
-                'mail.mailers.smtp.stream' => [
-                    'ssl' => [
-                        'allow_self_signed' => true,
-                        'verify_peer' => false,
-                        'verify_peer_name' => false,
-                    ],
-                ],
-            ]);
-        }
+        // SSL peer verification toggle (important for self-hosted mail servers).
+        // Must be the top-level `verify_peer` config key — Laravel 11 forwards it to
+        // Symfony's EsmtpTransportFactory as a DSN option. The nested `stream.ssl` key
+        // is never read. Pass a real boolean (empty string = "verify on" in Symfony).
+        config(['mail.mailers.smtp.verify_peer' => (bool) ($data['mail_verify_peer'] ?? true)]);
 
         // Purge the cached mailer instances so Laravel re-creates the transport
         // with the updated config instead of reusing the boot-time .env transport.

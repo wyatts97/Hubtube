@@ -54,18 +54,12 @@ class DynamicConfigServiceProvider extends ServiceProvider
             config(['mail.from.name' => $fromName]);
         }
 
-        // SSL peer verification — disable for self-hosted mail servers with self-signed certs
-        $verifyPeer = Setting::get('mail_verify_peer', 'true');
-        if ($verifyPeer === 'false' || $verifyPeer === '0') {
-            config([
-                'mail.mailers.smtp.stream' => [
-                    'ssl' => [
-                        'allow_self_signed' => true,
-                        'verify_peer' => false,
-                        'verify_peer_name' => false,
-                    ],
-                ],
-            ]);
-        }
+        // SSL peer verification — disable for self-hosted mail servers with self-signed
+        // or hostname-mismatched certs. Laravel 11 passes this config straight through to
+        // Symfony's EsmtpTransportFactory as a DSN option, so it MUST be the top-level
+        // `verify_peer` key (the nested `stream.ssl` key is never read by Laravel).
+        // Symfony treats an empty string as "verify on", so pass a real boolean.
+        $verifyPeer = filter_var(Setting::get('mail_verify_peer', 'true'), FILTER_VALIDATE_BOOLEAN);
+        config(['mail.mailers.smtp.verify_peer' => $verifyPeer]);
     }
 }
