@@ -95,53 +95,50 @@
             </div>
 
             {{-- Mini stats row --}}
-            <div class="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-white">
-                    <x-phosphor-eye class="h-3.5 w-3.5" /> {{ number_format($stats['views'] ?? 0) }} views
+            <div class="ht-vpreview__stats">
+                <span class="ht-vstat">
+                    <x-phosphor-eye /> {{ number_format($stats['views'] ?? 0) }} views
                 </span>
-                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-white">
-                    <x-phosphor-thumbs-up class="h-3.5 w-3.5" /> {{ number_format($stats['likes'] ?? 0) }}
+                <span class="ht-vstat">
+                    <x-phosphor-thumbs-up /> {{ number_format($stats['likes'] ?? 0) }}
                 </span>
-                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-white">
-                    <x-phosphor-clock class="h-3.5 w-3.5" /> {{ $stats['duration'] ?? '—' }}
+                <span class="ht-vstat">
+                    <x-phosphor-clock /> {{ $stats['duration'] ?? '—' }}
                 </span>
-                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-white">
-                    <x-phosphor-circles-three class="h-3.5 w-3.5" /> {{ $stats['size'] ?? '—' }}
+                <span class="ht-vstat">
+                    <x-phosphor-circles-three /> {{ $stats['size'] ?? '—' }}
                 </span>
-                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 dark:bg-white/5 dark:ring-white/10 dark:text-white">
-                    <x-phosphor-hard-drives class="h-3.5 w-3.5" /> {{ $stats['disk'] ?? '—' }}
+                <span class="ht-vstat">
+                    <x-phosphor-hard-drives /> {{ $stats['disk'] ?? '—' }}
                 </span>
             </div>
 
             {{-- Cloud-only warning --}}
             <template x-if="isCloudOnly">
-                <div class="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 ring-1 ring-amber-500/20 px-3 py-2 dark:bg-amber-500/10">
-                    <x-phosphor-warning class="h-4 w-4 text-amber-500 shrink-0" />
-                    <p class="text-xs text-amber-700 dark:text-amber-300">
-                        Original file offloaded to cloud. Frame capture via FFmpeg unavailable.
-                    </p>
+                <div class="ht-vpreview__warning">
+                    <x-phosphor-warning />
+                    <p>Original file offloaded to cloud. Frame capture via FFmpeg unavailable.</p>
                 </div>
             </template>
 
             {{-- Action Row --}}
-            <div class="mt-3 flex flex-wrap items-center gap-2">
+            <div class="ht-vpreview__actions">
                 <button
                     type="button"
                     x-on:click="$wire.captureFrame(currentTime)"
-                    class="fi-btn inline-flex items-center gap-1.5 font-semibold rounded-lg px-3 py-1.5 text-xs bg-primary-600 text-white hover:bg-primary-500 dark:bg-primary-500 dark:hover:bg-primary-400 transition"
+                    class="ht-vbtn"
                     :disabled="!duration || $wire.isCapturing || isCloudOnly"
-                    :class="{ 'opacity-50 cursor-not-allowed': isCloudOnly }"
                 >
                     <template x-if="$wire.isCapturing"><x-filament::loading-indicator class="h-4 w-4" /></template>
-                    <template x-if="!$wire.isCapturing"><x-phosphor-camera class="h-4 w-4" /></template>
+                    <template x-if="!$wire.isCapturing"><x-phosphor-camera /></template>
                     <span>Capture Frame</span>
                 </button>
 
-                <span class="text-xs text-gray-500 dark:text-gray-400 font-mono" x-show="duration > 0">
+                <span class="ht-vtime" x-show="duration > 0">
                     <span x-text="formatTime(currentTime)"></span> / <span x-text="formatTime(duration)"></span>
                 </span>
 
-                <div class="ml-auto flex items-center gap-1.5"
+                <div class="ht-vshare"
                      x-data="{
                         copied: null,
                         copy(key, text) {
@@ -155,25 +152,22 @@
                 >
                     @if($shareUrls['public'] ?? false)
                     <button type="button" x-on:click="copy('public', @js($shareUrls['public']))"
-                        class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 hover:bg-gray-100 dark:bg-white/5 dark:ring-white/10 dark:text-white dark:hover:bg-white/10 transition"
-                        title="Copy public URL">
-                        <x-phosphor-link class="h-3.5 w-3.5" />
+                        class="ht-vchip" title="Copy public URL">
+                        <x-phosphor-link />
                         <span x-text="copied === 'public' ? 'Copied!' : 'Public'"></span>
                     </button>
                     @endif
                     @if($shareUrls['stream'] ?? false)
                     <button type="button" x-on:click="copy('stream', @js($shareUrls['stream']))"
-                        class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 hover:bg-gray-100 dark:bg-white/5 dark:ring-white/10 dark:text-white dark:hover:bg-white/10 transition"
-                        title="Copy direct stream URL">
-                        <x-phosphor-arrow-square-out class="h-3.5 w-3.5" />
+                        class="ht-vchip" title="Copy direct stream URL">
+                        <x-phosphor-arrow-square-out />
                         <span x-text="copied === 'stream' ? 'Copied!' : 'Stream'"></span>
                     </button>
                     @endif
                     @if($shareUrls['source'] ?? false)
                     <button type="button" x-on:click="copy('source', @js($shareUrls['source']))"
-                        class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs bg-gray-50 ring-1 ring-gray-950/5 text-gray-700 hover:bg-gray-100 dark:bg-white/5 dark:ring-white/10 dark:text-white dark:hover:bg-white/10 transition font-mono"
-                        title="Copy source path">
-                        <x-phosphor-files class="h-3.5 w-3.5" />
+                        class="ht-vchip ht-vchip--mono" title="Copy source path">
+                        <x-phosphor-files />
                         <span x-text="copied === 'source' ? 'Copied!' : 'Path'"></span>
                     </button>
                     @endif
