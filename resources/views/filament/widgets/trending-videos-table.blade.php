@@ -65,9 +65,6 @@
                             <x-phosphor-film-strip class="w-5 h-5" />
                         </div>
                     @endif
-                    <span class="ht-vidrow__play">
-                        <x-phosphor-play class="w-3.5 h-3.5" />
-                    </span>
                 </div>
 
                 <div class="ht-vidrow__body">
