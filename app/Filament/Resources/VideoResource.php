@@ -212,13 +212,13 @@ class VideoResource extends Resource
                                     ->columnSpanFull(),
                                 Placeholder::make('popular_tags')
                                     ->hiddenLabel()
-                                    ->content(fn ($component): string => view(
+                                    ->content(fn ($component): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(view(
                                         'filament.components.popular-tag-pills',
                                         [
                                             'tagsPath' => rtrim($component->getStatePath(), '.') . '.tags',
                                             'tags' => \App\Models\Hashtag::orderByDesc('usage_count')->limit(20)->pluck('name')->toArray(),
                                         ]
-                                    )->render()),
+                                    )->render())),
                             ])->columns(2),
 
                         Tab::make('Moderation')

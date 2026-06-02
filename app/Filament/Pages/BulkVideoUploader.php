@@ -136,13 +136,13 @@ class BulkVideoUploader extends Page implements HasForms
                             ->columnSpanFull(),
                         Placeholder::make('popular_tags')
                             ->hiddenLabel()
-                            ->content(fn ($component): string => view(
+                            ->content(fn ($component): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(view(
                                 'filament.components.popular-tag-pills',
                                 [
                                     'tagsPath' => rtrim($component->getStatePath(), '.') . '.tags',
                                     'tags' => \App\Models\Hashtag::orderByDesc('usage_count')->limit(20)->pluck('name')->toArray(),
                                 ]
-                            )->render()),
+                            )->render())),
                         Toggle::make('age_restricted')
                             ->label('Age Restricted')
                             ->inline(false),
@@ -241,13 +241,13 @@ class BulkVideoUploader extends Page implements HasForms
                                     ->columnSpanFull(),
                                 Placeholder::make('popular_tags')
                                     ->hiddenLabel()
-                                    ->content(fn ($component): string => view(
+                                    ->content(fn ($component): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(view(
                                         'filament.components.popular-tag-pills',
                                         [
                                             'tagsPath' => rtrim($component->getStatePath(), '.') . '.tags',
                                             'tags' => \App\Models\Hashtag::orderByDesc('usage_count')->limit(20)->pluck('name')->toArray(),
                                         ]
-                                    )->render()),
+                                    )->render())),
                                 Toggle::make('age_restricted')
                                     ->label('Age Restricted')
                                     ->inline(false),
