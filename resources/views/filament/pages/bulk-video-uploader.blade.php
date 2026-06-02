@@ -52,23 +52,23 @@
                 @if ($this->bulkToken)
                     <div wire:poll.3s="pollBulkResults"></div>
                 @endif
-                <div wire:poll.5s class="space-y-3">
+                <div wire:poll.5s class="ht-bulkproc">
                     @foreach ($this->createdVideos as $video)
-                        <div class="flex items-center justify-between py-3 px-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900" wire:key="proc-{{ $video->id }}">
-                            <div class="flex items-center gap-3">
+                        <div class="ht-bulkproc__row" wire:key="proc-{{ $video->id }}">
+                            <div class="ht-bulkproc__info">
                                 @if ($video->thumbnail_url)
-                                    <img src="{{ $video->thumbnail_url }}" alt="" class="w-16 h-9 rounded object-cover shrink-0">
+                                    <img src="{{ $video->thumbnail_url }}" alt="" class="ht-bulkproc__thumb">
                                 @else
-                                    <div class="w-16 h-9 rounded bg-gray-200 dark:bg-gray-700 shrink-0 flex items-center justify-center">
-                                        <x-phosphor-video-camera class="w-4 h-4 text-gray-400" />
+                                    <div class="ht-bulkproc__thumb ht-bulkproc__thumb--empty">
+                                        <x-phosphor-video-camera />
                                     </div>
                                 @endif
-                                <div>
-                                    <p class="font-medium text-gray-900 dark:text-white text-sm">{{ $video->title }}</p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ $video->user?->username ?? '—' }}</p>
+                                <div class="ht-bulkproc__meta">
+                                    <p class="ht-bulkproc__title">{{ $video->title }}</p>
+                                    <p class="ht-bulkproc__user">{{ $video->user?->username ?? '—' }}</p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-3">
+                            <div class="ht-bulkproc__status">
                                 @if ($video->status === 'processed')
                                     @if ($video->scheduled_at)
                                         <x-filament::badge color="info" icon="phosphor-clock">
@@ -101,7 +101,7 @@
                                         $slugTitle = \Illuminate\Support\Str::slug($video->title, '_');
                                         $thumbCount = (int) \App\Models\Setting::get('thumbnail_count', 4);
                                     @endphp
-                                    <div class="flex items-center gap-1">
+                                    <div class="ht-bulkproc__thumbs">
                                         @for ($i = 0; $i < $thumbCount; $i++)
                                             @php
                                                 $thumbPath = "videos/{$video->slug}/{$slugTitle}_thumb_{$i}.jpg";
@@ -110,13 +110,12 @@
                                             @if ($thumbExists)
                                                 <button
                                                     wire:click="selectThumbnail({{ $video->id }}, {{ $i }})"
-                                                    class="rounded border-2 overflow-hidden transition {{ $video->thumbnail === $thumbPath ? 'border-primary-500 ring-2 ring-primary-300' : 'border-gray-300 dark:border-gray-600 hover:border-primary-400' }}"
+                                                    class="ht-bulkproc__thumb-btn {{ $video->thumbnail === $thumbPath ? 'is-active' : '' }}"
                                                     title="Select thumbnail {{ $i + 1 }}"
                                                 >
                                                     <img
                                                         src="{{ \Illuminate\Support\Facades\Storage::disk($video->storage_disk ?? 'public')->url($thumbPath) }}"
                                                         alt="Thumb {{ $i + 1 }}"
-                                                        class="w-12 h-7 object-cover"
                                                     >
                                                 </button>
                                             @endif

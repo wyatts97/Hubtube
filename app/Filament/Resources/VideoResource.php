@@ -16,7 +16,9 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\Placeholder;
 use Filament\Schemas\Components\View;
+use Filament\Schemas\Components\Component;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
@@ -183,6 +185,7 @@ class VideoResource extends Resource
                                     ->preload(),
                                 Select::make('category_id')
                                     ->relationship('category', 'name')
+                                    ->required()
                                     ->searchable()
                                     ->preload(),
                                 Select::make('status')
@@ -207,6 +210,15 @@ class VideoResource extends Resource
                                 TagsInput::make('tags')
                                     ->separator(',')
                                     ->columnSpanFull(),
+                                Placeholder::make('popular_tags')
+                                    ->hiddenLabel()
+                                    ->content(fn ($component): string => view(
+                                        'filament.components.popular-tag-pills',
+                                        [
+                                            'tagsPath' => rtrim($component->getStatePath(), '.') . '.tags',
+                                            'tags' => \App\Models\Hashtag::orderByDesc('usage_count')->limit(20)->pluck('name')->toArray(),
+                                        ]
+                                    )->render()),
                             ])->columns(2),
 
                         Tab::make('Moderation')

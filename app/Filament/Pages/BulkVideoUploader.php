@@ -120,9 +120,10 @@ class BulkVideoUploader extends Page implements HasForms
                         Select::make('category_id')
                             ->label('Category')
                             ->options(fn () => Category::active()->orderBy('name')->pluck('name', 'id')->all())
+                            ->required()
                             ->searchable()
                             ->preload()
-                            ->placeholder('— None —'),
+                            ->placeholder('Select a category'),
                         Select::make('user_id')
                             ->label('Assign to User')
                             ->options(fn () => User::orderBy('username')->pluck('username', 'id')->all())
@@ -133,6 +134,15 @@ class BulkVideoUploader extends Page implements HasForms
                             ->label('Tags')
                             ->placeholder('Add tags…')
                             ->columnSpanFull(),
+                        Placeholder::make('popular_tags')
+                            ->hiddenLabel()
+                            ->content(fn ($component): string => view(
+                                'filament.components.popular-tag-pills',
+                                [
+                                    'tagsPath' => rtrim($component->getStatePath(), '.') . '.tags',
+                                    'tags' => \App\Models\Hashtag::orderByDesc('usage_count')->limit(20)->pluck('name')->toArray(),
+                                ]
+                            )->render()),
                         Toggle::make('age_restricted')
                             ->label('Age Restricted')
                             ->inline(false),
@@ -215,9 +225,10 @@ class BulkVideoUploader extends Page implements HasForms
                                 Select::make('category_id')
                                     ->label('Category')
                                     ->options(fn () => Category::active()->orderBy('name')->pluck('name', 'id')->all())
+                                    ->required()
                                     ->searchable()
                                     ->preload()
-                                    ->placeholder('— None —'),
+                                    ->placeholder('Select a category'),
                                 Select::make('user_id')
                                     ->label('Assign to User')
                                     ->options(fn () => User::orderBy('username')->pluck('username', 'id')->all())
@@ -228,6 +239,15 @@ class BulkVideoUploader extends Page implements HasForms
                                     ->label('Tags')
                                     ->placeholder('Add tags…')
                                     ->columnSpanFull(),
+                                Placeholder::make('popular_tags')
+                                    ->hiddenLabel()
+                                    ->content(fn ($component): string => view(
+                                        'filament.components.popular-tag-pills',
+                                        [
+                                            'tagsPath' => rtrim($component->getStatePath(), '.') . '.tags',
+                                            'tags' => \App\Models\Hashtag::orderByDesc('usage_count')->limit(20)->pluck('name')->toArray(),
+                                        ]
+                                    )->render()),
                                 Toggle::make('age_restricted')
                                     ->label('Age Restricted')
                                     ->inline(false),
@@ -302,11 +322,18 @@ class BulkVideoUploader extends Page implements HasForms
             return;
         }
 
-        // Validate all entries have titles
+        // Validate all entries have titles and categories
         foreach ($this->entries as $index => $entry) {
             if (empty(trim($entry['title'] ?? ''))) {
                 Notification::make()
                     ->title("Video #" . ($index + 1) . " needs a title")
+                    ->danger()
+                    ->send();
+                return;
+            }
+            if (empty($entry['category_id'])) {
+                Notification::make()
+                    ->title("Video #" . ($index + 1) . " needs a category")
                     ->danger()
                     ->send();
                 return;

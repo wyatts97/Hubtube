@@ -64,7 +64,7 @@ const tagInput = ref('');
 const showTagSuggestions = ref(false);
 
 const recentTags = computed(() =>
-    (props.existingTags || []).slice(0, 8).filter(tg => !form.tags.includes(tg))
+    (props.existingTags || []).slice(0, 20).filter(tg => !form.tags.includes(tg))
 );
 
 const filteredTags = computed(() => {
@@ -645,16 +645,16 @@ watch(fieldErrors, (errs) => {
                                 </button>
                             </div>
                         </div>
-                        <!-- Recent / popular tag chips -->
+                        <!-- Popular tags — horizontal scrollable pills -->
                         <div v-if="recentTags.length" class="mt-2">
                             <p class="text-xs text-text-muted mb-1">Popular tags:</p>
-                            <div class="flex flex-wrap gap-1.5">
+                            <div class="flex items-center gap-1.5 overflow-x-auto pb-1" style="scrollbar-width: thin;">
                                 <button
                                     v-for="rt in recentTags"
                                     :key="rt"
                                     type="button"
                                     @click="addTag(rt)"
-                                    class="text-xs px-2 py-0.5 rounded-full bg-bg-secondary text-text-secondary hover:bg-bg-card transition-colors"
+                                    class="text-xs px-2 py-0.5 rounded-full bg-bg-secondary text-text-secondary hover:bg-bg-card transition-colors shrink-0 whitespace-nowrap"
                                 >
                                     + {{ rt }}
                                 </button>
