@@ -179,11 +179,6 @@ class AdminPanelProvider extends PanelProvider
                     ->url('/')
                     ->icon('phosphor-globe'),
                 MenuItem::make()
-                    ->label('Pulse')
-                    ->url('/pulse')
-                    ->icon('phosphor-chart-bar')
-                    ->openUrlInNewTab(),
-                MenuItem::make()
                     ->label('Flush Cache')
                     ->icon('phosphor-arrows-clockwise')
                     ->url('/admin/flush-cache')

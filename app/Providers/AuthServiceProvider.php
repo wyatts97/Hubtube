@@ -34,8 +34,5 @@ class AuthServiceProvider extends ServiceProvider
             return $user->wallet_balance >= (int) Setting::get('min_withdrawal', 50);
         });
 
-        Gate::define('viewPulse', function ($user) {
-            return $user->is_admin;
-        });
     }
 }
