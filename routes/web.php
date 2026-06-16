@@ -440,6 +440,9 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
     });
 
+    // Search autocomplete
+    Route::get('/api/search-suggest', [SearchController::class, 'suggest'])->middleware('throttle:30,1')->name('search.suggest');
+
     // Translation API routes
     Route::post('/api/translate', [TranslationController::class, 'translate'])->middleware('throttle:60,1')->name('translate');
     Route::post('/api/translate/batch', [TranslationController::class, 'translateBatch'])->middleware('throttle:30,1')->name('translate.batch');
@@ -466,6 +469,9 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/channel/{username}/about', [ChannelController::class, 'localeAbout'])->name('locale.channel.about');
         Route::get('/public-playlists', [PlaylistController::class, 'publicIndex'])->name('locale.playlists.public');
         Route::get('/pages/{slug}', [PageController::class, 'localeShow'])->name('locale.pages.show');
+
+        // Locale-prefixed search autocomplete
+        Route::get('/api/search-suggest', [SearchController::class, 'suggest'])->middleware('throttle:30,1')->name('locale.search.suggest');
 
         // Locale-prefixed video show — uses plain {slug} param to avoid model binding conflict with {locale}
         Route::get('/{slug}', [VideoController::class, 'localeShow'])->name('locale.videos.show');

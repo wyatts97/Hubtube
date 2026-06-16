@@ -7,7 +7,7 @@ import {
     ChevronLeft, ChevronRight, Shield,
     X, Check, CheckCheck, Rss, LayoutDashboard, ChevronDown, ChevronUp, Film,
     Tag, Folder, Star, ExternalLink, Eye, EyeOff, LayoutGrid, Plus,
-    ImageIcon, MoreHorizontal
+    ImageIcon, MoreHorizontal, Loader2
 } from 'lucide-vue-next';
 import { useTheme } from '@/Composables/useTheme';
 import { useToast } from '@/Composables/useToast';
@@ -57,6 +57,16 @@ const submitLogin = () => {
 };
 const mobileSearchQuery = ref('');
 const openMegaMenu = ref(null);
+
+// Live search autocomplete state
+const searchSuggestions = ref({ videos: [], channels: [] });
+const showSuggestions = ref(false);
+const suggestLoading = ref(false);
+let suggestTimeout = null;
+const searchInputRef = ref(null);
+const suggestionsRef = ref(null);
+const activeSuggestionIndex = ref(-1);
+const totalSuggestions = computed(() => searchSuggestions.value.videos.length + searchSuggestions.value.channels.length);
 
 // Menu items from admin panel
 const menuItems = computed(() => page.props.menuItems || { header: [], mobile: [] });
@@ -123,6 +133,85 @@ const handleMobileSearch = () => {
     if (mobileSearchQuery.value.trim()) {
         window.location.href = `${localizedUrl('/search')}?q=${encodeURIComponent(mobileSearchQuery.value)}`;
         showMobileSearch.value = false;
+        showSuggestions.value = false;
+    }
+};
+
+const handleSearch = () => {
+    if (searchQuery.value.trim()) {
+        window.location.href = `${localizedUrl('/search')}?q=${encodeURIComponent(searchQuery.value)}`;
+        showSuggestions.value = false;
+    }
+};
+
+const fetchSuggestions = async (query) => {
+    if (!query || query.length < 2) {
+        searchSuggestions.value = { videos: [], channels: [] };
+        showSuggestions.value = false;
+        suggestLoading.value = false;
+        return;
+    }
+    suggestLoading.value = true;
+    const { ok, data } = await get(`${localizedUrl('/api/search-suggest')}?q=${encodeURIComponent(query)}`);
+    suggestLoading.value = false;
+    if (ok && data) {
+        searchSuggestions.value = { videos: data.videos || [], channels: data.channels || [] };
+        showSuggestions.value = true;
+        activeSuggestionIndex.value = -1;
+    }
+};
+
+const debouncedFetchSuggestions = (query) => {
+    if (suggestTimeout) clearTimeout(suggestTimeout);
+    suggestTimeout = setTimeout(() => fetchSuggestions(query), 250);
+};
+
+const navigateToSuggestion = (item, type) => {
+    showSuggestions.value = false;
+    if (type === 'video') {
+        router.visit(localizedUrl(`/${item.slug}`));
+    } else if (type === 'channel') {
+        router.visit(localizedUrl(`/channel/${item.username}`));
+    }
+};
+
+const onSearchInput = () => {
+    debouncedFetchSuggestions(searchQuery.value);
+};
+
+const onSearchKeydown = (e) => {
+    if (!showSuggestions.value || totalSuggestions.value === 0) return;
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeSuggestionIndex.value = (activeSuggestionIndex.value + 1) % totalSuggestions.value;
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeSuggestionIndex.value = (activeSuggestionIndex.value - 1 + totalSuggestions.value) % totalSuggestions.value;
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (activeSuggestionIndex.value >= 0) {
+            const videoCount = searchSuggestions.value.videos.length;
+            if (activeSuggestionIndex.value < videoCount) {
+                navigateToSuggestion(searchSuggestions.value.videos[activeSuggestionIndex.value], 'video');
+            } else {
+                navigateToSuggestion(searchSuggestions.value.channels[activeSuggestionIndex.value - videoCount], 'channel');
+            }
+        } else if (showMobileSearch.value) {
+            handleMobileSearch();
+        } else {
+            handleSearch();
+        }
+    } else if (e.key === 'Escape') {
+        showSuggestions.value = false;
+        activeSuggestionIndex.value = -1;
+    }
+};
+
+const isActiveSuggestion = (index) => index === activeSuggestionIndex.value;
+
+const closeSuggestionsOnOutside = (e) => {
+    if (suggestionsRef.value && !suggestionsRef.value.contains(e.target) && searchInputRef.value && !searchInputRef.value.contains(e.target)) {
+        showSuggestions.value = false;
     }
 };
 
@@ -143,6 +232,7 @@ const closeDropdowns = (e) => {
     if (!e.target.closest('.mobile-upload-menu')) {
         showMobileUploadMenu.value = false;
     }
+    closeSuggestionsOnOutside(e);
 };
 
 onMounted(() => {
@@ -186,6 +276,12 @@ watch(flash, (newFlash) => {
     }
 }, { immediate: true, deep: true });
 
+// Hide search suggestions on page navigation
+watch(() => page.url, () => {
+    showSuggestions.value = false;
+    activeSuggestionIndex.value = -1;
+});
+
 const getIconColor = (navKey) => {
     const icons = iconSettings.value;
     if (!icons) return 'var(--color-text-secondary)';
@@ -218,11 +314,7 @@ const libraryNav = computed(() => [
     { name: t('nav.history') || 'History', href: '/history', icon: History, key: 'history' },
 ]);
 
-const handleSearch = () => {
-    if (searchQuery.value.trim()) {
-        window.location.href = `${localizedUrl('/search')}?q=${encodeURIComponent(searchQuery.value)}`;
-    }
-};
+// handleSearch moved above with suggestion logic
 
 const toggleSidebar = () => {
     sidebarCollapsed.value = !sidebarCollapsed.value;
@@ -326,19 +418,87 @@ const handleMobileNavClick = (item) => {
                 </div>
 
                 <!-- Center: Search -->
-                <div class="flex-1 max-w-2xl mx-4 hidden md:block">
-                    <form @submit.prevent="handleSearch" class="relative" role="search">
+                <div class="flex-1 max-w-2xl mx-4 hidden md:block relative">
+                    <form @submit.prevent="handleSearch" class="relative" role="search" ref="searchInputRef">
                         <input
                             v-model="searchQuery"
                             type="text"
                             :placeholder="t('common.search_placeholder') || 'Search videos...'"
-                            class="input pr-12"
+                            class="input pr-12 w-full"
                             aria-label="Search videos"
+                            @input="onSearchInput"
+                            @keydown="onSearchKeydown"
+                            autocomplete="off"
+                            autocapitalize="off"
                         />
                         <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80 text-text-muted" aria-label="Search">
                             <Search class="w-5 h-5" />
                         </button>
                     </form>
+
+                    <!-- Autocomplete Dropdown -->
+                    <div
+                        v-if="showSuggestions && (searchSuggestions.videos.length || searchSuggestions.channels.length || suggestLoading)"
+                        ref="suggestionsRef"
+                        class="absolute top-full left-0 right-0 mt-1 card shadow-xl bg-bg-card border border-border z-50 max-h-80 overflow-y-auto scrollbar-hide"
+                    >
+                        <div v-if="suggestLoading" class="p-3 text-sm text-text-muted flex items-center gap-2">
+                            <Loader2 class="w-4 h-4 animate-spin" />
+                            <span>{{ t('common.loading') || 'Loading...' }}</span>
+                        </div>
+
+                        <template v-if="!suggestLoading">
+                            <!-- Videos -->
+                            <div v-if="searchSuggestions.videos.length">
+                                <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted bg-bg-secondary">{{ t('common.videos') || 'Videos' }}</div>
+                                <button
+                                    v-for="(video, idx) in searchSuggestions.videos"
+                                    :key="video.id"
+                                    type="button"
+                                    class="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-secondary transition-colors text-left"
+                                    :class="{ 'bg-bg-secondary': isActiveSuggestion(idx) }"
+                                    @click="navigateToSuggestion(video, 'video')"
+                                    @mouseenter="activeSuggestionIndex = idx"
+                                >
+                                    <div class="w-10 h-7 shrink-0 rounded overflow-hidden bg-black">
+                                        <img :src="video.thumbnail_url || '/images/default_avatar.webp'" :alt="video.title" class="w-full h-full object-cover" loading="lazy" />
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-medium truncate text-text-primary">{{ video.title }}</p>
+                                        <p class="text-[11px] text-text-muted">{{ video.username }} <span v-if="video.duration_formatted" class="ml-1">• {{ video.duration_formatted }}</span></p>
+                                    </div>
+                                    <Film class="w-4 h-4 text-text-muted shrink-0" />
+                                </button>
+                            </div>
+
+                            <!-- Channels -->
+                            <div v-if="searchSuggestions.channels.length">
+                                <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted bg-bg-secondary">{{ t('common.channels') || 'Channels' }}</div>
+                                <button
+                                    v-for="(channel, idx) in searchSuggestions.channels"
+                                    :key="channel.id"
+                                    type="button"
+                                    class="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-secondary transition-colors text-left"
+                                    :class="{ 'bg-bg-secondary': isActiveSuggestion(searchSuggestions.videos.length + idx) }"
+                                    @click="navigateToSuggestion(channel, 'channel')"
+                                    @mouseenter="activeSuggestionIndex = searchSuggestions.videos.length + idx"
+                                >
+                                    <div class="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-bg-secondary">
+                                        <img :src="channel.avatar_url || '/images/default_avatar.webp'" :alt="channel.channel_name" class="w-full h-full object-cover" loading="lazy" />
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-medium truncate text-text-primary">{{ channel.channel_name }}</p>
+                                        <p class="text-[11px] text-text-muted">@{{ channel.username }}</p>
+                                    </div>
+                                    <User class="w-4 h-4 text-text-muted shrink-0" />
+                                </button>
+                            </div>
+
+                            <div v-if="!searchSuggestions.videos.length && !searchSuggestions.channels.length" class="p-3 text-sm text-text-muted text-center">
+                                {{ t('search.no_results') || 'No results found' }}
+                            </div>
+                        </template>
+                    </div>
                 </div>
 
                 <!-- Right: Actions -->
@@ -650,14 +810,81 @@ const handleMobileNavClick = (item) => {
                         class="input flex-1"
                         aria-label="Search videos"
                         autofocus
+                        @input="debouncedFetchSuggestions(mobileSearchQuery.value)"
+                        @keydown="onSearchKeydown"
+                        autocomplete="off"
+                        autocapitalize="off"
                     />
                     <button type="submit" class="btn btn-primary p-2" aria-label="Search">
                         <Search class="w-5 h-5" />
                     </button>
-                    <button type="button" @click="showMobileSearch = false" class="p-2 rounded-full text-text-secondary" aria-label="Close search">
+                    <button type="button" @click="showMobileSearch = false; showSuggestions = false" class="p-2 rounded-full text-text-secondary" aria-label="Close search">
                         <X class="w-5 h-5" />
                     </button>
                 </form>
+
+                <!-- Mobile Autocomplete Dropdown -->
+                <div
+                    v-if="showSuggestions && (searchSuggestions.videos.length || searchSuggestions.channels.length || suggestLoading)"
+                    class="mt-2 max-h-72 overflow-y-auto scrollbar-hide"
+                >
+                    <div v-if="suggestLoading" class="p-3 text-sm text-text-muted flex items-center gap-2">
+                        <Loader2 class="w-4 h-4 animate-spin" />
+                        <span>{{ t('common.loading') || 'Loading...' }}</span>
+                    </div>
+
+                    <template v-if="!suggestLoading">
+                        <!-- Videos -->
+                        <div v-if="searchSuggestions.videos.length">
+                            <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted bg-bg-secondary">{{ t('common.videos') || 'Videos' }}</div>
+                            <button
+                                v-for="(video, idx) in searchSuggestions.videos"
+                                :key="video.id"
+                                type="button"
+                                class="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-secondary transition-colors text-left"
+                                :class="{ 'bg-bg-secondary': isActiveSuggestion(idx) }"
+                                @click="navigateToSuggestion(video, 'video')"
+                                @mouseenter="activeSuggestionIndex = idx"
+                            >
+                                <div class="w-10 h-7 shrink-0 rounded overflow-hidden bg-black">
+                                    <img :src="video.thumbnail_url || '/images/default_avatar.webp'" :alt="video.title" class="w-full h-full object-cover" loading="lazy" />
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-medium truncate text-text-primary">{{ video.title }}</p>
+                                    <p class="text-[11px] text-text-muted">{{ video.username }} <span v-if="video.duration_formatted" class="ml-1">• {{ video.duration_formatted }}</span></p>
+                                </div>
+                                <Film class="w-4 h-4 text-text-muted shrink-0" />
+                            </button>
+                        </div>
+
+                        <!-- Channels -->
+                        <div v-if="searchSuggestions.channels.length">
+                            <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted bg-bg-secondary">{{ t('common.channels') || 'Channels' }}</div>
+                            <button
+                                v-for="(channel, idx) in searchSuggestions.channels"
+                                :key="channel.id"
+                                type="button"
+                                class="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-secondary transition-colors text-left"
+                                :class="{ 'bg-bg-secondary': isActiveSuggestion(searchSuggestions.videos.length + idx) }"
+                                @click="navigateToSuggestion(channel, 'channel')"
+                                @mouseenter="activeSuggestionIndex = searchSuggestions.videos.length + idx"
+                            >
+                                <div class="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-bg-secondary">
+                                    <img :src="channel.avatar_url || '/images/default_avatar.webp'" :alt="channel.channel_name" class="w-full h-full object-cover" loading="lazy" />
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-medium truncate text-text-primary">{{ channel.channel_name }}</p>
+                                    <p class="text-[11px] text-text-muted">@{{ channel.username }}</p>
+                                </div>
+                                <User class="w-4 h-4 text-text-muted shrink-0" />
+                            </button>
+                        </div>
+
+                        <div v-if="!searchSuggestions.videos.length && !searchSuggestions.channels.length" class="p-3 text-sm text-text-muted text-center">
+                            {{ t('search.no_results') || 'No results found' }}
+                        </div>
+                    </template>
+                </div>
             </div>
         </div>
 

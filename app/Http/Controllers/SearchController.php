@@ -108,4 +108,69 @@ class SearchController extends Controller
             ->orderByDesc('usage_count')
             ->paginate(24);
     }
+
+    /**
+     * Live search autocomplete suggestions.
+     * Returns top videos + channels for the navbar dropdown.
+     */
+    public function suggest(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $query = $request->get('q', '');
+        if (empty($query) || strlen($query) < 2) {
+            return response()->json(['videos' => [], 'channels' => []]);
+        }
+
+        $escapedQuery = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $query);
+        $driver = config('scout.driver');
+        $useScout = $driver && !in_array($driver, ['database', 'null', 'collection']);
+
+        // Videos: top 5
+        if ($useScout) {
+            $videos = Video::search($query)
+                ->query(fn($q) => $q->with(['user'])->public()->approved()->processed())
+                ->take(5)
+                ->get();
+        } else {
+            $videos = Video::query()
+                ->with(['user'])
+                ->public()
+                ->approved()
+                ->processed()
+                ->where(function ($q) use ($escapedQuery, $query) {
+                    $q->where('title', 'like', "%{$escapedQuery}%")
+                      ->orWhere('description', 'like', "%{$escapedQuery}%")
+                      ->orWhereJsonContains('tags', $query);
+                })
+                ->latest('published_at')
+                ->limit(5)
+                ->get();
+        }
+
+        // Channels: top 3
+        $channels = User::query()
+            ->with('channel')
+            ->where(function ($q) use ($escapedQuery) {
+                $q->where('username', 'like', "%{$escapedQuery}%")
+                  ->orWhereHas('channel', fn($sub) => $sub->where('name', 'like', "%{$escapedQuery}%"));
+            })
+            ->limit(3)
+            ->get();
+
+        return response()->json([
+            'videos' => $videos->map(fn($v) => [
+                'id' => $v->id,
+                'slug' => $v->slug,
+                'title' => $v->title,
+                'thumbnail_url' => $v->thumbnail_url ?? $v->thumbnail,
+                'duration_formatted' => $v->formatted_duration ?? null,
+                'username' => $v->user?->username,
+            ]),
+            'channels' => $channels->map(fn($u) => [
+                'id' => $u->id,
+                'username' => $u->username,
+                'avatar_url' => $u->avatar_url ?? $u->avatar,
+                'channel_name' => $u->channel?->name ?? $u->username,
+            ]),
+        ]);
+    }
 }
