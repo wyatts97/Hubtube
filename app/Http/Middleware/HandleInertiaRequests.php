@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Services\TranslationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -258,14 +259,16 @@ class HandleInertiaRequests extends Middleware
     protected function getMenuItems(): array
     {
         try {
-            $items = MenuItem::getMenuTree('both');
-            $headerOnly = MenuItem::getMenuTree('header');
-            $mobileOnly = MenuItem::getMenuTree('mobile');
+            return Cache::remember(MenuItem::CACHE_KEY, MenuItem::CACHE_TTL, function () {
+                $items      = MenuItem::getMenuTree('both');
+                $headerOnly = MenuItem::getMenuTree('header');
+                $mobileOnly = MenuItem::getMenuTree('mobile');
 
-            return [
-                'header' => $items->merge($headerOnly)->sortBy('sort_order')->values()->toArray(),
-                'mobile' => $items->merge($mobileOnly)->sortBy('sort_order')->values()->toArray(),
-            ];
+                return [
+                    'header' => $items->merge($headerOnly)->sortBy('sort_order')->values()->toArray(),
+                    'mobile' => $items->merge($mobileOnly)->sortBy('sort_order')->values()->toArray(),
+                ];
+            });
         }
         catch (Exception $e) {
             // Table may not exist yet (pre-migration)

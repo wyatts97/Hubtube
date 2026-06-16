@@ -251,6 +251,10 @@ class VideoController extends Controller
                 ->each(fn ($p) => $p->has_video = (bool) $p->has_video);
         }
 
+        // Append heavy accessors (StorageManager::exists() calls) only on the show page,
+        // not on list queries where they'd fire per-row.
+        $video->append(['quality_urls', 'hls_playlist_url']);
+
         // Translate tags for non-default locales
         $translatedTags = null;
         $locale = App::getLocale();

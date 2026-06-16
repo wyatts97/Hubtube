@@ -43,14 +43,31 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
      */
     public int $uniqueFor = 3600;
 
+    /**
+     * All settings loaded once at job start — replaces ~44 individual Setting::get() calls
+     * with a single Setting::getAll() cache read.
+     */
+    protected array $settings = [];
+
+    /**
+     * Read a value from the pre-loaded settings array.
+     */
+    protected function s(string $key, mixed $default = null): mixed
+    {
+        return $this->settings[$key] ?? $default;
+    }
+
     public function __construct(
         public Video $video
     ) {}
 
     public function handle(VideoService $videoService): void
     {
+        // Load all settings once — avoids ~44 individual Redis lookups during the job.
+        $this->settings = Setting::getAll();
+
         // Check if FFmpeg processing is enabled
-        if (!Setting::get('ffmpeg_enabled', true)) {
+        if (!$this->s('ffmpeg_enabled', true)) {
             Log::info('FFmpeg processing disabled, serving original file', [
                 'video_id' => $this->video->id,
             ]);
@@ -78,7 +95,7 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
             $qualities = $this->processVideo();
 
             // Check if cloud offloading is enabled in admin settings
-            if (Setting::get('cloud_offloading_enabled', false)) {
+            if ($this->s('cloud_offloading_enabled', false)) {
                 $targetDisk = StorageManager::getActiveDiskName();
                 if (StorageManager::isCloudDisk($targetDisk)) {
                     $this->uploadToCloudStorage($targetDisk);
@@ -102,7 +119,7 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
     protected function markAsProcessedWithOriginal(): void
     {
         // Check if cloud offloading is enabled in admin settings
-        if (Setting::get('cloud_offloading_enabled', false)) {
+        if ($this->s('cloud_offloading_enabled', false)) {
             $targetDisk = StorageManager::getActiveDiskName();
             if (StorageManager::isCloudDisk($targetDisk)) {
                 $this->uploadToCloudStorage($targetDisk);
@@ -179,42 +196,42 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
             return 'ultrafast';
         }
 
-        return Setting::get('video_quality_preset', 'veryfast');
+        return $this->s('video_quality_preset', 'veryfast');
     }
 
     protected function getRateControl(): string
     {
-        return Setting::get('ffmpeg_rate_control', 'crf');
+        return $this->s('ffmpeg_rate_control', 'crf');
     }
 
     protected function getCrf(): int
     {
-        return (int) Setting::get('ffmpeg_crf', 22);
+        return (int) $this->s('ffmpeg_crf', 22);
     }
 
     protected function getPixFmt(): string
     {
-        return Setting::get('ffmpeg_pix_fmt', 'yuv420p');
+        return $this->s('ffmpeg_pix_fmt', 'yuv420p');
     }
 
     protected function getMp4ExtraArgs(): string
     {
-        return trim((string) Setting::get('ffmpeg_mp4_extra_args', ''));
+        return trim((string) $this->s('ffmpeg_mp4_extra_args', ''));
     }
 
     protected function getHlsExtraArgs(): string
     {
-        return trim((string) Setting::get('ffmpeg_hls_extra_args', ''));
+        return trim((string) $this->s('ffmpeg_hls_extra_args', ''));
     }
 
     protected function getHlsPlaylistType(): string
     {
-        return trim((string) Setting::get('ffmpeg_hls_playlist_type', 'vod')) ?: 'vod';
+        return trim((string) $this->s('ffmpeg_hls_playlist_type', 'vod')) ?: 'vod';
     }
 
     protected function getHlsFlags(): string
     {
-        return trim((string) Setting::get('ffmpeg_hls_flags', 'independent_segments')) ?: 'independent_segments';
+        return trim((string) $this->s('ffmpeg_hls_flags', 'independent_segments')) ?: 'independent_segments';
     }
 
     protected function getMp4EncodeArgs(?string $bitrate = null): string
@@ -223,8 +240,8 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
         $rateControl = $this->getRateControl();
         $crf = $this->getCrf();
         $pixFmt = $this->getPixFmt();
-        $audioBitrate = Setting::get('audio_bitrate', '128k');
-        $threads = (int) Setting::get('ffmpeg_threads', 4);
+        $audioBitrate = $this->s('audio_bitrate', '128k');
+        $threads = (int) $this->s('ffmpeg_threads', 4);
         $extraArgs = $this->getMp4ExtraArgs();
 
         $videoRate = ($rateControl === 'bitrate' && $bitrate)
@@ -246,9 +263,9 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
     {
         $preset = $this->getQualityPreset();
         $crf = $this->getCrf();
-        $audioBitrate = Setting::get('audio_bitrate', '128k');
-        $threads = (int) Setting::get('ffmpeg_threads', 4);
-        $hlsTime = (int) Setting::get('hls_segment_duration', 6);
+        $audioBitrate = $this->s('audio_bitrate', '128k');
+        $threads = (int) $this->s('ffmpeg_threads', 4);
+        $hlsTime = (int) $this->s('hls_segment_duration', 6);
         $playlistType = $this->getHlsPlaylistType();
         $flags = $this->getHlsFlags();
         $extraArgs = $this->getHlsExtraArgs();
@@ -268,11 +285,11 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
 
     protected function hasImageWatermark(): bool
     {
-        if (!Setting::get('watermark_enabled', false)) {
+        if (!$this->s('watermark_enabled', false)) {
             return false;
         }
 
-        $watermarkImage = Setting::get('watermark_image', '');
+        $watermarkImage = $this->s('watermark_image', '');
         if (empty($watermarkImage)) {
             return false;
         }
@@ -283,11 +300,11 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
 
     protected function hasTextWatermark(): bool
     {
-        if (!Setting::get('watermark_text_enabled', false)) {
+        if (!$this->s('watermark_text_enabled', false)) {
             return false;
         }
 
-        return trim((string) Setting::get('watermark_text', '')) !== '';
+        return trim((string) $this->s('watermark_text', '')) !== '';
     }
 
     /**
@@ -374,7 +391,7 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
         }
         
         // Generate animated preview if enabled (skip if already exists)
-        if (Setting::get('animated_previews_enabled', true)) {
+        if ($this->s('animated_previews_enabled', true)) {
             $previewFile = "{$videoDir}/{$slugTitle}_preview.webp";
             if (!file_exists($previewFile) || filesize($previewFile) === 0) {
                 $this->generateAnimatedPreview($inputPath, $videoDir, $videoInfo['duration']);
@@ -403,11 +420,11 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
         }
 
         // Check if multi-resolution transcoding is enabled
-        $multiResolutionEnabled = Setting::get('multi_resolution_enabled', true);
+        $multiResolutionEnabled = $this->s('multi_resolution_enabled', true);
         
         if ($multiResolutionEnabled) {
             // Get enabled resolutions from settings
-            $enabledResolutions = Setting::get('enabled_resolutions', ['360p', '480p', '720p']);
+            $enabledResolutions = $this->s('enabled_resolutions', ['360p', '480p', '720p']);
             
             // Ensure it's an array
             if (is_string($enabledResolutions)) {
@@ -436,7 +453,7 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
             ]);
 
             if (!empty($targetQualities)) {
-                $generateHls = (bool) Setting::get('generate_hls', true);
+                $generateHls = (bool) $this->s('generate_hls', true);
                 $qualities = $this->transcodeAllQualities($transcodeInput, $outputDir, $targetQualities, $generateHls);
             }
         }
@@ -529,7 +546,7 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
     {
         $ffmpeg = $this->getFFmpegPath();
         $duration = $this->video->duration;
-        $count = (int) Setting::get('thumbnail_count', 4);
+        $count = (int) $this->s('thumbnail_count', 4);
         $slugTitle = $this->getSluggedTitle();
 
         // Probe whether libwebp is available in this FFmpeg build
@@ -781,7 +798,7 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
     protected function transcodeAllQualities(string $inputPath, string $outputDir, array $targetQualities, bool $generateHls): array
     {
         $ffmpeg = $this->getFFmpegPath();
-        $threads = (int) Setting::get('ffmpeg_threads', 4);
+        $threads = (int) $this->s('ffmpeg_threads', 4);
         $preset = $this->getQualityPreset();
         $qualities = [];
 
@@ -871,7 +888,7 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
     protected function transcodeToQuality(string $inputPath, string $outputDir, string $quality, array $settings, ?int $threads = null, ?string $preset = null): void
     {
         $ffmpeg = $this->getFFmpegPath();
-        $threads = $threads ?? (int) Setting::get('ffmpeg_threads', 4);
+        $threads = $threads ?? (int) $this->s('ffmpeg_threads', 4);
         $preset = $preset ?? $this->getQualityPreset();
         
         $output = "{$outputDir}/{$quality}.mp4";
@@ -913,7 +930,7 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
             return '';
         }
 
-        $watermarkImage = Setting::get('watermark_image', '');
+        $watermarkImage = $this->s('watermark_image', '');
         $watermarkPath = Storage::disk('public')->path($watermarkImage);
         if (!file_exists($watermarkPath)) {
             return '';
@@ -928,10 +945,10 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
         $currentLabel = '0:v';
 
         if ($this->hasImageWatermark()) {
-            $position = Setting::get('watermark_position', 'bottom-right');
-            $opacity = Setting::get('watermark_opacity', 70) / 100;
-            $scale = Setting::get('watermark_scale', 15) / 100;
-            $padding = Setting::get('watermark_padding', 10);
+            $position = $this->s('watermark_position', 'bottom-right');
+            $opacity = $this->s('watermark_opacity', 70) / 100;
+            $scale = $this->s('watermark_scale', 15) / 100;
+            $padding = $this->s('watermark_padding', 10);
 
             // Calculate watermark width based on video width
             $wmWidth = (int) ($videoWidth * $scale);
@@ -972,18 +989,18 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
             return null;
         }
 
-        $text = $this->escapeDrawtextValue((string) Setting::get('watermark_text', ''));
-        $font = $this->escapeDrawtextValue((string) Setting::get('watermark_text_font', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'));
-        $size = (int) Setting::get('watermark_text_size', 24);
-        $color = (string) Setting::get('watermark_text_color', 'white');
-        $opacity = (int) Setting::get('watermark_text_opacity', 70) / 100;
-        $padding = (int) Setting::get('watermark_text_padding', 10);
-        $position = (string) Setting::get('watermark_text_position', 'top');
+        $text = $this->escapeDrawtextValue((string) $this->s('watermark_text', ''));
+        $font = $this->escapeDrawtextValue((string) $this->s('watermark_text_font', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'));
+        $size = (int) $this->s('watermark_text_size', 24);
+        $color = (string) $this->s('watermark_text_color', 'white');
+        $opacity = (int) $this->s('watermark_text_opacity', 70) / 100;
+        $padding = (int) $this->s('watermark_text_padding', 10);
+        $position = (string) $this->s('watermark_text_position', 'top');
 
-        $scrollEnabled = (bool) Setting::get('watermark_text_scroll_enabled', false);
-        $scrollSpeed = (string) Setting::get('watermark_text_scroll_speed', 'medium');
-        $scrollInterval = (int) Setting::get('watermark_text_scroll_interval', 0);
-        $scrollStartDelay = (int) Setting::get('watermark_text_scroll_start_delay', 0);
+        $scrollEnabled = (bool) $this->s('watermark_text_scroll_enabled', false);
+        $scrollSpeed = (string) $this->s('watermark_text_scroll_speed', 'medium');
+        $scrollInterval = (int) $this->s('watermark_text_scroll_interval', 0);
+        $scrollStartDelay = (int) $this->s('watermark_text_scroll_start_delay', 0);
 
         // Responsive font size: scale relative to the shorter dimension of the
         // actual output frame. For landscape video the shorter dim is height;
@@ -1079,7 +1096,7 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
     protected function generateHlsPlaylist(string $outputDir, array $qualities): void
     {
         $ffmpeg = $this->getFFmpegPath();
-        $hlsTime = (int) Setting::get('hls_segment_duration', 6);
+        $hlsTime = (int) $this->s('hls_segment_duration', 6);
         $playlistType = $this->getHlsPlaylistType();
         $flags = $this->getHlsFlags();
         $extraArgs = $this->getHlsExtraArgs();
@@ -1269,7 +1286,7 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
             $this->video->update(['storage_disk' => $targetDisk]);
 
             // Optionally delete local copies after successful cloud upload
-            if (Setting::get('cloud_offloading_delete_local', false)) {
+            if ($this->s('cloud_offloading_delete_local', false)) {
                 Log::info('ProcessVideoJob: deleting local copies after cloud offload', [
                     'video_id' => $this->video->id,
                 ]);

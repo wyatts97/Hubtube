@@ -85,9 +85,7 @@ class Video extends Model
         'thumbnail_url',
         'preview_url',
         'preview_thumbnails_url',
-        'hls_playlist_url',
         'formatted_duration',
-        'quality_urls',
     ];
 
     protected function casts(): array
