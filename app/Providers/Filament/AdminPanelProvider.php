@@ -210,6 +210,10 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::HEAD_END,
                 fn (): string => '<style>' . file_get_contents(resource_path('css/filament/admin/theme.css')) . '</style>',
             )
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.partials.session-expired-overlay')->render(),
+            )
             ->navigationGroups(static::buildNavigationGroups())
             ->plugins(static::buildPlugins())
             // Collapsed sidebar becomes a slim icon rail (not fully hidden),
