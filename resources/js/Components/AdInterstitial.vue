@@ -19,6 +19,10 @@ import AdSlot from '@/Components/AdSlot.vue';
 
 const page = usePage();
 const config = computed(() => page.props.app?.interstitial || {});
+const user = computed(() => page.props.auth?.user);
+const isPro = computed(() => user.value?.is_pro ?? false);
+const proAdFree = computed(() => page.props.app?.pro_ad_free !== false);
+const suppressAds = computed(() => isPro.value && proAdFree.value);
 
 const STORAGE_KEY = 'ht_page_views';
 const EXEMPT_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/install', '/admin'];
@@ -30,7 +34,7 @@ let countdownTimer = null;
 const isMobile = () => window.innerWidth < 768;
 
 const adHtml = computed(() => {
-    if (!config.value.enabled) return '';
+    if (!config.value.enabled || suppressAds.value) return '';
     const mobile = config.value.mobileCode?.trim();
     const desktop = config.value.code?.trim();
     if (isMobile() && mobile) return mobile;

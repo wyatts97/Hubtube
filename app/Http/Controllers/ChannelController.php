@@ -16,6 +16,12 @@ class ChannelController extends Controller
         protected SeoService $seoService,
     ) {}
 
+    protected function shouldSuppressAds(): bool
+    {
+        $user = auth()->user();
+        return $user && $user->is_pro && (bool) Setting::get('pro_ad_free', true);
+    }
+
     public function localeShow(string $locale, string $username): Response
     {
         $user = User::where('username', $username)->firstOrFail();
@@ -74,7 +80,7 @@ class ChannelController extends Controller
             'showLikedVideos' => $isOwner || !empty($settings['show_liked_videos']),
             'showWatchHistory' => $isOwner || !empty($settings['show_watch_history']),
             'seo' => $this->seoService->forChannel($user),
-            'bannerAd' => [
+            'bannerAd' => $this->shouldSuppressAds() ? ['enabled' => false] : [
                 'enabled' => (bool) Setting::get('channel_banner_ad_enabled', false),
                 'code' => (string) Setting::get('channel_banner_ad_html', ''),
                 'image' => (string) Setting::get('channel_banner_ad_image', ''),

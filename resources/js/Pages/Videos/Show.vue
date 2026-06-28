@@ -13,7 +13,7 @@ import CommentSection from '@/Components/CommentSection.vue';
 import VideoPlayer from '@/Components/VideoPlayer.vue';
 import EmbeddedVideoPlayer from '@/Components/EmbeddedVideoPlayer.vue';
 import VideoAdPlayer from '@/Components/VideoAdPlayer.vue';
-import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff, Eye, ListVideo, Plus, Check, Loader2, Folder, Hash, Play, Shuffle, Repeat, SkipBack, SkipForward, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff, Eye, ListVideo, Plus, Check, Loader2, Folder, Hash, Play, Shuffle, Repeat, SkipBack, SkipForward, ChevronLeft, ChevronRight, Download } from 'lucide-vue-next';
 
 const props = defineProps({
     video: Object,
@@ -27,6 +27,7 @@ const props = defineProps({
     playlistContext: { type: Object, default: null },
     userPlaylists: { type: Array, default: () => [] },
     seo: { type: Object, default: () => ({}) },
+    videoAdsEnabled: { type: Boolean, default: true },
 });
 
 const toast = useToast();
@@ -171,6 +172,9 @@ const hlsPlaylistUrl = computed(() => props.video.hls_playlist_url || '');
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
+const canDownload = computed(() => {
+    return user.value && (user.value.is_pro || user.value.id === props.video?.user_id || user.value.is_admin);
+});
 
 const playlistMode = ref('play'); // play | shuffle | loop
 const playlistContext = computed(() => props.playlistContext || null);
@@ -577,6 +581,7 @@ const getRelatedTitle = (video) => {
                         :preview-thumbnails="video.preview_thumbnails_url || ''"
                     />
                     <VideoAdPlayer
+                        v-if="videoAdsEnabled"
                         ref="adPlayerRef"
                         :category-id="video.category_id"
                         :video-duration="video.duration || 0"
@@ -791,6 +796,16 @@ const getRelatedTitle = (video) => {
                                 <Share2 class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                                 <span class="hidden sm:inline">{{ t('common.share') || 'Share' }}</span>
                             </button>
+
+                            <a
+                                v-if="canDownload"
+                                :href="`/videos/${props.video.id}/download`"
+                                class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
+                                download
+                            >
+                                <Download class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                                <span class="hidden sm:inline">{{ t('common.download') || 'Download' }}</span>
+                            </a>
 
                             <!-- Save to Playlist -->
                             <div class="relative playlist-menu-area shrink-0">

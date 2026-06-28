@@ -25,6 +25,12 @@ const maxUploadBytes = computed(() => {
     return mb * 1048576;
 });
 
+const maxSizeProMb = computed(() => page.props.app?.upload?.max_size_pro || 5000);
+const maxSizeFreeMb = computed(() => page.props.app?.upload?.max_size_free || 500);
+const maxDailyPro = computed(() => page.props.app?.upload?.max_daily_uploads_pro || 50);
+const maxDailyFree = computed(() => page.props.app?.upload?.max_daily_uploads_free || 5);
+const proEnabled = computed(() => page.props.app?.pro_enabled !== false);
+
 // ── Form state (metadata only — file goes through useChunkedUpload) ─────────
 const form = reactive({
     title: '',
@@ -385,8 +391,14 @@ watch(fieldErrors, (errs) => {
                         <h2 class="text-lg font-semibold mb-1 text-text-primary">Daily Upload Limit Reached</h2>
                         <p class="text-sm text-text-secondary">
                             You've reached your maximum number of uploads for today. Your limit resets at midnight.
-                            Upgrade to a Pro account to increase your daily upload limit.
                         </p>
+                        <a
+                            v-if="proEnabled && !currentUser?.is_pro"
+                            href="/pro"
+                            class="inline-block mt-2 text-sm font-medium text-accent hover:underline"
+                        >
+                            Upgrade to Pro for up to {{ maxDailyPro }} uploads/day →
+                        </a>
                     </div>
                 </div>
             </div>
@@ -432,7 +444,17 @@ watch(fieldErrors, (errs) => {
                     <p class="text-sm mt-4 text-text-muted">
                         Supported: {{ allowedExtensions.join(', ').toUpperCase() }} · max {{ formatBytes(maxUploadBytes) }}
                     </p>
+                    <p class="text-xs mt-2 text-text-muted">
+                        Free: {{ maxSizeFreeMb }} MB / {{ maxDailyFree }} uploads/day · Pro: {{ maxSizeProMb }} MB / {{ maxDailyPro }} uploads/day
+                    </p>
                     <p v-if="fileError" class="text-red-500 text-sm mt-3 field-error">{{ fileError }}</p>
+                    <a
+                        v-if="proEnabled && !currentUser?.is_pro && fileError && videoFile && videoFile.size > maxUploadBytes"
+                        href="/pro"
+                        class="inline-block mt-2 text-sm font-medium text-accent hover:underline"
+                    >
+                        Upgrade to Pro to upload up to {{ maxSizeProMb }} MB →
+                    </a>
                 </div>
 
                 <!-- Video Preview + Upload Progress -->

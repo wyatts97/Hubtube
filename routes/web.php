@@ -24,11 +24,13 @@ use App\Http\Controllers\ImageController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\ProController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\ThumbnailProxyController;
 use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\WalletController;
 use Illuminate\Support\Facades\Route;
+use Laravel\Cashier\Http\Controllers\WebhookController as StripeWebhookController;
 
 // ── Installer Routes ──
 Route::middleware('installed:block')->prefix('install')->group(function () {
@@ -277,6 +279,10 @@ Route::get('/api/video-ads', [\App\Http\Controllers\VideoAdController::class, 'g
     ->middleware('throttle:30,1')
     ->name('video-ads.get');
 
+// Stripe webhook (must be outside auth + age gates)
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
+    ->name('stripe.webhook');
+
 // Ad impression & click tracking (fire-and-forget, heavily rate-limited)
 Route::post('/api/ad-impression', [\App\Http\Controllers\VideoAdController::class, 'recordImpression'])
     ->middleware('throttle:120,1')
@@ -295,6 +301,7 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/api/videos/load-more', [HomeController::class, 'loadMoreVideos'])->name('videos.loadMore');
     Route::get('/trending', [HomeController::class, 'trending'])->name('trending');
     Route::get('/search', [SearchController::class, 'index'])->name('search');
+    Route::get('/pro', [ProController::class, 'index'])->name('pro.index');
 
     Route::get('/videos', [VideoController::class, 'index'])->name('videos.index');
     Route::get('/contact', [ContactController::class, 'show'])->name('contact');
@@ -357,6 +364,11 @@ Route::middleware('age.verified')->group(function () {
 
         Route::get('/upload', [VideoController::class, 'create'])->name('videos.create');
 
+        // Pro membership (authenticated actions)
+        Route::post('/pro/checkout', [ProController::class, 'checkout'])->name('pro.checkout');
+        Route::get('/pro/success', [ProController::class, 'success'])->name('pro.success');
+        Route::get('/pro/portal', [ProController::class, 'portal'])->name('pro.portal');
+
         // Image upload & management
         Route::get('/image-upload', [ImageController::class, 'create'])->name('images.create');
         Route::post('/image-upload', [ImageController::class, 'store'])->middleware('throttle:10,1')->name('images.store');
@@ -374,6 +386,7 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/videos/{video}/edit', [VideoController::class, 'edit'])->name('videos.edit');
         Route::get('/videos/{video}/status', [VideoController::class, 'status'])->name('videos.status');
         Route::get('/videos/{video}/processing-status', [VideoController::class, 'processingStatus'])->name('videos.processing-status');
+        Route::get('/videos/{video}/download', [VideoController::class, 'download'])->middleware('throttle:10,1')->name('videos.download');
         Route::post('/videos/{video}/select-thumbnail', [VideoController::class, 'selectThumbnail'])->name('videos.select-thumbnail');
         Route::put('/videos/{video}', [VideoController::class, 'update'])->name('videos.update');
         Route::delete('/videos/{video}', [VideoController::class, 'destroy'])->name('videos.destroy');

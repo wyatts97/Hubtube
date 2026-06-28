@@ -37,6 +37,12 @@ class VideoController extends Controller
         protected SeoService $seoService,
     ) {}
 
+    protected function shouldSuppressAds(): bool
+    {
+        $user = auth()->user();
+        return $user && $user->is_pro && (bool) Setting::get('pro_ad_free', true);
+    }
+
     public function index(Request $request): Response
     {
         $escapedSearch = $request->search
@@ -69,7 +75,7 @@ class VideoController extends Controller
                 $request->category ? (string) $request->category : null,
                 $request->sort ? (string) $request->sort : null,
             ),
-            'bannerAd' => [
+            'bannerAd' => $this->shouldSuppressAds() ? ['enabled' => false] : [
                 'enabled' => (bool) Setting::get('browse_banner_ad_enabled', false),
                 'code' => (string) Setting::get('browse_banner_ad_html', ''),
                 'image' => (string) Setting::get('browse_banner_ad_image', ''),
@@ -78,17 +84,17 @@ class VideoController extends Controller
                 'mobileImage' => (string) Setting::get('browse_banner_ad_mobile_image', ''),
                 'mobileLink' => (string) Setting::get('browse_banner_ad_mobile_link', ''),
             ],
-            'adSettings' => [
+            'adSettings' => $this->shouldSuppressAds() ? ['videoGridEnabled' => false] : [
                 'videoGridEnabled' => (bool) Setting::get('video_grid_ad_enabled', false),
                 'videoGridCode' => (string) Setting::get('video_grid_ad_code', ''),
                 'videoGridMobileCode' => (string) Setting::get('video_grid_ad_mobile_code', ''),
                 'videoGridFrequency' => (int) Setting::get('video_grid_ad_frequency', 8),
                 'outstreamFrequency' => (int) Setting::get('video_outstream_ad_frequency', 6),
             ],
-            'outstreamAds' => (bool) Setting::get('video_outstream_ad_enabled', false)
+            'outstreamAds' => $this->shouldSuppressAds() ? [] : ((bool) Setting::get('video_outstream_ad_enabled', false)
                 ? VideoAd::getAdsForPlacement('outstream', null, auth()->user()?->is_pro ? 'pro' : (auth()->check() ? 'default' : 'guest'), false)
-                : [],
-            'sponsoredCards' => SponsoredCard::getForPage(
+                : []),
+            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage(
                 'browse',
                 auth()->user()?->role ?? 'guest',
                 $request->category ? (int) $request->category : null,
@@ -210,13 +216,13 @@ class VideoController extends Controller
         $all = Setting::getAll();
         $s = fn (string $key, mixed $default = null) => $all[$key] ?? $default;
 
-        $sidebarAd = [
+        $sidebarAd = $this->shouldSuppressAds() ? ['enabled' => false] : [
             'enabled' => (bool) $s('video_sidebar_ad_enabled', false),
             'code' => (string) $s('video_sidebar_ad_code', ''),
             'mobileCode' => (string) $s('video_sidebar_ad_mobile_code', ''),
         ];
 
-        $bannerAbovePlayer = [
+        $bannerAbovePlayer = $this->shouldSuppressAds() ? ['enabled' => false] : [
             'enabled' => (bool) $s('banner_above_player_enabled', false),
             'html' => (string) $s('banner_above_player_html', ''),
             'image' => (string) $s('banner_above_player_image', ''),
@@ -226,7 +232,7 @@ class VideoController extends Controller
             'mobile_link' => (string) $s('banner_above_player_mobile_link', ''),
         ];
 
-        $bannerBelowPlayer = [
+        $bannerBelowPlayer = $this->shouldSuppressAds() ? ['enabled' => false] : [
             'enabled' => (bool) $s('banner_below_player_enabled', false),
             'html' => (string) $s('banner_below_player_html', ''),
             'image' => (string) $s('banner_below_player_image', ''),
@@ -284,6 +290,7 @@ class VideoController extends Controller
             'playlistContext' => $playlistContext,
             'userPlaylists' => $userPlaylists,
             'seo' => $this->seoService->forVideo($video),
+            'videoAdsEnabled' => !$this->shouldSuppressAds(),
         ]);
     }
 
@@ -638,5 +645,64 @@ class VideoController extends Controller
         return response()->json([
             'thumbnail_url' => $url,
         ]);
+    }
+
+    public function download(Request $request, Video $video)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            abort(403);
+        }
+
+        if (!$user->is_pro && $user->id !== $video->user_id && !$user->is_admin) {
+            abort(403);
+        }
+
+        if (!$video->isAccessibleBy($user)) {
+            abort(403);
+        }
+
+        // Pick the highest processed MP4 quality available.
+        $qualityUrls = $video->quality_urls;
+        $path = null;
+        $disk = $video->storage_disk ?? 'public';
+
+        if (!empty($qualityUrls)) {
+            // Sort keys descending so 1080p > 720p > 480p > original
+            $ordered = collect($qualityUrls)->sortKeysDesc();
+            foreach ($ordered as $quality => $url) {
+                if ($quality === 'original') {
+                    $path = $video->video_path;
+                } else {
+                    $candidate = dirname($video->video_path) . '/processed/' . $quality . '.mp4';
+                    if (StorageManager::exists($candidate, $disk)) {
+                        $path = $candidate;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!$path) {
+            $path = $video->video_path;
+        }
+
+        if (!$path || !StorageManager::exists($path, $disk)) {
+            abort(404);
+        }
+
+        $filename = Str::slug($video->title, '_') . '.mp4';
+
+        if ($disk === 'public') {
+            return Storage::disk('public')->download($path, $filename);
+        }
+
+        // Remote storage: redirect to a signed temporary URL with attachment disposition.
+        $url = Storage::disk($disk)->temporaryUrl($path, now()->addMinutes(5), [
+            'ResponseContentDisposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+
+        return redirect()->away($url);
     }
 }

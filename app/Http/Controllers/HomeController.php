@@ -20,6 +20,13 @@ class HomeController extends Controller
     public function __construct(
         protected SeoService $seoService,
     ) {}
+
+    protected function shouldSuppressAds(): bool
+    {
+        $user = auth()->user();
+        return $user && $user->is_pro && (bool) Setting::get('pro_ad_free', true);
+    }
+
     public function index(Request $request): Response
     {
         $all = Setting::getAll();
@@ -81,9 +88,9 @@ class HomeController extends Controller
             'latestVideos' => $latestVideos,
             'popularVideos' => $popularVideos,
             'categories' => $categories,
-            'adSettings' => $adSettings,
+            'adSettings' => $this->shouldSuppressAds() ? ['videoGridEnabled' => false] : $adSettings,
             'seo' => $this->seoService->forHome(),
-            'sponsoredCards' => SponsoredCard::getForPage('home', auth()->user()?->role ?? 'guest'),
+            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('home', auth()->user()?->role ?? 'guest'),
         ]);
     }
 
@@ -150,13 +157,13 @@ class HomeController extends Controller
             'videos'       => $videos,
             'period'       => $period,
             'seo'          => $this->seoService->forTrending(),
-            'adSettings'   => [
+            'adSettings'   => $this->shouldSuppressAds() ? ['videoGridEnabled' => false] : [
                 'videoGridEnabled'    => (bool) Setting::get('video_grid_ad_enabled', false),
                 'videoGridCode'       => (string) Setting::get('video_grid_ad_code', ''),
                 'videoGridMobileCode' => (string) Setting::get('video_grid_ad_mobile_code', ''),
                 'videoGridFrequency'  => (int) Setting::get('video_grid_ad_frequency', 8),
             ],
-            'sponsoredCards' => SponsoredCard::getForPage('trending', auth()->user()?->role ?? 'guest'),
+            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('trending', auth()->user()?->role ?? 'guest'),
         ]);
     }
 
@@ -237,7 +244,7 @@ class HomeController extends Controller
             'translatedDescription' => $translatedDescription,
             'videos' => $videos,
             'seo' => $this->seoService->forCategory($category),
-            'bannerAd' => [
+            'bannerAd' => $this->shouldSuppressAds() ? ['enabled' => false] : [
                 'enabled' => (bool) Setting::get('category_banner_ad_enabled', false),
                 'code' => (string) Setting::get('category_banner_ad_html', ''),
                 'image' => (string) Setting::get('category_banner_ad_image', ''),
@@ -246,7 +253,7 @@ class HomeController extends Controller
                 'mobileImage' => (string) Setting::get('category_banner_ad_mobile_image', ''),
                 'mobileLink' => (string) Setting::get('category_banner_ad_mobile_link', ''),
             ],
-            'sponsoredCards' => SponsoredCard::getForPage(
+            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage(
                 'category',
                 auth()->user()?->role ?? 'guest',
                 $category->id,

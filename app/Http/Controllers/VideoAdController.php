@@ -48,6 +48,26 @@ class VideoAdController extends Controller
         $categoryId = $request->integer('category_id');
         $user = $request->user();
 
+        // Pro users with ad-free enabled get no ads at all.
+        if ($user && $user->is_pro && Setting::get('pro_ad_free', true)) {
+            return response()->json([
+                'ads' => [
+                    'pre_roll'  => [],
+                    'mid_roll'  => [],
+                    'post_roll' => [],
+                    'outstream' => [],
+                ],
+                'config' => [
+                    'pre_roll_skip_after'   => (int) Setting::get('video_ad_pre_roll_skip_after', 5),
+                    'mid_roll_skip_after'   => (int) Setting::get('video_ad_mid_roll_skip_after', 5),
+                    'post_roll_skip_after'  => (int) Setting::get('video_ad_post_roll_skip_after', 0),
+                    'mid_roll_interval'     => (int) Setting::get('video_ad_mid_roll_interval', 300),
+                    'mid_roll_max_count'    => (int) Setting::get('video_ad_mid_roll_max_count', 3),
+                    'outstream_frequency'   => (int) Setting::get('video_outstream_ad_frequency', 6),
+                ],
+            ]);
+        }
+
         // Determine user role for targeting
         $userRole = 'guest';
         if ($user) {

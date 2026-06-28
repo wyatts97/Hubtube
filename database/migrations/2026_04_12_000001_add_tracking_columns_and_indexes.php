@@ -65,7 +65,19 @@ return new class extends Migration
 
     protected function indexExists(string $table, string $indexName): bool
     {
-        $db = Schema::getConnection()->getDatabaseName();
+        $connection = Schema::getConnection();
+
+        if ($connection->getDriverName() === 'sqlite') {
+            $indexes = \Illuminate\Support\Facades\DB::select("PRAGMA index_list({$table})");
+            foreach ($indexes as $index) {
+                if (($index->name ?? null) === $indexName) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        $db = $connection->getDatabaseName();
         $count = \Illuminate\Support\Facades\DB::selectOne(
             "SELECT COUNT(*) as cnt FROM information_schema.STATISTICS
              WHERE table_schema = ? AND table_name = ? AND index_name = ?",

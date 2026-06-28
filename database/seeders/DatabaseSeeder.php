@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             SettingsSeeder::class,
             PageSeeder::class,
             EmailTemplateSeeder::class,
+            PlanSeeder::class,
         ]);
     }
 }

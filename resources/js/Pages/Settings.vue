@@ -116,9 +116,11 @@ const updatePrivacy = () => {
 };
 
 const upgradeToPro = () => {
-    router.visit('/wallet/deposit', {
-        data: { upgrade: true },
-    });
+    router.visit('/pro');
+};
+
+const goToProPortal = () => {
+    router.visit('/pro/portal', { preserveScroll: true });
 };
 
 const showDeleteConfirm = ref(false);
@@ -401,17 +403,22 @@ const tabs = computed(() => {
                         <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.billing') || 'Billing & Subscription' }}</h2>
                         <div class="space-y-4">
                             <div class="p-4 rounded-lg bg-bg-secondary">
-                                <div class="flex items-center justify-between">
+                                <div class="flex items-center justify-between flex-wrap gap-3">
                                     <div>
                                         <p class="font-medium text-text-primary">{{ t('settings.current_plan') || 'Current Plan' }}</p>
                                         <p class="text-text-secondary">{{ user?.is_pro ? 'Pro' : 'Free' }}</p>
                                     </div>
-                                    <button v-if="!user?.is_pro" @click="upgradeToPro" class="btn btn-primary">
-                                        {{ t('settings.upgrade_pro') || 'Upgrade to Pro' }}
-                                    </button>
-                                    <span v-else class="px-3 py-1 rounded-full text-sm font-medium bg-accent" style="color: white;">
-                                        Active
-                                    </span>
+                                    <div class="flex items-center gap-2">
+                                        <button v-if="!user?.is_pro" @click="upgradeToPro" class="btn btn-primary">
+                                            {{ t('settings.upgrade_pro') || 'Upgrade to Pro' }}
+                                        </button>
+                                        <button v-else @click="goToProPortal" class="btn btn-secondary">
+                                            Manage Subscription
+                                        </button>
+                                        <span v-if="user?.is_pro" class="px-3 py-1 rounded-full text-sm font-medium bg-accent" style="color: white;">
+                                            Active
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="p-4 rounded-lg bg-bg-secondary">
@@ -431,23 +438,23 @@ const tabs = computed(() => {
                                 <ul class="space-y-2 text-sm text-text-secondary">
                                     <li class="flex items-center gap-2">
                                         <span class="text-accent">✓</span>
-                                        Upload up to 50 videos per day
+                                        Ad-free viewing
                                     </li>
                                     <li class="flex items-center gap-2">
                                         <span class="text-accent">✓</span>
-                                        Upload videos up to 5GB
+                                        Upload videos up to 1 GB
                                     </li>
                                     <li class="flex items-center gap-2">
                                         <span class="text-accent">✓</span>
-                                        Edit videos after upload (thumbnails, title, tags)
+                                        Higher daily upload cap
                                     </li>
                                     <li class="flex items-center gap-2">
                                         <span class="text-accent">✓</span>
-                                        Priority video processing
+                                        Download videos
                                     </li>
                                     <li class="flex items-center gap-2">
                                         <span class="text-accent">✓</span>
-                                        Advanced analytics
+                                        Pro badge on channel and comments
                                     </li>
                                 </ul>
                             </div>

@@ -58,6 +58,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->statefulApi();
 
+        $middleware->validateCsrfTokens(except: [
+            'stripe/webhook',
+        ]);
+
         $middleware->throttleApi('60,1');
     })
     ->withExceptions(function (Exceptions $exceptions) {

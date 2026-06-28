@@ -9,6 +9,7 @@ import { useVideoGrid } from '@/Composables/useVideoGrid';
 import BannerAd from '@/Components/UI/BannerAd.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
+import ProBadge from '@/Components/ProBadge.vue';
 import { Bell, BellOff, Flag, Loader2, Video, Eye, Calendar } from 'lucide-vue-next';
 
 const { t } = useI18n();
@@ -94,9 +95,10 @@ const tabs = computed(() => {
             </div>
             
             <div class="flex-1 min-w-0">
-                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-text-primary">
+                <h1 class="flex items-center gap-2 text-xl sm:text-2xl md:text-3xl font-bold text-text-primary">
                     {{ channel.username }}
-                    <span v-if="channel.is_verified" class="ml-2 text-accent">✓</span>
+                    <span v-if="channel.is_verified" class="text-accent">✓</span>
+                    <ProBadge v-if="channel.is_pro" size="md" />
                 </h1>
                 <p class="mt-1 text-sm sm:text-base text-text-secondary">
                     @{{ channel.username }}

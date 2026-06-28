@@ -5,6 +5,7 @@ import { timeAgo as timeAgoFn, formatViews } from '@/Composables/useFormatters';
 import { useOptimizedImage } from '@/Composables/useOptimizedImage';
 import { useI18n } from '@/Composables/useI18n';
 import { useTranslation } from '@/Composables/useTranslation';
+import ProBadge from '@/Components/ProBadge.vue';
 
 const { thumbnailProps, avatarProps } = useOptimizedImage();
 const { localizedUrl, locale, t, isTranslated } = useI18n();
@@ -154,9 +155,10 @@ const onPreviewLoad = (event) => {
             </div>
             <div class="flex-1 min-w-0">
                 <h3 class="font-medium leading-tight" :class="`line-clamp-${vc.titleLines || 2}`" :style="titleStyle">{{ isTranslated ? getTranslated('video', video.id, 'title', video.title) : video.title }}</h3>
-                <Link v-if="showUploader && video.user" :href="localizedUrl(`/channel/${video.user.username}`)" class="mt-1 block" :style="{ ...metaStyle, color: uploaderColor }">
+                <Link v-if="showUploader && video.user" :href="localizedUrl(`/channel/${video.user.username}`)" class="mt-1 flex items-center gap-1.5" :style="{ ...metaStyle, color: uploaderColor }">
                     {{ video.user.username }}
-                    <span v-if="video.user.is_verified" class="inline-block ml-1">✓</span>
+                    <span v-if="video.user.is_verified" class="inline-block">✓</span>
+                    <ProBadge v-if="video.user.is_pro" size="sm" />
                 </Link>
                 <p v-if="showViews || showTimestamp" :style="{ ...metaStyle, color: metaColor }">
                     <template v-if="showViews">{{ t('video.views', { count: formattedViews }) }}</template>

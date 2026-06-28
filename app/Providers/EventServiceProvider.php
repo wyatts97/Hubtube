@@ -15,6 +15,7 @@ use SocialiteProviders\Reddit\RedditExtendSocialite;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use Laravel\Cashier\Events\WebhookReceived;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -35,6 +36,9 @@ class EventServiceProvider extends ServiceProvider
         ],
         SocialiteWasCalled::class => [
             RedditExtendSocialite::class . '@handle',
+        ],
+        WebhookReceived::class => [
+            \App\Listeners\HandleStripeSubscriptionChanges::class,
         ],
     ];
 

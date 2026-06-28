@@ -5,6 +5,7 @@ import { ThumbsUp, ThumbsDown, MoreVertical, Reply, Trash2, Edit2 } from 'lucide
 import { useFetch } from '@/Composables/useFetch';
 import { timeAgo } from '@/Composables/useFormatters';
 import { useI18n } from '@/Composables/useI18n';
+import ProBadge from '@/Components/ProBadge.vue';
 
 const { t } = useI18n();
 
@@ -164,6 +165,7 @@ fetchComments();
                         <Link :href="`/channel/${comment.user?.username}`" class="font-medium hover:opacity-80 text-text-primary">
                             {{ comment.user?.username }}
                         </Link>
+                        <ProBadge v-if="comment.user?.is_pro" size="sm" />
                         <span class="text-sm text-text-muted">{{ timeAgo(comment.created_at) }}</span>
                     </div>
                     <p class="mt-1 whitespace-pre-wrap text-text-secondary">{{ comment.content }}</p>
@@ -237,6 +239,7 @@ fetchComments();
                             <div class="flex-1">
                                 <div class="flex items-center gap-2">
                                     <span class="font-medium text-sm text-text-primary">{{ reply.user?.username }}</span>
+                                    <ProBadge v-if="reply.user?.is_pro" size="sm" />
                                     <span class="text-xs text-text-muted">{{ timeAgo(reply.created_at) }}</span>
                                 </div>
                                 <p class="text-sm mt-1 text-text-secondary">{{ reply.content }}</p>
