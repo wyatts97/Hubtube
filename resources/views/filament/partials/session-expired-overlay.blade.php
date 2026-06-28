@@ -34,29 +34,44 @@
     display: none !important;
 }
 .ht-session-overlay__card {
+    position: relative;
     width: 100%;
     max-width: 24rem;
-    background: #111827; /* gray-900 — admin is always dark */
-    border: 1px solid #374151; /* gray-700 */
-    border-radius: 0.75rem;
+    background: linear-gradient(180deg, rgb(24 24 27 / 0.95), rgb(18 18 20 / 0.95));
+    border: 1px solid rgb(255 255 255 / 0.08);
+    border-radius: 0.875rem;
     padding: 1.5rem;
     text-align: center;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    box-shadow:
+        0 25px 50px -12px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    overflow: hidden;
+}
+.ht-session-overlay__card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgb(99 102 241 / 0.65), rgb(168 85 247 / 0.45), transparent);
+    opacity: 0.8;
+    pointer-events: none;
 }
 .ht-session-overlay__icon {
     width: 2.5rem;
     height: 2.5rem;
-    color: #f59e0b; /* amber-500 */
+    color: rgb(251 191 36); /* amber-400 */
     margin: 0 auto 1rem;
 }
 .ht-session-overlay__title {
-    color: #f9fafb; /* gray-50 */
+    color: rgb(243 244 246); /* gray-100 */
     font-size: 1.125rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
 }
 .ht-session-overlay__text {
-    color: #9ca3af; /* gray-400 */
+    color: rgb(148 163 184); /* slate-400 */
     font-size: 0.875rem;
     margin-bottom: 1.25rem;
     line-height: 1.5;
@@ -72,27 +87,29 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    background: #3b82f6; /* blue-500 */
-    color: #ffffff;
+    background: rgb(39 39 42); /* zinc-800 */
+    color: rgb(244 244 245); /* zinc-100 */
     font-weight: 500;
     font-size: 0.875rem;
     padding: 0.5rem 1rem;
     border-radius: 0.5rem;
-    border: none;
+    border: 1px solid rgb(63 63 70); /* zinc-700 */
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
     text-decoration: none;
 }
 .ht-session-overlay__btn:hover {
-    background: #2563eb; /* blue-600 */
+    background: rgb(63 63 70); /* zinc-700 */
+    border-color: rgb(82 82 91); /* zinc-600 */
+    color: rgb(255 255 255);
 }
 .ht-session-overlay__link {
-    color: #9ca3af; /* gray-400 */
+    color: rgb(148 163 184); /* slate-400 */
     font-size: 0.875rem;
     text-decoration: underline;
 }
 .ht-session-overlay__link:hover {
-    color: #e5e7eb; /* gray-200 */
+    color: rgb(209 213 219); /* gray-300 */
 }
 </style>
 
