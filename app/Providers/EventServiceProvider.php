@@ -6,7 +6,6 @@ use App\Events\VideoUploaded;
 use App\Listeners\ProcessVideoUpload;
 use App\Events\VideoProcessed;
 use App\Listeners\NotifyVideoProcessed;
-use App\Listeners\TweetNewVideoListener;
 use App\Listeners\SubmitVideoToIndexNowListener;
 use App\Events\NewSubscriber;
 use App\Listeners\NotifyChannelOfNewSubscriber;
@@ -28,7 +27,6 @@ class EventServiceProvider extends ServiceProvider
         ],
         VideoProcessed::class => [
             NotifyVideoProcessed::class,
-            TweetNewVideoListener::class,
             SubmitVideoToIndexNowListener::class,
         ],
         NewSubscriber::class => [

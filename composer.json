@@ -7,7 +7,6 @@
     "require": {
         "php": "^8.2",
         "ext-redis": "*",
-        "abraham/twitteroauth": "^7.0",
         "awcodes/overlook": "^3.0",
         "bezhansalleh/filament-shield": "^4.0",
         "croustibat/filament-jobs-monitor": "*",

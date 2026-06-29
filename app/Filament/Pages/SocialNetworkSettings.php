@@ -6,15 +6,9 @@ use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Actions;
-use Filament\Actions\Action;
-use App\Services\TwitterService;
-use Throwable;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -54,22 +48,6 @@ class SocialNetworkSettings extends Page implements HasForms
             'social_login_reddit_enabled' => (bool) Setting::get('social_login_reddit_enabled', false),
             'social_login_reddit_client_id' => Setting::getDecrypted('social_login_reddit_client_id', ''),
             'social_login_reddit_client_secret' => Setting::getDecrypted('social_login_reddit_client_secret', ''),
-
-            // -- Twitter Auto-Post: API Credentials --
-            'twitter_api_bearer_token' => Setting::getDecrypted('twitter_api_bearer_token', ''),
-            'twitter_api_consumer_key' => Setting::getDecrypted('twitter_api_consumer_key', ''),
-            'twitter_api_consumer_secret' => Setting::getDecrypted('twitter_api_consumer_secret', ''),
-            'twitter_api_access_token' => Setting::getDecrypted('twitter_api_access_token', ''),
-            'twitter_api_access_token_secret' => Setting::getDecrypted('twitter_api_access_token_secret', ''),
-
-            // -- Twitter Auto-Post: Settings --
-            'twitter_auto_tweet_new_enabled' => (bool) Setting::get('twitter_auto_tweet_new_enabled', false),
-            'twitter_auto_tweet_scheduled_enabled' => (bool) Setting::get('twitter_auto_tweet_scheduled_enabled', false),
-            'twitter_tweet_interval_hours' => (int) Setting::get('twitter_tweet_interval_hours', 4),
-            'twitter_min_video_age_days' => (int) Setting::get('twitter_min_video_age_days', 7),
-            'twitter_no_retweet_within_days' => (int) Setting::get('twitter_no_retweet_within_days', 30),
-            'twitter_tweet_template' => Setting::get('twitter_tweet_template', '{title} — Watch now: {url} #{category}'),
-            'twitter_hashtags' => Setting::get('twitter_hashtags', ''),
         ]);
     }
 
@@ -148,103 +126,6 @@ class SocialNetworkSettings extends Page implements HasForms
                                     ])->columns(2),
                             ]),
 
-                        Tab::make('Twitter Auto-Post')
-                            ->icon('phosphor-megaphone')
-                            ->schema([
-                                Placeholder::make('twitter_api_info')
-                                    ->content('Automatically tweet when a new video is published and/or schedule periodic tweets of older videos. Requires Twitter API v2 credentials with tweet write permissions (OAuth 1.0a User Context).')
-                                    ->columnSpanFull(),
-
-                                Section::make('API Credentials')
-                                    ->description('From developer.x.com → Your App → Keys and Tokens. These are the OAuth 1.0a keys used for posting tweets on behalf of your account.')
-                                    ->icon('phosphor-key')
-                                    ->collapsible()
-                                    ->schema([
-                                        TextInput::make('twitter_api_consumer_key')
-                                            ->label('API Key (Consumer Key)')
-                                            ->password()
-                                            ->revealable(),
-                                        TextInput::make('twitter_api_consumer_secret')
-                                            ->label('API Secret (Consumer Secret)')
-                                            ->password()
-                                            ->revealable(),
-                                        TextInput::make('twitter_api_access_token')
-                                            ->label('Access Token')
-                                            ->password()
-                                            ->revealable(),
-                                        TextInput::make('twitter_api_access_token_secret')
-                                            ->label('Access Token Secret')
-                                            ->password()
-                                            ->revealable(),
-                                        TextInput::make('twitter_api_bearer_token')
-                                            ->label('Bearer Token')
-                                            ->password()
-                                            ->revealable()
-                                            ->helperText('Optional. Used for read-only API calls.'),
-                                    ])->columns(2),
-
-                                Section::make('Auto-Tweet Settings')
-                                    ->icon('phosphor-gear')
-                                    ->schema([
-                                        Toggle::make('twitter_auto_tweet_new_enabled')
-                                            ->label('Auto-tweet when a new video is published')
-                                            ->helperText('Sends a tweet immediately when a video finishes processing and becomes published.'),
-                                        Toggle::make('twitter_auto_tweet_scheduled_enabled')
-                                            ->label('Schedule periodic tweets of older videos')
-                                            ->helperText('Periodically tweets a random older video for ongoing engagement.')
-                                            ->reactive(),
-                                        TextInput::make('twitter_tweet_interval_hours')
-                                            ->label('Tweet Interval (hours)')
-                                            ->numeric()
-                                            ->minValue(1)
-                                            ->maxValue(168)
-                                            ->default(4)
-                                            ->helperText('Hours between scheduled older video tweets.')
-                                            ->visible(fn ($get) => $get('twitter_auto_tweet_scheduled_enabled')),
-                                        TextInput::make('twitter_min_video_age_days')
-                                            ->label('Minimum Video Age (days)')
-                                            ->numeric()
-                                            ->minValue(1)
-                                            ->maxValue(365)
-                                            ->default(7)
-                                            ->helperText('Only tweet videos older than this many days.')
-                                            ->visible(fn ($get) => $get('twitter_auto_tweet_scheduled_enabled')),
-                                        TextInput::make('twitter_no_retweet_within_days')
-                                            ->label("Don't Re-tweet Within (days)")
-                                            ->numeric()
-                                            ->minValue(1)
-                                            ->maxValue(365)
-                                            ->default(30)
-                                            ->helperText('Avoid tweeting the same video again within this period.')
-                                            ->visible(fn ($get) => $get('twitter_auto_tweet_scheduled_enabled')),
-                                    ])->columns(2),
-
-                                Section::make('Tweet Template')
-                                    ->icon('phosphor-file-text')
-                                    ->schema([
-                                        Textarea::make('twitter_tweet_template')
-                                            ->label('Tweet Template')
-                                            ->rows(3)
-                                            ->placeholder('{title} — Watch now: {url} #{category}')
-                                            ->helperText('Available placeholders: {title}, {url}, {channel}, {category}. URLs count as 23 chars (t.co). Max 280 chars total.'),
-                                        TextInput::make('twitter_hashtags')
-                                            ->label('Additional Hashtags')
-                                            ->placeholder('HubTube, Videos, Trending')
-                                            ->helperText('Comma-separated hashtags appended to every tweet (without #).'),
-                                        Actions::make([
-                                            Action::make('sendTestTweet')
-                                                ->label('Send Test Tweet')
-                                                ->icon('phosphor-paper-plane-right')
-                                                ->color('gray')
-                                                ->requiresConfirmation()
-                                                ->modalHeading('Send Test Tweet')
-                                                ->modalDescription('This will post a test tweet to your connected Twitter account. Continue?')
-                                                ->action(function () {
-                                                    $this->sendTestTweet();
-                                                }),
-                                        ])->columnSpanFull(),
-                                    ]),
-                            ]),
                     ])->columnSpanFull(),
             ])
             ->statePath('data');
@@ -257,25 +138,15 @@ class SocialNetworkSettings extends Page implements HasForms
         'social_login_twitter_client_secret',
         'social_login_reddit_client_id',
         'social_login_reddit_client_secret',
-        'twitter_api_bearer_token',
-        'twitter_api_consumer_key',
-        'twitter_api_consumer_secret',
-        'twitter_api_access_token',
-        'twitter_api_access_token_secret',
     ];
 
     protected const BOOLEAN_KEYS = [
         'social_login_google_enabled',
         'social_login_twitter_enabled',
         'social_login_reddit_enabled',
-        'twitter_auto_tweet_new_enabled',
-        'twitter_auto_tweet_scheduled_enabled',
     ];
 
     protected const INTEGER_KEYS = [
-        'twitter_tweet_interval_hours',
-        'twitter_min_video_age_days',
-        'twitter_no_retweet_within_days',
     ];
 
     public function save(): void
@@ -309,34 +180,4 @@ class SocialNetworkSettings extends Page implements HasForms
             ->send();
     }
 
-    public function sendTestTweet(): void
-    {
-        // Save first so latest credentials are applied
-        $this->save();
-
-        try {
-            $service = app(TwitterService::class);
-            $result = $service->sendTestTweet();
-
-            if ($result) {
-                Notification::make()
-                    ->title('Test tweet sent!')
-                    ->body('Check your Twitter account to verify.')
-                    ->success()
-                    ->send();
-            } else {
-                Notification::make()
-                    ->title('Tweet failed')
-                    ->body('Could not send test tweet. Check your API credentials.')
-                    ->danger()
-                    ->send();
-            }
-        } catch (Throwable $e) {
-            Notification::make()
-                ->title('Tweet failed')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
-    }
 }

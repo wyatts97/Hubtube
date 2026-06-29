@@ -38,7 +38,7 @@ class EditVideo extends EditRecord
                         'published_at' => $this->record->published_at ?? now(),
                     ]);
 
-                    // Fire VideoProcessed so "published" notification + tweet go out
+                    // Fire VideoProcessed so the "published" notification goes out
                     $alreadyNotified = AppNotification::where('user_id', $this->record->user_id)
                         ->where('type', 'video_processed')
                         ->where('data->video_id', $this->record->id)

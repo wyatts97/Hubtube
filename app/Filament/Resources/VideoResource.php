@@ -516,7 +516,7 @@ class VideoResource extends Resource
                                 ]);
                             }
 
-                            // Fire VideoProcessed so "published" notification + tweet go out
+                            // Fire VideoProcessed so the "published" notification goes out
                             $alreadyNotified = AppNotification::where('user_id', $record->user_id)
                                 ->where('type', 'video_processed')
                                 ->where('data->video_id', $record->id)
@@ -663,7 +663,7 @@ class VideoResource extends Resource
                                     'published_at' => $v->published_at ?? now(),
                                 ]);
 
-                                // Fire VideoProcessed so "published" notification + tweet go out
+                                // Fire VideoProcessed so the "published" notification goes out
                                 $alreadyNotified = AppNotification::where('user_id', $v->user_id)
                                     ->where('type', 'video_processed')
                                     ->where('data->video_id', $v->id)

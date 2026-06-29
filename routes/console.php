@@ -18,7 +18,3 @@ Schedule::command('videos:prune-bulk-temp')->dailyAt('03:15')->withoutOverlappin
 
 // Publish scheduled videos every minute so they go live on time
 Schedule::command('videos:publish-scheduled')->everyMinute();
-
-// Twitter auto-post: tweet older videos on a configurable schedule
-// The interval is read inside the command; we run the check hourly and let the command decide
-Schedule::command('tweets:older-video')->hourly();
