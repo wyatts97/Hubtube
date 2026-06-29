@@ -265,14 +265,12 @@ class PaymentSettings extends Page implements HasForms
                                             ->helperText('Annual price = monthly × 12 × (1 - discount/100)')
                                             ->live()
                                             ->required(),
-                                        Text::make('annual_preview')
-                                            ->label('Annual price preview')
-                                            ->content(function (callable $get) {
+                                        Text::make(function (callable $get) {
                                                 $monthly = (float) ($get('pro_monthly_price') ?? 9.99);
                                                 $discount = (int) ($get('pro_annual_discount_percent') ?? 20);
                                                 $annual = round($monthly * 12 * (1 - $discount / 100), 2);
                                                 $savings = round((($monthly * 12) - $annual), 2);
-                                                return "\${$annual} / year (saves \${$savings} vs monthly)";
+                                                return "Annual price: \${$annual} / year (saves \${$savings} vs monthly)";
                                             })
                                             ->extraAttributes(['class' => 'text-sm text-gray-500']),
                                     ])->columns(2),
