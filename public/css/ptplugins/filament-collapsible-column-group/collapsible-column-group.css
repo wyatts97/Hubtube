@@ -1,0 +1,10 @@
+/* Collapsible column groups — collapsed first-column placeholder cell. */
+th.cg-placeholder,
+td.cg-placeholder {
+    max-width: 2rem !important;
+    width: 2rem !important;
+    padding: 0.25rem !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+}

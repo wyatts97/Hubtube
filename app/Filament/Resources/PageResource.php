@@ -9,6 +9,7 @@ use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Toggle;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
+use PtPlugins\FilamentCollapsibleColumnGroup\CollapsibleColumnGroup;
 use Filament\Actions\EditAction;
 use App\Filament\Resources\PageResource\Pages\ListPages;
 use App\Filament\Resources\PageResource\Pages\CreatePage;
@@ -63,20 +64,34 @@ class PageResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('title')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('slug')
-                    ->searchable()
-                    ->copyable()
-                    ->prefix('/pages/'),
-                IconColumn::make('is_published')
-                    ->boolean()
-                    ->label('Published'),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->label('Last Updated'),
+                CollapsibleColumnGroup::make('Page Info')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('title')
+                            ->searchable()
+                            ->sortable(),
+                        TextColumn::make('slug')
+                            ->searchable()
+                            ->copyable()
+                            ->prefix('/pages/'),
+                    ]),
+
+                CollapsibleColumnGroup::make('Status')
+                    ->collapsible()
+                    ->columns([
+                        IconColumn::make('is_published')
+                            ->boolean()
+                            ->label('Published'),
+                    ]),
+
+                CollapsibleColumnGroup::make('Dates')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('updated_at')
+                            ->dateTime()
+                            ->sortable()
+                            ->label('Last Updated'),
+                    ]),
             ])
             ->recordActions([
                 EditAction::make(),

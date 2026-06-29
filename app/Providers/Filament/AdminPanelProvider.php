@@ -33,6 +33,7 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filafly\Icons\Phosphor\PhosphorIcons;
+use FinityLabs\FinMail\FinMailPlugin;
 use Muazzam\SlickScrollbar\SlickScrollbarPlugin;
 
 
@@ -80,6 +81,11 @@ class AdminPanelProvider extends PanelProvider
         }
 
         $plugins[] = PhosphorIcons::make()->regular();
+
+        if (class_exists(FinMailPlugin::class)) {
+            $plugins[] = FinMailPlugin::make()
+                ->navigationGroup('Integrations');
+        }
 
         return $plugins;
     }

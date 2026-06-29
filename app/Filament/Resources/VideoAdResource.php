@@ -7,6 +7,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Grid;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Str;
+use PtPlugins\FilamentCollapsibleColumnGroup\CollapsibleColumnGroup;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -208,78 +209,94 @@ class VideoAdResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name')
-                    ->weight('bold')
-                    ->searchable()
-                    ->sortable(),
+                CollapsibleColumnGroup::make('Creative')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('name')
+                            ->weight('bold')
+                            ->searchable()
+                            ->sortable(),
+                        TextColumn::make('type')
+                            ->badge()
+                            ->formatStateUsing(fn (string $state) => strtoupper($state))
+                            ->color(fn (string $state): string => match ($state) {
+                                'mp4'   => 'info',
+                                'vast'  => 'purple',
+                                'vpaid' => 'indigo',
+                                'html'  => 'warning',
+                                default => 'gray',
+                            }),
+                        TextColumn::make('placement')
+                            ->badge()
+                            ->formatStateUsing(fn (string $state) => ucwords(str_replace('_', '-', $state)))
+                            ->color(fn (string $state): string => match ($state) {
+                                'pre_roll'  => 'success',
+                                'mid_roll'  => 'warning',
+                                'post_roll' => 'danger',
+                                default     => 'gray',
+                            }),
+                    ]),
 
-                TextColumn::make('type')
-                    ->badge()
-                    ->formatStateUsing(fn (string $state) => strtoupper($state))
-                    ->color(fn (string $state): string => match ($state) {
-                        'mp4'   => 'info',
-                        'vast'  => 'purple',
-                        'vpaid' => 'indigo',
-                        'html'  => 'warning',
-                        default => 'gray',
-                    }),
+                CollapsibleColumnGroup::make('Source')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('content')
+                            ->label('Source')
+                            ->formatStateUsing(function (string $state, VideoAd $record): string {
+                                if ($record->type === 'mp4' && $record->file_path) {
+                                    return '📁 ' . basename($record->file_path);
+                                }
+                                if ($record->type === 'html') {
+                                    return '🖥 HTML script (' . strlen($state) . ' chars)';
+                                }
+                                return Str::limit($state, 50);
+                            })
+                            ->color('gray')
+                            ->size('sm'),
+                    ]),
 
-                TextColumn::make('placement')
-                    ->badge()
-                    ->formatStateUsing(fn (string $state) => ucwords(str_replace('_', '-', $state)))
-                    ->color(fn (string $state): string => match ($state) {
-                        'pre_roll'  => 'success',
-                        'mid_roll'  => 'warning',
-                        'post_roll' => 'danger',
-                        default     => 'gray',
-                    }),
+                CollapsibleColumnGroup::make('Targeting')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('weight')
+                            ->alignCenter()
+                            ->sortable(),
+                        TextColumn::make('category_ids')
+                            ->label('Targeting')
+                            ->formatStateUsing(function ($state, VideoAd $record): string {
+                                $cats  = ($record->category_ids && count($record->category_ids))
+                                    ? count($record->category_ids) . ' cats'
+                                    : 'All cats';
+                                $roles = ($record->target_roles && count($record->target_roles))
+                                    ? implode(', ', $record->target_roles)
+                                    : 'All roles';
+                                return "{$cats} · {$roles}";
+                            })
+                            ->color('gray')
+                            ->size('sm'),
+                    ]),
 
-                TextColumn::make('content')
-                    ->label('Source')
-                    ->formatStateUsing(function (string $state, VideoAd $record): string {
-                        if ($record->type === 'mp4' && $record->file_path) {
-                            return '📁 ' . basename($record->file_path);
-                        }
-                        if ($record->type === 'html') {
-                            return '🖥 HTML script (' . strlen($state) . ' chars)';
-                        }
-                        return Str::limit($state, 50);
-                    })
-                    ->color('gray')
-                    ->size('sm'),
+                CollapsibleColumnGroup::make('Metrics')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('impressions_count')
+                            ->label('Impressions')
+                            ->numeric()
+                            ->sortable()
+                            ->alignCenter(),
+                        TextColumn::make('clicks_count')
+                            ->label('Clicks')
+                            ->numeric()
+                            ->sortable()
+                            ->alignCenter(),
+                    ]),
 
-                TextColumn::make('weight')
-                    ->alignCenter()
-                    ->sortable(),
-
-                TextColumn::make('category_ids')
-                    ->label('Targeting')
-                    ->formatStateUsing(function ($state, VideoAd $record): string {
-                        $cats  = ($record->category_ids && count($record->category_ids))
-                            ? count($record->category_ids) . ' cats'
-                            : 'All cats';
-                        $roles = ($record->target_roles && count($record->target_roles))
-                            ? implode(', ', $record->target_roles)
-                            : 'All roles';
-                        return "{$cats} · {$roles}";
-                    })
-                    ->color('gray')
-                    ->size('sm'),
-
-                TextColumn::make('impressions_count')
-                    ->label('Impressions')
-                    ->numeric()
-                    ->sortable()
-                    ->alignCenter(),
-
-                TextColumn::make('clicks_count')
-                    ->label('Clicks')
-                    ->numeric()
-                    ->sortable()
-                    ->alignCenter(),
-
-                ToggleColumn::make('is_active')
-                    ->label('Active'),
+                CollapsibleColumnGroup::make('Status')
+                    ->collapsible()
+                    ->columns([
+                        ToggleColumn::make('is_active')
+                            ->label('Active'),
+                    ]),
             ])
             ->filters([
                 SelectFilter::make('type')

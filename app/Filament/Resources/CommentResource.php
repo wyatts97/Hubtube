@@ -9,6 +9,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
+use PtPlugins\FilamentCollapsibleColumnGroup\CollapsibleColumnGroup;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Actions\EditAction;
 use Filament\Actions\Action;
@@ -81,56 +82,75 @@ class CommentResource extends Resource
             ->modifyQueryUsing(fn ($query) => $query->with(['user', 'video' => fn ($q) => $q->withTrashed()]))
             ->defaultSort('created_at', 'desc')
             ->columns([
-                TextColumn::make('user.username')
-                    ->label('User')
-                    ->searchable()
-                    ->icon('phosphor-user')
-                    ->iconColor('gray')
-                    ->weight('semibold')
-                    ->grow(false),
-                TextColumn::make('video.title')
-                    ->label('Video')
-                    ->limit(30)
-                    ->placeholder('(deleted)')
-                    ->url(fn (Comment $record): ?string => $record->video?->slug ? url('/' . $record->video->slug) : null)
-                    ->openUrlInNewTab()
-                    ->searchable()
-                    ->color('gray')
-                    ->size('sm'),
-                TextColumn::make('content')
-                    ->label('Comment')
-                    ->wrap()
-                    ->limit(120)
-                    ->searchable(),
-                TextColumn::make('moderation_status')
-                    ->label('Status')
-                    ->badge()
-                    ->alignCenter()
-                    ->getStateUsing(fn (Comment $record): string => $record->is_approved ? 'Approved' : 'Pending')
-                    ->color(fn (string $state): string => $state === 'Approved' ? 'success' : 'warning')
-                    ->icon(fn (string $state): string => $state === 'Approved' ? 'phosphor-check-circle' : 'phosphor-clock'),
-                IconColumn::make('is_pinned')
-                    ->label('Pinned')
-                    ->alignCenter()
-                    ->boolean()
-                    ->trueIcon('phosphor-bookmark')
-                    ->falseIcon('phosphor-bookmark')
-                    ->trueColor('warning')
-                    ->falseColor('gray')
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('likes_count')
-                    ->label('Likes')
-                    ->numeric()
-                    ->sortable()
-                    ->alignRight()
-                    ->toggleable(isToggledHiddenByDefault: false),
-                TextColumn::make('created_at')
-                    ->label('Posted')
-                    ->since()
-                    ->sortable()
-                    ->color('gray')
-                    ->size('sm')
-                    ->tooltip(fn (Comment $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
+                CollapsibleColumnGroup::make('Comment')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('user.username')
+                            ->label('User')
+                            ->searchable()
+                            ->icon('phosphor-user')
+                            ->iconColor('gray')
+                            ->weight('semibold')
+                            ->grow(false),
+                        TextColumn::make('video.title')
+                            ->label('Video')
+                            ->limit(30)
+                            ->placeholder('(deleted)')
+                            ->url(fn (Comment $record): ?string => $record->video?->slug ? url('/' . $record->video->slug) : null)
+                            ->openUrlInNewTab()
+                            ->searchable()
+                            ->color('gray')
+                            ->size('sm'),
+                        TextColumn::make('content')
+                            ->label('Comment')
+                            ->wrap()
+                            ->limit(120)
+                            ->searchable(),
+                    ]),
+
+                CollapsibleColumnGroup::make('Status')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('moderation_status')
+                            ->label('Status')
+                            ->badge()
+                            ->alignCenter()
+                            ->getStateUsing(fn (Comment $record): string => $record->is_approved ? 'Approved' : 'Pending')
+                            ->color(fn (string $state): string => $state === 'Approved' ? 'success' : 'warning')
+                            ->icon(fn (string $state): string => $state === 'Approved' ? 'phosphor-check-circle' : 'phosphor-clock'),
+                        IconColumn::make('is_pinned')
+                            ->label('Pinned')
+                            ->alignCenter()
+                            ->boolean()
+                            ->trueIcon('phosphor-bookmark')
+                            ->falseIcon('phosphor-bookmark')
+                            ->trueColor('warning')
+                            ->falseColor('gray')
+                            ->toggleable(isToggledHiddenByDefault: true),
+                    ]),
+
+                CollapsibleColumnGroup::make('Metrics')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('likes_count')
+                            ->label('Likes')
+                            ->numeric()
+                            ->sortable()
+                            ->alignRight()
+                            ->toggleable(isToggledHiddenByDefault: false),
+                    ]),
+
+                CollapsibleColumnGroup::make('Dates')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('created_at')
+                            ->label('Posted')
+                            ->since()
+                            ->sortable()
+                            ->color('gray')
+                            ->size('sm')
+                            ->tooltip(fn (Comment $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
+                    ]),
             ])
             ->filters([
                 TernaryFilter::make('is_approved'),

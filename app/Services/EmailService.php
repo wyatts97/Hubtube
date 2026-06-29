@@ -3,60 +3,50 @@
 namespace App\Services;
 
 use Throwable;
-use App\Mail\TemplateMail;
-use App\Models\EmailTemplate;
 use App\Models\Setting;
+use FinityLabs\FinMail\Mail\TemplateMail as FinMailTemplateMail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class EmailService
 {
     /**
-     * Send a template-based email to a user.
-     * Checks if the template is active and if the email notification type is enabled.
+     * Send a FinMail template email to a user.
      */
-    public static function sendToUser(string $templateSlug, string $toEmail, array $data = []): bool
+    public static function sendToUser(string $templateKey, string $toEmail, array $data = []): bool
     {
         if (!static::isMailConfigured()) {
             return false;
         }
 
-        $template = EmailTemplate::findBySlug($templateSlug);
-        if (!$template) {
-            Log::warning("EmailService: template '{$templateSlug}' not found or inactive.");
-            return false;
-        }
-
-        // Check if this user-facing notification type is enabled
-        $settingKey = "email_notify_{$templateSlug}";
+        $settingKey = "email_notify_{$templateKey}";
         $enabled = Setting::get($settingKey, 'true');
         if ($enabled === 'false' || $enabled === '0') {
             return false;
         }
 
         try {
-            Mail::to($toEmail)->sendNow(new TemplateMail($templateSlug, $data));
+            Mail::to($toEmail)->sendNow(
+                FinMailTemplateMail::make($templateKey)->models(self::prepareData($data))
+            );
             return true;
         } catch (Throwable $e) {
-            Log::error("EmailService: failed to send '{$templateSlug}' to {$toEmail}: {$e->getMessage()}");
+            Log::error("EmailService: failed to send '{$templateKey}' to {$toEmail}: {$e->getMessage()}");
             return false;
         }
     }
 
     /**
-     * Send a template-based email to the admin notification address.
-     * Uses the admin_notification_email setting, falls back to mail_from_address.
+     * Send a FinMail template email to the admin notification address.
      */
-    public static function sendToAdmin(string $templateSlug, array $data = [], ?string $replyTo = null, ?string $replyToName = null): bool
+    public static function sendToAdmin(string $templateKey, array $data = [], ?string $replyTo = null, ?string $replyToName = null): bool
     {
         if (!static::isMailConfigured()) {
             return false;
         }
 
-        // Check if admin wants this notification type
-        $settingKey = "admin_notify_{$templateSlug}";
+        $settingKey = "admin_notify_{$templateKey}";
         $enabled = Setting::get($settingKey, true);
-        // Handle boolean or string values consistently
         if (!filter_var($enabled, FILTER_VALIDATE_BOOLEAN)) {
             return false;
         }
@@ -67,15 +57,21 @@ class EmailService
         }
 
         if (empty($adminEmail)) {
-            Log::warning("EmailService: no admin email configured for notification '{$templateSlug}'.");
+            Log::warning("EmailService: no admin email configured for notification '{$templateKey}'.");
             return false;
         }
 
         try {
-            Mail::to($adminEmail)->sendNow(new TemplateMail($templateSlug, $data, $replyTo, $replyToName));
+            $mail = FinMailTemplateMail::make($templateKey)->models(self::prepareData($data));
+
+            if ($replyTo) {
+                $mail->overrideReplyTo($replyTo, $replyToName);
+            }
+
+            Mail::to($adminEmail)->sendNow($mail);
             return true;
         } catch (Throwable $e) {
-            Log::error("EmailService: failed to send admin notification '{$templateSlug}': {$e->getMessage()}");
+            Log::error("EmailService: failed to send admin notification '{$templateKey}': {$e->getMessage()}");
             return false;
         }
     }
@@ -87,5 +83,21 @@ class EmailService
     {
         $mailer = Setting::get('mail_mailer', config('mail.default', 'log'));
         return !empty($mailer) && $mailer !== 'log';
+    }
+
+    /**
+     * Ensure legacy scalar tokens (e.g. {{ username }}) continue to resolve
+     * by passing the data array as top-level models and adding the site name.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected static function prepareData(array $data): array
+    {
+        if (!array_key_exists('site_name', $data)) {
+            $data['site_name'] = config('app.name', 'HubTube');
+        }
+
+        return $data;
     }
 }

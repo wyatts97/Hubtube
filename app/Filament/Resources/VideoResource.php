@@ -22,6 +22,7 @@ use Filament\Schemas\Components\Component;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
+use PtPlugins\FilamentCollapsibleColumnGroup\CollapsibleColumnGroup;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Filters\Filter;
@@ -297,113 +298,127 @@ class VideoResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->poll('15s')
             ->columns([
-                ImageColumn::make('thumbnail_display')
-                    ->label('Thumbnail')
-                    ->getStateUsing(fn (Video $record): ?string => $record->thumbnail_url)
-                    ->height(50)
-                    ->width(89)
-                    ->extraImgAttributes([
-                        'class' => 'ht-thumb-hover',
-                    ])
-                    ->extraAttributes(['class' => 'ht-thumb-col'])
-                    ->defaultImageUrl(url('/icons/icon-192x192.png')),
+                CollapsibleColumnGroup::make('Video Info')
+                    ->collapsible()
+                    ->columns([
+                        ImageColumn::make('thumbnail_display')
+                            ->label('Thumbnail')
+                            ->getStateUsing(fn (Video $record): ?string => $record->thumbnail_url)
+                            ->height(50)
+                            ->width(89)
+                            ->extraImgAttributes([
+                                'class' => 'ht-thumb-hover',
+                            ])
+                            ->extraAttributes(['class' => 'ht-thumb-col'])
+                            ->defaultImageUrl(url('/icons/icon-192x192.png')),
 
-                TextColumn::make('title')
-                    ->searchable()
-                    ->sortable()
-                    ->weight('bold')
-                    ->limit(50)
-                    ->description(fn (Video $record): string => $record->formatted_duration ?: '—'),
+                        TextColumn::make('title')
+                            ->searchable()
+                            ->sortable()
+                            ->weight('bold')
+                            ->limit(50)
+                            ->description(fn (Video $record): string => $record->formatted_duration ?: '—'),
 
-                TextColumn::make('user.username')
-                    ->label('Uploader')
-                    ->searchable()
-                    ->sortable()
-                    ->icon('phosphor-user')
-                    ->size('sm'),
+                        TextColumn::make('user.username')
+                            ->label('Uploader')
+                            ->searchable()
+                            ->sortable()
+                            ->icon('phosphor-user')
+                            ->size('sm'),
 
-                TextColumn::make('category.name')
-                    ->label('Category')
-                    ->sortable()
-                    ->size('sm')
-                    ->placeholder('—')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                        TextColumn::make('category.name')
+                            ->label('Category')
+                            ->sortable()
+                            ->size('sm')
+                            ->placeholder('—')
+                            ->toggleable(isToggledHiddenByDefault: true),
+                    ]),
 
-                TextColumn::make('status')
-                    ->badge()
-                    ->formatStateUsing(fn (string $state, Video $record): string => match (true) {
-                        $state === 'processed' && $record->is_approved && $record->published_at => 'Published',
-                        $state === 'processed' && !is_null($record->queue_order) => 'Scheduled',
-                        $state === 'processed' && !$record->is_approved => 'Needs Moderation',
-                        $state === 'pending_download' => 'Pending Download',
-                        $state === 'downloading' => 'Downloading',
-                        $state === 'download_failed' => 'Download Failed',
-                        default => ucfirst($state),
-                    })
-                    ->color(fn (string $state, Video $record): string => match (true) {
-                        $state === 'processed' && $record->is_approved && $record->published_at => 'success',
-                        $state === 'processed' && !is_null($record->queue_order) => 'info',
-                        $state === 'processed' && !$record->is_approved => 'warning',
-                        $state === 'pending' => 'gray',
-                        $state === 'pending_download' => 'gray',
-                        $state === 'downloading' => 'info',
-                        $state === 'download_failed' => 'danger',
-                        $state === 'processing' => 'info',
-                        $state === 'failed' => 'danger',
-                        default => 'gray',
-                    }),
+                CollapsibleColumnGroup::make('Status')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('status')
+                            ->badge()
+                            ->formatStateUsing(fn (string $state, Video $record): string => match (true) {
+                                $state === 'processed' && $record->is_approved && $record->published_at => 'Published',
+                                $state === 'processed' && !is_null($record->queue_order) => 'Scheduled',
+                                $state === 'processed' && !$record->is_approved => 'Needs Moderation',
+                                $state === 'pending_download' => 'Pending Download',
+                                $state === 'downloading' => 'Downloading',
+                                $state === 'download_failed' => 'Download Failed',
+                                default => ucfirst($state),
+                            })
+                            ->color(fn (string $state, Video $record): string => match (true) {
+                                $state === 'processed' && $record->is_approved && $record->published_at => 'success',
+                                $state === 'processed' && !is_null($record->queue_order) => 'info',
+                                $state === 'processed' && !$record->is_approved => 'warning',
+                                $state === 'pending' => 'gray',
+                                $state === 'pending_download' => 'gray',
+                                $state === 'downloading' => 'info',
+                                $state === 'download_failed' => 'danger',
+                                $state === 'processing' => 'info',
+                                $state === 'failed' => 'danger',
+                                default => 'gray',
+                            }),
 
-                // Hidden by default — Status badge above already communicates approved/needs-moderation.
-                // Still available via the column toggle for admins who want a standalone flag.
-                IconColumn::make('is_approved')
-                    ->boolean()
-                    ->label('Approved')
-                    ->alignCenter()
-                    ->trueIcon('phosphor-check-circle')
-                    ->falseIcon('phosphor-clock')
-                    ->trueColor('success')
-                    ->falseColor('warning')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                        IconColumn::make('is_approved')
+                            ->boolean()
+                            ->label('Approved')
+                            ->alignCenter()
+                            ->trueIcon('phosphor-check-circle')
+                            ->falseIcon('phosphor-clock')
+                            ->trueColor('success')
+                            ->falseColor('warning')
+                            ->toggleable(isToggledHiddenByDefault: true),
 
-                IconColumn::make('is_featured')
-                    ->boolean()
-                    ->label('Featured')
-                    ->alignCenter()
-                    ->trueIcon('phosphor-star')
-                    ->falseIcon('phosphor-star')
-                    ->trueColor('warning')
-                    ->falseColor('gray')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                        IconColumn::make('is_featured')
+                            ->boolean()
+                            ->label('Featured')
+                            ->alignCenter()
+                            ->trueIcon('phosphor-star')
+                            ->falseIcon('phosphor-star')
+                            ->trueColor('warning')
+                            ->falseColor('gray')
+                            ->toggleable(isToggledHiddenByDefault: true),
+                    ]),
 
-                TextColumn::make('views_count')
-                    ->label('Views')
-                    ->numeric()
-                    ->sortable()
-                    ->alignRight()
-                    ->icon('phosphor-eye')
-                    ->iconColor('gray'),
+                CollapsibleColumnGroup::make('Metrics')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('views_count')
+                            ->label('Views')
+                            ->numeric()
+                            ->sortable()
+                            ->alignRight()
+                            ->icon('phosphor-eye')
+                            ->iconColor('gray'),
 
-                TextColumn::make('likes_count')
-                    ->label('Likes')
-                    ->numeric()
-                    ->sortable()
-                    ->icon('phosphor-thumbs-up')
-                    ->iconColor('gray')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                        TextColumn::make('likes_count')
+                            ->label('Likes')
+                            ->numeric()
+                            ->sortable()
+                            ->icon('phosphor-thumbs-up')
+                            ->iconColor('gray')
+                            ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('size')
-                    ->label('Size')
-                    ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                        TextColumn::make('size')
+                            ->label('Size')
+                            ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—')
+                            ->sortable()
+                            ->toggleable(isToggledHiddenByDefault: true),
+                    ]),
 
-                TextColumn::make('created_at')
-                    ->label('Uploaded')
-                    ->since()
-                    ->sortable()
-                    ->size('sm')
-                    ->color('gray')
-                    ->tooltip(fn (Video $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
+                CollapsibleColumnGroup::make('Dates')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('created_at')
+                            ->label('Uploaded')
+                            ->since()
+                            ->sortable()
+                            ->size('sm')
+                            ->color('gray')
+                            ->tooltip(fn (Video $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
+                    ]),
             ])
             ->filters([
                 SelectFilter::make('status')

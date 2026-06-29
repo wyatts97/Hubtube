@@ -10,9 +10,10 @@ use Filament\Schemas\Components\Actions;
 use Filament\Actions\Action;
 use Illuminate\Mail\MailManager;
 use Throwable;
-use App\Mail\TemplateMail;
-use App\Models\EmailTemplate;
 use App\Models\Setting;
+use FinityLabs\FinMail\Mail\TemplateMail as FinMailTemplateMail;
+use FinityLabs\FinMail\Settings\GeneralSettings;
+use App\Models\User;
 use App\Services\AdminLogger;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -36,20 +37,9 @@ class IntegrationSettings extends Page implements HasForms
 
     public ?array $data = [];
 
-    // Email templates state
-    public array $emailTemplates = [];
-    public array $editingTemplates = [];
-    public ?int $expandedTemplate = null;
-    public ?string $previewHtml = null;
-
     public function mount(): void
     {
         $this->form->fill([
-            // Bunny Stream
-            'bunny_stream_api_key' => Setting::getDecrypted('bunny_stream_api_key', ''),
-            'bunny_stream_library_id' => Setting::get('bunny_stream_library_id', ''),
-            'bunny_stream_cdn_host' => Setting::get('bunny_stream_cdn_host', ''),
-            'bunny_stream_cdn_token_key' => Setting::getDecrypted('bunny_stream_cdn_token_key', ''),
             // Mail SMTP
             'mail_mailer' => Setting::get('mail_mailer', 'log'),
             'mail_host' => Setting::get('mail_host', ''),
@@ -61,8 +51,6 @@ class IntegrationSettings extends Page implements HasForms
             'mail_from_name' => Setting::get('mail_from_name', ''),
             'mail_verify_peer' => (bool) filter_var(Setting::get('mail_verify_peer', true), FILTER_VALIDATE_BOOLEAN),
         ]);
-
-        $this->loadEmailTemplates();
     }
 
     public function form(Schema $schema): Schema
@@ -71,28 +59,6 @@ class IntegrationSettings extends Page implements HasForms
             ->components([
                 Tabs::make('Integration Settings')
                     ->tabs([
-                        Tab::make('Bunny Stream')
-                            ->icon('phosphor-cloud')
-                            ->schema([
-                                Section::make('Bunny Stream')
-                                    ->description('Used for migrating embedded Bunny Stream videos to local/cloud storage.')
-                                    ->schema([
-                                        TextInput::make('bunny_stream_api_key')
-                                            ->label('API Key')
-                                            ->password()
-                                            ->revealable(),
-                                        TextInput::make('bunny_stream_library_id')
-                                            ->label('Library ID'),
-                                        TextInput::make('bunny_stream_cdn_host')
-                                            ->label('CDN Host')
-                                            ->placeholder('vz-xxxxxxxx-xxx.b-cdn.net'),
-                                        TextInput::make('bunny_stream_cdn_token_key')
-                                            ->label('CDN Token Key')
-                                            ->password()
-                                            ->revealable()
-                                            ->helperText('For signed URL authentication. Leave empty if not using token auth.'),
-                                    ])->columns(2),
-                            ]),
                         Tab::make('Email / SMTP')
                             ->icon('phosphor-envelope')
                             ->schema([
@@ -161,14 +127,29 @@ class IntegrationSettings extends Page implements HasForms
                                         ])->columnSpanFull(),
                                     ])->columns(2),
                             ]),
+
+                        Tab::make('Email Templates')
+                            ->icon('phosphor-envelope')
+                            ->schema([
+                                Section::make('Email Templates')
+                                    ->description('Manage email templates, themes, and sent logs in the FinMail editor.')
+                                    ->schema([
+                                        Actions::make([
+                                            Action::make('openEmailTemplates')
+                                                ->label('Open Email Templates')
+                                                ->icon('phosphor-envelope')
+                                                ->color('primary')
+                                                ->url(fn () => route('filament.admin.resources.email-templates.index'))
+                                                ->openUrlInNewTab(false),
+                                        ])->columnSpanFull(),
+                                    ])->columns(1),
+                            ]),
                     ])->columnSpanFull(),
             ])
             ->statePath('data');
     }
 
     protected const ENCRYPTED_KEYS = [
-        'bunny_stream_api_key',
-        'bunny_stream_cdn_token_key',
         'mail_password',
     ];
 
@@ -201,6 +182,16 @@ class IntegrationSettings extends Page implements HasForms
         // Apply mail config at runtime so it takes effect immediately
         if (!empty($data['mail_mailer']) && $data['mail_mailer'] !== 'log') {
             $this->applyMailConfig($data);
+        }
+
+        // Keep FinMail's default sender in sync with the SMTP settings page.
+        try {
+            $finMailSettings = app(GeneralSettings::class);
+            $finMailSettings->default_from_address = $data['mail_from_address'] ?? $finMailSettings->default_from_address;
+            $finMailSettings->default_from_name = $data['mail_from_name'] ?? $finMailSettings->default_from_name;
+            $finMailSettings->save();
+        } catch (Throwable) {
+            // If the settings table isn't ready yet, skip the sync.
         }
 
         AdminLogger::settingsSaved('Integration', array_keys($data));
@@ -241,17 +232,17 @@ class IntegrationSettings extends Page implements HasForms
     {
         $this->save();
 
-        $to = auth()->user()->email;
+        /** @var User $user */
+        $user = auth()->user();
 
         try {
-            Mail::to($to)->sendNow(new TemplateMail('welcome', [
-                'username' => auth()->user()->username ?? 'Admin',
-                'login_url' => url('/admin'),
-            ]));
+            Mail::to($user->email)->sendNow(
+                FinMailTemplateMail::make('welcome')->models(['user' => $user])
+            );
 
             Notification::make()
                 ->title('Test email sent!')
-                ->body("Check your inbox at {$to}")
+                ->body("Check your inbox at {$user->email}")
                 ->success()
                 ->send();
         } catch (Throwable $e) {
@@ -263,179 +254,4 @@ class IntegrationSettings extends Page implements HasForms
         }
     }
 
-    // -- Email Templates Management ------------------------------------------
-
-    public function loadEmailTemplates(): void
-    {
-        $templates = EmailTemplate::orderBy('id')->get();
-        $this->emailTemplates = $templates->toArray();
-        $this->editingTemplates = [];
-
-        foreach ($templates as $t) {
-            $this->editingTemplates[$t->id] = [
-                'subject' => $t->subject,
-                'body_html' => $t->body_html,
-            ];
-        }
-    }
-
-    public function toggleTemplate(int $id): void
-    {
-        $this->expandedTemplate = $this->expandedTemplate === $id ? null : $id;
-    }
-
-    public function toggleTemplateActive(int $id): void
-    {
-        $template = EmailTemplate::find($id);
-        if ($template) {
-            $template->update(['is_active' => !$template->is_active]);
-            $this->loadEmailTemplates();
-
-            Notification::make()
-                ->title($template->is_active ? 'Template enabled' : 'Template disabled')
-                ->success()
-                ->send();
-        }
-    }
-
-    public function saveTemplate(int $id): void
-    {
-        $data = $this->editingTemplates[$id] ?? null;
-        if (!$data) {
-            return;
-        }
-
-        $template = EmailTemplate::find($id);
-        if ($template) {
-            $template->update([
-                'subject' => $data['subject'],
-                'body_html' => $data['body_html'],
-            ]);
-
-            AdminLogger::settingsSaved('Email Template', [$template->slug]);
-
-            $this->loadEmailTemplates();
-
-            Notification::make()
-                ->title("Template \"{$template->name}\" saved")
-                ->success()
-                ->send();
-        }
-    }
-
-    public function previewTemplate(int $id): void
-    {
-        $data = $this->editingTemplates[$id] ?? null;
-        if (!$data) {
-            return;
-        }
-
-        $template = EmailTemplate::find($id);
-        if (!$template) {
-            return;
-        }
-
-        // Build sample data for preview
-        $sampleData = [
-            'username' => 'JohnDoe',
-            'verify_url' => url('/verify-email/sample-token'),
-            'reset_url' => url('/reset-password/sample-token'),
-            'video_title' => 'My Awesome Video',
-            'video_url' => url('/my-awesome-video'),
-            'subscriber_name' => 'JaneSmith',
-            'channel_url' => url('/channel/johndoe'),
-            'login_url' => url('/login'),
-            'sender_name' => 'Contact User',
-            'sender_email' => 'contact@example.com',
-            'subject' => 'Question about your site',
-            'message' => 'Hi, I have a question about your platform. Can you help?',
-            'amount' => '$50.00',
-            'rejection_reason' => 'Content does not meet community guidelines.',
-            'expiry_minutes' => '60',
-            'site_name' => config('app.name'),
-        ];
-
-        // Temporarily set the subject/body from the editing state
-        $tempTemplate = new EmailTemplate([
-            'slug' => $template->slug,
-            'subject' => $data['subject'],
-            'body_html' => $data['body_html'],
-            'is_active' => true,
-        ]);
-
-        $body = $tempTemplate->renderBody($sampleData);
-
-        $this->previewHtml = view('emails.layout', [
-            'body' => $body,
-            'subject' => $tempTemplate->renderSubject($sampleData),
-        ])->render();
-    }
-
-    public function sendTestTemplate(int $id): void
-    {
-        $this->saveTemplate($id);
-
-        $template = EmailTemplate::find($id);
-        if (!$template) {
-            return;
-        }
-
-        $to = auth()->user()->email;
-
-        $sampleData = [
-            'username' => auth()->user()->username ?? 'Admin',
-            'verify_url' => url('/verify-email/test'),
-            'reset_url' => url('/reset-password/test'),
-            'video_title' => 'Test Video Title',
-            'video_url' => url('/test-video'),
-            'subscriber_name' => 'TestSubscriber',
-            'channel_url' => url('/channel/test'),
-            'login_url' => url('/login'),
-            'sender_name' => 'Test Contact',
-            'sender_email' => 'test@example.com',
-            'subject' => 'Test contact submission',
-            'message' => 'This is a test message from the email template preview system.',
-            'amount' => '$25.00',
-            'rejection_reason' => 'This is a test rejection reason.',
-            'expiry_minutes' => '60',
-        ];
-
-        try {
-            Mail::to($to)->send(new TemplateMail($template->slug, $sampleData));
-
-            Notification::make()
-                ->title("Test email sent for \"{$template->name}\"")
-                ->body("Check your inbox at {$to}")
-                ->success()
-                ->send();
-        } catch (Throwable $e) {
-            Notification::make()
-                ->title('Email sending failed')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
-    }
-
-    public function seedTemplates(): void
-    {
-        foreach (EmailTemplate::defaults() as $default) {
-            EmailTemplate::updateOrCreate(
-                ['slug' => $default['slug']],
-                $default
-            );
-        }
-
-        $this->loadEmailTemplates();
-
-        Notification::make()
-            ->title('Email templates reset to defaults')
-            ->success()
-            ->send();
-    }
-
-    public function getPlaceholders(string $slug): array
-    {
-        return EmailTemplate::PLACEHOLDERS[$slug] ?? [];
-    }
 }

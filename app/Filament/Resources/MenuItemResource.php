@@ -9,6 +9,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
+use PtPlugins\FilamentCollapsibleColumnGroup\CollapsibleColumnGroup;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Filters\Filter;
@@ -154,31 +155,45 @@ class MenuItemResource extends Resource
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with('parent'))
             ->columns([
-                TextColumn::make('label')
-                    ->searchable()
-                    ->sortable()
-                    ->description(fn (MenuItem $record) => $record->parent ? "↳ Child of: {$record->parent->label}" : null),
-                TextColumn::make('type')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'link' => 'primary',
-                        'category' => 'success',
-                        'tag' => 'warning',
-                        'dropdown' => 'info',
-                        'divider' => 'gray',
-                        default => 'gray',
-                    }),
-                TextColumn::make('url')
-                    ->limit(40),
-                TextColumn::make('location')
-                    ->badge(),
-                IconColumn::make('is_mega')
-                    ->label('Mega')
-                    ->boolean(),
-                IconColumn::make('is_active')
-                    ->boolean(),
-                TextColumn::make('sort_order')
-                    ->sortable(),
+                CollapsibleColumnGroup::make('Menu Info')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('label')
+                            ->searchable()
+                            ->sortable()
+                            ->description(fn (MenuItem $record) => $record->parent ? "↳ Child of: {$record->parent->label}" : null),
+                        TextColumn::make('type')
+                            ->badge()
+                            ->color(fn (string $state): string => match ($state) {
+                                'link' => 'primary',
+                                'category' => 'success',
+                                'tag' => 'warning',
+                                'dropdown' => 'info',
+                                'divider' => 'gray',
+                                default => 'gray',
+                            }),
+                        TextColumn::make('url')
+                            ->limit(40),
+                    ]),
+
+                CollapsibleColumnGroup::make('Display')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('location')
+                            ->badge(),
+                        IconColumn::make('is_mega')
+                            ->label('Mega')
+                            ->boolean(),
+                        IconColumn::make('is_active')
+                            ->boolean(),
+                    ]),
+
+                CollapsibleColumnGroup::make('Order')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('sort_order')
+                            ->sortable(),
+                    ]),
             ])
             ->defaultSort('sort_order')
             ->filters([

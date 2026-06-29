@@ -9,6 +9,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\TextColumn;
+use PtPlugins\FilamentCollapsibleColumnGroup\CollapsibleColumnGroup;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Actions\ViewAction;
 use App\Filament\Resources\WalletTransactionResource\Pages\ListWalletTransactions;
@@ -82,34 +83,53 @@ class WalletTransactionResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('user.username')
-                    ->label('User')
-                    ->searchable(),
-                TextColumn::make('type')
-                    ->badge()
-                    ->color(fn (string $state): string => match (true) {
-                        in_array($state, ['deposit', 'video_sale']) => 'success',
-                        in_array($state, ['withdrawal', 'video_purchase']) => 'danger',
-                        $state === 'refund' => 'warning',
-                        default => 'gray',
-                    }),
-                TextColumn::make('amount')
-                    ->money('USD')
-                    ->sortable(),
-                TextColumn::make('balance_after')
-                    ->money('USD'),
-                TextColumn::make('status')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'pending' => 'warning',
-                        'completed' => 'success',
-                        'failed' => 'danger',
-                        'cancelled' => 'gray',
-                        default => 'gray',
-                    }),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable(),
+                CollapsibleColumnGroup::make('Transaction')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('user.username')
+                            ->label('User')
+                            ->searchable(),
+                        TextColumn::make('type')
+                            ->badge()
+                            ->color(fn (string $state): string => match (true) {
+                                in_array($state, ['deposit', 'video_sale']) => 'success',
+                                in_array($state, ['withdrawal', 'video_purchase']) => 'danger',
+                                $state === 'refund' => 'warning',
+                                default => 'gray',
+                            }),
+                    ]),
+
+                CollapsibleColumnGroup::make('Amount')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('amount')
+                            ->money('USD')
+                            ->sortable(),
+                        TextColumn::make('balance_after')
+                            ->money('USD'),
+                    ]),
+
+                CollapsibleColumnGroup::make('Status')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('status')
+                            ->badge()
+                            ->color(fn (string $state): string => match ($state) {
+                                'pending' => 'warning',
+                                'completed' => 'success',
+                                'failed' => 'danger',
+                                'cancelled' => 'gray',
+                                default => 'gray',
+                            }),
+                    ]),
+
+                CollapsibleColumnGroup::make('Dates')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('created_at')
+                            ->dateTime()
+                            ->sortable(),
+                    ]),
             ])
             ->filters([
                 SelectFilter::make('type')

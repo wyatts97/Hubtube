@@ -13,7 +13,6 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             SettingsSeeder::class,
             PageSeeder::class,
-            EmailTemplateSeeder::class,
             PlanSeeder::class,
         ]);
     }

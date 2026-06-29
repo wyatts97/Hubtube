@@ -10,6 +10,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
+use PtPlugins\FilamentCollapsibleColumnGroup\CollapsibleColumnGroup;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Actions\EditAction;
 use Filament\Actions\Action;
@@ -97,26 +98,45 @@ class ChannelResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('user.username')
-                    ->label('Owner')
-                    ->searchable(),
-                TextColumn::make('subscriber_count')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('total_views')
-                    ->numeric()
-                    ->sortable(),
-                IconColumn::make('is_verified')
-                    ->boolean(),
-                IconColumn::make('subscription_enabled')
-                    ->boolean(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                CollapsibleColumnGroup::make('Channel Info')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('name')
+                            ->searchable()
+                            ->sortable(),
+                        TextColumn::make('user.username')
+                            ->label('Owner')
+                            ->searchable(),
+                    ]),
+
+                CollapsibleColumnGroup::make('Metrics')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('subscriber_count')
+                            ->numeric()
+                            ->sortable(),
+                        TextColumn::make('total_views')
+                            ->numeric()
+                            ->sortable(),
+                    ]),
+
+                CollapsibleColumnGroup::make('Status')
+                    ->collapsible()
+                    ->columns([
+                        IconColumn::make('is_verified')
+                            ->boolean(),
+                        IconColumn::make('subscription_enabled')
+                            ->boolean(),
+                    ]),
+
+                CollapsibleColumnGroup::make('Dates')
+                    ->collapsible()
+                    ->columns([
+                        TextColumn::make('created_at')
+                            ->dateTime()
+                            ->sortable()
+                            ->toggleable(isToggledHiddenByDefault: true),
+                    ]),
             ])
             ->filters([
                 TernaryFilter::make('is_verified'),
