@@ -100,7 +100,7 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         return $this->hasMany(Like::class);
     }
 
-    public function subscriptions(): HasMany
+    public function channelSubscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class, 'subscriber_id');
     }
@@ -168,7 +168,7 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
 
     public function isSubscribedTo(User $user): bool
     {
-        return $this->subscriptions()->where('channel_id', $user->id)->exists();
+        return $this->channelSubscriptions()->where('channel_id', $user->id)->exists();
     }
 
     public function canEditVideo(): bool

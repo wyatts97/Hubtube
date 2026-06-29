@@ -220,7 +220,7 @@ class SettingsController extends Controller
             // Clean up related records (comments, likes, subscriptions, etc.)
             $user->comments()->delete();
             $user->likes()->delete();
-            $user->subscriptions()->delete();
+            $user->channelSubscriptions()->delete();
             $user->playlists()->delete();
             $user->notifications()->delete();
             $user->walletTransactions()->delete();

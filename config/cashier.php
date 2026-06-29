@@ -7,7 +7,11 @@ use App\Models\User;
 return [
     'key' => null,
     'secret' => null,
-    'webhook_secret' => null,
+    'webhook' => [
+        'secret' => null,
+        'tolerance' => env('STRIPE_WEBHOOK_TOLERANCE', 300),
+        'events' => null,
+    ],
     'currency' => env('CASHIER_CURRENCY', 'usd'),
     'currency_locale' => env('CASHIER_CURRENCY_LOCALE', 'en'),
     'stripe_model' => User::class,

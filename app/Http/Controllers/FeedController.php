@@ -12,7 +12,7 @@ class FeedController extends Controller
     public function __invoke(Request $request): Response
     {
         $subscribedChannelIds = $request->user()
-            ->subscriptions()
+            ->channelSubscriptions()
             ->pluck('channel_id');
 
         $videos = Video::query()
