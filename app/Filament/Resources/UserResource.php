@@ -90,17 +90,24 @@ class UserResource extends Resource
 
                 Section::make('Account Status')
                     ->schema([
-                        Toggle::make('is_verified')
-                            ->label('Verified'),
-                        Toggle::make('is_pro')
-                            ->label('Pro User'),
-                        Toggle::make('is_admin')
-                            ->label('Administrator'),
+                        Section::make('Roles')
+                            ->schema([
+                                Toggle::make('is_verified')
+                                    ->label('Verified'),
+                                Toggle::make('is_pro')
+                                    ->label('Pro User'),
+                                Toggle::make('is_admin')
+                                    ->label('Administrator'),
+                            ])->columns(3)
+                            ->columnSpanFull()
+                            ->compact(),
                         TextInput::make('wallet_balance')
+                            ->label('Wallet Balance')
                             ->numeric()
                             ->prefix('$')
-                            ->disabled(),
-                    ])->columns(4),
+                            ->disabled()
+                            ->columnSpan(1),
+                    ])->columns(1),
             ]);
     }
 

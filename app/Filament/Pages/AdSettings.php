@@ -27,8 +27,8 @@ class AdSettings extends Page implements HasForms
 
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-currency-dollar';
     protected static ?string $navigationLabel = 'Ad Settings';
-    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
-    protected static ?int $navigationSort = 2;
+    protected static string | \UnitEnum | null $navigationGroup = 'Monetization';
+    protected static ?int $navigationSort = 4;
     protected string $view = 'filament.pages.ad-settings';
 
     public ?array $data = [];
