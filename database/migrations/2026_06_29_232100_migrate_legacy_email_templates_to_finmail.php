@@ -102,9 +102,30 @@ return new class extends Migration
             return;
         }
 
-        Schema::table($childTable, function (Blueprint $table) use ($column, $parentTable, $onDelete) {
-            $table->foreign($column)->references('id')->on($parentTable)->{$onDelete}();
+        $constraintName = "{$childTable}_{$column}_foreign";
+
+        if (! $this->foreignKeyExists($constraintName, $childTable)) {
+            Schema::table($childTable, function (Blueprint $table) use ($column, $parentTable, $onDelete, $constraintName) {
+                $table->foreign($column, $constraintName)->references('id')->on($parentTable)->{$onDelete}();
+            });
+            return;
+        }
+
+        // Constraint exists; drop it and re-add it because the referenced table was rebuilt.
+        Schema::table($childTable, function (Blueprint $table) use ($column, $parentTable, $onDelete, $constraintName) {
+            $table->dropForeign([$constraintName]);
+            $table->foreign($column, $constraintName)->references('id')->on($parentTable)->{$onDelete}();
         });
+    }
+
+    protected function foreignKeyExists(string $constraintName, string $table): bool
+    {
+        return DB::table('information_schema.table_constraints')
+            ->where('constraint_schema', DB::getDatabaseName())
+            ->where('table_name', $table)
+            ->where('constraint_name', $constraintName)
+            ->where('constraint_type', 'FOREIGN KEY')
+            ->exists();
     }
 
     public function down(): void
