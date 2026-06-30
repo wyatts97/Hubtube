@@ -486,6 +486,56 @@ class Video extends Model
     }
 
     /**
+     * Find all videos that reference the given file path in any stored path column.
+     */
+    public static function findByFilePath(string $path): array
+    {
+        $results = [];
+        $fields = ['video_path', 'thumbnail', 'preview_path', 'trailer_path', 'scrubber_vtt_path'];
+
+        $videos = static::query()
+            ->where(function ($query) use ($fields, $path) {
+                foreach ($fields as $field) {
+                    $query->orWhere($field, $path);
+                }
+            })
+            ->get();
+
+        foreach ($videos as $video) {
+            foreach ($fields as $field) {
+                if ($video->{$field} === $path) {
+                    $results[] = [
+                        'model' => 'Video',
+                        'id' => $video->id,
+                        'field' => $field,
+                        'record' => $video,
+                    ];
+                }
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Update stored paths that match $oldPath to $newPath.
+     */
+    public static function updateFilePath(string $oldPath, string $newPath): int
+    {
+        $count = 0;
+
+        foreach (static::findByFilePath($oldPath) as $match) {
+            $record = $match['record'];
+            $field = $match['field'];
+            $record->{$field} = $newPath;
+            $record->saveQuietly();
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
      * Get all available thumbnail URLs for this video (generated during processing).
      */
     public function getAvailableThumbnails(): array

@@ -113,6 +113,60 @@ class Image extends Model
         return $query->where('is_approved', true);
     }
 
+    /**
+     * Find all images that reference the given file path in file_path or thumbnail_path.
+     */
+    public static function findByFilePath(string $path): array
+    {
+        $results = [];
+
+        $images = static::query()
+            ->where(function ($query) use ($path) {
+                $query->where('file_path', $path)
+                    ->orWhere('thumbnail_path', $path);
+            })
+            ->get();
+
+        foreach ($images as $image) {
+            if ($image->file_path === $path) {
+                $results[] = [
+                    'model' => 'Image',
+                    'id' => $image->id,
+                    'field' => 'file_path',
+                    'record' => $image,
+                ];
+            }
+            if ($image->thumbnail_path === $path) {
+                $results[] = [
+                    'model' => 'Image',
+                    'id' => $image->id,
+                    'field' => 'thumbnail_path',
+                    'record' => $image,
+                ];
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Update stored paths that match $oldPath to $newPath.
+     */
+    public static function updateFilePath(string $oldPath, string $newPath): int
+    {
+        $count = 0;
+
+        foreach (static::findByFilePath($oldPath) as $match) {
+            $record = $match['record'];
+            $field = $match['field'];
+            $record->{$field} = $newPath;
+            $record->saveQuietly();
+            $count++;
+        }
+
+        return $count;
+    }
+
     public function isAccessibleBy(?User $user): bool
     {
         if ($this->privacy === 'public') {
