@@ -6,7 +6,6 @@ use Filament\Schemas\Schema;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Tables\Columns\TextColumn;
-use PtPlugins\FilamentCollapsibleColumnGroup\CollapsibleColumnGroup;
 use Filament\Tables\Filters\Filter;
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
@@ -74,36 +73,24 @@ class TagResource extends Resource
     {
         return $table
             ->columns([
-                CollapsibleColumnGroup::make('Tag Info')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('name')
-                            ->searchable()
-                            ->sortable(),
-                        TextColumn::make('slug')
-                            ->searchable()
-                            ->sortable(),
-                    ]),
+                TextColumn::make('name')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('slug')
+                    ->searchable()
+                    ->sortable(),
 
-                CollapsibleColumnGroup::make('Metrics')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('videos_count')
-                            ->label('Videos')
-                            ->sortable(),
-                        TextColumn::make('usage_count')
-                            ->label('Usage')
-                            ->sortable(),
-                    ]),
+                TextColumn::make('videos_count')
+                    ->label('Videos')
+                    ->sortable(),
+                TextColumn::make('usage_count')
+                    ->label('Usage')
+                    ->sortable(),
 
-                CollapsibleColumnGroup::make('Dates')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('updated_at')
-                            ->dateTime()
-                            ->label('Updated')
-                            ->sortable(),
-                    ]),
+                TextColumn::make('updated_at')
+                    ->dateTime()
+                    ->label('Updated')
+                    ->sortable(),
             ])
             ->filters([
                 Filter::make('high_usage')

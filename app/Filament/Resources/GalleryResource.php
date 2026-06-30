@@ -9,7 +9,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
-use PtPlugins\FilamentCollapsibleColumnGroup\CollapsibleColumnGroup;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
@@ -26,7 +25,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
-
 
 class GalleryResource extends Resource
 {
@@ -81,68 +79,52 @@ class GalleryResource extends Resource
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
-                CollapsibleColumnGroup::make('Gallery Info')
-                    ->collapsible()
-                    ->columns([
-                        ImageColumn::make('cover_display')
-                            ->label('Cover')
-                            ->getStateUsing(fn (Gallery $record): ?string => $record->cover_url)
-                            ->height(50)
-                            ->width(50)
-                            ->extraImgAttributes(['class' => 'rounded object-cover']),
-                        TextColumn::make('title')
-                            ->searchable()
-                            ->sortable()
-                            ->weight('bold')
-                            ->limit(50),
-                        TextColumn::make('user.username')
-                            ->label('Owner')
-                            ->searchable()
-                            ->sortable()
-                            ->icon('phosphor-user')
-                            ->size('sm'),
-                    ]),
+                ImageColumn::make('cover_display')
+                    ->label('Cover')
+                    ->getStateUsing(fn (Gallery $record): ?string => $record->cover_url)
+                    ->height(50)
+                    ->width(50)
+                    ->extraImgAttributes(['class' => 'rounded object-cover']),
+                TextColumn::make('title')
+                    ->searchable()
+                    ->sortable()
+                    ->weight('bold')
+                    ->limit(50),
+                TextColumn::make('user.username')
+                    ->label('Owner')
+                    ->searchable()
+                    ->sortable()
+                    ->icon('phosphor-user')
+                    ->size('sm'),
 
-                CollapsibleColumnGroup::make('Metrics')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('images_count')
-                            ->label('Images')
-                            ->numeric()
-                            ->sortable()
-                            ->icon('phosphor-image')
-                            ->iconColor('gray'),
-                        TextColumn::make('views_count')
-                            ->label('Views')
-                            ->numeric()
-                            ->sortable()
-                            ->icon('phosphor-eye')
-                            ->iconColor('gray'),
-                    ]),
+                TextColumn::make('images_count')
+                    ->label('Images')
+                    ->numeric()
+                    ->sortable()
+                    ->icon('phosphor-image')
+                    ->iconColor('gray'),
+                TextColumn::make('views_count')
+                    ->label('Views')
+                    ->numeric()
+                    ->sortable()
+                    ->icon('phosphor-eye')
+                    ->iconColor('gray'),
 
-                CollapsibleColumnGroup::make('Status')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('privacy')
-                            ->badge()
-                            ->color(fn (string $state): string => match ($state) {
-                                'public' => 'success',
-                                'unlisted' => 'warning',
-                                'private' => 'danger',
-                                default => 'gray',
-                            }),
-                    ]),
+                TextColumn::make('privacy')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'public' => 'success',
+                        'unlisted' => 'warning',
+                        'private' => 'danger',
+                        default => 'gray',
+                    }),
 
-                CollapsibleColumnGroup::make('Dates')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('created_at')
-                            ->label('Created')
-                            ->since()
-                            ->sortable()
-                            ->size('sm')
-                            ->color('gray'),
-                    ]),
+                TextColumn::make('created_at')
+                    ->label('Created')
+                    ->since()
+                    ->sortable()
+                    ->size('sm')
+                    ->color('gray'),
             ])
             ->filters([
                 SelectFilter::make('privacy')

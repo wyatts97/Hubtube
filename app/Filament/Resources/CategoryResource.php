@@ -11,7 +11,6 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
-use PtPlugins\FilamentCollapsibleColumnGroup\CollapsibleColumnGroup;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
@@ -27,7 +26,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
-
 
 class CategoryResource extends Resource
 {
@@ -76,34 +74,22 @@ class CategoryResource extends Resource
     {
         return $table
             ->columns([
-                CollapsibleColumnGroup::make('Category Info')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('name')
-                            ->searchable()
-                            ->sortable(),
-                        TextColumn::make('slug')
-                            ->searchable(),
-                        TextColumn::make('parent.name')
-                            ->label('Parent'),
-                    ]),
+                TextColumn::make('name')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('slug')
+                    ->searchable(),
+                TextColumn::make('parent.name')
+                    ->label('Parent'),
 
-                CollapsibleColumnGroup::make('Status')
-                    ->collapsible()
-                    ->columns([
-                        IconColumn::make('is_active')
-                            ->boolean(),
-                        TextColumn::make('sort_order')
-                            ->sortable(),
-                    ]),
+                IconColumn::make('is_active')
+                    ->boolean(),
+                TextColumn::make('sort_order')
+                    ->sortable(),
 
-                CollapsibleColumnGroup::make('Metrics')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('videos_count')
-                            ->counts('videos')
-                            ->label('Videos'),
-                    ]),
+                TextColumn::make('videos_count')
+                    ->counts('videos')
+                    ->label('Videos'),
             ])
             ->filters([
                 TernaryFilter::make('is_active'),

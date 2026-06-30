@@ -12,7 +12,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
-use PtPlugins\FilamentCollapsibleColumnGroup\CollapsibleColumnGroup;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Enums\FiltersLayout;
@@ -33,7 +32,6 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-
 
 class ImageResource extends Resource
 {
@@ -124,38 +122,30 @@ class ImageResource extends Resource
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
-                CollapsibleColumnGroup::make('Image Info')
-                    ->collapsible()
-                    ->columns([
-                        ImageColumn::make('thumbnail_display')
-                            ->label('Preview')
-                            ->getStateUsing(fn (Image $record): ?string => $record->thumbnail_url)
-                            ->height(50)
-                            ->width(50)
-                            ->extraImgAttributes(['class' => 'rounded object-cover']),
-                        TextColumn::make('title')
-                            ->searchable()
-                            ->sortable()
-                            ->weight('bold')
-                            ->limit(50)
-                            ->placeholder('Untitled'),
-                        TextColumn::make('user.username')
-                            ->label('Uploader')
-                            ->searchable()
-                            ->sortable()
-                            ->icon('phosphor-user')
-                            ->size('sm'),
-                    ]),
+                ImageColumn::make('thumbnail_display')
+                    ->label('Preview')
+                    ->getStateUsing(fn (Image $record): ?string => $record->thumbnail_url)
+                    ->height(50)
+                    ->width(50)
+                    ->extraImgAttributes(['class' => 'rounded object-cover']),
+                TextColumn::make('title')
+                    ->searchable()
+                    ->sortable()
+                    ->weight('bold')
+                    ->limit(50)
+                    ->placeholder('Untitled'),
+                TextColumn::make('user.username')
+                    ->label('Uploader')
+                    ->searchable()
+                    ->sortable()
+                    ->icon('phosphor-user')
+                    ->size('sm'),
 
-                CollapsibleColumnGroup::make('Technical')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('mime_type')
-                            ->label('Type')
-                            ->size('sm')
-                            ->badge()
-                            ->color('gray'),
-                    ]),
+                TextColumn::make('mime_type')
+                    ->label('Type')
+                    ->size('sm')
+                    ->badge()
+                    ->color('gray'),
 
                 TextColumn::make('dimensions')
                     ->label('Size')
@@ -163,17 +153,13 @@ class ImageResource extends Resource
                     ->size('sm')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                CollapsibleColumnGroup::make('Status')
-                    ->collapsible()
-                    ->columns([
-                        IconColumn::make('is_approved')
-                            ->boolean()
-                            ->label('Approved')
-                            ->trueIcon('phosphor-check-circle')
-                            ->falseIcon('phosphor-x-circle')
-                            ->trueColor('success')
-                            ->falseColor('danger'),
-                    ]),
+                IconColumn::make('is_approved')
+                    ->boolean()
+                    ->label('Approved')
+                    ->trueIcon('phosphor-check-circle')
+                    ->falseIcon('phosphor-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('danger'),
 
                 IconColumn::make('is_animated')
                     ->boolean()
@@ -194,16 +180,12 @@ class ImageResource extends Resource
                     })
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                CollapsibleColumnGroup::make('Metrics')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('views_count')
-                            ->label('Views')
-                            ->numeric()
-                            ->sortable()
-                            ->icon('phosphor-eye')
-                            ->iconColor('gray'),
-                    ]),
+                TextColumn::make('views_count')
+                    ->label('Views')
+                    ->numeric()
+                    ->sortable()
+                    ->icon('phosphor-eye')
+                    ->iconColor('gray'),
 
                 TextColumn::make('file_size')
                     ->label('File Size')
@@ -211,16 +193,12 @@ class ImageResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                CollapsibleColumnGroup::make('Dates')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('created_at')
-                            ->label('Uploaded')
-                            ->since()
-                            ->sortable()
-                            ->size('sm')
-                            ->color('gray'),
-                    ]),
+                TextColumn::make('created_at')
+                    ->label('Uploaded')
+                    ->since()
+                    ->sortable()
+                    ->size('sm')
+                    ->color('gray'),
             ])
             ->filters([
                 TernaryFilter::make('is_approved')

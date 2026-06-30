@@ -13,7 +13,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
-use PtPlugins\FilamentCollapsibleColumnGroup\CollapsibleColumnGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -27,7 +26,6 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-
 
 class SponsoredCardResource extends Resource
 {
@@ -175,84 +173,68 @@ class SponsoredCardResource extends Resource
     {
         return $table
             ->columns([
-                CollapsibleColumnGroup::make('Ad Info')
-                    ->collapsible()
-                    ->columns([
-                        ImageColumn::make('thumb_display')
-                            ->label('Thumb')
-                            ->getStateUsing(function ($record): ?string {
-                                $thumb = $record->thumbnail_url;
-                                if (!$thumb) return null;
-                                // External URL — Filament uses it directly (bypasses disk resolution)
-                                if (str_starts_with($thumb, 'http://') || str_starts_with($thumb, 'https://')) {
-                                    return $thumb;
-                                }
-                                // Strip any accidental /storage/ prefix so Filament resolves via disk correctly
-                                if (str_starts_with($thumb, '/storage/')) {
-                                    return substr($thumb, 9);
-                                }
-                                return $thumb;
-                            })
-                            ->disk('public')
-                            ->square()
-                            ->size(60)
-                            ->defaultImageUrl(url('/images/placeholder.jpg')),
-                        TextColumn::make('title')
-                            ->searchable()
-                            ->weight('bold')
-                            ->limit(40),
-                        TextColumn::make('click_url')
-                            ->label('URL')
-                            ->limit(30)
-                            ->color('gray')
-                            ->copyable(),
-                    ]),
+                ImageColumn::make('thumb_display')
+                    ->label('Thumb')
+                    ->getStateUsing(function ($record): ?string {
+                        $thumb = $record->thumbnail_url;
+                        if (!$thumb) return null;
+                        // External URL — Filament uses it directly (bypasses disk resolution)
+                        if (str_starts_with($thumb, 'http://') || str_starts_with($thumb, 'https://')) {
+                            return $thumb;
+                        }
+                        // Strip any accidental /storage/ prefix so Filament resolves via disk correctly
+                        if (str_starts_with($thumb, '/storage/')) {
+                            return substr($thumb, 9);
+                        }
+                        return $thumb;
+                    })
+                    ->disk('public')
+                    ->square()
+                    ->size(60)
+                    ->defaultImageUrl(url('/images/placeholder.jpg')),
+                TextColumn::make('title')
+                    ->searchable()
+                    ->weight('bold')
+                    ->limit(40),
+                TextColumn::make('click_url')
+                    ->label('URL')
+                    ->limit(30)
+                    ->color('gray')
+                    ->copyable(),
 
-                CollapsibleColumnGroup::make('Targeting')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('target_pages')
-                            ->label('Pages')
-                            ->formatStateUsing(function ($state): string {
-                                if (empty($state) || !is_array($state)) return 'All';
-                                return implode(', ', array_map('ucfirst', $state));
-                            })
-                            ->badge()
-                            ->color('gray'),
-                        TextColumn::make('frequency')
-                            ->label('Every N')
-                            ->alignCenter(),
-                        TextColumn::make('weight')
-                            ->alignCenter(),
-                    ]),
+                TextColumn::make('target_pages')
+                    ->label('Pages')
+                    ->formatStateUsing(function ($state): string {
+                        if (empty($state) || !is_array($state)) return 'All';
+                        return implode(', ', array_map('ucfirst', $state));
+                    })
+                    ->badge()
+                    ->color('gray'),
+                TextColumn::make('frequency')
+                    ->label('Every N')
+                    ->alignCenter(),
+                TextColumn::make('weight')
+                    ->alignCenter(),
 
-                CollapsibleColumnGroup::make('Performance')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('clicks_count')
-                            ->label('Clicks')
-                            ->numeric()
-                            ->sortable()
-                            ->alignCenter(),
-                    ]),
+                TextColumn::make('clicks_count')
+                    ->label('Clicks')
+                    ->numeric()
+                    ->sortable()
+                    ->alignCenter(),
 
-                CollapsibleColumnGroup::make('Status')
-                    ->collapsible()
-                    ->columns([
-                        IconColumn::make('is_active')
-                            ->label('Active')
-                            ->boolean(),
-                        TextColumn::make('price')
-                            ->money('USD')
-                            ->sortable()
-                            ->toggleable(),
-                        TextColumn::make('ribbon_text')
-                            ->label('Ribbon')
-                            ->badge()
-                            ->color('danger')
-                            ->formatStateUsing(fn ($state) => $state ? "Featured {$state}" : null)
-                            ->toggleable(),
-                    ]),
+                IconColumn::make('is_active')
+                    ->label('Active')
+                    ->boolean(),
+                TextColumn::make('price')
+                    ->money('USD')
+                    ->sortable()
+                    ->toggleable(),
+                TextColumn::make('ribbon_text')
+                    ->label('Ribbon')
+                    ->badge()
+                    ->color('danger')
+                    ->formatStateUsing(fn ($state) => $state ? "Featured {$state}" : null)
+                    ->toggleable(),
 
                 TextColumn::make('created_at')
                     ->dateTime('M j, Y')

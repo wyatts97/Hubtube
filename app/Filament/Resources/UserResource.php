@@ -12,7 +12,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
-use PtPlugins\FilamentCollapsibleColumnGroup\CollapsibleColumnGroup;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -30,7 +29,6 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
-
 
 class UserResource extends Resource
 {
@@ -116,81 +114,58 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
-                CollapsibleColumnGroup::make('User Info')
-                    ->collapsible()
-                    ->columns([
-                        ImageColumn::make('avatar')
-                            ->circular()
-                            ->getStateUsing(function ($record) {
-                                $avatar = $record->avatar;
-                                if (!$avatar) {
-                                    return null;
-                                }
-                                // If it's already a full URL, return as-is
-                                if (str_starts_with($avatar, 'http')) {
-                                    return $avatar;
-                                }
-                                // If it's a relative path like /storage/..., make it absolute
-                                return url($avatar);
-                            })
-                            ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->username ?? '?') . '&background=6366f1&color=fff&size=80'),
-                        TextColumn::make('username')
-                            ->searchable()
-                            ->sortable(),
-                        TextColumn::make('email')
-                            ->searchable()
-                            ->sortable(),
-                    ]),
+                ImageColumn::make('avatar')
+                    ->circular()
+                    ->getStateUsing(function ($record) {
+                        $avatar = $record->avatar;
+                        if (!$avatar) {
+                            return null;
+                        }
+                        // If it's already a full URL, return as-is
+                        if (str_starts_with($avatar, 'http')) {
+                            return $avatar;
+                        }
+                        // If it's a relative path like /storage/..., make it absolute
+                        return url($avatar);
+                    })
+                    ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->username ?? '?') . '&background=6366f1&color=fff&size=80'),
+                TextColumn::make('username')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('email')
+                    ->searchable()
+                    ->sortable(),
 
-                CollapsibleColumnGroup::make('Status')
-                    ->collapsible()
-                    ->columns([
-                        IconColumn::make('is_verified')
-                            ->boolean()
-                            ->label('Verified'),
-                        IconColumn::make('is_pro')
-                            ->boolean()
-                            ->label('Pro'),
-                        IconColumn::make('is_admin')
-                            ->boolean()
-                            ->label('Admin'),
-                    ]),
+                IconColumn::make('is_verified')
+                    ->boolean()
+                    ->label('Verified'),
+                IconColumn::make('is_pro')
+                    ->boolean()
+                    ->label('Pro'),
+                IconColumn::make('is_admin')
+                    ->boolean()
+                    ->label('Admin'),
 
-                CollapsibleColumnGroup::make('Metrics')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('videos_count')
-                            ->counts('videos')
-                            ->label('Videos')
-                            ->numeric()
-                            ->sortable()
-                            ->icon('phosphor-video-camera')
-                            ->iconColor('gray'),
-                    ]),
+                TextColumn::make('videos_count')
+                    ->counts('videos')
+                    ->label('Videos')
+                    ->numeric()
+                    ->sortable()
+                    ->icon('phosphor-video-camera')
+                    ->iconColor('gray'),
 
                 TextColumn::make('wallet_balance')
                     ->money('USD')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                CollapsibleColumnGroup::make('Dates')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('created_at')
-                            ->label('Joined')
-                            ->since()
-                            ->sortable()
-                            ->size('sm')
-                            ->color('gray')
-                            ->tooltip(fn (User $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
-                        TextColumn::make('created_at')
-                            ->label('Joined')
-                            ->since()
-                            ->sortable()
-                            ->size('sm')
-                            ->color('gray')
-                            ->tooltip(fn (User $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
-                    ]),
+                TextColumn::make('created_at')
+                    ->label('Joined')
+                    ->since()
+                    ->sortable()
+                    ->size('sm')
+                    ->color('gray')
+                    ->tooltip(fn (User $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
 
                 TextColumn::make('updated_at')
                     ->label('Last Active')

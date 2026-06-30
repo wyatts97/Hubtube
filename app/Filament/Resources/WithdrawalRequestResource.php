@@ -11,7 +11,6 @@ use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\TextColumn;
-use PtPlugins\FilamentCollapsibleColumnGroup\CollapsibleColumnGroup;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -26,7 +25,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
-
 
 class WithdrawalRequestResource extends Resource
 {
@@ -107,50 +105,34 @@ class WithdrawalRequestResource extends Resource
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
-                CollapsibleColumnGroup::make('Request')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('id')
-                            ->sortable(),
-                        TextColumn::make('user.username')
-                            ->label('User')
-                            ->searchable(),
-                    ]),
+                TextColumn::make('id')
+                    ->sortable(),
+                TextColumn::make('user.username')
+                    ->label('User')
+                    ->searchable(),
 
-                CollapsibleColumnGroup::make('Payment')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('amount')
-                            ->money('USD')
-                            ->sortable(),
-                        TextColumn::make('payment_method')
-                            ->badge(),
-                    ]),
+                TextColumn::make('amount')
+                    ->money('USD')
+                    ->sortable(),
+                TextColumn::make('payment_method')
+                    ->badge(),
 
-                CollapsibleColumnGroup::make('Status')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('status')
-                            ->badge()
-                            ->color(fn (string $state): string => match ($state) {
-                                WithdrawalRequest::STATUS_PENDING => 'warning',
-                                WithdrawalRequest::STATUS_PROCESSING => 'info',
-                                WithdrawalRequest::STATUS_COMPLETED => 'success',
-                                WithdrawalRequest::STATUS_REJECTED => 'danger',
-                                default => 'gray',
-                            }),
-                        TextColumn::make('processedBy.username')
-                            ->label('Processed By')
-                            ->placeholder('-'),
-                    ]),
+                TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        WithdrawalRequest::STATUS_PENDING => 'warning',
+                        WithdrawalRequest::STATUS_PROCESSING => 'info',
+                        WithdrawalRequest::STATUS_COMPLETED => 'success',
+                        WithdrawalRequest::STATUS_REJECTED => 'danger',
+                        default => 'gray',
+                    }),
+                TextColumn::make('processedBy.username')
+                    ->label('Processed By')
+                    ->placeholder('-'),
 
-                CollapsibleColumnGroup::make('Dates')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('created_at')
-                            ->dateTime()
-                            ->sortable(),
-                    ]),
+                TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('status')
