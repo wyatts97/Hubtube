@@ -254,14 +254,10 @@ class SponsoredCardResource extends Resource
                             ->toggleable(),
                     ]),
 
-                CollapsibleColumnGroup::make('Dates')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('created_at')
-                            ->dateTime('M j, Y')
-                            ->sortable()
-                            ->toggleable(isToggledHiddenByDefault: true),
-                    ]),
+                TextColumn::make('created_at')
+                    ->dateTime('M j, Y')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('created_at', 'desc')
             ->recordActions([

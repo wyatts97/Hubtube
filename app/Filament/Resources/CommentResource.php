@@ -118,16 +118,17 @@ class CommentResource extends Resource
                             ->getStateUsing(fn (Comment $record): string => $record->is_approved ? 'Approved' : 'Pending')
                             ->color(fn (string $state): string => $state === 'Approved' ? 'success' : 'warning')
                             ->icon(fn (string $state): string => $state === 'Approved' ? 'phosphor-check-circle' : 'phosphor-clock'),
-                        IconColumn::make('is_pinned')
-                            ->label('Pinned')
-                            ->alignCenter()
-                            ->boolean()
-                            ->trueIcon('phosphor-bookmark')
-                            ->falseIcon('phosphor-bookmark')
-                            ->trueColor('warning')
-                            ->falseColor('gray')
-                            ->toggleable(isToggledHiddenByDefault: true),
                     ]),
+
+                IconColumn::make('is_pinned')
+                    ->label('Pinned')
+                    ->alignCenter()
+                    ->boolean()
+                    ->trueIcon('phosphor-bookmark')
+                    ->falseIcon('phosphor-bookmark')
+                    ->trueColor('warning')
+                    ->falseColor('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 CollapsibleColumnGroup::make('Metrics')
                     ->collapsible()

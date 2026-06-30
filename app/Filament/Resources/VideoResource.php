@@ -326,13 +326,14 @@ class VideoResource extends Resource
                             ->icon('phosphor-user')
                             ->size('sm'),
 
-                        TextColumn::make('category.name')
-                            ->label('Category')
-                            ->sortable()
-                            ->size('sm')
-                            ->placeholder('—')
-                            ->toggleable(isToggledHiddenByDefault: true),
                     ]),
+
+                TextColumn::make('category.name')
+                    ->label('Category')
+                    ->sortable()
+                    ->size('sm')
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 CollapsibleColumnGroup::make('Status')
                     ->collapsible()
@@ -361,26 +362,27 @@ class VideoResource extends Resource
                                 default => 'gray',
                             }),
 
-                        IconColumn::make('is_approved')
-                            ->boolean()
-                            ->label('Approved')
-                            ->alignCenter()
-                            ->trueIcon('phosphor-check-circle')
-                            ->falseIcon('phosphor-clock')
-                            ->trueColor('success')
-                            ->falseColor('warning')
-                            ->toggleable(isToggledHiddenByDefault: true),
-
-                        IconColumn::make('is_featured')
-                            ->boolean()
-                            ->label('Featured')
-                            ->alignCenter()
-                            ->trueIcon('phosphor-star')
-                            ->falseIcon('phosphor-star')
-                            ->trueColor('warning')
-                            ->falseColor('gray')
-                            ->toggleable(isToggledHiddenByDefault: true),
                     ]),
+
+                IconColumn::make('is_approved')
+                    ->boolean()
+                    ->label('Approved')
+                    ->alignCenter()
+                    ->trueIcon('phosphor-check-circle')
+                    ->falseIcon('phosphor-clock')
+                    ->trueColor('success')
+                    ->falseColor('warning')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                IconColumn::make('is_featured')
+                    ->boolean()
+                    ->label('Featured')
+                    ->alignCenter()
+                    ->trueIcon('phosphor-star')
+                    ->falseIcon('phosphor-star')
+                    ->trueColor('warning')
+                    ->falseColor('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 CollapsibleColumnGroup::make('Metrics')
                     ->collapsible()
@@ -401,12 +403,21 @@ class VideoResource extends Resource
                             ->iconColor('gray')
                             ->toggleable(isToggledHiddenByDefault: true),
 
-                        TextColumn::make('size')
-                            ->label('Size')
-                            ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—')
-                            ->sortable()
-                            ->toggleable(isToggledHiddenByDefault: true),
                     ]),
+
+                TextColumn::make('likes_count')
+                    ->label('Likes')
+                    ->numeric()
+                    ->sortable()
+                    ->icon('phosphor-thumbs-up')
+                    ->iconColor('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('size')
+                    ->label('Size')
+                    ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 CollapsibleColumnGroup::make('Dates')
                     ->collapsible()

@@ -109,24 +109,26 @@ class ContactMessageResource extends Resource
                             ->searchable()
                             ->sortable()
                             ->weight(fn (ContactMessage $record) => $record->is_read ? 'normal' : 'bold'),
-                        TextColumn::make('email')
-                            ->searchable()
-                            ->sortable()
-                            ->icon('phosphor-envelope')
-                            ->size('sm')
-                            ->copyable()
-                            ->toggleable(isToggledHiddenByDefault: true),
                         TextColumn::make('subject')
                             ->searchable()
                             ->limit(50)
                             ->placeholder('(no subject)')
                             ->weight(fn (ContactMessage $record) => $record->is_read ? 'normal' : 'bold'),
-                        TextColumn::make('message')
-                            ->limit(60)
-                            ->size('sm')
-                            ->color('gray')
-                            ->toggleable(isToggledHiddenByDefault: true),
                     ]),
+
+                TextColumn::make('email')
+                    ->searchable()
+                    ->sortable()
+                    ->icon('phosphor-envelope')
+                    ->size('sm')
+                    ->copyable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('message')
+                    ->limit(60)
+                    ->size('sm')
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 CollapsibleColumnGroup::make('Dates')
                     ->collapsible()

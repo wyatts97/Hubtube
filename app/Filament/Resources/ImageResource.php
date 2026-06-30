@@ -155,12 +155,13 @@ class ImageResource extends Resource
                             ->size('sm')
                             ->badge()
                             ->color('gray'),
-                        TextColumn::make('dimensions')
-                            ->label('Size')
-                            ->getStateUsing(fn (Image $record): string => "{$record->width}×{$record->height}")
-                            ->size('sm')
-                            ->toggleable(isToggledHiddenByDefault: true),
                     ]),
+
+                TextColumn::make('dimensions')
+                    ->label('Size')
+                    ->getStateUsing(fn (Image $record): string => "{$record->width}×{$record->height}")
+                    ->size('sm')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 CollapsibleColumnGroup::make('Status')
                     ->collapsible()
@@ -172,24 +173,26 @@ class ImageResource extends Resource
                             ->falseIcon('phosphor-x-circle')
                             ->trueColor('success')
                             ->falseColor('danger'),
-                        IconColumn::make('is_animated')
-                            ->boolean()
-                            ->label('Animated')
-                            ->trueIcon('phosphor-gif')
-                            ->falseIcon('phosphor-minus')
-                            ->trueColor('info')
-                            ->falseColor('gray')
-                            ->toggleable(isToggledHiddenByDefault: true),
-                        TextColumn::make('privacy')
-                            ->badge()
-                            ->color(fn (string $state): string => match ($state) {
-                                'public' => 'success',
-                                'unlisted' => 'warning',
-                                'private' => 'danger',
-                                default => 'gray',
-                            })
-                            ->toggleable(isToggledHiddenByDefault: true),
                     ]),
+
+                IconColumn::make('is_animated')
+                    ->boolean()
+                    ->label('Animated')
+                    ->trueIcon('phosphor-gif')
+                    ->falseIcon('phosphor-minus')
+                    ->trueColor('info')
+                    ->falseColor('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('privacy')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'public' => 'success',
+                        'unlisted' => 'warning',
+                        'private' => 'danger',
+                        default => 'gray',
+                    })
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 CollapsibleColumnGroup::make('Metrics')
                     ->collapsible()
@@ -200,12 +203,13 @@ class ImageResource extends Resource
                             ->sortable()
                             ->icon('phosphor-eye')
                             ->iconColor('gray'),
-                        TextColumn::make('file_size')
-                            ->label('File Size')
-                            ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—')
-                            ->sortable()
-                            ->toggleable(isToggledHiddenByDefault: true),
                     ]),
+
+                TextColumn::make('file_size')
+                    ->label('File Size')
+                    ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 CollapsibleColumnGroup::make('Dates')
                     ->collapsible()

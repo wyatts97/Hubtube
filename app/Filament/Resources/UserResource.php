@@ -166,11 +166,12 @@ class UserResource extends Resource
                             ->sortable()
                             ->icon('phosphor-video-camera')
                             ->iconColor('gray'),
-                        TextColumn::make('wallet_balance')
-                            ->money('USD')
-                            ->sortable()
-                            ->toggleable(isToggledHiddenByDefault: true),
                     ]),
+
+                TextColumn::make('wallet_balance')
+                    ->money('USD')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 CollapsibleColumnGroup::make('Dates')
                     ->collapsible()
@@ -182,14 +183,22 @@ class UserResource extends Resource
                             ->size('sm')
                             ->color('gray')
                             ->tooltip(fn (User $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
-                        TextColumn::make('updated_at')
-                            ->label('Last Active')
+                        TextColumn::make('created_at')
+                            ->label('Joined')
                             ->since()
                             ->sortable()
                             ->size('sm')
                             ->color('gray')
-                            ->toggleable(isToggledHiddenByDefault: true),
+                            ->tooltip(fn (User $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
                     ]),
+
+                TextColumn::make('updated_at')
+                    ->label('Last Active')
+                    ->since()
+                    ->sortable()
+                    ->size('sm')
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 TernaryFilter::make('is_verified'),

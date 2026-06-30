@@ -129,14 +129,10 @@ class ChannelResource extends Resource
                             ->boolean(),
                     ]),
 
-                CollapsibleColumnGroup::make('Dates')
-                    ->collapsible()
-                    ->columns([
-                        TextColumn::make('created_at')
-                            ->dateTime()
-                            ->sortable()
-                            ->toggleable(isToggledHiddenByDefault: true),
-                    ]),
+                TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 TernaryFilter::make('is_verified'),
