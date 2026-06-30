@@ -134,14 +134,12 @@
                     </x-filament::input.wrapper>
 
                     {{-- Sort --}}
-                    <x-filament::input.wrapper style="width:140px;">
-                        <x-filament::input.select wire:model.live="sortBy">
-                            <option value="modified">Modified</option>
-                            <option value="name">Name</option>
-                            <option value="size">Size</option>
-                            <option value="type">Type</option>
-                        </x-filament::input.select>
-                    </x-filament::input.wrapper>
+                    <select wire:model.live="sortBy" class="text-sm rounded-md border-none px-3 py-2" style="width:140px;background:#27272a;color:#d4d4d8;">
+                        <option value="modified">Modified</option>
+                        <option value="name">Name</option>
+                        <option value="size">Size</option>
+                        <option value="type">Type</option>
+                    </select>
 
                     <button wire:click="toggleSortDirection" class="p-2 rounded-md" style="background:#27272a;color:#d4d4d8;">
                         @if ($sortDirection === 'asc')
