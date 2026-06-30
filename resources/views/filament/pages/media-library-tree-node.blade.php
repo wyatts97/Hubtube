@@ -5,33 +5,33 @@
 @endphp
 
 <li>
-    <div class="flex items-center gap-1 rounded-md cursor-pointer"
-         style="padding:4px 8px;padding-left:{{ $paddingLeft }}px;background:{{ $isActive ? 'rgba(244,63,94,0.12)' : 'transparent' }};"
+    <div class="ht-folder-row {{ $isActive ? 'ht-folder-row-active' : '' }}"
+         style="padding:4px 8px;padding-left:{{ $paddingLeft }}px;"
          wire:click="$set('currentDirectory', '{{ $node['path'] }}')">
         @if (!empty($node['children']))
-            <button type="button" wire:click.stop="toggleNode('{{ $node['path'] }}')" class="p-0.5 rounded" style="color:#a1a1aa;">
+            <button type="button" wire:click.stop="toggleNode('{{ $node['path'] }}')" style="padding:2px;border-radius:6px;color:#a1a1aa;background:none;border:none;cursor:pointer;">
                 @if ($isExpanded)
-                    <x-phosphor-caret-down class="w-3 h-3" />
+                    <x-phosphor-caret-down style="width:12px;height:12px;" />
                 @else
-                    <x-phosphor-caret-right class="w-3 h-3" />
+                    <x-phosphor-caret-right style="width:12px;height:12px;" />
                 @endif
             </button>
         @else
-            <span class="w-4"></span>
+            <span style="width:16px;"></span>
         @endif
 
         @if ($level === 0)
-            <x-phosphor-hard-drives class="w-4 h-4" style="color:#a1a1aa;" />
+            <x-phosphor-hard-drives style="width:16px;height:16px;color:#a1a1aa;" />
         @else
-            <x-phosphor-folder class="w-4 h-4" style="color:{{ $isActive ? 'var(--color-primary-400)' : '#a1a1aa' }};" />
+            <x-phosphor-folder style="width:16px;height:16px;color:{{ $isActive ? 'var(--color-primary-400)' : '#a1a1aa' }};" />
         @endif
 
-        <span class="text-sm truncate" style="color:{{ $isActive ? '#fff' : '#d4d4d8' }};" title="{{ $node['name'] }}">{{ $node['name'] }}</span>
-        <span class="text-[10px] ml-auto" style="color:#71717a;">{{ $node['count'] }}</span>
+        <span class="ht-text-sm ht-truncate" style="color:{{ $isActive ? '#fff' : '#d4d4d8' }};" title="{{ $node['name'] }}">{{ $node['name'] }}</span>
+        <span class="ht-text-10 ht-ml-auto" style="color:#71717a;">{{ $node['count'] }}</span>
     </div>
 
     @if (!empty($node['children']) && $isExpanded)
-        <ul class="space-y-1 mt-1">
+        <ul style="display:flex;flex-direction:column;gap:4px;list-style:none;margin:4px 0 0 0;padding:0;">
             @foreach ($node['children'] as $child)
                 @include('filament.pages.media-library-tree-node', ['node' => $child, 'level' => $level + 1])
             @endforeach
