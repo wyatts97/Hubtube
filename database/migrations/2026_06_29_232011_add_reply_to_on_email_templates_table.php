@@ -8,14 +8,26 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table(config('fin-mail.table_names.templates') ?? 'email_templates', function (Blueprint $table) {
-            $table->json('reply_to')->nullable()->after('from');
+        $table = config('fin-mail.table_names.templates') ?? 'email_templates';
+
+        if (!Schema::hasTable($table) || Schema::hasColumn($table, 'reply_to')) {
+            return;
+        }
+
+        Schema::table($table, function (Blueprint $table) {
+            $table->json('reply_to')->nullable();
         });
     }
 
     public function down(): void
     {
-        Schema::table(config('fin-mail.table_names.templates') ?? 'email_templates', function (Blueprint $table) {
+        $table = config('fin-mail.table_names.templates') ?? 'email_templates';
+
+        if (!Schema::hasTable($table) || !Schema::hasColumn($table, 'reply_to')) {
+            return;
+        }
+
+        Schema::table($table, function (Blueprint $table) {
             $table->dropColumn('reply_to');
         });
     }

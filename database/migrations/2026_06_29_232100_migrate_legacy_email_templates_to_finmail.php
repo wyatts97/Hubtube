@@ -78,7 +78,33 @@ return new class extends Migration
             DB::table($table)->insert($payload);
         }
 
+        // Re-create foreign key constraints on tables that reference email_templates.
+        $this->restoreForeignKeyConstraint(
+            $table,
+            config('fin-mail.table_names.versions') ?? 'email_template_versions',
+            'email_template_id',
+            'cascadeOnDelete'
+        );
+
+        $this->restoreForeignKeyConstraint(
+            $table,
+            config('fin-mail.table_names.sent') ?? 'sent_emails',
+            'email_template_id',
+            'nullOnDelete'
+        );
+
         Schema::enableForeignKeyConstraints();
+    }
+
+    protected function restoreForeignKeyConstraint(string $parentTable, string $childTable, string $column, string $onDelete): void
+    {
+        if (!Schema::hasTable($childTable) || !Schema::hasColumn($childTable, $column)) {
+            return;
+        }
+
+        Schema::table($childTable, function (Blueprint $table) use ($column, $parentTable, $onDelete) {
+            $table->foreign($column)->references('id')->on($parentTable)->{$onDelete}();
+        });
     }
 
     public function down(): void
