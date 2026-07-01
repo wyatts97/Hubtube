@@ -34,7 +34,7 @@
         @endphp
 
         {{-- Summary Cards --}}
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="ht-summary-grid">
             @foreach ([
                 ['label' => 'Total Videos',   'value' => number_format($summary['total_videos']),      'sub' => '+'.number_format($summary['videos_this_week']).' this week',                         'icon' => 'phosphor-film-strip',              'tint' => 'indigo'],
                 ['label' => 'Total Users',    'value' => number_format($summary['total_users']),       'sub' => '+'.number_format($summary['users_this_week']).' this week',                          'icon' => 'phosphor-users',             'tint' => 'emerald'],

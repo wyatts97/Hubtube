@@ -57,6 +57,13 @@
 }
 
 /* ── Custom: Analytics summary cards ── */
+.ht-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
 .ht-summary-card {
     position: relative;
     display: flex;
@@ -738,7 +745,6 @@
 
 .fi-wi-chart-filter-ctn .fi-input-wrp:focus-within {
     border-color: rgb(99 102 241);
-    ring-width: 0;
 }
 
 .dark .fi-wi-chart-filter-ctn .fi-input-wrp:focus-within {
