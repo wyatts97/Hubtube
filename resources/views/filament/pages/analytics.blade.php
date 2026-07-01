@@ -109,6 +109,8 @@
         @php
             $googleWidgets = $this->getGoogleWidgets();
             $googleEnabled = (bool) \App\Models\Setting::get('google_analytics_enabled', false);
+            $googleTestStatus = \App\Models\Setting::get('google_analytics_last_test_status', '');
+            $googleTestMessage = \App\Models\Setting::get('google_analytics_last_test_message', '');
         @endphp
 
         {{-- Google Analytics configuration form --}}
@@ -116,9 +118,24 @@
             {{ $this->form }}
         </form>
 
+        {{-- Connection test result --}}
+        @if($googleEnabled && $googleTestStatus === 'error' && $googleTestMessage)
+            <div class="rounded-lg border border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-900/20 p-4 mb-6 text-sm text-red-700 dark:text-red-300">
+                <div class="font-semibold mb-1">Google Analytics connection failed</div>
+                <div class="font-mono text-xs">{{ $googleTestMessage }}</div>
+                <div class="mt-2 text-xs">Fix the issue, then re-save the settings above to test again.</div>
+            </div>
+        @endif
+
         {{-- Google Analytics widgets --}}
-        @if($googleEnabled)
+        @if($googleEnabled && count($googleWidgets))
             <x-filament-widgets::widgets :widgets="$googleWidgets" :columns="2" />
+        @elseif($googleEnabled)
+            <div class="ht-panel">
+                <div class="ht-panel__empty">
+                    Save the settings above to test the connection. Once the connection succeeds, the analytics widgets will appear here.
+                </div>
+            </div>
         @else
             <div class="ht-panel">
                 <div class="ht-panel__empty">

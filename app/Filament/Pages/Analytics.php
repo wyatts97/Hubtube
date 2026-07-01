@@ -23,6 +23,8 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Spatie\Analytics\Facades\Analytics as AnalyticsFacade;
+use Spatie\Analytics\Period;
 
 class Analytics extends Page implements HasForms
 {
@@ -119,6 +121,17 @@ class Analytics extends Page implements HasForms
 
     public function getGoogleWidgets(): array
     {
+        // Only render widgets when the integration is enabled and the last
+        // connection test succeeded. This prevents 500 errors from widgets
+        // when the API credentials or permissions are invalid.
+        if (! (bool) Setting::get('google_analytics_enabled', false)) {
+            return [];
+        }
+
+        if (Setting::get('google_analytics_last_test_status', '') !== 'success') {
+            return [];
+        }
+
         return [
             GaWidgets\PageViewsWidget::class,
             GaWidgets\VisitorsWidget::class,
@@ -154,8 +167,9 @@ class Analytics extends Page implements HasForms
     public function save(): void
     {
         $data = $this->form->getState();
+        $enabled = (bool) $data['google_analytics_enabled'];
 
-        Setting::set('google_analytics_enabled', $data['google_analytics_enabled'] ? '1' : '0', 'analytics', 'boolean');
+        Setting::set('google_analytics_enabled', $enabled ? '1' : '0', 'analytics', 'boolean');
         Setting::set('google_analytics_property_id', $data['google_analytics_property_id'] ?? '', 'analytics', 'string');
         Setting::setEncrypted('google_analytics_service_account_json', $data['google_analytics_service_account_json'] ?? '', 'analytics');
 
@@ -167,6 +181,42 @@ class Analytics extends Page implements HasForms
             'google_analytics_property_id',
             'google_analytics_service_account_json',
         ]);
+
+        if ($enabled) {
+            try {
+                // Make a lightweight API call to surface configuration/permission errors.
+                AnalyticsFacade::fetchTotalVisitorsAndPageViews(Period::days(1), 1);
+
+                Setting::set('google_analytics_last_test_status', 'success', 'analytics', 'string');
+                Setting::set('google_analytics_last_test_message', '', 'analytics', 'string');
+                Setting::set('google_analytics_last_test_at', now()->toDateTimeString(), 'analytics', 'string');
+
+                Notification::make()
+                    ->title('Google Analytics connected successfully')
+                    ->success()
+                    ->send();
+
+                return;
+            } catch (\Throwable $e) {
+                report($e);
+
+                Setting::set('google_analytics_last_test_status', 'error', 'analytics', 'string');
+                Setting::set('google_analytics_last_test_message', $e->getMessage(), 'analytics', 'string');
+                Setting::set('google_analytics_last_test_at', now()->toDateTimeString(), 'analytics', 'string');
+
+                Notification::make()
+                    ->title('Google Analytics connection failed')
+                    ->body($e->getMessage())
+                    ->danger()
+                    ->persistent()
+                    ->send();
+
+                return;
+            }
+        }
+
+        Setting::set('google_analytics_last_test_status', '', 'analytics', 'string');
+        Setting::set('google_analytics_last_test_message', '', 'analytics', 'string');
 
         Notification::make()
             ->title('Google Analytics settings saved')
