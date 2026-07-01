@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    {{-- Tab navigation --}}
+    {{-- Tab navigation at the top of the page content --}}
     <div class="ht-analytics-tabs" role="tablist">
         <button
             type="button"
@@ -30,6 +30,7 @@
             $overallCtr = $summary['total_impressions'] > 0
                 ? round(($summary['total_clicks'] / $summary['total_impressions']) * 100, 2)
                 : 0;
+            $localWidgets = $this->getLocalWidgets();
         @endphp
 
         {{-- Summary Cards --}}
@@ -53,13 +54,9 @@
             @endforeach
         </div>
 
-        {{-- Chart widgets are auto-rendered by Filament above the page content
-             via getHeaderWidgets(). Do NOT render them again here — duplicate
-             chart IDs cause ApexCharts 'classList of null' crashes. --}}
-
         {{-- Ad Performance Table --}}
         @if(count($adStats) > 0)
-            <div class="ht-panel mt-6">
+            <div class="ht-panel mb-6">
                 <div class="ht-panel__header">
                     <h3>Ad Creative Performance</h3>
                 </div>
@@ -97,16 +94,37 @@
                 </div>
             </div>
         @else
-            <div class="ht-panel mt-6">
+            <div class="ht-panel mb-6">
                 <div class="ht-panel__empty">
                     No ad creative data yet. Enable video ads and impressions will be tracked here.
                 </div>
             </div>
         @endif
+
+        {{-- Local analytics widgets --}}
+        @if(count($localWidgets))
+            <x-filament-widgets::widgets :widgets="$localWidgets" :columns="2" />
+        @endif
     @else
-        {{-- Google Analytics tab: configuration form --}}
-        <form wire:submit="save" class="mt-2">
+        @php
+            $googleWidgets = $this->getGoogleWidgets();
+            $googleEnabled = (bool) \App\Models\Setting::get('google_analytics_enabled', false);
+        @endphp
+
+        {{-- Google Analytics configuration form --}}
+        <form wire:submit="save" class="mb-6">
             {{ $this->form }}
         </form>
+
+        {{-- Google Analytics widgets --}}
+        @if($googleEnabled)
+            <x-filament-widgets::widgets :widgets="$googleWidgets" :columns="2" />
+        @else
+            <div class="ht-panel">
+                <div class="ht-panel__empty">
+                    Enable Google Analytics above and save the settings to display the analytics widgets.
+                </div>
+            </div>
+        @endif
     @endif
 </x-filament-panels::page>

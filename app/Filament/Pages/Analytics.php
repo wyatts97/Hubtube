@@ -62,9 +62,13 @@ class Analytics extends Page implements HasForms
                         TextInput::make('google_analytics_property_id')
                             ->label('GA4 Property ID')
                             ->placeholder('123456789')
-                            ->helperText('The numeric property ID from your Google Analytics 4 property.')
+                            ->helperText('Enter the numeric property ID from GA4 admin settings (not the G-XXXX measurement ID).')
                             ->visible(fn ($get) => $get('google_analytics_enabled'))
-                            ->required(fn ($get) => $get('google_analytics_enabled')),
+                            ->required(fn ($get) => $get('google_analytics_enabled'))
+                            ->regex('/^\d+$/')
+                            ->validationMessages([
+                                'regex' => 'The property ID must be numeric, e.g. 123456789. Do not use the G-XXXX measurement ID.',
+                            ]),
 
                         Textarea::make('google_analytics_service_account_json')
                             ->label('Service Account JSON Key')
@@ -72,7 +76,8 @@ class Analytics extends Page implements HasForms
                             ->helperText('Create a service account in Google Cloud Console, enable the Google Analytics Data API, and paste the JSON key here.')
                             ->rows(10)
                             ->visible(fn ($get) => $get('google_analytics_enabled'))
-                            ->required(fn ($get) => $get('google_analytics_enabled')),
+                            ->required(fn ($get) => $get('google_analytics_enabled'))
+                            ->rules(['json']),
 
                         Placeholder::make('ga_instructions')
                             ->content('Share your GA4 property with the service account email listed in the JSON key. The property ID should be the numeric ID shown in GA4 admin settings.')
@@ -85,26 +90,21 @@ class Analytics extends Page implements HasForms
     }
 
     /**
-     * Switch header widgets based on the active tab.
+     * Widgets are rendered manually inside the page content so the tabs
+     * can sit at the top of the page instead of below the header widgets.
      */
     public function getHeaderWidgets(): array
     {
-        if ($this->activeTab === 'google') {
-            return [
-                GaWidgets\PageViewsWidget::class,
-                GaWidgets\VisitorsWidget::class,
-                GaWidgets\ActiveUsersOneDayWidget::class,
-                GaWidgets\ActiveUsersSevenDayWidget::class,
-                GaWidgets\ActiveUsersTwentyEightDayWidget::class,
-                GaWidgets\SessionsWidget::class,
-                GaWidgets\SessionsByCountryWidget::class,
-                GaWidgets\SessionsDurationWidget::class,
-                GaWidgets\SessionsByDeviceWidget::class,
-                GaWidgets\MostVisitedPagesWidget::class,
-                GaWidgets\TopReferrersListWidget::class,
-            ];
-        }
+        return [];
+    }
 
+    public function getHeaderWidgetsColumns(): int|array
+    {
+        return 2;
+    }
+
+    public function getLocalWidgets(): array
+    {
         $widgets = [];
 
         if (class_exists(UploadsChartWidget::class)) {
@@ -117,12 +117,21 @@ class Analytics extends Page implements HasForms
         return $widgets;
     }
 
-    public function getHeaderWidgetsColumns(): int|array
+    public function getGoogleWidgets(): array
     {
-        return match ($this->activeTab) {
-            'google' => 2,
-            default => 2,
-        };
+        return [
+            GaWidgets\PageViewsWidget::class,
+            GaWidgets\VisitorsWidget::class,
+            GaWidgets\ActiveUsersOneDayWidget::class,
+            GaWidgets\ActiveUsersSevenDayWidget::class,
+            GaWidgets\ActiveUsersTwentyEightDayWidget::class,
+            GaWidgets\SessionsWidget::class,
+            GaWidgets\SessionsByCountryWidget::class,
+            GaWidgets\SessionsDurationWidget::class,
+            GaWidgets\SessionsByDeviceWidget::class,
+            GaWidgets\MostVisitedPagesWidget::class,
+            GaWidgets\TopReferrersListWidget::class,
+        ];
     }
 
     protected function getHeaderActions(): array
@@ -138,7 +147,8 @@ class Analytics extends Page implements HasForms
 
     public function updatedActiveTab(): void
     {
-        $this->dispatch('refresh-widgets');
+        // Livewire will re-render the page content automatically, so the
+        // widgets for the active tab will swap in without a full page load.
     }
 
     public function save(): void
