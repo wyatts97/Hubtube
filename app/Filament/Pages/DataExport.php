@@ -84,6 +84,16 @@ class DataExport extends Page implements HasForms
         ];
     }
 
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('export')
+                ->label('Export Data')
+                ->icon('phosphor-tray-arrow-down')
+                ->action('export'),
+        ];
+    }
+
     public function export(): Response|StreamedResponse
     {
         // Validate at least one export type is selected

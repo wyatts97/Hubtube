@@ -7,6 +7,7 @@ use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Grid;
+use Filament\Actions\Action;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use Filament\Forms\Components\FileUpload;
@@ -416,6 +417,22 @@ class AdSettings extends Page implements HasForms
                     ->label('Mobile Click URL')
                     ->placeholder('https://example.com'),
             ])->visible(fn ($get) => $get("{$prefix}_enabled") && $get("{$prefix}_mobile_type") === 'image'),
+        ];
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('save')
+                ->label('Save Ad Settings')
+                ->icon('phosphor-check')
+                ->action('save'),
+            Action::make('manageCreatives')
+                ->label('Manage Video Ad Creatives')
+                ->icon('phosphor-film-strip')
+                ->color('gray')
+                ->url(fn () => route('filament.admin.resources.video-ads.index'))
+                ->openUrlInNewTab(false),
         ];
     }
 

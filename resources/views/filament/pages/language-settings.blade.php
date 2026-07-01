@@ -6,12 +6,6 @@
     {{-- Language Settings Form --}}
     <form wire:submit="save">
         {{ $this->form }}
-
-        <div class="mt-6">
-            <x-filament::button type="submit">
-                Save Language Settings
-            </x-filament::button>
-        </div>
     </form>
 
     {{-- Translation Overrides Table (Filament) --}}

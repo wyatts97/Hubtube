@@ -192,6 +192,16 @@ class SeoDiagnostics extends Page implements HasForms
             ->statePath('data');
     }
 
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('save')
+                ->label('Save Settings')
+                ->icon('phosphor-check')
+                ->action('save'),
+        ];
+    }
+
     public function saveTemplate(): void
     {
         $data = $this->form->getState();

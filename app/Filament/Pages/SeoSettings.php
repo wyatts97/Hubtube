@@ -6,6 +6,7 @@ use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Section;
+use Filament\Actions\Action;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use Filament\Forms\Components\Textarea;
@@ -410,6 +411,16 @@ class SeoSettings extends Page implements HasForms
                     ])->columnSpanFull(),
             ])
             ->statePath('data');
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('save')
+                ->label('Save Settings')
+                ->icon('phosphor-check')
+                ->action('save'),
+        ];
     }
 
     public function save(): void

@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
+use Filament\Actions\Action;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use Filament\Forms\Components\TextInput;
@@ -96,6 +97,16 @@ class PwaSettings extends Page implements HasForms
                     ->columns(2),
             ])
             ->statePath('data');
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('save')
+                ->label('Save Settings')
+                ->icon('phosphor-check')
+                ->action('save'),
+        ];
     }
 
     public function save(): void

@@ -71,6 +71,10 @@ class PaymentSettings extends Page implements HasForms
     public function getHeaderActions(): array
     {
         return [
+            Action::make('save')
+                ->label('Save Settings')
+                ->icon('phosphor-check')
+                ->action('save'),
             Action::make('syncStripePrices')
                 ->label('Sync Prices to Stripe')
                 ->icon('phosphor-lightning')

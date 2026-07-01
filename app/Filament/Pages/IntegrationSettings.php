@@ -153,6 +153,16 @@ class IntegrationSettings extends Page implements HasForms
         'mail_password',
     ];
 
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('save')
+                ->label('Save Settings')
+                ->icon('phosphor-check')
+                ->action('save'),
+        ];
+    }
+
     public function save(): void
     {
         $data = $this->form->getState();

@@ -5,41 +5,48 @@
         @if (!$isCreating)
             <x-filament::section heading="Upload Videos" icon="phosphor-tray-arrow-up"
                 description="Select multiple video files to upload. After uploading, fill in the details for each video below.">
-                <form wire:submit="addUploadedFiles" class="space-y-4">
-                    {{ $this->uploadForm }}
-                    <x-filament::button type="submit" icon="phosphor-plus-circle">
+                <x-slot:afterHeader>
+                    <x-filament::button type="submit" form="bulk-upload-form" icon="phosphor-plus-circle">
                         Add to Queue
                     </x-filament::button>
+                </x-slot:afterHeader>
+
+                <form id="bulk-upload-form" wire:submit="addUploadedFiles" class="space-y-4">
+                    {{ $this->uploadForm }}
                 </form>
             </x-filament::section>
 
             {{-- Apply to All Bar --}}
             @if (count($entries) > 0)
-                <form wire:submit.prevent="applyBulkSettings">
-                    {{ $this->bulkSettingsForm }}
-                    <div class="mt-3">
-                        <x-filament::button type="submit" icon="phosphor-check" color="gray" size="sm">
+                <x-filament::section heading="Apply to All" icon="phosphor-sliders-horizontal"
+                    description="Defaults applied to each newly added file.">
+                    <x-slot:afterHeader>
+                        <x-filament::button type="submit" form="bulk-apply-form" icon="phosphor-check" color="gray" size="sm">
                             Apply to All Entries
                         </x-filament::button>
-                    </div>
-                </form>
+                    </x-slot:afterHeader>
+
+                    <form id="bulk-apply-form" wire:submit.prevent="applyBulkSettings">
+                        {{ $this->bulkSettingsForm }}
+                    </form>
+                </x-filament::section>
             @endif
 
             {{-- Video Entries --}}
             @if (count($entries) > 0)
                 <x-filament::section heading="Video Queue ({{ count($entries) }})" icon="phosphor-list-numbers">
-                    {{ $this->entriesForm }}
-
-                    <div class="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+                    <x-slot:afterHeader>
                         <x-filament::button
                             wire:click="createAllVideos"
                             wire:confirm="Create {{ count($entries) }} video(s)? They will be queued for processing."
                             icon="phosphor-rocket-launch"
-                            size="lg"
+                            size="sm"
                         >
                             Create {{ count($entries) }} Video(s)
                         </x-filament::button>
-                    </div>
+                    </x-slot:afterHeader>
+
+                    {{ $this->entriesForm }}
                 </x-filament::section>
             @endif
         @endif

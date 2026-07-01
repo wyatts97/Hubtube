@@ -165,6 +165,10 @@ class SearchIndexingSettings extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('save')
+                ->label('Save Settings')
+                ->icon('phosphor-check')
+                ->action('save'),
             Action::make('generateKey')
                 ->label('Generate Key')
                 ->icon('phosphor-key')

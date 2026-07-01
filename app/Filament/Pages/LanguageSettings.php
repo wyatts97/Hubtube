@@ -110,6 +110,16 @@ class LanguageSettings extends Page implements HasForms, HasTable
             ->statePath('data');
     }
 
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('save')
+                ->label('Save Language Settings')
+                ->icon('phosphor-check')
+                ->action('save'),
+        ];
+    }
+
     public function save(): void
     {
         $data = $this->form->getState();

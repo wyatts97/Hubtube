@@ -763,6 +763,16 @@ class SiteSettings extends Page implements HasForms
             ->statePath('data');
     }
 
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('save')
+                ->label('Save Settings')
+                ->icon('phosphor-check')
+                ->action('save'),
+        ];
+    }
+
     public function save(): void
     {
         $data = $this->form->getState();
