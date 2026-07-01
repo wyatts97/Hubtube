@@ -6,24 +6,105 @@ use App\Filament\Widgets\Analytics\CategoryViewsChartWidget;
 use App\Filament\Widgets\Analytics\RevenueChartWidget;
 use App\Filament\Widgets\Analytics\SignupsChartWidget;
 use App\Filament\Widgets\Analytics\UploadsChartWidget;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
 use App\Models\VideoAd;
+use App\Services\AdminLogger;
+use BezhanSalleh\GoogleAnalytics\Widgets as GaWidgets;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 
-class Analytics extends Page
+class Analytics extends Page implements HasForms
 {
+    use InteractsWithForms;
+
     protected static string | \BackedEnum | null $navigationIcon  = 'phosphor-chart-bar';
     protected static ?string $navigationLabel = 'Analytics';
     protected static string | \UnitEnum | null $navigationGroup = 'Overview';
     protected static ?int    $navigationSort  = 2;
     protected string  $view            = 'filament.pages.analytics';
 
+    public ?array $data = [];
+    public string $activeTab = 'local';
+
+    public function mount(): void
+    {
+        $this->form->fill([
+            'google_analytics_enabled' => (bool) Setting::get('google_analytics_enabled', false),
+            'google_analytics_property_id' => Setting::get('google_analytics_property_id', ''),
+            'google_analytics_service_account_json' => Setting::getDecrypted('google_analytics_service_account_json', ''),
+        ]);
+    }
+
+    public function form(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Section::make('Google Analytics Configuration')
+                    ->description('Connect your GA4 property to display the analytics widgets.')
+                    ->icon('phosphor-globe')
+                    ->schema([
+                        Toggle::make('google_analytics_enabled')
+                            ->label('Enable Google Analytics')
+                            ->reactive()
+                            ->helperText('When enabled, the Google Analytics widgets will be shown on the Google Analytics tab.'),
+
+                        TextInput::make('google_analytics_property_id')
+                            ->label('GA4 Property ID')
+                            ->placeholder('123456789')
+                            ->helperText('The numeric property ID from your Google Analytics 4 property.')
+                            ->visible(fn ($get) => $get('google_analytics_enabled'))
+                            ->required(fn ($get) => $get('google_analytics_enabled')),
+
+                        Textarea::make('google_analytics_service_account_json')
+                            ->label('Service Account JSON Key')
+                            ->placeholder('Paste the full JSON contents from your Google service account key...')
+                            ->helperText('Create a service account in Google Cloud Console, enable the Google Analytics Data API, and paste the JSON key here.')
+                            ->rows(10)
+                            ->visible(fn ($get) => $get('google_analytics_enabled'))
+                            ->required(fn ($get) => $get('google_analytics_enabled')),
+
+                        Placeholder::make('ga_instructions')
+                            ->content('Share your GA4 property with the service account email listed in the JSON key. The property ID should be the numeric ID shown in GA4 admin settings.')
+                            ->columnSpanFull(),
+                    ])
+                    ->collapsible()
+                    ->columnSpanFull(),
+            ])
+            ->statePath('data');
+    }
+
     /**
-     * Host the ApexChart widgets in a 2-column grid.
+     * Switch header widgets based on the active tab.
      */
     public function getHeaderWidgets(): array
     {
+        if ($this->activeTab === 'google') {
+            return [
+                GaWidgets\PageViewsWidget::class,
+                GaWidgets\VisitorsWidget::class,
+                GaWidgets\ActiveUsersOneDayWidget::class,
+                GaWidgets\ActiveUsersSevenDayWidget::class,
+                GaWidgets\ActiveUsersTwentyEightDayWidget::class,
+                GaWidgets\SessionsWidget::class,
+                GaWidgets\SessionsByCountryWidget::class,
+                GaWidgets\SessionsDurationWidget::class,
+                GaWidgets\SessionsByDeviceWidget::class,
+                GaWidgets\MostVisitedPagesWidget::class,
+                GaWidgets\TopReferrersListWidget::class,
+            ];
+        }
+
         $widgets = [];
 
         if (class_exists(UploadsChartWidget::class)) {
@@ -38,7 +119,69 @@ class Analytics extends Page
 
     public function getHeaderWidgetsColumns(): int|array
     {
-        return 2;
+        return match ($this->activeTab) {
+            'google' => 2,
+            default => 2,
+        };
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('save')
+                ->label('Save Settings')
+                ->icon('phosphor-check')
+                ->action('save')
+                ->visible(fn () => $this->activeTab === 'google'),
+        ];
+    }
+
+    public function updatedActiveTab(): void
+    {
+        $this->dispatch('refresh-widgets');
+    }
+
+    public function save(): void
+    {
+        $data = $this->form->getState();
+
+        Setting::set('google_analytics_enabled', $data['google_analytics_enabled'] ? '1' : '0', 'analytics', 'boolean');
+        Setting::set('google_analytics_property_id', $data['google_analytics_property_id'] ?? '', 'analytics', 'string');
+        Setting::setEncrypted('google_analytics_service_account_json', $data['google_analytics_service_account_json'] ?? '', 'analytics');
+
+        // Re-apply config immediately so the user can test the widgets.
+        $this->applyGoogleAnalyticsConfig();
+
+        AdminLogger::settingsSaved('Google Analytics', [
+            'google_analytics_enabled',
+            'google_analytics_property_id',
+            'google_analytics_service_account_json',
+        ]);
+
+        Notification::make()
+            ->title('Google Analytics settings saved')
+            ->success()
+            ->send();
+    }
+
+    protected function applyGoogleAnalyticsConfig(): void
+    {
+        $enabled = (bool) Setting::get('google_analytics_enabled', false);
+        $propertyId = Setting::get('google_analytics_property_id', '');
+        $json = Setting::getDecrypted('google_analytics_service_account_json', '');
+
+        $credentials = [];
+        if ($enabled && !empty($json)) {
+            $decoded = json_decode($json, true);
+            if (is_array($decoded)) {
+                $credentials = $decoded;
+            }
+        }
+
+        config([
+            'analytics.property_id' => $enabled ? $propertyId : '',
+            'analytics.service_account_credentials_json' => $credentials,
+        ]);
     }
 
     public function getSummaryStats(): array

@@ -19,6 +19,7 @@ class DynamicConfigServiceProvider extends ServiceProvider
         // Only apply if the settings table exists (skip during migrations)
         try {
             $this->applyMailConfig();
+            $this->applyGoogleAnalyticsConfig();
         } catch (Throwable $e) {
             // Table doesn't exist yet (fresh install, pre-migration) — skip silently
         }
@@ -61,5 +62,25 @@ class DynamicConfigServiceProvider extends ServiceProvider
         // Symfony treats an empty string as "verify on", so pass a real boolean.
         $verifyPeer = filter_var(Setting::get('mail_verify_peer', 'true'), FILTER_VALIDATE_BOOLEAN);
         config(['mail.mailers.smtp.verify_peer' => $verifyPeer]);
+    }
+
+    protected function applyGoogleAnalyticsConfig(): void
+    {
+        $enabled = (bool) Setting::get('google_analytics_enabled', false);
+        $propertyId = Setting::get('google_analytics_property_id', '');
+        $json = Setting::getDecrypted('google_analytics_service_account_json', '');
+
+        $credentials = [];
+        if ($enabled && !empty($json)) {
+            $decoded = json_decode($json, true);
+            if (is_array($decoded)) {
+                $credentials = $decoded;
+            }
+        }
+
+        config([
+            'analytics.property_id' => $enabled ? $propertyId : '',
+            'analytics.service_account_credentials_json' => $credentials,
+        ]);
     }
 }

@@ -87,6 +87,11 @@ class AdminPanelProvider extends PanelProvider
                 ->navigationGroup('Integrations');
         }
 
+        // Google Analytics widgets (credentials configured via admin panel)
+        if (class_exists(\BezhanSalleh\GoogleAnalytics\GoogleAnalyticsPlugin::class)) {
+            $plugins[] = \BezhanSalleh\GoogleAnalytics\GoogleAnalyticsPlugin::make();
+        }
+
         return $plugins;
     }
 

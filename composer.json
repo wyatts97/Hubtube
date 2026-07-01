@@ -5,9 +5,10 @@
     "keywords": ["laravel", "cms", "video", "tube", "streaming"],
     "license": "proprietary",
     "require": {
-        "php": "^8.2",
+        "php": "^8.3",
         "ext-redis": "*",
         "awcodes/overlook": "^3.0",
+        "bezhansalleh/filament-google-analytics": "3.0",
         "bezhansalleh/filament-shield": "^4.0",
         "croustibat/filament-jobs-monitor": "*",
         "filafly/filament-phosphor-icons": "^2.2",

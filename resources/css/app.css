@@ -4,6 +4,8 @@
 @source "../../resources/js/**/*.vue";
 @source "../../resources/js/**/*.js";
 @source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
+@source "../../vendor/bezhansalleh/filament-google-analytics/resources/views/**/*.blade.php";
+@source "../../vendor/bezhansalleh/filament-google-analytics/src/{Widgets,Support}/*.php";
 
 /*
  * HubTube is dark-only. Palette is defined as Tailwind v4 @theme tokens so
