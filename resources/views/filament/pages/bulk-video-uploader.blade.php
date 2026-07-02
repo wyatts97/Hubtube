@@ -6,12 +6,12 @@
             <x-filament::section heading="Upload Videos" icon="phosphor-tray-arrow-up"
                 description="Select multiple video files to upload. After uploading, fill in the details for each video below.">
                 <x-slot:afterHeader>
-                    <x-filament::button type="submit" form="bulk-upload-form" icon="phosphor-plus-circle">
+                    <x-filament::button wire:click="addUploadedFiles" icon="phosphor-plus-circle">
                         Add to Queue
                     </x-filament::button>
                 </x-slot:afterHeader>
 
-                <form id="bulk-upload-form" wire:submit="addUploadedFiles" class="space-y-4">
+                <form id="bulk-upload-form" class="space-y-4">
                     {{ $this->uploadForm }}
                 </form>
             </x-filament::section>
@@ -21,12 +21,12 @@
                 <x-filament::section heading="Apply to All" icon="phosphor-sliders-horizontal"
                     description="Defaults applied to each newly added file.">
                     <x-slot:afterHeader>
-                        <x-filament::button type="submit" form="bulk-apply-form" icon="phosphor-check" color="gray" size="sm">
+                        <x-filament::button wire:click="applyBulkSettings" icon="phosphor-check" color="gray" size="sm">
                             Apply to All Entries
                         </x-filament::button>
                     </x-slot:afterHeader>
 
-                    <form id="bulk-apply-form" wire:submit.prevent="applyBulkSettings">
+                    <form id="bulk-apply-form" class="space-y-4">
                         {{ $this->bulkSettingsForm }}
                     </form>
                 </x-filament::section>
