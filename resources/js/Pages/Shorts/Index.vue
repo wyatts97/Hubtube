@@ -254,6 +254,17 @@ const onScroll = () => {
     }
 };
 
+const pauseAllVideos = (exceptIndex) => {
+    slides.value.forEach((slide, idx) => {
+        if (idx === exceptIndex || !slide) return;
+        const video = slide.querySelector('video');
+        if (video) {
+            video.pause();
+            video.currentTime = 0;
+        }
+    });
+};
+
 const setupIntersectionTracking = () => {
     if (!feedContainer.value) return;
     const observer = new IntersectionObserver(
@@ -266,6 +277,8 @@ const setupIntersectionTracking = () => {
                 if (!video) return;
 
                 if (entry.isIntersecting && idx === currentIndex.value) {
+                    // Pause all other videos first to prevent overlap
+                    pauseAllVideos(idx);
                     video.muted = muted.value;
                     video.play().catch(() => {});
                     if (item?.type === 'short') {
@@ -308,8 +321,27 @@ onUnmounted(() => {
     if (observerInstance) observerInstance.disconnect();
 });
 
-watch(currentIndex, async (newIndex) => {
+watch(currentIndex, async (newIndex, oldIndex) => {
     showMoreMenu.value = false;
+    
+    // Pause previous video
+    if (oldIndex !== undefined && slides.value[oldIndex]) {
+        const prevVideo = slides.value[oldIndex].querySelector('video');
+        if (prevVideo) {
+            prevVideo.pause();
+            prevVideo.currentTime = 0;
+        }
+    }
+    
+    // Play new video
+    if (slides.value[newIndex]) {
+        const newVideo = slides.value[newIndex].querySelector('video');
+        if (newVideo) {
+            newVideo.muted = muted.value;
+            newVideo.play().catch(() => {});
+        }
+    }
+    
     if (newIndex >= items.value.length - 3 && hasMore.value) await loadMore();
     if (activeShort.value && showComments.value) await loadComments(activeShort.value.id);
 });
