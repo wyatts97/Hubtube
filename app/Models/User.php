@@ -136,6 +136,29 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         return $this->hasMany(WalletTransaction::class);
     }
 
+    public function ccbillSubscriptions(): HasMany
+    {
+        return $this->hasMany(CCBillSubscription::class);
+    }
+
+    /**
+     * Whether the user has any active CCBill subscription granting Pro access.
+     */
+    public function hasActiveCCBillSubscription(): bool
+    {
+        return $this->ccbillSubscriptions()
+            ->whereNotIn('status', [
+                CCBillSubscription::STATUS_EXPIRED,
+                CCBillSubscription::STATUS_REFUNDED,
+                CCBillSubscription::STATUS_CHARGEBACK,
+            ])
+            ->where(function ($q) {
+                $q->whereNull('current_period_end')
+                    ->orWhere('current_period_end', '>', now());
+            })
+            ->exists();
+    }
+
     public function complianceRecords(): HasMany
     {
         return $this->hasMany(ComplianceRecord::class);

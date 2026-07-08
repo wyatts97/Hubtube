@@ -283,6 +283,15 @@ Route::get('/api/video-ads', [\App\Http\Controllers\VideoAdController::class, 'g
 Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
     ->name('stripe.webhook');
 
+// CCBill webhook (must be outside auth + age gates; CSRF-exempt in bootstrap/app.php)
+Route::post('/ccbill/webhook', [\App\Http\Controllers\CCBillController::class, 'webhook'])
+    ->middleware('throttle:120,1')
+    ->name('ccbill.webhook');
+
+// CCBill post-checkout landing pages (buyer returns from the hosted FlexForm)
+Route::get('/ccbill/success', [\App\Http\Controllers\CCBillController::class, 'success'])->name('ccbill.success');
+Route::get('/ccbill/cancel', [\App\Http\Controllers\CCBillController::class, 'cancel'])->name('ccbill.cancel');
+
 // Ad impression & click tracking (fire-and-forget, heavily rate-limited)
 Route::post('/api/ad-impression', [\App\Http\Controllers\VideoAdController::class, 'recordImpression'])
     ->middleware('throttle:120,1')

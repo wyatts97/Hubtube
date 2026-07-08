@@ -48,10 +48,13 @@ class PaymentSettings extends Page implements HasForms
             'paypal_sandbox' => Setting::get('paypal_sandbox', true),
             // CCBill
             'ccbill_enabled' => Setting::get('ccbill_enabled', false),
+            'ccbill_primary' => Setting::get('ccbill_primary', false),
             'ccbill_account' => Setting::get('ccbill_account', ''),
             'ccbill_subaccount' => Setting::get('ccbill_subaccount', ''),
             'ccbill_flex_id' => Setting::get('ccbill_flex_id', ''),
-            'ccbill_salt' => Setting::get('ccbill_salt', ''),
+            'ccbill_salt' => Setting::getDecrypted('ccbill_salt', ''),
+            'ccbill_webhook_secret' => Setting::getDecrypted('ccbill_webhook_secret', ''),
+            'ccbill_webhook_ips' => Setting::get('ccbill_webhook_ips', ''),
             // General
             'currency' => Setting::get('currency', 'USD'),
             'min_deposit' => Setting::get('min_deposit', 10),
@@ -83,7 +86,60 @@ class PaymentSettings extends Page implements HasForms
                 ->modalHeading('Sync Pro prices to Stripe')
                 ->modalDescription('This will create or update Stripe Products and Prices for the monthly and annual Pro plans.')
                 ->action(fn () => $this->syncStripePrices()),
+            Action::make('syncCCBillPrices')
+                ->label('Sync Prices to CCBill')
+                ->icon('phosphor-credit-card')
+                ->color('gray')
+                ->requiresConfirmation()
+                ->modalHeading('Sync Pro prices to CCBill')
+                ->modalDescription('This writes the FlexForms dynamic-pricing fields (initial/recurring price, period in days, rebills) onto the monthly and annual Pro plans.')
+                ->action(fn () => $this->syncCCBillPrices()),
         ];
+    }
+
+    public function syncCCBillPrices(): void
+    {
+        $monthlyPrice = round((float) Setting::get('pro_monthly_price', 9.99), 2);
+        $discountPercent = (int) Setting::get('pro_annual_discount_percent', 20);
+        $annualPrice = round($monthlyPrice * 12 * (1 - $discountPercent / 100), 2);
+
+        // CCBill periods are expressed in days. Monthly = 30, Annual = 365.
+        Plan::query()->updateOrCreate(
+            ['slug' => 'pro-monthly'],
+            [
+                'name' => 'Pro Monthly',
+                'amount_cents' => (int) round($monthlyPrice * 100),
+                'interval' => 'month',
+                'annual_discount_percent' => 0,
+                'is_active' => true,
+                'ccbill_initial_price' => $monthlyPrice,
+                'ccbill_initial_period' => 30,
+                'ccbill_recurring_price' => $monthlyPrice,
+                'ccbill_recurring_period' => 30,
+                'ccbill_num_rebills' => 99,
+            ]
+        );
+
+        Plan::query()->updateOrCreate(
+            ['slug' => 'pro-annual'],
+            [
+                'name' => 'Pro Annual',
+                'amount_cents' => (int) round($annualPrice * 100),
+                'interval' => 'year',
+                'annual_discount_percent' => $discountPercent,
+                'is_active' => true,
+                'ccbill_initial_price' => $annualPrice,
+                'ccbill_initial_period' => 365,
+                'ccbill_recurring_price' => $annualPrice,
+                'ccbill_recurring_period' => 365,
+                'ccbill_num_rebills' => 99,
+            ]
+        );
+
+        Notification::make()
+            ->title('CCBill prices synced to Pro plans')
+            ->success()
+            ->send();
     }
 
     public function syncStripePrices(): void
@@ -227,21 +283,42 @@ class PaymentSettings extends Page implements HasForms
                         Tab::make('CCBill')
                             ->schema([
                                 Section::make('CCBill Configuration')
-                                    ->description('Adult-friendly payment processor')
+                                    ->description('Adult-friendly payment processor. Uses FlexForms dynamic pricing + Webhooks.')
                                     ->schema([
                                         Toggle::make('ccbill_enabled')
                                             ->label('Enable CCBill'),
+                                        Toggle::make('ccbill_primary')
+                                            ->label('Use CCBill as primary Pro gateway')
+                                            ->helperText('When on, Pro checkout uses CCBill instead of Stripe.'),
                                         TextInput::make('ccbill_account')
-                                            ->label('Account Number'),
+                                            ->label('Account Number')
+                                            ->helperText('Your 6-digit main account (e.g. 999999).'),
                                         TextInput::make('ccbill_subaccount')
-                                            ->label('Sub Account'),
+                                            ->label('Sub Account')
+                                            ->helperText('4-digit subaccount with Dynamic Pricing enabled (e.g. 0000).'),
                                         TextInput::make('ccbill_flex_id')
-                                            ->label('FlexForm ID'),
+                                            ->label('FlexForm ID')
+                                            ->helperText('The FlexForms paylink ID (Dynamic Pricing must be enabled on the form).'),
                                         TextInput::make('ccbill_salt')
-                                            ->label('Salt Key')
+                                            ->label('Encryption / Salt Key')
                                             ->password()
-                                            ->revealable(),
+                                            ->revealable()
+                                            ->helperText('From CCBill Admin. Stored encrypted at rest.'),
                                     ])->columns(2),
+                                Section::make('Webhooks')
+                                    ->description('Configure these in CCBill Admin → Webhooks (or Background Post). Entitlements are granted only via webhooks.')
+                                    ->schema([
+                                        Text::make(fn () => 'Webhook URL: ' . url('/ccbill/webhook'))
+                                            ->extraAttributes(['class' => 'text-sm font-mono text-gray-400']),
+                                        TextInput::make('ccbill_webhook_secret')
+                                            ->label('Webhook Secret')
+                                            ->password()
+                                            ->revealable()
+                                            ->helperText('A shared token appended to your webhook URL as ?secret=... — CCBill must include it. Stored encrypted.'),
+                                        TextInput::make('ccbill_webhook_ips')
+                                            ->label('Allowed Webhook IPs')
+                                            ->helperText('Optional comma-separated IP allowlist for extra webhook security. Leave blank to allow any source.'),
+                                    ])->columns(1),
                             ]),
                         Tab::make('Pro Plans')
                             ->schema([
@@ -308,8 +385,17 @@ class PaymentSettings extends Page implements HasForms
     {
         $data = $this->form->getState();
 
+        // Credentials that must be stored encrypted at rest.
+        $encryptedKeys = ['ccbill_salt', 'ccbill_webhook_secret'];
+
         foreach ($data as $key => $value) {
             $group = str_starts_with($key, 'pro_') ? 'pro' : 'payments';
+
+            if (in_array($key, $encryptedKeys, true)) {
+                Setting::setEncrypted($key, $value, $group);
+                continue;
+            }
+
             $type = match (true) {
                 is_bool($value) => 'boolean',
                 is_int($value) || is_float($value) => 'integer',

@@ -1,6 +1,6 @@
 # HubTube — Video Sharing & Streaming CMS
 
-A self-hosted, feature-rich video-sharing platform built with Laravel 11, Vue 3, and Inertia.js. Includes video upload/processing, live streaming, monetization, multi-language support, SEO, and a comprehensive admin panel.
+A self-hosted, feature-rich video-sharing platform built with Laravel 12, Vue 3, and Inertia.js. Includes video upload/processing, live streaming, monetization, multi-language support, SEO, and a comprehensive admin panel.
 
 ## Prerequisites (Check/install all server-side dependencies)
 ```bash
@@ -324,7 +324,7 @@ The scheduler runs: Horizon snapshots, batch pruning, expired token cleanup, sof
 
 | Layer | Technology |
 |-------|-----------|
-| **Backend** | Laravel 11 (PHP 8.2+), Filament 3 Admin |
+| **Backend** | Laravel 12 (PHP 8.3+), Filament 4 Admin |
 | **Frontend** | Vue 3 (Composition API), Inertia.js, Tailwind CSS v4 |
 | **Database** | MySQL 8+ / MariaDB 10.6+ |
 | **Queue** | Laravel Horizon + Redis |
@@ -372,6 +372,19 @@ The scheduler runs: Horizon snapshots, batch pruning, expired token cleanup, sof
 - Ad targeting by category and user role, weighted random selection
 - Click-through URLs on video ads
 - Banner ads (above/below player, desktop + mobile variants)
+- Pro memberships via **Stripe** (Cashier) and **CCBill** (FlexForms + Webhooks); admin selects the primary gateway
+
+### CCBill Setup (Pro memberships)
+
+CCBill is the adult-friendly processor. It uses **FlexForms Dynamic Pricing** (a signed hosted checkout redirect) plus **Webhooks** (the source of truth for entitlements). All config lives in **Admin → Payment Settings → CCBill** (nothing in `.env`).
+
+1. In **CCBill Admin**: enable **Dynamic Pricing** on both the subaccount and the FlexForm; note your Account number, 4-digit Subaccount, FlexForm ID, and Encryption/Salt key.
+2. In **HubTube Admin → Payment Settings → CCBill**: paste those values, set a **Webhook Secret**, and toggle **Use CCBill as primary Pro gateway**. The Salt and Webhook Secret are encrypted at rest.
+3. Click **Sync Prices to CCBill** to write dynamic-pricing fields (initial/recurring price, period in **days**, rebills) onto the `pro-monthly` / `pro-annual` plans.
+4. In **CCBill Admin → Webhooks**: point events at the displayed Webhook URL (`/ccbill/webhook`) with `?secret=<your webhook secret>` appended. Handled events: `NewSaleSuccess`, `RenewalSuccess`, `RenewalFailure`, `Cancellation`, `Expiration`, `Refund`/`Void`/`Return`, `Chargeback`.
+5. Cancellations/refunds are managed in CCBill Admin for now (DataLink API automation is a future enhancement; `zenphp/obsidian` can replace this after a Laravel 12 / PHP 8.4 upgrade).
+
+Pro access is granted **only** by verified webhooks — never by the browser redirect — and revoked only when no other active entitlement (Stripe or another CCBill sub) remains.
 
 ### Admin Panel (`/admin`)
 - **Dashboard**: Stats overview with clickable cards, trending videos, recent uploads, system status bar

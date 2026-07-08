@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Plan;
 use App\Models\Setting;
+use App\Services\CCBillService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -14,6 +15,8 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ProController extends Controller
 {
+    public function __construct(protected CCBillService $ccbill) {}
+
     public function index(): Response
     {
         if (!Setting::get('pro_enabled', true)) {
@@ -38,11 +41,27 @@ class ProController extends Controller
             $sub = $user->subscriptions()->active()->first();
             if ($sub) {
                 $subscription = [
+                    'gateway' => 'stripe',
                     'plan' => $sub->type,
                     'ends_at' => $sub->ends_at?->toDateString(),
                     'current_period_end' => $sub->current_period_end?->toDateString(),
-                    'stripe_status' => $sub->stripe_status,
+                    'status' => $sub->stripe_status,
                 ];
+            } else {
+                $ccbillSub = $user->ccbillSubscriptions()
+                    ->whereNotIn('status', ['expired', 'refunded', 'chargeback'])
+                    ->latest()
+                    ->first();
+
+                if ($ccbillSub && $ccbillSub->isActive()) {
+                    $subscription = [
+                        'gateway' => 'ccbill',
+                        'plan' => $ccbillSub->plan?->interval === 'year' ? 'year' : 'month',
+                        'ends_at' => $ccbillSub->cancelled_at?->toDateString(),
+                        'current_period_end' => $ccbillSub->current_period_end?->toDateString(),
+                        'status' => $ccbillSub->status,
+                    ];
+                }
             }
         }
 
@@ -53,10 +72,32 @@ class ProController extends Controller
             ],
             'annualSavings' => $annualSavings,
             'subscription' => $subscription,
+            'activeGateway' => $this->activeGateway(),
         ]);
     }
 
-    public function checkout(Request $request): RedirectResponse
+    /**
+     * Determine which processor drives Pro checkout. CCBill takes precedence when
+     * configured as primary; otherwise Stripe (if enabled).
+     */
+    protected function activeGateway(): string
+    {
+        if ($this->ccbill->isPrimary() && $this->ccbill->isConfigured()) {
+            return 'ccbill';
+        }
+
+        if (Setting::get('stripe_enabled', false)) {
+            return 'stripe';
+        }
+
+        if ($this->ccbill->isConfigured()) {
+            return 'ccbill';
+        }
+
+        return 'stripe';
+    }
+
+    public function checkout(Request $request): \Symfony\Component\HttpFoundation\Response
     {
         if (!auth()->check()) {
             return redirect()->route('login');
@@ -69,7 +110,32 @@ class ProController extends Controller
         $interval = $request->input('plan', 'monthly');
         $plan = Plan::active()->where('slug', $interval === 'annual' ? 'pro-annual' : 'pro-monthly')->first();
 
-        if (!$plan || !$plan->stripe_price_id) {
+        if (!$plan) {
+            return back()->with('error', 'Pro plan is not configured yet. Please contact support.');
+        }
+
+        if ($this->activeGateway() === 'ccbill') {
+            return $this->ccbillCheckout($plan);
+        }
+
+        return $this->stripeCheckout($plan);
+    }
+
+    protected function ccbillCheckout(Plan $plan): \Symfony\Component\HttpFoundation\Response
+    {
+        $url = $this->ccbill->buildCheckoutUrl($plan, auth()->user());
+
+        if (!$url) {
+            return back()->with('error', 'CCBill is not configured for this plan yet. Please contact support.');
+        }
+
+        // External redirect: Inertia requires a full-page (non-XHR) redirect.
+        return Inertia::location($url);
+    }
+
+    protected function stripeCheckout(Plan $plan): RedirectResponse
+    {
+        if (!$plan->stripe_price_id) {
             return back()->with('error', 'Pro plan is not configured yet. Please contact support.');
         }
 

@@ -11,6 +11,7 @@ const props = defineProps({
     plans: Object,
     annualSavings: Number,
     subscription: { type: Object, default: null },
+    activeGateway: { type: String, default: 'stripe' },
 });
 
 const page = usePage();
@@ -64,15 +65,21 @@ const goToPortal = () => {
                     You are currently subscribed to <span class="text-accent">Pro {{ subscription.plan === 'year' ? 'Annual' : 'Monthly' }}</span>
                 </p>
                 <p class="text-sm text-text-secondary mb-4">
-                    Status: {{ subscription.stripe_status }}
+                    Status: {{ subscription.status }}
                     <span v-if="subscription.current_period_end">· Renews on {{ subscription.current_period_end }}</span>
                 </p>
                 <button
+                    v-if="subscription.gateway === 'stripe'"
                     @click="goToPortal"
                     class="btn btn-primary"
                 >
                     Manage Subscription
                 </button>
+                <p v-else class="text-sm text-text-secondary">
+                    To manage or cancel your subscription, visit the
+                    <a href="https://support.ccbill.com/" target="_blank" rel="noopener" class="text-accent underline">CCBill consumer portal</a>
+                    or contact support.
+                </p>
             </div>
 
             <!-- Pricing cards -->

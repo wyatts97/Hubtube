@@ -60,6 +60,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             'stripe/webhook',
+            'ccbill/webhook',
         ]);
 
         $middleware->throttleApi('60,1');
