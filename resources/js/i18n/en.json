@@ -30,6 +30,7 @@
         "no_notifications": "No notifications",
         "categories": "Categories",
         "tags": "Tags",
+        "shorts": "Shorts",
         "more": "More"
     },
     "common": {
@@ -243,6 +244,7 @@
         "featured": "Featured",
         "latest": "Latest Videos",
         "popular": "Popular",
+        "shorts": "Shorts",
         "reached_end": "You've reached the end",
         "loading_more": "Loading more videos..."
     },
