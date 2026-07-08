@@ -304,14 +304,14 @@ class AdSettings extends Page implements HasForms
 
                                         TextInput::make('zone_popunder_url')
                                             ->label('Desktop Zone URL')
-                                            ->placeholder('https://s.pemsrv.com/v1/link.php?cat=&idzone=5857198&type=8')
+                                            ->placeholder('https://example.com/popunder-zone')
                                             ->url()
                                             ->columnSpanFull()
                                             ->visible(fn ($get) => $get('zone_popunder_enabled')),
 
                                         TextInput::make('zone_popunder_mobile_url')
                                             ->label('Mobile Zone URL (optional)')
-                                            ->placeholder('https://s.pemsrv.com/v1/link.php?cat=&idzone=xxxxxx&type=8')
+                                            ->placeholder('https://example.com/popunder-zone-mobile')
                                             ->url()
                                             ->helperText('Leave empty to use desktop URL on all devices.')
                                             ->columnSpanFull()

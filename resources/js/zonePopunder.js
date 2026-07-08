@@ -52,16 +52,27 @@
     }
 
     function fire(target) {
-        const win = window.open(targetUrl, '_blank', 'noopener,noreferrer');
-        if (win) {
-            const state = getState();
-            state.fired++;
-            state.clicks = 0;
-            state.lastFiredAt = Date.now();
-            setState(state);
-            try { win.opener = null; } catch {}
+        // Use a plain window.open so we keep a reference to the new window.
+        // This is required for a popunder (blur new window, focus parent).
+        // Note: true background-tab behavior is browser-dependent; some browsers
+        // always focus a user-initiated popup regardless of script focus calls.
+        const win = window.open(targetUrl, '_blank');
+        if (!win) {
+            // Popup blocked or no window reference — do not reset counters so we try again.
+            return false;
         }
-        return !!win;
+
+        const state = getState();
+        state.fired++;
+        state.clicks = 0;
+        state.lastFiredAt = Date.now();
+        setState(state);
+
+        try { win.blur(); } catch {}
+        try { window.focus(); } catch {}
+        try { win.opener = null; } catch {}
+
+        return true;
     }
 
     function isWhitelistedTarget(el) {
