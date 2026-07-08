@@ -79,24 +79,30 @@
 
     function isWhitelistedTarget(el) {
         if (!el) return false;
-        // Allow clicks on most of the page, but not form controls, links that open in new tab already,
-        // or <a> elements with explicit _blank (browser handles those).
-        if (el.tagName === 'A') {
-            const target = el.getAttribute('target');
-            const href = el.getAttribute('href') || '';
-            if (target === '_blank') return false;
-            if (href.startsWith('mailto:') || href.startsWith('tel:')) return false;
-        }
-        if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'LABEL'].includes(el.tagName)) return false;
+        
+        // Find closest <a> ancestor (or self if already an <a>)
+        const linkEl = el.closest('a');
+        if (!linkEl) return false;
+        
+        const href = linkEl.getAttribute('href') || '';
+        
+        // Exclude non-navigational links
+        if (href === '#' || href === '' || href.startsWith('javascript:')) return false;
+        if (href.startsWith('mailto:') || href.startsWith('tel:')) return false;
+        
+        const target = linkEl.getAttribute('target');
+        if (target === '_blank') return false;
+        
         return true;
     }
 
     function onClick(e) {
+        if (!isWhitelistedTarget(e.target)) return;
+        
         const state = getState();
         state.clicks++;
         setState(state);
 
-        if (!isWhitelistedTarget(e.target)) return;
         if (!shouldFire()) return;
 
         const fired = fire();
