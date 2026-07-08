@@ -6,9 +6,10 @@ import { useI18n } from '@/Composables/useI18n';
 import { useToast } from '@/Composables/useToast';
 import { formatViews } from '@/Composables/useFormatters';
 import ShortsAdSlide from '@/Components/ShortsAdSlide.vue';
+import ShareModal from '@/Components/ShareModal.vue';
 import {
     Heart, MessageCircle, Share2, MoreVertical, Volume2, VolumeX,
-    Play, Pause, ChevronUp, ChevronDown, X, Filter, ChevronLeft
+    ChevronUp, ChevronDown, X, Filter, ChevronLeft, Flag
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -21,7 +22,7 @@ const props = defineProps({
     seo: { type: Object, default: () => ({}) },
 });
 
-const { localizedUrl } = useI18n();
+const { t, localizedUrl } = useI18n();
 const toast = useToast();
 const page = usePage();
 const { get, post } = useFetch();
@@ -36,6 +37,13 @@ const nextCursor = ref(2);
 const muted = ref(true);
 const showComments = ref(false);
 const showFilters = ref(false);
+const showShareModal = ref(false);
+const showMoreMenu = ref(false);
+const showReportModal = ref(false);
+const reportReason = ref('');
+const reportDescription = ref('');
+const reportSubmitting = ref(false);
+const reportSuccess = ref(false);
 const comments = ref([]);
 const loadingComments = ref(false);
 const feedContainer = ref(null);
@@ -69,7 +77,16 @@ const activeShort = computed(() => {
 
 const currentVideoId = computed(() => activeShort.value?.id);
 
-const toggleMute = () => { muted.value = !muted.value; };
+const shareUrl = computed(() => {
+    if (!activeShort.value) return '';
+    return window.location.origin + localizedUrl(`/shorts/${activeShort.value.uuid}`);
+});
+
+const toggleMute = () => {
+    muted.value = !muted.value;
+    const video = slides.value[currentIndex.value]?.querySelector('video');
+    if (video) video.muted = muted.value;
+};
 
 const togglePlay = () => {
     const el = slides.value[currentIndex.value]?.querySelector('video');
@@ -79,26 +96,56 @@ const togglePlay = () => {
 };
 
 const likeShort = async () => {
-    if (!user.value || !activeShort.value) return;
-    const { ok, data } = await post(`/videos/${activeShort.value.uuid}/like`);
+    if (!activeShort.value) return;
+    if (!user.value) {
+        router.visit(localizedUrl('/login'));
+        return;
+    }
+    const { ok, data } = await post(`/videos/${activeShort.value.id}/like`);
     if (ok && data && activeShort.value) {
         activeShort.value.user_liked = data.liked;
         activeShort.value.likes_count = data.likesCount;
     }
 };
 
-const shareShort = async () => {
+const shareShort = () => {
     if (!activeShort.value) return;
-    const url = window.location.origin + localizedUrl(`/shorts/${activeShort.value.uuid}`);
-    try {
-        if (navigator.share) {
-            await navigator.share({ title: activeShort.value.title, url });
-        } else {
-            await navigator.clipboard.writeText(url);
-            toast.success('Link copied to clipboard');
-        }
-    } catch {
-        toast.error('Could not share');
+    showMoreMenu.value = false;
+    showShareModal.value = true;
+};
+
+const openReport = () => {
+    if (!activeShort.value) return;
+    if (!user.value) {
+        router.visit(localizedUrl('/login'));
+        return;
+    }
+    showMoreMenu.value = false;
+    showReportModal.value = true;
+};
+
+const submitReport = async () => {
+    if (!reportReason.value || !activeShort.value || !user.value) return;
+    reportSubmitting.value = true;
+    const { ok, data, status } = await post('/reports', {
+        reportable_type: 'video',
+        reportable_id: activeShort.value.id,
+        reason: reportReason.value,
+        description: reportDescription.value,
+    });
+    reportSubmitting.value = false;
+    if (ok) {
+        reportSuccess.value = true;
+        toast.success(data?.message || t('report.success') || 'Report submitted successfully!');
+        setTimeout(() => {
+            showReportModal.value = false;
+            reportSuccess.value = false;
+            reportReason.value = '';
+            reportDescription.value = '';
+        }, 1500);
+    } else {
+        const msg = data?.error || data?.message || (status === 422 ? 'You have already reported this content' : 'Failed to submit report. Please try again.');
+        toast.error(msg);
     }
 };
 
@@ -262,8 +309,14 @@ onUnmounted(() => {
 });
 
 watch(currentIndex, async (newIndex) => {
+    showMoreMenu.value = false;
     if (newIndex >= items.value.length - 3 && hasMore.value) await loadMore();
     if (activeShort.value && showComments.value) await loadComments(activeShort.value.id);
+});
+
+watch(muted, (value) => {
+    const video = slides.value[currentIndex.value]?.querySelector('video');
+    if (video) video.muted = value;
 });
 
 const goBack = () => router.visit(localizedUrl('/'));
@@ -301,7 +354,7 @@ const goBack = () => router.visit(localizedUrl('/'));
                         class="w-full h-full object-contain bg-black"
                         loop
                         playsinline
-                        muted
+                        :muted="muted"
                         preload="metadata"
                     />
 
@@ -323,12 +376,23 @@ const goBack = () => router.visit(localizedUrl('/'));
                             <span class="text-xs font-medium">{{ item.data.comments_count || 0 }}</span>
                         </button>
 
-                        <button @click="shareShort" class="flex flex-col items-center gap-1 text-white">
-                            <Share2 class="w-7 h-7" />
-                        </button>
-
-                        <button class="text-white">
+                        <button @click="showMoreMenu = !showMoreMenu" class="text-white relative">
                             <MoreVertical class="w-7 h-7" />
+                        </button>
+                    </div>
+
+                    <!-- More menu popover -->
+                    <div
+                        v-if="showMoreMenu && currentIndex === index"
+                        class="absolute right-3 bottom-12 lg:bottom-8 z-30 bg-black/80 backdrop-blur-sm rounded-xl p-2 min-w-[140px] border border-white/10"
+                    >
+                        <button @click="shareShort" class="flex items-center gap-3 w-full px-3 py-2 text-white rounded-lg hover:bg-white/10">
+                            <Share2 class="w-5 h-5" />
+                            <span class="text-sm">{{ t('common.share') || 'Share' }}</span>
+                        </button>
+                        <button @click="openReport" class="flex items-center gap-3 w-full px-3 py-2 text-white rounded-lg hover:bg-white/10">
+                            <Flag class="w-5 h-5" />
+                            <span class="text-sm">{{ t('common.report') || 'Report' }}</span>
                         </button>
                     </div>
 
@@ -342,19 +406,16 @@ const goBack = () => router.visit(localizedUrl('/'));
                     </div>
 
                     <!-- Top controls -->
-                    <div class="absolute top-4 left-0 right-0 px-4 z-20 flex items-center justify-between">
+                    <div class="absolute top-4 left-0 lg:left-auto lg:right-4 right-0 px-4 lg:px-0 z-[60] flex items-center justify-between lg:justify-end gap-3">
                         <button @click="goBack" class="lg:hidden text-white/80 hover:text-white">
                             <ChevronLeft class="w-6 h-6" />
                         </button>
                         <div class="flex items-center gap-3">
-                            <button @click="togglePlay" class="text-white/80 hover:text-white">
-                                <Play v-if="false" class="w-6 h-6" />
-                            </button>
-                            <button @click="toggleMute" class="text-white/80 hover:text-white">
+                            <button @click="toggleMute" class="text-white/80 hover:text-white p-2 rounded-full bg-black/40 hover:bg-black/60">
                                 <VolumeX v-if="muted" class="w-6 h-6" />
                                 <Volume2 v-else class="w-6 h-6" />
                             </button>
-                            <button @click="showFilters = true" class="text-white/80 hover:text-white">
+                            <button @click="showFilters = true" class="text-white/80 hover:text-white p-2 rounded-full bg-black/40 hover:bg-black/60">
                                 <Filter class="w-6 h-6" />
                             </button>
                         </div>
@@ -374,6 +435,24 @@ const goBack = () => router.visit(localizedUrl('/'));
             <div v-if="loadingMore" class="h-full w-full flex items-center justify-center shrink-0">
                 <div class="w-10 h-10 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
             </div>
+        </div>
+
+        <!-- Desktop prev/next chevrons -->
+        <div class="hidden lg:flex absolute right-6 top-1/2 -translate-y-1/2 z-40 flex-col gap-4">
+            <button
+                @click="goPrev"
+                :disabled="currentIndex === 0"
+                class="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+                <ChevronUp class="w-7 h-7" />
+            </button>
+            <button
+                @click="goNext"
+                :disabled="currentIndex >= items.length - 1 && !hasMore"
+                class="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+                <ChevronDown class="w-7 h-7" />
+            </button>
         </div>
 
         <!-- Comments drawer -->
@@ -469,6 +548,52 @@ const goBack = () => router.visit(localizedUrl('/'));
                 </div>
             </div>
         </Transition>
+
+        <!-- Share modal -->
+        <ShareModal v-model="showShareModal" :url="shareUrl" :title="activeShort?.title" />
+
+        <!-- Report modal -->
+        <Teleport to="body">
+            <div
+                v-if="showReportModal"
+                class="fixed inset-0 z-50 flex items-center justify-center px-4"
+                style="background-color: rgba(0,0,0,0.6);"
+                @click.self="showReportModal = false"
+            >
+                <div class="w-full max-w-md card p-6 shadow-xl bg-bg-card">
+                    <h3 class="text-lg font-bold mb-4 text-text-primary">{{ t('report.title') || 'Report Video' }}</h3>
+
+                    <div v-if="reportSuccess" class="text-center py-4">
+                        <p class="text-green-500 font-medium">{{ t('report.success') || 'Report submitted successfully!' }}</p>
+                    </div>
+
+                    <form v-else @submit.prevent="submitReport" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-text-secondary">{{ t('report.reason') || 'Reason' }}</label>
+                            <select v-model="reportReason" class="input" required>
+                                <option value="" disabled>{{ t('report.select_reason') || 'Select a reason' }}</option>
+                                <option value="spam">{{ t('report.spam') || 'Spam or misleading' }}</option>
+                                <option value="harassment">{{ t('report.harassment') || 'Harassment or bullying' }}</option>
+                                <option value="illegal">{{ t('report.illegal') || 'Illegal content' }}</option>
+                                <option value="copyright">{{ t('report.copyright') || 'Copyright violation' }}</option>
+                                <option value="underage">{{ t('report.underage') || 'Underage content' }}</option>
+                                <option value="other">{{ t('report.other') || 'Other' }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('report.details') || 'Details (optional)' }}</label>
+                            <textarea v-model="reportDescription" class="input" rows="3" :placeholder="t('report.details_placeholder') || 'Provide additional details...'" maxlength="2000"></textarea>
+                        </div>
+                        <div class="flex gap-3 justify-end">
+                            <button type="button" @click="showReportModal = false" class="btn btn-secondary">{{ t('common.cancel') || 'Cancel' }}</button>
+                            <button type="submit" :disabled="reportSubmitting || !reportReason" class="btn btn-primary">
+                                {{ reportSubmitting ? (t('report.submitting') || 'Submitting...') : (t('report.submit') || 'Submit Report') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </Teleport>
     </div>
 </template>
 
