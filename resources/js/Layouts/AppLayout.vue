@@ -7,7 +7,7 @@ import {
     ChevronLeft, ChevronRight, Shield,
     X, Check, CheckCheck, Rss, LayoutDashboard, ChevronDown, ChevronUp, Film,
     Tag, Folder, Star, ExternalLink, Eye, EyeOff, LayoutGrid, Plus,
-    ImageIcon, MoreHorizontal, Loader2
+    ImageIcon, MoreHorizontal, Loader2, Smartphone
 } from 'lucide-vue-next';
 import { useTheme } from '@/Composables/useTheme';
 import { useToast } from '@/Composables/useToast';
@@ -304,6 +304,7 @@ const monetizationEnabled = computed(() => page.props.app?.monetization_enabled 
 
 const navigation = computed(() => [
     { name: t('nav.home') || 'Home', href: localizedUrl('/'), icon: Home, key: 'home' },
+    { name: t('nav.shorts') || 'Shorts', href: localizedUrl('/shorts'), icon: Smartphone, key: 'shorts' },
     { name: t('nav.trending') || 'Trending', href: localizedUrl('/trending'), icon: TrendingUp, key: 'trending' },
     { name: t('nav.categories') || 'Categories', href: localizedUrl('/categories'), icon: LayoutGrid, key: 'categories' },
     { name: t('nav.tags') || 'Tags', href: localizedUrl('/tags'), icon: Tag, key: 'tags' },
@@ -366,6 +367,7 @@ const mobileNavItems = computed(() => [
 ]);
 
 const mobileMoreItems = computed(() => [
+    { name: tSafe('nav.shorts', 'Shorts'), href: localizedUrl('/shorts'), icon: Smartphone },
     { name: tSafe('nav.trending', 'Trending'), href: localizedUrl('/trending'), icon: TrendingUp },
     { name: tSafe('nav.tags', 'Tags'), href: localizedUrl('/tags'), icon: Tag },
     { name: tSafe('nav.playlists', 'Playlists'), href: localizedUrl('/public-playlists'), icon: ListVideo },

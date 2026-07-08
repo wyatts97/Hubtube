@@ -2,10 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Facades\Cache;
-use Throwable;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use App\Services\StorageManager;
 use App\Traits\Translatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,9 +10,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Laravel\Scout\Searchable;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Throwable;
 
 class Video extends Model
 {
@@ -128,7 +128,7 @@ class Video extends Model
             $tags = preg_split('/[\r\n,]+/', $tags) ?: [];
         }
 
-        if (!is_array($tags)) {
+        if (! is_array($tags)) {
             return [];
         }
 
@@ -145,7 +145,7 @@ class Video extends Model
 
         $normalized = [];
         foreach ($tags as $tag) {
-            if (!is_scalar($tag)) {
+            if (! is_scalar($tag)) {
                 continue;
             }
 
@@ -210,7 +210,7 @@ class Video extends Model
             if ($video->wasChanged('description')) {
                 $stale[] = 'description';
             }
-            if (!empty($stale)) {
+            if (! empty($stale)) {
                 try {
                     Translation::where('translatable_type', static::class)
                         ->where('translatable_id', $video->id)
@@ -248,7 +248,7 @@ class Video extends Model
             }
 
             // Delete thumbnail if stored outside video dir (legacy path)
-            if ($video->thumbnail && !str_starts_with($video->thumbnail, 'videos/')) {
+            if ($video->thumbnail && ! str_starts_with($video->thumbnail, 'videos/')) {
                 StorageManager::delete($video->thumbnail, $disk);
             }
         });
@@ -345,13 +345,18 @@ class Video extends Model
         return $query->where('is_featured', true);
     }
 
+    public function scopeShorts($query)
+    {
+        return $query->where('is_portrait', true)->where('duration', '<', 60);
+    }
+
     public function isAccessibleBy(?User $user): bool
     {
         if ($this->privacy === 'public') {
             return true;
         }
 
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -421,7 +426,7 @@ class Video extends Model
 
     public function getPreviewThumbnailsUrlAttribute(): ?string
     {
-        if (!$this->scrubber_vtt_path) {
+        if (! $this->scrubber_vtt_path) {
             return null;
         }
 
@@ -430,18 +435,18 @@ class Video extends Model
 
     public function getHlsPlaylistUrlAttribute(): ?string
     {
-        if (!$this->video_path) {
+        if (! $this->video_path) {
             return null;
         }
 
         $disk = $this->storage_disk ?? 'public';
-        if ($disk !== 'public' && !Setting::get('cloud_storage_public_bucket', false)) {
+        if ($disk !== 'public' && ! Setting::get('cloud_storage_public_bucket', false)) {
             return null;
         }
         $baseDir = dirname($this->video_path);
-        $masterPath = $baseDir . '/processed/master.m3u8';
+        $masterPath = $baseDir.'/processed/master.m3u8';
 
-        if (!StorageManager::exists($masterPath, $disk)) {
+        if (! StorageManager::exists($masterPath, $disk)) {
             return null;
         }
 
@@ -450,7 +455,7 @@ class Video extends Model
 
     public function getQualityUrlsAttribute(): array
     {
-        if (!$this->video_path || !$this->qualities_available) {
+        if (! $this->video_path || ! $this->qualities_available) {
             return [];
         }
 
@@ -462,7 +467,7 @@ class Video extends Model
             if ($quality === 'original') {
                 $urls['original'] = StorageManager::url($this->video_path, $disk);
             } else {
-                $path = $baseDir . '/processed/' . $quality . '.mp4';
+                $path = $baseDir.'/processed/'.$quality.'.mp4';
                 if (StorageManager::exists($path, $disk)) {
                     $urls[$quality] = StorageManager::url($path, $disk);
                 }
@@ -478,7 +483,7 @@ class Video extends Model
             return $this->embed_url;
         }
 
-        if (!$this->video_path) {
+        if (! $this->video_path) {
             return null;
         }
 
@@ -540,7 +545,7 @@ class Video extends Model
      */
     public function getAvailableThumbnails(): array
     {
-        if (!$this->slug) {
+        if (! $this->slug) {
             return [];
         }
 
@@ -564,7 +569,7 @@ class Video extends Model
         }
 
         // Include custom thumbnail if it exists and isn't already in the list
-        if ($this->thumbnail && !collect($thumbnails)->pluck('path')->contains($this->thumbnail)) {
+        if ($this->thumbnail && ! collect($thumbnails)->pluck('path')->contains($this->thumbnail)) {
             if (StorageManager::exists($this->thumbnail, $disk)) {
                 array_unshift($thumbnails, [
                     'path' => $this->thumbnail,
@@ -579,7 +584,7 @@ class Video extends Model
 
     public function hasPurchasedBy(?User $user): bool
     {
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 

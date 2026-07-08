@@ -11,6 +11,7 @@
  */
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useFetch } from '@/Composables/useFetch';
+import { useImaAd } from '@/Composables/useImaAd';
 
 const props = defineProps({
     categoryId: { type: Number, default: null },
@@ -46,9 +47,11 @@ const adBuffering = ref(false);
 // IMA state (VAST / VPAID only)
 const imaContainerRef = ref(null);
 const imaVideoRef = ref(null);
-let imaDisplayContainer = null;
-let imaAdsLoader = null;
-let imaAdsManager = null;
+const { play: playIma, destroy: destroyIma } = useImaAd(imaContainerRef, imaVideoRef, {
+    onStart: (placement) => { emit('ad-started', placement); emit('request-pause'); fireImpression(currentAd.value); },
+    onComplete: () => endAd(),
+    onError: () => endAd(),
+});
 
 // Mid-roll tracking
 const midRollsPlayed = ref(0);
@@ -94,91 +97,10 @@ const getSkipDelay = (placement) => {
     }
 };
 
-// ── IMA SDK (VAST / VPAID) ──
-const loadImaSdk = () => new Promise((resolve, reject) => {
-    if (window.google?.ima) { resolve(); return; }
-    const s = document.createElement('script');
-    s.src = 'https://imasdk.googleapis.com/js/sdkloader/ima3.js';
-    s.onload = resolve;
-    s.onerror = reject;
-    document.head.appendChild(s);
-});
-
-const destroyIma = () => {
-    try { imaAdsManager?.destroy(); } catch (_) {}
-    try { imaAdsLoader?.contentComplete(); } catch (_) {}
-    imaAdsManager = null;
-    imaAdsLoader = null;
-    imaDisplayContainer = null;
-};
-
+// ── VAST / VPAID dispatcher ──
 const playVastAd = async (ad, placement) => {
-    try { await loadImaSdk(); }
-    catch (e) {
-        console.warn('[VideoAdPlayer] IMA SDK failed to load:', e);
-        endAd(); return;
-    }
-
-    await nextTick();
-    if (!imaContainerRef.value || !imaVideoRef.value) { endAd(); return; }
-
-    try {
-        const ima = window.google.ima;
-        destroyIma();
-
-        ima.settings.setDisableCustomPlaybackForIOS10Plus(true);
-
-        imaDisplayContainer = new ima.AdDisplayContainer(imaContainerRef.value, imaVideoRef.value);
-        imaDisplayContainer.initialize();
-
-        imaAdsLoader = new ima.AdsLoader(imaDisplayContainer);
-
-        imaAdsLoader.addEventListener(
-            ima.AdsManagerLoadedEvent.Type.ADS_MANAGER_LOADED,
-            (event) => {
-                imaAdsManager = event.getAdsManager(imaVideoRef.value);
-
-                imaAdsManager.addEventListener(ima.AdEvent.Type.STARTED, () => {
-                    emit('ad-started', placement);
-                    emit('request-pause');
-                    fireImpression(ad);
-                });
-                imaAdsManager.addEventListener(ima.AdEvent.Type.COMPLETE, () => { destroyIma(); endAd(); });
-                imaAdsManager.addEventListener(ima.AdEvent.Type.SKIPPED,  () => { destroyIma(); emit('ad-skipped', placement); endAd(); });
-                imaAdsManager.addEventListener(ima.AdEvent.Type.ALL_ADS_COMPLETED, () => { destroyIma(); endAd(); });
-                imaAdsManager.addEventListener(ima.AdErrorEvent.Type.AD_ERROR, (err) => {
-                    console.warn('[VideoAdPlayer] IMA ad error:', err.getError().toString());
-                    destroyIma(); endAd();
-                });
-
-                try {
-                    const w = imaContainerRef.value?.offsetWidth  || 640;
-                    const h = imaContainerRef.value?.offsetHeight || 360;
-                    imaAdsManager.init(w, h, ima.ViewMode.NORMAL);
-                    imaAdsManager.start();
-                } catch (err) {
-                    console.warn('[VideoAdPlayer] IMA start error:', err);
-                    destroyIma(); endAd();
-                }
-            }
-        );
-
-        imaAdsLoader.addEventListener(ima.AdErrorEvent.Type.AD_ERROR, (err) => {
-            console.warn('[VideoAdPlayer] IMA loader error:', err.getError().toString());
-            destroyIma(); endAd();
-        });
-
-        const req = new ima.AdsRequest();
-        req.adTagUrl = ad.content.trim();
-        req.linearAdSlotWidth    = imaContainerRef.value?.offsetWidth  || 640;
-        req.linearAdSlotHeight   = imaContainerRef.value?.offsetHeight || 360;
-        req.nonLinearAdSlotWidth  = imaContainerRef.value?.offsetWidth  || 640;
-        req.nonLinearAdSlotHeight = 150;
-        imaAdsLoader.requestAds(req);
-    } catch (e) {
-        console.warn('[VideoAdPlayer] IMA setup error:', e);
-        destroyIma(); endAd();
-    }
+    currentAd.value = ad;
+    await playIma(ad, { placement });
 };
 
 // ── Impression / click pixel helpers ──

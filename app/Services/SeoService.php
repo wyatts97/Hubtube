@@ -2,16 +2,15 @@
 
 namespace App\Services;
 
-use Exception;
+use App\Models\Category;
 use App\Models\Gallery;
 use App\Models\Image;
 use App\Models\Page;
 use App\Models\Playlist;
 use App\Models\Setting;
-use App\Models\Video;
 use App\Models\User;
-use App\Models\Category;
-use App\Services\StorageManager;
+use App\Models\Video;
+use Exception;
 use Illuminate\Support\Facades\App;
 
 class SeoService
@@ -39,6 +38,7 @@ class SeoService
                 $this->settings = [];
             }
         }
+
         return $this->settings[$key] ?? $default;
     }
 
@@ -58,8 +58,9 @@ class SeoService
     protected function template(string $template, array $vars): string
     {
         foreach ($vars as $key => $value) {
-            $template = str_replace('{' . $key . '}', (string) $value, $template);
+            $template = str_replace('{'.$key.'}', (string) $value, $template);
         }
+
         return $template;
     }
 
@@ -73,7 +74,8 @@ class SeoService
         if (mb_strlen($text) <= $max) {
             return $text;
         }
-        return mb_substr($text, 0, $max - 3) . '...';
+
+        return mb_substr($text, 0, $max - 3).'...';
     }
 
     /**
@@ -81,15 +83,16 @@ class SeoService
      */
     public function canonical(?string $path = null): ?string
     {
-        if (!$this->s('seo_canonical_enabled', true)) {
+        if (! $this->s('seo_canonical_enabled', true)) {
             return null;
         }
         $url = $path ? url($path) : url()->current();
         // Strip query parameters for canonical
         $url = strtok($url, '?');
-        if ($this->s('seo_force_trailing_slash', false) && !str_ends_with($url, '/')) {
+        if ($this->s('seo_force_trailing_slash', false) && ! str_ends_with($url, '/')) {
             $url .= '/';
         }
+
         return $url;
     }
 
@@ -111,6 +114,7 @@ class SeoService
         }
 
         static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -240,7 +244,7 @@ class SeoService
                 $schema['commentCount'] = $video->comments_count;
             }
 
-            $schema['isFamilyFriendly'] = !$video->age_restricted;
+            $schema['isFamilyFriendly'] = ! $video->age_restricted;
 
             // Add language annotation
             $schema['inLanguage'] = App::getLocale();
@@ -271,6 +275,7 @@ class SeoService
         }
 
         static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -319,6 +324,7 @@ class SeoService
         $seo['schema'][] = $schema;
 
         static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -397,6 +403,7 @@ class SeoService
         }
 
         static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -428,6 +435,24 @@ class SeoService
         ];
 
         static::$currentSeo = $seo;
+
+        return $seo;
+    }
+
+    /**
+     * Generate SEO data for the Shorts page.
+     */
+    public function forShorts(array $filters = []): array
+    {
+        $vars = ['site_name' => $this->siteName()];
+        $title = $this->template($this->s('seo_shorts_title', 'Shorts | {site_name}'), $vars);
+        $description = $this->truncate($this->template($this->s('seo_shorts_description', 'Watch quick vertical short-form videos on {site_name}.'), $vars));
+
+        $seo = $this->baseMeta($title, $description, '/shorts');
+        $seo['og']['type'] = 'website';
+
+        static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -442,6 +467,7 @@ class SeoService
 
         $seo = $this->baseMeta($title, $description, '/trending');
         static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -456,6 +482,7 @@ class SeoService
 
         $seo = $this->baseMeta($title, $description, '/live');
         static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -471,6 +498,7 @@ class SeoService
         $seo['robots'] = 'noindex, follow';
 
         static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -484,6 +512,7 @@ class SeoService
 
         $seo = $this->baseMeta($title, $description, "/tag/{$tag}");
         static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -518,6 +547,7 @@ class SeoService
         }
 
         static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -547,6 +577,7 @@ class SeoService
         }
 
         static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -566,6 +597,7 @@ class SeoService
         $seo['og']['type'] = 'website';
 
         static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -589,6 +621,7 @@ class SeoService
         }
 
         static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -597,7 +630,7 @@ class SeoService
      */
     public function forImage(Image $image): array
     {
-        $title = $image->title ?: ('Photo ' . $image->uuid);
+        $title = $image->title ?: ('Photo '.$image->uuid);
         $vars = [
             'title' => $title,
             'site_name' => $this->siteName(),
@@ -626,7 +659,7 @@ class SeoService
         // noindex non-public/unapproved images
         if (
             (isset($image->privacy) && $image->privacy !== 'public')
-            || (isset($image->is_approved) && !$image->is_approved)
+            || (isset($image->is_approved) && ! $image->is_approved)
         ) {
             $seo['robots'] = 'noindex, nofollow';
         }
@@ -648,7 +681,7 @@ class SeoService
                     'url' => url("/channel/{$image->user->username}"),
                 ];
             }
-            if (!empty($image->width) && !empty($image->height)) {
+            if (! empty($image->width) && ! empty($image->height)) {
                 $schema['width'] = (int) $image->width;
                 $schema['height'] = (int) $image->height;
             }
@@ -656,6 +689,7 @@ class SeoService
         }
 
         static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -679,6 +713,7 @@ class SeoService
         }
 
         static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -743,6 +778,7 @@ class SeoService
         }
 
         static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -766,6 +802,7 @@ class SeoService
         }
 
         static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -802,6 +839,7 @@ class SeoService
         }
 
         static::$currentSeo = $seo;
+
         return $seo;
     }
 
@@ -873,7 +911,7 @@ class SeoService
         $sameAs = $this->s('seo_schema_same_as', '');
         if ($sameAs) {
             $links = array_filter(array_map('trim', explode("\n", $sameAs)));
-            if (!empty($links)) {
+            if (! empty($links)) {
                 $schema['sameAs'] = $links;
             }
         }
@@ -895,7 +933,7 @@ class SeoService
                 '@type' => 'SearchAction',
                 'target' => [
                     '@type' => 'EntryPoint',
-                    'urlTemplate' => url('/search') . '?q={search_term_string}',
+                    'urlTemplate' => url('/search').'?q={search_term_string}',
                 ],
                 'query-input' => 'required name=search_term_string',
             ],
@@ -919,6 +957,7 @@ class SeoService
             'sr' => 'sr_RS', 'lt' => 'lt_LT', 'lv' => 'lv_LV', 'et' => 'et_EE',
             'fil' => 'fil_PH',
         ];
+
         return $map[$locale] ?? $locale;
     }
 
@@ -935,9 +974,15 @@ class SeoService
         $secs = $seconds % 60;
 
         $duration = 'PT';
-        if ($hours > 0) $duration .= "{$hours}H";
-        if ($minutes > 0) $duration .= "{$minutes}M";
-        if ($secs > 0 || $duration === 'PT') $duration .= "{$secs}S";
+        if ($hours > 0) {
+            $duration .= "{$hours}H";
+        }
+        if ($minutes > 0) {
+            $duration .= "{$minutes}M";
+        }
+        if ($secs > 0 || $duration === 'PT') {
+            $duration .= "{$secs}S";
+        }
 
         return $duration;
     }

@@ -306,12 +306,30 @@
         $stickyCode = \App\Models\Setting::get('custom_sticky_banner_code', '') ?: '';
         $stickyMobileCode = \App\Models\Setting::get('custom_sticky_banner_mobile_code', '') ?: '';
 
+        // Zone popunder config (our click-triggered zone URL handler)
+        $zonePopunderEnabled = filter_var(\App\Models\Setting::get('zone_popunder_enabled', false), FILTER_VALIDATE_BOOLEAN);
+        $zonePopunderUrl = \App\Models\Setting::get('zone_popunder_url', '') ?: '';
+        $zonePopunderMobileUrl = \App\Models\Setting::get('zone_popunder_mobile_url', '') ?: '';
+
         // Server-side mobile detection via User-Agent for ad variant selection
         $ua = request()->header('User-Agent', '');
         $isMobileUA = (bool) preg_match('/Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile|webOS/i', $ua);
     @endphp
     @if($popunderEnabled && ($popunderCode || $popunderMobileCode))
         {!! $isMobileUA ? ($popunderMobileCode ?: $popunderCode) : $popunderCode !!}
+    @endif
+    @if($zonePopunderEnabled && ($zonePopunderUrl || $zonePopunderMobileUrl))
+        <script>
+            window.__zonePopunder = {
+                enabled: true,
+                url: @json($zonePopunderUrl),
+                mobileUrl: @json($zonePopunderMobileUrl),
+                triggerType: @json(\App\Models\Setting::get('zone_popunder_trigger_type', 'clicks')),
+                clickFrequency: @json((int) \App\Models\Setting::get('zone_popunder_click_frequency', 3)),
+                cooldownMinutes: @json((int) \App\Models\Setting::get('zone_popunder_cooldown_minutes', 5)),
+                maxPerSession: @json((int) \App\Models\Setting::get('zone_popunder_max_per_session', 3)),
+            };
+        </script>
     @endif
     @if($interstitialEnabled && ($interstitialCode || $interstitialMobileCode))
         {!! $isMobileUA ? ($interstitialMobileCode ?: $interstitialCode) : $interstitialCode !!}

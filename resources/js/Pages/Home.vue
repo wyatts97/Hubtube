@@ -6,6 +6,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
+import ShortsRail from '@/Components/ShortsRail.vue';
 import { Loader2 } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
 import AdSlot from '@/Components/AdSlot.vue';
@@ -25,6 +26,7 @@ const props = defineProps({
     latestVideos: Object, // Now a paginated object
     popularVideos: Array,
     categories: Array,
+    shortsPreview: { type: Array, default: () => [] },
     adSettings: Object, // Ad settings from admin
     seo: { type: Object, default: () => ({}) },
     sponsoredCards: { type: Array, default: () => [] },
@@ -190,6 +192,9 @@ const getSponsoredCard = (index) => {
                 </template>
             </div>
         </section>
+
+        <!-- Shorts Preview Rail -->
+        <ShortsRail v-if="shortsPreview?.length" :shorts="shortsPreview" />
 
         <!-- Latest Videos -->
         <section class="mb-8">

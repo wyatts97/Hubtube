@@ -2,24 +2,15 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Grid;
-use Filament\Tables\Columns\TextColumn;
-use Illuminate\Support\Str;
-use Filament\Tables\Columns\ToggleColumn;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TernaryFilter;
-use Filament\Actions\EditAction;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use App\Filament\Resources\VideoAdResource\Pages\ListVideoAds;
 use App\Filament\Resources\VideoAdResource\Pages\CreateVideoAd;
 use App\Filament\Resources\VideoAdResource\Pages\EditVideoAd;
-use App\Filament\Resources\VideoAdResource\Pages;
+use App\Filament\Resources\VideoAdResource\Pages\ListVideoAds;
 use App\Models\Category;
 use App\Models\VideoAd;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
@@ -28,18 +19,30 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
 
 class VideoAdResource extends Resource
 {
     protected static ?string $model = VideoAd::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-film-strip';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-film-strip';
+
     protected static ?string $navigationLabel = 'Ad Creatives';
-    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Appearance';
+
     protected static ?int $navigationSort = 3;
+
     protected static ?string $recordTitleAttribute = 'name';
 
     public static function form(Schema $schema): Schema
@@ -55,29 +58,33 @@ class VideoAdResource extends Resource
                     Select::make('placement')
                         ->required()
                         ->options([
-                            'pre_roll'  => 'Pre-Roll (before video)',
-                            'mid_roll'  => 'Mid-Roll (during video)',
+                            'pre_roll' => 'Pre-Roll (before video)',
+                            'mid_roll' => 'Mid-Roll (during video)',
                             'post_roll' => 'Post-Roll (after video)',
                             'outstream' => 'Outstream (in video grid)',
+                            'shorts' => 'Shorts (full-screen vertical)',
                         ])
-                        ->default('pre_roll'),
+                        ->default('pre_roll')
+                        ->helperText(fn ($get) => $get('placement') === 'shorts'
+                            ? 'Use 9:16 portrait creatives. VAST vertical video tags and HTML/banner ads are supported.'
+                            : null),
                 ]),
 
                 Grid::make(2)->schema([
                     Select::make('type')
                         ->required()
                         ->options([
-                            'mp4'   => 'MP4 Video (local file or URL)',
-                            'vast'  => 'VAST Tag URL',
+                            'mp4' => 'MP4 Video (local file or URL)',
+                            'vast' => 'VAST Tag URL',
                             'vpaid' => 'VPAID Tag URL',
-                            'html'  => 'HTML Ad Script',
+                            'html' => 'HTML Ad Script',
                         ])
                         ->default('mp4')
                         ->live()
                         ->helperText(fn ($get) => match ($get('type')) {
                             'vast', 'vpaid' => 'Served via Google IMA SDK. The ad network controls skip behavior.',
-                            'mp4'           => 'Upload a file OR paste an external URL below.',
-                            default         => null,
+                            'mp4' => 'Upload a file OR paste an external URL below.',
+                            default => null,
                         }),
 
                     TextInput::make('weight')
@@ -131,11 +138,11 @@ class VideoAdResource extends Resource
                         ->label('')
                         ->content(new HtmlString(
                             '<div style="background:#1e3a5f;border:1px solid #2563eb;border-radius:8px;padding:12px 16px;font-size:13px;color:#93c5fd;">'
-                            . '<strong style="color:#60a5fa;">ℹ VAST/VPAID Notes</strong><br>'
-                            . '• Skip delay settings in "Ad Settings → Video Roll Ads" do <strong>not</strong> apply — the ad network controls skip.<br>'
-                            . '• Click-through URL is handled by the VAST tag itself.<br>'
-                            . '• Weight and category/role targeting still apply for ad selection.'
-                            . '</div>'
+                            .'<strong style="color:#60a5fa;">ℹ VAST/VPAID Notes</strong><br>'
+                            .'• Skip delay settings in "Ad Settings → Video Roll Ads" do <strong>not</strong> apply — the ad network controls skip.<br>'
+                            .'• Click-through URL is handled by the VAST tag itself.<br>'
+                            .'• Weight and category/role targeting still apply for ad selection.'
+                            .'</div>'
                         ))
                         ->columnSpanFull(),
                 ]),
@@ -188,10 +195,10 @@ class VideoAdResource extends Resource
                     CheckboxList::make('target_roles')
                         ->label('Target User Roles')
                         ->options([
-                            'guest'   => 'Guests (not logged in)',
+                            'guest' => 'Guests (not logged in)',
                             'default' => 'Default Users (free)',
-                            'pro'     => 'Pro Users',
-                            'admin'   => 'Admins',
+                            'pro' => 'Pro Users',
+                            'admin' => 'Admins',
                         ])
                         ->helperText('Leave empty to show to all users'),
                 ]),
@@ -215,31 +222,33 @@ class VideoAdResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn (string $state) => strtoupper($state))
                     ->color(fn (string $state): string => match ($state) {
-                        'mp4'   => 'info',
-                        'vast'  => 'purple',
+                        'mp4' => 'info',
+                        'vast' => 'purple',
                         'vpaid' => 'indigo',
-                        'html'  => 'warning',
+                        'html' => 'warning',
                         default => 'gray',
                     }),
                 TextColumn::make('placement')
                     ->badge()
                     ->formatStateUsing(fn (string $state) => ucwords(str_replace('_', '-', $state)))
                     ->color(fn (string $state): string => match ($state) {
-                        'pre_roll'  => 'success',
-                        'mid_roll'  => 'warning',
+                        'pre_roll' => 'success',
+                        'mid_roll' => 'warning',
                         'post_roll' => 'danger',
-                        default     => 'gray',
+                        'shorts' => 'info',
+                        default => 'gray',
                     }),
 
                 TextColumn::make('content')
                     ->label('Source')
                     ->formatStateUsing(function (string $state, VideoAd $record): string {
                         if ($record->type === 'mp4' && $record->file_path) {
-                            return '📁 ' . basename($record->file_path);
+                            return '📁 '.basename($record->file_path);
                         }
                         if ($record->type === 'html') {
-                            return '🖥 HTML script (' . strlen($state) . ' chars)';
+                            return '🖥 HTML script ('.strlen($state).' chars)';
                         }
+
                         return Str::limit($state, 50);
                     })
                     ->color('gray')
@@ -251,12 +260,13 @@ class VideoAdResource extends Resource
                 TextColumn::make('category_ids')
                     ->label('Targeting')
                     ->formatStateUsing(function ($state, VideoAd $record): string {
-                        $cats  = ($record->category_ids && count($record->category_ids))
-                            ? count($record->category_ids) . ' cats'
+                        $cats = ($record->category_ids && count($record->category_ids))
+                            ? count($record->category_ids).' cats'
                             : 'All cats';
                         $roles = ($record->target_roles && count($record->target_roles))
                             ? implode(', ', $record->target_roles)
                             : 'All roles';
+
                         return "{$cats} · {$roles}";
                     })
                     ->color('gray')
@@ -279,16 +289,18 @@ class VideoAdResource extends Resource
             ->filters([
                 SelectFilter::make('type')
                     ->options([
-                        'mp4'   => 'MP4',
-                        'vast'  => 'VAST',
+                        'mp4' => 'MP4',
+                        'vast' => 'VAST',
                         'vpaid' => 'VPAID',
-                        'html'  => 'HTML',
+                        'html' => 'HTML',
                     ]),
                 SelectFilter::make('placement')
                     ->options([
-                        'pre_roll'  => 'Pre-Roll',
-                        'mid_roll'  => 'Mid-Roll',
+                        'pre_roll' => 'Pre-Roll',
+                        'mid_roll' => 'Mid-Roll',
                         'post_roll' => 'Post-Roll',
+                        'outstream' => 'Outstream',
+                        'shorts' => 'Shorts',
                     ]),
                 TernaryFilter::make('is_active')->label('Active'),
             ])
@@ -321,17 +333,18 @@ class VideoAdResource extends Resource
 
     public static function mutateFormDataBeforeSave(array $data): array
     {
-        $data['category_ids'] = !empty($data['category_ids']) ? array_map('intval', $data['category_ids']) : null;
-        $data['target_roles'] = !empty($data['target_roles']) ? $data['target_roles'] : null;
+        $data['category_ids'] = ! empty($data['category_ids']) ? array_map('intval', $data['category_ids']) : null;
+        $data['target_roles'] = ! empty($data['target_roles']) ? $data['target_roles'] : null;
+
         return $data;
     }
 
     public static function getPages(): array
     {
         return [
-            'index'  => ListVideoAds::route('/'),
+            'index' => ListVideoAds::route('/'),
             'create' => CreateVideoAd::route('/create'),
-            'edit'   => EditVideoAd::route('/{record}/edit'),
+            'edit' => EditVideoAd::route('/{record}/edit'),
         ];
     }
 }

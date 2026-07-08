@@ -1,5 +1,6 @@
 import './bootstrap';
 import '../css/app.css';
+import './zonePopunder';
 
 import NProgress from 'nprogress';
 

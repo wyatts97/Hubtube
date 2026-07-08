@@ -83,11 +83,21 @@ class HomeController extends Controller
             'videoGridFrequency' => (int) $s('video_grid_ad_frequency', 8),
         ];
 
+        $shortsPreview = Cache::remember('home:shorts', 120, fn () =>
+            Video::query()
+                ->with(['user.channel', 'category'])
+                ->public()->approved()->processed()->shorts()
+                ->latest('published_at')
+                ->limit(12)
+                ->get()
+        );
+
         return Inertia::render('Home', [
             'featuredVideos' => $featuredVideos,
             'latestVideos' => $latestVideos,
             'popularVideos' => $popularVideos,
             'categories' => $categories,
+            'shortsPreview' => $shortsPreview,
             'adSettings' => $this->shouldSuppressAds() ? ['videoGridEnabled' => false] : $adSettings,
             'seo' => $this->seoService->forHome(),
             'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('home', auth()->user()?->role ?? 'guest'),

@@ -2,14 +2,9 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Grid;
-use Filament\Actions\Action;
 use App\Models\Setting;
 use App\Services\AdminLogger;
+use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -19,17 +14,25 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Storage;
-
 
 class AdSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-currency-dollar';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-currency-dollar';
+
     protected static ?string $navigationLabel = 'Ad Settings';
-    protected static string | \UnitEnum | null $navigationGroup = 'Monetization';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Monetization';
+
     protected static ?int $navigationSort = 4;
+
     protected string $view = 'filament.pages.ad-settings';
 
     public ?array $data = [];
@@ -37,92 +40,101 @@ class AdSettings extends Page implements HasForms
     public function mount(): void
     {
         $this->form->fill([
-            'video_ad_pre_roll_enabled'      => Setting::get('video_ad_pre_roll_enabled', false),
-            'video_ad_mid_roll_enabled'      => Setting::get('video_ad_mid_roll_enabled', false),
-            'video_ad_post_roll_enabled'     => Setting::get('video_ad_post_roll_enabled', false),
-            'video_ad_pre_roll_skip_after'   => Setting::get('video_ad_pre_roll_skip_after', 5),
-            'video_ad_mid_roll_skip_after'   => Setting::get('video_ad_mid_roll_skip_after', 5),
-            'video_ad_post_roll_skip_after'  => Setting::get('video_ad_post_roll_skip_after', 0),
-            'video_ad_mid_roll_interval'     => Setting::get('video_ad_mid_roll_interval', 300),
-            'video_ad_mid_roll_max_count'    => Setting::get('video_ad_mid_roll_max_count', 3),
-            'video_ad_shuffle'               => Setting::get('video_ad_shuffle', true),
-            'banner_above_player_enabled'       => Setting::get('banner_above_player_enabled', false),
-            'banner_above_player_type'          => Setting::get('banner_above_player_type', 'html'),
-            'banner_above_player_html'          => Setting::get('banner_above_player_html', ''),
-            'banner_above_player_image'         => Setting::get('banner_above_player_image', ''),
-            'banner_above_player_link'          => Setting::get('banner_above_player_link', ''),
-            'banner_above_player_mobile_type'   => Setting::get('banner_above_player_mobile_type', 'html'),
-            'banner_above_player_mobile_html'   => Setting::get('banner_above_player_mobile_html', ''),
-            'banner_above_player_mobile_image'  => Setting::get('banner_above_player_mobile_image', ''),
-            'banner_above_player_mobile_link'   => Setting::get('banner_above_player_mobile_link', ''),
-            'banner_below_player_enabled'       => Setting::get('banner_below_player_enabled', false),
-            'banner_below_player_type'          => Setting::get('banner_below_player_type', 'html'),
-            'banner_below_player_html'          => Setting::get('banner_below_player_html', ''),
-            'banner_below_player_image'         => Setting::get('banner_below_player_image', ''),
-            'banner_below_player_link'          => Setting::get('banner_below_player_link', ''),
-            'banner_below_player_mobile_type'   => Setting::get('banner_below_player_mobile_type', 'html'),
-            'banner_below_player_mobile_html'   => Setting::get('banner_below_player_mobile_html', ''),
-            'banner_below_player_mobile_image'  => Setting::get('banner_below_player_mobile_image', ''),
-            'banner_below_player_mobile_link'   => Setting::get('banner_below_player_mobile_link', ''),
-            'browse_banner_ad_enabled'          => Setting::get('browse_banner_ad_enabled', false),
-            'browse_banner_ad_type'             => Setting::get('browse_banner_ad_type', 'html'),
-            'browse_banner_ad_html'             => Setting::get('browse_banner_ad_html', ''),
-            'browse_banner_ad_image'            => Setting::get('browse_banner_ad_image', ''),
-            'browse_banner_ad_link'             => Setting::get('browse_banner_ad_link', ''),
-            'browse_banner_ad_mobile_type'      => Setting::get('browse_banner_ad_mobile_type', 'html'),
-            'browse_banner_ad_mobile_html'      => Setting::get('browse_banner_ad_mobile_html', ''),
-            'browse_banner_ad_mobile_image'     => Setting::get('browse_banner_ad_mobile_image', ''),
-            'browse_banner_ad_mobile_link'      => Setting::get('browse_banner_ad_mobile_link', ''),
-            'search_banner_ad_enabled'          => Setting::get('search_banner_ad_enabled', false),
-            'search_banner_ad_type'             => Setting::get('search_banner_ad_type', 'html'),
-            'search_banner_ad_html'             => Setting::get('search_banner_ad_html', ''),
-            'search_banner_ad_image'            => Setting::get('search_banner_ad_image', ''),
-            'search_banner_ad_link'             => Setting::get('search_banner_ad_link', ''),
-            'search_banner_ad_mobile_type'      => Setting::get('search_banner_ad_mobile_type', 'html'),
-            'search_banner_ad_mobile_html'      => Setting::get('search_banner_ad_mobile_html', ''),
-            'search_banner_ad_mobile_image'     => Setting::get('search_banner_ad_mobile_image', ''),
-            'search_banner_ad_mobile_link'      => Setting::get('search_banner_ad_mobile_link', ''),
-            'channel_banner_ad_enabled'         => Setting::get('channel_banner_ad_enabled', false),
-            'channel_banner_ad_type'            => Setting::get('channel_banner_ad_type', 'html'),
-            'channel_banner_ad_html'            => Setting::get('channel_banner_ad_html', ''),
-            'channel_banner_ad_image'           => Setting::get('channel_banner_ad_image', ''),
-            'channel_banner_ad_link'            => Setting::get('channel_banner_ad_link', ''),
-            'channel_banner_ad_mobile_type'     => Setting::get('channel_banner_ad_mobile_type', 'html'),
-            'channel_banner_ad_mobile_html'     => Setting::get('channel_banner_ad_mobile_html', ''),
-            'channel_banner_ad_mobile_image'    => Setting::get('channel_banner_ad_mobile_image', ''),
-            'channel_banner_ad_mobile_link'     => Setting::get('channel_banner_ad_mobile_link', ''),
-            'category_banner_ad_enabled'        => Setting::get('category_banner_ad_enabled', false),
-            'category_banner_ad_type'           => Setting::get('category_banner_ad_type', 'html'),
-            'category_banner_ad_html'           => Setting::get('category_banner_ad_html', ''),
-            'category_banner_ad_image'          => Setting::get('category_banner_ad_image', ''),
-            'category_banner_ad_link'           => Setting::get('category_banner_ad_link', ''),
-            'category_banner_ad_mobile_type'    => Setting::get('category_banner_ad_mobile_type', 'html'),
-            'category_banner_ad_mobile_html'    => Setting::get('category_banner_ad_mobile_html', ''),
-            'category_banner_ad_mobile_image'   => Setting::get('category_banner_ad_mobile_image', ''),
-            'category_banner_ad_mobile_link'    => Setting::get('category_banner_ad_mobile_link', ''),
-            'video_grid_ad_enabled'             => Setting::get('video_grid_ad_enabled', false),
-            'video_grid_ad_frequency'           => Setting::get('video_grid_ad_frequency', 8),
-            'video_grid_ad_code'                => Setting::get('video_grid_ad_code', ''),
-            'video_grid_ad_mobile_code'         => Setting::get('video_grid_ad_mobile_code', ''),
-            'video_sidebar_ad_enabled'          => Setting::get('video_sidebar_ad_enabled', false),
-            'video_sidebar_ad_code'             => Setting::get('video_sidebar_ad_code', ''),
-            'video_sidebar_ad_mobile_code'      => Setting::get('video_sidebar_ad_mobile_code', ''),
-            'footer_ad_enabled'                 => Setting::get('footer_ad_enabled', false),
-            'footer_ad_code'                    => Setting::get('footer_ad_code', ''),
-            'footer_ad_mobile_code'             => Setting::get('footer_ad_mobile_code', ''),
-            'custom_popunder_enabled'           => Setting::get('custom_popunder_enabled', false),
-            'custom_popunder_code'              => Setting::get('custom_popunder_code', ''),
-            'custom_popunder_mobile_code'       => Setting::get('custom_popunder_mobile_code', ''),
-            'custom_interstitial_enabled'       => Setting::get('custom_interstitial_enabled', false),
-            'interstitial_frequency'            => Setting::get('interstitial_frequency', 5),
-            'interstitial_skip_delay'           => Setting::get('interstitial_skip_delay', 5),
-            'custom_interstitial_code'          => Setting::get('custom_interstitial_code', ''),
-            'custom_interstitial_mobile_code'   => Setting::get('custom_interstitial_mobile_code', ''),
-            'video_outstream_ad_enabled'        => Setting::get('video_outstream_ad_enabled', false),
-            'video_outstream_ad_frequency'      => Setting::get('video_outstream_ad_frequency', 6),
-            'custom_sticky_banner_enabled'      => Setting::get('custom_sticky_banner_enabled', false),
-            'custom_sticky_banner_code'         => Setting::get('custom_sticky_banner_code', ''),
-            'custom_sticky_banner_mobile_code'  => Setting::get('custom_sticky_banner_mobile_code', ''),
+            'video_ad_pre_roll_enabled' => Setting::get('video_ad_pre_roll_enabled', false),
+            'video_ad_mid_roll_enabled' => Setting::get('video_ad_mid_roll_enabled', false),
+            'video_ad_post_roll_enabled' => Setting::get('video_ad_post_roll_enabled', false),
+            'video_ad_pre_roll_skip_after' => Setting::get('video_ad_pre_roll_skip_after', 5),
+            'video_ad_mid_roll_skip_after' => Setting::get('video_ad_mid_roll_skip_after', 5),
+            'video_ad_post_roll_skip_after' => Setting::get('video_ad_post_roll_skip_after', 0),
+            'video_ad_mid_roll_interval' => Setting::get('video_ad_mid_roll_interval', 300),
+            'video_ad_mid_roll_max_count' => Setting::get('video_ad_mid_roll_max_count', 3),
+            'video_ad_shuffle' => Setting::get('video_ad_shuffle', true),
+            'banner_above_player_enabled' => Setting::get('banner_above_player_enabled', false),
+            'banner_above_player_type' => Setting::get('banner_above_player_type', 'html'),
+            'banner_above_player_html' => Setting::get('banner_above_player_html', ''),
+            'banner_above_player_image' => Setting::get('banner_above_player_image', ''),
+            'banner_above_player_link' => Setting::get('banner_above_player_link', ''),
+            'banner_above_player_mobile_type' => Setting::get('banner_above_player_mobile_type', 'html'),
+            'banner_above_player_mobile_html' => Setting::get('banner_above_player_mobile_html', ''),
+            'banner_above_player_mobile_image' => Setting::get('banner_above_player_mobile_image', ''),
+            'banner_above_player_mobile_link' => Setting::get('banner_above_player_mobile_link', ''),
+            'banner_below_player_enabled' => Setting::get('banner_below_player_enabled', false),
+            'banner_below_player_type' => Setting::get('banner_below_player_type', 'html'),
+            'banner_below_player_html' => Setting::get('banner_below_player_html', ''),
+            'banner_below_player_image' => Setting::get('banner_below_player_image', ''),
+            'banner_below_player_link' => Setting::get('banner_below_player_link', ''),
+            'banner_below_player_mobile_type' => Setting::get('banner_below_player_mobile_type', 'html'),
+            'banner_below_player_mobile_html' => Setting::get('banner_below_player_mobile_html', ''),
+            'banner_below_player_mobile_image' => Setting::get('banner_below_player_mobile_image', ''),
+            'banner_below_player_mobile_link' => Setting::get('banner_below_player_mobile_link', ''),
+            'browse_banner_ad_enabled' => Setting::get('browse_banner_ad_enabled', false),
+            'browse_banner_ad_type' => Setting::get('browse_banner_ad_type', 'html'),
+            'browse_banner_ad_html' => Setting::get('browse_banner_ad_html', ''),
+            'browse_banner_ad_image' => Setting::get('browse_banner_ad_image', ''),
+            'browse_banner_ad_link' => Setting::get('browse_banner_ad_link', ''),
+            'browse_banner_ad_mobile_type' => Setting::get('browse_banner_ad_mobile_type', 'html'),
+            'browse_banner_ad_mobile_html' => Setting::get('browse_banner_ad_mobile_html', ''),
+            'browse_banner_ad_mobile_image' => Setting::get('browse_banner_ad_mobile_image', ''),
+            'browse_banner_ad_mobile_link' => Setting::get('browse_banner_ad_mobile_link', ''),
+            'search_banner_ad_enabled' => Setting::get('search_banner_ad_enabled', false),
+            'search_banner_ad_type' => Setting::get('search_banner_ad_type', 'html'),
+            'search_banner_ad_html' => Setting::get('search_banner_ad_html', ''),
+            'search_banner_ad_image' => Setting::get('search_banner_ad_image', ''),
+            'search_banner_ad_link' => Setting::get('search_banner_ad_link', ''),
+            'search_banner_ad_mobile_type' => Setting::get('search_banner_ad_mobile_type', 'html'),
+            'search_banner_ad_mobile_html' => Setting::get('search_banner_ad_mobile_html', ''),
+            'search_banner_ad_mobile_image' => Setting::get('search_banner_ad_mobile_image', ''),
+            'search_banner_ad_mobile_link' => Setting::get('search_banner_ad_mobile_link', ''),
+            'channel_banner_ad_enabled' => Setting::get('channel_banner_ad_enabled', false),
+            'channel_banner_ad_type' => Setting::get('channel_banner_ad_type', 'html'),
+            'channel_banner_ad_html' => Setting::get('channel_banner_ad_html', ''),
+            'channel_banner_ad_image' => Setting::get('channel_banner_ad_image', ''),
+            'channel_banner_ad_link' => Setting::get('channel_banner_ad_link', ''),
+            'channel_banner_ad_mobile_type' => Setting::get('channel_banner_ad_mobile_type', 'html'),
+            'channel_banner_ad_mobile_html' => Setting::get('channel_banner_ad_mobile_html', ''),
+            'channel_banner_ad_mobile_image' => Setting::get('channel_banner_ad_mobile_image', ''),
+            'channel_banner_ad_mobile_link' => Setting::get('channel_banner_ad_mobile_link', ''),
+            'category_banner_ad_enabled' => Setting::get('category_banner_ad_enabled', false),
+            'category_banner_ad_type' => Setting::get('category_banner_ad_type', 'html'),
+            'category_banner_ad_html' => Setting::get('category_banner_ad_html', ''),
+            'category_banner_ad_image' => Setting::get('category_banner_ad_image', ''),
+            'category_banner_ad_link' => Setting::get('category_banner_ad_link', ''),
+            'category_banner_ad_mobile_type' => Setting::get('category_banner_ad_mobile_type', 'html'),
+            'category_banner_ad_mobile_html' => Setting::get('category_banner_ad_mobile_html', ''),
+            'category_banner_ad_mobile_image' => Setting::get('category_banner_ad_mobile_image', ''),
+            'category_banner_ad_mobile_link' => Setting::get('category_banner_ad_mobile_link', ''),
+            'video_grid_ad_enabled' => Setting::get('video_grid_ad_enabled', false),
+            'video_grid_ad_frequency' => Setting::get('video_grid_ad_frequency', 8),
+            'video_grid_ad_code' => Setting::get('video_grid_ad_code', ''),
+            'video_grid_ad_mobile_code' => Setting::get('video_grid_ad_mobile_code', ''),
+            'video_sidebar_ad_enabled' => Setting::get('video_sidebar_ad_enabled', false),
+            'video_sidebar_ad_code' => Setting::get('video_sidebar_ad_code', ''),
+            'video_sidebar_ad_mobile_code' => Setting::get('video_sidebar_ad_mobile_code', ''),
+            'footer_ad_enabled' => Setting::get('footer_ad_enabled', false),
+            'footer_ad_code' => Setting::get('footer_ad_code', ''),
+            'footer_ad_mobile_code' => Setting::get('footer_ad_mobile_code', ''),
+            'custom_popunder_enabled' => Setting::get('custom_popunder_enabled', false),
+            'custom_popunder_code' => Setting::get('custom_popunder_code', ''),
+            'custom_popunder_mobile_code' => Setting::get('custom_popunder_mobile_code', ''),
+            'custom_interstitial_enabled' => Setting::get('custom_interstitial_enabled', false),
+            'interstitial_frequency' => Setting::get('interstitial_frequency', 5),
+            'interstitial_skip_delay' => Setting::get('interstitial_skip_delay', 5),
+            'custom_interstitial_code' => Setting::get('custom_interstitial_code', ''),
+            'custom_interstitial_mobile_code' => Setting::get('custom_interstitial_mobile_code', ''),
+            'video_outstream_ad_enabled' => Setting::get('video_outstream_ad_enabled', false),
+            'video_outstream_ad_frequency' => Setting::get('video_outstream_ad_frequency', 6),
+            'shorts_ad_enabled' => Setting::get('shorts_ad_enabled', false),
+            'shorts_ad_frequency' => Setting::get('shorts_ad_frequency', 8),
+            'custom_sticky_banner_enabled' => Setting::get('custom_sticky_banner_enabled', false),
+            'custom_sticky_banner_code' => Setting::get('custom_sticky_banner_code', ''),
+            'custom_sticky_banner_mobile_code' => Setting::get('custom_sticky_banner_mobile_code', ''),
+            'zone_popunder_enabled' => Setting::get('zone_popunder_enabled', false),
+            'zone_popunder_url' => Setting::get('zone_popunder_url', ''),
+            'zone_popunder_mobile_url' => Setting::get('zone_popunder_mobile_url', ''),
+            'zone_popunder_trigger_type' => Setting::get('zone_popunder_trigger_type', 'clicks'),
+            'zone_popunder_click_frequency' => Setting::get('zone_popunder_click_frequency', 3),
+            'zone_popunder_cooldown_minutes' => Setting::get('zone_popunder_cooldown_minutes', 5),
+            'zone_popunder_max_per_session' => Setting::get('zone_popunder_max_per_session', 3),
         ]);
     }
 
@@ -282,6 +294,68 @@ class AdSettings extends Page implements HasForms
                                             ->helperText('Leave empty to use desktop code on all devices.')
                                             ->visible(fn ($get) => $get('custom_popunder_enabled')),
                                     ]),
+
+                                Section::make('Zone Popunder (Click-Triggered)')
+                                    ->description('Raw zone URL popunder (e.g. pemsrv) triggered by our own click/time logic with frequency caps.')
+                                    ->icon('phosphor-browsers')
+                                    ->collapsible()->collapsed()
+                                    ->schema([
+                                        Toggle::make('zone_popunder_enabled')->label('Enable Zone Popunder')->live(),
+
+                                        TextInput::make('zone_popunder_url')
+                                            ->label('Desktop Zone URL')
+                                            ->placeholder('https://s.pemsrv.com/v1/link.php?cat=&idzone=5857198&type=8')
+                                            ->url()
+                                            ->columnSpanFull()
+                                            ->visible(fn ($get) => $get('zone_popunder_enabled')),
+
+                                        TextInput::make('zone_popunder_mobile_url')
+                                            ->label('Mobile Zone URL (optional)')
+                                            ->placeholder('https://s.pemsrv.com/v1/link.php?cat=&idzone=xxxxxx&type=8')
+                                            ->url()
+                                            ->helperText('Leave empty to use desktop URL on all devices.')
+                                            ->columnSpanFull()
+                                            ->visible(fn ($get) => $get('zone_popunder_enabled')),
+
+                                        Select::make('zone_popunder_trigger_type')
+                                            ->label('Trigger Mode')
+                                            ->options([
+                                                'clicks' => 'Every N clicks',
+                                                'time' => 'After cooldown (minutes)',
+                                                'both' => 'Both (N clicks AND cooldown passed)',
+                                            ])
+                                            ->default('clicks')
+                                            ->live()
+                                            ->visible(fn ($get) => $get('zone_popunder_enabled')),
+
+                                        Grid::make(3)->schema([
+                                            TextInput::make('zone_popunder_click_frequency')
+                                                ->label('Click Frequency')
+                                                ->numeric()
+                                                ->default(3)
+                                                ->minValue(1)
+                                                ->maxValue(100)
+                                                ->helperText('Fire popunder every Nth click')
+                                                ->visible(fn ($get) => in_array($get('zone_popunder_trigger_type'), ['clicks', 'both'])),
+
+                                            TextInput::make('zone_popunder_cooldown_minutes')
+                                                ->label('Cooldown (minutes)')
+                                                ->numeric()
+                                                ->default(5)
+                                                ->minValue(0)
+                                                ->maxValue(1440)
+                                                ->helperText('0 = no cooldown')
+                                                ->visible(fn ($get) => in_array($get('zone_popunder_trigger_type'), ['time', 'both'])),
+
+                                            TextInput::make('zone_popunder_max_per_session')
+                                                ->label('Max Per Session')
+                                                ->numeric()
+                                                ->default(3)
+                                                ->minValue(1)
+                                                ->maxValue(100)
+                                                ->helperText('Cap popunders per browser session'),
+                                        ])->visible(fn ($get) => $get('zone_popunder_enabled')),
+                                    ]),
                                 Section::make('Interstitial / Full-Page Ad')
                                     ->description('Full-screen interstitial ad overlay shown on page transitions. Controlled by the Vue AdInterstitial component using sessionStorage page-view tracking.')
                                     ->icon('phosphor-arrows-out')
@@ -322,6 +396,19 @@ class AdSettings extends Page implements HasForms
                                             ->numeric()->default(6)->minValue(2)->maxValue(50)
                                             ->helperText('Show an outstream ad after every N video cards')
                                             ->visible(fn ($get) => $get('video_outstream_ad_enabled')),
+                                    ]),
+
+                                Section::make('Shorts Ads')
+                                    ->description('Full-screen interstitial ad slides inside the vertical Shorts feed. Manage creatives under Appearance → Ad Creatives with placement set to "Shorts".')
+                                    ->icon('phosphor-device-mobile-camera')
+                                    ->collapsible()->collapsed()
+                                    ->schema([
+                                        Toggle::make('shorts_ad_enabled')->label('Enable Shorts Ads')->live(),
+                                        TextInput::make('shorts_ad_frequency')
+                                            ->label('Ad Frequency (every N shorts)')
+                                            ->numeric()->default(8)->minValue(1)->maxValue(50)
+                                            ->helperText('Insert an ad slide after every N short videos')
+                                            ->visible(fn ($get) => $get('shorts_ad_enabled')),
                                     ]),
                                 Section::make('Sticky Banner / Video Slider Ad')
                                     ->description('Sticky banner fixed at the bottom of the viewport.')
@@ -449,9 +536,9 @@ class AdSettings extends Page implements HasForms
         foreach ($bannerPrefixes as $prefix) {
             foreach (['', '_mobile'] as $variant) {
                 $uploadKey = "{$prefix}{$variant}_image_upload";
-                $imageKey  = "{$prefix}{$variant}_image";
+                $imageKey = "{$prefix}{$variant}_image";
 
-                if (!empty($data[$uploadKey])) {
+                if (! empty($data[$uploadKey])) {
                     $data[$imageKey] = Storage::disk('public')->url($data[$uploadKey]);
                 }
 
@@ -462,8 +549,8 @@ class AdSettings extends Page implements HasForms
         foreach ($data as $key => $value) {
             $type = match (true) {
                 is_bool($value) => 'boolean',
-                is_int($value)  => 'integer',
-                default         => 'string',
+                is_int($value) => 'integer',
+                default => 'string',
             };
             Setting::set($key, $value, 'ads', $type);
         }
