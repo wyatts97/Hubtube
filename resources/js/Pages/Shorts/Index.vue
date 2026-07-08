@@ -28,7 +28,7 @@ const { get, post } = useFetch();
 
 const user = computed(() => page.props.auth?.user);
 
-const items = ref(buildFeedItems(props.initialShorts?.data || []));
+const items = ref([]);
 const currentIndex = ref(Math.max(0, props.startIndex));
 const loadingMore = ref(false);
 const hasMore = ref(props.initialShorts?.next_page_url ? true : false);
@@ -243,12 +243,16 @@ const setupIntersectionTracking = () => {
 let observerInstance = null;
 
 onMounted(() => {
+    items.value = buildFeedItems(props.initialShorts?.data || []);
+
     window.addEventListener('keydown', handleKeydown);
     feedContainer.value?.addEventListener('scroll', onScroll);
-    nextTick(() => { observerInstance = setupIntersectionTracking(); });
-    if (feedContainer.value && currentIndex.value > 0) {
-        feedContainer.value.scrollTop = currentIndex.value * feedContainer.value.clientHeight;
-    }
+    nextTick(() => {
+        observerInstance = setupIntersectionTracking();
+        if (feedContainer.value && currentIndex.value > 0) {
+            feedContainer.value.scrollTop = currentIndex.value * feedContainer.value.clientHeight;
+        }
+    });
 });
 
 onUnmounted(() => {
