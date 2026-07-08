@@ -72,7 +72,8 @@
         "sponsored": "Sponsored",
         "skip": "Skip",
         "try_again": "Try Again",
-        "translating": "Translating..."
+        "translating": "Translating...",
+        "download": "Download"
     },
     "video": {
         "views": "{count} views",

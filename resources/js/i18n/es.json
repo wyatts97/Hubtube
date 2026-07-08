@@ -71,7 +71,8 @@
         "sponsored": "Patrocinado",
         "skip": "Saltar",
         "try_again": "Intentar de Nuevo",
-        "translating": "Traduciendo..."
+        "translating": "Traduciendo...",
+        "download": "Descargar"
     },
     "video": {
         "views": "{count} vistas",

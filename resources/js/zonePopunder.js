@@ -10,13 +10,15 @@
     const config = window.__zonePopunder || null;
     if (!config || !config.enabled || !config.url) return;
 
-    const STORAGE_KEY = 'ht_zone_popunder';
-    const isMobileUA = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile|webOS/i.test(navigator.userAgent);
-    const targetUrl = (isMobileUA ? (config.mobileUrl || config.url) : config.url).trim();
+    // Defensive: ensure config values are valid numbers
     const triggerType = config.triggerType || 'clicks';
     const clickFrequency = Math.max(1, parseInt(config.clickFrequency, 10) || 3);
     const cooldownMinutes = Math.max(0, parseInt(config.cooldownMinutes, 10) || 5);
     const maxPerSession = Math.max(1, parseInt(config.maxPerSession, 10) || 3);
+
+    const STORAGE_KEY = 'ht_zone_popunder';
+    const isMobileUA = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile|webOS/i.test(navigator.userAgent);
+    const targetUrl = (isMobileUA ? (config.mobileUrl || config.url) : config.url).trim();
 
     function getState() {
         try {
