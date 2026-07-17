@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7a086499aad43590529cad9710ebe45b",
+    "content-hash": "a3ec362643a32253c324aa87918dcdab",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -9508,55 +9508,6 @@
                 }
             ],
             "time": "2022-12-17T21:53:22+00:00"
-        },
-        {
-            "name": "secretninjas/filament-masonry",
-            "version": "v1.0.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/secretninjas/filament-masonry.git",
-                "reference": "8124a2a81ad86139e323c5751f3266a93628c88c"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/secretninjas/filament-masonry/zipball/8124a2a81ad86139e323c5751f3266a93628c88c",
-                "reference": "8124a2a81ad86139e323c5751f3266a93628c88c",
-                "shasum": ""
-            },
-            "require": {
-                "filament/filament": "^5.0",
-                "php": "^8.3"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "SecretNinjas\\FilamentMasonry\\FilamentMasonryServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "SecretNinjas\\FilamentMasonry\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Wouter Dijkstra",
-                    "email": "tools@secretninjas.nl",
-                    "role": "Developer"
-                }
-            ],
-            "description": "Masonry CSS Grid layout for Filament v5 dashboards",
-            "support": {
-                "issues": "https://github.com/secretninjas/filament-masonry/issues",
-                "source": "https://github.com/secretninjas/filament-masonry/tree/v1.0.0"
-            },
-            "time": "2026-06-18T09:42:59+00:00"
         },
         {
             "name": "sentry/sentry",

@@ -8,19 +8,12 @@ use App\Models\User;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
-use SecretNinjas\FilamentMasonry\Concerns\HasMasonryLayout;
-use SecretNinjas\FilamentMasonry\Enums\WidgetSize;
 
 class RecentSignupsTable extends BaseWidget
 {
-    use HasMasonryLayout;
-
     protected static bool $isDiscovered = false;
 
     protected static ?string $heading = 'Recent Signups';
-
-    protected static WidgetSize $size = WidgetSize::FullWidth;
-    protected static int $order = 40;
 
     protected int|string|array $columnSpan = 'full';
 

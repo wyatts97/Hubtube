@@ -8,11 +8,9 @@ use App\Filament\Widgets\RecentUploadsTable;
 use App\Filament\Widgets\StatsOverview;
 use App\Filament\Widgets\TrendingVideosTable;
 use Filament\Pages\Dashboard as BaseDashboard;
-use SecretNinjas\FilamentMasonry\Concerns\HasMasonryDashboard;
 
 class Dashboard extends BaseDashboard
 {
-    use HasMasonryDashboard;
 
     protected static string | \UnitEnum | null $navigationGroup = 'Overview';
 
@@ -34,8 +32,7 @@ class Dashboard extends BaseDashboard
     }
 
     /**
-     * Dashboard widgets rendered in the masonry grid. Per-widget size and order
-     * are controlled by the HasMasonryLayout trait on each widget class.
+     * Dashboard widgets rendered in Filament's default responsive grid.
      */
     public function getWidgets(): array
     {

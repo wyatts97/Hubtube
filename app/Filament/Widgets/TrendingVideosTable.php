@@ -6,8 +6,6 @@ use App\Models\Video;
 use Filament\Widgets\Widget;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
-use SecretNinjas\FilamentMasonry\Concerns\HasMasonryLayout;
-use SecretNinjas\FilamentMasonry\Enums\WidgetSize;
 
 /**
  * Custom trending-videos widget — a visual card list with thumbnails,
@@ -15,14 +13,9 @@ use SecretNinjas\FilamentMasonry\Enums\WidgetSize;
  */
 class TrendingVideosTable extends Widget
 {
-    use HasMasonryLayout;
-
     protected static bool $isDiscovered = false;
 
     protected string $view = 'filament.widgets.trending-videos-table';
-
-    protected static WidgetSize $size = WidgetSize::Medium;
-    protected static int $order = 20;
 
     protected int|string|array $columnSpan = 1;
 
