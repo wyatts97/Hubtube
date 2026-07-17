@@ -11,6 +11,8 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Leek\FilamentRightClick\Menu\ContextMenuItem;
+use Leek\FilamentRightClick\Menu\ContextMenuSeparator;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
@@ -312,6 +314,23 @@ class VideoAdResource extends Resource
                             Storage::disk('public')->delete($record->file_path);
                         }
                     }),
+            ])
+            ->contextMenuActions([
+                ContextMenuItem::for(EditAction::make('ctxEdit'))
+                    ->label('Edit')
+                    ->icon('phosphor-pencil-simple'),
+                ContextMenuSeparator::make(),
+                ContextMenuItem::for(
+                    DeleteAction::make('ctxDelete')
+                        ->after(function (VideoAd $record) {
+                            if ($record->file_path && Storage::disk('public')->exists($record->file_path)) {
+                                Storage::disk('public')->delete($record->file_path);
+                            }
+                        }),
+                )
+                    ->label('Delete')
+                    ->icon('phosphor-trash')
+                    ->color('danger'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

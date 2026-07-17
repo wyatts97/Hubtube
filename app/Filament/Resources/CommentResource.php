@@ -16,6 +16,8 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\BulkAction;
+use Leek\FilamentRightClick\Menu\ContextMenuItem;
+use Leek\FilamentRightClick\Menu\ContextMenuSeparator;
 use App\Filament\Resources\CommentResource\Pages\ListComments;
 use App\Filament\Resources\CommentResource\Pages\EditComment;
 use App\Filament\Resources\CommentResource\Pages;
@@ -147,6 +149,26 @@ class CommentResource extends Resource
                     ->action(fn (Comment $record) => $record->update(['is_approved' => true]))
                     ->visible(fn (Comment $record) => !$record->is_approved),
                 DeleteAction::make(),
+            ])
+            ->contextMenuActions([
+                ContextMenuItem::for(EditAction::make('ctxEdit'))
+                    ->label('Edit')
+                    ->icon('phosphor-pencil-simple'),
+                ContextMenuItem::for(
+                    Action::make('ctxApprove')
+                        ->icon('phosphor-check')
+                        ->color('success')
+                        ->action(fn (Comment $record) => $record->update(['is_approved' => true]))
+                        ->visible(fn (Comment $record) => !$record->is_approved),
+                )
+                    ->label('Approve')
+                    ->icon('phosphor-check')
+                    ->color('success'),
+                ContextMenuSeparator::make(),
+                ContextMenuItem::for(DeleteAction::make('ctxDelete'))
+                    ->label('Delete')
+                    ->icon('phosphor-trash')
+                    ->color('danger'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

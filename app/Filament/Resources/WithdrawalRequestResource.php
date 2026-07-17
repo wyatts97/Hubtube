@@ -14,6 +14,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Leek\FilamentRightClick\Menu\ContextMenuItem;
 use App\Filament\Resources\WithdrawalRequestResource\Pages\ListWithdrawalRequests;
 use App\Filament\Resources\WithdrawalRequestResource\Pages\EditWithdrawalRequest;
 use App\Filament\Resources\WithdrawalRequestResource\Pages;
@@ -224,6 +225,11 @@ class WithdrawalRequestResource extends Resource
                     }),
 
                 EditAction::make(),
+            ])
+            ->contextMenuActions([
+                ContextMenuItem::for(EditAction::make('ctxEdit'))
+                    ->label('Edit')
+                    ->icon('phosphor-pencil-simple'),
             ])
             ->toolbarActions([])
             ->striped();

@@ -7,13 +7,13 @@ use App\Filament\Widgets\RecentSignupsTable;
 use App\Filament\Widgets\RecentUploadsTable;
 use App\Filament\Widgets\StatsOverview;
 use App\Filament\Widgets\TrendingVideosTable;
-use App\Models\Setting;
-use App\Models\Video;
 use Filament\Pages\Dashboard as BaseDashboard;
+use SecretNinjas\FilamentMasonry\Concerns\HasMasonryDashboard;
 
 class Dashboard extends BaseDashboard
 {
-    protected string $view = 'filament.pages.dashboard';
+    use HasMasonryDashboard;
+
     protected static string | \UnitEnum | null $navigationGroup = 'Overview';
 
     public function getGreeting(): string
@@ -28,151 +28,27 @@ class Dashboard extends BaseDashboard
         return "{$greeting}, {$name}";
     }
 
-    public function getPendingModerationCount(): int
+    public function getSubheading(): ?string
     {
-        return Video::where('is_approved', false)
-            ->where('status', 'processed')
-            ->whereNull('queue_order')
-            ->count();
-    }
-
-    public function getProcessingCount(): int
-    {
-        return Video::whereIn('status', ['processing', 'pending'])->count();
-    }
-
-    public function getFailedCount(): int
-    {
-        return Video::where('status', 'failed')->count();
+        return $this->getGreeting();
     }
 
     /**
-     * All available widgets with metadata for the layout manager.
+     * Dashboard widgets rendered in the masonry grid. Per-widget size and order
+     * are controlled by the HasMasonryLayout trait on each widget class.
      */
-    public static function allWidgetDefinitions(): array
-    {
-        $defs = [
-            ['key' => 'stats',           'label' => 'Stats Overview',    'class' => StatsOverview::class,      'span' => 'full'],
-        ];
-
-        if (class_exists(OverlookWidget::class)) {
-            $defs[] = ['key' => 'overlook', 'label' => 'Resource Overview', 'class' => OverlookWidget::class, 'span' => 'full'];
-        }
-
-        return array_merge($defs, [
-            ['key' => 'trending',        'label' => 'Trending Videos',   'class' => TrendingVideosTable::class, 'span' => '1'],
-            ['key' => 'recent_uploads',  'label' => 'Recent Uploads',   'class' => RecentUploadsTable::class,  'span' => '1'],
-            ['key' => 'recent_signups',  'label' => 'Recent Signups',   'class' => RecentSignupsTable::class,  'span' => 'full'],
-        ]);
-    }
-
-    /**
-     * Get the saved layout for the current admin user.
-     * Returns an array of widget keys in order, with visibility flags.
-     */
-    public function getSavedLayout(): array
-    {
-        $userId = auth()->id();
-        $saved = Setting::get("dashboard_layout_user_{$userId}", null);
-
-        if ($saved) {
-            $layout = is_string($saved) ? json_decode($saved, true) : $saved;
-            if (is_array($layout)) {
-                return $layout;
-            }
-        }
-
-        // Default: all widgets visible in default order
-        return collect(static::allWidgetDefinitions())
-            ->map(fn ($w) => ['key' => $w['key'], 'visible' => true])
-            ->toArray();
-    }
-
-    /**
-     * Save the layout for the current admin user (called via Livewire).
-     */
-    public function saveLayout(array $layout): void
-    {
-        $userId = auth()->id();
-        Setting::set("dashboard_layout_user_{$userId}", json_encode($layout), 'dashboard', 'string');
-    }
-
-    /**
-     * Reset layout to default (called via Livewire).
-     */
-    public function resetLayout(): void
-    {
-        $userId = auth()->id();
-        Setting::set("dashboard_layout_user_{$userId}", '', 'dashboard', 'string');
-    }
-
-    /**
-     * Toggle a widget's visibility (called via Livewire).
-     */
-    public function toggleWidget(string $key): void
-    {
-        $layout = $this->getSavedLayout();
-        foreach ($layout as &$item) {
-            if ($item['key'] === $key) {
-                $item['visible'] = !$item['visible'];
-                break;
-            }
-        }
-        $this->saveLayout($layout);
-    }
-
-    /**
-     * Reorder widgets (called via Livewire from SortableJS).
-     */
-    public function reorderWidgets(array $orderedKeys): void
-    {
-        $layout = $this->getSavedLayout();
-        $indexed = collect($layout)->keyBy('key');
-
-        $newLayout = [];
-        foreach ($orderedKeys as $key) {
-            if ($indexed->has($key)) {
-                $newLayout[] = $indexed[$key];
-            }
-        }
-
-        // Append any widgets not in the ordered list (new widgets added after layout was saved)
-        foreach ($layout as $item) {
-            if (!in_array($item['key'], $orderedKeys)) {
-                $newLayout[] = $item;
-            }
-        }
-
-        $this->saveLayout($newLayout);
-    }
-
-    /**
-     * Get ordered, visible widgets for rendering.
-     */
-    public function getOrderedWidgets(): array
-    {
-        $layout = $this->getSavedLayout();
-        $definitions = collect(static::allWidgetDefinitions())->keyBy('key');
-
-        $result = [];
-        foreach ($layout as $item) {
-            if (!$item['visible']) continue;
-            if (!$definitions->has($item['key'])) continue;
-            $result[] = $definitions[$item['key']];
-        }
-
-        return $result;
-    }
-
-    public function getColumns(): int|array
-    {
-        return 2;
-    }
-
     public function getWidgets(): array
     {
-        return collect($this->getOrderedWidgets())
-            ->pluck('class')
-            ->toArray();
+        $widgets = [StatsOverview::class];
+
+        if (class_exists(OverlookWidget::class)) {
+            $widgets[] = OverlookWidget::class;
+        }
+
+        return array_merge($widgets, [
+            TrendingVideosTable::class,
+            RecentUploadsTable::class,
+            RecentSignupsTable::class,
+        ]);
     }
 }

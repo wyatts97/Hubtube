@@ -15,6 +15,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use Leek\FilamentRightClick\Menu\ContextMenuItem;
 use App\Filament\Resources\ChannelResource\Pages\ListChannels;
 use App\Filament\Resources\ChannelResource\Pages\CreateChannel;
 use App\Filament\Resources\ChannelResource\Pages\EditChannel;
@@ -131,6 +132,21 @@ class ChannelResource extends Resource
                     ->color('success')
                     ->action(fn (Channel $record) => $record->update(['is_verified' => true]))
                     ->visible(fn (Channel $record) => !$record->is_verified),
+            ])
+            ->contextMenuActions([
+                ContextMenuItem::for(EditAction::make('ctxEdit'))
+                    ->label('Edit')
+                    ->icon('phosphor-pencil-simple'),
+                ContextMenuItem::for(
+                    Action::make('ctxVerify')
+                        ->icon('phosphor-check-circle')
+                        ->color('success')
+                        ->action(fn (Channel $record) => $record->update(['is_verified' => true]))
+                        ->visible(fn (Channel $record) => !$record->is_verified),
+                )
+                    ->label('Verify')
+                    ->icon('phosphor-check-circle')
+                    ->color('success'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

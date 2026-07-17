@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "844da677fef04652f725d9a372dd5462",
+    "content-hash": "7a086499aad43590529cad9710ebe45b",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -5887,6 +5887,72 @@
             "time": "2026-07-13T11:08:40+00:00"
         },
         {
+            "name": "leek/filament-right-click",
+            "version": "v1.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/leek/filament-right-click.git",
+                "reference": "48b2b0c8ea783d3b0d24394bce4841dc91609c39"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/leek/filament-right-click/zipball/48b2b0c8ea783d3b0d24394bce4841dc91609c39",
+                "reference": "48b2b0c8ea783d3b0d24394bce4841dc91609c39",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^4.0 || ^5.0",
+                "php": "^8.2",
+                "spatie/laravel-package-tools": "^1.15"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.0",
+                "orchestra/testbench": "^9.0 || ^10.0 || ^11.0",
+                "pestphp/pest": "^3.0 || ^4.0",
+                "pestphp/pest-plugin-laravel": "^3.0 || ^4.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Leek\\FilamentRightClick\\FilamentRightClickServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Leek\\FilamentRightClick\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Chris Jones",
+                    "email": "leeked@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Right-click table row menus for Filament panels that trigger native Filament actions.",
+            "keywords": [
+                "actions",
+                "context-menu",
+                "filament",
+                "filamentphp",
+                "laravel",
+                "leek",
+                "right-click",
+                "tables"
+            ],
+            "support": {
+                "issues": "https://github.com/leek/filament-right-click/issues",
+                "source": "https://github.com/leek/filament-right-click"
+            },
+            "time": "2026-07-01T14:05:00+00:00"
+        },
+        {
             "name": "livewire/livewire",
             "version": "v4.3.3",
             "source": {
@@ -6039,6 +6105,64 @@
                 }
             ],
             "time": "2026-04-11T18:38:28+00:00"
+        },
+        {
+            "name": "martin6363/filament-sidebar-resize",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Martin6363/filament-sidebar-resize.git",
+                "reference": "536aaf2d179719b444d78f3b140049806200af1b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Martin6363/filament-sidebar-resize/zipball/536aaf2d179719b444d78f3b140049806200af1b",
+                "reference": "536aaf2d179719b444d78f3b140049806200af1b",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^5.0",
+                "illuminate/contracts": "^12.0|^13.0",
+                "php": "^8.2|^8.3|^8.4"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Martin6363\\SidebarResize\\SidebarResizeServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Martin6363\\SidebarResize\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Martin",
+                    "email": "martin.khachatryan.2024@gmail.com"
+                }
+            ],
+            "description": "Drag-to-resize Filament v5 admin sidebar with localStorage persistence",
+            "homepage": "https://github.com/martin6363/filament-sidebar-resize",
+            "keywords": [
+                "admin",
+                "filament",
+                "laravel",
+                "plugin",
+                "resize",
+                "sidebar"
+            ],
+            "support": {
+                "issues": "https://github.com/Martin6363/filament-sidebar-resize/issues",
+                "source": "https://github.com/Martin6363/filament-sidebar-resize/tree/v1.0.0"
+            },
+            "time": "2026-07-06T17:45:42+00:00"
         },
         {
             "name": "meilisearch/meilisearch-php",
@@ -9384,6 +9508,55 @@
                 }
             ],
             "time": "2022-12-17T21:53:22+00:00"
+        },
+        {
+            "name": "secretninjas/filament-masonry",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/secretninjas/filament-masonry.git",
+                "reference": "8124a2a81ad86139e323c5751f3266a93628c88c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/secretninjas/filament-masonry/zipball/8124a2a81ad86139e323c5751f3266a93628c88c",
+                "reference": "8124a2a81ad86139e323c5751f3266a93628c88c",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^5.0",
+                "php": "^8.3"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "SecretNinjas\\FilamentMasonry\\FilamentMasonryServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "SecretNinjas\\FilamentMasonry\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Wouter Dijkstra",
+                    "email": "tools@secretninjas.nl",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Masonry CSS Grid layout for Filament v5 dashboards",
+            "support": {
+                "issues": "https://github.com/secretninjas/filament-masonry/issues",
+                "source": "https://github.com/secretninjas/filament-masonry/tree/v1.0.0"
+            },
+            "time": "2026-06-18T09:42:59+00:00"
         },
         {
             "name": "sentry/sentry",

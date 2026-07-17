@@ -37,6 +37,8 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteBulkAction;
+use Leek\FilamentRightClick\Menu\ContextMenuItem;
+use Leek\FilamentRightClick\Menu\ContextMenuSeparator;
 use App\Filament\Resources\VideoResource\Widgets\VideoStatsOverview;
 use App\Filament\Resources\VideoResource\Pages\ListVideos;
 use App\Filament\Resources\VideoResource\Pages\CreateVideo;
@@ -646,6 +648,34 @@ class VideoResource extends Resource
 
                     DeleteAction::make(),
                 ]),
+            ])
+            ->contextMenuActions([
+                ContextMenuItem::for(ViewAction::make('ctxView'))
+                    ->label('View')
+                    ->icon('phosphor-eye'),
+                ContextMenuItem::for(EditAction::make('ctxEdit'))
+                    ->label('Edit')
+                    ->icon('phosphor-pencil-simple'),
+                ContextMenuItem::for(
+                    Action::make('ctxFeature')
+                        ->action(fn (Video $record) => $record->update(['is_featured' => !$record->is_featured])),
+                )
+                    ->label('Feature / Unfeature')
+                    ->icon('phosphor-star')
+                    ->color('warning'),
+                ContextMenuItem::for(
+                    Action::make('ctxViewFrontend')
+                        ->url(fn (Video $record): string => url('/' . $record->slug))
+                        ->openUrlInNewTab()
+                        ->visible(fn (Video $record) => $record->status === 'processed' && $record->is_approved),
+                )
+                    ->label('View on Site')
+                    ->icon('phosphor-eye'),
+                ContextMenuSeparator::make(),
+                ContextMenuItem::for(DeleteAction::make('ctxDelete'))
+                    ->label('Delete')
+                    ->icon('phosphor-trash')
+                    ->color('danger'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

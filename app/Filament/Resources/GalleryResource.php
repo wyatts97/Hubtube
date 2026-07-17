@@ -16,6 +16,8 @@ use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use Leek\FilamentRightClick\Menu\ContextMenuItem;
+use Leek\FilamentRightClick\Menu\ContextMenuSeparator;
 use App\Filament\Resources\GalleryResource\Pages\ListGalleries;
 use App\Filament\Resources\GalleryResource\Pages\EditGallery;
 use App\Filament\Resources\GalleryResource\Pages;
@@ -152,6 +154,23 @@ class GalleryResource extends Resource
 
                     DeleteAction::make(),
                 ]),
+            ])
+            ->contextMenuActions([
+                ContextMenuItem::for(EditAction::make('ctxEdit'))
+                    ->label('Edit')
+                    ->icon('phosphor-pencil-simple'),
+                ContextMenuItem::for(
+                    Action::make('ctxViewFrontend')
+                        ->url(fn (Gallery $record): string => "/gallery/{$record->slug}")
+                        ->openUrlInNewTab(),
+                )
+                    ->label('View on Site')
+                    ->icon('phosphor-eye'),
+                ContextMenuSeparator::make(),
+                ContextMenuItem::for(DeleteAction::make('ctxDelete'))
+                    ->label('Delete')
+                    ->icon('phosphor-trash')
+                    ->color('danger'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

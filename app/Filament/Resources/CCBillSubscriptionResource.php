@@ -6,6 +6,7 @@ use App\Filament\Resources\CCBillSubscriptionResource\Pages\ListCCBillSubscripti
 use App\Models\CCBillSubscription;
 use App\Models\Setting;
 use Filament\Actions\ViewAction;
+use Leek\FilamentRightClick\Menu\ContextMenuItem;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -74,6 +75,11 @@ class CCBillSubscriptionResource extends Resource
             ])
             ->recordActions([
                 ViewAction::make(),
+            ])
+            ->contextMenuActions([
+                ContextMenuItem::for(ViewAction::make('ctxView'))
+                    ->label('View')
+                    ->icon('phosphor-eye'),
             ])
             ->toolbarActions([])
             ->defaultSort('created_at', 'desc')

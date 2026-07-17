@@ -12,9 +12,16 @@ use App\Models\WalletTransaction;
 use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use SecretNinjas\FilamentMasonry\Concerns\HasMasonryLayout;
+use SecretNinjas\FilamentMasonry\Enums\WidgetSize;
 
 class StatsOverview extends BaseWidget
 {
+    use HasMasonryLayout;
+
+    protected static WidgetSize $size = WidgetSize::FullWidth;
+    protected static int $order = 0;
+
     protected int | string | array $columnSpan = 'full';
 
     protected function getColumns(): int

@@ -35,6 +35,9 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filafly\Icons\Phosphor\PhosphorIcons;
 use FinityLabs\FinMail\FinMailPlugin;
 use Muazzam\SlickScrollbar\SlickScrollbarPlugin;
+use Martin6363\SidebarResize\SidebarResizePlugin;
+use Leek\FilamentRightClick\FilamentRightClickPlugin;
+use SecretNinjas\FilamentMasonry\MasonryPlugin;
 
 
 class AdminPanelProvider extends PanelProvider
@@ -90,6 +93,24 @@ class AdminPanelProvider extends PanelProvider
         // Google Analytics widgets (credentials configured via admin panel)
         if (class_exists(\BezhanSalleh\GoogleAnalytics\GoogleAnalyticsPlugin::class)) {
             $plugins[] = \BezhanSalleh\GoogleAnalytics\GoogleAnalyticsPlugin::make();
+        }
+
+        // Drag-to-resize navigation sidebar (width persisted in browser localStorage)
+        if (class_exists(SidebarResizePlugin::class)) {
+            $plugins[] = SidebarResizePlugin::make()
+                ->minWidth(220)
+                ->maxWidth(460);
+        }
+
+        // Right-click context menus on resource tables (opt-in per table via contextMenuActions)
+        if (class_exists(FilamentRightClickPlugin::class)) {
+            $plugins[] = FilamentRightClickPlugin::make();
+        }
+
+        // Dense-packed masonry grid for the dashboard widgets
+        if (class_exists(MasonryPlugin::class)) {
+            $plugins[] = MasonryPlugin::make()
+                ->columns(['default' => 1, 'sm' => 2, 'xl' => 4]);
         }
 
         return $plugins;
