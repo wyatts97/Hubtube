@@ -19,8 +19,6 @@ use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
-use Leek\FilamentRightClick\Menu\ContextMenuItem;
-use Leek\FilamentRightClick\Menu\ContextMenuSeparator;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteBulkAction;
@@ -249,33 +247,6 @@ class ImageResource extends Resource
 
                     DeleteAction::make(),
                 ]),
-            ])
-            ->contextMenuActions([
-                ContextMenuItem::for(EditAction::make('ctxEdit'))
-                    ->label('Edit')
-                    ->icon('phosphor-pencil-simple'),
-                ContextMenuItem::for(
-                    Action::make('ctxApprove')
-                        ->requiresConfirmation()
-                        ->action(fn (Image $record) => $record->update(['is_approved' => true]))
-                        ->visible(fn (Image $record) => !$record->is_approved),
-                )
-                    ->label('Approve')
-                    ->icon('phosphor-check-circle')
-                    ->color('success'),
-                ContextMenuItem::for(
-                    Action::make('ctxViewFrontend')
-                        ->url(fn (Image $record): string => "/image/{$record->uuid}")
-                        ->openUrlInNewTab()
-                        ->visible(fn (Image $record) => $record->is_approved),
-                )
-                    ->label('View on Site')
-                    ->icon('phosphor-eye'),
-                ContextMenuSeparator::make(),
-                ContextMenuItem::for(DeleteAction::make('ctxDelete'))
-                    ->label('Delete')
-                    ->icon('phosphor-trash')
-                    ->color('danger'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

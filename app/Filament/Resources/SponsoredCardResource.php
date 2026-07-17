@@ -16,8 +16,6 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
-use Leek\FilamentRightClick\Menu\ContextMenuItem;
-use Leek\FilamentRightClick\Menu\ContextMenuSeparator;
 use App\Filament\Resources\SponsoredCardResource\Pages\ListSponsoredCards;
 use App\Filament\Resources\SponsoredCardResource\Pages\CreateSponsoredCard;
 use App\Filament\Resources\SponsoredCardResource\Pages\EditSponsoredCard;
@@ -247,16 +245,6 @@ class SponsoredCardResource extends Resource
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),
-            ])
-            ->contextMenuActions([
-                ContextMenuItem::for(EditAction::make('ctxEdit'))
-                    ->label('Edit')
-                    ->icon('phosphor-pencil-simple'),
-                ContextMenuSeparator::make(),
-                ContextMenuItem::for(DeleteAction::make('ctxDelete'))
-                    ->label('Delete')
-                    ->icon('phosphor-trash')
-                    ->color('danger'),
             ])
             ->toolbarActions([
                 DeleteBulkAction::make(),

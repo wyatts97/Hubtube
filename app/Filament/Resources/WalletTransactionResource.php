@@ -11,7 +11,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Actions\ViewAction;
-use Leek\FilamentRightClick\Menu\ContextMenuItem;
 use App\Filament\Resources\WalletTransactionResource\Pages\ListWalletTransactions;
 use App\Filament\Resources\WalletTransactionResource\Pages;
 use App\Models\WalletTransaction;
@@ -132,11 +131,6 @@ class WalletTransactionResource extends Resource
             ])
             ->recordActions([
                 ViewAction::make(),
-            ])
-            ->contextMenuActions([
-                ContextMenuItem::for(ViewAction::make('ctxView'))
-                    ->label('View')
-                    ->icon('phosphor-eye'),
             ])
             ->toolbarActions([])
             ->striped();

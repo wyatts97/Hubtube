@@ -18,8 +18,6 @@ use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Leek\FilamentRightClick\Menu\ContextMenuItem;
-use Leek\FilamentRightClick\Menu\ContextMenuSeparator;
 use App\Filament\Resources\UserResource\Pages\ListUsers;
 use App\Filament\Resources\UserResource\Pages\CreateUser;
 use App\Filament\Resources\UserResource\Pages\EditUser;
@@ -212,23 +210,6 @@ class UserResource extends Resource
 
                 EditAction::make(),
                 DeleteAction::make(),
-            ])
-            ->contextMenuActions([
-                ContextMenuItem::for(
-                    Action::make('ctxViewVideos')
-                        ->url(fn (User $record): string => route('filament.admin.resources.videos.index') . '?tableFilters[user_id][value]=' . $record->id),
-                )
-                    ->label('Videos')
-                    ->icon('phosphor-video-camera')
-                    ->color('info'),
-                ContextMenuItem::for(EditAction::make('ctxEdit'))
-                    ->label('Edit')
-                    ->icon('phosphor-pencil-simple'),
-                ContextMenuSeparator::make(),
-                ContextMenuItem::for(DeleteAction::make('ctxDelete'))
-                    ->label('Delete')
-                    ->icon('phosphor-trash')
-                    ->color('danger'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

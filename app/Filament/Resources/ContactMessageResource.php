@@ -14,8 +14,6 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Actions\ViewAction;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
-use Leek\FilamentRightClick\Menu\ContextMenuItem;
-use Leek\FilamentRightClick\Menu\ContextMenuSeparator;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteBulkAction;
@@ -152,24 +150,6 @@ class ContactMessageResource extends Resource
                     ->action(fn (ContactMessage $record) => $record->update(['is_read' => !$record->is_read])),
 
                 DeleteAction::make(),
-            ])
-            ->contextMenuActions([
-                ContextMenuItem::for(ViewAction::make('ctxView'))
-                    ->label('View')
-                    ->icon('phosphor-eye'),
-                ContextMenuItem::for(
-                    Action::make('ctxToggleRead')
-                        ->icon(fn (ContactMessage $record) => $record->is_read ? 'phosphor-envelope' : 'phosphor-envelope-open')
-                        ->label(fn (ContactMessage $record) => $record->is_read ? 'Mark Unread' : 'Mark Read')
-                        ->action(fn (ContactMessage $record) => $record->update(['is_read' => !$record->is_read])),
-                )
-                    ->label('Toggle Read')
-                    ->icon('phosphor-envelope-open'),
-                ContextMenuSeparator::make(),
-                ContextMenuItem::for(DeleteAction::make('ctxDelete'))
-                    ->label('Delete')
-                    ->icon('phosphor-trash')
-                    ->color('danger'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

@@ -12,8 +12,6 @@ use Filament\Actions\DeleteAction;
 use App\Services\TagSyncService;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Leek\FilamentRightClick\Menu\ContextMenuItem;
-use Leek\FilamentRightClick\Menu\ContextMenuSeparator;
 use App\Filament\Resources\TagResource\Pages\ListTags;
 use App\Filament\Resources\TagResource\Pages\EditTag;
 use App\Filament\Resources\TagResource\Pages;
@@ -105,21 +103,6 @@ class TagResource extends Resource
                     ->before(function (Hashtag $record): void {
                         app(TagSyncService::class)->deleteTag($record);
                     }),
-            ])
-            ->contextMenuActions([
-                ContextMenuItem::for(EditAction::make('ctxEdit'))
-                    ->label('Edit')
-                    ->icon('phosphor-pencil-simple'),
-                ContextMenuSeparator::make(),
-                ContextMenuItem::for(
-                    DeleteAction::make('ctxDelete')
-                        ->before(function (Hashtag $record): void {
-                            app(TagSyncService::class)->deleteTag($record);
-                        }),
-                )
-                    ->label('Delete')
-                    ->icon('phosphor-trash')
-                    ->color('danger'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

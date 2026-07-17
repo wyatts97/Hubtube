@@ -36,7 +36,6 @@ use Filafly\Icons\Phosphor\PhosphorIcons;
 use FinityLabs\FinMail\FinMailPlugin;
 use Muazzam\SlickScrollbar\SlickScrollbarPlugin;
 use Martin6363\SidebarResize\SidebarResizePlugin;
-use Leek\FilamentRightClick\FilamentRightClickPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -98,11 +97,6 @@ class AdminPanelProvider extends PanelProvider
             $plugins[] = SidebarResizePlugin::make()
                 ->minWidth(220)
                 ->maxWidth(460);
-        }
-
-        // Right-click context menus on resource tables (opt-in per table via contextMenuActions)
-        if (class_exists(FilamentRightClickPlugin::class)) {
-            $plugins[] = FilamentRightClickPlugin::make();
         }
 
         return $plugins;
