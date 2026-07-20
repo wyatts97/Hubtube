@@ -59,7 +59,8 @@ class AdminPanelProvider extends PanelProvider
 
         // Queue / failed-job monitor (replaces custom FailedJobs page)
         if (class_exists(FilamentJobsMonitorPlugin::class)) {
-            $plugins[] = FilamentJobsMonitorPlugin::make();
+            $plugins[] = FilamentJobsMonitorPlugin::make()
+                ->navigationCountBadge(false);
         }
 
         if (class_exists(SlickScrollbarPlugin::class)) {
