@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use Awcodes\Overlook\Widgets\OverlookWidget;
 use App\Filament\Widgets\RecentSignupsTable;
 use App\Filament\Widgets\RecentUploadsTable;
 use App\Filament\Widgets\StatsOverview;
@@ -37,10 +36,6 @@ class Dashboard extends BaseDashboard
     public function getWidgets(): array
     {
         $widgets = [StatsOverview::class];
-
-        if (class_exists(OverlookWidget::class)) {
-            $widgets[] = OverlookWidget::class;
-        }
 
         return array_merge($widgets, [
             TrendingVideosTable::class,

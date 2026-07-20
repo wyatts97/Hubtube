@@ -7,7 +7,6 @@
     "require": {
         "php": "^8.3",
         "ext-redis": "*",
-        "awcodes/overlook": "^4.0",
         "bezhansalleh/filament-google-analytics": "^3.3",
         "bezhansalleh/filament-shield": "^4.0",
         "croustibat/filament-jobs-monitor": "*",
@@ -33,6 +32,7 @@
         "martin6363/filament-sidebar-resize": "1.0",
         "meilisearch/meilisearch-php": "^1.6",
         "mradder/filament-logger": "^1.0",
+        "muazzam/slick-scrollbar": "^1.1",
         "openplain/filament-shadcn-theme": "^1.0",
         "sentry/sentry-laravel": "^4.20",
         "socialiteproviders/reddit": "^4.2",

@@ -5,8 +5,6 @@ namespace App\Providers\Filament;
 use Leandrocfe\FilamentApexCharts\FilamentApexChartsPlugin;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Croustibat\FilamentJobsMonitor\FilamentJobsMonitorPlugin;
-use Awcodes\Overlook\OverlookPlugin;
-use Croustibat\FilamentJobsMonitor\Resources\QueueMonitorResource;
 use Throwable;
 use App\Filament\Pages\Dashboard;
 use App\Services\SystemStatusBar;
@@ -62,15 +60,6 @@ class AdminPanelProvider extends PanelProvider
         // Queue / failed-job monitor (replaces custom FailedJobs page)
         if (class_exists(FilamentJobsMonitorPlugin::class)) {
             $plugins[] = FilamentJobsMonitorPlugin::make();
-        }
-
-        // Overlook — resource overview widget (used via Dashboard widget list)
-        if (class_exists(OverlookPlugin::class)) {
-            $plugins[] = OverlookPlugin::make()
-                ->alphabetical()
-                ->excludes([
-                    QueueMonitorResource::class,
-                ]);
         }
 
         if (class_exists(SlickScrollbarPlugin::class)) {
