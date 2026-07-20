@@ -20,17 +20,17 @@
         border-radius: 9999px;
         transform: translate(50%, -50%);
         background-color: rgb(255 255 255);
-        border: 1px solid rgb(var(--ht-accent, 184 65 76) / 0.3);
+        border: 1px solid color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 30%, transparent);
         box-shadow:
             0 1px 3px rgb(0 0 0 / 0.08),
             0 1px 2px rgb(0 0 0 / 0.04);
         background-image:
-            radial-gradient(circle, rgb(var(--ht-accent, 184 65 76) / 0.6) 1.25px, transparent 1.35px),
-            radial-gradient(circle, rgb(var(--ht-accent, 184 65 76) / 0.6) 1.25px, transparent 1.35px),
-            radial-gradient(circle, rgb(var(--ht-accent, 184 65 76) / 0.6) 1.25px, transparent 1.35px),
-            radial-gradient(circle, rgb(var(--ht-accent, 184 65 76) / 0.6) 1.25px, transparent 1.35px),
-            radial-gradient(circle, rgb(var(--ht-accent, 184 65 76) / 0.6) 1.25px, transparent 1.35px),
-            radial-gradient(circle, rgb(var(--ht-accent, 184 65 76) / 0.6) 1.25px, transparent 1.35px);
+            radial-gradient(circle, color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 60%, transparent) 1.25px, transparent 1.35px),
+            radial-gradient(circle, color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 60%, transparent) 1.25px, transparent 1.35px),
+            radial-gradient(circle, color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 60%, transparent) 1.25px, transparent 1.35px),
+            radial-gradient(circle, color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 60%, transparent) 1.25px, transparent 1.35px),
+            radial-gradient(circle, color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 60%, transparent) 1.25px, transparent 1.35px),
+            radial-gradient(circle, color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 60%, transparent) 1.25px, transparent 1.35px);
         background-size:
             4px 4px,
             4px 4px,
@@ -60,41 +60,41 @@
         bottom: 0;
         inset-inline-end: 0;
         width: 1px;
-        background-color: rgb(var(--ht-accent, 184 65 76) / 0.35);
-        box-shadow: 1px 0 0 rgb(var(--ht-accent, 184 65 76) / 0.1);
+        background-color: color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 35%, transparent);
+        box-shadow: 1px 0 0 color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 10%, transparent);
         transition: background-color 150ms ease, box-shadow 150ms ease, width 150ms ease;
         z-index: -1;
     }
 
     .fi-sidebar-resize-handle:hover::before,
     .fi-sidebar-resize-handle:active::before {
-        border-color: rgb(var(--ht-accent-hover, 199 89 96));
+        border-color: var(--ht-accent-hover, oklch(0.7 0.11 24));
         box-shadow:
             0 2px 6px rgb(0 0 0 / 0.1),
-            0 0 0 1px rgb(var(--ht-accent, 184 65 76) / 0.25);
+            0 0 0 1px color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 25%, transparent);
         transform: translate(50%, -50%) scale(1.04);
     }
 
     .fi-sidebar-resize-handle:hover::after,
     .fi-sidebar-resize-handle:active::after {
         width: 2px;
-        background-color: rgb(var(--ht-accent, 184 65 76));
-        box-shadow: 0 0 0 1px rgb(var(--ht-accent, 184 65 76) / 0.35);
+        background-color: var(--ht-accent, oklch(0.62 0.14 25));
+        box-shadow: 0 0 0 1px color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 35%, transparent);
     }
 
     .dark .fi-sidebar-resize-handle::before {
         background-color: rgb(31 41 55);
-        border-color: rgb(var(--ht-accent, 184 65 76) / 0.5);
+        border-color: color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 50%, transparent);
         box-shadow:
             0 1px 3px rgb(0 0 0 / 0.35),
             inset 0 1px 0 rgb(255 255 255 / 0.04);
         background-image:
-            radial-gradient(circle, rgb(var(--ht-accent-hover, 199 89 96) / 0.8) 1.25px, transparent 1.35px),
-            radial-gradient(circle, rgb(var(--ht-accent-hover, 199 89 96) / 0.8) 1.25px, transparent 1.35px),
-            radial-gradient(circle, rgb(var(--ht-accent-hover, 199 89 96) / 0.8) 1.25px, transparent 1.35px),
-            radial-gradient(circle, rgb(var(--ht-accent-hover, 199 89 96) / 0.8) 1.25px, transparent 1.35px),
-            radial-gradient(circle, rgb(var(--ht-accent-hover, 199 89 96) / 0.8) 1.25px, transparent 1.35px),
-            radial-gradient(circle, rgb(var(--ht-accent-hover, 199 89 96) / 0.8) 1.25px, transparent 1.35px);
+            radial-gradient(circle, color-mix(in oklch, var(--ht-accent-hover, oklch(0.7 0.11 24)) 80%, transparent) 1.25px, transparent 1.35px),
+            radial-gradient(circle, color-mix(in oklch, var(--ht-accent-hover, oklch(0.7 0.11 24)) 80%, transparent) 1.25px, transparent 1.35px),
+            radial-gradient(circle, color-mix(in oklch, var(--ht-accent-hover, oklch(0.7 0.11 24)) 80%, transparent) 1.25px, transparent 1.35px),
+            radial-gradient(circle, color-mix(in oklch, var(--ht-accent-hover, oklch(0.7 0.11 24)) 80%, transparent) 1.25px, transparent 1.35px),
+            radial-gradient(circle, color-mix(in oklch, var(--ht-accent-hover, oklch(0.7 0.11 24)) 80%, transparent) 1.25px, transparent 1.35px),
+            radial-gradient(circle, color-mix(in oklch, var(--ht-accent-hover, oklch(0.7 0.11 24)) 80%, transparent) 1.25px, transparent 1.35px);
         background-size:
             4px 4px,
             4px 4px,
@@ -106,47 +106,47 @@
 
     .dark .fi-sidebar-resize-handle:hover::before,
     .dark .fi-sidebar-resize-handle:active::before {
-        border-color: rgb(var(--ht-accent-hover, 199 89 96));
+        border-color: var(--ht-accent-hover, oklch(0.7 0.11 24));
         box-shadow:
             0 2px 8px rgb(0 0 0 / 0.4),
-            0 0 0 1px rgb(var(--ht-accent, 184 65 76) / 0.3);
+            0 0 0 1px color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 30%, transparent);
     }
 
     .dark .fi-sidebar-resize-handle::after {
-        background-color: rgb(var(--ht-accent, 184 65 76) / 0.4);
-        box-shadow: 1px 0 0 rgb(var(--ht-accent, 184 65 76) / 0.1);
+        background-color: color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 40%, transparent);
+        box-shadow: 1px 0 0 color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 10%, transparent);
     }
 
     .dark .fi-sidebar-resize-handle:hover::after,
     .dark .fi-sidebar-resize-handle:active::after {
-        background-color: rgb(var(--ht-accent, 184 65 76));
-        box-shadow: 0 0 0 1px rgb(var(--ht-accent, 184 65 76) / 0.45);
+        background-color: var(--ht-accent, oklch(0.62 0.14 25));
+        box-shadow: 0 0 0 1px color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 45%, transparent);
     }
 
     body.fi-sidebar-resizing .fi-sidebar-resize-handle::before {
-        border-color: rgb(var(--ht-accent, 184 65 76) / 0.65);
+        border-color: color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 65%, transparent);
         box-shadow:
-            0 2px 8px rgb(var(--ht-accent, 184 65 76) / 0.25),
-            0 0 0 2px rgb(var(--ht-accent, 184 65 76) / 0.2);
+            0 2px 8px color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 25%, transparent),
+            0 0 0 2px color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 20%, transparent);
         transform: translate(50%, -50%) scale(1.06);
     }
 
     body.fi-sidebar-resizing .fi-sidebar-resize-handle::after {
         width: 2px;
-        background-color: rgb(var(--ht-accent, 184 65 76));
-        box-shadow: 0 0 0 1px rgb(var(--ht-accent, 184 65 76) / 0.4);
+        background-color: var(--ht-accent, oklch(0.62 0.14 25));
+        box-shadow: 0 0 0 1px color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 40%, transparent);
     }
 
     .dark body.fi-sidebar-resizing .fi-sidebar-resize-handle::before {
-        border-color: rgb(var(--ht-accent-hover, 199 89 96) / 0.8);
+        border-color: color-mix(in oklch, var(--ht-accent-hover, oklch(0.7 0.11 24)) 80%, transparent);
         box-shadow:
-            0 2px 10px rgb(var(--ht-accent, 184 65 76) / 0.25),
-            0 0 0 2px rgb(var(--ht-accent, 184 65 76) / 0.2);
+            0 2px 10px color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 25%, transparent),
+            0 0 0 2px color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 20%, transparent);
     }
 
     .dark body.fi-sidebar-resizing .fi-sidebar-resize-handle::after {
-        background-color: rgb(var(--ht-accent, 184 65 76));
-        box-shadow: 0 0 0 1px rgb(var(--ht-accent, 184 65 76) / 0.5);
+        background-color: var(--ht-accent, oklch(0.62 0.14 25));
+        box-shadow: 0 0 0 1px color-mix(in oklch, var(--ht-accent, oklch(0.62 0.14 25)) 50%, transparent);
     }
 
     body.fi-sidebar-resizing,
