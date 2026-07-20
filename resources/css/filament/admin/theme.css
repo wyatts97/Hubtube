@@ -1877,3 +1877,121 @@ svg.h-6 { height: 1.5rem !important; }
 .dark svg.dark\:text-gray-500 {
     color: rgb(161 161 170) !important;
 }
+
+/* ============================================================
+   Table icons — sort, filter, column manager, column icons
+   Filament tables use text-gray-400 dark:text-gray-500 which
+   is too dim.  Bump everything to gray-400 in dark mode.
+   ============================================================ */
+
+/* ── Table header sort icons (unsorted state) ── */
+.dark .fi-ta-header-cell:not(.fi-ta-header-cell-sorted) .fi-icon {
+    color: rgb(161 161 170) !important;
+}
+
+/* ── Table header sort icons on hover/focus ── */
+.dark .fi-ta-header-cell-sort-btn:hover .fi-icon,
+.dark .fi-ta-header-cell-sort-btn:focus-visible .fi-icon {
+    color: rgb(212 212 216) !important;
+}
+
+/* ── Table column icons (icon columns, text column icons) ── */
+.dark .fi-ta-icon .fi-icon,
+.dark .fi-ta-text .fi-icon,
+.dark .fi-ta-icon-count-summary .fi-icon {
+    color: rgb(161 161 170) !important;
+}
+
+/* ── Table loading indicators ── */
+.dark .fi-ta .fi-loading-indicator {
+    color: rgb(161 161 170) !important;
+}
+
+/* ── Table placeholder text (empty cells) ── */
+.dark .fi-ta-placeholder {
+    color: rgb(161 161 170) !important;
+}
+
+/* ── Table empty state icon ── */
+.dark .fi-ta-empty-state-icon-bg .fi-icon {
+    color: rgb(161 161 170) !important;
+}
+
+/* ── Table header toolbar / column manager / filter buttons ── */
+/* These are action buttons with fi-icon inside */
+.dark .fi-ta-header-toolbar .fi-icon,
+.dark .fi-ta-header .fi-icon,
+.dark .fi-ta-filters-trigger-action-ctn .fi-icon,
+.dark .fi-ta-actions .fi-icon {
+    color: rgb(161 161 170) !important;
+}
+
+/* ── Table filter dropdown icons ── */
+.dark .fi-ta-filters .fi-icon,
+.dark .fi-ta-filter-indicators .fi-icon {
+    color: rgb(161 161 170) !important;
+}
+
+/* ── Table summary row icons ── */
+.dark .fi-ta-summary-row .fi-icon {
+    color: rgb(161 161 170) !important;
+}
+
+/* ── Table cell color-gray icons (e.g. gray badge icons) ── */
+.dark .fi-ta .fi-color-gray .fi-icon {
+    color: rgb(161 161 170) !important;
+}
+
+/* ============================================================
+   Jobs monitor page — Croustibat/FilamentJobsMonitor
+   Uses Tailwind text-gray-400 dark:text-gray-500 for frame
+   numbers, metadata, stack trace details, JSON tree labels.
+   ============================================================ */
+.dark .fi-page span.text-gray-500,
+.dark .fi-page span.dark\:text-gray-500,
+.dark .fi-page span.text-gray-400,
+.dark .fi-page span.dark\:text-gray-400,
+.dark .fi-page div.text-gray-500,
+.dark .fi-page div.dark\:text-gray-500,
+.dark .fi-page div.text-gray-400,
+.dark .fi-page div.dark\:text-gray-400 {
+    color: rgb(161 161 170) !important;
+}
+
+/* Jobs monitor: tab icons */
+.dark .fi-tabs .fi-icon {
+    color: rgb(161 161 170) !important;
+}
+
+/* Jobs monitor: stack trace frame numbers and file paths */
+.dark .fi-page span.tabular-nums.text-gray-400,
+.dark .fi-page span.tabular-nums.dark\:text-gray-500,
+.dark .fi-page span.truncate.text-gray-400,
+.dark .fi-page span.truncate.dark\:text-gray-500 {
+    color: rgb(161 161 170) !important;
+}
+
+/* Jobs monitor: JSON tree keys and null values */
+.dark .fi-page span.text-gray-400.dark\:text-gray-500,
+.dark .fi-page span.italic.text-gray-400,
+.dark .fi-page span.italic.dark\:text-gray-500 {
+    color: rgb(161 161 170) !important;
+}
+
+/* Jobs monitor: vendor frames hidden message */
+.dark .fi-page div.text-gray-400.dark\:text-gray-500,
+.dark .fi-page div.px-3.py-2.text-gray-400,
+.dark .fi-page div.px-3.py-2.dark\:text-gray-500 {
+    color: rgb(161 161 170) !important;
+}
+
+/* ============================================================
+   Broader catch-all for any remaining gray-400/500 text in
+   dark mode across the panel (labels, descriptions, meta text)
+   ============================================================ */
+.dark .fi-page .text-gray-400,
+.dark .fi-page .dark\:text-gray-400,
+.dark .fi-resource .text-gray-400,
+.dark .fi-resource .dark\:text-gray-400 {
+    color: rgb(161 161 170) !important;
+}
