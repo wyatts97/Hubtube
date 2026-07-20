@@ -48,7 +48,7 @@ class SignupsChartWidget extends ApexChartWidget
                 'curve' => 'smooth',
                 'width' => 2,
             ],
-            'colors' => ['#10b981'],
+            'colors' => ['#b8524d'],
             'fill' => [
                 'type' => 'gradient',
                 'gradient' => [

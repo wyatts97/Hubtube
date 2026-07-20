@@ -29,19 +29,7 @@ class ScheduledVideos extends Page implements HasTable
     protected static ?int $navigationSort = 6;
     protected string $view = 'filament.pages.scheduled-videos';
 
-    public static function getNavigationBadge(): ?string
-    {
-        $count = Video::whereNotNull('queue_order')
-            ->whereNull('published_at')
-            ->count();
-
-        return $count > 0 ? (string)$count : null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        return 'info';
-    }
+    // Scheduled count is surfaced as a topbar pill (see SystemStatusBar::getActionItems).
 
     protected function getHeaderActions(): array
     {

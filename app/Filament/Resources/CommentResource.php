@@ -33,15 +33,7 @@ class CommentResource extends Resource
     protected static ?int $navigationSort = 4;
     protected static ?string $recordTitleAttribute = 'content';
 
-    public static function getNavigationBadge(): ?string
-    {
-        return static::getModel()::where('is_approved', false)->count() ?: null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        return 'warning';
-    }
+    // Approval count is surfaced as a topbar pill (see SystemStatusBar::getActionItems).
 
     public static function form(Schema $schema): Schema
     {

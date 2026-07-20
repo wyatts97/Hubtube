@@ -40,15 +40,7 @@ class ImageResource extends Resource
     protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 3;
 
-    public static function getNavigationBadge(): ?string
-    {
-        return static::getModel()::where('is_approved', false)->count() ?: null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        return 'warning';
-    }
+    // Moderation count is surfaced as a topbar pill (see SystemStatusBar::getActionItems).
 
     public static function form(Schema $schema): Schema
     {

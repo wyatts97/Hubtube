@@ -36,15 +36,7 @@ class ContactMessageResource extends Resource
     protected static string | \UnitEnum | null $navigationGroup = 'Users & Messages';
     protected static ?int $navigationSort = 2;
 
-    public static function getNavigationBadge(): ?string
-    {
-        return static::getModel()::where('is_read', false)->count() ?: null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        return 'danger';
-    }
+    // Unread count is surfaced as a topbar pill (see SystemStatusBar::getActionItems).
 
     public static function form(Schema $schema): Schema
     {

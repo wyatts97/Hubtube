@@ -86,18 +86,7 @@ class VideoResource extends Resource
         return parent::getGlobalSearchEloquentQuery()->with('user');
     }
 
-    public static function getNavigationBadge(): ?string
-    {
-        return static::getModel()::where('is_approved', false)
-            ->where('status', 'processed')
-            ->whereNull('queue_order')
-            ->count() ?: null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        return 'warning';
-    }
+    // Moderation count is surfaced as a topbar pill (see SystemStatusBar::getActionItems).
 
     public static function infolist(Schema $schema): Schema
     {

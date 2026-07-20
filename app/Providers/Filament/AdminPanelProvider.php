@@ -65,8 +65,8 @@ class AdminPanelProvider extends PanelProvider
         if (class_exists(SlickScrollbarPlugin::class)) {
             $plugins[] = SlickScrollbarPlugin::make()
                 ->size('6px')
-                ->color('#ef4444')
-                ->hoverColor('rgb(220 38 38)');
+                ->color('#b8524d')
+                ->hoverColor('#c85c56');
         }
 
         $plugins[] = PhosphorIcons::make()->regular();
@@ -116,6 +116,58 @@ class AdminPanelProvider extends PanelProvider
         }, $groups);
     }
 
+    /**
+     * Muted brand red used as the panel primary (links, active states,
+     * highlights). Lower chroma than shadcn's Red so it reads comfortably
+     * on the dark zinc backdrop while staying clearly red.
+     *
+     * Follows the shadcn "doubled shades" structure (50=500, 100=600,
+     * 200=700) so the theme's dark-mode shade-swap is a no-op and the
+     * colour never flips to near-white.
+     *
+     * @return array<int, string>
+     */
+    protected static function mutedRed(): array
+    {
+        return [
+            50  => 'oklch(0.62 0.14 25)',
+            100 => 'oklch(0.565 0.14 26)',
+            200 => 'oklch(0.5 0.13 27)',
+            300 => 'oklch(0.79 0.07 22)',
+            400 => 'oklch(0.7 0.11 24)',
+            500 => 'oklch(0.62 0.14 25)',
+            600 => 'oklch(0.565 0.14 26)',
+            700 => 'oklch(0.5 0.13 27)',
+            800 => 'oklch(0.44 0.11 27)',
+            900 => 'oklch(0.39 0.095 26)',
+            950 => 'oklch(0.98 0 0)',
+        ];
+    }
+
+    /**
+     * Bright "firetruck" red reserved for destructive/danger actions.
+     * Higher chroma than the muted primary so destructive buttons stand
+     * out from the everyday accent. (~#ee1c25)
+     *
+     * @return array<int, string>
+     */
+    protected static function firetruckRed(): array
+    {
+        return [
+            50  => 'oklch(0.6 0.245 27)',
+            100 => 'oklch(0.55 0.245 28)',
+            200 => 'oklch(0.49 0.215 28)',
+            300 => 'oklch(0.8 0.12 22)',
+            400 => 'oklch(0.7 0.2 25)',
+            500 => 'oklch(0.6 0.245 27)',
+            600 => 'oklch(0.55 0.245 28)',
+            700 => 'oklch(0.49 0.215 28)',
+            800 => 'oklch(0.43 0.18 28)',
+            900 => 'oklch(0.38 0.145 27)',
+            950 => 'oklch(0.98 0 0)',
+        ];
+    }
+
     public function panel(Panel $panel): Panel
     {
         // Resolve site logo for admin panel branding
@@ -159,8 +211,8 @@ class AdminPanelProvider extends PanelProvider
             ->brandName($brandName)
             ->font('Inter')
             ->colors([
-                'primary' => ShadcnColor::Default,
-                'danger'  => ShadcnColor::Red,
+                'primary' => static::mutedRed(),
+                'danger'  => static::firetruckRed(),
                 'warning' => ShadcnColor::Yellow,
                 'success' => ShadcnColor::Green,
                 'info'    => ShadcnColor::Blue,
@@ -202,11 +254,11 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([])
             ->renderHook(
-                PanelsRenderHook::TOPBAR_START,
+                PanelsRenderHook::TOPBAR_END,
                 function (): string {
                     try {
                         return view('filament.widgets.system-status-bar', [
-                            'metrics' => app(SystemStatusBar::class)->getMetrics(),
+                            'items' => app(SystemStatusBar::class)->getActionItems(),
                         ])->render();
                     } catch (Throwable $e) {
                         return '';

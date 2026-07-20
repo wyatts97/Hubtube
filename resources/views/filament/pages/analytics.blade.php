@@ -36,19 +36,19 @@
         {{-- Summary Cards --}}
         <div class="ht-summary-grid">
             @foreach ([
-                ['label' => 'Total Videos',   'value' => number_format($summary['total_videos']),      'sub' => '+'.number_format($summary['videos_this_week']).' this week',                         'icon' => 'phosphor-film-strip',              'tint' => 'indigo'],
-                ['label' => 'Total Users',    'value' => number_format($summary['total_users']),       'sub' => '+'.number_format($summary['users_this_week']).' this week',                          'icon' => 'phosphor-users',             'tint' => 'emerald'],
-                ['label' => 'Total Views',    'value' => number_format($summary['total_views']),       'sub' => 'All time',                                                                           'icon' => 'phosphor-eye',               'tint' => 'sky'],
-                ['label' => 'Ad Impressions', 'value' => number_format($summary['total_impressions']), 'sub' => number_format($summary['total_clicks']).' clicks · '.$overallCtr.'% CTR',             'icon' => 'phosphor-cursor', 'tint' => 'amber'],
+                ['label' => 'Total Videos',   'value' => number_format($summary['total_videos']),      'sub' => '+'.number_format($summary['videos_this_week']).' this week',                         'icon' => 'phosphor-film-strip',     'tint' => 'accent'],
+                ['label' => 'Total Users',    'value' => number_format($summary['total_users']),       'sub' => '+'.number_format($summary['users_this_week']).' this week',                          'icon' => 'phosphor-users',            'tint' => 'accent'],
+                ['label' => 'Total Views',    'value' => number_format($summary['total_views']),       'sub' => 'All time',                                                                               'icon' => 'phosphor-eye',              'tint' => 'accent'],
+                ['label' => 'Ad Impressions', 'value' => number_format($summary['total_impressions']), 'sub' => number_format($summary['total_clicks']).' clicks · '.$overallCtr.'% CTR',            'icon' => 'phosphor-cursor',           'tint' => 'accent'],
             ] as $card)
             <div class="ht-summary-card" data-tint="{{ $card['tint'] }}">
                 <div class="ht-summary-card__icon ht-tint-{{ $card['tint'] }}">
                     <x-filament::icon :icon="$card['icon']" class="w-5 h-5" />
                 </div>
                 <div class="min-w-0">
-                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ $card['label'] }}</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1 tabular-nums">{{ $card['value'] }}</p>
-                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate">{{ $card['sub'] }}</p>
+                    <p class="text-xs font-medium ht-muted uppercase tracking-wider">{{ $card['label'] }}</p>
+                    <p class="text-2xl font-bold ht-panel__name mt-1 tabular-nums">{{ $card['value'] }}</p>
+                    <p class="text-xs ht-muted mt-1 truncate">{{ $card['sub'] }}</p>
                 </div>
             </div>
             @endforeach

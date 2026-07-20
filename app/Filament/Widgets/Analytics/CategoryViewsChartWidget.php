@@ -51,13 +51,13 @@ class CategoryViewsChartWidget extends ApexChartWidget
                     'barHeight'    => '70%',
                 ],
             ],
-            'colors' => ['#6366f1'],
+            'colors' => ['#b8524d'],
             'fill' => [
                 'type' => 'gradient',
                 'gradient' => [
                     'shade'           => 'dark',
                     'type'            => 'horizontal',
-                    'gradientToColors' => ['#a855f7'],
+                    'gradientToColors' => ['#c85c56'],
                     'stops'           => [0, 100],
                 ],
             ],

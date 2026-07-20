@@ -41,17 +41,7 @@ class WithdrawalRequestResource extends Resource
         return (bool) Setting::get('monetization_enabled', true);
     }
 
-    public static function getNavigationBadge(): ?string
-    {
-        $count = static::getModel()::where('status', WithdrawalRequest::STATUS_PENDING)->count();
-
-        return $count > 0 ? (string) $count : null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        return 'warning';
-    }
+    // Pending count is surfaced as a topbar pill (see SystemStatusBar::getActionItems).
 
     public static function form(Schema $schema): Schema
     {

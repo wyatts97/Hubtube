@@ -53,7 +53,7 @@ class UploadsChartWidget extends ApexChartWidget
                 'curve' => 'smooth',
                 'width' => 2,
             ],
-            'colors' => ['#6366f1'],
+            'colors' => ['#b8524d'],
             'fill' => [
                 'type' => 'gradient',
                 'gradient' => [
