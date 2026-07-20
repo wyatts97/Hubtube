@@ -146,7 +146,7 @@
 }
 
 /* Tint variants */
-.ht-tint-accent { background: rgb(var(--ht-accent) / 0.12); color: rgb(var(--ht-accent)); }
+.ht-tint-accent { background: rgb(var(--ht-accent) / 0.15); color: rgb(var(--primary-400, 199 89 96)); }
 
 .ht-summary-card[data-tint="accent"]::before { background: linear-gradient(90deg, transparent, rgb(var(--ht-accent) / 0.75), transparent); }
 
@@ -419,8 +419,8 @@
 }
 .ht-vidwidget__icon--trending,
 .ht-vidwidget__icon--recent {
-    background: rgb(var(--ht-accent) / 0.12);
-    color: rgb(var(--ht-accent));
+    background: rgb(var(--ht-accent) / 0.15);
+    color: rgb(var(--primary-400, 199 89 96));
 }
 
 .ht-vidwidget__title {
@@ -661,7 +661,7 @@
 .ht-vidstat--views,
 .dark .ht-vidstat--views,
 .ht-vidstat--likes,
-.dark .ht-vidstat--likes { color: rgb(var(--ht-text-muted)); }
+.dark .ht-vidstat--likes { color: rgb(var(--gray-400, 161 161 170)); }
 
 /* Status pills */
 .ht-vidpill {
@@ -1739,7 +1739,7 @@ svg.h-6 { height: 1.5rem !important; }
     width: 0.875rem;
     height: 0.875rem;
     flex-shrink: 0;
-    color: rgb(var(--ht-text-muted));
+    color: rgb(var(--gray-400, 161 161 170));
 }
 
 .ht-topbar-pill__count {
@@ -1788,4 +1788,92 @@ svg.h-6 { height: 1.5rem !important; }
 
 .ht-topbar-pill--info:hover .ht-topbar-pill__count {
     color: rgb(var(--ht-info));
+}
+
+/* ============================================================
+   Icon brightness — Filament's defaults use 400/500-level
+   grays and color shades that are too dim against the dark
+   panel surface.  These overrides bump every icon to a
+   brighter, more legible level.
+   ============================================================ */
+
+/* ── Native Filament stat-overview widget icons ── */
+/* The main decorative icon (top-right of each stat card) */
+.dark .fi-wi-stats-overview-stat .fi-icon {
+    color: rgb(var(--gray-400, 161 161 170)) !important;
+}
+
+/* Description icons — Filament applies text-color-500; bump to 300/400 */
+.dark .fi-wi-stats-overview-stat .fi-wi-stats-overview-stat-description.fi-color .fi-icon {
+    color: rgb(var(--color-400, var(--primary-400, 199 89 96))) !important;
+}
+
+/* Per-color description icon brightening */
+.dark .fi-wi-stats-overview-stat .fi-wi-stats-overview-stat-description.fi-color-primary .fi-icon {
+    color: rgb(var(--primary-400, 199 89 96)) !important;
+}
+.dark .fi-wi-stats-overview-stat .fi-wi-stats-overview-stat-description.fi-color-success .fi-icon {
+    color: rgb(var(--success-400, 74 222 128)) !important;
+}
+.dark .fi-wi-stats-overview-stat .fi-wi-stats-overview-stat-description.fi-color-info .fi-icon {
+    color: rgb(var(--info-400, 96 165 250)) !important;
+}
+.dark .fi-wi-stats-overview-stat .fi-wi-stats-overview-stat-description.fi-color-warning .fi-icon {
+    color: rgb(var(--warning-400, 250 204 21)) !important;
+}
+.dark .fi-wi-stats-overview-stat .fi-wi-stats-overview-stat-description.fi-color-danger .fi-icon {
+    color: rgb(var(--danger-400, 248 113 113)) !important;
+}
+.dark .fi-wi-stats-overview-stat .fi-wi-stats-overview-stat-description.fi-color-gray .fi-icon {
+    color: rgb(var(--gray-400, 161 161 170)) !important;
+}
+
+/* ── Stat card main icon (->icon() on Stat::make) ── */
+.dark .fi-wi-stats-overview-stat > .fi-icon {
+    color: rgb(var(--gray-300, 203 213 225)) !important;
+}
+
+/* ── Section / page header icons in Filament resources ── */
+.dark .fi-section-header .fi-icon {
+    color: rgb(var(--gray-300, 203 213 225)) !important;
+}
+
+/* ── Resource page title icons ── */
+.dark .fi-resource-page-header .fi-icon {
+    color: rgb(var(--primary-400, 199 89 96)) !important;
+}
+
+/* ── Navigation icons (sidebar) — brighter ── */
+.dark .fi-sidebar-nav .fi-icon {
+    color: rgb(var(--gray-400, 161 161 170)) !important;
+}
+
+/* ── Table header / action icons — brighter ── */
+.dark .fi-ta .fi-icon {
+    color: rgb(var(--gray-400, 161 161 170)) !important;
+}
+
+/* ── Form field icons (prefix/suffix) — brighter ── */
+.dark .fi-input-wrp .fi-icon {
+    color: rgb(var(--gray-400, 161 161 170)) !important;
+}
+
+/* ── Blade view inline SVG icons (video-preview-manager, etc.) ── */
+/* Tailwind's dark:text-gray-500 is too dim — bump to gray-400 */
+.dark .fi-section svg.text-gray-500,
+.dark .fi-section svg.dark\:text-gray-500,
+.dark .fi-section-content svg[class*="text-gray-400"] {
+    color: rgb(161 161 170) !important;
+}
+
+/* ── Scheduled videos page icons ── */
+.dark .fi-page svg[class*="text-gray-400"],
+.dark .fi-page svg[class*="text-gray-500"] {
+    color: rgb(161 161 170) !important;
+}
+
+/* ── Generic catch-all: any SVG using gray-500 in dark mode ── */
+.dark svg.text-gray-500,
+.dark svg.dark\:text-gray-500 {
+    color: rgb(161 161 170) !important;
 }
