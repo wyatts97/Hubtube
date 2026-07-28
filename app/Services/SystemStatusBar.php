@@ -33,11 +33,12 @@ class SystemStatusBar
 
     /**
      * Action-item counts surfaced as topbar pills (replaces the old
-     * coloured sidebar navigation badges). Each entry is only included
-     * when its count is > 0. Every lookup is individually guarded so a
-     * single failing query never takes down the whole topbar.
+     * coloured sidebar navigation badges). Every item is always included,
+     * even at zero, so the strip reads as a stable status bar. Each lookup
+     * is individually guarded so a single failing query never takes down
+     * the whole topbar.
      *
-     * @return array<int, array{key:string,label:string,count:int,url:?string,icon:string,tone:string}>
+     * @return array<int, array{key:string,label:string,shortLabel:string,count:int,url:?string,icon:string,tone:string}>
      */
     public function getActionItems(): array
     {
@@ -46,7 +47,8 @@ class SystemStatusBar
         $items[] = $this->buildItem(
             key: 'moderation',
             label: 'Videos need moderation',
-            icon: 'phosphor-video-camera',
+            shortLabel: 'Needs Moderation',
+            icon: 'phosphor-shield-check',
             tone: 'warning',
             count: fn () => Video::where('is_approved', false)
                 ->where('status', 'processed')
@@ -58,6 +60,7 @@ class SystemStatusBar
         $items[] = $this->buildItem(
             key: 'images',
             label: 'Images need moderation',
+            shortLabel: 'Images',
             icon: 'phosphor-image',
             tone: 'warning',
             count: fn () => Image::where('is_approved', false)->count(),
@@ -67,6 +70,7 @@ class SystemStatusBar
         $items[] = $this->buildItem(
             key: 'comments',
             label: 'Comments awaiting approval',
+            shortLabel: 'Comments',
             icon: 'phosphor-chat-text',
             tone: 'warning',
             count: fn () => Comment::where('is_approved', false)->count(),
@@ -76,6 +80,7 @@ class SystemStatusBar
         $items[] = $this->buildItem(
             key: 'contacts',
             label: 'Unread contact messages',
+            shortLabel: 'Messages',
             icon: 'phosphor-envelope',
             tone: 'danger',
             count: fn () => ContactMessage::where('is_read', false)->count(),
@@ -86,6 +91,7 @@ class SystemStatusBar
             $items[] = $this->buildItem(
                 key: 'withdrawals',
                 label: 'Pending withdrawals',
+                shortLabel: 'Withdrawals',
                 icon: 'phosphor-currency-dollar',
                 tone: 'warning',
                 count: fn () => WithdrawalRequest::where('status', WithdrawalRequest::STATUS_PENDING)->count(),
@@ -96,6 +102,7 @@ class SystemStatusBar
         $items[] = $this->buildItem(
             key: 'scheduled',
             label: 'Scheduled videos',
+            shortLabel: 'Scheduled',
             icon: 'phosphor-clock',
             tone: 'info',
             count: fn () => Video::whereNotNull('queue_order')
@@ -107,29 +114,27 @@ class SystemStatusBar
         $items[] = $this->buildItem(
             key: 'logs',
             label: 'Failed jobs',
+            shortLabel: 'Failed Jobs',
             icon: 'phosphor-warning-octagon',
             tone: 'danger',
             count: fn () => $this->getQueueStatus()['failed'] ?? 0,
             url: fn () => $this->logsUrl(),
         );
 
-        // Drop any item that resolved to a zero/failed count.
-        return array_values(array_filter($items, fn ($item) => $item !== null && $item['count'] > 0));
+        // Only drop items whose count query actually failed.
+        return array_values(array_filter($items, fn ($item) => $item !== null));
     }
 
     /**
      * Resolve a single action item, swallowing any error (missing table,
      * unregistered resource, etc.) so the topbar degrades gracefully.
+     * A zero count is a valid result and is still rendered.
      */
-    protected function buildItem(string $key, string $label, string $icon, string $tone, \Closure $count, \Closure $url): ?array
+    protected function buildItem(string $key, string $label, string $shortLabel, string $icon, string $tone, \Closure $count, \Closure $url): ?array
     {
         try {
             $value = (int) $count();
         } catch (Throwable $e) {
-            return null;
-        }
-
-        if ($value <= 0) {
             return null;
         }
 
@@ -142,6 +147,7 @@ class SystemStatusBar
         return [
             'key' => $key,
             'label' => $label,
+            'shortLabel' => $shortLabel,
             'count' => $value,
             'url' => $resolvedUrl,
             'icon' => $icon,

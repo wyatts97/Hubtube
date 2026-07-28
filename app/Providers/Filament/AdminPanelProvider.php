@@ -255,7 +255,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([])
             ->renderHook(
-                PanelsRenderHook::TOPBAR_END,
+                PanelsRenderHook::TOPBAR_LOGO_AFTER,
                 function (): string {
                     try {
                         return view('filament.widgets.system-status-bar', [

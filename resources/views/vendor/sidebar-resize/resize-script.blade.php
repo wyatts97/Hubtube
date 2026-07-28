@@ -149,10 +149,13 @@
         box-shadow: 0 0 0 1px oklch(0.62 0.14 25 / 0.5);
     }
 
-    body.fi-sidebar-resizing,
-    body.fi-sidebar-resizing * {
-        cursor: col-resize !important;
-        user-select: none !important;
+    body.fi-sidebar-resizing {
+        cursor: col-resize;
+        user-select: none;
+    }
+
+    body.fi-sidebar-resizing .fi-main {
+        pointer-events: none;
     }
 
     body.fi-sidebar-resizing .fi-main-sidebar {
@@ -225,10 +228,13 @@
                 || body.classList.contains('fi-body-has-sidebar-fully-collapsible-on-desktop');
         }
 
-        function applyWidth(sidebar, width) {
+        function applyWidth(sidebar, width, syncRootVariable = true) {
             const value = clamp(width) + 'px';
 
-            document.documentElement.style.setProperty('--sidebar-width', value);
+            if (syncRootVariable) {
+                document.documentElement.style.setProperty('--sidebar-width', value);
+            }
+
             sidebar.style.width = value;
             sidebar.style.minWidth = value;
             sidebar.style.maxWidth = value;
@@ -327,6 +333,7 @@
             let dragging = false;
             let animationFrameId = null;
             let pendingWidth = null;
+            let dragOrigin = 0;
 
             function flushPendingWidth() {
                 animationFrameId = null;
@@ -335,7 +342,11 @@
                     return;
                 }
 
-                applyWidth(sidebar, pendingWidth);
+                // Skip the :root custom property while dragging. It is only
+                // consumed by .fi-sidebar itself (which already has an inline
+                // width), and writing it every frame invalidates style for the
+                // whole document. It is synced once on mouseup instead.
+                applyWidth(sidebar, pendingWidth, false);
                 pendingWidth = null;
             }
 
@@ -360,6 +371,13 @@
                 event.preventDefault();
                 event.stopPropagation();
 
+                // Measure the sidebar's leading edge once. Reading
+                // getBoundingClientRect() on every mousemove would force a
+                // synchronous layout right after the previous frame wrote
+                // inline widths, causing read/write thrashing and visible lag.
+                const rect = sidebar.getBoundingClientRect();
+                dragOrigin = isRtl ? rect.right : rect.left;
+
                 dragging = true;
                 document.body.classList.add('fi-sidebar-resizing');
                 document.addEventListener('mousemove', onMouseMove);
@@ -371,10 +389,9 @@
                     return;
                 }
 
-                const rect = sidebar.getBoundingClientRect();
                 const width = isRtl
-                    ? rect.right - event.clientX
-                    : event.clientX - rect.left;
+                    ? dragOrigin - event.clientX
+                    : event.clientX - dragOrigin;
 
                 scheduleWidth(width);
             }
@@ -397,7 +414,11 @@
                 const currentWidth = parsePixels(getComputedStyle(sidebar).width);
 
                 if (currentWidth !== null) {
-                    writeStorage(clamp(currentWidth));
+                    const finalWidth = clamp(currentWidth);
+
+                    // Sync the :root variable once, now that dragging is over.
+                    document.documentElement.style.setProperty('--sidebar-width', finalWidth + 'px');
+                    writeStorage(finalWidth);
                 }
             }
 
