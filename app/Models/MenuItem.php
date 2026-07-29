@@ -14,6 +14,7 @@ class MenuItem extends Model
     use HasFactory;
 
     protected $fillable = [
+        'category_id',
         'label',
         'type',
         'url',
@@ -45,6 +46,11 @@ class MenuItem extends Model
     public function parent(): BelongsTo
     {
         return $this->belongsTo(MenuItem::class, 'parent_id');
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 
     public const CACHE_KEY = 'menu:items';
