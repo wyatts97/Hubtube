@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
@@ -62,6 +63,14 @@ class ImageResource extends Resource
                             ->columnSpanFull(),
                     ])
                     ->visibleOn('create'),
+
+                Section::make('Image Preview')
+                    ->hiddenOn('create')
+                    ->schema([
+                        View::make('filament.resources.image-resource.components.image-preview')
+                            ->columnSpanFull(),
+                    ])
+                    ->columnSpanFull(),
 
                 Section::make('Image Details')
                     ->schema([

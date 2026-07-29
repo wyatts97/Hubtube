@@ -18,7 +18,15 @@ class ListVideos extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            Action::make('create')
+                ->label('New Video')
+                ->icon('phosphor-plus')
+                ->url(VideoResource::getUrl('create')),
+
+            Action::make('bulkUpload')
+                ->label('Bulk Upload')
+                ->icon('phosphor-tray-arrow-up')
+                ->url('/admin/bulk-video-uploader'),
         ];
     }
 

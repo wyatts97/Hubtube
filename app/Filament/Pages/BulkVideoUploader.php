@@ -40,6 +40,12 @@ class BulkVideoUploader extends Page implements HasForms
     protected static ?string $navigationLabel = 'Bulk Upload';
     protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 7;
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     protected string $view = 'filament.pages.bulk-video-uploader';
 
     /** @var array File upload form state */
