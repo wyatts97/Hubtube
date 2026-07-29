@@ -24,6 +24,7 @@ use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteBulkAction;
 use App\Filament\Resources\ImageResource\Pages\ListImages;
 use App\Filament\Resources\ImageResource\Pages\EditImage;
+use App\Filament\Resources\ImageResource\Pages\CreateImage;
 use App\Filament\Resources\ImageResource\Pages;
 use App\Models\Image;
 use Filament\Forms;
@@ -46,9 +47,25 @@ class ImageResource extends Resource
     {
         return $schema
             ->components([
+                // Create-only: upload new image file
+                Section::make('Image File')
+                    ->schema([
+                        FileUpload::make('file_path')
+                            ->label('Image File')
+                            ->disk('public')
+                            ->directory('images/admin-uploads')
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
+                            ->maxSize(524288) // 500MB
+                            ->visibility('public')
+                            ->helperText('Upload JPG, PNG, GIF, or WebP. Max 500MB. Image will be processed after creation.')
+                            ->columnSpanFull(),
+                    ])
+                    ->visibleOn('create'),
+
                 Section::make('Image Details')
                     ->schema([
                         TextInput::make('title')
+                            ->required()
                             ->maxLength(200)
                             ->columnSpanFull(),
                         Textarea::make('description')
@@ -272,6 +289,7 @@ class ImageResource extends Resource
     {
         return [
             'index' => ListImages::route('/'),
+            'create' => CreateImage::route('/create'),
             'edit' => EditImage::route('/{record}/edit'),
         ];
     }

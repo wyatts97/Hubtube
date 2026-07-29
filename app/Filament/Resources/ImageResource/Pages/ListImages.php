@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ImageResource\Pages;
 
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Actions\Action;
 use App\Filament\Resources\ImageResource;
 use App\Models\Image;
 use Filament\Resources\Pages\ListRecords;
@@ -11,6 +12,21 @@ use Illuminate\Database\Eloquent\Builder;
 class ListImages extends ListRecords
 {
     protected static string $resource = ImageResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('create')
+                ->label('New Image')
+                ->icon('phosphor-plus')
+                ->url(ImageResource::getUrl('create')),
+
+            Action::make('bulkUpload')
+                ->label('Bulk Upload')
+                ->icon('phosphor-images')
+                ->url('/admin/bulk-image-uploader'),
+        ];
+    }
 
     public function getTabs(): array
     {
