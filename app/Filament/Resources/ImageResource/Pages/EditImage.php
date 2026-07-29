@@ -6,6 +6,7 @@ use Filament\Actions\DeleteAction;
 use App\Filament\Resources\ImageResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class EditImage extends EditRecord
 {
@@ -16,5 +17,10 @@ class EditImage extends EditRecord
         return [
             DeleteAction::make(),
         ];
+    }
+
+    protected function resolveRecord($key): Model
+    {
+        return ImageResource::getModel()::where('id', $key)->firstOrFail();
     }
 }
