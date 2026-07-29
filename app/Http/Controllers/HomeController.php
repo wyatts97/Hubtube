@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Image;
 use App\Models\Setting;
 use App\Models\SponsoredCard;
 use App\Models\Video;
@@ -92,12 +93,23 @@ class HomeController extends Controller
                 ->get()
         );
 
+        $latestImages = Cache::remember('home:latest_images', 120, fn () =>
+            Image::query()
+                ->with('user')
+                ->public()
+                ->approved()
+                ->latest('published_at')
+                ->limit(10)
+                ->get()
+        );
+
         return Inertia::render('Home', [
             'featuredVideos' => $featuredVideos,
             'latestVideos' => $latestVideos,
             'popularVideos' => $popularVideos,
             'categories' => $categories,
             'shortsPreview' => $shortsPreview,
+            'latestImages' => $latestImages,
             'adSettings' => $this->shouldSuppressAds() ? ['videoGridEnabled' => false] : $adSettings,
             'seo' => $this->seoService->forHome(),
             'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('home', auth()->user()?->role ?? 'guest'),

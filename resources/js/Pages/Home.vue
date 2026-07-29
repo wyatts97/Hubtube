@@ -7,6 +7,7 @@ import VideoCard from '@/Components/VideoCard.vue';
 import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import ShortsRail from '@/Components/ShortsRail.vue';
+import ImagesRail from '@/Components/ImagesRail.vue';
 import { Loader2 } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
 import AdSlot from '@/Components/AdSlot.vue';
@@ -27,6 +28,7 @@ const props = defineProps({
     popularVideos: Array,
     categories: Array,
     shortsPreview: { type: Array, default: () => [] },
+    latestImages: { type: Array, default: () => [] },
     adSettings: Object, // Ad settings from admin
     seo: { type: Object, default: () => ({}) },
     sponsoredCards: { type: Array, default: () => [] },
@@ -269,6 +271,9 @@ const getSponsoredCard = (index) => {
                 />
             </template>
         </section>
+
+        <!-- Latest Images Rail -->
+        <ImagesRail v-if="latestImages?.length" :images="latestImages" />
 
         <!-- Popular Videos -->
         <section v-if="popularVideos.length > 0 || isInitialLoad" class="mb-8">

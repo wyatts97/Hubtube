@@ -2,7 +2,10 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Actions\Action;
 use Throwable;
 use ZipArchive;
 use RuntimeException;
@@ -29,59 +32,60 @@ class DataExport extends Page implements HasForms
 
     public ?array $data = [];
 
-    // Form fields
-    public bool $export_users = false;
-    public bool $export_videos = false;
-    public bool $export_images = false;
-    public ?string $users_format = 'csv';
-    public ?string $media_format = 'zip';
-
     public function mount(): void
     {
-        $this->form->fill();
+        $this->form->fill([
+            'export_users' => false,
+            'export_videos' => false,
+            'export_images' => false,
+            'users_format' => 'csv',
+            'media_format' => 'zip',
+        ]);
     }
 
-    protected function getFormSchema(): array
+    public function form(Schema $schema): Schema
     {
-        return [
-            Section::make('Select Data to Export')
-                ->description('Choose which data types you want to export from the site.')
-                ->schema([
-                    Checkbox::make('export_users')
-                        ->label('Export Users')
-                        ->reactive(),
-                    Checkbox::make('export_videos')
-                        ->label('Export Videos (with media files)')
-                        ->reactive(),
-                    Checkbox::make('export_images')
-                        ->label('Export Images (with media files)')
-                        ->reactive(),
-                ]),
+        return $schema
+            ->components([
+                Section::make('Select Data to Export')
+                    ->description('Choose which data types you want to export from the site.')
+                    ->schema([
+                        Checkbox::make('export_users')
+                            ->label('Export Users')
+                            ->live(),
+                        Checkbox::make('export_videos')
+                            ->label('Export Videos (with media files)')
+                            ->live(),
+                        Checkbox::make('export_images')
+                            ->label('Export Images (with media files)')
+                            ->live(),
+                    ]),
 
-            Section::make('Export Format')
-                ->description('Choose the format for your export.')
-                ->schema([
-                    Select::make('users_format')
-                        ->label('Users Export Format')
-                        ->options([
-                            'csv' => 'CSV',
-                            'json' => 'JSON',
-                            'sql' => 'SQL',
-                        ])
-                        ->default('csv')
-                        ->visible(fn () => $this->export_users)
-                        ->required(fn () => $this->export_users),
+                Section::make('Export Format')
+                    ->description('Choose the format for your export.')
+                    ->schema([
+                        Select::make('users_format')
+                            ->label('Users Export Format')
+                            ->options([
+                                'csv' => 'CSV',
+                                'json' => 'JSON',
+                                'sql' => 'SQL',
+                            ])
+                            ->default('csv')
+                            ->visible(fn (Get $get): bool => (bool) $get('export_users'))
+                            ->required(fn (Get $get): bool => (bool) $get('export_users')),
 
-                    Select::make('media_format')
-                        ->label('Media Export Format')
-                        ->options([
-                            'zip' => 'ZIP Archive',
-                        ])
-                        ->default('zip')
-                        ->visible(fn () => $this->export_videos || $this->export_images)
-                        ->required(fn () => $this->export_videos || $this->export_images),
-                ]),
-        ];
+                        Select::make('media_format')
+                            ->label('Media Export Format')
+                            ->options([
+                                'zip' => 'ZIP Archive',
+                            ])
+                            ->default('zip')
+                            ->visible(fn (Get $get): bool => (bool) ($get('export_videos') || $get('export_images')))
+                            ->required(fn (Get $get): bool => (bool) ($get('export_videos') || $get('export_images'))),
+                    ]),
+            ])
+            ->statePath('data');
     }
 
     protected function getHeaderActions(): array
@@ -96,8 +100,13 @@ class DataExport extends Page implements HasForms
 
     public function export(): Response|StreamedResponse
     {
+        $exportUsers = (bool) ($this->data['export_users'] ?? false);
+        $exportVideos = (bool) ($this->data['export_videos'] ?? false);
+        $exportImages = (bool) ($this->data['export_images'] ?? false);
+        $usersFormat = $this->data['users_format'] ?? 'csv';
+
         // Validate at least one export type is selected
-        if (!$this->export_users && !$this->export_videos && !$this->export_images) {
+        if (!$exportUsers && !$exportVideos && !$exportImages) {
             Notification::make()
                 ->title('No data selected')
                 ->body('Please select at least one data type to export.')
@@ -114,16 +123,16 @@ class DataExport extends Page implements HasForms
             $service->cleanupOldExports();
 
             // Export users if selected
-            if ($this->export_users) {
-                $userFilePath = $service->exportUsers($this->users_format);
+            if ($exportUsers) {
+                $userFilePath = $service->exportUsers($usersFormat);
                 $exportedFiles[] = [
                     'path' => $userFilePath,
-                    'name' => "users_export_{$this->users_format}." . $this->users_format,
+                    'name' => "users_export_{$usersFormat}." . $usersFormat,
                 ];
             }
 
             // Export videos if selected
-            if ($this->export_videos) {
+            if ($exportVideos) {
                 $videoFilePath = $service->exportVideos();
                 $exportedFiles[] = [
                     'path' => $videoFilePath,
@@ -132,7 +141,7 @@ class DataExport extends Page implements HasForms
             }
 
             // Export images if selected
-            if ($this->export_images) {
+            if ($exportImages) {
                 $imageFilePath = $service->exportImages();
                 $exportedFiles[] = [
                     'path' => $imageFilePath,
