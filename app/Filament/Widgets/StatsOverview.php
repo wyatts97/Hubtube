@@ -8,6 +8,7 @@ use App\Models\Comment;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
+use App\Models\VisitorDaily;
 use App\Models\WalletTransaction;
 use App\Services\StorageManager;
 use Carbon\Carbon;
@@ -148,7 +149,7 @@ class StatsOverview extends BaseWidget
                 if (Schema::hasTable('visitor_daily')) {
                     $today = now()->toDateString();
                     $visitorCount = VisitorDaily::where('date', $today)
-                        ->distinct('visitor_hash')
+                        ->distinct()
                         ->count('visitor_hash');
                 }
             } catch (\Throwable) {

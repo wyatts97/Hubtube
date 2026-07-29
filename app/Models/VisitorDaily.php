@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class VisitorDaily extends Model
 {
+    protected $table = 'visitor_daily';
+
     protected $fillable = [
         'visitor_hash',
         'date',
