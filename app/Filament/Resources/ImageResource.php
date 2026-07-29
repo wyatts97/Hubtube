@@ -66,10 +66,9 @@ class ImageResource extends Resource
 
                 Section::make('Image Preview')
                     ->hiddenOn('create')
-                    ->columns(2)
                     ->schema([
                         View::make('filament.resources.image-resource.components.image-preview')
-                            ->columnSpan(1),
+                            ->columnSpanFull(),
                     ]),
 
                 Section::make('Image Details')
