@@ -497,6 +497,13 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/channel/{username}/history', [ChannelController::class, 'localeWatchHistory'])->name('locale.channel.history');
         Route::get('/channel/{username}/about', [ChannelController::class, 'localeAbout'])->name('locale.channel.about');
         Route::get('/public-playlists', [PlaylistController::class, 'publicIndex'])->name('locale.playlists.public');
+
+        // Image & Gallery routes (locale-prefixed)
+        Route::get('/images', [ImageController::class, 'index'])->name('locale.images.index');
+        Route::get('/image/{image:slug}', [ImageController::class, 'show'])->name('locale.images.show');
+        Route::get('/galleries', [GalleryController::class, 'index'])->name('locale.galleries.index');
+        Route::get('/gallery/{gallery:slug}', [GalleryController::class, 'show'])->name('locale.galleries.show');
+
         Route::get('/pages/{slug}', [PageController::class, 'localeShow'])->name('locale.pages.show');
 
         // Locale-prefixed search autocomplete

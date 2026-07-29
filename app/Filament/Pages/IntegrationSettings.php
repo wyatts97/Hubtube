@@ -3,8 +3,6 @@
 namespace App\Filament\Pages;
 
 use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Actions;
 use Filament\Actions\Action;
@@ -30,8 +28,8 @@ class IntegrationSettings extends Page implements HasForms
     use InteractsWithForms;
 
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-puzzle-piece';
-    protected static ?string $navigationLabel = 'Services & Email';
-    protected static string | \UnitEnum | null $navigationGroup = 'Integrations';
+    protected static ?string $navigationLabel = 'Email';
+    protected static string | \UnitEnum | null $navigationGroup = 'Users & Email';
     protected static ?int $navigationSort = 1;
     protected string $view = 'filament.pages.integration-settings';
 
@@ -57,12 +55,7 @@ class IntegrationSettings extends Page implements HasForms
     {
         return $schema
             ->components([
-                Tabs::make('Integration Settings')
-                    ->tabs([
-                        Tab::make('Email / SMTP')
-                            ->icon('phosphor-envelope')
-                            ->schema([
-                                Section::make('Mail Server Configuration')
+                Section::make('Mail Server Configuration')
                                     ->description('Works with any SMTP server: Gmail, Mailgun, SendGrid, BillionMail (self-hosted), or any other provider. Set the host and port to match your mail server.')
                                     ->schema([
                                         Select::make('mail_mailer')
@@ -126,25 +119,6 @@ class IntegrationSettings extends Page implements HasForms
                                                 }),
                                         ])->columnSpanFull(),
                                     ])->columns(2),
-                            ]),
-
-                        Tab::make('Email Templates')
-                            ->icon('phosphor-envelope')
-                            ->schema([
-                                Section::make('Email Templates')
-                                    ->description('Manage email templates, themes, and sent logs in the FinMail editor.')
-                                    ->schema([
-                                        Actions::make([
-                                            Action::make('openEmailTemplates')
-                                                ->label('Open Email Templates')
-                                                ->icon('phosphor-envelope')
-                                                ->color('primary')
-                                                ->url(fn () => route('filament.admin.resources.email-templates.index'))
-                                                ->openUrlInNewTab(false),
-                                        ])->columnSpanFull(),
-                                    ])->columns(1),
-                            ]),
-                    ])->columnSpanFull(),
             ])
             ->statePath('data');
     }

@@ -23,10 +23,10 @@ class SocialNetworkSettings extends Page implements HasForms
     use InteractsWithForms;
 
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-share';
-    protected static ?string $navigationLabel = 'Social Networks';
-    protected static string | \UnitEnum | null $navigationGroup = 'Integrations';
+    protected static ?string $navigationLabel = 'Social Login';
+    protected static string | \UnitEnum | null $navigationGroup = 'Users & Email';
     protected static ?int $navigationSort = 2;
-    protected static ?string $title = 'Social Networks';
+    protected static ?string $title = 'Social Login';
     protected static ?string $slug = 'social-networks';
     protected string $view = 'filament.pages.social-network-settings';
 

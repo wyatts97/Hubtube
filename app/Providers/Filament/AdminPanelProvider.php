@@ -74,7 +74,7 @@ class AdminPanelProvider extends PanelProvider
 
         if (class_exists(FinMailPlugin::class)) {
             $plugins[] = FinMailPlugin::make()
-                ->navigationGroup('Integrations');
+                ->navigationGroup('Users & Email');
         }
 
         // Google Analytics widgets (credentials configured via admin panel)
@@ -97,10 +97,9 @@ class AdminPanelProvider extends PanelProvider
         $groups = [
             ['key' => 'Overview',         'collapsed' => false, 'icon' => 'phosphor-squares-four'],
             ['key' => 'Content',          'collapsed' => false, 'icon' => 'phosphor-video-camera'],
-            ['key' => 'Users & Messages', 'collapsed' => false, 'icon' => 'phosphor-users'],
+            ['key' => 'Users & Email',    'collapsed' => false, 'icon' => 'phosphor-users'],
             ['key' => 'Monetization',     'collapsed' => false, 'icon' => 'phosphor-currency-dollar'],
             ['key' => 'Appearance',       'collapsed' => false, 'icon' => 'phosphor-paint-brush'],
-            ['key' => 'Integrations',     'collapsed' => true,  'icon' => 'phosphor-puzzle-piece'],
             ['key' => 'System',           'collapsed' => true,  'icon' => 'phosphor-gear'],
             ['key' => 'Tools',            'collapsed' => true,  'icon' => 'phosphor-wrench'],
         ];

@@ -39,9 +39,9 @@ class VideoAdResource extends Resource
 
     protected static ?string $navigationLabel = 'Ad Creatives';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Appearance';
+    protected static string|\UnitEnum|null $navigationGroup = 'Monetization';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 5;
 
     protected static ?string $recordTitleAttribute = 'name';
 

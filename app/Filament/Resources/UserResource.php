@@ -34,7 +34,7 @@ class UserResource extends Resource
 {
     protected static ?string $model = User::class;
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-users';
-    protected static string | \UnitEnum | null $navigationGroup = 'Users & Messages';
+    protected static string | \UnitEnum | null $navigationGroup = 'Users & Email';
     protected static ?int $navigationSort = 1;
     protected static ?string $recordTitleAttribute = 'username';
 

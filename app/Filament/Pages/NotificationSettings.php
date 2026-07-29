@@ -21,7 +21,7 @@ class NotificationSettings extends Page implements HasForms
 
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-bell';
     protected static ?string $navigationLabel = 'Notifications';
-    protected static string | \UnitEnum | null $navigationGroup = 'Users & Messages';
+    protected static string | \UnitEnum | null $navigationGroup = 'Users & Email';
     protected static ?int $navigationSort = 3;
     protected string $view = 'filament.pages.notification-settings';
 

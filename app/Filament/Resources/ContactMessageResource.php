@@ -33,7 +33,7 @@ class ContactMessageResource extends Resource
     protected static ?string $model = ContactMessage::class;
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-envelope';
     protected static ?string $navigationLabel = 'Contact & Reports';
-    protected static string | \UnitEnum | null $navigationGroup = 'Users & Messages';
+    protected static string | \UnitEnum | null $navigationGroup = 'Users & Email';
     protected static ?int $navigationSort = 2;
 
     // Unread count is surfaced as a topbar pill (see SystemStatusBar::getActionItems).
