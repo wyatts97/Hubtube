@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Exception;
+use App\Models\Category;
 use App\Models\MenuItem;
 use App\Models\Setting;
 use App\Services\TranslationService;
@@ -268,6 +269,29 @@ class HandleInertiaRequests extends Middleware
                 $items      = MenuItem::getMenuTree('both');
                 $headerOnly = MenuItem::getMenuTree('header');
                 $mobileOnly = MenuItem::getMenuTree('mobile');
+
+                if ($items->isEmpty() && $headerOnly->isEmpty() && $mobileOnly->isEmpty()) {
+                    $categories = Category::active()->parentCategories()->orderBy('sort_order')->get();
+
+                    $default = $categories->map(fn (Category $category) => [
+                        'id'         => 'category_' . $category->id,
+                        'label'      => $category->name,
+                        'type'       => 'category',
+                        'url'        => route('categories.show', $category->slug),
+                        'target'     => '_self',
+                        'icon'       => null,
+                        'is_active'  => true,
+                        'is_mega'    => false,
+                        'mega_columns' => null,
+                        'children'   => [],
+                        'sort_order' => $category->sort_order ?? 0,
+                    ])->values()->toArray();
+
+                    return [
+                        'header' => $default,
+                        'mobile' => $default,
+                    ];
+                }
 
                 return [
                     'header' => $items->merge($headerOnly)->sortBy('sort_order')->values()->toArray(),
