@@ -81,7 +81,7 @@ class ImageResource extends Resource
                             ->relationship('category', 'name')
                             ->requiredOn('create')
                             ->searchable()
-                            ->preload(),
+                            ->nullable(),
                         Select::make('privacy')
                             ->options([
                                 'public' => 'Public',
