@@ -89,15 +89,6 @@ class StatsOverview extends BaseWidget
                 ->toArray();
             $viewChart = $this->fillChartData($viewChartData, $now, 7);
 
-            // ── Processing queue size over last 7 days (failed-job proxy) ──
-            $processChartData = Video::where('created_at', '>=', $sevenDaysAgo)
-                ->where('status', 'failed')
-                ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
-                ->groupByRaw('DATE(created_at)')
-                ->pluck('count', 'date')
-                ->toArray();
-            $processChart = $this->fillChartData($processChartData, $now, 7);
-
             // ── Storage growth sparkline (new bytes uploaded per day) ──
             $storageChartData = Video::where('created_at', '>=', $sevenDaysAgo)
                 ->selectRaw('DATE(created_at) as date, SUM(size) as total')
@@ -143,17 +134,12 @@ class StatsOverview extends BaseWidget
                 if ($diskTotal && $diskFree !== false) {
                     $storageLabel = $this->formatBytes($diskUsed) . ' / ' . $this->formatBytes($diskTotal);
                     $percent = round(($diskUsed / $diskTotal) * 100, 1);
-                    $storageDescription = $percent . '% used · ' . number_format($totalVideos) . ' files on disk';
+                    $storageDescription = $percent . '% used';
                 } else {
                     $storageLabel = $this->formatBytes($totalSize);
                     $storageDescription = number_format($totalVideos) . ' files on disk';
                 }
             }
-
-            // ── Processing ──
-            $processingCount = Video::where('status', 'processing')->count();
-            $pendingCount = Video::where('status', 'pending')->count();
-            $failedCount = Video::where('status', 'failed')->count();
 
             $stats = [
                 // Row 1
@@ -200,16 +186,6 @@ class StatsOverview extends BaseWidget
                     ->chart($storageChart)
                     ->chartColor('gray')
                     ->color('gray'),
-
-                Stat::make('Processing', $processingCount > 0 ? "{$processingCount} encoding" : 'Idle')
-                    ->description(
-                        ($pendingCount > 0 ? "{$pendingCount} queued" : 'No queue') .
-                        ($failedCount > 0 ? " · {$failedCount} failed" : '')
-                    )
-                    ->descriptionIcon('phosphor-gear')
-                    ->chart($processChart)
-                    ->chartColor($failedCount > 0 ? 'danger' : 'gray')
-                    ->color($failedCount > 0 ? 'danger' : ($processingCount > 0 ? 'info' : 'gray')),
             ];
 
             // Add Revenue stat only if monetization is enabled

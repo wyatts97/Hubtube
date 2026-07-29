@@ -6,6 +6,7 @@ use App\Filament\Widgets\RecentSignupsTable;
 use App\Filament\Widgets\RecentUploadsTable;
 use App\Filament\Widgets\StatsOverview;
 use App\Filament\Widgets\TrendingVideosTable;
+use App\Filament\Widgets\VisitorsWidget;
 use Filament\Pages\Dashboard as BaseDashboard;
 
 class Dashboard extends BaseDashboard
@@ -35,7 +36,7 @@ class Dashboard extends BaseDashboard
      */
     public function getWidgets(): array
     {
-        $widgets = [StatsOverview::class];
+        $widgets = [StatsOverview::class, VisitorsWidget::class];
 
         return array_merge($widgets, [
             TrendingVideosTable::class,
