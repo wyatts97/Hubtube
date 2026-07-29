@@ -100,7 +100,7 @@ const getSkipDelay = (placement) => {
 // ── VAST / VPAID dispatcher ──
 const playVastAd = async (ad, placement) => {
     currentAd.value = ad;
-    await playIma(ad, { placement });
+    await playIma(ad);
 };
 
 // ── Impression / click pixel helpers ──

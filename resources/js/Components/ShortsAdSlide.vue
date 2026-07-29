@@ -16,10 +16,12 @@ const autoplayBlocked = ref(false);
 const localVideoRef = ref(null);
 const htmlRef = ref(null);
 
+const adError = ref(false);
+
 const { play: playIma, destroy: destroyIma } = useImaAd(containerRef, videoRef, {
-    onStart: () => { loading.value = false; fireImpression(); },
+    onStart: () => { loading.value = false; adError.value = false; fireImpression(); },
     onComplete: () => { /* slide remains visible until user swipes past */ },
-    onError: () => { loading.value = false; },
+    onError: () => { loading.value = false; adError.value = true; },
     fireImpression: () => fireImpression(),
 });
 
@@ -35,6 +37,7 @@ const fetchAd = async () => {
         adType.value = ad.value.type;
 
         if (isVast.value) {
+            adError.value = false;
             nextTick(() => playIma(ad.value));
         } else if (isMp4.value) {
             loading.value = false;
@@ -137,6 +140,17 @@ onUnmounted(() => {
         <!-- Loading -->
         <div v-if="loading" class="absolute inset-0 flex items-center justify-center z-20">
             <div class="w-10 h-10 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+        </div>
+
+        <!-- Ad error fallback -->
+        <div v-if="adError" class="absolute inset-0 flex flex-col items-center justify-center z-20 gap-3">
+            <p class="text-white/70 text-sm">Ad unavailable</p>
+            <button
+                @click="$emit('load-more')"
+                class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-lg border border-white/30 transition-colors"
+            >
+                Skip →
+            </button>
         </div>
 
         <!-- VAST/VPAID via IMA -->
