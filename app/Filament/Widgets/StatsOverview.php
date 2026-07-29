@@ -142,25 +142,17 @@ class StatsOverview extends BaseWidget
                 }
             }
 
-            // ── Visitors (7-day default) ──
+            // ── Visitors (today only) ──
             $visitorCount = 0;
-            $visitorChart = array_fill(0, 7, 0);
             try {
                 if (Schema::hasTable('visitor_daily')) {
-                    $startDate = $sevenDaysAgo;
-                    $visitorCount = VisitorDaily::sinceDate($startDate)
+                    $today = now()->toDateString();
+                    $visitorCount = VisitorDaily::where('date', $today)
                         ->distinct('visitor_hash')
                         ->count('visitor_hash');
-
-                    $visitorChartData = VisitorDaily::sinceDate($startDate)
-                        ->selectRaw('date, COUNT(DISTINCT visitor_hash) as unique_visitors')
-                        ->groupBy('date')
-                        ->pluck('unique_visitors', 'date')
-                        ->toArray();
-                    $visitorChart = $this->fillChartData($visitorChartData, $now, 7);
                 }
             } catch (\Throwable) {
-                // Fallback to zeros
+                // Fallback to zero
             }
 
             $stats = [
@@ -210,10 +202,8 @@ class StatsOverview extends BaseWidget
                     ->color('gray'),
 
                 Stat::make('Visitors', number_format($visitorCount))
-                    ->description('Last 7 days')
+                    ->description('Today')
                     ->descriptionIcon('phosphor-users')
-                    ->chart($visitorChart)
-                    ->chartColor('warning')
                     ->color('primary'),
             ];
 
