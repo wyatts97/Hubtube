@@ -66,11 +66,11 @@ class ImageResource extends Resource
 
                 Section::make('Image Preview')
                     ->hiddenOn('create')
+                    ->columns(2)
                     ->schema([
                         View::make('filament.resources.image-resource.components.image-preview')
-                            ->columnSpanFull(),
-                    ])
-                    ->columnSpanFull(),
+                            ->columnSpan(1),
+                    ]),
 
                 Section::make('Image Details')
                     ->schema([
@@ -91,6 +91,7 @@ class ImageResource extends Resource
                             ->relationship('category', 'name')
                             ->required(fn (string $operation): bool => $operation === 'create')
                             ->searchable()
+                            ->preload()
                             ->nullable(),
                         Select::make('privacy')
                             ->options([

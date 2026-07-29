@@ -8,7 +8,7 @@
         <img
             src="{{ $record->image_url }}"
             alt="{{ $record->title ?: 'Image preview' }}"
-            style="max-height: 24rem; max-width: 100%; height: auto; border-radius: 0.5rem; display: block;"
+            style="max-height: 20rem; max-width: 100%; height: auto; border-radius: 0.5rem; display: block; margin: 0 auto;"
         >
         @if($record->is_animated)
             <p style="margin-top: 0.5rem; font-size: 0.75rem; color: #9ca3af;">Animated preview (GIF/WebP)</p>
