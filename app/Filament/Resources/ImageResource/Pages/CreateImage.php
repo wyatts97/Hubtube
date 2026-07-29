@@ -21,8 +21,8 @@ class CreateImage extends CreateRecord
         $data['privacy'] = $data['privacy'] ?? 'public';
 
         // Handle the uploaded image file
-        if (!empty($data['file_path'])) {
-            $tempPath = $data['file_path'];
+        if (!empty($data['image_file'])) {
+            $tempPath = $data['image_file'];
             $slug = $data['slug'];
             $directory = "images/{$slug}";
             $extension = pathinfo($tempPath, PATHINFO_EXTENSION) ?: 'jpg';
@@ -46,7 +46,7 @@ class CreateImage extends CreateRecord
             }
         }
 
-        unset($data['file_path']);
+        unset($data['image_file']);
 
         return $data;
     }

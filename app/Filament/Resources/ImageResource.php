@@ -9,6 +9,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\FileUpload;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
@@ -50,7 +51,7 @@ class ImageResource extends Resource
                 // Create-only: upload new image file
                 Section::make('Image File')
                     ->schema([
-                        FileUpload::make('file_path')
+                        FileUpload::make('image_file')
                             ->label('Image File')
                             ->disk('public')
                             ->directory('images/admin-uploads')
@@ -81,7 +82,6 @@ class ImageResource extends Resource
                             ->relationship('category', 'name')
                             ->requiredOn('create')
                             ->searchable()
-                            ->preload()
                             ->nullable(),
                         Select::make('privacy')
                             ->options([
