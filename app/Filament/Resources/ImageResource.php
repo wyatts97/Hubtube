@@ -79,6 +79,7 @@ class ImageResource extends Resource
                             ->preload(),
                         Select::make('category_id')
                             ->relationship('category', 'name')
+                            ->requiredOn('create')
                             ->searchable()
                             ->preload(),
                         Select::make('privacy')

@@ -94,7 +94,7 @@ class ImageController extends Controller
             'image_file' => ['required', 'file', 'mimes:jpg,jpeg,png,gif,webp,bmp', 'max:51200'], // 50MB
             'title' => ['nullable', 'string', 'max:200'],
             'description' => ['nullable', 'string', 'max:5000'],
-            'category_id' => ['nullable', 'exists:categories,id'],
+            'category_id' => ['required', 'exists:categories,id'],
             'privacy' => ['required', 'in:public,private,unlisted'],
             'tags' => ['nullable', 'array', 'max:20'],
             'tags.*' => ['string', 'max:50'],

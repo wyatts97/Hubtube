@@ -110,6 +110,7 @@ class BulkImageUploader extends Page implements HasForms
                         Select::make('category_id')
                             ->label('Category')
                             ->options(fn () => Category::active()->orderBy('name')->pluck('name', 'id')->all())
+                            ->required()
                             ->searchable()
                             ->preload()
                             ->placeholder('Select a category'),
@@ -173,7 +174,7 @@ class BulkImageUploader extends Page implements HasForms
                         Placeholder::make('preview')
                             ->hiddenLabel()
                             ->content(fn (Get $get): View => view(
-                                'filament.pages.partials.bulk-entry-preview',
+                                'filament.pages.partials.bulk-image-preview',
                                 [
                                     'filePath' => $get('file_path'),
                                     'fileSize' => $get('file_size'),
@@ -207,6 +208,7 @@ class BulkImageUploader extends Page implements HasForms
                                 Select::make('category_id')
                                     ->label('Category')
                                     ->options(fn () => Category::active()->orderBy('name')->pluck('name', 'id')->all())
+                                    ->required()
                                     ->searchable()
                                     ->preload()
                                     ->placeholder('Select a category'),
@@ -302,7 +304,7 @@ class BulkImageUploader extends Page implements HasForms
             return;
         }
 
-        // Validate all entries have titles and users
+        // Validate all entries have titles, users, and categories
         foreach ($this->entries as $index => $entry) {
             if (empty(trim($entry['title'] ?? ''))) {
                 Notification::make()
@@ -314,6 +316,13 @@ class BulkImageUploader extends Page implements HasForms
             if (empty($entry['user_id'])) {
                 Notification::make()
                     ->title("Image #" . ($index + 1) . " needs a user assigned")
+                    ->danger()
+                    ->send();
+                return;
+            }
+            if (empty($entry['category_id'])) {
+                Notification::make()
+                    ->title("Image #" . ($index + 1) . " needs a category")
                     ->danger()
                     ->send();
                 return;
