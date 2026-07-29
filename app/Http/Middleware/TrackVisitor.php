@@ -26,9 +26,13 @@ class TrackVisitor
                 str_starts_with($path, 'api/') ||
                 str_starts_with($path, 'livewire/') ||
                 str_starts_with($path, 'admin/') ||
-                $request->hasHeader('X-Livewire') ||
-                $request->ajax()
+                $request->hasHeader('X-Livewire')
             ) {
+                return $response;
+            }
+
+            // Skip AJAX requests that are NOT Inertia (Inertia page loads should be tracked)
+            if ($request->ajax() && !$request->hasHeader('X-Inertia')) {
                 return $response;
             }
 

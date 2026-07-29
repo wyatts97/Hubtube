@@ -213,7 +213,7 @@ class StatsOverview extends BaseWidget
                     ->description('Last 7 days')
                     ->descriptionIcon('phosphor-users')
                     ->chart($visitorChart)
-                    ->chartColor('primary')
+                    ->chartColor('warning')
                     ->color('primary'),
             ];
 
