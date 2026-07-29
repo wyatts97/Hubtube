@@ -112,7 +112,7 @@ class ImageController extends Controller
             ]
         );
 
-        return redirect()->route('images.show', $image->uuid)
+        return redirect()->route('images.show', $image->slug)
             ->with('success', 'Image uploaded successfully!');
     }
 

@@ -336,7 +336,7 @@ Route::middleware('age.verified')->group(function () {
 
     // Image & Gallery routes (public browse)
     Route::get('/images', [ImageController::class, 'index'])->name('images.index');
-    Route::get('/image/{image:uuid}', [ImageController::class, 'show'])->name('images.show');
+    Route::get('/image/{image:slug}', [ImageController::class, 'show'])->name('images.show');
     Route::get('/galleries', [GalleryController::class, 'index'])->name('galleries.index');
     Route::get('/gallery/{gallery:slug}', [GalleryController::class, 'show'])->name('galleries.show');
 

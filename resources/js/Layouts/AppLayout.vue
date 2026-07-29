@@ -307,6 +307,7 @@ const navigation = computed(() => [
     { name: tSafe('nav.shorts', 'Shorts'), href: localizedUrl('/shorts'), icon: Smartphone, key: 'shorts' },
     { name: tSafe('nav.trending', 'Trending'), href: localizedUrl('/trending'), icon: TrendingUp, key: 'trending' },
     { name: tSafe('nav.categories', 'Categories'), href: localizedUrl('/categories'), icon: LayoutGrid, key: 'categories' },
+    { name: tSafe('nav.images', 'Images'), href: localizedUrl('/images'), icon: ImageIcon, key: 'images' },
     { name: tSafe('nav.tags', 'Tags'), href: localizedUrl('/tags'), icon: Tag, key: 'tags' },
 ]);
 
@@ -369,6 +370,7 @@ const mobileNavItems = computed(() => [
 const mobileMoreItems = computed(() => [
     { name: tSafe('nav.shorts', 'Shorts'), href: localizedUrl('/shorts'), icon: Smartphone },
     { name: tSafe('nav.trending', 'Trending'), href: localizedUrl('/trending'), icon: TrendingUp },
+    { name: tSafe('nav.images', 'Images'), href: localizedUrl('/images'), icon: ImageIcon },
     { name: tSafe('nav.tags', 'Tags'), href: localizedUrl('/tags'), icon: Tag },
     { name: tSafe('nav.playlists', 'Playlists'), href: localizedUrl('/public-playlists'), icon: ListVideo },
 ]);

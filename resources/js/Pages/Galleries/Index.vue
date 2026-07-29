@@ -1,7 +1,8 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import SeoHead from '@/Components/SeoHead.vue';
 import { Eye, ImageIcon, Clock, Flame, Plus } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 
@@ -10,6 +11,7 @@ const { t } = useI18n();
 const props = defineProps({
     galleries: Object,
     filters: Object,
+    seo: Object,
 });
 
 const sort = ref(props.filters?.sort || '');
@@ -33,7 +35,7 @@ const formatViews = (count) => {
 </script>
 
 <template>
-    <Head title="Galleries" />
+    <SeoHead :seo="seo" />
 
     <AppLayout>
         <div class="mb-5">

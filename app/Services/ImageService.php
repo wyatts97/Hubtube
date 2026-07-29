@@ -81,11 +81,14 @@ class ImageService
             $thumbnailPath = $this->generateStaticThumbnailFromAnimated($file, $directory, $disk);
         }
 
+        $title = $metadata['title'] ?? pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+
         // Create the database record
         $image = Image::create([
             'user_id' => $userId,
             'uuid' => $uuid,
-            'title' => $metadata['title'] ?? pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+            'slug' => $this->generateUniqueSlug($title),
+            'title' => $title,
             'description' => $metadata['description'] ?? null,
             'file_path' => $originalPath,
             'thumbnail_path' => $thumbnailPath,
@@ -104,6 +107,25 @@ class ImageService
         ]);
 
         return $image;
+    }
+
+    protected function generateUniqueSlug(?string $title): string
+    {
+        $baseSlug = Str::slug((string) $title) ?: 'image-' . Str::lower(Str::random(6));
+
+        if (Str::length($baseSlug) < 4) {
+            $baseSlug .= '-' . Str::lower(Str::random(6));
+        }
+
+        $baseSlug = Str::limit($baseSlug, 200, '');
+
+        $slug = $baseSlug;
+        $suffix = 2;
+        while (Image::where('slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . $suffix;
+            $suffix++;
+        }
+        return $slug;
     }
 
     protected function generateThumbnail(UploadedFile $file, string $directory, string $disk, int $width, int $height): ?string

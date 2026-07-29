@@ -233,7 +233,7 @@ class ImageResource extends Resource
                     Action::make('view_frontend')
                         ->icon('phosphor-eye')
                         ->color('gray')
-                        ->url(fn (Image $record): string => "/image/{$record->uuid}")
+                        ->url(fn (Image $record): string => "/image/{$record->slug}")
                         ->openUrlInNewTab()
                         ->visible(fn (Image $record) => $record->is_approved),
 

@@ -26,6 +26,7 @@ class Image extends Model
     protected $fillable = [
         'user_id',
         'uuid',
+        'slug',
         'title',
         'description',
         'file_path',
@@ -84,6 +85,11 @@ class Image extends Model
                 StorageManager::delete($image->thumbnail_path, $disk);
             }
         });
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
     }
 
     public function user(): BelongsTo

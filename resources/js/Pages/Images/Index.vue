@@ -1,7 +1,8 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import SeoHead from '@/Components/SeoHead.vue';
 import ImageCard from '@/Components/ImageCard.vue';
 import { Filter, X, Clock, Flame, CalendarDays } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
@@ -12,6 +13,7 @@ const props = defineProps({
     images: Object,
     categories: Array,
     filters: Object,
+    seo: Object,
 });
 
 const category = ref(props.filters?.category || '');
@@ -60,7 +62,7 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside));
 </script>
 
 <template>
-    <Head title="Browse Images" />
+    <SeoHead :seo="seo" />
 
     <AppLayout>
         <div class="mb-5">

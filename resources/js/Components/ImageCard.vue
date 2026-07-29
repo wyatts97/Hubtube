@@ -15,7 +15,7 @@ const formatViews = (count) => {
 </script>
 
 <template>
-    <Link :href="`/image/${image.uuid}`" class="group block">
+    <Link :href="`/image/${image.slug}`" class="group block">
         <div class="relative rounded-xl overflow-hidden bg-bg-secondary">
             <div class="aspect-square">
                 <img

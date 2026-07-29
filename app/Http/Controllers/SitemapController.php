@@ -300,7 +300,7 @@ class SitemapController extends Controller
                 : null;
 
             $entry = "  <url>\n";
-            $entry .= '    <loc>' . $this->xmlEscape(url("/image/{$image->uuid}")) . "</loc>\n";
+            $entry .= '    <loc>' . $this->xmlEscape(url("/image/{$image->slug}")) . "</loc>\n";
             $entry .= '    <lastmod>' . $image->updated_at->toW3cString() . "</lastmod>\n";
             $entry .= "    <changefreq>monthly</changefreq>\n";
             $entry .= "    <priority>0.5</priority>\n";

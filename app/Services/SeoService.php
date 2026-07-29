@@ -626,7 +626,7 @@ class SeoService
     }
 
     /**
-     * Generate SEO data for an image detail page (/image/{uuid}).
+     * Generate SEO data for an image detail page (/image/{slug}).
      */
     public function forImage(Image $image): array
     {
@@ -641,7 +641,7 @@ class SeoService
         $descRaw = $image->description ?: $this->template('View photo "{title}" on {site_name}.', $vars);
         $description = $this->truncate($descRaw);
 
-        $canonicalPath = "/image/{$image->uuid}";
+        $canonicalPath = "/image/{$image->slug}";
         $seo = $this->baseMeta($titleStr, $description, $canonicalPath);
 
         $imageUrl = null;

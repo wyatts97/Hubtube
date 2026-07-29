@@ -1,7 +1,8 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import SeoHead from '@/Components/SeoHead.vue';
 import ImageCard from '@/Components/ImageCard.vue';
 import Lightbox from '@/Components/Lightbox.vue';
 import MasonryGrid from '@/Components/MasonryGrid.vue';
@@ -14,6 +15,7 @@ const props = defineProps({
     gallery: Object,
     images: Object,
     canEdit: Boolean,
+    seo: Object,
 });
 
 const showLightbox = ref(false);
@@ -49,7 +51,7 @@ const deleteGallery = () => {
 </script>
 
 <template>
-    <Head :title="gallery.title" />
+    <SeoHead :seo="seo" />
 
     <AppLayout>
         <div class="max-w-7xl mx-auto">

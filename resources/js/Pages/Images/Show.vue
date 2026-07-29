@@ -1,7 +1,8 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import SeoHead from '@/Components/SeoHead.vue';
 import ImageCard from '@/Components/ImageCard.vue';
 import Lightbox from '@/Components/Lightbox.vue';
 import { Eye, Calendar, Tag, User, Trash2, Download, Maximize2, ArrowLeft } from 'lucide-vue-next';
@@ -13,6 +14,7 @@ const props = defineProps({
     image: Object,
     relatedImages: Array,
     canEdit: Boolean,
+    seo: Object,
 });
 
 const showLightbox = ref(false);
@@ -35,7 +37,7 @@ const formatViews = (count) => {
 
 const deleteImage = () => {
     if (confirm('Are you sure you want to delete this image?')) {
-        router.delete(`/images/${props.image.id}`);
+        router.delete(`/images/${props.image.slug}`);
     }
 };
 
@@ -55,7 +57,7 @@ const lightboxImages = computed(() => {
 </script>
 
 <template>
-    <Head :title="image.title || 'Image'" />
+    <SeoHead :seo="seo" />
 
     <AppLayout>
         <div class="max-w-6xl mx-auto">
