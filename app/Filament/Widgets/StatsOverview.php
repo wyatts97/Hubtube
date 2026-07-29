@@ -9,6 +9,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
 use App\Models\WalletTransaction;
+use App\Services\StorageManager;
 use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -130,7 +131,24 @@ class StatsOverview extends BaseWidget
 
             // ── Storage ──
             $totalSize = Video::sum('size');
-            $storageLabel = $this->formatBytes($totalSize);
+            $isCloud = StorageManager::isCloudDisk();
+            if ($isCloud) {
+                $storageLabel = $this->formatBytes($totalSize);
+                $storageDescription = number_format($totalVideos) . ' files · Cloud disk';
+            } else {
+                $storagePath = \Illuminate\Support\Facades\Storage::disk('public')->path('');
+                $diskTotal = @disk_total_space($storagePath);
+                $diskFree = @disk_free_space($storagePath);
+                $diskUsed = $diskTotal ? $diskTotal - $diskFree : 0;
+                if ($diskTotal && $diskFree !== false) {
+                    $storageLabel = $this->formatBytes($diskUsed) . ' / ' . $this->formatBytes($diskTotal);
+                    $percent = round(($diskUsed / $diskTotal) * 100, 1);
+                    $storageDescription = $percent . '% used · ' . number_format($totalVideos) . ' files on disk';
+                } else {
+                    $storageLabel = $this->formatBytes($totalSize);
+                    $storageDescription = number_format($totalVideos) . ' files on disk';
+                }
+            }
 
             // ── Processing ──
             $processingCount = Video::where('status', 'processing')->count();
@@ -176,8 +194,8 @@ class StatsOverview extends BaseWidget
                     ->url(route('filament.admin.resources.comments.index'))
                     ->extraAttributes(['class' => 'cursor-pointer']),
 
-                Stat::make('Video Storage', $storageLabel)
-                    ->description(number_format($totalVideos) . ' files on disk')
+                Stat::make('Storage', $storageLabel)
+                    ->description($storageDescription)
                     ->descriptionIcon('phosphor-hard-drives')
                     ->chart($storageChart)
                     ->chartColor('gray')
@@ -213,7 +231,9 @@ class StatsOverview extends BaseWidget
 
     private function formatBytes(int|float $bytes): string
     {
-        if ($bytes >= 1073741824) {
+        if ($bytes >= 1099511627776) {
+            return number_format($bytes / 1099511627776, 2) . ' TB';
+        } elseif ($bytes >= 1073741824) {
             return number_format($bytes / 1073741824, 2) . ' GB';
         } elseif ($bytes >= 1048576) {
             return number_format($bytes / 1048576, 1) . ' MB';
