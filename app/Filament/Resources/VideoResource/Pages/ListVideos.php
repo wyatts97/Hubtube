@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\VideoResource\Pages;
 
-use Filament\Actions\CreateAction;
+use Filament\Actions\Action;
 use Filament\Schemas\Components\Tabs\Tab;
 use App\Filament\Resources\VideoResource;
 use App\Filament\Resources\VideoResource\Widgets\VideoStatsOverview;
