@@ -5,6 +5,8 @@ namespace App\Filament\Widgets;
 use App\Models\VisitorDaily;
 use Carbon\Carbon;
 use Filament\Widgets\Widget;
+use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 class VisitorsWidget extends Widget
 {
@@ -33,30 +35,6 @@ class VisitorsWidget extends Widget
             default => 7,
         };
 
-        $startDate = now()->subDays($days - 1)->startOfDay();
-
-        // Unique visitors in range
-        $uniqueCount = VisitorDaily::sinceDate($startDate)
-            ->distinct('visitor_hash')
-            ->count('visitor_hash');
-
-        // Total visits in range
-        $totalVisits = VisitorDaily::sinceDate($startDate)
-            ->sum('visit_count');
-
-        // Build chart data
-        $chartData = VisitorDaily::sinceDate($startDate)
-            ->selectRaw('date, COUNT(DISTINCT visitor_hash) as unique_visitors')
-            ->groupBy('date')
-            ->pluck('unique_visitors', 'date')
-            ->toArray();
-
-        $chart = [];
-        for ($i = $days - 1; $i >= 0; $i--) {
-            $date = now()->copy()->subDays($i)->toDateString();
-            $chart[] = $chartData[$date] ?? 0;
-        }
-
         $label = match ($this->visitorRange) {
             '1d'   => 'Today',
             '7d'   => 'Last 7 days',
@@ -64,11 +42,47 @@ class VisitorsWidget extends Widget
             default => 'Last 7 days',
         };
 
-        return [
-            'count'       => $uniqueCount,
-            'total_visits' => $totalVisits,
+        $empty = [
+            'count'        => 0,
+            'total_visits' => 0,
             'label'        => $label,
-            'chart'        => $chart,
+            'chart'        => array_fill(0, $days, 0),
         ];
+
+        try {
+            if (!Schema::hasTable('visitor_daily')) {
+                return $empty;
+            }
+
+            $startDate = now()->subDays($days - 1)->startOfDay();
+
+            $uniqueCount = VisitorDaily::sinceDate($startDate)
+                ->distinct('visitor_hash')
+                ->count('visitor_hash');
+
+            $totalVisits = (int) VisitorDaily::sinceDate($startDate)
+                ->sum('visit_count');
+
+            $chartData = VisitorDaily::sinceDate($startDate)
+                ->selectRaw('date, COUNT(DISTINCT visitor_hash) as unique_visitors')
+                ->groupBy('date')
+                ->pluck('unique_visitors', 'date')
+                ->toArray();
+
+            $chart = [];
+            for ($i = $days - 1; $i >= 0; $i--) {
+                $date = now()->copy()->subDays($i)->toDateString();
+                $chart[] = $chartData[$date] ?? 0;
+            }
+
+            return [
+                'count'        => $uniqueCount,
+                'total_visits' => $totalVisits,
+                'label'        => $label,
+                'chart'        => $chart,
+            ];
+        } catch (Throwable) {
+            return $empty;
+        }
     }
 }
