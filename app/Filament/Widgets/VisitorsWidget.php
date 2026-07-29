@@ -8,7 +8,7 @@ use Filament\Widgets\Widget;
 
 class VisitorsWidget extends Widget
 {
-    protected static string $view = 'filament.widgets.visitors-widget';
+    protected string $view = 'filament.widgets.visitors-widget';
 
     protected int | string | array $columnSpan = 1;
 
