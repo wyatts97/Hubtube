@@ -11,6 +11,7 @@ use App\Models\Video;
 use App\Models\WalletTransaction;
 use App\Services\StorageManager;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Schema;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -141,6 +142,27 @@ class StatsOverview extends BaseWidget
                 }
             }
 
+            // ── Visitors (7-day default) ──
+            $visitorCount = 0;
+            $visitorChart = array_fill(0, 7, 0);
+            try {
+                if (Schema::hasTable('visitor_daily')) {
+                    $startDate = $sevenDaysAgo;
+                    $visitorCount = VisitorDaily::sinceDate($startDate)
+                        ->distinct('visitor_hash')
+                        ->count('visitor_hash');
+
+                    $visitorChartData = VisitorDaily::sinceDate($startDate)
+                        ->selectRaw('date, COUNT(DISTINCT visitor_hash) as unique_visitors')
+                        ->groupBy('date')
+                        ->pluck('unique_visitors', 'date')
+                        ->toArray();
+                    $visitorChart = $this->fillChartData($visitorChartData, $now, 7);
+                }
+            } catch (\Throwable) {
+                // Fallback to zeros
+            }
+
             $stats = [
                 // Row 1
                 Stat::make('Total Users', number_format($totalUsers))
@@ -186,6 +208,13 @@ class StatsOverview extends BaseWidget
                     ->chart($storageChart)
                     ->chartColor('gray')
                     ->color('gray'),
+
+                Stat::make('Visitors', number_format($visitorCount))
+                    ->description('Last 7 days')
+                    ->descriptionIcon('phosphor-users')
+                    ->chart($visitorChart)
+                    ->chartColor('primary')
+                    ->color('primary'),
             ];
 
             // Add Revenue stat only if monetization is enabled
