@@ -6,6 +6,8 @@ use Throwable;
 use App\Models\Setting;
 use FinityLabs\FinMail\Enums\EmailStatus;
 use FinityLabs\FinMail\Mail\TemplateMail as FinMailTemplateMail;
+use FinityLabs\FinMail\Models\EmailTemplate;
+use FinityLabs\FinMail\Models\EmailTheme;
 use FinityLabs\FinMail\Models\SentEmail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -40,6 +42,8 @@ class EmailService
                 'status' => EmailStatus::Queued,
                 'sent_by' => auth()->id(),
             ]);
+
+            $mail = $mail->extraData(['theme' => static::resolveEmailThemeColors($mail->getTemplate())]);
 
             Mail::to($toEmail)->sendNow(
                 $mail->withLogging($sentEmail)
@@ -94,6 +98,8 @@ class EmailService
                 'sent_by' => auth()->id(),
             ]);
 
+            $mail = $mail->extraData(['theme' => static::resolveEmailThemeColors($mail->getTemplate())]);
+
             Mail::to($adminEmail)->sendNow(
                 $mail->withLogging($sentEmail)
             );
@@ -111,6 +117,21 @@ class EmailService
     {
         $mailer = Setting::get('mail_mailer', config('mail.default', 'log'));
         return !empty($mailer) && $mailer !== 'log';
+    }
+
+    public static function resolveEmailThemeColors(EmailTemplate $template): array
+    {
+        $colors = $template->resolvedThemeColors();
+        $defaults = EmailTheme::defaultColors();
+
+        if ($colors !== $defaults) {
+            return $colors;
+        }
+
+        $fallback = EmailTheme::getDefault()
+            ?? EmailTheme::query()->orderBy('id')->first();
+
+        return $fallback?->resolvedColors() ?? $defaults;
     }
 
     /**

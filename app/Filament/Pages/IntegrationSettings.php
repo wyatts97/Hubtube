@@ -15,6 +15,7 @@ use FinityLabs\FinMail\Models\SentEmail;
 use FinityLabs\FinMail\Settings\GeneralSettings;
 use App\Models\User;
 use App\Services\AdminLogger;
+use App\Services\EmailService;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -228,6 +229,8 @@ class IntegrationSettings extends Page implements HasForms
                     'site_name' => config('app.name'),
                     'login_url' => url('/login'),
                 ]);
+
+            $mail = $mail->extraData(['theme' => EmailService::resolveEmailThemeColors($mail->getTemplate())]);
 
             $envelope = $mail->envelope();
             $sentEmail = SentEmail::create([
