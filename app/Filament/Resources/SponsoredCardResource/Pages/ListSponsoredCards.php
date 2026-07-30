@@ -22,4 +22,9 @@ class ListSponsoredCards extends ListRecords
     {
         return parent::table($table);
     }
+
+    protected function getTableQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getTableQuery()->withoutGlobalScopes();
+    }
 }
