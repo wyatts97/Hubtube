@@ -93,11 +93,17 @@ const adsEnabled = computed(() => {
     const enabled = props.adSettings?.videoGridEnabled;
     return enabled === true || enabled === 'true' || enabled === 1 || enabled === '1';
 });
-const adCode = computed(() => props.adSettings?.videoGridCode || '');
-const adMobileCode = computed(() => props.adSettings?.videoGridMobileCode || props.adSettings?.videoGridCode || '');
+const gridAds = computed(() => props.adSettings?.videoGridAds || []);
 const adFrequency = computed(() => parseInt(props.adSettings?.videoGridFrequency) || 8);
+
+const getGridAd = () => {
+    const ads = gridAds.value;
+    if (!ads.length) return { code: '', mobileCode: '' };
+    return ads[Math.floor(Math.random() * ads.length)];
+};
+
 const shouldShowAd = (index, totalLength) => {
-    if (!adsEnabled.value || !adCode.value.trim()) return false;
+    if (!adsEnabled.value || !gridAds.value.length) return false;
     return (index + 1) % adFrequency.value === 0 && index < totalLength - 1;
 };
 
@@ -214,8 +220,8 @@ const getOutstreamAd = (index) => {
                     v-if="shouldShowAd(index, videos.data.length)"
                     class="col-span-1 flex items-start justify-center rounded-xl p-2"
                 >
-                    <AdSlot :html="adCode" class="hidden sm:block" />
-                    <AdSlot :html="adMobileCode" class="sm:hidden" />
+                    <AdSlot :html="getGridAd().code" class="hidden sm:block" />
+                    <AdSlot :html="getGridAd().mobileCode" class="sm:hidden" />
                 </div>
                 <SponsoredVideoCard
                     v-if="getSponsoredCard(index)"

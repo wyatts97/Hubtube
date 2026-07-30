@@ -2,9 +2,11 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\Category;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use Filament\Actions\Action;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -105,8 +107,22 @@ class AdSettings extends Page implements HasForms
             'category_banner_ad_mobile_link' => Setting::get('category_banner_ad_mobile_link', ''),
             'video_grid_ad_enabled' => Setting::get('video_grid_ad_enabled', false),
             'video_grid_ad_frequency' => Setting::get('video_grid_ad_frequency', 8),
-            'video_grid_ad_code' => Setting::get('video_grid_ad_code', ''),
-            'video_grid_ad_mobile_code' => Setting::get('video_grid_ad_mobile_code', ''),
+            'video_grid_ad_count' => (int) Setting::get('video_grid_ad_count', 1),
+            'video_grid_ad_1_code' => Setting::get('video_grid_ad_1_code', '') ?: Setting::get('video_grid_ad_code', ''),
+            'video_grid_ad_1_mobile_code' => Setting::get('video_grid_ad_1_mobile_code', '') ?: Setting::get('video_grid_ad_mobile_code', ''),
+            'video_grid_ad_1_categories' => json_decode(Setting::get('video_grid_ad_1_categories', '[]'), true) ?? [],
+            'video_grid_ad_2_code' => Setting::get('video_grid_ad_2_code', ''),
+            'video_grid_ad_2_mobile_code' => Setting::get('video_grid_ad_2_mobile_code', ''),
+            'video_grid_ad_2_categories' => json_decode(Setting::get('video_grid_ad_2_categories', '[]'), true) ?? [],
+            'video_grid_ad_3_code' => Setting::get('video_grid_ad_3_code', ''),
+            'video_grid_ad_3_mobile_code' => Setting::get('video_grid_ad_3_mobile_code', ''),
+            'video_grid_ad_3_categories' => json_decode(Setting::get('video_grid_ad_3_categories', '[]'), true) ?? [],
+            'video_grid_ad_4_code' => Setting::get('video_grid_ad_4_code', ''),
+            'video_grid_ad_4_mobile_code' => Setting::get('video_grid_ad_4_mobile_code', ''),
+            'video_grid_ad_4_categories' => json_decode(Setting::get('video_grid_ad_4_categories', '[]'), true) ?? [],
+            'video_grid_ad_5_code' => Setting::get('video_grid_ad_5_code', ''),
+            'video_grid_ad_5_mobile_code' => Setting::get('video_grid_ad_5_mobile_code', ''),
+            'video_grid_ad_5_categories' => json_decode(Setting::get('video_grid_ad_5_categories', '[]'), true) ?? [],
             'video_sidebar_ad_enabled' => Setting::get('video_sidebar_ad_enabled', false),
             'video_sidebar_ad_code' => Setting::get('video_sidebar_ad_code', ''),
             'video_sidebar_ad_mobile_code' => Setting::get('video_sidebar_ad_mobile_code', ''),
@@ -157,7 +173,7 @@ class AdSettings extends Page implements HasForms
             ->components([
                 Tabs::make('Ad Settings')->tabs([
 
-                    Tab::make('Video Roll Ads')
+                    Tab::make('Video Player Ads')
                         ->icon('phosphor-play')
                         ->schema([
                             Section::make('Pre-Roll, Mid-Roll & Post-Roll Settings')
@@ -238,24 +254,6 @@ class AdSettings extends Page implements HasForms
                                     ->icon('phosphor-tag')
                                     ->collapsible()->collapsed()
                                     ->schema(self::bannerAdFields('category_banner_ad', 'Enable Category Page Banner')),
-                                Section::make('Video Grid Ads')
-                                    ->description('Injected between video cards on browsing pages. Recommended: 300x250')
-                                    ->icon('phosphor-squares-four')
-                                    ->collapsible()->collapsed()
-                                    ->schema([
-                                        Toggle::make('video_grid_ad_enabled')->label('Enable Video Grid Ads')->live(),
-                                        TextInput::make('video_grid_ad_frequency')
-                                            ->label('Ad Frequency')->helperText('Show an ad after every X videos')
-                                            ->numeric()->default(8)->minValue(2)->maxValue(50)
-                                            ->visible(fn ($get) => $get('video_grid_ad_enabled')),
-                                        Textarea::make('video_grid_ad_code')
-                                            ->label('Desktop Ad HTML Code (300x250)')->rows(4)->columnSpanFull()
-                                            ->visible(fn ($get) => $get('video_grid_ad_enabled')),
-                                        Textarea::make('video_grid_ad_mobile_code')
-                                            ->label('Mobile Ad HTML Code')->rows(4)->columnSpanFull()
-                                            ->helperText('Leave empty to use desktop code on all devices.')
-                                            ->visible(fn ($get) => $get('video_grid_ad_enabled')),
-                                    ]),
                                 Section::make('Video Page Sidebar Ad')
                                     ->description('Ad above related videos on watch pages. Recommended: 300x250 or 300x600')
                                     ->icon('phosphor-stack')
@@ -287,7 +285,119 @@ class AdSettings extends Page implements HasForms
                             ]),
                         ]),
 
-                    Tab::make('Homepage Rail Ads')
+                    Tab::make('Video Grid Ads')
+                        ->icon('phosphor-grid-four')
+                        ->schema([
+                            Section::make('Video Grid Ad Settings')
+                                ->description('Ads injected between video cards on browsing pages (Home, Browse, Trending, Category). Recommended size: 300x250. Multiple variants are randomly rotated per impression.')
+                                ->schema([
+                                    Toggle::make('video_grid_ad_enabled')->label('Enable Video Grid Ads')->live(),
+                                    TextInput::make('video_grid_ad_frequency')
+                                        ->label('Ad Frequency')
+                                        ->helperText('Show an ad after every X videos')
+                                        ->numeric()->default(8)->minValue(2)->maxValue(50)
+                                        ->visible(fn ($get) => $get('video_grid_ad_enabled')),
+                                    Select::make('video_grid_ad_count')
+                                        ->label('Number of Ad Variants')
+                                        ->options(['1' => '1', '2' => '2', '3' => '3', '4' => '4', '5' => '5'])
+                                        ->default('1')
+                                        ->live()
+                                        ->helperText('Each variant is randomly rotated. More variants = more ad diversity.')
+                                        ->visible(fn ($get) => $get('video_grid_ad_enabled')),
+                                ]),
+
+                            Section::make('Ad Variant 1')
+                                ->description('First ad variant — always available')
+                                ->collapsible()
+                                ->schema([
+                                    Textarea::make('video_grid_ad_1_code')
+                                        ->label('Desktop Ad HTML Code (300x250)')->rows(4)->columnSpanFull(),
+                                    Textarea::make('video_grid_ad_1_mobile_code')
+                                        ->label('Mobile Ad HTML Code')->rows(4)->columnSpanFull()
+                                        ->helperText('Leave empty to use desktop code on all devices.'),
+                                    CheckboxList::make('video_grid_ad_1_categories')
+                                        ->label('Show In Categories')
+                                        ->options(fn () => Category::active()->orderBy('sort_order')->pluck('name', 'id')->toArray())
+                                        ->helperText('Leave unchecked to show in all categories.')
+                                        ->columns(3)
+                                        ->searchable(),
+                                ])
+                                ->visible(fn ($get) => $get('video_grid_ad_enabled')),
+
+                            Section::make('Ad Variant 2')
+                                ->description('Second ad variant')
+                                ->collapsible()->collapsed()
+                                ->schema([
+                                    Textarea::make('video_grid_ad_2_code')
+                                        ->label('Desktop Ad HTML Code (300x250)')->rows(4)->columnSpanFull(),
+                                    Textarea::make('video_grid_ad_2_mobile_code')
+                                        ->label('Mobile Ad HTML Code')->rows(4)->columnSpanFull()
+                                        ->helperText('Leave empty to use desktop code on all devices.'),
+                                    CheckboxList::make('video_grid_ad_2_categories')
+                                        ->label('Show In Categories')
+                                        ->options(fn () => Category::active()->orderBy('sort_order')->pluck('name', 'id')->toArray())
+                                        ->helperText('Leave unchecked to show in all categories.')
+                                        ->columns(3)
+                                        ->searchable(),
+                                ])
+                                ->visible(fn ($get) => $get('video_grid_ad_enabled') && (int) $get('video_grid_ad_count') >= 2),
+
+                            Section::make('Ad Variant 3')
+                                ->description('Third ad variant')
+                                ->collapsible()->collapsed()
+                                ->schema([
+                                    Textarea::make('video_grid_ad_3_code')
+                                        ->label('Desktop Ad HTML Code (300x250)')->rows(4)->columnSpanFull(),
+                                    Textarea::make('video_grid_ad_3_mobile_code')
+                                        ->label('Mobile Ad HTML Code')->rows(4)->columnSpanFull()
+                                        ->helperText('Leave empty to use desktop code on all devices.'),
+                                    CheckboxList::make('video_grid_ad_3_categories')
+                                        ->label('Show In Categories')
+                                        ->options(fn () => Category::active()->orderBy('sort_order')->pluck('name', 'id')->toArray())
+                                        ->helperText('Leave unchecked to show in all categories.')
+                                        ->columns(3)
+                                        ->searchable(),
+                                ])
+                                ->visible(fn ($get) => $get('video_grid_ad_enabled') && (int) $get('video_grid_ad_count') >= 3),
+
+                            Section::make('Ad Variant 4')
+                                ->description('Fourth ad variant')
+                                ->collapsible()->collapsed()
+                                ->schema([
+                                    Textarea::make('video_grid_ad_4_code')
+                                        ->label('Desktop Ad HTML Code (300x250)')->rows(4)->columnSpanFull(),
+                                    Textarea::make('video_grid_ad_4_mobile_code')
+                                        ->label('Mobile Ad HTML Code')->rows(4)->columnSpanFull()
+                                        ->helperText('Leave empty to use desktop code on all devices.'),
+                                    CheckboxList::make('video_grid_ad_4_categories')
+                                        ->label('Show In Categories')
+                                        ->options(fn () => Category::active()->orderBy('sort_order')->pluck('name', 'id')->toArray())
+                                        ->helperText('Leave unchecked to show in all categories.')
+                                        ->columns(3)
+                                        ->searchable(),
+                                ])
+                                ->visible(fn ($get) => $get('video_grid_ad_enabled') && (int) $get('video_grid_ad_count') >= 4),
+
+                            Section::make('Ad Variant 5')
+                                ->description('Fifth ad variant')
+                                ->collapsible()->collapsed()
+                                ->schema([
+                                    Textarea::make('video_grid_ad_5_code')
+                                        ->label('Desktop Ad HTML Code (300x250)')->rows(4)->columnSpanFull(),
+                                    Textarea::make('video_grid_ad_5_mobile_code')
+                                        ->label('Mobile Ad HTML Code')->rows(4)->columnSpanFull()
+                                        ->helperText('Leave empty to use desktop code on all devices.'),
+                                    CheckboxList::make('video_grid_ad_5_categories')
+                                        ->label('Show In Categories')
+                                        ->options(fn () => Category::active()->orderBy('sort_order')->pluck('name', 'id')->toArray())
+                                        ->helperText('Leave unchecked to show in all categories.')
+                                        ->columns(3)
+                                        ->searchable(),
+                                ])
+                                ->visible(fn ($get) => $get('video_grid_ad_enabled') && (int) $get('video_grid_ad_count') >= 5),
+                        ]),
+
+                    Tab::make('Homepage Ads')
                         ->icon('phosphor-rows')
                         ->schema([
                             Grid::make(2)->schema([
@@ -605,6 +715,9 @@ class AdSettings extends Page implements HasForms
         }
 
         foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                $value = json_encode($value);
+            }
             $type = match (true) {
                 is_bool($value) => 'boolean',
                 is_int($value) => 'integer',

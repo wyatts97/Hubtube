@@ -43,6 +43,30 @@ class VideoController extends Controller
         return $user && $user->is_pro && (bool) Setting::get('pro_ad_free', true);
     }
 
+    protected function buildGridAdVariants(?int $categoryId = null): array
+    {
+        $all = Setting::getAll();
+        $s = fn (string $key, mixed $default = null) => $all[$key] ?? $default;
+
+        $count = (int) $s('video_grid_ad_count', 1);
+        $variants = [];
+
+        for ($n = 1; $n <= max(1, $count); $n++) {
+            $code = (string) $s("video_grid_ad_{$n}_code", '');
+            if (!$code) continue;
+
+            $cats = json_decode($s("video_grid_ad_{$n}_categories", '[]'), true) ?? [];
+            if ($categoryId !== null && !empty($cats) && !in_array($categoryId, $cats)) continue;
+
+            $variants[] = [
+                'code' => $code,
+                'mobileCode' => (string) $s("video_grid_ad_{$n}_mobile_code", '') ?: $code,
+            ];
+        }
+
+        return $variants;
+    }
+
     public function index(Request $request): Response
     {
         $escapedSearch = $request->search
@@ -86,8 +110,7 @@ class VideoController extends Controller
             ],
             'adSettings' => $this->shouldSuppressAds() ? ['videoGridEnabled' => false] : [
                 'videoGridEnabled' => (bool) Setting::get('video_grid_ad_enabled', false),
-                'videoGridCode' => (string) Setting::get('video_grid_ad_code', ''),
-                'videoGridMobileCode' => (string) Setting::get('video_grid_ad_mobile_code', ''),
+                'videoGridAds' => $this->buildGridAdVariants($request->category ? (int) $request->category : null),
                 'videoGridFrequency' => (int) Setting::get('video_grid_ad_frequency', 8),
                 'outstreamFrequency' => (int) Setting::get('video_outstream_ad_frequency', 6),
             ],

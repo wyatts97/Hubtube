@@ -157,13 +157,18 @@ const adsEnabled = computed(() => {
     return enabled === true || enabled === 'true' || enabled === 1 || enabled === '1';
 });
 
-const adCode = computed(() => props.adSettings?.videoGridCode || '');
-const adMobileCode = computed(() => props.adSettings?.videoGridMobileCode || props.adSettings?.videoGridCode || '');
+const gridAds = computed(() => props.adSettings?.videoGridAds || []);
 const adFrequency = computed(() => parseInt(props.adSettings?.videoGridFrequency) || 8);
+
+const getGridAd = () => {
+    const ads = gridAds.value;
+    if (!ads.length) return { code: '', mobileCode: '' };
+    return ads[Math.floor(Math.random() * ads.length)];
+};
 
 // Helper to check if ad should show after index
 const shouldShowAd = (index, totalLength) => {
-    if (!adsEnabled.value || !adCode.value.trim()) return false;
+    if (!adsEnabled.value || !gridAds.value.length) return false;
     return (index + 1) % adFrequency.value === 0 && index < totalLength - 1;
 };
 
@@ -226,8 +231,8 @@ const getSponsoredCard = (index) => {
                             class="flex items-start justify-center rounded-xl p-2"
                             :class="mobileGrid === 2 ? 'col-span-2 sm:col-span-1' : 'col-span-1'"
                         >
-                            <AdSlot :html="adCode" class="hidden sm:block" />
-                            <AdSlot :html="adMobileCode" class="sm:hidden" />
+                            <AdSlot :html="getGridAd().code" class="hidden sm:block" />
+                            <AdSlot :html="getGridAd().mobileCode" class="sm:hidden" />
                         </div>
                         <SponsoredVideoCard
                             v-if="getSponsoredCard(index)"
@@ -259,8 +264,8 @@ const getSponsoredCard = (index) => {
                             class="flex items-start justify-center rounded-xl p-2"
                             :class="mobileGrid === 2 ? 'col-span-2 sm:col-span-1' : 'col-span-1'"
                         >
-                            <AdSlot :html="adCode" class="hidden sm:block" />
-                            <AdSlot :html="adMobileCode" class="sm:hidden" />
+                            <AdSlot :html="getGridAd().code" class="hidden sm:block" />
+                            <AdSlot :html="getGridAd().mobileCode" class="sm:hidden" />
                         </div>
                         <SponsoredVideoCard
                             v-if="getSponsoredCard(index)"
