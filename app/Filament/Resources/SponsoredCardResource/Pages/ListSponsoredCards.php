@@ -6,6 +6,7 @@ use Filament\Actions\CreateAction;
 use App\Filament\Resources\SponsoredCardResource;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ListSponsoredCards extends ListRecords
 {
@@ -23,8 +24,8 @@ class ListSponsoredCards extends ListRecords
         return parent::table($table);
     }
 
-    protected function getTableQuery(): \Illuminate\Database\Eloquent\Builder
+    protected function getTableQuery(): Builder
     {
-        return parent::getTableQuery()->withoutGlobalScopes();
+        return parent::getTableQuery();
     }
 }
