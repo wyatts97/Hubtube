@@ -117,12 +117,6 @@ onUnmounted(() => {
     }
 });
 
-// Ribbon text
-const ribbonText = computed(() => {
-    const suffix = props.card.ribbon_text || '';
-    return suffix ? `Featured ${suffix}` : 'Featured';
-});
-
 // Price display
 const hasPrice = computed(() => props.card.price || props.card.formatted_price);
 const displayPrice = computed(() => props.card.formatted_sale_price || props.card.formatted_price);
@@ -143,13 +137,6 @@ const discountPercent = computed(() => props.card.discount_percent);
         @click="handleClick"
     >
         <div class="thumbnail relative overflow-hidden" :style="{ borderRadius: thumbRadius }">
-            <!-- Featured Ribbon -->
-            <div class="absolute top-0 left-0 z-20">
-                <div class="featured-ribbon">
-                    <span class="featured-ribbon-text">{{ ribbonText }}</span>
-                </div>
-            </div>
-
             <!-- Sale Badge -->
             <div v-if="discountPercent" class="absolute top-2 right-2 z-20">
                 <span class="sale-badge">-{{ discountPercent }}%</span>
@@ -228,30 +215,6 @@ const discountPercent = computed(() => props.card.discount_percent);
 </template>
 
 <style scoped>
-.featured-ribbon {
-    position: relative;
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-    color: white;
-    padding: 6px 16px 6px 10px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.featured-ribbon::after {
-    content: '';
-    position: absolute;
-    bottom: -4px;
-    left: 0;
-    width: 4px;
-    height: 4px;
-    background: #7f1d1d;
-    clip-path: polygon(0 0, 100% 0, 100% 100%);
-}
-
 .sale-badge {
     background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
     color: white;

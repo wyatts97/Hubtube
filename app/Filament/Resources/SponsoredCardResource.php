@@ -70,7 +70,7 @@ class SponsoredCardResource extends Resource
                             ->placeholder('Studio or brand name'),
                     ])->columns(2),
 
-                Section::make('Pricing & Ribbon')
+                Section::make('Pricing')
                     ->schema([
                         Grid::make(3)->schema([
                             TextInput::make('price')
@@ -91,11 +91,6 @@ class SponsoredCardResource extends Resource
                                 ->numeric()
                                 ->placeholder('300'),
                         ]),
-                        TextInput::make('ribbon_text')
-                            ->label('Ribbon Text')
-                            ->maxLength(50)
-                            ->placeholder('e.g. "Product", "Video", "Clip"')
-                            ->helperText('Text shown after "Featured" on the ribbon (e.g. "Featured Product")'),
                     ]),
 
                 Section::make('Preview Images')
@@ -244,13 +239,6 @@ class SponsoredCardResource extends Resource
                     ->money('USD')
                     ->sortable()
                     ->toggleable(),
-                TextColumn::make('ribbon_text')
-                    ->label('Ribbon')
-                    ->badge()
-                    ->color('danger')
-                    ->formatStateUsing(fn ($state) => $state ? "Featured {$state}" : null)
-                    ->toggleable(),
-
                 TextColumn::make('created_at')
                     ->dateTime('M j, Y')
                     ->sortable()
