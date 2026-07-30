@@ -229,7 +229,8 @@ class LanguageSettings extends Page implements HasForms, HasTable
             ])
             ->headerActions([
                 CreateAction::make()
-                    ->label('Add Override')
+                    ->label('Add')
+                    ->icon('phosphor-plus')
                     ->model(TranslationOverride::class)
                     ->schema(fn () => $this->overrideFormSchema())
                     ->using(function (array $data): TranslationOverride {
