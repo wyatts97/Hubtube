@@ -4,7 +4,9 @@ namespace App\Services;
 
 use Throwable;
 use App\Models\Setting;
+use FinityLabs\FinMail\Enums\EmailStatus;
 use FinityLabs\FinMail\Mail\TemplateMail as FinMailTemplateMail;
+use FinityLabs\FinMail\Models\SentEmail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -26,8 +28,21 @@ class EmailService
         }
 
         try {
+            $mail = FinMailTemplateMail::make($templateKey)
+                ->models(self::prepareData($data));
+
+            $envelope = $mail->envelope();
+            $sentEmail = SentEmail::create([
+                'email_template_id' => $mail->getTemplate()->id,
+                'sender' => $envelope->from?->address ?? config('mail.from.address'),
+                'to' => [$toEmail],
+                'subject' => $envelope->subject,
+                'status' => EmailStatus::Queued,
+                'sent_by' => auth()->id(),
+            ]);
+
             Mail::to($toEmail)->sendNow(
-                FinMailTemplateMail::make($templateKey)->models(self::prepareData($data))
+                $mail->withLogging($sentEmail)
             );
             return true;
         } catch (Throwable $e) {
@@ -62,13 +77,26 @@ class EmailService
         }
 
         try {
-            $mail = FinMailTemplateMail::make($templateKey)->models(self::prepareData($data));
+            $mail = FinMailTemplateMail::make($templateKey)
+                ->models(self::prepareData($data));
 
             if ($replyTo) {
                 $mail->overrideReplyTo($replyTo, $replyToName);
             }
 
-            Mail::to($adminEmail)->sendNow($mail);
+            $envelope = $mail->envelope();
+            $sentEmail = SentEmail::create([
+                'email_template_id' => $mail->getTemplate()->id,
+                'sender' => $envelope->from?->address ?? config('mail.from.address'),
+                'to' => [$adminEmail],
+                'subject' => $envelope->subject,
+                'status' => EmailStatus::Queued,
+                'sent_by' => auth()->id(),
+            ]);
+
+            Mail::to($adminEmail)->sendNow(
+                $mail->withLogging($sentEmail)
+            );
             return true;
         } catch (Throwable $e) {
             Log::error("EmailService: failed to send admin notification '{$templateKey}': {$e->getMessage()}");
