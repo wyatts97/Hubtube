@@ -5,6 +5,7 @@ namespace App\Filament\Resources\SponsoredCardResource\Pages;
 use Filament\Actions\CreateAction;
 use App\Filament\Resources\SponsoredCardResource;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Tables\Table;
 
 class ListSponsoredCards extends ListRecords
 {
@@ -15,5 +16,10 @@ class ListSponsoredCards extends ListRecords
         return [
             CreateAction::make()->label('Add')->icon('phosphor-plus'),
         ];
+    }
+
+    public function table(Table $table): Table
+    {
+        return parent::table($table);
     }
 }

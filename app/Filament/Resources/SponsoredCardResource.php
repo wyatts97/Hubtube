@@ -33,7 +33,7 @@ class SponsoredCardResource extends Resource
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-megaphone';
     protected static ?string $navigationLabel = 'Sponsored Cards';
     protected static string | \UnitEnum | null $navigationGroup = 'Monetization';
-    protected static ?int $navigationSort = 5;
+    protected static ?string $navigationSort = '5';
 
     public static function form(Schema $schema): Schema
     {
@@ -242,7 +242,8 @@ class SponsoredCardResource extends Resource
             ->emptyStateHeading('No sponsored cards')
             ->emptyStateDescription('Create native in-feed ads that look like video cards with a "Sponsored" badge.')
             ->emptyStateIcon('phosphor-megaphone')
-            ->striped();
+            ->striped()
+            ->recordsPerPageSelectOptions([10, 25, 50, 100]);
     }
 
     public static function getPages(): array
