@@ -30,7 +30,8 @@ class StatsOverview extends BaseWidget
     protected function getStats(): array
     {
         try {
-            $now = Carbon::now();
+            $timezone = Setting::get('site_timezone', config('app.timezone')) ?: config('app.timezone');
+            $now = Carbon::now($timezone);
             $sevenDaysAgo = $now->copy()->subDays(6)->startOfDay();
 
             // ── Users (batched 7-day chart query) ──
@@ -147,7 +148,7 @@ class StatsOverview extends BaseWidget
             $visitorCount = 0;
             try {
                 if (Schema::hasTable('visitor_daily')) {
-                    $today = now()->toDateString();
+                    $today = $now->toDateString();
                     $visitorCount = VisitorDaily::where('date', $today)
                         ->distinct()
                         ->count('visitor_hash');

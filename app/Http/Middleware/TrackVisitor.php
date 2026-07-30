@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Setting;
 use App\Models\VisitorDaily;
 use Closure;
 use Illuminate\Http\Request;
@@ -45,7 +46,15 @@ class TrackVisitor
             $ip = $request->ip() ?? '0.0.0.0';
             $ua = $request->userAgent() ?? '';
             $hash = hash('sha256', $ip . $ua);
-            $today = now()->toDateString();
+
+            $timezone = config('app.timezone');
+            try {
+                $timezone = Setting::get('site_timezone', $timezone) ?: $timezone;
+            } catch (\Throwable) {
+                // Setting may not be available
+            }
+            $now = now($timezone);
+            $today = $now->toDateString();
 
             // Upsert: increment if exists, otherwise insert
             DB::table('visitor_daily')->upsert(
@@ -53,13 +62,13 @@ class TrackVisitor
                     'visitor_hash' => $hash,
                     'date'         => $today,
                     'visit_count'  => 1,
-                    'created_at'  => now(),
-                    'updated_at'  => now(),
+                    'created_at'  => $now,
+                    'updated_at'  => $now,
                 ],
                 ['visitor_hash', 'date'],
                 [
                     'visit_count' => DB::raw('visit_count + 1'),
-                    'updated_at'  => now(),
+                    'updated_at'  => $now,
                 ]
             );
         } catch (\Throwable) {
