@@ -33,7 +33,7 @@ class SponsoredCardResource extends Resource
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-megaphone';
     protected static ?string $navigationLabel = 'Sponsored Cards';
     protected static string | \UnitEnum | null $navigationGroup = 'Monetization';
-    protected static ?string $navigationSort = '5';
+    protected static ?int $navigationSort = 5;
 
     public static function form(Schema $schema): Schema
     {
