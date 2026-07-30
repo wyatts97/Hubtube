@@ -105,6 +105,7 @@ class SiteSettings extends Page implements HasForms
             'custom_footer_scripts' => Setting::get('custom_footer_scripts', ''),
             'infinite_scroll_enabled' => Setting::get('infinite_scroll_enabled', false),
             'videos_per_page' => Setting::get('videos_per_page', 24),
+            'site_timezone' => Setting::get('site_timezone', config('app.timezone')),
         ]);
 
         $this->watermarkPreviewUrl = $this->resolveWatermarkPreviewUrl();
@@ -327,6 +328,17 @@ class SiteSettings extends Page implements HasForms
                                             ->default(24)
                                             ->helperText('Number of videos to show per page or load'),
                                     ])->columns(2),
+                                Section::make('Localization')
+                                    ->schema([
+                                        Select::make('site_timezone')
+                                            ->label('Site Timezone')
+                                            ->helperText('All timestamps in the admin panel will be shown in this timezone.')
+                                            ->options(array_combine(\DateTimeZone::listIdentifiers(), \DateTimeZone::listIdentifiers()))
+                                            ->searchable()
+                                            ->native(false)
+                                            ->default(fn () => Setting::get('site_timezone', config('app.timezone')))
+                                            ->required(),
+                                    ])->columnSpanFull(),
                             ]),
                         Tab::make('Users')
                             ->schema([

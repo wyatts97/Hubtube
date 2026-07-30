@@ -10,6 +10,7 @@ use App\Filament\Pages\Dashboard;
 use App\Services\SystemStatusBar;
 use Filament\Contracts\Plugin;
 use App\Http\Middleware\AuthenticateFilament;
+use App\Http\Middleware\SetAdminTimezone;
 use App\Models\Setting;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -280,6 +281,7 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->spa()
             ->middleware([
+                SetAdminTimezone::class,
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
