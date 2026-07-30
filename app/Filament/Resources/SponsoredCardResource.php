@@ -26,6 +26,7 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class SponsoredCardResource extends Resource
 {
@@ -176,13 +177,16 @@ class SponsoredCardResource extends Resource
                     ->defaultImageUrl(url('/images/placeholder.jpg')),
                 TextColumn::make('title')
                     ->searchable()
+                    ->sortable()
                     ->weight('bold')
-                    ->limit(40),
+                    ->limit(40)
+                    ->toggleable(),
                 TextColumn::make('click_url')
                     ->label('URL')
                     ->limit(30)
                     ->color('gray')
-                    ->copyable(),
+                    ->copyable()
+                    ->toggleable(),
 
                 TextColumn::make('target_pages')
                     ->label('Pages')
@@ -191,18 +195,24 @@ class SponsoredCardResource extends Resource
                         return implode(', ', array_map('ucfirst', $state));
                     })
                     ->badge()
-                    ->color('gray'),
+                    ->color('gray')
+                    ->toggleable(),
                 TextColumn::make('frequency')
                     ->label('Every N')
-                    ->alignCenter(),
+                    ->alignCenter()
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('weight')
-                    ->alignCenter(),
+                    ->alignCenter()
+                    ->sortable()
+                    ->toggleable(),
 
                 TextColumn::make('clicks_count')
                     ->label('Clicks')
                     ->numeric()
                     ->sortable()
-                    ->alignCenter(),
+                    ->alignCenter()
+                    ->toggleable(),
 
                 TextColumn::make('impressions_count')
                     ->label('Impr.')
@@ -221,7 +231,9 @@ class SponsoredCardResource extends Resource
 
                 IconColumn::make('is_active')
                     ->label('Active')
-                    ->boolean(),
+                    ->boolean()
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('price')
                     ->money('USD')
                     ->sortable()
@@ -231,7 +243,7 @@ class SponsoredCardResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->defaultSort('created_at', 'desc')
+            ->defaultSort(fn (Builder $query, string $direction) => $query->orderBy('created_at', $direction)->orderBy('id', $direction), 'desc')
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),
