@@ -173,17 +173,17 @@ class SponsoredCardResource extends Resource
                     ->getStateUsing(function ($record): ?string {
                         $thumb = $record->thumbnail_url;
                         if (!$thumb) return null;
-                        // External URL — Filament uses it directly (bypasses disk resolution)
+                        // External URL — return as-is
                         if (str_starts_with($thumb, 'http://') || str_starts_with($thumb, 'https://')) {
                             return $thumb;
                         }
-                        // Strip any accidental /storage/ prefix so Filament resolves via disk correctly
+                        // Already a resolved /storage/ path
                         if (str_starts_with($thumb, '/storage/')) {
-                            return substr($thumb, 9);
+                            return $thumb;
                         }
-                        return $thumb;
+                        // Local storage path — resolve to public URL
+                        return '/storage/' . $thumb;
                     })
-                    ->disk('public')
                     ->square()
                     ->size(60)
                     ->defaultImageUrl(url('/images/placeholder.jpg')),
