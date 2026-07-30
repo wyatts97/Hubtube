@@ -243,7 +243,7 @@ class SponsoredCardResource extends Resource
             ->emptyStateDescription('Create native in-feed ads that look like video cards with a "Sponsored" badge.')
             ->emptyStateIcon('phosphor-megaphone')
             ->striped()
-            ->recordsPerPageSelectOptions([10, 25, 50, 100]);
+            ->paginated([10, 25, 50, 100]);
     }
 
     public static function getPages(): array
