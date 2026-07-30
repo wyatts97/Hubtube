@@ -173,11 +173,13 @@ const shouldShowAd = (index, totalLength) => {
 };
 
 // Sponsored cards: insert at frequency intervals, cycling through available cards
+// Offset by half the grid ad frequency so they interleave instead of stacking
 const sponsoredFrequency = computed(() => props.sponsoredCards?.[0]?.frequency || 8);
+const sponsoredOffset = computed(() => Math.floor(adFrequency.value / 2));
 const getSponsoredCard = (index) => {
     if (!props.sponsoredCards?.length) return null;
-    if ((index + 1) % sponsoredFrequency.value !== 0) return null;
-    const cardIndex = Math.floor((index + 1) / sponsoredFrequency.value) - 1;
+    if ((index + 1 + sponsoredOffset.value) % sponsoredFrequency.value !== 0) return null;
+    const cardIndex = Math.floor((index + 1 + sponsoredOffset.value) / sponsoredFrequency.value) - 1;
     return props.sponsoredCards[cardIndex % props.sponsoredCards.length] || null;
 };
 </script>

@@ -1,6 +1,6 @@
 <script setup>
 import { usePage } from '@inertiajs/vue3';
-import { computed, ref, onUnmounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useFetch } from '@/Composables/useFetch';
 
 const page = usePage();
@@ -12,6 +12,10 @@ const props = defineProps({
         required: true,
     },
 });
+
+const cardEl = ref(null);
+let impressionFired = false;
+let impressionObserver = null;
 
 const vc = computed(() => page.props.theme?.videoCard || {});
 
@@ -82,6 +86,37 @@ const handleClick = (e) => {
     }
 };
 
+const fireImpression = () => {
+    if (impressionFired || !props.card?.id) return;
+    impressionFired = true;
+    post(`/api/sponsored/${props.card.id}/impression`, {}).catch(() => {});
+};
+
+onMounted(() => {
+    if (!cardEl.value) return;
+    impressionObserver = new IntersectionObserver(
+        (entries) => {
+            const entry = entries?.[0];
+            if (entry?.isIntersecting) {
+                fireImpression();
+                if (impressionObserver) {
+                    impressionObserver.disconnect();
+                    impressionObserver = null;
+                }
+            }
+        },
+        { threshold: 0.5 }
+    );
+    impressionObserver.observe(cardEl.value);
+});
+
+onUnmounted(() => {
+    if (impressionObserver) {
+        impressionObserver.disconnect();
+        impressionObserver = null;
+    }
+});
+
 // Ribbon text
 const ribbonText = computed(() => {
     const suffix = props.card.ribbon_text || '';
@@ -97,6 +132,7 @@ const discountPercent = computed(() => props.card.discount_percent);
 
 <template>
     <a
+        ref="cardEl"
         :href="card.click_url"
         target="_blank"
         rel="noopener noreferrer sponsored"

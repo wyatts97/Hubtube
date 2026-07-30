@@ -222,6 +222,21 @@ class SponsoredCardResource extends Resource
                     ->sortable()
                     ->alignCenter(),
 
+                TextColumn::make('impressions_count')
+                    ->label('Impr.')
+                    ->numeric()
+                    ->sortable()
+                    ->alignCenter()
+                    ->toggleable(),
+
+                TextColumn::make('ctr')
+                    ->label('CTR')
+                    ->state(fn ($record) => $record->impressions_count > 0
+                        ? round(($record->clicks_count / $record->impressions_count) * 100, 1) . '%'
+                        : '—')
+                    ->alignCenter()
+                    ->toggleable(),
+
                 IconColumn::make('is_active')
                     ->label('Active')
                     ->boolean(),

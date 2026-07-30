@@ -45,10 +45,11 @@ const shouldShowAd = (index, totalLength) => {
 };
 
 const sponsoredFrequency = computed(() => props.sponsoredCards?.[0]?.frequency || 8);
+const sponsoredOffset = computed(() => Math.floor(adFrequency.value / 2));
 const getSponsoredCard = (index) => {
     if (!props.sponsoredCards?.length) return null;
-    if ((index + 1) % sponsoredFrequency.value !== 0) return null;
-    const cardIndex = Math.floor((index + 1) / sponsoredFrequency.value) - 1;
+    if ((index + 1 + sponsoredOffset.value) % sponsoredFrequency.value !== 0) return null;
+    const cardIndex = Math.floor((index + 1 + sponsoredOffset.value) / sponsoredFrequency.value) - 1;
     return props.sponsoredCards[cardIndex % props.sponsoredCards.length] || null;
 };
 

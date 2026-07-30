@@ -46,6 +46,13 @@ class VideoAdController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    public function recordSponsoredImpression(Request $request, int $cardId): JsonResponse
+    {
+        SponsoredCard::where('id', $cardId)->increment('impressions_count');
+
+        return response()->json(['ok' => true]);
+    }
+
     public function getAds(Request $request): JsonResponse
     {
         $categoryId = $request->integer('category_id');

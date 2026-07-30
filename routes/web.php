@@ -306,6 +306,11 @@ Route::post('/api/sponsored/{cardId}/click', [\App\Http\Controllers\VideoAdContr
     ->middleware('throttle:60,1')
     ->name('sponsored.click');
 
+// Sponsored card impression tracking
+Route::post('/api/sponsored/{cardId}/impression', [\App\Http\Controllers\VideoAdController::class, 'recordSponsoredImpression'])
+    ->middleware('throttle:60,1')
+    ->name('sponsored.impression');
+
 Route::middleware('age.verified')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('/api/videos/load-more', [HomeController::class, 'loadMoreVideos'])->name('videos.loadMore');
