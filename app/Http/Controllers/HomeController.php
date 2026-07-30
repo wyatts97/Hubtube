@@ -82,7 +82,34 @@ class HomeController extends Controller
             'videoGridCode' => (string) $s('video_grid_ad_code', ''),
             'videoGridMobileCode' => (string) $s('video_grid_ad_mobile_code', ''),
             'videoGridFrequency' => (int) $s('video_grid_ad_frequency', 8),
+            'rail1' => [
+                'enabled' => (bool) $s('home_rail_1_enabled', false),
+                'code' => (string) $s('home_rail_1_code', ''),
+                'mobileCode' => (string) $s('home_rail_1_mobile_code', ''),
+            ],
+            'rail2' => [
+                'enabled' => (bool) $s('home_rail_2_enabled', false),
+                'code' => (string) $s('home_rail_2_code', ''),
+                'mobileCode' => (string) $s('home_rail_2_mobile_code', ''),
+            ],
+            'rail3' => [
+                'enabled' => (bool) $s('home_rail_3_enabled', false),
+                'code' => (string) $s('home_rail_3_code', ''),
+                'mobileCode' => (string) $s('home_rail_3_mobile_code', ''),
+            ],
+            'rail4' => [
+                'enabled' => (bool) $s('home_rail_4_enabled', false),
+                'code' => (string) $s('home_rail_4_code', ''),
+                'mobileCode' => (string) $s('home_rail_4_mobile_code', ''),
+            ],
         ];
+
+        if ($this->shouldSuppressAds()) {
+            $adSettings['videoGridEnabled'] = false;
+            foreach (['rail1', 'rail2', 'rail3', 'rail4'] as $rail) {
+                $adSettings[$rail]['enabled'] = false;
+            }
+        }
 
         $shortsPreview = Cache::remember('home:shorts', 120, fn () =>
             Video::query()
@@ -110,7 +137,7 @@ class HomeController extends Controller
             'categories' => $categories,
             'shortsPreview' => $shortsPreview,
             'latestImages' => $latestImages,
-            'adSettings' => $this->shouldSuppressAds() ? ['videoGridEnabled' => false] : $adSettings,
+            'adSettings' => $adSettings,
             'seo' => $this->seoService->forHome(),
             'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('home', auth()->user()?->role ?? 'guest'),
         ]);

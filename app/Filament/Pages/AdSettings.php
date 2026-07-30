@@ -135,6 +135,18 @@ class AdSettings extends Page implements HasForms
             'zone_popunder_click_frequency' => Setting::get('zone_popunder_click_frequency', 3),
             'zone_popunder_cooldown_minutes' => Setting::get('zone_popunder_cooldown_minutes', 5),
             'zone_popunder_max_per_session' => Setting::get('zone_popunder_max_per_session', 3),
+            'home_rail_1_enabled' => Setting::get('home_rail_1_enabled', false),
+            'home_rail_1_code' => Setting::get('home_rail_1_code', ''),
+            'home_rail_1_mobile_code' => Setting::get('home_rail_1_mobile_code', ''),
+            'home_rail_2_enabled' => Setting::get('home_rail_2_enabled', false),
+            'home_rail_2_code' => Setting::get('home_rail_2_code', ''),
+            'home_rail_2_mobile_code' => Setting::get('home_rail_2_mobile_code', ''),
+            'home_rail_3_enabled' => Setting::get('home_rail_3_enabled', false),
+            'home_rail_3_code' => Setting::get('home_rail_3_code', ''),
+            'home_rail_3_mobile_code' => Setting::get('home_rail_3_mobile_code', ''),
+            'home_rail_4_enabled' => Setting::get('home_rail_4_enabled', false),
+            'home_rail_4_code' => Setting::get('home_rail_4_code', ''),
+            'home_rail_4_mobile_code' => Setting::get('home_rail_4_mobile_code', ''),
         ]);
     }
 
@@ -271,6 +283,29 @@ class AdSettings extends Page implements HasForms
                                             ->helperText('Leave empty to use desktop code on all devices.')
                                             ->visible(fn ($get) => $get('footer_ad_enabled')),
                                     ]),
+                            ]),
+                        ]),
+
+                    Tab::make('Homepage Rail Ads')
+                        ->icon('phosphor-rows')
+                        ->schema([
+                            Grid::make(2)->schema([
+                                Section::make('After Featured / Before Shorts')
+                                    ->description('Between the featured videos grid and the shorts rail')
+                                    ->collapsible()->collapsed()
+                                    ->schema(self::railAdFields('home_rail_1', 'Enable Ad Zone 1')),
+                                Section::make('After Shorts / Before Latest')
+                                    ->description('Between the shorts rail and the latest videos grid')
+                                    ->collapsible()->collapsed()
+                                    ->schema(self::railAdFields('home_rail_2', 'Enable Ad Zone 2')),
+                                Section::make('After Latest / Before Images')
+                                    ->description('Between the latest videos grid and the images rail')
+                                    ->collapsible()->collapsed()
+                                    ->schema(self::railAdFields('home_rail_3', 'Enable Ad Zone 3')),
+                                Section::make('After Images / Before Popular')
+                                    ->description('Between the images rail and the popular videos grid')
+                                    ->collapsible()->collapsed()
+                                    ->schema(self::railAdFields('home_rail_4', 'Enable Ad Zone 4')),
                             ]),
                         ]),
 
@@ -504,6 +539,22 @@ class AdSettings extends Page implements HasForms
                     ->label('Mobile Click URL')
                     ->placeholder('https://example.com'),
             ])->visible(fn ($get) => $get("{$prefix}_enabled") && $get("{$prefix}_mobile_type") === 'image'),
+        ];
+    }
+
+    protected static function railAdFields(string $prefix, string $label): array
+    {
+        return [
+            Toggle::make("{$prefix}_enabled")->label($label)->live(),
+            Textarea::make("{$prefix}_code")
+                ->label('Desktop HTML Ad Code')
+                ->rows(4)->columnSpanFull()
+                ->visible(fn ($get) => $get("{$prefix}_enabled")),
+            Textarea::make("{$prefix}_mobile_code")
+                ->label('Mobile HTML Ad Code')
+                ->helperText('Leave empty to use desktop code on all devices.')
+                ->rows(4)->columnSpanFull()
+                ->visible(fn ($get) => $get("{$prefix}_enabled")),
         ];
     }
 

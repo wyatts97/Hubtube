@@ -11,6 +11,7 @@ import ImagesRail from '@/Components/ImagesRail.vue';
 import { Loader2 } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
 import AdSlot from '@/Components/AdSlot.vue';
+import BannerAd from '@/Components/UI/BannerAd.vue';
 import { useI18n } from '@/Composables/useI18n';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 import { useVideoGrid } from '@/Composables/useVideoGrid';
@@ -195,8 +196,12 @@ const getSponsoredCard = (index) => {
             </div>
         </section>
 
+        <BannerAd :config="adSettings?.rail1" />
+
         <!-- Shorts Preview Rail -->
         <ShortsRail v-if="shortsPreview?.length" :shorts="shortsPreview" />
+
+        <BannerAd :config="adSettings?.rail2" />
 
         <!-- Latest Videos -->
         <section class="mb-8">
@@ -272,8 +277,12 @@ const getSponsoredCard = (index) => {
             </template>
         </section>
 
+        <BannerAd :config="adSettings?.rail3" />
+
         <!-- Latest Images Rail -->
         <ImagesRail v-if="latestImages?.length" :images="latestImages" />
+
+        <BannerAd :config="adSettings?.rail4" />
 
         <!-- Popular Videos -->
         <section v-if="popularVideos.length > 0 || isInitialLoad" class="mb-8">
