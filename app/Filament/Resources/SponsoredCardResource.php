@@ -10,7 +10,6 @@ use Filament\Schemas\Components\Grid;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Toggle;
-use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Actions\EditAction;
@@ -168,25 +167,22 @@ class SponsoredCardResource extends Resource
     {
         return $table
             ->columns([
-                ImageColumn::make('thumb_display')
+                TextColumn::make('thumb_display')
                     ->label('Thumb')
-                    ->getStateUsing(function ($record): ?string {
+                    ->formatStateUsing(function ($record): string {
                         $thumb = $record->thumbnail_url;
-                        if (!$thumb) return null;
-                        // External URL — return as-is
+                        if (!$thumb) return '';
                         if (str_starts_with($thumb, 'http://') || str_starts_with($thumb, 'https://')) {
-                            return $thumb;
+                            $url = $thumb;
+                        } elseif (str_starts_with($thumb, '/storage/')) {
+                            $url = $thumb;
+                        } else {
+                            $url = '/storage/' . $thumb;
                         }
-                        // Already a resolved /storage/ path
-                        if (str_starts_with($thumb, '/storage/')) {
-                            return $thumb;
-                        }
-                        // Local storage path — resolve to public URL
-                        return '/storage/' . $thumb;
+                        return '<img src="' . htmlspecialchars($url, ENT_QUOTES) . '" style="width:60px;height:60px;object-fit:cover;border-radius:4px;" loading="lazy" onerror="this.src=\'' . e(url('/images/placeholder.jpg')) . '\'" />';
                     })
-                    ->square()
-                    ->size(60)
-                    ->defaultImageUrl(url('/images/placeholder.jpg')),
+                    ->html()
+                    ->wrap(false),
                 TextColumn::make('title')
                     ->searchable()
                     ->weight('bold')
