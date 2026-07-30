@@ -157,7 +157,7 @@ class SystemStatusBar
 
     protected function logsUrl(): ?string
     {
-        $resource = config('filament-logger.activity_resource');
+        $resource = config('filament-jobs-monitor.resources.resource');
 
         if (is_string($resource) && class_exists($resource) && method_exists($resource, 'getUrl')) {
             return $resource::getUrl('index');
