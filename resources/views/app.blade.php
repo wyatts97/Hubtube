@@ -300,6 +300,7 @@
         $popunderCode = \App\Models\Setting::get('custom_popunder_code', '') ?: '';
         $popunderMobileCode = \App\Models\Setting::get('custom_popunder_mobile_code', '') ?: '';
         $interstitialEnabled = filter_var(\App\Models\Setting::get('custom_interstitial_enabled', false), FILTER_VALIDATE_BOOLEAN);
+        $interstitialMode = \App\Models\Setting::get('custom_interstitial_mode', 'manual') ?: 'manual';
         $interstitialCode = \App\Models\Setting::get('custom_interstitial_code', '') ?: '';
         $interstitialMobileCode = \App\Models\Setting::get('custom_interstitial_mobile_code', '') ?: '';
         $stickyEnabled = filter_var(\App\Models\Setting::get('custom_sticky_banner_enabled', false), FILTER_VALIDATE_BOOLEAN);
@@ -331,7 +332,7 @@
             };
         </script>
     @endif
-    @if($interstitialEnabled && ($interstitialCode || $interstitialMobileCode))
+    @if($interstitialEnabled && $interstitialMode === 'automatic' && ($interstitialCode || $interstitialMobileCode))
         {!! $isMobileUA ? ($interstitialMobileCode ?: $interstitialCode) : $interstitialCode !!}
     @endif
     @if($stickyEnabled && ($stickyCode || $stickyMobileCode))

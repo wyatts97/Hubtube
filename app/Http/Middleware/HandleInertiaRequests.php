@@ -111,6 +111,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'interstitial' => [
                 'enabled'    => (bool) $this->s('custom_interstitial_enabled', false),
+                'mode'       => (string) $this->s('custom_interstitial_mode', 'manual'),
                 'code'       => (string) $this->s('custom_interstitial_code', ''),
                 'mobileCode' => (string) $this->s('custom_interstitial_mobile_code', ''),
                 'frequency'  => (int) $this->s('interstitial_frequency', 5),

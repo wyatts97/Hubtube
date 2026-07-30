@@ -117,6 +117,7 @@ class AdSettings extends Page implements HasForms
             'custom_popunder_code' => Setting::get('custom_popunder_code', ''),
             'custom_popunder_mobile_code' => Setting::get('custom_popunder_mobile_code', ''),
             'custom_interstitial_enabled' => Setting::get('custom_interstitial_enabled', false),
+            'custom_interstitial_mode' => Setting::get('custom_interstitial_mode', 'manual'),
             'interstitial_frequency' => Setting::get('interstitial_frequency', 5),
             'interstitial_skip_delay' => Setting::get('interstitial_skip_delay', 5),
             'custom_interstitial_code' => Setting::get('custom_interstitial_code', ''),
@@ -392,27 +393,33 @@ class AdSettings extends Page implements HasForms
                                         ])->visible(fn ($get) => $get('zone_popunder_enabled')),
                                     ]),
                                 Section::make('Interstitial / Full-Page Ad')
-                                    ->description('Full-screen interstitial ad overlay shown on page transitions. Controlled by the Vue AdInterstitial component using sessionStorage page-view tracking.')
+                                    ->description('Manual mode uses a site-controlled overlay with frequency and skip timer. Automatic mode injects the ad code directly and lets the ad network handle timing.')
                                     ->icon('phosphor-arrows-out')
                                     ->collapsible()->collapsed()
                                     ->schema([
                                         Toggle::make('custom_interstitial_enabled')->label('Enable Interstitial Ad')->live(),
+                                        Select::make('custom_interstitial_mode')
+                                            ->label('Ad Mode')
+                                            ->options(['manual' => 'Manual (site controlled)', 'automatic' => 'Automatic (ad code controlled)'])
+                                            ->default('manual')
+                                            ->live()
+                                            ->visible(fn ($get) => $get('custom_interstitial_enabled')),
                                         Grid::make(2)->schema([
                                             TextInput::make('interstitial_frequency')
                                                 ->label('Show Every N Pages')
                                                 ->numeric()->default(5)->minValue(1)->maxValue(50)
                                                 ->helperText('e.g. 5 = show every 5th page view per session')
-                                                ->visible(fn ($get) => $get('custom_interstitial_enabled')),
+                                                ->visible(fn ($get) => $get('custom_interstitial_enabled') && $get('custom_interstitial_mode') === 'manual'),
                                             TextInput::make('interstitial_skip_delay')
                                                 ->label('Skip / Close After (sec)')
                                                 ->numeric()->default(5)->minValue(0)->maxValue(30)
                                                 ->helperText('0 = immediately closeable')
-                                                ->visible(fn ($get) => $get('custom_interstitial_enabled')),
+                                                ->visible(fn ($get) => $get('custom_interstitial_enabled') && $get('custom_interstitial_mode') === 'manual'),
                                         ]),
                                         Textarea::make('custom_interstitial_code')
                                             ->label('Desktop Interstitial Ad Code')->rows(5)->columnSpanFull()
                                             ->placeholder('<script src="https://a.magsrv.com/ad-provider.js"></script>...')
-                                            ->helperText('Shown inside the interstitial overlay on desktop.')
+                                            ->helperText('Used in Manual overlay or injected directly in Automatic mode.')
                                             ->visible(fn ($get) => $get('custom_interstitial_enabled')),
                                         Textarea::make('custom_interstitial_mobile_code')
                                             ->label('Mobile Interstitial Ad Code')->rows(5)->columnSpanFull()

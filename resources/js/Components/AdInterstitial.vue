@@ -34,7 +34,7 @@ let countdownTimer = null;
 const isMobile = () => window.innerWidth < 768;
 
 const adHtml = computed(() => {
-    if (!config.value.enabled || suppressAds.value) return '';
+    if (!config.value.enabled || suppressAds.value || (config.value.mode || 'manual') !== 'manual') return '';
     const mobile = config.value.mobileCode?.trim();
     const desktop = config.value.code?.trim();
     if (isMobile() && mobile) return mobile;
