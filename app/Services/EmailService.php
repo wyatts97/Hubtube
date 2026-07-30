@@ -21,7 +21,7 @@ class EmailService
 
         $settingKey = "email_notify_{$templateKey}";
         $enabled = Setting::get($settingKey, 'true');
-        if ($enabled === 'false' || $enabled === '0') {
+        if (! filter_var($enabled, FILTER_VALIDATE_BOOLEAN)) {
             return false;
         }
 
