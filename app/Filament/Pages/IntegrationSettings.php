@@ -9,7 +9,9 @@ use Filament\Actions\Action;
 use Illuminate\Mail\MailManager;
 use Throwable;
 use App\Models\Setting;
+use FinityLabs\FinMail\Enums\EmailStatus;
 use FinityLabs\FinMail\Mail\TemplateMail as FinMailTemplateMail;
+use FinityLabs\FinMail\Models\SentEmail;
 use FinityLabs\FinMail\Settings\GeneralSettings;
 use App\Models\User;
 use App\Services\AdminLogger;
@@ -220,8 +222,25 @@ class IntegrationSettings extends Page implements HasForms
         $user = auth()->user();
 
         try {
+            $mail = FinMailTemplateMail::make('welcome')
+                ->models([
+                    'username' => $user->username,
+                    'site_name' => config('app.name'),
+                    'login_url' => url('/login'),
+                ]);
+
+            $envelope = $mail->envelope();
+            $sentEmail = SentEmail::create([
+                'email_template_id' => $mail->getTemplate()->id,
+                'sender' => $envelope->from?->address ?? config('mail.from.address'),
+                'to' => [$user->email],
+                'subject' => $envelope->subject,
+                'status' => EmailStatus::Queued,
+                'sent_by' => $user->id,
+            ]);
+
             Mail::to($user->email)->sendNow(
-                FinMailTemplateMail::make('welcome')->models(['user' => $user])
+                $mail->withLogging($sentEmail)
             );
 
             Notification::make()
