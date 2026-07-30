@@ -11,6 +11,13 @@ class SetAdminTimezone
 {
     public function handle(Request $request, Closure $next): Response
     {
+        static::setTimezone();
+
+        return $next($request);
+    }
+
+    public static function setTimezone(): void
+    {
         $timezone = config('app.timezone');
 
         try {
@@ -23,7 +30,5 @@ class SetAdminTimezone
             config(['app.timezone' => $timezone]);
             date_default_timezone_set($timezone);
         }
-
-        return $next($request);
     }
 }
