@@ -10,6 +10,7 @@ use Filament\Schemas\Components\Grid;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Toggle;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Actions\EditAction;
@@ -167,22 +168,12 @@ class SponsoredCardResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('thumb_display')
+                ImageColumn::make('thumbnail_url')
                     ->label('Thumb')
-                    ->formatStateUsing(function ($record): string {
-                        $thumb = $record->thumbnail_url;
-                        if (!$thumb) return '';
-                        if (str_starts_with($thumb, 'http://') || str_starts_with($thumb, 'https://')) {
-                            $url = $thumb;
-                        } elseif (str_starts_with($thumb, '/storage/')) {
-                            $url = $thumb;
-                        } else {
-                            $url = '/storage/' . $thumb;
-                        }
-                        return '<img src="' . htmlspecialchars($url, ENT_QUOTES) . '" style="width:60px;height:60px;object-fit:cover;border-radius:4px;" loading="lazy" onerror="this.src=\'' . e(url('/images/placeholder.jpg')) . '\'" />';
-                    })
-                    ->html()
-                    ->wrap(false),
+                    ->disk('public')
+                    ->square()
+                    ->size(60)
+                    ->defaultImageUrl(url('/images/placeholder.jpg')),
                 TextColumn::make('title')
                     ->searchable()
                     ->weight('bold')
