@@ -1,28 +1,8 @@
 <?php
 
-use Spatie\Health\Checks\Checks\CacheCheck;
-use Spatie\Health\Checks\Checks\DatabaseCheck;
-use Spatie\Health\Checks\Checks\DebugModeCheck;
-use Spatie\Health\Checks\Checks\EnvironmentCheck;
-use Spatie\Health\Checks\Checks\HorizonCheck;
-use Spatie\Health\Checks\Checks\RedisCheck;
-use Spatie\Health\Checks\Checks\ScheduleCheck;
-use Spatie\Health\Checks\Checks\UsedDiskSpaceCheck;
-
 return [
 
-    'checks' => [
-        DatabaseCheck::new(),
-        RedisCheck::new(),
-        CacheCheck::new(),
-        DebugModeCheck::new()->unless(config('app.debug') === false),
-        EnvironmentCheck::new()->expectEnvironment(config('app.env')),
-        HorizonCheck::new(),
-        ScheduleCheck::new(),
-        UsedDiskSpaceCheck::new()
-            ->warnWhenUsedSpaceIsAbovePercentage(80)
-            ->failWhenUsedSpaceIsAbovePercentage(95),
-    ],
+    'checks' => [],
 
     'result_stores' => [
         \Spatie\Health\ResultStores\EloquentHealthResultStore::class => [

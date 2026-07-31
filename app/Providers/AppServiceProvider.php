@@ -11,6 +11,15 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
+use Spatie\Health\Facades\Health;
+use Spatie\Health\Checks\Checks\CacheCheck;
+use Spatie\Health\Checks\Checks\DatabaseCheck;
+use Spatie\Health\Checks\Checks\DebugModeCheck;
+use Spatie\Health\Checks\Checks\EnvironmentCheck;
+use Spatie\Health\Checks\Checks\HorizonCheck;
+use Spatie\Health\Checks\Checks\RedisCheck;
+use Spatie\Health\Checks\Checks\ScheduleCheck;
+use Spatie\Health\Checks\Checks\UsedDiskSpaceCheck;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,5 +43,18 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Event::listen(JobProcessing::class, fn () => SetAdminTimezone::setTimezone());
+
+        Health::checks([
+            DatabaseCheck::new(),
+            RedisCheck::new(),
+            CacheCheck::new(),
+            DebugModeCheck::new()->unless(config('app.debug') === false),
+            EnvironmentCheck::new()->expectEnvironment(config('app.env')),
+            HorizonCheck::new(),
+            ScheduleCheck::new(),
+            UsedDiskSpaceCheck::new()
+                ->warnWhenUsedSpaceIsAbovePercentage(80)
+                ->failWhenUsedSpaceIsAbovePercentage(95),
+        ]);
     }
 }
