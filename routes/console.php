@@ -24,4 +24,4 @@ Schedule::command('backup:run')->dailyAt('01:00')->withoutOverlapping();
 Schedule::command('backup:clean')->weekly()->sundays()->at('02:00');
 
 // Spatie Health: run checks every 10 minutes
-Schedule::command('health:run')->everyTenMinutes();
+Schedule::command('health:check')->everyTenMinutes();

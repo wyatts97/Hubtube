@@ -29,7 +29,7 @@ class HealthChecks extends Page
                     $this->running = true;
 
                     try {
-                        Artisan::call('health:run');
+                        Artisan::call('health:check');
                         Notification::make()
                             ->title('Health checks completed')
                             ->success()
