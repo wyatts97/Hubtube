@@ -25,3 +25,4 @@ Schedule::command('backup:clean')->weekly()->sundays()->at('02:00');
 
 // Spatie Health: run checks every 10 minutes
 Schedule::command('health:check')->everyTenMinutes();
+Schedule::command('model:prune', ['--model' => [\Spatie\Health\Models\HealthCheckResultHistoryItem::class]])->daily();

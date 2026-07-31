@@ -26,11 +26,12 @@ return [
 
     'result_stores' => [
         \Spatie\Health\ResultStores\EloquentHealthResultStore::class => [
-            'connection' => env('HEALTH_DB_CONNECTION', null),
-            'keep_results_for_days' => 14,
+            'model' => \Spatie\Health\Models\HealthCheckResultHistoryItem::class,
+            'keep_history_for_days' => 14,
         ],
+
         \Spatie\Health\ResultStores\CacheHealthResultStore::class => [
-            'store' => 'redis',
+            'store' => 'file',
         ],
     ],
 
@@ -40,8 +41,15 @@ return [
             \Spatie\Health\Notifications\CheckFailedNotification::class => ['mail'],
         ],
         'notifiable' => \Spatie\Health\Notifications\Notifiable::class,
-        'channel' => 'mail',
-        'queue' => null,
+        'throttle_notifications_for_minutes' => 60,
+        'only_on_failure' => false,
+        'mail' => [
+            'to' => env('HEALTH_MAIL_TO', env('MAIL_FROM_ADDRESS', 'admin@wedgietube.com')),
+            'from' => [
+                'address' => env('MAIL_FROM_ADDRESS', 'noreply@wedgietube.com'),
+                'name' => env('MAIL_FROM_NAME', 'HubTube Health'),
+            ],
+        ],
     ],
 
     'silenced_checks' => [],
