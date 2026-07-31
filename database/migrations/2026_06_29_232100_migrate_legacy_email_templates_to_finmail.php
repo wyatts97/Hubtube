@@ -12,7 +12,7 @@ return new class extends Migration
         $table = config('fin-mail.table_names.templates') ?? 'email_templates';
 
         // If the table already uses the FinMail schema (no 'slug' column), nothing to migrate.
-        if (Schema::hasTable($table) && !Schema::hasColumn($table, 'slug')) {
+        if (Schema::hasTable($table) && ! Schema::hasColumn($table, 'slug')) {
             return;
         }
 
@@ -98,7 +98,7 @@ return new class extends Migration
 
     protected function restoreForeignKeyConstraint(string $parentTable, string $childTable, string $column, string $onDelete): void
     {
-        if (!Schema::hasTable($childTable) || !Schema::hasColumn($childTable, $column)) {
+        if (! Schema::hasTable($childTable) || ! Schema::hasColumn($childTable, $column)) {
             return;
         }
 
@@ -108,6 +108,7 @@ return new class extends Migration
             Schema::table($childTable, function (Blueprint $table) use ($column, $parentTable, $onDelete, $constraintName) {
                 $table->foreign($column, $constraintName)->references('id')->on($parentTable)->{$onDelete}();
             });
+
             return;
         }
 
@@ -120,6 +121,12 @@ return new class extends Migration
 
     protected function foreignKeyExists(string $constraintName, string $table): bool
     {
+        // SQLite (used in tests) has no information_schema; assume the
+        // constraint does not exist so it gets (re)created as needed.
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            return false;
+        }
+
         return DB::table('information_schema.table_constraints')
             ->where('constraint_schema', DB::getDatabaseName())
             ->where('table_name', $table)

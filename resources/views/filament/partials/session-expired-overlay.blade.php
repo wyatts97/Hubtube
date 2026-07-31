@@ -3,15 +3,17 @@
      a friendly "Refresh page" prompt instead of the default white error modal. --}}
 <div id="ht-session-expired-overlay" class="ht-session-overlay" role="alert" aria-live="assertive" hidden>
     <div class="ht-session-overlay__card">
-        <x-phosphor-warning-circle class="ht-session-overlay__icon" />
-        <h2 class="ht-session-overlay__title">Session expired</h2>
-        <p class="ht-session-overlay__text">You’ve been idle for a while. Refresh the page to continue.</p>
+        <div class="ht-session-overlay__icon-wrap">
+            <x-phosphor-warning-circle class="ht-session-overlay__icon" />
+        </div>
+        <h2 class="ht-session-overlay__title" data-session-text>Session expired</h2>
+        <p class="ht-session-overlay__text" data-session-text>You’ve been idle for a while. Refresh the page to continue.</p>
         <div class="ht-session-overlay__actions">
             <button type="button" class="ht-session-overlay__btn" onclick="window.location.reload()">
                 <x-phosphor-arrows-clockwise class="w-4 h-4" />
                 <span>Refresh page</span>
             </button>
-            <a href="{{ route('login') }}" class="ht-session-overlay__link">
+            <a href="{{ route('login') }}" class="ht-session-overlay__link" data-session-only>
                 Log in again
             </a>
         </div>
@@ -19,14 +21,31 @@
 </div>
 
 <style>
+/* Fall back to the admin panel's design tokens when injected inside .fi-body.
+   If the tokens are unavailable (e.g. overlay rendered outside the panel),
+   these defaults keep the same muted-red-on-dark-zinc palette. */
 .ht-session-overlay {
+    --ht-accent: 184 65 76;
+    --ht-accent-hover: 199 89 96;
+    --ht-accent-soft: 88 28 32;
+    --ht-surface: 24 24 27;
+    --ht-surface-2: 30 30 34;
+    --ht-surface-3: 39 39 42;
+    --ht-border: 39 39 42;
+    --ht-border-soft: 55 55 60;
+    --ht-text: 228 228 231;
+    --ht-text-heading: 244 244 245;
+    --ht-text-muted: 161 161 170;
+    --ht-warning: 234 179 8;
+    --ht-danger: 239 68 68;
+
     position: fixed;
     inset: 0;
     z-index: 9999;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.75);
+    background: rgb(0 0 0 / 0.75);
     backdrop-filter: blur(4px);
     padding: 1rem;
 }
@@ -37,14 +56,15 @@
     position: relative;
     width: 100%;
     max-width: 24rem;
-    background: linear-gradient(180deg, rgb(24 24 27 / 0.95), rgb(18 18 20 / 0.95));
-    border: 1px solid rgb(255 255 255 / 0.08);
+    background: linear-gradient(180deg, rgb(var(--ht-surface) / 0.97), rgb(18 18 20 / 0.97));
+    border: 1px solid rgb(var(--ht-accent) / 0.2);
     border-radius: 0.875rem;
     padding: 1.5rem;
     text-align: center;
     box-shadow:
-        0 25px 50px -12px rgba(0, 0, 0, 0.5),
-        inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        0 25px 50px -12px rgb(0 0 0 / 0.5),
+        0 0 0 1px rgb(var(--ht-accent) / 0.05),
+        inset 0 1px 0 rgb(255 255 255 / 0.03);
     overflow: hidden;
 }
 .ht-session-overlay__card::before {
@@ -54,24 +74,34 @@
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent, rgb(99 102 241 / 0.65), rgb(168 85 247 / 0.45), transparent);
-    opacity: 0.8;
+    background: linear-gradient(90deg, transparent, rgb(var(--ht-accent) / 0.8), rgb(var(--ht-accent-hover) / 0.5), transparent);
+    opacity: 0.85;
     pointer-events: none;
 }
-.ht-session-overlay__icon {
-    width: 2.5rem;
-    height: 2.5rem;
-    color: rgb(251 191 36); /* amber-400 */
+.ht-session-overlay__icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 9999px;
+    background: rgb(var(--ht-accent) / 0.12);
+    border: 1px solid rgb(var(--ht-accent) / 0.2);
     margin: 0 auto 1rem;
 }
+.ht-session-overlay__icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    color: rgb(var(--ht-accent-hover));
+}
 .ht-session-overlay__title {
-    color: rgb(243 244 246); /* gray-100 */
+    color: rgb(var(--ht-text-heading));
     font-size: 1.125rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
 }
 .ht-session-overlay__text {
-    color: rgb(148 163 184); /* slate-400 */
+    color: rgb(var(--ht-text-muted));
     font-size: 0.875rem;
     margin-bottom: 1.25rem;
     line-height: 1.5;
@@ -87,29 +117,34 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    background: rgb(39 39 42); /* zinc-800 */
-    color: rgb(244 244 245); /* zinc-100 */
-    font-weight: 500;
+    background: rgb(var(--ht-accent));
+    color: rgb(255 255 255);
+    font-weight: 600;
     font-size: 0.875rem;
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 1.25rem;
     border-radius: 0.5rem;
-    border: 1px solid rgb(63 63 70); /* zinc-700 */
+    border: 1px solid rgb(var(--ht-accent-hover));
     cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     text-decoration: none;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.2), 0 0 0 1px rgb(var(--ht-accent) / 0.25);
 }
 .ht-session-overlay__btn:hover {
-    background: rgb(63 63 70); /* zinc-700 */
-    border-color: rgb(82 82 91); /* zinc-600 */
-    color: rgb(255 255 255);
+    background: rgb(var(--ht-accent-hover));
+    border-color: rgb(var(--ht-accent-hover));
+    box-shadow: 0 4px 12px -2px rgb(var(--ht-accent) / 0.4), 0 0 0 1px rgb(var(--ht-accent) / 0.3);
+}
+.ht-session-overlay__btn:active {
+    transform: translateY(1px);
 }
 .ht-session-overlay__link {
-    color: rgb(148 163 184); /* slate-400 */
+    color: rgb(var(--ht-text-muted));
     font-size: 0.875rem;
     text-decoration: underline;
+    transition: color 0.2s ease;
 }
 .ht-session-overlay__link:hover {
-    color: rgb(209 213 219); /* gray-300 */
+    color: rgb(var(--ht-accent-hover));
 }
 </style>
 
@@ -118,7 +153,29 @@
     const overlay = document.getElementById('ht-session-expired-overlay');
     if (!overlay) return;
 
-    const showOverlay = () => {
+    const titleEl = overlay.querySelector('[data-session-text].ht-session-overlay__title');
+    const textEl = overlay.querySelector('[data-session-text].ht-session-overlay__text');
+    const loginLink = overlay.querySelector('[data-session-only]');
+    const iconWrap = overlay.querySelector('.ht-session-overlay__icon-wrap');
+
+    // Session/auth-related statuses show the "Session expired" prompt.
+    const SESSION_STATUSES = new Set([401, 403, 405, 419]);
+
+    const showOverlay = (isSessionError) => {
+        if (isSessionError) {
+            if (titleEl) titleEl.textContent = 'Session expired';
+            if (textEl) textEl.textContent = 'You’ve been idle for a while. Refresh the page to continue.';
+            if (loginLink) loginLink.style.display = '';
+            if (iconWrap) iconWrap.style.setProperty('--ht-accent', '184 65 76');
+        } else {
+            // Server error — not a session issue. Show an accurate message
+            // instead of misleading the user with "You've been idle".
+            if (titleEl) titleEl.textContent = 'Something went wrong';
+            if (textEl) textEl.textContent = 'The server encountered an error while processing your request. Try refreshing the page.';
+            if (loginLink) loginLink.style.display = 'none';
+            // Switch the icon tint to danger red for server errors
+            if (iconWrap) iconWrap.style.setProperty('--ht-accent', '239 68 68');
+        }
         overlay.removeAttribute('hidden');
     };
 
@@ -127,20 +184,21 @@
     if (window.Livewire && typeof Livewire.hook === 'function') {
         Livewire.hook('request', ({ fail }) => {
             fail(({ status, preventDefault }) => {
-                // 401  = unauthenticated (our new middleware response)
+                // 401  = unauthenticated (our middleware response)
                 // 403  = forbidden (e.g. user no longer admin)
                 // 405  = method not allowed (the original symptom on redirect)
                 // 419  = CSRF token expired (Laravel page-expired)
-                // >=500 = server error that breaks Livewire response parsing
-                if (status === 401 || status === 403 || status === 405 || status === 419 || status >= 500) {
+                // >=500 = server error (bug, not a session issue)
+                if (SESSION_STATUSES.has(status) || status >= 500) {
                     preventDefault();
-                    showOverlay();
+                    showOverlay(SESSION_STATUSES.has(status));
                 }
             });
         });
     }
 
-    // Fallback: catch unhandled Livewire errors that bubble to window
-    window.addEventListener('livewire:error', () => showOverlay());
+    // Fallback: catch unhandled Livewire errors that bubble to window.
+    // Treat as a server error since we can't confirm the status here.
+    window.addEventListener('livewire:error', () => showOverlay(false));
 })();
 </script>

@@ -2,18 +2,12 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Actions\Action;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Schemas\Components\Utilities\Set;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Database\Eloquent\Collection;
 use App\Models\Category;
-use App\Models\User;
 use App\Models\Image;
+use App\Models\User;
 use App\Services\AdminLogger;
 use App\Services\ImageService;
+use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
@@ -22,23 +16,30 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Symfony\Component\Uid\Ulid;
 
 class BulkImageUploader extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-images';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-images';
+
     protected static ?string $navigationLabel = 'Bulk Image Upload';
-    protected static string | \UnitEnum | null $navigationGroup = 'Content';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Content';
+
     protected static ?int $navigationSort = 8;
 
     public static function shouldRegisterNavigation(): bool
@@ -88,19 +89,19 @@ class BulkImageUploader extends Page implements HasForms
     {
         return $schema
             ->components([
-            FileUpload::make('image_files')
-            ->label('Drop image files here or click to browse')
-            ->disk('public')
-            ->directory('images/admin-uploads')
-            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
-            ->maxSize(524288) // 500MB
-            ->multiple()
-            ->maxFiles(50)
-            ->visibility('public')
-            ->storeFileNamesIn('image_file_names')
-            ->previewable(false)
-            ->columnSpanFull(),
-        ])
+                FileUpload::make('image_files')
+                    ->label('Drop image files here or click to browse')
+                    ->disk('public')
+                    ->directory('images/admin-uploads')
+                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
+                    ->maxSize(524288) // 500MB
+                    ->multiple()
+                    ->maxFiles(50)
+                    ->visibility('public')
+                    ->storeFileNamesIn('image_file_names')
+                    ->previewable(false)
+                    ->columnSpanFull(),
+            ])
             ->statePath('uploadData');
     }
 
@@ -157,8 +158,7 @@ class BulkImageUploader extends Page implements HasForms
                     ->cloneable(false)
                     ->collapsible()
                     ->collapsed(false)
-                    ->itemLabel(fn (array $state): string =>
-                        trim((string) ($state['title'] ?? '')) !== ''
+                    ->itemLabel(fn (array $state): string => trim((string) ($state['title'] ?? '')) !== ''
                             ? (string) $state['title']
                             : ((string) ($state['file_name'] ?? 'Image'))
                     )
@@ -255,6 +255,7 @@ class BulkImageUploader extends Page implements HasForms
 
         if (empty($paths)) {
             Notification::make()->title('No files selected')->warning()->send();
+
             return;
         }
 
@@ -277,7 +278,7 @@ class BulkImageUploader extends Page implements HasForms
         // Reset the upload form
         $this->uploadForm->fill([]);
 
-        Notification::make()->title(count($paths) . ' file(s) added')->success()->send();
+        Notification::make()->title(count($paths).' file(s) added')->success()->send();
     }
 
     public function applyBulkSettings(): void
@@ -285,16 +286,16 @@ class BulkImageUploader extends Page implements HasForms
         $settings = $this->bulkSettingsForm->getState();
 
         foreach ($this->entries as &$entry) {
-            if (!empty($settings['category_id'])) {
+            if (! empty($settings['category_id'])) {
                 $entry['category_id'] = $settings['category_id'];
             }
-            if (!empty($settings['user_id'])) {
+            if (! empty($settings['user_id'])) {
                 $entry['user_id'] = $settings['user_id'];
             }
-            if (!empty($settings['tags'])) {
+            if (! empty($settings['tags'])) {
                 $entry['tags'] = $settings['tags'];
             }
-            if (!empty($settings['privacy'])) {
+            if (! empty($settings['privacy'])) {
                 $entry['privacy'] = $settings['privacy'];
             }
         }
@@ -307,6 +308,7 @@ class BulkImageUploader extends Page implements HasForms
     {
         if (empty($this->entries)) {
             Notification::make()->title('No images to create')->warning()->send();
+
             return;
         }
 
@@ -314,23 +316,26 @@ class BulkImageUploader extends Page implements HasForms
         foreach ($this->entries as $index => $entry) {
             if (empty(trim($entry['title'] ?? ''))) {
                 Notification::make()
-                    ->title("Image #" . ($index + 1) . " needs a title")
+                    ->title('Image #'.($index + 1).' needs a title')
                     ->danger()
                     ->send();
+
                 return;
             }
             if (empty($entry['user_id'])) {
                 Notification::make()
-                    ->title("Image #" . ($index + 1) . " needs a user assigned")
+                    ->title('Image #'.($index + 1).' needs a user assigned')
                     ->danger()
                     ->send();
+
                 return;
             }
             if (empty($entry['category_id'])) {
                 Notification::make()
-                    ->title("Image #" . ($index + 1) . " needs a category")
+                    ->title('Image #'.($index + 1).' needs a category')
                     ->danger()
                     ->send();
+
                 return;
             }
         }
@@ -346,7 +351,7 @@ class BulkImageUploader extends Page implements HasForms
             $fullPath = Storage::disk('public')->path($tempPath);
 
             // Create UploadedFile from the temp path
-            $uploadedFile = new \Illuminate\Http\UploadedFile(
+            $uploadedFile = new UploadedFile(
                 $fullPath,
                 $entry['file_name'],
                 mime_content_type($fullPath),
@@ -378,11 +383,11 @@ class BulkImageUploader extends Page implements HasForms
         }
 
         AdminLogger::settingsSaved('Bulk Image Upload', [
-            'created_' . count($this->createdImageIds) . '_images',
+            'created_'.count($this->createdImageIds).'_images',
         ]);
 
         Notification::make()
-            ->title('Created ' . count($this->createdImageIds) . ' image(s)')
+            ->title('Created '.count($this->createdImageIds).' image(s)')
             ->success()
             ->send();
 
@@ -398,6 +403,7 @@ class BulkImageUploader extends Page implements HasForms
         $base = pathinfo($name, PATHINFO_FILENAME);
         $clean = preg_replace('/[_\-.]+/', ' ', $base) ?? $base;
         $clean = preg_replace('/\s+/', ' ', trim($clean)) ?? $clean;
+
         return $clean === '' ? '' : Str::title($clean);
     }
 
@@ -406,17 +412,18 @@ class BulkImageUploader extends Page implements HasForms
         $baseSlug = Str::slug($title) ?: 'image';
         $slug = $baseSlug;
         $suffix = 2;
-        while (Image::withTrashed()->where('slug', $slug)->exists()) {
-            $slug = $baseSlug . '-' . $suffix;
+        while (Image::where('slug', $slug)->exists()) {
+            $slug = $baseSlug.'-'.$suffix;
             $suffix++;
         }
+
         return $slug;
     }
 
     public function getCreatedImagesProperty(): Collection
     {
         if (empty($this->createdImageIds)) {
-            return new Collection();
+            return new Collection;
         }
 
         return Image::with('user', 'category')
