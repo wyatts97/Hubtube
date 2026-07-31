@@ -29,17 +29,16 @@
         @endif
 
         <x-filament::section heading="System Health" icon="phosphor-heartbeat" description="Monitor the health of database, Redis, Horizon, cache, disk space, and scheduled tasks.">
-            @if (empty($this->checkResults))
+            @if (empty($checkResults))
                 <div class="text-center py-8 text-gray-500 dark:text-gray-400">
                     <x-filament::icon icon="phosphor-heartbeat" class="w-12 h-12 mx-auto mb-3 opacity-50" />
                     <p>No health check results yet. Click "Run Health Checks" to start.</p>
                 </div>
             @else
                 <div class="mb-4">
-                    @php $overall = $this->overallStatus; @endphp
-                    <x-filament::badge color="{{ $statusColors[$overall] ?? 'gray' }}" size="md">
-                        <x-filament::icon icon="{{ $statusIcons[$overall] ?? 'phosphor-question' }}" class="w-4 h-4 mr-1" />
-                        {{ ucfirst($overall) }}
+                    <x-filament::badge color="{{ $statusColors[$overallStatus] ?? 'gray' }}" size="md">
+                        <x-filament::icon icon="{{ $statusIcons[$overallStatus] ?? 'phosphor-question' }}" class="w-4 h-4 mr-1" />
+                        {{ ucfirst($overallStatus) }}
                     </x-filament::badge>
                 </div>
 
@@ -54,7 +53,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($this->checkResults as $result)
+                            @foreach ($checkResults as $result)
                                 <tr class="border-b border-gray-100 dark:border-gray-800">
                                     <td class="py-3 px-4 text-sm font-medium">{{ $result['label'] }}</td>
                                     <td class="py-3 px-4">
