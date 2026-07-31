@@ -37,6 +37,8 @@
         "sentry/sentry-laravel": "^4.20",
         "socialiteproviders/reddit": "^4.2",
         "spatie/laravel-activitylog": "^4.8",
+        "spatie/laravel-backup": "^9.0",
+        "spatie/laravel-health": "^1.30",
         "spatie/laravel-medialibrary": "^11.4",
         "spatie/laravel-permission": "^6.4",
         "stichoza/google-translate-php": "^5.1",

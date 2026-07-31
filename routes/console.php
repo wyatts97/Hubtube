@@ -18,3 +18,10 @@ Schedule::command('videos:prune-bulk-temp')->dailyAt('03:15')->withoutOverlappin
 
 // Publish scheduled videos every minute so they go live on time
 Schedule::command('videos:publish-scheduled')->everyMinute();
+
+// Spatie Backup: nightly backup + weekly cleanup
+Schedule::command('backup:run')->dailyAt('01:00')->withoutOverlapping();
+Schedule::command('backup:clean')->weekly()->sundays()->at('02:00');
+
+// Spatie Health: run checks every 10 minutes
+Schedule::command('health:run')->everyTenMinutes();
