@@ -6,7 +6,7 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Artisan;
-use Livewire\Attributes\Computed;
+use Spatie\Health\ResultStores\EloquentHealthResultStore;
 
 class HealthChecks extends Page
 {
@@ -18,6 +18,13 @@ class HealthChecks extends Page
     protected string $view = 'filament.pages.health-checks';
 
     public bool $running = false;
+    public array $checkResults = [];
+    public string $overallStatus = 'unknown';
+
+    public function mount(): void
+    {
+        $this->loadResults();
+    }
 
     protected function getHeaderActions(): array
     {
@@ -43,62 +50,50 @@ class HealthChecks extends Page
                     } finally {
                         $this->running = false;
                     }
+
+                    $this->loadResults();
                 })
                 ->disabled(fn () => $this->running),
         ];
     }
 
-    #[Computed]
-    public function checkResults(): array
+    public function loadResults(): void
     {
         try {
-            $results = \Spatie\Health\ResultStores\EloquentHealthResultStore::class;
-            $store = app($results);
-
+            $store = app(EloquentHealthResultStore::class);
             $latestResults = $store->latestResults();
 
             if (!$latestResults) {
-                return [];
+                $this->checkResults = [];
+                $this->overallStatus = 'unknown';
+                return;
             }
 
             $checks = [];
+            $overall = 'ok';
+
             foreach ($latestResults->storedCheckResults as $result) {
+                $statusValue = $result->status->value;
                 $checks[] = [
                     'name' => $result->checkName,
                     'label' => $result->checkLabel ?? $result->checkName,
-                    'status' => $result->status->value,
+                    'status' => $statusValue,
                     'message' => $result->notificationMessage ?? $result->shortSummary ?? '',
                     'last_checked' => $result->lastChecked?->diffForHumans() ?? '—',
                 ];
+
+                if (in_array($statusValue, ['failed', 'crashed', 'error'])) {
+                    $overall = 'failed';
+                } elseif ($statusValue === 'warning' && $overall !== 'failed') {
+                    $overall = 'warning';
+                }
             }
 
-            return $checks;
+            $this->checkResults = $checks;
+            $this->overallStatus = $overall;
         } catch (\Throwable $e) {
-            return [];
+            $this->checkResults = [];
+            $this->overallStatus = 'unknown';
         }
-    }
-
-    #[Computed]
-    public function overallStatus(): string
-    {
-        $results = $this->checkResults;
-
-        if (empty($results)) {
-            return 'unknown';
-        }
-
-        foreach ($results as $result) {
-            if (in_array($result['status'], ['failed', 'crashed', 'error'])) {
-                return 'failed';
-            }
-        }
-
-        foreach ($results as $result) {
-            if ($result['status'] === 'warning') {
-                return 'warning';
-            }
-        }
-
-        return 'ok';
     }
 }
