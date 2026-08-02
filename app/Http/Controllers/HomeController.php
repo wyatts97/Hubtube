@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Image;
+use App\Models\Playlist;
 use App\Models\Setting;
 use App\Models\SponsoredCard;
 use App\Models\Video;
@@ -153,6 +154,16 @@ class HomeController extends Controller
                 ->get()
         );
 
+        $latestPlaylists = Cache::remember('home:latest_playlists', 120, fn () =>
+            Playlist::query()
+                ->with('user:id,username,avatar')
+                ->public()
+                ->where('video_count', '>', 0)
+                ->latest()
+                ->limit(10)
+                ->get()
+        );
+
         return Inertia::render('Home', [
             'featuredVideos' => $featuredVideos,
             'latestVideos' => $latestVideos,
@@ -160,6 +171,7 @@ class HomeController extends Controller
             'categories' => $categories,
             'shortsPreview' => $shortsPreview,
             'latestImages' => $latestImages,
+            'latestPlaylists' => $latestPlaylists,
             'adSettings' => $adSettings,
             'seo' => $this->seoService->forHome(),
             'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('home', auth()->user()?->role ?? 'guest'),

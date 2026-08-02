@@ -8,6 +8,7 @@ import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import ShortsRail from '@/Components/ShortsRail.vue';
 import ImagesRail from '@/Components/ImagesRail.vue';
+import PlaylistsRail from '@/Components/PlaylistsRail.vue';
 import { Loader2 } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
 import GridAdSlot from '@/Components/GridAdSlot.vue';
@@ -30,6 +31,7 @@ const props = defineProps({
     categories: Array,
     shortsPreview: { type: Array, default: () => [] },
     latestImages: { type: Array, default: () => [] },
+    latestPlaylists: { type: Array, default: () => [] },
     adSettings: Object, // Ad settings from admin
     seo: { type: Object, default: () => ({}) },
     sponsoredCards: { type: Array, default: () => [] },
@@ -277,6 +279,9 @@ const getSponsoredCard = (index) => {
         </section>
 
         <BannerAd :config="adSettings?.rail3" />
+
+        <!-- Latest Playlists Rail -->
+        <PlaylistsRail v-if="latestPlaylists?.length" :playlists="latestPlaylists" />
 
         <!-- Latest Images Rail -->
         <ImagesRail v-if="latestImages?.length" :images="latestImages" />
