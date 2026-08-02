@@ -5,7 +5,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { Filter, X, ArrowUpDown, Clock, Flame, CalendarDays } from 'lucide-vue-next';
-import AdSlot from '@/Components/AdSlot.vue';
+import GridAdSlot from '@/Components/GridAdSlot.vue';
 import OutstreamAd from '@/Components/OutstreamAd.vue';
 import BannerAd from '@/Components/UI/BannerAd.vue';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
@@ -15,7 +15,7 @@ import { useVideoGrid } from '@/Composables/useVideoGrid';
 const { t } = useI18n();
 
 const { translateVideos, tr } = useAutoTranslate(['title']);
-const { gridClass } = useVideoGrid();
+const { gridClass, mobileGrid } = useVideoGrid();
 
 const props = defineProps({
     videos: Object,
@@ -95,12 +95,6 @@ const adsEnabled = computed(() => {
 });
 const gridAds = computed(() => props.adSettings?.videoGridAds || []);
 const adFrequency = computed(() => parseInt(props.adSettings?.videoGridFrequency) || 8);
-
-const getGridAd = () => {
-    const ads = gridAds.value;
-    if (!ads.length) return { code: '', mobileCode: '' };
-    return ads[Math.floor(Math.random() * ads.length)];
-};
 
 const shouldShowAd = (index, totalLength) => {
     if (!adsEnabled.value || !gridAds.value.length) return false;
@@ -220,10 +214,10 @@ const getOutstreamAd = (index) => {
                 <VideoCard :video="withTranslation(video)" />
                 <div
                     v-if="shouldShowAd(index, videos.data.length)"
-                    class="col-span-1 flex items-start justify-center rounded-xl p-2"
+                    class="rounded-xl p-2"
+                    :class="mobileGrid === 2 ? 'col-span-2 sm:col-span-1' : 'col-span-1'"
                 >
-                    <AdSlot :html="getGridAd().code" class="hidden sm:block" />
-                    <AdSlot :html="getGridAd().mobileCode" class="sm:hidden" />
+                    <GridAdSlot :ads="gridAds" />
                 </div>
                 <SponsoredVideoCard
                     v-if="getSponsoredCard(index)"

@@ -289,7 +289,7 @@ class AdSettings extends Page implements HasForms
                         ->icon('phosphor-grid-four')
                         ->schema([
                             Section::make('Video Grid Ad Settings')
-                                ->description('Ads injected between video cards on browsing pages (Home, Browse, Trending, Category). Recommended size: 300x250. Multiple variants are randomly rotated per impression.')
+                                ->description('Ads injected between video cards on browsing pages (Home, Browse, Trending, Category). Recommended size: 300x250, but creatives of any size are automatically scaled to fit the grid on all devices. Multiple variants are randomly rotated per impression.')
                                 ->schema([
                                     Toggle::make('video_grid_ad_enabled')->label('Enable Video Grid Ads')->live(),
                                     TextInput::make('video_grid_ad_frequency')

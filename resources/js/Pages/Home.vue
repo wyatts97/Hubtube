@@ -10,7 +10,7 @@ import ShortsRail from '@/Components/ShortsRail.vue';
 import ImagesRail from '@/Components/ImagesRail.vue';
 import { Loader2 } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
-import AdSlot from '@/Components/AdSlot.vue';
+import GridAdSlot from '@/Components/GridAdSlot.vue';
 import BannerAd from '@/Components/UI/BannerAd.vue';
 import { useI18n } from '@/Composables/useI18n';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
@@ -160,12 +160,6 @@ const adsEnabled = computed(() => {
 const gridAds = computed(() => props.adSettings?.videoGridAds || []);
 const adFrequency = computed(() => parseInt(props.adSettings?.videoGridFrequency) || 8);
 
-const getGridAd = () => {
-    const ads = gridAds.value;
-    if (!ads.length) return { code: '', mobileCode: '' };
-    return ads[Math.floor(Math.random() * ads.length)];
-};
-
 // Helper to check if ad should show after index
 const shouldShowAd = (index, totalLength) => {
     if (!adsEnabled.value || !gridAds.value.length) return false;
@@ -228,13 +222,12 @@ const getSponsoredCard = (index) => {
                     <template v-for="(video, index) in videos" :key="'scroll-' + video.id">
                         <VideoCard :video="withTranslation(video)" />
                         <!-- Ad after every X videos -->
-                        <div 
+                        <div
                             v-if="shouldShowAd(index, videos.length)"
-                            class="flex items-start justify-center rounded-xl p-2"
+                            class="rounded-xl p-2"
                             :class="mobileGrid === 2 ? 'col-span-2 sm:col-span-1' : 'col-span-1'"
                         >
-                            <AdSlot :html="getGridAd().code" class="hidden sm:block" />
-                            <AdSlot :html="getGridAd().mobileCode" class="sm:hidden" />
+                            <GridAdSlot :ads="gridAds" />
                         </div>
                         <SponsoredVideoCard
                             v-if="getSponsoredCard(index)"
@@ -261,13 +254,12 @@ const getSponsoredCard = (index) => {
                     <template v-for="(video, index) in latestVideos.data" :key="'page-' + video.id">
                         <VideoCard :video="withTranslation(video)" />
                         <!-- Ad after every X videos -->
-                        <div 
+                        <div
                             v-if="shouldShowAd(index, latestVideos.data.length)"
-                            class="flex items-start justify-center rounded-xl p-2"
+                            class="rounded-xl p-2"
                             :class="mobileGrid === 2 ? 'col-span-2 sm:col-span-1' : 'col-span-1'"
                         >
-                            <AdSlot :html="getGridAd().code" class="hidden sm:block" />
-                            <AdSlot :html="getGridAd().mobileCode" class="sm:hidden" />
+                            <GridAdSlot :ads="gridAds" />
                         </div>
                         <SponsoredVideoCard
                             v-if="getSponsoredCard(index)"

@@ -5,7 +5,7 @@ import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
-import AdSlot from '@/Components/AdSlot.vue';
+import GridAdSlot from '@/Components/GridAdSlot.vue';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 import { useVideoGrid } from '@/Composables/useVideoGrid';
@@ -13,7 +13,7 @@ import BannerAd from '@/Components/UI/BannerAd.vue';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
 
 const { t, localizedUrl } = useI18n();
-const { gridClass } = useVideoGrid();
+const { gridClass, mobileGrid } = useVideoGrid();
 
 const props = defineProps({
     category: Object,
@@ -32,12 +32,6 @@ const adsEnabled = computed(() => {
 });
 const gridAds = computed(() => props.adSettings?.videoGridAds || []);
 const adFrequency = computed(() => parseInt(props.adSettings?.videoGridFrequency) || 8);
-
-const getGridAd = () => {
-    const ads = gridAds.value;
-    if (!ads.length) return { code: '', mobileCode: '' };
-    return ads[Math.floor(Math.random() * ads.length)];
-};
 
 const shouldShowAd = (index, totalLength) => {
     if (!adsEnabled.value || !gridAds.value.length) return false;
@@ -86,10 +80,10 @@ const goToPage = (pageNum) => {
                 <VideoCard :video="video" />
                 <div
                     v-if="shouldShowAd(index, videos.data.length)"
-                    class="col-span-1 flex items-start justify-center rounded-xl p-2"
+                    class="rounded-xl p-2"
+                    :class="mobileGrid === 2 ? 'col-span-2 sm:col-span-1' : 'col-span-1'"
                 >
-                    <AdSlot :html="getGridAd().code" class="hidden sm:block" />
-                    <AdSlot :html="getGridAd().mobileCode" class="sm:hidden" />
+                    <GridAdSlot :ads="gridAds" />
                 </div>
                 <SponsoredVideoCard
                     v-if="getSponsoredCard(index)"
