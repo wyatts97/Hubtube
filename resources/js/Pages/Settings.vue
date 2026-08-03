@@ -2,7 +2,7 @@
 import { Head, useForm, usePage, router } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { User, Lock, Bell, Shield, Wallet, ExternalLink, Loader2, Camera, ImageIcon, Trash2, AlertTriangle } from 'lucide-vue-next';
+import { User, Lock, Bell, Shield, Wallet, ExternalLink, Loader2, Camera, ImageIcon, Trash2, AlertTriangle, Download, ShieldCheck, KeyRound } from 'lucide-vue-next';
 import { usePushNotifications } from '@/Composables/usePushNotifications';
 import { useI18n } from '@/Composables/useI18n';
 
@@ -123,6 +123,13 @@ const goToProPortal = () => {
     router.visit('/pro/portal', { preserveScroll: true });
 };
 
+const exportingData = ref(false);
+const downloadMyData = () => {
+    exportingData.value = true;
+    window.location.href = '/settings/export-data';
+    setTimeout(() => { exportingData.value = false; }, 2000);
+};
+
 const showDeleteConfirm = ref(false);
 const deleteForm = useForm({
     password: '',
@@ -140,6 +147,106 @@ const confirmDeleteAccount = () => {
 };
 
 const monetizationEnabled = computed(() => page.props.app?.monetization_enabled !== false);
+
+// --- Two-Factor Authentication ---
+const twoFactorEnabled = ref(page.props.twoFactorEnabled ?? false);
+const twoFactorStep = ref('idle'); // idle | setup | confirm | recovery
+const twoFactorQrCode = ref('');
+const twoFactorSecret = ref('');
+const twoFactorCode = ref('');
+const twoFactorError = ref('');
+const twoFactorProcessing = ref(false);
+const recoveryCodes = ref([]);
+const showDisable2fa = ref(false);
+const disable2faPassword = ref('');
+const disable2faError = ref('');
+
+const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+
+const apiPost = async (url, body = {}) => {
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': csrfToken(),
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(body),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        const message = data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Something went wrong.');
+        throw new Error(message);
+    }
+    return data;
+};
+
+const startTwoFactorSetup = async () => {
+    twoFactorError.value = '';
+    twoFactorProcessing.value = true;
+    try {
+        const data = await apiPost('/settings/two-factor/enable');
+        twoFactorQrCode.value = data.qr_code_svg;
+        twoFactorSecret.value = data.secret;
+        twoFactorStep.value = 'setup';
+    } catch (e) {
+        twoFactorError.value = e.message;
+    } finally {
+        twoFactorProcessing.value = false;
+    }
+};
+
+const confirmTwoFactorSetup = async () => {
+    twoFactorError.value = '';
+    twoFactorProcessing.value = true;
+    try {
+        const data = await apiPost('/settings/two-factor/confirm', { code: twoFactorCode.value });
+        recoveryCodes.value = data.recovery_codes;
+        twoFactorEnabled.value = true;
+        twoFactorStep.value = 'recovery';
+        twoFactorCode.value = '';
+    } catch (e) {
+        twoFactorError.value = e.message;
+    } finally {
+        twoFactorProcessing.value = false;
+    }
+};
+
+const finishTwoFactorSetup = () => {
+    twoFactorStep.value = 'idle';
+    recoveryCodes.value = [];
+};
+
+const regenerateRecoveryCodes = async () => {
+    twoFactorError.value = '';
+    twoFactorProcessing.value = true;
+    try {
+        const data = await apiPost('/settings/two-factor/recovery-codes');
+        recoveryCodes.value = data.recovery_codes;
+        twoFactorStep.value = 'recovery';
+    } catch (e) {
+        twoFactorError.value = e.message;
+    } finally {
+        twoFactorProcessing.value = false;
+    }
+};
+
+const disableTwoFactor = async () => {
+    disable2faError.value = '';
+    twoFactorProcessing.value = true;
+    try {
+        await apiPost('/settings/two-factor/disable', { password: disable2faPassword.value });
+        twoFactorEnabled.value = false;
+        showDisable2fa.value = false;
+        disable2faPassword.value = '';
+        twoFactorStep.value = 'idle';
+    } catch (e) {
+        disable2faError.value = e.message;
+    } finally {
+        twoFactorProcessing.value = false;
+    }
+};
 
 const tabs = computed(() => {
     const items = [
@@ -294,6 +401,81 @@ const tabs = computed(() => {
                         </form>
                     </div>
 
+                    <!-- Two-Factor Authentication -->
+                    <div v-if="activeTab === 'password'" class="card p-6 mt-6">
+                        <div class="flex items-center gap-3 mb-4">
+                            <ShieldCheck class="w-5 h-5 text-accent" />
+                            <h2 class="text-lg font-semibold text-text-primary">Two-Factor Authentication</h2>
+                        </div>
+
+                        <!-- Idle: show status -->
+                        <template v-if="twoFactorStep === 'idle'">
+                            <p class="text-sm mb-4 text-text-secondary">
+                                Add an extra layer of security to your account by requiring an authentication code from your phone in addition to your password.
+                            </p>
+                            <div v-if="twoFactorEnabled" class="flex items-center gap-3 flex-wrap">
+                                <span class="px-3 py-1 rounded-full text-sm font-medium bg-accent" style="color: white;">Enabled</span>
+                                <button @click="regenerateRecoveryCodes" :disabled="twoFactorProcessing" class="btn btn-secondary text-sm">
+                                    Regenerate Recovery Codes
+                                </button>
+                                <button @click="showDisable2fa = true" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors">
+                                    Disable 2FA
+                                </button>
+                            </div>
+                            <button v-else @click="startTwoFactorSetup" :disabled="twoFactorProcessing" class="btn btn-primary text-sm">
+                                <Loader2 v-if="twoFactorProcessing" class="w-4 h-4 animate-spin mr-1" />
+                                Enable Two-Factor Authentication
+                            </button>
+                            <p v-if="twoFactorError" class="text-red-500 text-sm mt-2">{{ twoFactorError }}</p>
+                        </template>
+
+                        <!-- Setup: show QR code + confirm form -->
+                        <template v-else-if="twoFactorStep === 'setup'">
+                            <p class="text-sm mb-4 text-text-secondary">
+                                Scan this QR code with your authenticator app (Google Authenticator, Authy, 1Password, etc.), then enter the 6-digit code below to confirm.
+                            </p>
+                            <div class="flex flex-col items-center gap-3 mb-4">
+                                <div class="p-3 bg-white rounded-lg inline-block" v-html="twoFactorQrCode"></div>
+                                <p class="text-xs text-text-muted">Or enter this key manually:</p>
+                                <code class="text-sm px-3 py-1 rounded bg-bg-secondary text-text-primary break-all">{{ twoFactorSecret }}</code>
+                            </div>
+                            <form @submit.prevent="confirmTwoFactorSetup" class="space-y-3 max-w-xs mx-auto">
+                                <input
+                                    v-model="twoFactorCode"
+                                    type="text"
+                                    inputmode="numeric"
+                                    placeholder="123456"
+                                    class="input text-center tracking-widest"
+                                    autofocus
+                                    required
+                                />
+                                <p v-if="twoFactorError" class="text-red-500 text-sm">{{ twoFactorError }}</p>
+                                <div class="flex gap-2">
+                                    <button type="button" @click="twoFactorStep = 'idle'" class="btn btn-ghost flex-1 text-sm">Cancel</button>
+                                    <button type="submit" :disabled="twoFactorProcessing" class="btn btn-primary flex-1 text-sm">
+                                        <Loader2 v-if="twoFactorProcessing" class="w-4 h-4 animate-spin" />
+                                        <span v-else>Confirm</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </template>
+
+                        <!-- Recovery codes shown once after confirm / regenerate -->
+                        <template v-else-if="twoFactorStep === 'recovery'">
+                            <div class="flex items-center gap-2 mb-3">
+                                <KeyRound class="w-4 h-4 text-accent" />
+                                <p class="font-medium text-text-primary">Save your recovery codes</p>
+                            </div>
+                            <p class="text-sm mb-3 text-text-secondary">
+                                Store these codes somewhere safe. Each one can be used once to sign in if you lose access to your authenticator app.
+                            </p>
+                            <div class="grid grid-cols-2 gap-2 p-4 rounded-lg bg-bg-secondary font-mono text-sm mb-4">
+                                <span v-for="rc in recoveryCodes" :key="rc" class="text-text-primary">{{ rc }}</span>
+                            </div>
+                            <button @click="finishTwoFactorSetup" class="btn btn-primary text-sm">I've saved these codes</button>
+                        </template>
+                    </div>
+
                     <!-- Notifications Tab -->
                     <div v-if="activeTab === 'notifications'" class="card p-6">
                         <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.notification_prefs') || 'Notification Preferences' }}</h2>
@@ -396,6 +578,18 @@ const tabs = computed(() => {
                                 {{ t('settings.save_changes') || 'Save Privacy Settings' }}
                             </button>
                         </form>
+
+                        <div class="mt-6 pt-6 border-t border-border">
+                            <h3 class="font-medium mb-1 text-text-primary">Download My Data</h3>
+                            <p class="text-sm mb-3 text-text-secondary">
+                                Export a copy of your profile, videos, comments, playlists, watch history, and wallet transactions as a JSON file.
+                            </p>
+                            <button @click="downloadMyData" :disabled="exportingData" class="btn btn-secondary gap-2">
+                                <Loader2 v-if="exportingData" class="w-4 h-4 animate-spin" />
+                                <Download v-else class="w-4 h-4" />
+                                Download My Data
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Billing Tab -->
@@ -464,6 +658,38 @@ const tabs = computed(() => {
                 </div>
             </div>
         </div>
+
+        <!-- Disable 2FA Confirmation Modal -->
+        <Teleport to="body">
+            <div v-if="showDisable2fa" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showDisable2fa = false">
+                <div class="fixed inset-0 bg-black/60" @click="showDisable2fa = false"></div>
+                <div class="relative w-full max-w-md rounded-xl p-6 shadow-2xl bg-bg-card">
+                    <h3 class="text-lg font-semibold mb-4 text-text-primary">Disable Two-Factor Authentication</h3>
+                    <form @submit.prevent="disableTwoFactor">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-1 text-text-secondary">Password</label>
+                            <input
+                                v-model="disable2faPassword"
+                                type="password"
+                                class="w-full px-3 py-2 rounded-lg border text-sm bg-bg-secondary border-border text-text-primary"
+                                placeholder="Enter your password"
+                                required
+                            />
+                            <p v-if="disable2faError" class="text-red-500 text-sm mt-1">{{ disable2faError }}</p>
+                        </div>
+                        <div class="flex gap-3 justify-end">
+                            <button type="button" @click="showDisable2fa = false; disable2faPassword = ''" class="px-4 py-2 rounded-lg text-sm font-medium text-text-secondary bg-bg-secondary">
+                                Cancel
+                            </button>
+                            <button type="submit" :disabled="twoFactorProcessing || !disable2faPassword" class="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
+                                <Loader2 v-if="twoFactorProcessing" class="w-4 h-4 animate-spin inline" />
+                                <span v-else>Disable</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </Teleport>
 
         <!-- Delete Account Confirmation Modal -->
         <Teleport to="body">

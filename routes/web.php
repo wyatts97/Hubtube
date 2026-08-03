@@ -5,6 +5,8 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\SocialLoginController;
+use App\Http\Controllers\Auth\TwoFactorAuthenticationController;
+use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ContactController;
@@ -367,6 +369,9 @@ Route::middleware('age.verified')->group(function () {
         Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->name('password.email');
         Route::get('/reset-password/{token}', [PasswordResetController::class, 'resetForm'])->name('password.reset');
         Route::post('/reset-password', [PasswordResetController::class, 'reset'])->name('password.update');
+
+        Route::get('/two-factor-challenge', [TwoFactorChallengeController::class, 'create'])->name('two-factor.login');
+        Route::post('/two-factor-challenge', [TwoFactorChallengeController::class, 'store'])->middleware('throttle:10,1');
     });
 
     Route::middleware('auth')->group(function () {
@@ -448,6 +453,15 @@ Route::middleware('age.verified')->group(function () {
         Route::put('/settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications');
         Route::put('/settings/privacy', [SettingsController::class, 'updatePrivacy'])->name('settings.privacy');
         Route::delete('/settings/account', [SettingsController::class, 'deleteAccount'])->name('settings.delete-account');
+        Route::get('/settings/export-data', [SettingsController::class, 'exportData'])->middleware('throttle:3,60')->name('settings.export-data');
+
+        Route::prefix('settings/two-factor')->name('settings.two-factor.')->group(function () {
+            Route::get('/status', [TwoFactorAuthenticationController::class, 'status'])->name('status');
+            Route::post('/enable', [TwoFactorAuthenticationController::class, 'enable'])->middleware('throttle:5,1')->name('enable');
+            Route::post('/confirm', [TwoFactorAuthenticationController::class, 'confirm'])->middleware('throttle:10,1')->name('confirm');
+            Route::post('/disable', [TwoFactorAuthenticationController::class, 'disable'])->middleware('throttle:5,1')->name('disable');
+            Route::post('/recovery-codes', [TwoFactorAuthenticationController::class, 'regenerateRecoveryCodes'])->middleware('throttle:5,1')->name('recovery-codes');
+        });
 
         // Notifications
         Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

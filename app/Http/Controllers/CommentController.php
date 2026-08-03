@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Setting;
 use App\Models\Comment;
 use App\Models\Video;
+use App\Notifications\CommentReplyNotification;
+use App\Notifications\NewCommentNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +45,20 @@ class CommentController extends Controller
         $video->increment('comments_count');
 
         $comment->load('user');
+
+        if ($validated['parent_id'] ?? null) {
+            $parentComment = Comment::with('user')->find($validated['parent_id']);
+            if ($parentComment && $parentComment->user && $parentComment->user_id !== $request->user()->id) {
+                $comment->setRelation('video', $video);
+                $parentComment->user->notify(new CommentReplyNotification($comment, $parentComment));
+            }
+        } elseif ($video->user_id !== $request->user()->id) {
+            $video->loadMissing('user');
+            if ($video->user) {
+                $comment->setRelation('video', $video);
+                $video->user->notify(new NewCommentNotification($comment));
+            }
+        }
 
         return response()->json(['comment' => $comment], 201);
     }

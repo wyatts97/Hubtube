@@ -43,6 +43,10 @@ class LoginRequest extends FormRequest
             if (Auth::attempt([$loginField => $this->login, 'password' => $this->password], $this->boolean('remember'))) {
                 RateLimiter::clear($this->throttleKey());
 
+                if ($this->deferForTwoFactor(Auth::user(), $this->boolean('remember'))) {
+                    return;
+                }
+
                 if (Auth::user()->is_admin) {
                     AdminLogger::auth('Admin login', ['ip' => $this->ip()]);
                 }
@@ -97,6 +101,10 @@ class LoginRequest extends FormRequest
         $user = User::find($row->id);
         Auth::login($user, $this->boolean('remember'));
 
+        if ($this->deferForTwoFactor($user, $this->boolean('remember'))) {
+            return true;
+        }
+
         AdminLogger::auth('WordPress password migrated to bcrypt', [
             'user_id' => $user->id,
             'username' => $user->username,
@@ -104,6 +112,30 @@ class LoginRequest extends FormRequest
         ]);
 
         return true;
+    }
+
+    /**
+     * If the user has two-factor authentication enabled, log them out of the
+     * fully-authenticated session and stash their id so the 2FA challenge
+     * page can finish the login. Returns true if deferred.
+     */
+    private function deferForTwoFactor(User $user, bool $remember): bool
+    {
+        if (!$user->hasTwoFactorEnabled()) {
+            return false;
+        }
+
+        Auth::logout();
+
+        $this->session()->put('two_factor.user_id', $user->id);
+        $this->session()->put('two_factor.remember', $remember);
+
+        return true;
+    }
+
+    public function wantsTwoFactorChallenge(): bool
+    {
+        return $this->session()->has('two_factor.user_id');
     }
 
     public function ensureIsNotRateLimited(): void

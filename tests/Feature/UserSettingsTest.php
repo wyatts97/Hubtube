@@ -96,6 +96,34 @@ test('wordpress-hash user can delete account from settings', function () {
     $this->assertGuest();
 });
 
+test('guest cannot export data', function () {
+    $this->get('/settings/export-data')->assertRedirect('/login');
+});
+
+test('authenticated user can export their data as json', function () {
+    $user = asUser();
+
+    $response = $this->get('/settings/export-data');
+
+    $response->assertStatus(200);
+    $response->assertHeader('content-type', 'application/json');
+
+    $content = json_decode($response->streamedContent(), true);
+    expect($content['profile']['id'])->toBe($user->id);
+    expect($content['profile']['username'])->toBe($user->username);
+    expect($content)->toHaveKeys(['exported_at', 'profile', 'videos', 'comments', 'likes', 'playlists', 'subscriptions', 'watch_history', 'wallet_transactions', 'notifications']);
+});
+
+test('data export is rate limited', function () {
+    asUser();
+
+    for ($i = 0; $i < 3; $i++) {
+        $this->get('/settings/export-data')->assertStatus(200);
+    }
+
+    $this->get('/settings/export-data')->assertStatus(429);
+});
+
 test('guest cannot access dashboard', function () {
     $this->get('/dashboard')->assertRedirect('/login');
 });

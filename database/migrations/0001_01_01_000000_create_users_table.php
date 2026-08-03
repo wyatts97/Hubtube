@@ -27,7 +27,7 @@ return new class extends Migration
             $table->boolean('is_pro')->default(false);
             $table->boolean('is_admin')->default(false);
             $table->boolean('two_factor_enabled')->default(false);
-            $table->string('two_factor_secret')->nullable();
+            $table->text('two_factor_secret')->nullable();
             $table->timestamp('age_verified_at')->nullable();
             $table->timestamp('last_active_at')->nullable();
             $table->json('settings')->nullable();

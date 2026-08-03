@@ -22,6 +22,12 @@ class LoginController extends Controller
     {
         $request->authenticate();
 
+        if ($request->wantsTwoFactorChallenge()) {
+            $request->session()->regenerate();
+
+            return redirect()->route('two-factor.login');
+        }
+
         $request->session()->regenerate();
 
         $user = Auth::user();

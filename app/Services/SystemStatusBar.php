@@ -8,6 +8,7 @@ use Throwable;
 use App\Models\Comment;
 use App\Models\ContactMessage;
 use App\Models\Image;
+use App\Models\Report;
 use App\Models\Setting;
 use App\Models\WithdrawalRequest;
 use App\Services\FfmpegService;
@@ -16,6 +17,7 @@ use App\Filament\Resources\VideoResource;
 use App\Filament\Resources\ImageResource;
 use App\Filament\Resources\CommentResource;
 use App\Filament\Resources\ContactMessageResource;
+use App\Filament\Resources\ReportResource;
 use App\Filament\Resources\WithdrawalRequestResource;
 use App\Filament\Pages\ScheduledVideos;
 use Illuminate\Support\Facades\Storage;
@@ -75,6 +77,16 @@ class SystemStatusBar
             tone: 'warning',
             count: fn () => Comment::where('is_approved', false)->count(),
             url: fn () => CommentResource::getUrl('index'),
+        );
+
+        $items[] = $this->buildItem(
+            key: 'reports',
+            label: 'Pending reports',
+            shortLabel: 'Reports',
+            icon: 'phosphor-flag',
+            tone: 'danger',
+            count: fn () => Report::whereIn('status', [Report::STATUS_PENDING, Report::STATUS_REVIEWING])->count(),
+            url: fn () => ReportResource::getUrl('index'),
         );
 
         $items[] = $this->buildItem(

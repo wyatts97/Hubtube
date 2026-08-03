@@ -59,6 +59,8 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     protected $appends = [
@@ -77,6 +79,9 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
             'is_pro' => 'boolean',
             'is_admin' => 'boolean',
             'settings' => 'array',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
+            'two_factor_confirmed_at' => 'datetime',
         ];
     }
 
@@ -172,6 +177,29 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     public function withdrawalRequests(): HasMany
     {
         return $this->hasMany(WithdrawalRequest::class);
+    }
+
+    public function hasTwoFactorEnabled(): bool
+    {
+        return !is_null($this->two_factor_secret) && !is_null($this->two_factor_confirmed_at);
+    }
+
+    /**
+     * Consume a recovery code if valid, removing it so it cannot be reused.
+     */
+    public function consumeRecoveryCode(string $code): bool
+    {
+        $codes = $this->two_factor_recovery_codes ?? [];
+        $index = array_search($code, $codes, true);
+
+        if ($index === false) {
+            return false;
+        }
+
+        unset($codes[$index]);
+        $this->forceFill(['two_factor_recovery_codes' => array_values($codes)])->save();
+
+        return true;
     }
 
     public function isAgeVerified(): bool

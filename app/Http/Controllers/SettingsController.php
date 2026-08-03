@@ -17,18 +17,20 @@ use Illuminate\Validation\Rules\Password;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use App\Models\Setting;
+use App\Services\UserDataExportService;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class SettingsController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
         return Inertia::render('Settings', [
             'adminNotificationSettings' => [
                 'email_notifications' => (bool) filter_var(Setting::get('email_notify_new-subscriber', true), FILTER_VALIDATE_BOOLEAN),
                 'subscription_notifications' => (bool) filter_var(Setting::get('email_notify_new-subscriber', true), FILTER_VALIDATE_BOOLEAN),
             ],
+            'twoFactorEnabled' => $request->user()->hasTwoFactorEnabled(),
         ]);
     }
 
@@ -183,6 +185,19 @@ class SettingsController extends Controller
         ]);
 
         return redirect()->route('settings')->with('success', 'Privacy settings updated.');
+    }
+
+    public function exportData(Request $request, UserDataExportService $exporter)
+    {
+        $user = $request->user();
+        $data = $exporter->build($user);
+        $filename = $exporter->filename($user);
+
+        Log::info('User requested data export', ['user_id' => $user->id]);
+
+        return response()->streamDownload(function () use ($data) {
+            echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        }, $filename, ['Content-Type' => 'application/json']);
     }
 
     public function deleteAccount(Request $request): RedirectResponse

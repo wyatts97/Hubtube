@@ -37,6 +37,7 @@ class Notification extends Model
     const TYPE_VIDEO_APPROVED = 'video_approved';
     const TYPE_VIDEO_PROCESSED = 'video_processed';
     const TYPE_VIDEO_REJECTED = 'video_rejected';
+    const TYPE_REPORT_SUBMITTED = 'report_submitted';
 
     public function user(): BelongsTo
     {

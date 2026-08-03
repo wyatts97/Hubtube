@@ -7,6 +7,7 @@ use App\Models\Comment;
 use App\Models\User;
 use App\Models\ContactMessage;
 use App\Models\Report;
+use App\Notifications\ReportSubmittedNotification;
 use App\Services\EmailService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -92,6 +93,10 @@ class ReportController extends Controller
             'reported_content' => $reportedContent,
             'description' => $validated['description'] ?? '(No additional details)',
         ]);
+
+        User::where('is_admin', true)->get()->each(
+            fn (User $admin) => $admin->notify(new ReportSubmittedNotification($report, $reportedContent))
+        );
 
         return response()->json(['success' => true, 'message' => 'Report submitted successfully'], 201);
     }

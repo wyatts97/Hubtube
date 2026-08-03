@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Database\QueryException;
 use App\Models\Like;
 use App\Models\Video;
+use App\Notifications\VideoLikeNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +43,13 @@ class LikeController extends Controller
                     'type' => 'like',
                 ]);
                 $video->increment('likes_count');
+
+                if ($video->user_id !== $request->user()->id) {
+                    $video->loadMissing('user');
+                    if ($video->user) {
+                        $video->user->notify(new VideoLikeNotification($video, $request->user()));
+                    }
+                }
             }
 
             return response()->json([

@@ -49,6 +49,7 @@ use App\Models\User;
 use App\Models\Video;
 use App\Events\VideoProcessed;
 use App\Models\Notification as AppNotification;
+use App\Notifications\VideoRejectedNotification;
 use App\Services\EmailService;
 use App\Services\VideoService;
 use Filament\Forms;
@@ -567,11 +568,7 @@ class VideoResource extends Resource
 
                             $record->loadMissing('user');
                             if ($record->user) {
-                                EmailService::sendToUser('video-rejected', $record->user->email, [
-                                    'username' => $record->user->username,
-                                    'video_title' => $record->title,
-                                    'rejection_reason' => $reason,
-                                ]);
+                                $record->user->notify(new VideoRejectedNotification($record, $reason));
                             }
                         })
                         ->visible(fn (Video $record) => !$record->is_approved && $record->status === 'processed'),
