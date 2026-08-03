@@ -17,6 +17,7 @@
         "guzzlehttp/guzzle": "^7.8",
         "inertiajs/inertia-laravel": "^2.0",
         "intervention/image": "^3.0",
+        "laboiteacode/filament-logs-explorer": "^1.0",
         "laravel/cashier": "^15.0",
         "laravel/framework": "^12.0",
         "laravel/horizon": "^5.24",

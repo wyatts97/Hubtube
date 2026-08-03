@@ -90,6 +90,12 @@ class AdminPanelProvider extends PanelProvider
                 ->maxWidth(460);
         }
 
+        // Log file viewer (slide-over with search, keyboard nav, download, delete)
+        if (class_exists(FilamentLogsExplorerPlugin::class)) {
+            $plugins[] = FilamentLogsExplorerPlugin::make()
+                ->navigationGroup('Tools');
+        }
+
         return $plugins;
     }
 

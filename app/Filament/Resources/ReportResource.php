@@ -14,6 +14,8 @@ use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -171,9 +173,22 @@ class ReportResource extends Resource
             ->recordActions([
                 ViewAction::make(),
                 ActionGroup::make(static::resolutionActions()),
+                DeleteAction::make()
+                    ->label('Delete')
+                    ->icon('phosphor-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalDescription('This will permanently delete the report and its associated inbox entry. This action cannot be undone.'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    DeleteBulkAction::make()
+                        ->label('Delete')
+                        ->icon('phosphor-trash')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalDescription('This will permanently delete the selected reports and their associated inbox entries.')
+                        ->deselectRecordsAfterCompletion(),
                     BulkAction::make('dismiss')
                         ->label('Dismiss')
                         ->icon('phosphor-x-circle')
