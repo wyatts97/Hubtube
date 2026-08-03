@@ -35,6 +35,7 @@ use Filafly\Icons\Phosphor\PhosphorIcons;
 use FinityLabs\FinMail\FinMailPlugin;
 use Muazzam\SlickScrollbar\SlickScrollbarPlugin;
 use Martin6363\SidebarResize\SidebarResizePlugin;
+use Boquizo\FilamentLogViewer\FilamentLogViewerPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -88,6 +89,14 @@ class AdminPanelProvider extends PanelProvider
             $plugins[] = SidebarResizePlugin::make()
                 ->minWidth(220)
                 ->maxWidth(460);
+        }
+
+        // Log viewer (browse, filter, and manage Laravel log files)
+        if (class_exists(FilamentLogViewerPlugin::class)) {
+            $plugins[] = FilamentLogViewerPlugin::make()
+                ->navigationGroup('Tools')
+                ->navigationSort(95)
+                ->navigationLabel('Logs');
         }
 
         return $plugins;
