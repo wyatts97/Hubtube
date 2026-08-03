@@ -6,11 +6,18 @@ use LaBoiteACode\FilamentLogsExplorer\Pages\LogsExplorer as BaseLogsExplorer;
 
 class Logs extends BaseLogsExplorer
 {
-    protected static $navigationLabel = 'Logs';
+    public static function getNavigationLabel(): string
+    {
+        return 'Logs';
+    }
 
-    protected static $navigationIcon = 'heroicon-o-document-magnifying-glass';
+    public static function getNavigationGroup(): string|\UnitEnum|null
+    {
+        return 'Tools';
+    }
 
-    protected static $navigationGroup = 'Tools';
-
-    protected static $navigationSort = 95;
+    public static function getNavigationSort(): ?int
+    {
+        return 95;
+    }
 }
