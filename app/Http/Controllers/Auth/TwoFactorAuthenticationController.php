@@ -7,6 +7,7 @@ use App\Services\TwoFactorAuthenticationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class TwoFactorAuthenticationController extends Controller
@@ -23,18 +24,31 @@ class TwoFactorAuthenticationController extends Controller
     {
         $user = $request->user();
 
-        $secret = $this->twoFactor->generateSecretKey();
+        try {
+            $secret = $this->twoFactor->generateSecretKey();
 
-        $user->forceFill([
-            'two_factor_secret' => $secret,
-            'two_factor_recovery_codes' => null,
-            'two_factor_confirmed_at' => null,
-        ])->save();
+            $user->forceFill([
+                'two_factor_secret' => $secret,
+                'two_factor_recovery_codes' => null,
+                'two_factor_confirmed_at' => null,
+            ])->save();
 
-        return response()->json([
-            'qr_code_svg' => $this->twoFactor->qrCodeSvg($user, $secret),
-            'secret' => $secret,
-        ]);
+            return response()->json([
+                'qr_code_svg' => $this->twoFactor->qrCodeSvg($user, $secret),
+                'secret' => $secret,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('2FA enable failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'message' => 'Two-factor setup could not be started. Please ensure the server dependencies are installed.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

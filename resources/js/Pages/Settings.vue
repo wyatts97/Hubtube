@@ -379,21 +379,21 @@ const tabs = computed(() => {
                         <form @submit.prevent="updatePassword" class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.current_password') || 'Current Password' }}</label>
-                                <input v-model="passwordForm.current_password" type="password" class="input" />
+                                <input v-model="passwordForm.current_password" type="password" autocomplete="current-password" class="input" />
                                 <p v-if="passwordForm.errors.current_password" class="text-red-500 text-sm mt-1">
                                     {{ passwordForm.errors.current_password }}
                                 </p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.new_password') || 'New Password' }}</label>
-                                <input v-model="passwordForm.password" type="password" class="input" />
+                                <input v-model="passwordForm.password" type="password" autocomplete="new-password" class="input" />
                                 <p v-if="passwordForm.errors.password" class="text-red-500 text-sm mt-1">
                                     {{ passwordForm.errors.password }}
                                 </p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.confirm_password') || 'Confirm New Password' }}</label>
-                                <input v-model="passwordForm.password_confirmation" type="password" class="input" />
+                                <input v-model="passwordForm.password_confirmation" type="password" autocomplete="new-password" class="input" />
                             </div>
                             <button type="submit" :disabled="passwordForm.processing" class="btn btn-primary">
                                 {{ t('settings.update_password') || 'Update Password' }}
@@ -671,6 +671,7 @@ const tabs = computed(() => {
                             <input
                                 v-model="disable2faPassword"
                                 type="password"
+                                autocomplete="current-password"
                                 class="w-full px-3 py-2 rounded-lg border text-sm bg-bg-secondary border-border text-text-primary"
                                 placeholder="Enter your password"
                                 required
@@ -717,6 +718,7 @@ const tabs = computed(() => {
                             <input
                                 v-model="deleteForm.password"
                                 type="password"
+                                autocomplete="current-password"
                                 class="w-full px-3 py-2 rounded-lg border text-sm bg-bg-secondary border-border text-text-primary"
                                 placeholder="Enter your password"
                                 required

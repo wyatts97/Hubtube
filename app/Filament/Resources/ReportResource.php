@@ -179,11 +179,18 @@ class ReportResource extends Resource
                         ->icon('phosphor-x-circle')
                         ->color('gray')
                         ->requiresConfirmation()
-                        ->action(fn (Collection $records) => $records->each(
-                            fn (Report $r) => $r->status === Report::STATUS_PENDING || $r->status === Report::STATUS_REVIEWING
-                                ? $r->dismiss(auth()->user())
-                                : null
-                        ))
+                        ->action(function (Collection $records) {
+                            $userId = auth()->id();
+                            $records->each(function (Report $r) use ($userId) {
+                                if (in_array($r->status, [Report::STATUS_PENDING, Report::STATUS_REVIEWING])) {
+                                    $r->update([
+                                        'status' => Report::STATUS_DISMISSED,
+                                        'resolved_at' => now(),
+                                        'resolved_by' => $userId,
+                                    ]);
+                                }
+                            });
+                        })
                         ->deselectRecordsAfterCompletion(),
                 ]),
             ])
