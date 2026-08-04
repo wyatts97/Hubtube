@@ -143,9 +143,9 @@ const flash = computed(() => ({
             </div>
 
             <!-- How to Earn + Redeem -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 sm:mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 sm:mb-6 items-stretch">
                 <!-- How to Earn -->
-                <div class="card">
+                <div class="card h-full">
                     <div class="p-4 border-b border-border">
                         <h2 class="font-semibold text-text-primary flex items-center gap-2">
                             <TrendingUp class="w-4 h-4" />
@@ -168,7 +168,7 @@ const flash = computed(() => ({
                 </div>
 
                 <!-- Redeem -->
-                <div class="card">
+                <div class="card h-full">
                     <div class="p-4 border-b border-border">
                         <h2 class="font-semibold text-text-primary flex items-center gap-2">
                             <Sparkles class="w-4 h-4" />
@@ -202,10 +202,10 @@ const flash = computed(() => ({
                             <button
                                 v-else
                                 disabled
-                                class="w-full px-4 py-2 rounded-lg bg-bg-secondary text-text-muted cursor-not-allowed border border-border"
+                                class="w-full px-4 py-2.5 rounded-lg bg-zinc-700 text-zinc-300 cursor-not-allowed border border-zinc-600 flex items-center justify-center gap-2"
                                 :title="!redemptionEnabled ? 'Redemption is currently disabled' : `You need ${(redemptionCost - balance).toLocaleString()} more points`"
                             >
-                                <Sparkles class="w-4 h-4 inline mr-2" />
+                                <Sparkles class="w-4 h-4" />
                                 {{ !redemptionEnabled ? 'Redemption Disabled' : `Need ${(redemptionCost - balance).toLocaleString()} more pts` }}
                             </button>
                         </div>
