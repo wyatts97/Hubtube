@@ -51,23 +51,4 @@
     <form wire:submit="save">
         {{ $this->form }}
     </form>
-
-    <div class="mt-8">
-        <x-filament::section heading="Adjust User Points" class="fi-section" icon="phosphor-coins">
-            <form wire:submit="adjustPoints" class="space-y-4">
-                {{ $this->adjustForm }}
-                <div class="flex justify-end">
-                    <x-filament::button
-                        type="submit"
-                        color="primary"
-                        wire:loading.attr="disabled"
-                        wire:target="adjustPoints"
-                    >
-                        <span wire:loading.remove wire:target="adjustPoints">Adjust Points</span>
-                        <span wire:loading wire:target="adjustPoints">Adjusting...</span>
-                    </x-filament::button>
-                </div>
-            </form>
-        </x-filament::section>
-    </div>
 </x-filament-panels::page>

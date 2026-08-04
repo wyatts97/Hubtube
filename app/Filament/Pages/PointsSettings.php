@@ -35,7 +35,6 @@ class PointsSettings extends Page implements HasForms
     protected string $view = 'filament.pages.points-settings';
 
     public ?array $data = [];
-    public ?array $adjustData = [];
 
     public function mount(): void
     {
@@ -154,87 +153,58 @@ class PointsSettings extends Page implements HasForms
             Action::make('save')
                 ->label('Save Settings')
                 ->action('save'),
+
+            Action::make('adjust_points')
+                ->label('Adjust User Points')
+                ->icon('phosphor-coins')
+                ->color('warning')
+                ->schema([
+                    Select::make('user_id')
+                        ->label('User')
+                        ->searchable()
+                        ->getSearchResultsUsing(fn (string $search): array =>
+                            User::where('username', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%")
+                                ->limit(20)
+                                ->get()
+                                ->mapWithKeys(fn (User $u) => [$u->id => "{$u->username} ({$u->points_balance} pts)"])
+                                ->toArray()
+                        )
+                        ->getOptionLabelUsing(fn ($value): ?string =>
+                            User::find($value)?->username
+                        )
+                        ->required(),
+                    TextInput::make('points')
+                        ->label('Points (use negative to deduct)')
+                        ->numeric()
+                        ->required(),
+                    TextInput::make('reason')
+                        ->label('Reason')
+                        ->helperText('Shown to user in their points history')
+                        ->required(),
+                ])
+                ->action(function (array $data) {
+                    $user = User::findOrFail($data['user_id']);
+                    $points = (int) $data['points'];
+
+                    if ($points === 0) {
+                        Notification::make()->title('Points cannot be zero.')->danger()->send();
+                        return;
+                    }
+
+                    $service = app(PointsService::class);
+
+                    if ($points > 0) {
+                        $service->award($user, PointsTransaction::TYPE_ADMIN_ADJUSTMENT, $points, null, "Admin adjustment: {$data['reason']}");
+                    } else {
+                        $service->spend($user, abs($points), PointsTransaction::TYPE_ADMIN_ADJUSTMENT, "Admin adjustment: {$data['reason']}");
+                    }
+
+                    AdminLogger::log('Adjusted ' . number_format($points) . ' points for user ' . $user->username . ': ' . $data['reason']);
+
+                    Notification::make()->title('Points adjusted successfully for ' . $user->username)->success()->send();
+                }),
         ];
-    }
-
-    protected function getForms(): array
-    {
-        return [
-            'form',
-            'adjustForm',
-        ];
-    }
-
-    public function adjustForm(Schema $schema): Schema
-    {
-        return $schema
-            ->components([
-                Select::make('user_id')
-                    ->label('User')
-                    ->searchable()
-                    ->getSearchResultsUsing(fn (string $search): array =>
-                        User::where('username', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%")
-                            ->limit(20)
-                            ->get()
-                            ->mapWithKeys(fn (User $u) => [$u->id => "{$u->username} ({$u->points_balance} pts)"])
-                            ->toArray()
-                    )
-                    ->getOptionLabelUsing(fn ($value): ?string =>
-                        User::find($value)?->username
-                    )
-                    ->native(false)
-                    ->live()
-                    ->required(),
-                TextInput::make('points')
-                    ->label('Points (negative to deduct)')
-                    ->numeric()
-                    ->required(),
-                TextInput::make('reason')
-                    ->label('Reason')
-                    ->helperText('Shown to user in their points history')
-                    ->required(),
-            ])
-            ->statePath('adjustData');
-    }
-
-    public function adjustPoints(): void
-    {
-        $data = $this->adjustForm->getState();
-        $user = User::find($data['user_id']);
-        $points = (int) $data['points'];
-
-        if (!$user) {
-            Notification::make()->title('User not found.')->danger()->send();
-            return;
-        }
-
-        if ($points === 0) {
-            Notification::make()->title('Points cannot be zero.')->danger()->send();
-            return;
-        }
-
-        $service = app(PointsService::class);
-
-        if ($points > 0) {
-            $service->award($user, PointsTransaction::TYPE_ADMIN_ADJUSTMENT, $points, null, "Admin adjustment: {$data['reason']}");
-        } else {
-            try {
-                $service->spend($user, abs($points), PointsTransaction::TYPE_ADMIN_ADJUSTMENT, "Admin adjustment: {$data['reason']}");
-            } catch (\Exception $e) {
-                Notification::make()->title($e->getMessage())->danger()->send();
-                return;
-            }
-        }
-
-        AdminLogger::log('Adjusted ' . number_format($points) . ' points for user ' . $user->username . ': ' . $data['reason']);
-
-        Notification::make()
-            ->title('Points adjusted successfully for ' . $user->username)
-            ->success()
-            ->send();
-
-        $this->adjustForm->fill();
     }
 
     public function save(): void
