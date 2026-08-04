@@ -943,6 +943,17 @@
    prefixes aren't processed by the admin CSS pipeline).
    ─────────────────────────────────────────────────────────────── */
 
+/* Force log viewer icons to pure white in dark mode */
+.fi-fo-body .fi-ta-icon,
+.fi-fo-body .fi-ta-icon svg,
+.fi-fo-body .fi-ta-icon path,
+.fi-fo-body .fi-ac-icon,
+.fi-fo-body .fi-ac-icon svg,
+.fi-fo-body .fi-ac-icon path {
+    color: rgb(255 255 255) !important;
+    fill: rgb(255 255 255) !important;
+}
+
 /* Meta grid at top of detail page */
 .ht-log-meta-grid {
     display: grid;
