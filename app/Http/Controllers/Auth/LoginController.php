@@ -25,6 +25,9 @@ class LoginController extends Controller
         if ($request->wantsTwoFactorChallenge()) {
             $request->session()->regenerate();
 
+            // Save the intended URL so we can redirect after 2FA verification
+            $request->session()->put('two_factor.intended', $request->input('intended', '/'));
+
             return redirect()->route('two-factor.login');
         }
 

@@ -77,12 +77,15 @@ class TwoFactorChallengeController extends Controller
 
         $user->update(['last_active_at' => now()]);
 
+        // Get the intended URL from session, or use default based on user role
+        $intended = $request->session()->pull('two_factor.intended');
+
         if ($user->is_admin) {
             AdminLogger::auth('Admin login (2FA)', ['ip' => $request->ip()]);
 
-            return redirect()->intended(url('/admin'))->with('success', 'Welcome back!');
+            return redirect($intended ?? url('/admin'))->with('success', 'Welcome back!');
         }
 
-        return redirect()->intended(route('home'))->with('success', 'Welcome back!');
+        return redirect($intended ?? '/')->with('success', 'Welcome back!');
     }
 }
