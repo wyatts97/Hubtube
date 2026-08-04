@@ -186,11 +186,14 @@ const startTwoFactorSetup = async () => {
     twoFactorError.value = '';
     twoFactorProcessing.value = true;
     try {
+        console.log('Starting 2FA setup...');
         const data = await apiPost('/settings/two-factor/enable');
+        console.log('2FA setup response:', data);
         twoFactorQrCode.value = data.qr_code_svg;
         twoFactorSecret.value = data.secret;
         twoFactorStep.value = 'setup';
     } catch (e) {
+        console.error('2FA setup error:', e);
         twoFactorError.value = e.message;
     } finally {
         twoFactorProcessing.value = false;
