@@ -17,9 +17,9 @@ class TranslationService
 
     protected float $lastRequestTime = 0;
 
-    protected int $minDelayMs = 500;
+    protected int $minDelayMs = 1200;
 
-    protected int $maxRetries = 3;
+    protected int $maxRetries = 4;
 
     /**
      * Supported languages with native names and flag emoji.
@@ -179,8 +179,8 @@ class TranslationService
                     return $text;
                 }
 
-                // Exponential backoff: 2s, 4s, 8s
-                $backoff = pow(2, $attempt + 1) * 1000000; // microseconds
+                // Exponential backoff: 5s, 10s, 20s, 40s
+                $backoff = pow(2, $attempt) * 5000000; // microseconds
                 usleep((int) $backoff);
                 $attempt++;
             }
