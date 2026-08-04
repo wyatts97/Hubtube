@@ -157,6 +157,14 @@ class PointsSettings extends Page implements HasForms
         ];
     }
 
+    protected function getForms(): array
+    {
+        return [
+            'form',
+            'adjustForm',
+        ];
+    }
+
     public function adjustForm(Schema $schema): Schema
     {
         return $schema
@@ -175,6 +183,8 @@ class PointsSettings extends Page implements HasForms
                     ->getOptionLabelUsing(fn ($value): ?string =>
                         User::find($value)?->username
                     )
+                    ->native(false)
+                    ->live()
                     ->required(),
                 TextInput::make('points')
                     ->label('Points (negative to deduct)')

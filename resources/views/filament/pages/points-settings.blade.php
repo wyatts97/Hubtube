@@ -53,16 +53,21 @@
     </form>
 
     <div class="mt-8">
-        <h2 class="text-lg font-semibold text-white mb-4">Adjust User Points</h2>
-        <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-            <form wire:submit="adjustPoints">
+        <x-filament::section heading="Adjust User Points" class="fi-section" icon="phosphor-coins">
+            <form wire:submit="adjustPoints" class="space-y-4">
                 {{ $this->adjustForm }}
-                <div class="mt-4">
-                    <button type="submit" class="inline-flex items-center px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-500 transition-colors">
-                        Adjust Points
-                    </button>
+                <div class="flex justify-end">
+                    <x-filament::button
+                        type="submit"
+                        color="primary"
+                        wire:loading.attr="disabled"
+                        wire:target="adjustPoints"
+                    >
+                        <span wire:loading.remove wire:target="adjustPoints">Adjust Points</span>
+                        <span wire:loading wire:target="adjustPoints">Adjusting...</span>
+                    </x-filament::button>
                 </div>
             </form>
-        </div>
+        </x-filament::section>
     </div>
 </x-filament-panels::page>
