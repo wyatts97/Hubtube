@@ -15,6 +15,7 @@
         "register": "Register",
         "logout": "Logout",
         "wallet": "Wallet",
+        "rewards": "Rewards",
         "library": "Library",
         "create": "Create",
         "browse": "Browse",
@@ -312,6 +313,7 @@
         "total_likes": "Total Likes",
         "subscribers": "Subscribers",
         "wallet_balance": "Wallet Balance",
+        "points_balance": "Reward Points",
         "recent_videos": "Recent Videos",
         "top_performing": "Top Performing",
         "no_videos": "No videos yet",
@@ -395,5 +397,15 @@
         "filter": "Filter",
         "featured_desc": "Hand-picked featured content",
         "no_featured": "No featured videos yet"
+    },
+    "rewards": {
+        "title": "Rewards",
+        "subtitle": "Earn points by contributing content and redeem them for Ad-Free Pro.",
+        "points_balance": "Points Balance",
+        "how_to_earn": "How to Earn Points",
+        "redeem": "Redeem Points",
+        "history": "Points History",
+        "no_activity": "No points activity yet",
+        "no_activity_desc": "Upload videos, images, or post comments to start earning"
     }
 }
