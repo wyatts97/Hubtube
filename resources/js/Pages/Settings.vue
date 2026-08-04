@@ -431,47 +431,39 @@ const tabs = computed(() => {
 
                         <!-- Setup: show QR code + confirm form -->
                         <template v-else-if="twoFactorStep === 'setup'">
-                            <div class="flex flex-col lg:flex-row gap-6 items-start">
-                                <!-- QR Code Section -->
-                                <div class="flex-1 w-full lg:w-auto">
-                                    <p class="text-sm mb-3 text-text-secondary">
-                                        Scan this QR code with your authenticator app (Google Authenticator, Authy, 1Password, etc.).
-                                    </p>
-                                    <div class="flex flex-col items-center gap-3 p-4 rounded-lg bg-bg-secondary">
-                                        <div class="p-2 bg-white rounded-lg inline-block" v-html="twoFactorQrCode"></div>
-                                        <div class="text-center">
-                                            <p class="text-xs text-text-muted mb-1">Or enter this key manually:</p>
-                                            <code class="text-xs px-2 py-1 rounded bg-bg-tertiary text-text-primary break-all block">{{ twoFactorSecret }}</code>
-                                        </div>
+                            <div class="max-w-md mx-auto">
+                                <p class="text-sm mb-4 text-text-secondary text-center">
+                                    Scan this QR code with your authenticator app (Google Authenticator, Authy, 1Password, etc.), then enter the 6-digit code below to confirm.
+                                </p>
+                                
+                                <div class="flex flex-col items-center gap-4 mb-4">
+                                    <div class="p-3 bg-white rounded-lg inline-block" v-html="twoFactorQrCode" style="min-width: 180px; min-height: 180px;"></div>
+                                    <div class="text-center w-full">
+                                        <p class="text-xs text-text-muted mb-1">Or enter this key manually:</p>
+                                        <code class="text-xs px-2 py-1 rounded bg-bg-secondary text-text-primary break-all inline-block">{{ twoFactorSecret }}</code>
                                     </div>
                                 </div>
 
-                                <!-- Confirm Form -->
-                                <div class="w-full lg:w-80 shrink-0">
-                                    <p class="text-sm mb-3 text-text-secondary">
-                                        Enter the 6-digit code from your app to confirm setup.
-                                    </p>
-                                    <form @submit.prevent="confirmTwoFactorSetup" class="space-y-3">
-                                        <input
-                                            v-model="twoFactorCode"
-                                            type="text"
-                                            inputmode="numeric"
-                                            placeholder="123456"
-                                            class="input text-center tracking-widest text-lg"
-                                            maxlength="6"
-                                            autofocus
-                                            required
-                                        />
-                                        <p v-if="twoFactorError" class="text-red-500 text-sm">{{ twoFactorError }}</p>
-                                        <div class="flex gap-2 pt-1">
-                                            <button type="button" @click="twoFactorStep = 'idle'" class="btn btn-ghost flex-1 text-sm">Cancel</button>
-                                            <button type="submit" :disabled="twoFactorProcessing" class="btn btn-primary flex-1 text-sm">
-                                                <Loader2 v-if="twoFactorProcessing" class="w-4 h-4 animate-spin" />
-                                                <span v-else>Confirm</span>
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
+                                <form @submit.prevent="confirmTwoFactorSetup" class="space-y-3">
+                                    <input
+                                        v-model="twoFactorCode"
+                                        type="text"
+                                        inputmode="numeric"
+                                        placeholder="123456"
+                                        class="input text-center tracking-widest text-lg"
+                                        maxlength="6"
+                                        autofocus
+                                        required
+                                    />
+                                    <p v-if="twoFactorError" class="text-red-500 text-sm text-center">{{ twoFactorError }}</p>
+                                    <div class="flex gap-2">
+                                        <button type="button" @click="twoFactorStep = 'idle'" class="btn btn-ghost flex-1 text-sm">Cancel</button>
+                                        <button type="submit" :disabled="twoFactorProcessing" class="btn btn-primary flex-1 text-sm">
+                                            <Loader2 v-if="twoFactorProcessing" class="w-4 h-4 animate-spin" />
+                                            <span v-else>Confirm</span>
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </template>
 
