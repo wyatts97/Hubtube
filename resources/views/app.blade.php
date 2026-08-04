@@ -315,11 +315,16 @@
         // Server-side mobile detection via User-Agent for ad variant selection
         $ua = request()->header('User-Agent', '');
         $isMobileUA = (bool) preg_match('/Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile|webOS/i', $ua);
+
+        // Pro / ad-free users skip all Blade-injected ads
+        $proAdFree = (bool) \App\Models\Setting::get('pro_ad_free', true);
+        $currentUser = auth()->user();
+        $shouldSuppressAds = $currentUser && $currentUser->is_pro && $proAdFree;
     @endphp
-    @if($popunderEnabled && ($popunderCode || $popunderMobileCode))
+    @if($popunderEnabled && !$shouldSuppressAds && ($popunderCode || $popunderMobileCode))
         {!! $isMobileUA ? ($popunderMobileCode ?: $popunderCode) : $popunderCode !!}
     @endif
-    @if($zonePopunderEnabled && ($zonePopunderUrl || $zonePopunderMobileUrl))
+    @if($zonePopunderEnabled && !$shouldSuppressAds && ($zonePopunderUrl || $zonePopunderMobileUrl))
         <script>
             window.__zonePopunder = {
                 enabled: true,
@@ -332,10 +337,10 @@
             };
         </script>
     @endif
-    @if($interstitialEnabled && $interstitialMode === 'automatic' && ($interstitialCode || $interstitialMobileCode))
+    @if($interstitialEnabled && !$shouldSuppressAds && $interstitialMode === 'automatic' && ($interstitialCode || $interstitialMobileCode))
         {!! $isMobileUA ? ($interstitialMobileCode ?: $interstitialCode) : $interstitialCode !!}
     @endif
-    @if($stickyEnabled && ($stickyCode || $stickyMobileCode))
+    @if($stickyEnabled && !$shouldSuppressAds && ($stickyCode || $stickyMobileCode))
         <div class="ht-sticky-banner fixed bottom-0 left-0 right-0 z-50 flex justify-center w-full" style="max-height: 120px; overflow: hidden;">
             {!! $isMobileUA ? ($stickyMobileCode ?: $stickyCode) : $stickyCode !!}
         </div>
