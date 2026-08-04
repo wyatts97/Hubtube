@@ -10,8 +10,8 @@
             .ht-points-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
         }
         .ht-points-stat {
-            background-color: #111827;
-            border: 1px solid #374151;
+            background-color: #18181b;
+            border: 1px solid #27272a;
             border-radius: 0.75rem;
             padding: 1rem;
         }
