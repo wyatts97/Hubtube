@@ -93,8 +93,8 @@ const flash = computed(() => ({
     <AppLayout>
         <div class="max-w-4xl mx-auto">
             <div class="mb-4 sm:mb-6">
-                <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('rewards.title') || 'Rewards' }}</h1>
-                <p class="mt-1 text-sm text-text-secondary">{{ t('rewards.subtitle') || 'Earn points by contributing content and redeem them for Ad-Free Pro.' }}</p>
+                <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('rewards.title') || 'Rewards' }}</h1>Pro
+                <p class="mt-1 text-sm text-text-secondary">{{ t('rewards.subtitle') || 'Earn points by contributing content and redeem them for an Ad-Free Experience.' }}</p>
             </div>
 
             <!-- Flash messages -->
@@ -134,7 +134,7 @@ const flash = computed(() => ({
                 <div class="flex items-center gap-3">
                     <ShieldCheck class="w-6 h-6 shrink-0 text-accent" />
                     <div>
-                        <p class="font-semibold text-sm text-text-primary">Ad-Free Pro active</p>
+                        <p class="font-semibold text-sm text-text-primary">Ad-Free Experience active</p>
                         <p class="text-xs text-text-secondary">
                             {{ proDaysRemaining }} day{{ proDaysRemaining === 1 ? '' : 's' }} remaining — expires {{ proExpiryFormatted }}
                         </p>
@@ -178,11 +178,14 @@ const flash = computed(() => ({
                     <div class="p-4 flex flex-col justify-between h-full">
                         <div>
                             <p class="text-sm font-medium text-text-primary mb-1">
-                                {{ proGrantDays }} Days of Ad-Free Pro
+                                {{ proGrantDays }} Days of Ad-Free Experience
                             </p>
-                            <p class="text-xs text-text-secondary mb-3">
-                                No ads anywhere on the site, plus all Pro membership perks. Multiple redemptions stack and extend your Pro period.
-                            </p>
+                            <ul class="text-xs text-text-secondary mb-3 space-y-1">
+                                <li>• Ad-free viewing on all videos</li>
+                                <li>• Higher daily upload cap</li>
+                                <li>• Video downloads for offline viewing</li>
+                                <li class="text-text-muted">Multiple redemptions stack and extend your reward period</li>
+                            </ul>
                             <p class="text-lg font-bold text-amber-400">{{ redemptionCost.toLocaleString() }} points</p>
                         </div>
 
@@ -199,10 +202,10 @@ const flash = computed(() => ({
                             <button
                                 v-else
                                 disabled
-                                class="btn btn-secondary w-full gap-2 opacity-60 cursor-not-allowed"
+                                class="w-full px-4 py-2 rounded-lg bg-bg-secondary text-text-muted cursor-not-allowed border border-border"
                                 :title="!redemptionEnabled ? 'Redemption is currently disabled' : `You need ${(redemptionCost - balance).toLocaleString()} more points`"
                             >
-                                <Sparkles class="w-4 h-4" />
+                                <Sparkles class="w-4 h-4 inline mr-2" />
                                 {{ !redemptionEnabled ? 'Redemption Disabled' : `Need ${(redemptionCost - balance).toLocaleString()} more pts` }}
                             </button>
                         </div>
@@ -295,11 +298,11 @@ const flash = computed(() => ({
                         <h3 class="font-semibold text-text-primary">Confirm Redemption</h3>
                     </div>
                     <p class="text-sm text-text-secondary mb-1">
-                        Redeem <strong class="text-text-primary">{{ redemptionCost.toLocaleString() }} points</strong> for <strong class="text-text-primary">{{ proGrantDays }} days</strong> of Ad-Free Pro?
+                        Redeem <strong class="text-text-primary">{{ redemptionCost.toLocaleString() }} points</strong> for <strong class="text-text-primary">{{ proGrantDays }} days</strong> of Ad-Free Experience?
                     </p>
                     <p class="text-xs text-text-muted mb-5">
                         Balance after: {{ (balance - redemptionCost).toLocaleString() }} points
-                        <span v-if="proExpiryFormatted"> · Your current Pro period will be extended</span>
+                        <span v-if="proExpiryFormatted"> · Your current reward period will be extended</span>
                     </p>
                     <div class="flex gap-3">
                         <button @click="showConfirm = false" class="btn btn-secondary flex-1">Cancel</button>
