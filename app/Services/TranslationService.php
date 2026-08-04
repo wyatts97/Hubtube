@@ -15,6 +15,12 @@ class TranslationService
 {
     protected ?GoogleTranslate $translator = null;
 
+    protected float $lastRequestTime = 0;
+
+    protected int $minDelayMs = 500;
+
+    protected int $maxRetries = 3;
+
     /**
      * Supported languages with native names and flag emoji.
      */
@@ -120,7 +126,22 @@ class TranslationService
     }
 
     /**
+     * Enforce a minimum delay between Google Translate API requests
+     * to avoid 429 Too Many Responses rate limiting.
+     */
+    protected function throttle(): void
+    {
+        $now = microtime(true);
+        $elapsed = ($now - $this->lastRequestTime) * 1000;
+        if ($elapsed < $this->minDelayMs) {
+            usleep((int)(($this->minDelayMs - $elapsed) * 1000));
+        }
+        $this->lastRequestTime = microtime(true);
+    }
+
+    /**
      * Translate a raw string (no caching, no DB).
+     * Includes throttling and retry with exponential backoff on 429s.
      */
     public function translateText(string $text, string $targetLocale, ?string $sourceLocale = null): string
     {
@@ -133,23 +154,39 @@ class TranslationService
             return $text;
         }
 
-        try {
-            $translator = $this->getTranslator();
-            $translator->setSource($source);
-            $translator->setTarget($targetLocale);
-            $translated = $translator->translate($text) ?? $text;
+        $translator = $this->getTranslator();
+        $translator->setSource($source);
+        $translator->setTarget($targetLocale);
 
-            // Apply admin-defined overrides (word/phrase corrections)
-            $translated = TranslationOverride::applyOverrides($translated, $targetLocale);
+        $attempt = 0;
+        while ($attempt <= $this->maxRetries) {
+            try {
+                $this->throttle();
+                $translated = $translator->translate($text) ?? $text;
 
-            return $translated;
-        } catch (Exception $e) {
-            Log::warning("Translation failed: {$e->getMessage()}", [
-                'text' => Str::limit($text, 100),
-                'target' => $targetLocale,
-            ]);
-            return $text;
+                // Apply admin-defined overrides (word/phrase corrections)
+                $translated = TranslationOverride::applyOverrides($translated, $targetLocale);
+
+                return $translated;
+            } catch (Exception $e) {
+                $is429 = str_contains($e->getMessage(), '429');
+                if (!$is429 || $attempt === $this->maxRetries) {
+                    Log::warning("Translation failed: {$e->getMessage()}", [
+                        'text' => Str::limit($text, 100),
+                        'target' => $targetLocale,
+                        'attempt' => $attempt + 1,
+                    ]);
+                    return $text;
+                }
+
+                // Exponential backoff: 2s, 4s, 8s
+                $backoff = pow(2, $attempt + 1) * 1000000; // microseconds
+                usleep((int) $backoff);
+                $attempt++;
+            }
         }
+
+        return $text;
     }
 
     /**
