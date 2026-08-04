@@ -93,8 +93,7 @@ const flash = computed(() => ({
     <AppLayout>
         <div class="max-w-4xl mx-auto">
             <div class="mb-4 sm:mb-6">
-                <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('rewards.title') || 'Rewards' }}</h1>Pro
-                <p class="mt-1 text-sm text-text-secondary">{{ t('rewards.subtitle') || 'Earn points by contributing content and redeem them for an Ad-Free Experience.' }}</p>
+                <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('rewards.title') || 'Rewards' }}</h1>
             </div>
 
             <!-- Flash messages -->
