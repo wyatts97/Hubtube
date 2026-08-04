@@ -440,7 +440,12 @@ const tabs = computed(() => {
                                 </p>
                                 
                                 <div class="flex flex-col items-center gap-4 mb-4">
-                                    <div class="p-3 bg-white rounded-lg inline-block" v-html="twoFactorQrCode" style="min-width: 180px; min-height: 180px;"></div>
+                                    <div class="p-3 bg-white rounded-lg inline-block" style="min-width: 180px; min-height: 180px;">
+                                        <div v-if="twoFactorQrCode" v-html="twoFactorQrCode"></div>
+                                        <div v-else class="flex items-center justify-center text-gray-400 text-sm" style="min-width: 180px; min-height: 180px;">
+                                            Loading QR code...
+                                        </div>
+                                    </div>
                                     <div class="text-center w-full">
                                         <p class="text-xs text-text-muted mb-1">Or enter this key manually:</p>
                                         <code class="text-xs px-2 py-1 rounded bg-bg-secondary text-text-primary break-all inline-block">{{ twoFactorSecret }}</code>
