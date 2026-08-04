@@ -51,4 +51,18 @@
     <form wire:submit="save">
         {{ $this->form }}
     </form>
+
+    <div class="mt-8">
+        <h2 class="text-lg font-semibold text-white mb-4">Adjust User Points</h2>
+        <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+            <form wire:submit="adjustPoints">
+                {{ $this->adjustForm }}
+                <div class="mt-4">
+                    <button type="submit" class="inline-flex items-center px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-500 transition-colors">
+                        Adjust Points
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </x-filament-panels::page>

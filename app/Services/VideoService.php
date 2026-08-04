@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Events\VideoUploaded;
+use App\Models\PointsTransaction;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
@@ -166,6 +167,11 @@ class VideoService
         }
 
         $video->update($updateData);
+
+        // Award points if the video was auto-approved
+        if (!empty($updateData['is_approved']) && $video->user) {
+            $this->awardAutoApprovePoints($video);
+        }
     }
 
     protected function shouldAutoApprove(Video $video): bool
@@ -186,6 +192,26 @@ class VideoService
         }
 
         return false;
+    }
+
+    protected function awardAutoApprovePoints(Video $video): void
+    {
+        if (!Setting::get('points_enabled', true) || !Setting::get('points_video_upload_enabled', true)) {
+            return;
+        }
+
+        $points = (int) Setting::get('points_per_video_upload', 100);
+        if ($points <= 0) {
+            return;
+        }
+
+        app(PointsService::class)->award(
+            $video->user,
+            PointsTransaction::TYPE_VIDEO_UPLOAD,
+            $points,
+            $video,
+            'Video upload approved'
+        );
     }
 
     public function markAsFailed(Video $video, ?string $reason = null): void

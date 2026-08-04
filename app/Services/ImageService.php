@@ -5,7 +5,9 @@ namespace App\Services;
 use Throwable;
 use kornrunner\Blurhash\Blurhash;
 use App\Models\Image;
+use App\Models\PointsTransaction;
 use App\Models\Setting;
+use App\Services\PointsService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -106,7 +108,32 @@ class ImageService
             'published_at' => now(),
         ]);
 
+        // Award points if the image was auto-approved
+        if ($image->is_approved && $image->user) {
+            $this->awardAutoApprovePoints($image);
+        }
+
         return $image;
+    }
+
+    protected function awardAutoApprovePoints(Image $image): void
+    {
+        if (!Setting::get('points_enabled', true) || !Setting::get('points_image_upload_enabled', true)) {
+            return;
+        }
+
+        $points = (int) Setting::get('points_per_image_upload', 25);
+        if ($points <= 0) {
+            return;
+        }
+
+        app(PointsService::class)->award(
+            $image->user,
+            PointsTransaction::TYPE_IMAGE_UPLOAD,
+            $points,
+            $image,
+            'Image upload approved'
+        );
     }
 
     protected function generateUniqueSlug(?string $title): string
