@@ -29,6 +29,7 @@ use App\Http\Controllers\VideoController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\PointsController;
 use App\Http\Controllers\ThumbnailProxyController;
 use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\WalletController;
@@ -438,6 +439,9 @@ Route::middleware('age.verified')->group(function () {
 
         Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
         Route::delete('/history', [HistoryController::class, 'destroy'])->name('history.destroy');
+
+        Route::get('/rewards', [PointsController::class, 'index'])->name('rewards.index');
+        Route::post('/rewards/redeem', [PointsController::class, 'redeem'])->middleware('throttle:5,1')->name('rewards.redeem');
 
         Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');
         Route::get('/wallet/deposit', [WalletController::class, 'deposit'])->name('wallet.deposit');

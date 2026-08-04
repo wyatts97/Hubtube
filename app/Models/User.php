@@ -52,8 +52,9 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
 
     /**
      * Fields that must NEVER be mass-assignable.
-     * is_admin, is_pro, is_verified, wallet_balance
-     * must only be set via explicit $user->is_admin = true or admin panel.
+     * is_admin, is_pro, is_verified, wallet_balance,
+     * points_balance, pro_expires_at, pro_source
+     * must only be set via forceFill()/explicit assignment or admin panel.
      */
 
     protected $hidden = [
@@ -78,6 +79,8 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
             'is_verified' => 'boolean',
             'is_pro' => 'boolean',
             'is_admin' => 'boolean',
+            'points_balance' => 'integer',
+            'pro_expires_at' => 'datetime',
             'settings' => 'array',
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
@@ -139,6 +142,16 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     public function walletTransactions(): HasMany
     {
         return $this->hasMany(WalletTransaction::class);
+    }
+
+    public function pointsTransactions(): HasMany
+    {
+        return $this->hasMany(PointsTransaction::class);
+    }
+
+    public function pointsRedemptions(): HasMany
+    {
+        return $this->hasMany(PointsRedemption::class);
     }
 
     public function ccbillSubscriptions(): HasMany

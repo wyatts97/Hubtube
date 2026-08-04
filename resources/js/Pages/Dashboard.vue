@@ -1,7 +1,7 @@
 <script setup>
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Video, Eye, ThumbsUp, Users, Wallet, TrendingUp, Edit, BarChart3, Clock } from 'lucide-vue-next';
+import { Video, Eye, ThumbsUp, Users, Wallet, TrendingUp, Edit, BarChart3, Clock, Award } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 import { timeAgo, formatViews } from '@/Composables/useFormatters';
 import { useI18n } from '@/Composables/useI18n';
@@ -22,6 +22,7 @@ const props = defineProps({
 const page = usePage();
 const canEdit = computed(() => page.props.auth?.user?.can_edit_video);
 const monetizationEnabled = computed(() => page.props.app?.monetization_enabled !== false);
+const pointsEnabled = computed(() => page.props.app?.points_enabled !== false);
 
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(parseFloat(amount));
@@ -36,6 +37,9 @@ const statCards = computed(() => {
     ];
     if (monetizationEnabled.value) {
         cards.push({ label: t('dashboard.wallet_balance') || 'Wallet Balance', value: () => formatCurrency(props.stats.walletBalance), icon: Wallet, color: '#f59e0b' });
+    }
+    if (pointsEnabled.value) {
+        cards.push({ label: t('dashboard.points_balance') || 'Reward Points', value: () => formatNumber(props.stats.pointsBalance), icon: Award, color: '#f59e0b', href: '/rewards' });
     }
     return cards;
 });
@@ -62,7 +66,14 @@ const statsGridCols = computed(() => monetizationEnabled.value ? 'grid-cols-2 sm
 
             <!-- Stats Grid -->
             <div class="grid gap-2 sm:gap-4 mb-6 sm:mb-8" :class="statsGridCols">
-                <div v-for="stat in statCards" :key="stat.label" class="card p-3 sm:p-4">
+                <component
+                    v-for="stat in statCards"
+                    :key="stat.label"
+                    :is="stat.href ? Link : 'div'"
+                    :href="stat.href"
+                    class="card p-3 sm:p-4 transition-opacity"
+                    :class="stat.href ? 'hover:opacity-80 cursor-pointer' : ''"
+                >
                     <div class="flex items-center gap-2 sm:gap-3">
                         <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0" :style="{ backgroundColor: stat.color + '15' }">
                             <component :is="stat.icon" class="w-4 h-4 sm:w-5 sm:h-5" :style="{ color: stat.color }" />
@@ -72,7 +83,7 @@ const statsGridCols = computed(() => monetizationEnabled.value ? 'grid-cols-2 sm
                             <p class="text-sm sm:text-lg font-bold truncate text-text-primary">{{ stat.value() }}</p>
                         </div>
                     </div>
-                </div>
+                </component>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

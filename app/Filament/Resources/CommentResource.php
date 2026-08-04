@@ -20,6 +20,7 @@ use App\Filament\Resources\CommentResource\Pages\ListComments;
 use App\Filament\Resources\CommentResource\Pages\EditComment;
 use App\Filament\Resources\CommentResource\Pages;
 use App\Models\Comment;
+use App\Services\PointsService;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -136,7 +137,12 @@ class CommentResource extends Resource
                 Action::make('approve')
                     ->icon('phosphor-check')
                     ->color('success')
-                    ->action(fn (Comment $record) => $record->update(['is_approved' => true]))
+                    ->action(function (Comment $record) {
+                        $record->update(['is_approved' => true]);
+                        if ($record->user) {
+                            app(PointsService::class)->awardCommentPoints($record->user, $record);
+                        }
+                    })
                     ->visible(fn (Comment $record) => !$record->is_approved),
                 DeleteAction::make(),
             ])
@@ -145,7 +151,15 @@ class CommentResource extends Resource
                     DeleteBulkAction::make(),
                     BulkAction::make('approve')
                         ->icon('phosphor-check')
-                        ->action(fn ($records) => $records->each->update(['is_approved' => true])),
+                        ->action(function ($records) {
+                            $records->each(function (Comment $comment) {
+                                $wasApproved = $comment->is_approved;
+                                $comment->update(['is_approved' => true]);
+                                if (!$wasApproved && $comment->user) {
+                                    app(PointsService::class)->awardCommentPoints($comment->user, $comment);
+                                }
+                            });
+                        }),
                 ]),
             ])
             ->striped();

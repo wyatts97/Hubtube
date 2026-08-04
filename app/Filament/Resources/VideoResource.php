@@ -51,6 +51,7 @@ use App\Events\VideoProcessed;
 use App\Models\Notification as AppNotification;
 use App\Notifications\VideoRejectedNotification;
 use App\Services\EmailService;
+use App\Services\PointsService;
 use App\Services\VideoService;
 use Filament\Forms;
 use Filament\Infolists;
@@ -478,6 +479,7 @@ class VideoResource extends Resource
                         if (!$alreadyNotified) {
                             event(new VideoProcessed($record));
                         }
+                        static::awardUploadPoints($record);
                     })
                     ->visible(fn (Video $record) => !$record->is_approved && $record->status === 'processed'),
 
@@ -511,6 +513,8 @@ class VideoResource extends Resource
                             if (!$alreadyNotified) {
                                 event(new VideoProcessed($record));
                             }
+
+                            static::awardUploadPoints($record);
                         })
                         ->visible(fn (Video $record) => !$record->is_approved && $record->status === 'processed'),
 
@@ -654,6 +658,8 @@ class VideoResource extends Resource
                                 if (!$alreadyNotified) {
                                     event(new VideoProcessed($v));
                                 }
+
+                                static::awardUploadPoints($v);
                             });
                         })
                         ->deselectRecordsAfterCompletion(),
@@ -737,5 +743,34 @@ class VideoResource extends Resource
             'view' => ViewVideo::route('/{record}'),
             'edit' => EditVideo::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Award reward points to the uploader when a video is approved via moderation.
+     * Idempotent per video (guarded inside PointsService).
+     */
+    protected static function awardUploadPoints(Video $video): void
+    {
+        if (!Setting::get('points_enabled', true) || !Setting::get('points_video_upload_enabled', true)) {
+            return;
+        }
+
+        $points = (int) Setting::get('points_per_video_upload', 100);
+        if ($points <= 0) {
+            return;
+        }
+
+        $video->loadMissing('user');
+        if (!$video->user) {
+            return;
+        }
+
+        app(PointsService::class)->award(
+            $video->user,
+            \App\Models\PointsTransaction::TYPE_VIDEO_UPLOAD,
+            $points,
+            $video,
+            "Video approved: {$video->title}"
+        );
     }
 }

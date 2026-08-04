@@ -39,6 +39,7 @@ class HandleInertiaRequests extends Middleware
                         'is_pro' => $user->is_pro,
                         'is_admin' => $user->is_admin,
                         'wallet_balance' => $user->wallet_balance,
+                        'points_balance' => $user->points_balance,
                         'age_verified' => $user->isAgeVerified(),
                         'can_edit_video' => $user->canEditVideo(),
                         'settings' => $user->settings ?? [],
@@ -100,6 +101,7 @@ class HandleInertiaRequests extends Middleware
             'pro_enabled' => (bool) $this->s('pro_enabled', true),
             'pro_ad_free' => (bool) $this->s('pro_ad_free', true),
             'pro_badge_text' => (string) $this->s('pro_badge_text', 'PRO'),
+            'points_enabled' => (bool) $this->s('points_enabled', true),
             'upload' => [
                 'allowed_extensions' => array_values((array) config('hubtube.video.allowed_extensions', [
                     'mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wmv',

@@ -29,6 +29,9 @@ use App\Filament\Resources\ImageResource\Pages\EditImage;
 use App\Filament\Resources\ImageResource\Pages\CreateImage;
 use App\Filament\Resources\ImageResource\Pages;
 use App\Models\Image;
+use App\Models\PointsTransaction;
+use App\Models\Setting;
+use App\Services\PointsService;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -248,7 +251,10 @@ class ImageResource extends Resource
                         ->icon('phosphor-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
-                        ->action(fn (Image $record) => $record->update(['is_approved' => true]))
+                        ->action(function (Image $record) {
+                            $record->update(['is_approved' => true]);
+                            static::awardUploadPoints($record);
+                        })
                         ->visible(fn (Image $record) => !$record->is_approved),
 
                     Action::make('unapprove')
@@ -274,7 +280,12 @@ class ImageResource extends Resource
                         ->icon('phosphor-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
-                        ->action(fn (Collection $records) => $records->each(fn (Image $i) => $i->update(['is_approved' => true])))
+                        ->action(function (Collection $records) {
+                            $records->each(function (Image $i) {
+                                $i->update(['is_approved' => true]);
+                                static::awardUploadPoints($i);
+                            });
+                        })
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('unapprove')
@@ -294,6 +305,35 @@ class ImageResource extends Resource
     public static function getRelations(): array
     {
         return [];
+    }
+
+    /**
+     * Award reward points to the uploader when an image is approved via moderation.
+     * Idempotent per image (guarded inside PointsService).
+     */
+    protected static function awardUploadPoints(Image $image): void
+    {
+        if (!Setting::get('points_enabled', true) || !Setting::get('points_image_upload_enabled', true)) {
+            return;
+        }
+
+        $points = (int) Setting::get('points_per_image_upload', 25);
+        if ($points <= 0) {
+            return;
+        }
+
+        $image->loadMissing('user');
+        if (!$image->user) {
+            return;
+        }
+
+        app(PointsService::class)->award(
+            $image->user,
+            PointsTransaction::TYPE_IMAGE_UPLOAD,
+            $points,
+            $image,
+            "Image approved: {$image->title}"
+        );
     }
 
     public static function getPages(): array

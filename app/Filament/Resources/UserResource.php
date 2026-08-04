@@ -159,6 +159,14 @@ class UserResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
+                TextColumn::make('points_balance')
+                    ->label('Points')
+                    ->numeric()
+                    ->sortable()
+                    ->icon('phosphor-star')
+                    ->iconColor('warning')
+                    ->toggleable(),
+
                 TextColumn::make('created_at')
                     ->label('Joined')
                     ->since()
@@ -199,7 +207,14 @@ class UserResource extends Resource
                     ->color(fn (User $record) => $record->is_pro ? 'gray' : 'warning')
                     ->label(fn (User $record) => $record->is_pro ? 'Revoke Pro' : 'Grant Pro')
                     ->requiresConfirmation()
-                    ->action(fn (User $record) => $record->forceFill(['is_pro' => !$record->is_pro])->save()),
+                    ->action(function (User $record) {
+                        $granting = !$record->is_pro;
+                        $record->forceFill([
+                            'is_pro' => $granting,
+                            'pro_source' => $granting ? 'admin' : null,
+                            'pro_expires_at' => null,
+                        ])->save();
+                    }),
 
                 Action::make('view_videos')
                     ->icon('phosphor-video-camera')

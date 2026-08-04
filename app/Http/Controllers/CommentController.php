@@ -7,6 +7,7 @@ use App\Models\Comment;
 use App\Models\Video;
 use App\Notifications\CommentReplyNotification;
 use App\Notifications\NewCommentNotification;
+use App\Services\PointsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +44,10 @@ class CommentController extends Controller
         ]);
 
         $video->increment('comments_count');
+
+        if (!$requiresApproval) {
+            app(PointsService::class)->awardCommentPoints($request->user(), $comment);
+        }
 
         $comment->load('user');
 

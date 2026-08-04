@@ -7,7 +7,7 @@ import {
     ChevronLeft, ChevronRight, Shield,
     X, Check, CheckCheck, Rss, LayoutDashboard, ChevronDown, ChevronUp, Film,
     Tag, Folder, Star, ExternalLink, Eye, EyeOff, LayoutGrid, Plus,
-    ImageIcon, MoreHorizontal, Loader2, Smartphone
+    ImageIcon, MoreHorizontal, Loader2, Smartphone, Award
 } from 'lucide-vue-next';
 import { useTheme } from '@/Composables/useTheme';
 import { useToast } from '@/Composables/useToast';
@@ -301,6 +301,7 @@ const getIconColor = (navKey) => {
 };
 
 const monetizationEnabled = computed(() => page.props.app?.monetization_enabled !== false);
+const pointsEnabled = computed(() => page.props.app?.points_enabled !== false);
 
 const navigation = computed(() => [
     { name: tSafe('nav.home', 'Home'), href: localizedUrl('/'), icon: Home, key: 'home' },
@@ -615,6 +616,10 @@ const handleMobileNavClick = (item) => {
                                     <Link v-if="monetizationEnabled" href="/wallet" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
                                         <Wallet class="w-4 h-4" />
                                         <span>{{ t('nav.wallet') || 'Wallet' }}: ${{ user.wallet_balance }}</span>
+                                    </Link>
+                                    <Link v-if="pointsEnabled" href="/rewards" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
+                                        <Award class="w-4 h-4" />
+                                        <span>{{ t('nav.rewards') || 'Rewards' }}: {{ user.points_balance?.toLocaleString() || 0 }} pts</span>
                                     </Link>
                                     <Link href="/settings" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
                                         <Settings class="w-4 h-4" />

@@ -243,8 +243,8 @@ class CCBillController extends Controller
 
     protected function grantPro(User $user): void
     {
-        if (! $user->is_pro) {
-            $user->forceFill(['is_pro' => true])->save();
+        if (! $user->is_pro || $user->pro_source !== 'ccbill') {
+            $user->forceFill(['is_pro' => true, 'pro_source' => 'ccbill', 'pro_expires_at' => null])->save();
         }
     }
 
@@ -260,8 +260,16 @@ class CCBillController extends Controller
             // Cashier not configured / no stripe customer — ignore.
         }
 
-        if (! $hasStripe && ! $user->fresh()->hasActiveCCBillSubscription()) {
-            $user->forceFill(['is_pro' => false])->save();
+        $freshUser = $user->fresh();
+
+        if (! $hasStripe && ! $freshUser->hasActiveCCBillSubscription()) {
+            // Preserve any still-active points-granted Pro period.
+            if ($freshUser->pro_source === 'points' && $freshUser->pro_expires_at?->isFuture()) {
+                $freshUser->forceFill(['is_pro' => true])->save();
+                return;
+            }
+
+            $freshUser->forceFill(['is_pro' => false, 'pro_source' => null, 'pro_expires_at' => null])->save();
         }
     }
 }

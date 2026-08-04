@@ -65,6 +65,7 @@ class DashboardController extends Controller
                 'totalLikes' => $totalLikes,
                 'subscriberCount' => $subscriberCount,
                 'walletBalance' => $user->wallet_balance,
+                'pointsBalance' => $user->points_balance,
             ],
             'recentVideos' => $recentVideos,
             'topVideos' => $topVideos,
