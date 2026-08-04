@@ -48,6 +48,10 @@
         </div>
     </div>
 
+    <x-filament::section heading="Users with Points" icon="phosphor-users" description="Users who have earned points, sorted by highest balance.">
+        {{ $this->table }}
+    </x-filament::section>
+
     <form wire:submit="save">
         {{ $this->form }}
     </form>

@@ -19,10 +19,15 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 
-class PointsSettings extends Page implements HasForms
+class PointsSettings extends Page implements HasForms, HasTable
 {
     use InteractsWithForms;
+    use InteractsWithTable;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-star';
 
@@ -205,6 +210,37 @@ class PointsSettings extends Page implements HasForms
                     Notification::make()->title('Points adjusted successfully for ' . $user->username)->success()->send();
                 }),
         ];
+    }
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->query(
+                User::query()->where('points_balance', '>', 0)
+            )
+            ->defaultSort('points_balance', 'desc')
+            ->paginated([10, 25, 50])
+            ->columns([
+                TextColumn::make('username')
+                    ->label('User')
+                    ->searchable()
+                    ->sortable()
+                    ->weight('bold'),
+                TextColumn::make('email')
+                    ->label('Email')
+                    ->searchable()
+                    ->size('sm'),
+                TextColumn::make('points_balance')
+                    ->label('Points')
+                    ->numeric()
+                    ->sortable()
+                    ->badge()
+                    ->color('warning'),
+                TextColumn::make('pro_expires_at')
+                    ->label('Pro Status')
+                    ->formatStateUsing(fn ($state) => $state && $state > now() ? 'Active until ' . $state->format('M j, Y') : '—')
+                    ->size('sm'),
+            ]);
     }
 
     public function save(): void
