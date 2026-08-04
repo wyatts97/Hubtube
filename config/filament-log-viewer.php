@@ -104,22 +104,19 @@ return [
     /* -----------------------------------------------------------------
     |  Colors
     | -----------------------------------------------------------------
-    |  Tuned for dark mode — brighter, higher-contrast variants
-    |  that read well on the zinc/zinc-900 admin background.
-    | -----------------------------------------------------------------
      */
 
     'colors' => [
         'levels' => [
-            'all' => '#d4d4d8',
-            'emergency' => '#fca5a5',
-            'alert' => '#f87171',
-            'critical' => '#ef4444',
-            'error' => '#fb923c',
-            'warning' => '#fbbf24',
-            'notice' => '#86efac',
-            'info' => '#93c5fd',
-            'debug' => '#bfdbfe',
+            'all' => '#8A8A8A',
+            'emergency' => '#B71C1C',
+            'alert' => '#D32F2F',
+            'critical' => '#F44336',
+            'error' => '#FF5722',
+            'warning' => '#FF9100',
+            'notice' => '#4CAF50',
+            'info' => '#1976D2',
+            'debug' => '#90CAF9',
         ],
     ],
 

@@ -943,6 +943,21 @@
    prefixes aren't processed by the admin CSS pipeline).
    ─────────────────────────────────────────────────────────────── */
 
+/* Log viewer level icons: keep colored rounded-square backgrounds
+   but force the actual icon shapes (bug, fire, warning, etc.) to
+   pure white. The plugin sets inline `style="color: #xxx"` which
+   controls both the background tint (via fi-icon's color-mix) and
+   the SVG stroke (via currentColor). We override only the SVG
+   stroke/fill so the background color is preserved. */
+.fi-ta-ctn .fi-icon svg,
+.fi-ta-ctn .fi-icon svg path,
+.fi-ta-ctn .fi-icon svg circle,
+.fi-ta-ctn .fi-icon svg rect,
+.fi-ta-ctn .fi-icon svg line {
+    stroke: #ffffff !important;
+    fill: none !important;
+}
+
 /* Meta grid at top of detail page */
 .ht-log-meta-grid {
     display: grid;
