@@ -145,8 +145,8 @@ const flash = computed(() => ({
             <!-- How to Earn + Redeem -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 sm:mb-6 items-stretch">
                 <!-- How to Earn -->
-                <div class="card h-full">
-                    <div class="p-4 border-b border-border">
+                <div class="card h-full flex flex-col">
+                    <div class="p-4 border-b border-border shrink-0">
                         <h2 class="font-semibold text-text-primary flex items-center gap-2">
                             <TrendingUp class="w-4 h-4" />
                             {{ t('rewards.how_to_earn') || 'How to Earn Points' }}
@@ -168,14 +168,14 @@ const flash = computed(() => ({
                 </div>
 
                 <!-- Redeem -->
-                <div class="card h-full">
-                    <div class="p-4 border-b border-border">
+                <div class="card h-full flex flex-col">
+                    <div class="p-4 border-b border-border shrink-0">
                         <h2 class="font-semibold text-text-primary flex items-center gap-2">
                             <Sparkles class="w-4 h-4" />
                             {{ t('rewards.redeem') || 'Redeem Points' }}
                         </h2>
                     </div>
-                    <div class="p-4 flex flex-col justify-between h-full">
+                    <div class="p-4 flex flex-col flex-1">
                         <div>
                             <p class="text-sm font-medium text-text-primary mb-1">
                                 {{ proGrantDays }} Days of Ad-Free Experience
@@ -189,7 +189,7 @@ const flash = computed(() => ({
                             <p class="text-lg font-bold text-amber-400">{{ redemptionCost.toLocaleString() }} points</p>
                         </div>
 
-                        <div class="mt-4">
+                        <div class="mt-auto pt-4">
                             <button
                                 v-if="canRedeem"
                                 @click="confirmRedeem"
