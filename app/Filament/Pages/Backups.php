@@ -2,15 +2,23 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\Setting;
+use App\Services\AdminLogger;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
 
-class Backups extends Page
+class Backups extends Page implements HasForms
 {
+    use InteractsWithForms;
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-archive';
     protected static ?string $navigationLabel = 'Backups';
     protected static string | \UnitEnum | null $navigationGroup = 'Tools';
@@ -20,6 +28,42 @@ class Backups extends Page
 
     public bool $running = false;
     public string $status = '';
+    public ?array $settingsData = [];
+
+    public function mount(): void
+    {
+        $this->settingsForm->fill([
+            'backup_enabled' => Setting::get('backup_enabled', true),
+        ]);
+    }
+
+    public function settingsForm(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Section::make('Auto-Backup Settings')
+                    ->description('Control the scheduled nightly backup.')
+                    ->schema([
+                        Toggle::make('backup_enabled')
+                            ->label('Enable automatic daily backups')
+                            ->helperText('When enabled, a full backup runs nightly at 1:00 AM. Old backups are cleaned weekly.'),
+                    ]),
+            ])
+            ->statePath('settingsData');
+    }
+
+    public function saveBackupSettings(): void
+    {
+        $data = $this->settingsForm->getState();
+        Setting::set('backup_enabled', $data['backup_enabled'], 'backup', 'boolean');
+        AdminLogger::settingsSaved('Backups', array_keys($data));
+        Notification::make()->title('Backup settings saved')->success()->send();
+    }
+
+    protected function getForms(): array
+    {
+        return ['settingsForm'];
+    }
 
     protected function getHeaderActions(): array
     {

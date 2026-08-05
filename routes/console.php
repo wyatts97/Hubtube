@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Setting;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -22,9 +23,11 @@ Schedule::command('videos:publish-scheduled')->everyMinute();
 // Revoke expired points-granted Pro access
 Schedule::command('points:expire-pro')->hourly();
 
-// Spatie Backup: nightly backup + weekly cleanup
-Schedule::command('backup:run')->dailyAt('01:00')->withoutOverlapping();
-Schedule::command('backup:clean')->weekly()->sundays()->at('02:00');
+// Spatie Backup: nightly backup + weekly cleanup (skipped when backup_enabled setting is off)
+Schedule::command('backup:run')->dailyAt('01:00')->withoutOverlapping()
+    ->skip(fn () => !Setting::get('backup_enabled', true));
+Schedule::command('backup:clean')->weekly()->sundays()->at('02:00')
+    ->skip(fn () => !Setting::get('backup_enabled', true));
 
 // Spatie Health: run checks every 10 minutes
 Schedule::command('health:check')->everyTenMinutes();
