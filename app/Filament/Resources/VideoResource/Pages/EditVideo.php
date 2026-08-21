@@ -38,6 +38,8 @@ class EditVideo extends EditRecord
                         'published_at' => $this->record->published_at ?? now(),
                     ]);
 
+                    VideoResource::awardUploadPoints($this->record);
+
                     // Fire VideoProcessed so the "published" notification goes out
                     $alreadyNotified = AppNotification::where('user_id', $this->record->user_id)
                         ->where('type', 'video_processed')

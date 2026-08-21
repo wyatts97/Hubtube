@@ -10,6 +10,20 @@
             .ht-plyr-wrapper.is-portrait { max-width: 480px; }
             .ht-plyr-wrapper .plyr { max-height: 70vh; }
             .ht-plyr-wrapper .plyr video { max-height: 70vh; }
+
+            /* Fullscreen: Plyr toggles a class on this same node instead of moving it,
+               so the 70vh cap above must not apply once fullscreen, or the video is
+               capped well below the 100vh viewport (black bars). */
+            .ht-plyr-wrapper .plyr.plyr--fullscreen-active,
+            .ht-plyr-wrapper .plyr:fullscreen {
+                max-height: 100% !important;
+                height: 100% !important;
+            }
+            .ht-plyr-wrapper .plyr.plyr--fullscreen-active video,
+            .ht-plyr-wrapper .plyr:fullscreen video {
+                max-height: 100% !important;
+                height: 100% !important;
+            }
         </style>
     @endonce
 

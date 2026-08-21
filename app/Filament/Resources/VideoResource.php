@@ -749,7 +749,7 @@ class VideoResource extends Resource
      * Award reward points to the uploader when a video is approved via moderation.
      * Idempotent per video (guarded inside PointsService).
      */
-    protected static function awardUploadPoints(Video $video): void
+    public static function awardUploadPoints(Video $video): void
     {
         if (!Setting::get('points_enabled', true) || !Setting::get('points_video_upload_enabled', true)) {
             return;

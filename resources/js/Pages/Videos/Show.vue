@@ -58,14 +58,21 @@ const onAdStarted = (placement) => {
     if (player && !player.paused) player.pause();
 };
 
+const resumePlayer = (player) => {
+    player.play().catch((err) => {
+        console.warn('[Show.vue] Failed to resume video after ad:', err);
+        toast.error(t('video.tap_play_to_resume') || 'Tap play to resume the video');
+    });
+};
+
 const onAdEnded = (placement) => {
     if (placement === 'pre_roll') {
         preRollDone.value = true;
         const player = getPlayerElement();
-        if (player) player.play().catch(() => {});
+        if (player) resumePlayer(player);
     } else if (placement === 'mid_roll') {
         const player = getPlayerElement();
-        if (player) player.play().catch(() => {});
+        if (player) resumePlayer(player);
     } else if (placement === 'post_roll') {
         goToNextPlaylistVideo();
     }
@@ -79,7 +86,7 @@ const onAdRequestPause = () => {
 
 const onAdRequestPlay = () => {
     const player = getPlayerElement();
-    if (player) player.play().catch(() => {});
+    if (player) resumePlayer(player);
 };
 
 // Ad setup cleanup — clear timers and remove listeners on unmount

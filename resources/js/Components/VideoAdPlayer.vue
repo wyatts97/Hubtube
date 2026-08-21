@@ -59,6 +59,8 @@ const lastMidRollTime = ref(0);
 
 // Timers
 let elapsedTimer = null;
+let startWatchdog = null;
+let stallWatchdog = null;
 
 // ── Ad loading ──
 let adsLoadedPromise = null;
@@ -131,6 +133,17 @@ const playLocalAd = (ad, placement) => {
             canSkip.value = true;
         }
     }, 1000);
+
+    // Safety net (MP4 only — HTML ads have no play/playing lifecycle to watch):
+    // if the ad never actually starts playing (stalled buffering, a play()
+    // promise that never settles, or a silent failure with no 'error' event),
+    // don't leave the main video paused behind it forever.
+    if (ad.type === 'mp4') {
+        startWatchdog = setTimeout(() => {
+            console.warn('[VideoAdPlayer] Local ad failed to start within timeout, ending ad');
+            endAd();
+        }, 8000);
+    }
 
     if (ad.type === 'html') {
         nextTick(() => {
@@ -210,8 +223,21 @@ const tryPlayAd = () => {
     }
 };
 
-const onAdWaiting = () => { adBuffering.value = true; };
-const onAdPlaying = () => { adBuffering.value = false; };
+const onAdWaiting = () => {
+    adBuffering.value = true;
+    if (stallWatchdog) clearTimeout(stallWatchdog);
+    // If playback never resumes after stalling, don't leave the ad (and the
+    // main video paused underneath it) stuck buffering indefinitely.
+    stallWatchdog = setTimeout(() => {
+        console.warn('[VideoAdPlayer] Local ad stalled while buffering, ending ad');
+        endAd();
+    }, 8000);
+};
+const onAdPlaying = () => {
+    adBuffering.value = false;
+    if (startWatchdog) { clearTimeout(startWatchdog); startWatchdog = null; }
+    if (stallWatchdog) { clearTimeout(stallWatchdog); stallWatchdog = null; }
+};
 
 const manualPlay = () => {
     if (!adVideoRef.value) return;
@@ -235,6 +261,8 @@ const onAdVideoError = (e) => {
 
 const clearTimers = () => {
     if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; }
+    if (startWatchdog) { clearTimeout(startWatchdog); startWatchdog = null; }
+    if (stallWatchdog) { clearTimeout(stallWatchdog); stallWatchdog = null; }
 };
 
 // ── Computed ──
@@ -308,7 +336,7 @@ onUnmounted(() => { clearTimers(); destroyIma(); });
             <template v-if="isLocalVideoAd">
                 <video ref="adVideoRef" :src="currentAd.content"
                     class="w-full h-full object-contain"
-                    preload="auto" autoplay muted playsinline crossorigin="anonymous"
+                    preload="auto" muted playsinline crossorigin="anonymous"
                     @ended="onAdVideoEnded" @error="onAdVideoError"
                     @canplay="tryPlayAd" @waiting="onAdWaiting" @playing="onAdPlaying">
                 </video>
