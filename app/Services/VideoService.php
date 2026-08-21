@@ -151,12 +151,21 @@ class VideoService
         ]);
     }
 
-    public function markAsProcessed(Video $video, array $qualities): void
+    /**
+     * @param string|null $degradedReason When set, the video is being marked processed with a
+     *   degraded/fallback output (e.g. raw original after a transcoding failure) rather than a
+     *   clean multi-quality result. Recorded in `processing_fallback_reason` — a column separate
+     *   from `failure_reason`, which is already reused for admin rejection reasons — surfaced in
+     *   the admin panel without changing `status`, which many publish/approval/listing checks
+     *   compare directly against 'processed'.
+     */
+    public function markAsProcessed(Video $video, array $qualities, ?string $degradedReason = null): void
     {
         $updateData = [
             'status' => 'processed',
             'qualities_available' => $qualities,
             'processing_completed_at' => now(),
+            'processing_fallback_reason' => $degradedReason,
         ];
 
         // Auto-approve if global toggle is on (or trusted uploader) AND a publish time was provided.

@@ -54,7 +54,14 @@ return [
                 'connection' => 'redis',
                 'queue' => ['video-processing'],
                 'balance' => 'simple',
-                'maxProcesses' => 3,
+                // Was 3. Each job runs its whole pipeline (probe, thumbnails, sprites,
+                // watermark, transcode, HLS, cloud upload) serially in one process with
+                // a 3600s timeout, so a burst of uploads or one long video can starve the
+                // queue for up to an hour with too few workers. Raised modestly to reduce
+                // that risk — tune further to the server's actual CPU core count, since
+                // each worker runs ffmpeg with its own `ffmpeg_threads` setting and workers
+                // compete for the same CPU.
+                'maxProcesses' => 5,
                 'maxTime' => 0,
                 'maxJobs' => 0,
                 'memory' => 512,

@@ -47,6 +47,7 @@ class Video extends Model
         'privacy',
         'status',
         'failure_reason',
+        'processing_fallback_reason',
         'is_featured',
         'is_approved',
         'age_restricted',

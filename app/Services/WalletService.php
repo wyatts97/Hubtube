@@ -18,10 +18,16 @@ class WalletService
         ?Model $reference = null
     ): WalletTransaction {
         return DB::transaction(function () use ($user, $amount, $type, $description, $reference) {
-            $user->lockForUpdate();
-            
-            $newBalance = $user->wallet_balance + $amount;
-            $user->forceFill(['wallet_balance' => $newBalance])->save();
+            // Re-fetch and lock the row inside the transaction. lockForUpdate() is a query
+            // builder method, not a Model method — calling it on an already-loaded $user
+            // instance silently builds and discards a fresh, unexecuted query instead of
+            // actually locking anything, which allows concurrent credit/debit calls on the
+            // same user to race. Locking the freshly-fetched row closes that gap.
+            $locked = User::whereKey($user->id)->lockForUpdate()->first();
+
+            $newBalance = $locked->wallet_balance + $amount;
+            $locked->forceFill(['wallet_balance' => $newBalance])->save();
+            $user->wallet_balance = $newBalance;
 
             return WalletTransaction::create([
                 'user_id' => $user->id,
@@ -44,14 +50,15 @@ class WalletService
         ?Model $reference = null
     ): WalletTransaction {
         return DB::transaction(function () use ($user, $amount, $type, $description, $reference) {
-            $user->lockForUpdate();
+            $locked = User::whereKey($user->id)->lockForUpdate()->first();
 
-            if ($user->wallet_balance < $amount) {
+            if ($locked->wallet_balance < $amount) {
                 throw new Exception('Insufficient balance');
             }
 
-            $newBalance = $user->wallet_balance - $amount;
-            $user->forceFill(['wallet_balance' => $newBalance])->save();
+            $newBalance = $locked->wallet_balance - $amount;
+            $locked->forceFill(['wallet_balance' => $newBalance])->save();
+            $user->wallet_balance = $newBalance;
 
             return WalletTransaction::create([
                 'user_id' => $user->id,

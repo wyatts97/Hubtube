@@ -40,8 +40,15 @@ class ThumbnailProxyController extends Controller
 
         $host = strtolower((string) parse_url($url, PHP_URL_HOST));
 
-        // Block private / internal IP ranges (SSRF protection)
-        if ($this->isInternalHost($host)) {
+        // Resolve the hostname ONCE here and reuse this exact IP for the actual fetch
+        // below (via CURLOPT_RESOLVE). Checking the allowlist/private-IP rules against
+        // one resolution and then letting the HTTP client re-resolve the hostname
+        // independently at fetch time is a DNS-rebinding TOCTOU gap: an attacker-controlled
+        // DNS record could resolve safely for this check and then to an internal IP by the
+        // time the real request fires. Pinning the connection to the validated IP closes it.
+        $resolvedIp = $this->resolveHostIp($host);
+
+        if ($resolvedIp === null || $this->isInternalIp($resolvedIp)) {
             abort(403, 'Internal addresses are not allowed');
         }
 
@@ -63,9 +70,14 @@ class ThumbnailProxyController extends Controller
         // Uses the configured cache driver — set CACHE_DRIVER=redis in .env for production
         $store = Cache::store(config('cache.default'));
 
-        $imageData = $store->remember($cacheKey, 3600, function () use ($url) {
+        $imageData = $store->remember($cacheKey, 3600, function () use ($url, $host, $resolvedIp) {
             try {
                 $response = Http::timeout(10)
+                    ->withOptions([
+                        // Pin the connection to the IP validated above instead of letting
+                        // curl re-resolve $host independently.
+                        'curl' => [CURLOPT_RESOLVE => ["{$host}:443:{$resolvedIp}"]],
+                    ])
                     ->withHeaders([
                         'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                         'Accept' => 'image/*,*/*;q=0.8',
@@ -96,21 +108,30 @@ class ThumbnailProxyController extends Controller
     }
 
     /**
-     * Check if a hostname resolves to a private/internal IP range.
+     * Resolve a hostname to its IP once. Returns null if the hostname is an obviously
+     * internal name or DNS resolution fails. The caller must reuse the returned IP for
+     * both the allowlist/private-range check and the actual outbound request — resolving
+     * twice reopens the DNS-rebinding gap this is meant to close.
      */
-    protected function isInternalHost(string $host): bool
+    protected function resolveHostIp(string $host): ?string
     {
-        // Quick check for obvious internal hostnames
         if (in_array($host, ['localhost', '127.0.0.1', '0.0.0.0', '::1', ''], true)) {
-            return true;
+            return null;
         }
 
-        // Resolve hostname and check IP ranges
         $ip = gethostbyname($host);
         if ($ip === $host) {
-            return true; // DNS resolution failed — block
+            return null; // DNS resolution failed — block
         }
 
+        return $ip;
+    }
+
+    /**
+     * Check if an already-resolved IP is in a private/internal/reserved range.
+     */
+    protected function isInternalIp(string $ip): bool
+    {
         return !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
     }
 }

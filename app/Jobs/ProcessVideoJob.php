@@ -12,6 +12,7 @@ use App\Services\FfmpegService;
 use App\Services\StorageManager;
 use App\Services\VideoService;
 use App\Services\WatermarkService;
+use App\Services\AdminLogger;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -22,6 +23,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Models\Notification;
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
+use Symfony\Component\Process\Process;
 
 class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
 {
@@ -112,11 +115,15 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
                 'error' => $e->getMessage(),
             ]);
 
-            $this->markAsProcessedWithOriginal();
+            // This is a genuine transcode failure, not an intentional skip (ffmpeg
+            // disabled/unavailable) — mark it distinctly so it doesn't silently
+            // report as a clean 'processed' success, and alert admins so the
+            // underlying ffmpeg/environment problem gets noticed and fixed.
+            $this->markAsProcessedWithOriginal(degraded: true, reason: $e->getMessage());
         }
     }
 
-    protected function markAsProcessedWithOriginal(): void
+    protected function markAsProcessedWithOriginal(bool $degraded = false, ?string $reason = null): void
     {
         // Check if cloud offloading is enabled in admin settings
         if ($this->s('cloud_offloading_enabled', false)) {
@@ -127,7 +134,21 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
         }
 
         $videoService = app(VideoService::class);
-        $videoService->markAsProcessed($this->video, ['original']);
+        $videoService->markAsProcessed(
+            $this->video,
+            ['original'],
+            $degraded ? ($reason ?? 'Transcoding failed; shipped as unprocessed original.') : null
+        );
+
+        if ($degraded) {
+            AdminLogger::error(
+                "Video #{$this->video->id} ({$this->video->title}) shipped as unprocessed original after a transcoding failure — no multi-quality renditions, HLS, or watermark were produced.",
+                [
+                    'video_id' => $this->video->id,
+                    'reason' => $reason,
+                ]
+            );
+        }
 
         $this->notifyOnce();
     }
@@ -1309,26 +1330,32 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
 
     /**
      * Run a shell command and return [exitCode, output].
-     * Unlike shell_exec(), this captures the exit code so we can detect FFmpeg failures.
+     *
+     * Uses Symfony Process instead of raw proc_open so each individual ffmpeg/ffprobe
+     * invocation gets its own timeout, rather than relying solely on the job's overall
+     * 3600s timeout. Without this, a single hung command (bad input, stuck codec) could
+     * only be killed by the outer job timeout firing — which kills the PHP process but
+     * can leave orphaned ffmpeg children and partial temp files behind. Symfony Process
+     * terminates the whole process tree cleanly on timeout.
      */
     protected function runCommand(string $cmd): array
     {
-        $process = proc_open($cmd, [
-            1 => ['pipe', 'w'],
-            2 => ['pipe', 'w'],
-        ], $pipes);
+        $process = Process::fromShellCommandline($cmd);
+        $process->setTimeout((int) $this->s('ffmpeg_command_timeout', 1800));
 
-        if (!is_resource($process)) {
-            return [1, 'Failed to start process'];
+        try {
+            $process->run();
+        } catch (ProcessTimedOutException $e) {
+            Log::error('FFmpeg command timed out', [
+                'video_id' => $this->video->id,
+                'timeout' => $process->getTimeout(),
+            ]);
+            return [1, 'Command timed out after ' . $process->getTimeout() . 's'];
         }
 
-        $stdout = stream_get_contents($pipes[1]);
-        $stderr = stream_get_contents($pipes[2]);
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-        $exitCode = proc_close($process);
+        $output = trim($process->getOutput() . "\n" . $process->getErrorOutput());
 
-        return [$exitCode, trim($stdout . "\n" . $stderr)];
+        return [$process->getExitCode() ?? 1, $output];
     }
 
     public function failed(Throwable $exception): void

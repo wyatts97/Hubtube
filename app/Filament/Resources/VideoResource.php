@@ -263,6 +263,11 @@ class VideoResource extends Resource
                                     ->disabled()
                                     ->visible(fn ($record) => $record?->status === 'failed')
                                     ->columnSpanFull(),
+                                TextInput::make('processing_fallback_reason')
+                                    ->label('Degraded — shipped as unprocessed original')
+                                    ->disabled()
+                                    ->visible(fn ($record) => filled($record?->processing_fallback_reason))
+                                    ->columnSpanFull(),
                             ])->columns(2),
 
                         Tab::make('Activity')
@@ -322,6 +327,7 @@ class VideoResource extends Resource
                 TextColumn::make('status')
                     ->badge()
                     ->formatStateUsing(fn (string $state, Video $record): string => match (true) {
+                        $state === 'processed' && filled($record->processing_fallback_reason) => 'Degraded',
                         $state === 'processed' && $record->is_approved && $record->published_at => 'Published',
                         $state === 'processed' && !is_null($record->queue_order) => 'Scheduled',
                         $state === 'processed' && !$record->is_approved => 'Needs Moderation',
@@ -331,6 +337,7 @@ class VideoResource extends Resource
                         default => ucfirst($state),
                     })
                     ->color(fn (string $state, Video $record): string => match (true) {
+                        $state === 'processed' && filled($record->processing_fallback_reason) => 'warning',
                         $state === 'processed' && $record->is_approved && $record->published_at => 'success',
                         $state === 'processed' && !is_null($record->queue_order) => 'info',
                         $state === 'processed' && !$record->is_approved => 'warning',

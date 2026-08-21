@@ -11,6 +11,14 @@ use Illuminate\Support\Facades\Log;
 class StorageManager
 {
     /**
+     * Cache key of the Wasabi settings the disk was last built from, so repeated calls
+     * within the same request/process reuse the already-configured disk instead of
+     * rebuilding config and calling Storage::forgetDisk() on every single call that
+     * touches a Wasabi path (e.g. dozens of thumbnail/video URLs on one listing page).
+     */
+    protected static ?string $wasabiDiskCacheKey = null;
+
+    /**
      * Wasabi region-to-endpoint mapping per Wasabi docs.
      * @see https://docs.wasabi.com/docs/service-urls-for-wasabis-storage-regions
      */
@@ -89,6 +97,14 @@ class StorageManager
         // Build the public URL for the bucket
         $url = static::getWasabiPublicUrl($bucket, $region, $endpoint);
 
+        // Skip the config rebuild + Storage::forgetDisk() cycle if these are the same
+        // settings the disk was already built from — avoids redoing this on every one
+        // of dozens of thumbnail/video URL calls within a single request.
+        $cacheKey = md5(serialize([$key, $secret, $region, $bucket, $endpoint, $url]));
+        if (static::$wasabiDiskCacheKey === $cacheKey) {
+            return Storage::disk('wasabi');
+        }
+
         config([
             'filesystems.disks.wasabi' => [
                 'driver'                  => 's3',
@@ -106,6 +122,7 @@ class StorageManager
 
         // Purge the cached disk so Laravel rebuilds it with new config
         Storage::forgetDisk('wasabi');
+        static::$wasabiDiskCacheKey = $cacheKey;
 
         return Storage::disk('wasabi');
     }
