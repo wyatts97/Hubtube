@@ -64,7 +64,7 @@ const initPlayer = async () => {
         // Use locally bundled hls.js instead of loading from CDN.
         player.addEventListener('provider-change', (event) => {
             const provider = event.detail;
-            if (provider.type === 'hls') {
+            if (provider?.type === 'hls') {
                 provider.library = HLS;
             }
         });
