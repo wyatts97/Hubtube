@@ -25,6 +25,7 @@ import GenderFemaleIcon from '@/Components/Icons/GenderFemaleIcon.vue';
 import GaySymbolIcon from '@/Components/Icons/GaySymbolIcon.vue';
 import LesbianSymbolIcon from '@/Components/Icons/LesbianSymbolIcon.vue';
 import TransgenderSymbolIcon from '@/Components/Icons/TransgenderSymbolIcon.vue';
+import StraightSymbolIcon from '@/Components/Icons/StraightSymbolIcon.vue';
 
 const toast = useToast();
 const { get, post } = useFetch();
@@ -91,6 +92,7 @@ const genderIconMap = {
     'gender-gay': GaySymbolIcon,
     'gender-lesbian': LesbianSymbolIcon,
     'gender-transgender': TransgenderSymbolIcon,
+    'gender-straight': StraightSymbolIcon,
 };
 
 const menuIconMap = { ...lucideIconMap, ...genderIconMap };

@@ -123,6 +123,7 @@ class MenuItemResource extends Resource
                                 'gender-gay' => 'Gay Symbol',
                                 'gender-lesbian' => 'Lesbian Symbol',
                                 'gender-transgender' => 'Transgender Symbol',
+                                'gender-straight' => 'Straight Symbol',
                             ])
                             ->searchable()
                             ->nullable()
