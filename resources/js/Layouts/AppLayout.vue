@@ -7,7 +7,7 @@ import {
     ChevronLeft, ChevronRight, Shield,
     X, Check, CheckCheck, Rss, LayoutDashboard, ChevronDown, ChevronUp, Film,
     Tag, Folder, Star, ExternalLink, Eye, EyeOff, LayoutGrid, Plus,
-    ImageIcon, MoreHorizontal, Loader2, Smartphone, Award
+    ImageIcon, MoreHorizontal, Loader2, Smartphone, Award, LogIn
 } from 'lucide-vue-next';
 import { useTheme } from '@/Composables/useTheme';
 import { useToast } from '@/Composables/useToast';
@@ -637,7 +637,17 @@ const handleMobileNavClick = (item) => {
                     </template>
 
                     <template v-else>
-                        <button @click="showLoginModal = true" class="btn btn-primary">Login / Register</button>
+                        <!-- Mobile: icon-only, matching the language switcher's understated style -->
+                        <button
+                            @click="showLoginModal = true"
+                            class="sm:hidden p-2 rounded-full transition-all text-text-secondary opacity-70 hover:opacity-100"
+                            title="Login / Register"
+                            aria-label="Login / Register"
+                        >
+                            <LogIn class="w-5 h-5" />
+                        </button>
+                        <!-- Desktop: full labeled button -->
+                        <button @click="showLoginModal = true" class="hidden sm:inline-flex btn btn-primary">Login / Register</button>
                     </template>
                 </div>
             </div>
