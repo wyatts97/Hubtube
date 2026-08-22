@@ -30,7 +30,7 @@ import StraightSymbolIcon from '@/Components/Icons/StraightSymbolIcon.vue';
 const toast = useToast();
 const { get, post } = useFetch();
 const { localizedUrl, t, isTranslated } = useI18n();
-const { showOverlay } = useGlobalAutoTranslate();
+useGlobalAutoTranslate();
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
@@ -1150,15 +1150,6 @@ const handleMobileNavClick = (item) => {
         <!-- Interstitial Ad -->
         <AdInterstitial />
 
-        <!-- Translation Loading Overlay — full-page blur with min 3s display -->
-        <Transition name="translate-fade">
-            <div v-if="showOverlay" class="fixed inset-0 z-[9999] flex items-center justify-center" style="background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
-                <div class="flex flex-col items-center gap-4">
-                    <img src="/images/globe.svg" alt="" class="w-16 h-16 animate-spin-slow" style="filter: invert(1) brightness(2);" />
-                    <span class="text-base font-semibold text-white tracking-wide">{{ t('common.translating') }}</span>
-                </div>
-            </div>
-        </Transition>
     </div>
 </template>
 
@@ -1171,28 +1162,6 @@ const handleMobileNavClick = (item) => {
     .lg\:pl-sidebar {
         padding-left: 160px;
     }
-}
-
-/* Globe spin animation — slower than default for a smooth feel */
-.animate-spin-slow {
-    animation: spin 2.5s linear infinite;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* Translate overlay fade transition */
-.translate-fade-enter-active {
-    transition: opacity 0.4s ease-out;
-}
-.translate-fade-leave-active {
-    transition: opacity 0.6s ease-in;
-}
-.translate-fade-enter-from,
-.translate-fade-leave-to {
-    opacity: 0;
 }
 
 /* Mobile bottom navbar slide transition */

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\TranslateModelJob;
 use App\Models\Category;
 use App\Models\Page;
 use App\Models\Translation;
@@ -63,16 +64,18 @@ class TranslationController extends Controller
             }
         }
 
-        $translated = $this->translationService->translateModel(
-            $modelClass,
-            $model->id,
-            $fields,
-            $locale
-        );
+        $cached = $this->translationService->modelFromCache($modelClass, $model->id, $fields, $locale);
+
+        // Anything not already stored is translated in the background; the
+        // caller gets the source text now and the translation on a later visit.
+        if (!$cached['complete'] && TranslationService::autoTranslateEnabled()) {
+            TranslateModelJob::dispatch($modelClass, $model->id, array_keys($fields), $locale);
+        }
 
         return response()->json([
-            'translations' => $translated,
+            'translations' => $cached['fields'],
             'locale' => $locale,
+            'pending' => !$cached['complete'],
         ]);
     }
 
@@ -107,16 +110,23 @@ class TranslationController extends Controller
             return $item;
         })->toArray();
 
-        $translated = $this->translationService->translateBatch(
+        $cached = $this->translationService->batchFromCache(
             $modelClass,
             $items,
             $validated['fields'],
             $locale
         );
 
+        if (TranslationService::autoTranslateEnabled()) {
+            foreach ($cached['missing'] as $id) {
+                TranslateModelJob::dispatch($modelClass, $id, $validated['fields'], $locale);
+            }
+        }
+
         return response()->json([
-            'translations' => $translated,
+            'translations' => $cached['items'],
             'locale' => $locale,
+            'pending' => count($cached['missing']),
         ]);
     }
 

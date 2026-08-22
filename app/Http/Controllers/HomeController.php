@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\TranslateModelJob;
 use App\Models\Category;
 use App\Models\Image;
 use App\Models\Playlist;
@@ -273,13 +274,7 @@ class HomeController extends Controller
         $defaultLocale = TranslationService::getDefaultLocale();
 
         if ($locale !== $defaultLocale) {
-            $translationService = app(TranslationService::class);
-            $categories->transform(function ($category) use ($translationService, $locale) {
-                $category->name = $translationService->translateField(
-                    Category::class, $category->id, 'name', $category->name, $locale
-                );
-                return $category;
-            });
+            $this->applyCategoryNameTranslations($categories, $locale);
         }
 
         return Inertia::render('Categories/Index', [
@@ -310,14 +305,20 @@ class HomeController extends Controller
         $translatedDescription = null;
 
         if ($locale !== $defaultLocale) {
-            $translationService = app(TranslationService::class);
-            $translatedName = $translationService->translateField(
-                Category::class, $category->id, 'name', $category->name, $locale
-            );
+            $fields = ['name' => $category->name];
             if ($category->description) {
-                $translatedDescription = $translationService->translateField(
-                    Category::class, $category->id, 'description', $category->description, $locale
-                );
+                $fields['description'] = $category->description;
+            }
+
+            // Cache-only read; anything missing is translated in the background.
+            $cached = app(TranslationService::class)
+                ->modelFromCache(Category::class, $category->id, $fields, $locale);
+
+            $translatedName = $cached['fields']['name'] ?? null;
+            $translatedDescription = $cached['fields']['description'] ?? null;
+
+            if (!$cached['complete'] && TranslationService::autoTranslateEnabled()) {
+                TranslateModelJob::dispatch(Category::class, $category->id, array_keys($fields), $locale);
             }
         }
 
@@ -438,5 +439,35 @@ class HomeController extends Controller
             'videos' => $videos,
             'seo' => $this->seoService->forTag($tag),
         ]);
+    }
+
+    /**
+     * Swap in stored category-name translations and queue whatever is missing.
+     *
+     * One query for the whole collection rather than a translateField() call
+     * per category, which was both N+1 and a synchronous provider round-trip.
+     */
+    protected function applyCategoryNameTranslations($categories, string $locale): void
+    {
+        $items = $categories->map(fn ($category) => ['id' => $category->id, 'name' => $category->name])->all();
+
+        if (empty($items)) {
+            return;
+        }
+
+        $cached = app(TranslationService::class)->batchFromCache(Category::class, $items, ['name'], $locale);
+        $names = collect($cached['items'])->pluck('name', 'id');
+
+        $categories->transform(function ($category) use ($names) {
+            $category->name = $names[$category->id] ?? $category->name;
+
+            return $category;
+        });
+
+        if (TranslationService::autoTranslateEnabled()) {
+            foreach ($cached['missing'] as $id) {
+                TranslateModelJob::dispatch(Category::class, $id, ['name'], $locale);
+            }
+        }
     }
 }

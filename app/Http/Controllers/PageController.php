@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Exception;
 use Throwable;
 use Illuminate\Support\Facades\Log;
+use App\Jobs\TranslateModelJob;
 use App\Models\Page;
 use App\Services\SeoService;
 use App\Services\TranslationService;
@@ -38,21 +39,25 @@ class PageController extends Controller
 
         if ($locale !== $defaultLocale) {
             try {
-                $translationService = app(TranslationService::class);
-                // Translate title (short text — safe)
-                $translatedTitle = $translationService->translateField(
-                    Page::class, $page->id, 'title', $title, $locale
+                // Cache-only read. Page content is often long HTML, and the
+                // provider is throttled, so translating inline could hold the
+                // request for a long time; missing pieces are queued instead.
+                $cached = app(TranslationService::class)->modelFromCache(
+                    Page::class,
+                    $page->id,
+                    ['title' => $title, 'content' => $content],
+                    $locale
                 );
-                $title = $translatedTitle ?: $title;
 
-                // Translate content separately (can be very long HTML — may fail)
-                $translatedContent = $translationService->translateField(
-                    Page::class, $page->id, 'content', $content, $locale
-                );
-                $content = $translatedContent ?: $content;
+                $title = $cached['fields']['title'] ?: $title;
+                $content = $cached['fields']['content'] ?: $content;
+
+                if (!$cached['complete'] && TranslationService::autoTranslateEnabled()) {
+                    TranslateModelJob::dispatch(Page::class, $page->id, ['title', 'content'], $locale);
+                }
             } catch (Throwable $e) {
-                // Translation failed — fall back to original content
-                Log::warning('Page translation failed: ' . $e->getMessage(), [
+                // Lookup failed — fall back to original content
+                Log::warning('Page translation lookup failed: ' . $e->getMessage(), [
                     'page_id' => $page->id,
                     'locale' => $locale,
                 ]);

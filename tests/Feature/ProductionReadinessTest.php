@@ -463,3 +463,109 @@ test('the default locale ships no fallback catalogue', function () {
     expect($locale['current'])->toBe('en')
         ->and($locale['fallback'])->toBeEmpty();
 });
+
+// ── Content Translation Is Off The Request Path ─────────────────────────
+
+test('batch translate never calls the provider inline and queues the misses', function () {
+    Illuminate\Support\Facades\Queue::fake();
+    enableLocales(['en', 'es']);
+
+    $videos = App\Models\Video::factory()->count(3)->create();
+
+    $response = $this->postJson('/api/translate/batch', [
+        'type' => 'video',
+        'ids' => $videos->pluck('id')->all(),
+        'fields' => ['title'],
+        'locale' => 'es',
+    ]);
+
+    $response->assertStatus(200);
+
+    // Source text comes straight back; nothing was translated synchronously.
+    expect($response->json('pending'))->toBe(3)
+        ->and($response->json('translations.0.title'))->toBe($videos[0]->title);
+
+    Illuminate\Support\Facades\Queue::assertPushed(App\Jobs\TranslateModelJob::class, 3);
+});
+
+test('batch translate returns stored translations without queueing', function () {
+    Illuminate\Support\Facades\Queue::fake();
+    enableLocales(['en', 'es']);
+
+    $video = App\Models\Video::factory()->create();
+    App\Models\Translation::create([
+        'translatable_type' => App\Models\Video::class,
+        'translatable_id' => $video->id,
+        'field' => 'title',
+        'locale' => 'es',
+        'value' => 'Titulo traducido',
+        'translated_slug' => 'titulo-traducido',
+    ]);
+
+    $response = $this->postJson('/api/translate/batch', [
+        'type' => 'video',
+        'ids' => [$video->id],
+        'fields' => ['title'],
+        'locale' => 'es',
+    ]);
+
+    expect($response->json('translations.0.title'))->toBe('Titulo traducido')
+        ->and($response->json('translations.0.translated_slug'))->toBe('titulo-traducido')
+        ->and($response->json('pending'))->toBe(0);
+
+    Illuminate\Support\Facades\Queue::assertNothingPushed();
+});
+
+test('auto_translate_content off stops background translation being queued', function () {
+    Illuminate\Support\Facades\Queue::fake();
+    enableLocales(['en', 'es']);
+    Setting::set('auto_translate_content', false, 'language', 'boolean');
+    Setting::clearCache();
+
+    $video = App\Models\Video::factory()->create();
+
+    $this->postJson('/api/translate/batch', [
+        'type' => 'video',
+        'ids' => [$video->id],
+        'fields' => ['title'],
+        'locale' => 'es',
+    ])->assertStatus(200);
+
+    // The setting used to be written by the admin panel and read by nothing.
+    Illuminate\Support\Facades\Queue::assertNothingPushed();
+});
+
+test('the translate job is unique per model and locale', function () {
+    Illuminate\Support\Facades\Queue::fake();
+    enableLocales(['en', 'es']);
+
+    $job = new App\Jobs\TranslateModelJob(App\Models\Video::class, 7, ['title'], 'es');
+
+    expect($job->uniqueId())->toBe(App\Models\Video::class.':7:es')
+        ->and($job)->toBeInstanceOf(Illuminate\Contracts\Queue\ShouldBeUnique::class);
+});
+
+test('a processed video is pre-translated into every enabled locale', function () {
+    // Pre-translation on publish is what keeps the request path's cache-only
+    // reads from showing source text to real visitors.
+    Illuminate\Support\Facades\Queue::fake();
+    enableLocales(['en', 'es', 'pt']);
+
+    $video = App\Models\Video::factory()->create(['privacy' => 'public', 'is_approved' => true]);
+
+    (new App\Listeners\PreTranslateVideoListener)->handle(new App\Events\VideoProcessed($video));
+
+    // en is the default locale, so only es and pt are queued.
+    Illuminate\Support\Facades\Queue::assertPushed(App\Jobs\TranslateModelJob::class, 2);
+});
+
+test('a private video is not pre-translated', function () {
+    Illuminate\Support\Facades\Queue::fake();
+    enableLocales(['en', 'es']);
+
+    $video = App\Models\Video::factory()->create(['privacy' => 'private']);
+
+    (new App\Listeners\PreTranslateVideoListener)->handle(new App\Events\VideoProcessed($video));
+
+    Illuminate\Support\Facades\Queue::assertNothingPushed();
+});

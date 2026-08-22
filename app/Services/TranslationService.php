@@ -264,6 +264,91 @@ class TranslationService
      * Batch translate multiple items (e.g. video listings).
      * Returns array keyed by model ID with translated fields.
      */
+    /**
+     * Is background translation of user content switched on?
+     */
+    public static function autoTranslateEnabled(): bool
+    {
+        return (bool) Setting::get('auto_translate_content', true);
+    }
+
+    /**
+     * Read already-stored translations for a batch, without ever contacting the
+     * translation provider.
+     *
+     * This is the request-path counterpart to translateBatch(): the provider is
+     * throttled to one call every 1.2s with 5/10/20/40s retry backoff, so
+     * translating inline can hold a PHP-FPM worker for a minute or more. HTTP
+     * handlers call this and queue TranslateModelJob for whatever is missing.
+     *
+     * Returns ['items' => <items with any known translations applied>,
+     *          'missing' => <ids that still need at least one field>].
+     */
+    public function batchFromCache(string $modelClass, array $items, array $fieldNames, string $targetLocale): array
+    {
+        if ($targetLocale === static::getDefaultLocale()) {
+            return ['items' => $items, 'missing' => []];
+        }
+
+        $existing = Translation::where('translatable_type', $modelClass)
+            ->whereIn('translatable_id', array_column($items, 'id'))
+            ->where('locale', $targetLocale)
+            ->whereIn('field', $fieldNames)
+            ->get()
+            ->groupBy('translatable_id');
+
+        $result = [];
+        $missing = [];
+
+        foreach ($items as $item) {
+            $translated = $item;
+            $incomplete = false;
+
+            foreach ($fieldNames as $field) {
+                if (empty($item[$field])) {
+                    continue;
+                }
+
+                $row = $existing->get($item['id'])?->firstWhere('field', $field);
+
+                if (!$row) {
+                    $incomplete = true;
+
+                    continue;
+                }
+
+                $translated[$field] = $row->value;
+
+                if ($field === 'title' && $row->translated_slug) {
+                    $translated['translated_slug'] = $row->translated_slug;
+                }
+            }
+
+            if ($incomplete) {
+                $missing[] = $item['id'];
+            }
+
+            $result[] = $translated;
+        }
+
+        return ['items' => $result, 'missing' => $missing];
+    }
+
+    /**
+     * Single-model counterpart to batchFromCache(). Returns the stored
+     * translations, falling back to the source value for any missing field.
+     */
+    public function modelFromCache(string $modelClass, int $modelId, array $fields, string $targetLocale): array
+    {
+        $item = ['id' => $modelId] + $fields;
+        $result = $this->batchFromCache($modelClass, [$item], array_keys($fields), $targetLocale);
+
+        $translated = $result['items'][0] ?? $item;
+        unset($translated['id']);
+
+        return ['fields' => $translated, 'complete' => empty($result['missing'])];
+    }
+
     public function translateBatch(string $modelClass, array $items, array $fieldNames, string $targetLocale): array
     {
         $defaultLocale = static::getDefaultLocale();

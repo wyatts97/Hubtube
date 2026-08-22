@@ -6,6 +6,7 @@ use App\Events\VideoUploaded;
 use App\Listeners\ProcessVideoUpload;
 use App\Events\VideoProcessed;
 use App\Listeners\NotifyVideoProcessed;
+use App\Listeners\PreTranslateVideoListener;
 use App\Listeners\SubmitVideoToIndexNowListener;
 use App\Events\NewSubscriber;
 use App\Listeners\NotifyChannelOfNewSubscriber;
@@ -28,6 +29,7 @@ class EventServiceProvider extends ServiceProvider
         VideoProcessed::class => [
             NotifyVideoProcessed::class,
             SubmitVideoToIndexNowListener::class,
+            PreTranslateVideoListener::class,
         ],
         NewSubscriber::class => [
             NotifyChannelOfNewSubscriber::class,

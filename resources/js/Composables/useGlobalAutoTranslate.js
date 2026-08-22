@@ -9,7 +9,10 @@ import { usePage, router } from '@inertiajs/vue3';
  * request, and populates the shared useTranslation cache so VideoCard's
  * getTranslated() works everywhere — no per-page setup needed.
  *
- * Also exposes `isTranslating` for a loading overlay.
+ * The request only ever returns translations that are already stored; the
+ * server queues the rest. So this resolves in milliseconds and untranslated
+ * titles simply render in the source language until a job catches up — there
+ * is nothing to block the page for.
  */
 
 // Module-level shared cache (same shape as useTranslation's translationCache)
@@ -17,13 +20,6 @@ import { usePage, router } from '@inertiajs/vue3';
 import { _translationCache } from '@/Composables/useTranslation';
 
 const isTranslating = ref(false);
-const showOverlay = ref(false);
-let overlayTimer = null;
-const MIN_OVERLAY_MS = 3000;
-
-// Track if we've already shown the overlay for this session/locale
-// The overlay should only show ONCE when the user first switches languages
-let overlayShownForLocale = null;
 
 /**
  * Recursively find all video-like objects in page props.
@@ -91,17 +87,7 @@ async function translatePageVideos(page) {
 
     if (!ids.length) return;
 
-    // Only show overlay ONCE per locale switch (not on every page navigation)
-    // The overlay appears when the user first switches to a new language
-    const shouldShowOverlay = overlayShownForLocale !== locale;
-    
     isTranslating.value = true;
-    if (shouldShowOverlay) {
-        overlayShownForLocale = locale;
-        showOverlay.value = true;
-        if (overlayTimer) clearTimeout(overlayTimer);
-    }
-    const overlayStart = Date.now();
 
     try {
         const response = await fetch('/api/translate/batch', {
@@ -137,16 +123,6 @@ async function translatePageVideos(page) {
         // Silently fail — show original content
     } finally {
         isTranslating.value = false;
-        // Only hide overlay if we showed it (first time for this locale)
-        if (shouldShowOverlay) {
-            // Keep overlay visible for at least MIN_OVERLAY_MS so the user
-            // sees the animation and the page behind fully loads
-            const elapsed = Date.now() - overlayStart;
-            const remaining = Math.max(0, MIN_OVERLAY_MS - elapsed);
-            overlayTimer = setTimeout(() => {
-                showOverlay.value = false;
-            }, remaining);
-        }
     }
 }
 
@@ -165,5 +141,5 @@ export function useGlobalAutoTranslate() {
         if (typeof removeListener === 'function') removeListener();
     });
 
-    return { isTranslating, showOverlay };
+    return { isTranslating };
 }
