@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { VidstackPlayer, VidstackPlayerLayout } from 'vidstack/global/player';
 import 'vidstack/player/styles/default/theme.css';
 import 'vidstack/player/styles/default/layouts/video.css';
+import HLS from 'hls.js';
 
 const props = defineProps({
     src: {
@@ -62,12 +63,16 @@ const initPlayer = async () => {
             }),
         });
 
-        // Use locally bundled hls.js instead of loading from CDN — loaded lazily
-        // via dynamic import so MP4-only sources never pay for the hls.js chunk.
+        // Use locally bundled hls.js instead of loading from CDN.
+        // NOTE: a lazy `() => import('hls.js')` loader was tried here to defer
+        // this chunk for MP4-only pages, but it broke HLS playback in production
+        // (Vidstack fell back to a native <video type="application/x-mpegurl">
+        // source, which only Safari supports) — reverted to the synchronous
+        // import/assignment, which is the reliable, known-working form.
         player.addEventListener('provider-change', (event) => {
             const provider = event.detail;
             if (provider?.type === 'hls') {
-                provider.library = () => import('hls.js').then((mod) => mod.default ?? mod);
+                provider.library = HLS;
             }
         });
 
