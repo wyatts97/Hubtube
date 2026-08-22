@@ -210,62 +210,11 @@
         }
     </style>
 
-    {{-- hreflang tags for multi-language SEO.
-         Only emits alternates that actually resolve to distinct URLs, and uses
-         region-aware BCP 47 codes (pt-BR, zh-CN, …) where appropriate. --}}
-    @php
-        $enabledLangs = \App\Services\TranslationService::getEnabledLocales();
-        $defaultLang = \App\Services\TranslationService::getDefaultLocale();
-        $currentPath = request()->path();
-        $cleanPath = preg_replace('#^[a-z]{2,3}(/|$)#', '', $currentPath);
-        $cleanPath = $cleanPath ?: '/';
-
-        $hreflangMap = [];
-
-        if (count($enabledLangs) > 1) {
-            $route = request()->route();
-            $routeName = $route?->getName();
-            $videoModel = null;
-
-            // Detect video show pages (both default and locale-prefixed)
-            if (in_array($routeName, ['videos.show', 'locale.videos.show'])) {
-                $video = $route->parameter('video') ?? null;
-                $slug = $route->parameter('slug') ?? null;
-                if ($video instanceof \App\Models\Video) {
-                    $videoModel = $video;
-                } elseif ($slug) {
-                    $videoModel = \App\Models\Video::where('slug', $slug)->first()
-                        ?? \App\Models\Video::whereHas('translations', fn($q) => $q->where('translated_slug', $slug))->first();
-                }
-            }
-
-            if ($videoModel) {
-                // Video page: only emit hreflang for locales with confirmed translated slugs (plus default)
-                $translationService = app(\App\Services\TranslationService::class);
-                $alternates = $translationService->getAlternateUrls(
-                    \App\Models\Video::class,
-                    $videoModel->id,
-                    $videoModel->slug,
-                );
-                $defaultUrl = $alternates[$defaultLang] ?? url('/' . $videoModel->slug);
-                $hreflangMap['x-default'] = $defaultUrl;
-                $seen = [$defaultUrl => true];
-                foreach ($alternates as $lang => $href) {
-                    $tag = \App\Services\TranslationService::toHreflang($lang);
-                    if (!isset($seen[$href])) {
-                        $hreflangMap[$tag] = $href;
-                        $seen[$href] = true;
-                    } elseif ($lang === $defaultLang) {
-                        $hreflangMap[$tag] = $href;
-                    }
-                }
-            } else {
-                // Non-video page: shared path structure across locales
-                $hreflangMap = \App\Services\TranslationService::hreflangMapForPath('/' . $cleanPath);
-            }
-        }
-    @endphp
-    @foreach($hreflangMap as $hl => $href)
+    {{-- hreflang tags for multi-language SEO. Built by SeoService from the SEO
+         payload the controller already produced — no re-querying here.
+         Deliberately NOT marked with `inertia`: SeoHead.vue doesn't emit these,
+         and the head manager removes any keyed tag the client doesn't re-render. --}}
+    @foreach(\App\Services\SeoService::hreflangTags() as $hl => $href)
         <link rel="alternate" hreflang="{{ $hl }}" href="{{ $href }}" />
     @endforeach
 

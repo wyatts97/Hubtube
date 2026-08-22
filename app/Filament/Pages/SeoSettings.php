@@ -98,7 +98,6 @@ class SeoSettings extends Page implements HasForms
 
             // Canonical
             'seo_canonical_enabled' => Setting::get('seo_canonical_enabled', true),
-            'seo_force_trailing_slash' => Setting::get('seo_force_trailing_slash', false),
         ]);
     }
 
@@ -214,9 +213,6 @@ class SeoSettings extends Page implements HasForms
                                         Toggle::make('seo_canonical_enabled')
                                             ->label('Enable Canonical URLs')
                                             ->helperText('Adds <link rel="canonical"> to prevent duplicate content issues.'),
-                                        Toggle::make('seo_force_trailing_slash')
-                                            ->label('Force Trailing Slash')
-                                            ->helperText('Append trailing slash to canonical URLs (not recommended for most sites).'),
                                     ])->columns(2),
                             ]),
 

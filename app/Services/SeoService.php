@@ -42,6 +42,84 @@ class SeoService
         static::$currentSeo = null;
     }
 
+    /**
+     * Build the rel="alternate" hreflang map for the current page.
+     *
+     * Two shapes of page exist:
+     *
+     *  - Videos carry per-locale slugs, so a builder stores the resolved URLs
+     *    in the payload's `alternateUrls` and those are used verbatim.
+     *  - Everything else shares one path across locales (/es/category/foo),
+     *    which TranslationService::hreflangMapForPath() derives.
+     *
+     * Returns [hreflangCode => absoluteUrl], including x-default. Empty when
+     * only one locale is enabled.
+     */
+    public static function hreflangTags(): array
+    {
+        try {
+            if (count(TranslationService::getEnabledLocales()) <= 1) {
+                return [];
+            }
+
+            $alternates = static::$currentSeo['alternateUrls'] ?? [];
+
+            return empty($alternates)
+                ? TranslationService::hreflangMapForPath(static::localeFreePath())
+                : static::hreflangMapForAlternates($alternates);
+        } catch (Exception $e) {
+            // Settings/translations tables may be unavailable (install, tests).
+            return [];
+        }
+    }
+
+    /**
+     * Map pre-resolved per-locale URLs onto BCP 47 hreflang codes.
+     *
+     * Locales whose URL duplicates one already emitted are skipped, so an
+     * untranslated video doesn't advertise the same page several times — but
+     * the default locale always keeps its own tag alongside x-default.
+     */
+    protected static function hreflangMapForAlternates(array $alternates): array
+    {
+        $defaultLocale = TranslationService::getDefaultLocale();
+        $defaultUrl = $alternates[$defaultLocale] ?? reset($alternates);
+
+        $map = ['x-default' => $defaultUrl];
+        $seen = [$defaultUrl => true];
+
+        foreach ($alternates as $locale => $href) {
+            $tag = TranslationService::toHreflang($locale);
+
+            if (! isset($seen[$href])) {
+                $map[$tag] = $href;
+                $seen[$href] = true;
+            } elseif ($locale === $defaultLocale) {
+                $map[$tag] = $href;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * The current request path with any locale prefix removed.
+     *
+     * Matching the first segment against the enabled locales matters: a blind
+     * [a-z]{2,3} pattern also eats real first segments like /tag/... and /pro,
+     * which would point those pages' hreflang at the wrong URL.
+     */
+    protected static function localeFreePath(): string
+    {
+        $segments = array_values(array_filter(explode('/', request()->path()), 'strlen'));
+
+        if (isset($segments[0]) && TranslationService::isValidLocale($segments[0])) {
+            array_shift($segments);
+        }
+
+        return '/'.implode('/', $segments);
+    }
+
     protected function s(string $key, mixed $default = null): mixed
     {
         if (empty($this->settings)) {
@@ -100,13 +178,13 @@ class SeoService
             return null;
         }
         $url = $path ? url($path) : url()->current();
-        // Strip query parameters for canonical
-        $url = strtok($url, '?');
-        if ($this->s('seo_force_trailing_slash', false) && ! str_ends_with($url, '/')) {
-            $url .= '/';
-        }
 
-        return $url;
+        // Strip query parameters for canonical.
+        // Note: no trailing slash is ever appended. public/.htaccess 301-redirects
+        // trailing slashes away, so a canonical carrying one would point at a URL
+        // that immediately redirects. The old seo_force_trailing_slash setting that
+        // did this has been removed.
+        return strtok($url, '?');
     }
 
     /**

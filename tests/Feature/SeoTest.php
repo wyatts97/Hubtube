@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Category;
+use App\Models\Translation;
 use App\Models\User;
 use App\Models\Video;
 
@@ -141,6 +142,95 @@ test('404 responses are noindex', function () {
 
     $response->assertStatus(404);
     expect($response->getContent())->toContain('content="noindex, nofollow"');
+});
+
+/*
+|--------------------------------------------------------------------------
+| hreflang — built by SeoService, rendered server-side
+|--------------------------------------------------------------------------
+*/
+
+test('no hreflang links when only one locale is enabled', function () {
+    enableLocales(['en']);
+
+    expect(hreflangLinks($this->get('/videos')))->toBeEmpty();
+});
+
+test('pages sharing a path advertise every enabled locale', function () {
+    enableLocales(['en', 'es', 'pt']);
+
+    expect(hreflangLinks($this->get('/videos')))->toBe([
+        'x-default' => '/videos',
+        'en' => '/videos',
+        'es' => '/es/videos',
+        // Region-aware BCP 47 code, per TranslationService::toHreflang().
+        'pt-BR' => '/pt/videos',
+    ]);
+});
+
+test('a locale-prefixed page advertises the same cluster as its default-locale twin', function () {
+    enableLocales(['en', 'es']);
+    $category = Category::factory()->create(['slug' => 'cars']);
+
+    expect(hreflangLinks($this->get('/es/category/cars')))
+        ->toBe(hreflangLinks($this->get('/category/cars')));
+});
+
+test('short first path segments are not mistaken for a locale prefix', function (string $path) {
+    // A blind [a-z]{2,3} match treats "tag" and "pro" as locale prefixes and
+    // strips them, pointing these pages' hreflang at the wrong URL.
+    enableLocales(['en', 'es']);
+
+    expect(hreflangLinks($this->get($path)))->toBe([
+        'x-default' => $path,
+        'en' => $path,
+        'es' => '/es'.$path,
+    ]);
+})->with(['/tag/foo', '/pro']);
+
+test('a translated video advertises its per-locale slug', function () {
+    enableLocales(['en', 'es', 'pt']);
+    $video = Video::factory()->create(['slug' => 'my-video']);
+    Translation::create([
+        'translatable_type' => Video::class,
+        'translatable_id' => $video->id,
+        'field' => 'title',
+        'locale' => 'es',
+        'value' => 'Mi Video',
+        'translated_slug' => 'mi-video',
+    ]);
+
+    // pt is absent: only locales with a confirmed translated slug are claimed.
+    expect(hreflangLinks($this->get('/my-video')))->toBe([
+        'x-default' => '/my-video',
+        'en' => '/my-video',
+        'es' => '/es/mi-video',
+    ]);
+});
+
+test('the per-locale slug a video advertises actually resolves', function () {
+    enableLocales(['en', 'es']);
+    $video = Video::factory()->create(['slug' => 'my-video']);
+    Translation::create([
+        'translatable_type' => Video::class,
+        'translatable_id' => $video->id,
+        'field' => 'title',
+        'locale' => 'es',
+        'value' => 'Mi Video',
+        'translated_slug' => 'mi-video',
+    ]);
+
+    $this->get(hreflangLinks($this->get('/my-video'))['es'])->assertStatus(200);
+});
+
+test('canonical URLs never carry a trailing slash', function () {
+    // public/.htaccess 301-redirects trailing slashes away, so a canonical with
+    // one would point at a URL that immediately redirects.
+    $video = Video::factory()->create();
+
+    preg_match('/<link rel="canonical" href="([^"]+)"/', $this->get("/{$video->slug}")->getContent(), $m);
+
+    expect($m[1])->not->toEndWith('/');
 });
 
 test('locale-prefixed homepage loads', function () {

@@ -53,15 +53,18 @@ For the repeated tags (`og:locale:alternate`, `og:video:tag`) use an indexed key
 **Move it into `SeoService`.** `forVideo()` already calls `TranslationService::getAlternateUrls()` at line 274 and stores the result in `$seo['alternateUrls']` — the work is done, it just isn't reaching the view.
 
 1. Add `SeoService::hreflangTags(): array` returning the final `[$hreflangCode => $url]` map, including `x-default`. It reads `$this->currentSeo['alternateUrls']` when present (video pages) and falls back to `TranslationService::hreflangMapForPath()` otherwise. The BCP-47 conversion stays in `TranslationService::toHreflang()`.
-2. Extend the `alternateUrls` population beyond `forVideo()` to the other per-model pages that have translated content — `forCategory()`, `forPage()` — reusing the already-loaded model.
-3. `app.blade.php` collapses to:
+2. `app.blade.php` collapses to:
    ```blade
    @foreach(\App\Services\SeoService::hreflangTags() as $hl => $href)
-       <link rel="alternate" hreflang="{{ $hl }}" href="{{ $href }}" inertia="hreflang:{{ $hl }}" />
+       <link rel="alternate" hreflang="{{ $hl }}" href="{{ $href }}" />
    @endforeach
    ```
+   These links must **not** carry an `inertia` attribute — `SeoHead.vue` doesn't emit hreflang, and the head manager deletes any keyed tag the client doesn't re-render.
+3. Strip the locale prefix by matching the first path segment against the enabled locales, not with a `[a-z]{2,3}` pattern — that also eats real first segments like `/tag/…` and `/pro`, pointing those pages' hreflang at the wrong URL.
 
 Also resolve the trailing-slash contradiction: `public/.htaccess` 301-redirects trailing slashes *away* while `seo_force_trailing_slash` (`SeoService.php:92`) adds them, so enabling that setting produces canonicals that redirect. Remove the setting and the branch.
+
+**Dropped from this phase:** extending `alternateUrls` to `forCategory()` and `forPage()`. Only videos have per-locale slugs — `VideoController::localeShow()` resolves them, but `HomeController::localeCategory()` and `PageController::localeShow()` look up the original slug only. Advertising translated-slug URLs for those pages would emit hreflang pointing at 404s. Making them resolve translated slugs is a prerequisite, and belongs with the route consolidation in the appendix.
 
 ---
 
