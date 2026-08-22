@@ -6,7 +6,7 @@ import {
     Video, Home, TrendingUp, Zap, ListVideo, History, 
     ChevronLeft, ChevronRight, Shield,
     X, Check, CheckCheck, Rss, LayoutDashboard, ChevronDown, ChevronUp, Film,
-    Tag, Folder, Star, ExternalLink, Eye, EyeOff, LayoutGrid, Plus,
+    Tag, Folder, Star, Eye, EyeOff, LayoutGrid, Plus,
     ImageIcon, MoreHorizontal, Loader2, Smartphone, Award, LogIn
 } from 'lucide-vue-next';
 import { useTheme } from '@/Composables/useTheme';
@@ -650,9 +650,9 @@ const handleMobileNavClick = (item) => {
                 </div>
             </div>
 
-            <!-- Mega Menu Bar (desktop only) -->
-            <div v-if="headerMenuItems.length" class="hidden lg:block border-t mega-menu-area border-border">
-                <div class="flex items-center gap-1 px-4 h-10">
+            <!-- Menu Bar (tablet & desktop): site menu items on the left, language switcher on the far right -->
+            <div class="hidden md:flex items-center justify-between border-t mega-menu-area border-border h-10 px-4">
+                <div class="flex items-center gap-1 min-w-0">
                     <template v-for="item in headerMenuItems" :key="item.id">
                         <!-- Divider -->
                         <div v-if="item.type === 'divider'" class="w-px h-5 mx-1" style="background-color: var(--color-border);"></div>
@@ -692,7 +692,6 @@ const handleMobileNavClick = (item) => {
                                         >
                                             <component v-if="child.icon && getMenuIcon(child.icon)" :is="getMenuIcon(child.icon)" class="w-4 h-4 shrink-0" />
                                             <span>{{ child.label }}</span>
-                                            <ExternalLink v-if="child.target === '_blank'" class="w-3 h-3 ml-auto opacity-50" />
                                         </Link>
                                         <div v-else class="border-t my-1 border-border"></div>
                                     </template>
@@ -709,10 +708,11 @@ const handleMobileNavClick = (item) => {
                         >
                             <component v-if="item.icon && getMenuIcon(item.icon)" :is="getMenuIcon(item.icon)" class="w-4 h-4" />
                             <span>{{ item.label }}</span>
-                            <ExternalLink v-if="item.target === '_blank'" class="w-3 h-3 opacity-50" />
                         </Link>
                     </template>
                 </div>
+
+                <LanguageSwitcher align="right" class="shrink-0 ml-4" />
             </div>
         </header>
 
@@ -723,7 +723,7 @@ const handleMobileNavClick = (item) => {
                 sidebarCollapsed ? 'w-16' : 'sidebar-expanded'
             ]"
             :style="{
-                top: headerMenuItems.length ? '96px' : '56px',
+                top: '96px',
                 backgroundColor: 'var(--color-bg-secondary)',
                 borderRight: '1px solid var(--color-border)',
             }"
@@ -789,10 +789,6 @@ const handleMobileNavClick = (item) => {
                     </div>
                 </template>
 
-                <!-- Language Switcher -->
-                <div class="mt-6 pt-6 border-t border-border">
-                    <LanguageSwitcher :compact="sidebarCollapsed" />
-                </div>
             </nav>
         </aside>
 
@@ -802,8 +798,7 @@ const handleMobileNavClick = (item) => {
             :initial="{ opacity: 0, y: 8 }"
             :enter="{ opacity: 1, y: 0, transition: { duration: 0.2 } }"
             :leave="{ opacity: 0, y: -8, transition: { duration: 0.15 } }"
-            :class="['transition-all duration-300', sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-sidebar']"
-            :style="{ paddingTop: headerMenuItems.length ? '96px' : '56px' }"
+            :class="['transition-all duration-300 pt-14 md:pt-24', sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-sidebar']"
         >
             <div class="px-3 py-4 pb-20 lg:pb-4 sm:p-4 sm:pb-20 lg:p-6">
                 <slot />

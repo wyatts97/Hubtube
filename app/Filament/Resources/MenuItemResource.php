@@ -105,9 +105,23 @@ class MenuItemResource extends Resource
                             ])
                             ->default('_self'),
 
-                        TextInput::make('icon')
-                            ->placeholder('e.g. tag, folder, star')
-                            ->helperText('Lucide icon name (optional)'),
+                        Select::make('icon')
+                            ->options([
+                                'tag' => 'Tag',
+                                'folder' => 'Folder',
+                                'star' => 'Star',
+                                'home' => 'Home',
+                                'zap' => 'Zap',
+                                'trending-up' => 'Trending Up',
+                                'video' => 'Video',
+                                'film' => 'Film',
+                                'list-video' => 'Playlist',
+                                'history' => 'History',
+                                'search' => 'Search',
+                            ])
+                            ->searchable()
+                            ->nullable()
+                            ->helperText('Optional icon shown next to the label'),
 
                         Select::make('parent_id')
                             ->label('Parent Menu Item')
@@ -137,10 +151,6 @@ class MenuItemResource extends Resource
                             ->minValue(2)
                             ->maxValue(6)
                             ->visible(fn ($get) => $get('is_mega') && !$get('parent_id')),
-
-                        TextInput::make('sort_order')
-                            ->numeric()
-                            ->default(0),
 
                         Toggle::make('is_active')
                             ->default(true),
@@ -177,9 +187,6 @@ class MenuItemResource extends Resource
                     ->boolean(),
                 IconColumn::make('is_active')
                     ->boolean(),
-
-                TextColumn::make('sort_order')
-                    ->sortable(),
             ])
             ->defaultSort('sort_order')
             ->filters([
