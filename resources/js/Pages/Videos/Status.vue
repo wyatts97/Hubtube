@@ -1,10 +1,11 @@
 <script setup>
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useFetch } from '@/Composables/useFetch';
 import { Loader2, CheckCircle, ShieldCheck, Trash2, Clock, XCircle, Edit, Eye } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -106,7 +107,7 @@ const isPublished = computed(() => {
 </script>
 
 <template>
-    <Head :title="`Video Status: ${video.title}`" />
+    <SeoHead :title="`Video Status: ${video.title}`" />
 
     <AppLayout>
         <div class="max-w-2xl mx-auto">

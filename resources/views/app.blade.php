@@ -5,11 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title inertia>{{ config('app.name', 'HubTube') }}</title>
-
     {{-- Server-side SEO meta tags — critical for crawlers (Twitterbot, Facebookbot, Googlebot)
          that don't execute JavaScript. Without Inertia SSR, the SeoHead.vue component only
-         renders client-side, so these tags must be in the raw HTML response. --}}
+         renders client-side, so these tags must be in the raw HTML response.
+
+         Every tag below carrying an `inertia="key"` attribute has a matching
+         `head-key` in SeoHead.vue. Inertia's head manager replaces matched tags
+         on hydration — and REMOVES any inertia-attributed tag the client doesn't
+         re-emit. So never add `inertia` to a tag SeoHead.vue doesn't also render
+         (hreflang, verification, favicon, PWA and font tags stay unkeyed). --}}
     @php
         $seo = \App\Services\SeoService::getCurrent();
         $seoDesc = \App\Models\Setting::get('seo_meta_description', '');
@@ -39,77 +43,79 @@
         $schemas = $seo['schema'] ?? [];
     @endphp
 
+    <title inertia>{{ $metaTitle ?? config('app.name', 'HubTube') }}</title>
+
     {{-- Page description --}}
     @if($metaDesc)
-    <meta name="description" content="{{ $metaDesc }}">
+    <meta name="description" content="{{ $metaDesc }}" inertia="description">
     @endif
     @if($keywords)
-    <meta name="keywords" content="{{ $keywords }}">
+    <meta name="keywords" content="{{ $keywords }}" inertia="keywords">
     @endif
     @if($robots)
-    <meta name="robots" content="{{ $robots }}">
+    <meta name="robots" content="{{ $robots }}" inertia="robots">
     @endif
     @if($canonical)
-    <link rel="canonical" href="{{ $canonical }}">
+    <link rel="canonical" href="{{ $canonical }}" inertia="canonical">
     @endif
 
     {{-- Open Graph --}}
     @if($ogTitle)
-    <meta property="og:title" content="{{ $ogTitle }}">
+    <meta property="og:title" content="{{ $ogTitle }}" inertia="og:title">
     @endif
     @if($ogDesc)
-    <meta property="og:description" content="{{ $ogDesc }}">
+    <meta property="og:description" content="{{ $ogDesc }}" inertia="og:description">
     @endif
-    <meta property="og:type" content="{{ $ogType }}">
+    <meta property="og:type" content="{{ $ogType }}" inertia="og:type">
     @if($ogUrl)
-    <meta property="og:url" content="{{ $ogUrl }}">
+    <meta property="og:url" content="{{ $ogUrl }}" inertia="og:url">
     @endif
-    <meta property="og:site_name" content="{{ $ogSiteName }}">
+    <meta property="og:site_name" content="{{ $ogSiteName }}" inertia="og:site_name">
     @if($ogImage)
-    <meta property="og:image" content="{{ $ogImage }}">
+    <meta property="og:image" content="{{ $ogImage }}" inertia="og:image">
     @if(!empty($seo['og']['image:width']))
-    <meta property="og:image:width" content="{{ $seo['og']['image:width'] }}">
-    <meta property="og:image:height" content="{{ $seo['og']['image:height'] ?? '720' }}">
+    <meta property="og:image:width" content="{{ $seo['og']['image:width'] }}" inertia="og:image:width">
+    <meta property="og:image:height" content="{{ $seo['og']['image:height'] ?? '720' }}" inertia="og:image:height">
     @endif
     @endif
     @if(!empty($seo['og']['locale']))
-    <meta property="og:locale" content="{{ $seo['og']['locale'] }}">
+    <meta property="og:locale" content="{{ $seo['og']['locale'] }}" inertia="og:locale">
     @endif
     @if(!empty($seo['og']['locale:alternate']))
-    @foreach($seo['og']['locale:alternate'] as $altLocale)
-    <meta property="og:locale:alternate" content="{{ $altLocale }}">
+    @foreach($seo['og']['locale:alternate'] as $i => $altLocale)
+    <meta property="og:locale:alternate" content="{{ $altLocale }}" inertia="og:locale:alternate:{{ $i }}">
     @endforeach
     @endif
     @if(!empty($seo['og']['video:duration']))
-    <meta property="og:video:duration" content="{{ $seo['og']['video:duration'] }}">
+    <meta property="og:video:duration" content="{{ $seo['og']['video:duration'] }}" inertia="og:video:duration">
     @endif
     @if(!empty($seo['og']['video:release_date']))
-    <meta property="og:video:release_date" content="{{ $seo['og']['video:release_date'] }}">
+    <meta property="og:video:release_date" content="{{ $seo['og']['video:release_date'] }}" inertia="og:video:release_date">
     @endif
     @if(!empty($seo['og']['video:tag']) && is_array($seo['og']['video:tag']))
-    @foreach($seo['og']['video:tag'] as $tag)
-    <meta property="og:video:tag" content="{{ $tag }}">
+    @foreach($seo['og']['video:tag'] as $i => $tag)
+    <meta property="og:video:tag" content="{{ $tag }}" inertia="og:video:tag:{{ $i }}">
     @endforeach
     @endif
 
     {{-- Twitter Card --}}
-    <meta name="twitter:card" content="{{ $twCard }}">
+    <meta name="twitter:card" content="{{ $twCard }}" inertia="twitter:card">
     @if($twSite)
-    <meta name="twitter:site" content="{{ $twSite }}">
+    <meta name="twitter:site" content="{{ $twSite }}" inertia="twitter:site">
     @endif
     @if($twTitle)
-    <meta name="twitter:title" content="{{ $twTitle }}">
+    <meta name="twitter:title" content="{{ $twTitle }}" inertia="twitter:title">
     @endif
     @if($twDesc)
-    <meta name="twitter:description" content="{{ $twDesc }}">
+    <meta name="twitter:description" content="{{ $twDesc }}" inertia="twitter:description">
     @endif
     @if($twImage)
-    <meta name="twitter:image" content="{{ $twImage }}">
+    <meta name="twitter:image" content="{{ $twImage }}" inertia="twitter:image">
     @endif
 
     {{-- JSON-LD Structured Data --}}
     @if(!empty($schemas))
-    <script type="application/ld+json">{!! json_encode(count($schemas) === 1 ? $schemas[0] : $schemas, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    <script type="application/ld+json" inertia="schema">{!! json_encode(count($schemas) === 1 ? $schemas[0] : $schemas, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @endif
 
     {{-- Verification tags --}}

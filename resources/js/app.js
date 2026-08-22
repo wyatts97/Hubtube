@@ -58,7 +58,11 @@ if ('serviceWorker' in navigator) {
 }
 
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    // Pass-through: SeoService composes complete titles server-side (including
+    // the site name and configured separator), and app.blade.php renders that
+    // same string. Appending a suffix here would double it — "Video | HubTube -
+    // HubTube" — and desync the client title from the server-rendered one.
+    title: (title) => title || appName,
     resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, pages),
     setup({ el, App, props, plugin }) {
         const app = createApp({ render: () => h(App, props) });

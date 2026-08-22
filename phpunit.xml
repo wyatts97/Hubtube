@@ -13,6 +13,9 @@
         </testsuite>
     </testsuites>
     <php>
+        <!-- Matches the memory_limit in .user.ini. Image tests decode real
+             files through GD, which exhausts PHP's 128M default. -->
+        <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_KEY" value="base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="/>
         <env name="BCRYPT_ROUNDS" value="4"/>

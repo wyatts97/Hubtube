@@ -50,7 +50,7 @@ class SponsoredCard extends Model
             $q->whereNull('target_pages')
               ->orWhere('target_pages', '[]')
               ->orWhere('target_pages', 'null')
-              ->orWhereRaw("JSON_LENGTH(target_pages) = 0")
+              ->orWhereJsonLength('target_pages', 0)
               ->orWhereJsonContains('target_pages', $page);
         });
     }
@@ -61,7 +61,7 @@ class SponsoredCard extends Model
             $q->whereNull('target_roles')
               ->orWhere('target_roles', '[]')
               ->orWhere('target_roles', 'null')
-              ->orWhereRaw("JSON_LENGTH(target_roles) = 0")
+              ->orWhereJsonLength('target_roles', 0)
               ->orWhereJsonContains('target_roles', $role ?? 'guest');
         });
     }
@@ -72,7 +72,7 @@ class SponsoredCard extends Model
             $q->whereNull('category_ids')
               ->orWhere('category_ids', '[]')
               ->orWhere('category_ids', 'null')
-              ->orWhereRaw("JSON_LENGTH(category_ids) = 0");
+              ->orWhereJsonLength('category_ids', 0);
             if ($categoryId) {
                 $q->orWhereJsonContains('category_ids', $categoryId);
             }

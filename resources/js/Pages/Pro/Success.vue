@@ -1,14 +1,15 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Crown, CheckCircle } from 'lucide-vue-next';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const goToSettings = () => router.visit('/settings');
 const goHome = () => router.visit('/');
 </script>
 
 <template>
-    <Head title="Welcome to Pro" />
+    <SeoHead title="Welcome to Pro" />
 
     <AppLayout>
         <div class="max-w-2xl mx-auto px-4 py-12 text-center">

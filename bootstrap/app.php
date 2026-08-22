@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\SeoService;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -155,6 +156,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     return Inertia::render('Error', [
                         'status' => 419,
                         'message' => 'Your session has expired. Please refresh the page.',
+                        'seo' => app(SeoService::class)->forPrivatePage('Session Expired'),
                     ])->toResponse($request)->setStatusCode(419);
                 }
 
@@ -172,6 +174,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return Inertia::render('Error', [
                     'status' => $status,
                     'message' => $e->getMessage() ?: null,
+                    'seo' => app(SeoService::class)->forPrivatePage((string) $status),
                 ])->toResponse($request)->setStatusCode($status);
             }
         });

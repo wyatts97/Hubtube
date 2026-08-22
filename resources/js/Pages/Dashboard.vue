@@ -1,10 +1,11 @@
 <script setup>
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Video, Eye, ThumbsUp, Users, Wallet, TrendingUp, Edit, BarChart3, Clock, Award } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 import { timeAgo, formatViews } from '@/Composables/useFormatters';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -48,7 +49,7 @@ const statsGridCols = computed(() => monetizationEnabled.value ? 'grid-cols-2 sm
 </script>
 
 <template>
-    <Head :title="t('dashboard.title') || 'Creator Dashboard'" />
+    <SeoHead :title="t('dashboard.title') || 'Creator Dashboard'" />
 
     <AppLayout>
         <div class="max-w-6xl mx-auto">

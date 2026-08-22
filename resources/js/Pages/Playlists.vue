@@ -1,9 +1,10 @@
 <script setup>
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ListVideo, Plus, X } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -35,7 +36,7 @@ const createPlaylist = () => {
 </script>
 
 <template>
-    <Head :title="t('playlist.your_playlists') || 'Playlists'" />
+    <SeoHead :title="t('playlist.your_playlists') || 'Playlists'" />
 
     <AppLayout>
         <div class="flex items-center justify-between mb-6">

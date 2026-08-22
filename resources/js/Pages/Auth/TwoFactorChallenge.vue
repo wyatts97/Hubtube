@@ -1,7 +1,8 @@
 <script setup>
-import { Head, useForm } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import { ShieldCheck } from 'lucide-vue-next';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const useRecoveryCode = ref(false);
 
@@ -26,7 +27,7 @@ const toggleMode = () => {
 </script>
 
 <template>
-    <Head title="Two-Factor Authentication" />
+    <SeoHead title="Two-Factor Authentication" />
 
     <div class="min-h-screen flex items-center justify-center px-4 bg-bg-primary">
         <div class="w-full max-w-md">

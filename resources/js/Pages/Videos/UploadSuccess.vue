@@ -1,8 +1,9 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { CheckCircle, Upload, Home } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -12,7 +13,7 @@ defineProps({
 </script>
 
 <template>
-    <Head title="Upload Successful" />
+    <SeoHead title="Upload Successful" />
 
     <AppLayout>
         <div class="max-w-xl mx-auto text-center py-12">

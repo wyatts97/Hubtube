@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useEventListener } from '@vueuse/core';
 import { useFetch } from '@/Composables/useFetch';
@@ -9,6 +9,7 @@ import { formatViews } from '@/Composables/useFormatters';
 import ShortsAdSlide from '@/Components/ShortsAdSlide.vue';
 import ShareModal from '@/Components/ShareModal.vue';
 import ReportModal from '@/Components/ReportModal.vue';
+import SeoHead from '@/Components/SeoHead.vue';
 import {
     Heart, MessageCircle, Share2, MoreVertical, Volume2, VolumeX,
     ChevronUp, ChevronDown, X, Filter, ChevronLeft, Flag
@@ -327,7 +328,7 @@ const goBack = () => router.visit(localizedUrl('/'));
 </script>
 
 <template>
-    <Head :title="seo.title || 'Shorts'" />
+    <SeoHead />
 
     <div class="fixed inset-0 z-50 bg-black flex">
         <!-- Desktop back button -->

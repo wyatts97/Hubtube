@@ -1,8 +1,9 @@
 <script setup>
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Link, useForm, usePage } from '@inertiajs/vue3';
 import { Eye, EyeOff } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 const page = usePage();
@@ -44,7 +45,7 @@ const providerMeta = {
 </script>
 
 <template>
-    <Head title="Sign In" />
+    <SeoHead title="Sign In" />
 
     <div class="min-h-screen flex items-center justify-center px-4 bg-bg-primary">
         <div class="w-full max-w-md">

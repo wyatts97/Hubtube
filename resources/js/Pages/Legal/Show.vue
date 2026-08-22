@@ -1,8 +1,8 @@
 <script setup>
 import { computed } from 'vue';
-import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { sanitizeHtml } from '@/Composables/useSanitize';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const props = defineProps({
     page: Object,
@@ -12,7 +12,7 @@ const sanitizedContent = computed(() => sanitizeHtml(props.page?.content ?? ''))
 </script>
 
 <template>
-    <Head :title="page.title" />
+    <SeoHead />
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">

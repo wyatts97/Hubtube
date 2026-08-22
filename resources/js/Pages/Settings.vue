@@ -1,10 +1,11 @@
 <script setup>
-import { Head, useForm, usePage, router } from '@inertiajs/vue3';
+import { useForm, usePage, router } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { User, Lock, Bell, Shield, Wallet, ExternalLink, Loader2, Camera, ImageIcon, Trash2, AlertTriangle, Download, ShieldCheck, KeyRound } from 'lucide-vue-next';
 import { usePushNotifications } from '@/Composables/usePushNotifications';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -266,7 +267,7 @@ const tabs = computed(() => {
 </script>
 
 <template>
-    <Head :title="t('settings.title') || 'Settings'" />
+    <SeoHead :title="t('settings.title') || 'Settings'" />
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">

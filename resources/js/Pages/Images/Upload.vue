@@ -1,9 +1,10 @@
 <script setup>
-import { Head, useForm } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 import { ref, computed, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Upload, X, ImageIcon, FileImage, CheckCircle, AlertCircle } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -129,7 +130,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <Head title="Upload Image" />
+    <SeoHead title="Upload Image" />
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">

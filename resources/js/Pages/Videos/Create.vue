@@ -1,10 +1,11 @@
 <script setup>
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import { ref, computed, reactive, onUnmounted, onMounted, watch } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Upload, X, FileVideo, CheckCircle, AlertCircle, Calendar, Pause, Play, Loader2 } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 import { useChunkedUpload } from '@/Composables/useChunkedUpload';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -373,7 +374,7 @@ watch(fieldErrors, (errs) => {
 </script>
 
 <template>
-    <Head :title="t('upload.title') || 'Upload Video'" />
+    <SeoHead :title="t('upload.title') || 'Upload Video'" />
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">

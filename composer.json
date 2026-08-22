@@ -6,6 +6,7 @@
     "license": "proprietary",
     "require": {
         "php": "^8.3",
+        "ext-gd": "*",
         "ext-redis": "*",
         "bacon/bacon-qr-code": "^3.1",
         "bezhansalleh/filament-google-analytics": "^3.3",

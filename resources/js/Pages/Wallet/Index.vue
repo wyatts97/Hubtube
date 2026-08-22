@@ -1,9 +1,10 @@
 <script setup>
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Wallet, ArrowUpRight, ArrowDownLeft, Plus, ArrowDown, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 import { computed } from 'vue';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 const page = usePage();
@@ -46,7 +47,7 @@ const formatType = (type) => {
 </script>
 
 <template>
-    <Head title="Wallet" />
+    <SeoHead title="Wallet" />
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">

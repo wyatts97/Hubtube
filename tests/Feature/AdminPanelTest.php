@@ -27,9 +27,13 @@ test('guest cannot access horizon dashboard', function () {
 });
 
 test('expired session on Livewire request returns graceful 401', function () {
+    // Hits a real Filament panel route so AuthenticateFilament actually runs.
+    // The old target, POST /admin/livewire/update, was never a registered route
+    // under Livewire 4 — it namespaces its endpoint as /livewire-<hash>/update —
+    // so the request 404'd before reaching any middleware.
     $response = $this->withHeaders([
         'X-Livewire' => 'true',
-    ])->post('/admin/livewire/update', ['foo' => 'bar']);
+    ])->get('/admin');
 
     $response->assertStatus(401)
         ->assertJson([

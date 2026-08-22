@@ -482,6 +482,7 @@ const getRelatedTitle = (video) => {
                         ref="videoPlayerRef"
                         :src="video.video_url"
                         :poster="video.thumbnail_url"
+                        :title="seo.thumbnailAlt || video.title"
                         :hls-playlist="hlsPlaylistUrl"
                         :autoplay="false"
                         :preview-thumbnails="video.preview_thumbnails_url || ''"

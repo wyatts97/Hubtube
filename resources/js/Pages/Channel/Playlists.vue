@@ -1,9 +1,10 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ListVideo, Heart } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -47,7 +48,7 @@ const activeList = ref(null);
 </script>
 
 <template>
-    <Head :title="`${channel.username} - Playlists`" />
+    <SeoHead :title="`${channel.username} - Playlists`" />
 
     <AppLayout>
         <!-- Channel Header -->

@@ -1,9 +1,10 @@
 <script setup>
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Check, Crown, Download, Upload, Infinity, Zap } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -45,7 +46,7 @@ const goToPortal = () => {
 </script>
 
 <template>
-    <Head title="Go Pro" />
+    <SeoHead title="Go Pro" />
 
     <AppLayout>
         <div class="max-w-5xl mx-auto px-4 py-8 sm:py-12">

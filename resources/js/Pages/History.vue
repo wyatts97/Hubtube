@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { ref, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
@@ -8,6 +8,7 @@ import { History, Trash2 } from 'lucide-vue-next';
 import { useFetch } from '@/Composables/useFetch';
 import { useI18n } from '@/Composables/useI18n';
 import { useToast } from '@/Composables/useToast';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 const toast = useToast();
@@ -34,7 +35,7 @@ const clearHistory = async () => {
 </script>
 
 <template>
-    <Head :title="t('history.title') || 'Watch History'" />
+    <SeoHead :title="t('history.title') || 'Watch History'" />
 
     <AppLayout>
         <div class="flex items-center justify-between mb-6">

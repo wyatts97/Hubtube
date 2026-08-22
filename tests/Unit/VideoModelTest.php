@@ -97,8 +97,11 @@ test('video scope processed filters correctly', function () {
 });
 
 test('video scope shorts filters correctly', function () {
-    Video::factory()->create(['is_short' => true]);
-    Video::factory()->create(['is_short' => false]);
+    // The is_short column was dropped in 2026_04_22_000001_remove_shorts_and_gifts;
+    // Video::scopeShorts() now derives shorts from orientation plus duration.
+    Video::factory()->create(['is_portrait' => true, 'duration' => 30]);
+    Video::factory()->create(['is_portrait' => false, 'duration' => 30]);
+    Video::factory()->create(['is_portrait' => true, 'duration' => 120]);
 
     expect(Video::shorts()->count())->toBe(1);
 });

@@ -167,12 +167,20 @@ class VideoController extends Controller
         $video->load(['user.channel', 'category']);
         $video->incrementViews();
 
-        // Record watch history for authenticated users
+        // Record watch history for authenticated users.
+        // `updated_at` is what orders the "recently watched" list, but it isn't
+        // fillable — passing it to updateOrCreate() left the model clean, so
+        // save() was a no-op and re-watching never moved a video up the list.
+        // touch() bumps the timestamp directly.
         if (auth()->check()) {
-            WatchHistory::updateOrCreate(
-                ['user_id' => auth()->id(), 'video_id' => $video->id],
-                ['updated_at' => now()]
-            );
+            $history = WatchHistory::firstOrCreate([
+                'user_id' => auth()->id(),
+                'video_id' => $video->id,
+            ]);
+
+            if (!$history->wasRecentlyCreated) {
+                $history->touch();
+            }
         }
 
         $relatedVideos = Cache::remember(

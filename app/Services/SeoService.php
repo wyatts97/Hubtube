@@ -29,6 +29,19 @@ class SeoService
         return static::$currentSeo;
     }
 
+    /**
+     * Clear the static holder at the start of each request.
+     *
+     * Without this the payload survives between requests in any long-running
+     * worker (Octane, queue-driven rendering) and across tests in one process,
+     * so a page that never built its own SEO data would silently inherit the
+     * previous page's title, canonical and JSON-LD.
+     */
+    public static function reset(): void
+    {
+        static::$currentSeo = null;
+    }
+
     protected function s(string $key, mixed $default = null): mixed
     {
         if (empty($this->settings)) {
@@ -844,6 +857,49 @@ class SeoService
     }
 
     /**
+     * Generate SEO data for a page that must never be indexed — authenticated
+     * areas (settings, dashboard, wallet), auth screens, and error responses.
+     *
+     * These pages carry no Open Graph value, but they still need a payload so
+     * that app.blade.php and SeoHead.vue render from the same source. Without
+     * one, the Inertia head manager would strip the server-rendered tags on
+     * hydration instead of replacing them.
+     */
+    public function forPrivatePage(?string $title = null): array
+    {
+        $fullTitle = $title
+            ? "{$title} {$this->separator()} {$this->siteName()}"
+            : $this->siteName();
+
+        $seo = $this->baseMeta($fullTitle, '', null);
+        $seo['robots'] = 'noindex, nofollow';
+        // Private URLs shouldn't advertise a canonical.
+        $seo['canonical'] = null;
+        $seo['og']['url'] = null;
+
+        static::$currentSeo = $seo;
+
+        return $seo;
+    }
+
+    /**
+     * Site-wide default meta, used when a page never called a for*() builder.
+     *
+     * Sets the static holder so the Blade head and SeoHead.vue stay in sync.
+     */
+    public function defaultMeta(): array
+    {
+        $title = $this->s('seo_site_title') ?: $this->siteName();
+        $description = $this->truncate($this->s('seo_meta_description', ''));
+
+        $seo = $this->baseMeta($title, $description);
+
+        static::$currentSeo = $seo;
+
+        return $seo;
+    }
+
+    /**
      * Build base meta array shared by all pages.
      */
     protected function baseMeta(string $title, string $description, ?string $canonicalPath = null): array
@@ -875,6 +931,9 @@ class SeoService
             'schema' => [],
             'thumbnailAlt' => '',
             'alternateUrls' => [],
+            // Exposed so SeoHead.vue can compose override titles with the same
+            // separator the server uses. Not rendered as a tag.
+            'separator' => $this->separator(),
         ];
 
         // Add og:locale:alternate for all other enabled languages

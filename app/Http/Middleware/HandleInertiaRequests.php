@@ -2,10 +2,12 @@
 
 namespace App\Http\Middleware;
 
+use Closure;
 use Exception;
 use App\Models\Category;
 use App\Models\MenuItem;
 use App\Models\Setting;
+use App\Services\SeoService;
 use App\Services\TranslationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
@@ -15,6 +17,16 @@ use Inertia\Middleware;
 class HandleInertiaRequests extends Middleware
 {
     protected $rootView = 'app';
+
+    public function handle(Request $request, Closure $next)
+    {
+        // SeoService stashes each page's payload in a static so app.blade.php
+        // can render it server-side. Clear it per request so one response can
+        // never inherit the previous one's SEO data.
+        SeoService::reset();
+
+        return parent::handle($request, $next);
+    }
 
     public function version(Request $request): ?string
     {
@@ -63,7 +75,57 @@ class HandleInertiaRequests extends Middleware
             'theme' => fn() => $this->getThemeSettings(),
             'menuItems' => fn() => $this->getMenuItems(),
             'locale' => fn() => $this->getLocaleData(),
+            'seo' => fn() => $this->getSeoData($request),
         ];
+    }
+
+    /**
+     * Resolve the SEO payload for the current response.
+     *
+     * Controllers that call a SeoService::for*() builder win — the builder
+     * stores its result statically and also passes it as a page prop, so this
+     * closure simply hands back the same array. Pages that never called one
+     * still get a payload, because app.blade.php and SeoHead.vue must render
+     * from an identical source: any server-rendered head tag the client-side
+     * <Head> doesn't re-emit is removed from the DOM on hydration.
+     */
+    protected function getSeoData(Request $request): array
+    {
+        $current = SeoService::getCurrent();
+        if ($current !== null) {
+            return $current;
+        }
+
+        $service = app(SeoService::class);
+
+        return $this->isIndexableRoute($request)
+            ? $service->defaultMeta()
+            : $service->forPrivatePage();
+    }
+
+    /**
+     * A route behind auth/guest/verification gating is never publicly
+     * crawlable, so it defaults to noindex. An unmatched route (an error
+     * response) is treated the same way.
+     */
+    protected function isIndexableRoute(Request $request): bool
+    {
+        $route = $request->route();
+        if ($route === null) {
+            return false;
+        }
+
+        foreach ($route->gatherMiddleware() as $middleware) {
+            if (!is_string($middleware)) {
+                continue;
+            }
+            $name = explode(':', $middleware)[0];
+            if (in_array($name, ['auth', 'guest', 'verified', 'password.confirm'], true)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

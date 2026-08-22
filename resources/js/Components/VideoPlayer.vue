@@ -26,6 +26,13 @@ const props = defineProps({
         type: String,
         default: '',
     },
+    // Accessible name for the player and its poster image. Videos/Show.vue
+    // passes the SEO payload's thumbnailAlt (built from the configurable
+    // seo_video_thumbnail_alt_template setting) so the poster isn't unlabelled.
+    title: {
+        type: String,
+        default: '',
+    },
 });
 
 const emit = defineEmits(['ready']);
@@ -55,6 +62,7 @@ const initPlayer = async () => {
             target: containerRef.value,
             src: source,
             poster: props.poster,
+            title: props.title,
             crossOrigin: 'anonymous',
             playsinline: true,
             layout: new VidstackPlayerLayout({

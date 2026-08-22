@@ -1,10 +1,11 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { History } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -38,7 +39,7 @@ const tabs = computed(() => {
 </script>
 
 <template>
-    <Head :title="`${channel.username} - Recently Watched`" />
+    <SeoHead :title="`${channel.username} - Recently Watched`" />
 
     <AppLayout>
         <!-- Channel Header -->

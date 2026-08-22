@@ -43,3 +43,24 @@ function asAdmin(?App\Models\User $user = null): App\Models\User
     test()->actingAs($user);
     return $user;
 }
+
+/**
+ * Decode the Inertia page object from a rendered HTML response.
+ *
+ * Prefer $response->assertInertia(). Use this only where that helper can't
+ * read the response — it depends on $response->original still being the View,
+ * which a few routes lose — since this reads the same data-page payload the
+ * browser consumes.
+ */
+function inertiaPagePayload(Illuminate\Testing\TestResponse $response): array
+{
+    expect($response->getContent())->toMatch('/data-page="/');
+
+    preg_match('/data-page="([^"]*)"/', $response->getContent(), $matches);
+
+    $page = json_decode(html_entity_decode($matches[1], ENT_QUOTES), true);
+
+    expect($page)->toBeArray()->toHaveKeys(['component', 'props']);
+
+    return $page;
+}

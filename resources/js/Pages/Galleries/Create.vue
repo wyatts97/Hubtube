@@ -1,9 +1,10 @@
 <script setup>
-import { Head, useForm, Link } from '@inertiajs/vue3';
+import { useForm, Link } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ArrowLeft, ImageIcon, Check, X } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -51,7 +52,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Create Gallery" />
+    <SeoHead title="Create Gallery" />
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">

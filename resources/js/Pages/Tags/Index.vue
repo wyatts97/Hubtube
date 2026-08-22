@@ -1,9 +1,10 @@
 <script setup>
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Hash } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t, localizedUrl } = useI18n();
 
@@ -25,7 +26,7 @@ const placeholderImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/
 </script>
 
 <template>
-    <Head :title="t('tags.title') !== 'tags.title' ? t('tags.title') : 'Tags'" />
+    <SeoHead />
 
     <AppLayout>
         <div class="mb-6">

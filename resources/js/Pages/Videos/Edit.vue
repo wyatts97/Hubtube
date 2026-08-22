@@ -1,10 +1,11 @@
 <script setup>
-import { Head, useForm, router, usePage } from '@inertiajs/vue3';
+import { useForm, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useFetch } from '@/Composables/useFetch';
 import { X, Save, Trash2, Image, Loader2, CheckCircle, ShieldCheck } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -143,7 +144,7 @@ const statusColors = {
 </script>
 
 <template>
-    <Head :title="`Edit: ${video.title}`" />
+    <SeoHead :title="`Edit: ${video.title}`" />
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">

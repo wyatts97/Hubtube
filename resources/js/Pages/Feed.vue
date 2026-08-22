@@ -1,5 +1,5 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
@@ -7,6 +7,7 @@ import { Rss } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
 import { useI18n } from '@/Composables/useI18n';
 import { useVirtualGrid } from '@/Composables/useVirtualGrid';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -26,7 +27,7 @@ const goToPage = (pageNum) => {
 </script>
 
 <template>
-    <Head :title="t('feed.title') || 'Subscriptions Feed'" />
+    <SeoHead :title="t('feed.title') || 'Subscriptions Feed'" />
 
     <AppLayout>
         <div class="mb-6">

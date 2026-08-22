@@ -1,9 +1,10 @@
 <script setup>
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Folder } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t, localizedUrl } = useI18n();
 
@@ -23,7 +24,7 @@ const titleStyle = computed(() => ({
 </script>
 
 <template>
-    <Head :title="t('categories.title') || 'Categories'" />
+    <SeoHead />
 
     <AppLayout>
         <div class="mb-6">

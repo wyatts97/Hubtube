@@ -1,9 +1,10 @@
 <script setup>
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { computed } from 'vue';
 import { Send, CheckCircle, Mail, User, MessageSquare } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -26,7 +27,7 @@ const onSubmit = () => {
 </script>
 
 <template>
-    <Head :title="t('contact.title') || 'Contact Us'" />
+    <SeoHead :title="t('contact.title') || 'Contact Us'" />
 
     <AppLayout>
         <div class="max-w-2xl mx-auto py-8">

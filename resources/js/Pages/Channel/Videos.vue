@@ -1,10 +1,11 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -40,7 +41,7 @@ const tabs = computed(() => {
 </script>
 
 <template>
-    <Head :title="`${channel.username} - Videos`" />
+    <SeoHead :title="`${channel.username} - Videos`" />
 
     <AppLayout>
         <!-- Channel Header -->

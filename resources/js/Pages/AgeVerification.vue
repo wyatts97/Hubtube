@@ -1,8 +1,9 @@
 <script setup>
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { ShieldAlert, Loader2 } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -34,7 +35,7 @@ const decline = () => {
 </script>
 
 <template>
-    <Head title="Age Verification" />
+    <SeoHead title="Age Verification" />
 
     <div class="min-h-screen flex items-center justify-center px-4 bg-bg-primary">
         <div class="w-full max-w-lg text-center">

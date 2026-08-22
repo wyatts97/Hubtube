@@ -1,8 +1,9 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ArrowLeft, CreditCard, Bitcoin } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -33,7 +34,7 @@ const formatCurrency = (amount) => {
 </script>
 
 <template>
-    <Head title="Deposit Funds" />
+    <SeoHead title="Deposit Funds" />
 
     <AppLayout>
         <div class="max-w-lg mx-auto">

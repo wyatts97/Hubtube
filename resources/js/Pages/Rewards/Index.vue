@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import {
     Award, Video, ImageIcon, MessageCircle, ChevronLeft, ChevronRight,
@@ -7,6 +7,7 @@ import {
 } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 const page = usePage();
@@ -88,7 +89,7 @@ const flash = computed(() => ({
 </script>
 
 <template>
-    <Head :title="t('rewards.title') || 'Rewards'" />
+    <SeoHead :title="t('rewards.title') || 'Rewards'" />
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">

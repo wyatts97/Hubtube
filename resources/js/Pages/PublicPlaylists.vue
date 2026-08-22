@@ -1,9 +1,10 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ListVideo, TrendingUp, ArrowUpDown, Clock, Heart } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -36,7 +37,7 @@ const changeSort = (sort) => {
 </script>
 
 <template>
-    <Head :title="tSafe('playlist.public_playlists', 'Public Playlists')" />
+    <SeoHead />
 
     <AppLayout>
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">

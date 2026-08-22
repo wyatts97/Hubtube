@@ -1,9 +1,10 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { AlertTriangle, RefreshCw, Home, Clock } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -55,7 +56,7 @@ const refresh = () => {
 </script>
 
 <template>
-    <Head :title="title" />
+    <SeoHead :title="title" />
 
     <AppLayout>
         <div class="flex items-center justify-center py-20 px-4">

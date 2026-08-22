@@ -247,7 +247,7 @@ test('all critical named routes are registered', function () {
         'register',
         'logout',
         'trending',
-        'shorts',
+        'shorts.index',
         'search',
         'videos.show',
         'videos.create',
@@ -266,7 +266,8 @@ test('all critical named routes are registered', function () {
         'notifications.index',
         'playlists.index',
         'playlists.store',
-        'live.index',
+        // 'live.index' intentionally absent — live streaming was removed in
+        // 2025_02_24_000001_drop_live_streaming_tables.
         'wallet.index',
         'sitemap',
         'robots.txt',
@@ -286,7 +287,7 @@ test('locale-prefixed routes are registered', function () {
     $localeRoutes = [
         'locale.home',
         'locale.trending',
-        'locale.shorts',
+        'locale.shorts.index',
         'locale.search',
         'locale.videos.show',
         'locale.channel.show',

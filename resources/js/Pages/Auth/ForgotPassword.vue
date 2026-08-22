@@ -1,8 +1,9 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
 import { ArrowLeft } from 'lucide-vue-next';
 import { ref } from 'vue';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -22,7 +23,7 @@ const onSubmit = () => {
 </script>
 
 <template>
-    <Head title="Forgot Password" />
+    <SeoHead title="Forgot Password" />
 
     <div class="min-h-screen flex items-center justify-center px-4 bg-bg-primary">
         <div class="w-full max-w-md">

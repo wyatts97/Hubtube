@@ -1,9 +1,10 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Calendar, Eye, Video } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -44,7 +45,7 @@ const formatDate = (date) => {
 </script>
 
 <template>
-    <Head :title="`${channel.username} - About`" />
+    <SeoHead :title="`${channel.username} - About`" />
 
     <AppLayout>
         <!-- Channel Header -->

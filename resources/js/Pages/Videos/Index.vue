@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { ref, watch, computed, onMounted } from 'vue';
 import { onClickOutside } from '@vueuse/core';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -12,6 +12,7 @@ import BannerAd from '@/Components/UI/BannerAd.vue';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 import { useI18n } from '@/Composables/useI18n';
 import { useVideoGrid } from '@/Composables/useVideoGrid';
+import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
@@ -121,7 +122,7 @@ const getOutstreamAd = (index) => {
 </script>
 
 <template>
-    <Head title="Browse Videos" />
+    <SeoHead />
 
     <AppLayout>
         <!-- Top Ad Banner -->
