@@ -30,6 +30,8 @@
     --ht-danger-soft: 127 29 29;
     --ht-info: 59 130 246;
     --ht-info-soft: 30 58 138;
+    --ht-violet: 168 85 247;
+    --ht-violet-soft: 88 28 135;
 }
 
 /* ── Custom: Pending moderation alert banner ── */
@@ -679,6 +681,7 @@
 .ht-vidpill--sky     { background: rgb(var(--ht-info) / 0.15); color: rgb(var(--ht-info)); }
 .ht-vidpill--rose    { background: rgb(var(--ht-danger) / 0.15);  color: rgb(var(--ht-danger)); }
 .ht-vidpill--gray    { background: rgb(var(--ht-text-muted) / 0.15); color: rgb(var(--ht-text)); }
+.ht-vidpill--violet  { background: rgb(var(--ht-violet) / 0.15); color: rgb(var(--ht-violet)); }
 
 /* [x-cloak] hide until Alpine boots */
 [x-cloak] { display: none !important; }

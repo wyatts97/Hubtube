@@ -3,6 +3,7 @@
 
     $statusMap = function (\App\Models\Video $video): array {
         return match (true) {
+            $video->status === 'processed' && $video->scheduled_at    => ['Scheduled',        'violet'],
             $video->status === 'processed' && $video->is_approved     => ['Published',        'emerald'],
             $video->status === 'processed' && !$video->is_approved    => ['Needs Moderation', 'amber'],
             $video->status === 'processing'                           => ['Processing',       'sky'],
