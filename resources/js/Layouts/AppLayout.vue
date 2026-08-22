@@ -936,6 +936,7 @@ const handleMobileNavClick = (item) => {
                     <a href="/pages/terms-of-service" class="hover:opacity-80 text-text-muted">{{ t('footer.terms') || 'Terms of Service' }}</a>
                     <a href="/pages/privacy-policy" class="hover:opacity-80 text-text-muted">{{ t('footer.privacy') || 'Privacy Policy' }}</a>
                     <a href="/pages/dmca" class="hover:opacity-80 text-text-muted">{{ t('footer.dmca') || 'DMCA' }}</a>
+                    <a href="/dmca-request" class="hover:opacity-80 text-text-muted">{{ t('footer.dmca_request') || 'Submit Takedown Request' }}</a>
                     <a href="/pages/community-guidelines" class="hover:opacity-80 text-text-muted">{{ t('footer.guidelines') || 'Community Guidelines' }}</a>
                     <a href="/pages/cookie-policy" class="hover:opacity-80 text-text-muted">{{ t('footer.cookies') || 'Cookie Policy' }}</a>
                     <a href="/contact" class="hover:opacity-80 text-text-muted">{{ t('footer.contact') || 'Contact' }}</a>

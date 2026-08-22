@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\DmcaController;
 use App\Http\Controllers\DashboardController;
 // EmbeddedVideoController removed - imported videos now use the regular Video model and /<slug> route
 use App\Http\Controllers\FeedController;
@@ -327,6 +328,8 @@ Route::middleware('age.verified')->group(function () {
     Route::get('/videos', [VideoController::class, 'index'])->name('videos.index');
     Route::get('/contact', [ContactController::class, 'show'])->name('contact');
     Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,1')->name('contact.store');
+    Route::get('/dmca-request', [DmcaController::class, 'show'])->name('dmca.request');
+    Route::post('/dmca-request', [DmcaController::class, 'store'])->middleware('throttle:5,1')->name('dmca.store');
     Route::get('/categories', [HomeController::class, 'categories'])->name('categories.index');
     Route::get('/category/{category:slug}', [HomeController::class, 'category'])->name('categories.show');
     Route::get('/tags', [HomeController::class, 'tags'])->name('tags.index');
@@ -509,6 +512,7 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/search', [SearchController::class, 'index'])->name('locale.search');
         Route::get('/videos', [VideoController::class, 'index'])->name('locale.videos.index');
         Route::get('/contact', [ContactController::class, 'show'])->name('locale.contact');
+        Route::get('/dmca-request', [DmcaController::class, 'show'])->name('locale.dmca.request');
         Route::get('/categories', [HomeController::class, 'categories'])->name('locale.categories.index');
         Route::get('/category/{slug}', [HomeController::class, 'localeCategory'])->name('locale.categories.show');
         Route::get('/tags', [HomeController::class, 'localeTags'])->name('locale.tags.index');

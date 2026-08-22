@@ -7,6 +7,7 @@ import { useToast } from '@/Composables/useToast';
 import { formatViews } from '@/Composables/useFormatters';
 import ShortsAdSlide from '@/Components/ShortsAdSlide.vue';
 import ShareModal from '@/Components/ShareModal.vue';
+import ReportModal from '@/Components/ReportModal.vue';
 import {
     Heart, MessageCircle, Share2, MoreVertical, Volume2, VolumeX,
     ChevronUp, ChevronDown, X, Filter, ChevronLeft, Flag
@@ -40,10 +41,6 @@ const showFilters = ref(false);
 const showShareModal = ref(false);
 const showMoreMenu = ref(false);
 const showReportModal = ref(false);
-const reportReason = ref('');
-const reportDescription = ref('');
-const reportSubmitting = ref(false);
-const reportSuccess = ref(false);
 const comments = ref([]);
 const loadingComments = ref(false);
 const feedContainer = ref(null);
@@ -122,31 +119,6 @@ const openReport = () => {
     }
     showMoreMenu.value = false;
     showReportModal.value = true;
-};
-
-const submitReport = async () => {
-    if (!reportReason.value || !activeShort.value || !user.value) return;
-    reportSubmitting.value = true;
-    const { ok, data, status } = await post('/reports', {
-        reportable_type: 'video',
-        reportable_id: activeShort.value.id,
-        reason: reportReason.value,
-        description: reportDescription.value,
-    });
-    reportSubmitting.value = false;
-    if (ok) {
-        reportSuccess.value = true;
-        toast.success(data?.message || t('report.success') || 'Report submitted successfully!');
-        setTimeout(() => {
-            showReportModal.value = false;
-            reportSuccess.value = false;
-            reportReason.value = '';
-            reportDescription.value = '';
-        }, 1500);
-    } else {
-        const msg = data?.error || data?.message || (status === 422 ? 'You have already reported this content' : 'Failed to submit report. Please try again.');
-        toast.error(msg);
-    }
 };
 
 const openComments = async () => {
@@ -585,47 +557,12 @@ const goBack = () => router.visit(localizedUrl('/'));
         <ShareModal v-model="showShareModal" :url="shareUrl" :title="activeShort?.title" />
 
         <!-- Report modal -->
-        <Teleport to="body">
-            <div
-                v-if="showReportModal"
-                class="fixed inset-0 z-50 flex items-center justify-center px-4"
-                style="background-color: rgba(0,0,0,0.6);"
-                @click.self="showReportModal = false"
-            >
-                <div class="w-full max-w-md card p-6 shadow-xl bg-bg-card">
-                    <h3 class="text-lg font-bold mb-4 text-text-primary">{{ t('report.title') || 'Report Video' }}</h3>
-
-                    <div v-if="reportSuccess" class="text-center py-4">
-                        <p class="text-green-500 font-medium">{{ t('report.success') || 'Report submitted successfully!' }}</p>
-                    </div>
-
-                    <form v-else @submit.prevent="submitReport" class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-2 text-text-secondary">{{ t('report.reason') || 'Reason' }}</label>
-                            <select v-model="reportReason" class="input" required>
-                                <option value="" disabled>{{ t('report.select_reason') || 'Select a reason' }}</option>
-                                <option value="spam">{{ t('report.spam') || 'Spam or misleading' }}</option>
-                                <option value="harassment">{{ t('report.harassment') || 'Harassment or bullying' }}</option>
-                                <option value="illegal">{{ t('report.illegal') || 'Illegal content' }}</option>
-                                <option value="copyright">{{ t('report.copyright') || 'Copyright violation' }}</option>
-                                <option value="underage">{{ t('report.underage') || 'Underage content' }}</option>
-                                <option value="other">{{ t('report.other') || 'Other' }}</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('report.details') || 'Details (optional)' }}</label>
-                            <textarea v-model="reportDescription" class="input" rows="3" :placeholder="t('report.details_placeholder') || 'Provide additional details...'" maxlength="2000"></textarea>
-                        </div>
-                        <div class="flex gap-3 justify-end">
-                            <button type="button" @click="showReportModal = false" class="btn btn-secondary">{{ t('common.cancel') || 'Cancel' }}</button>
-                            <button type="submit" :disabled="reportSubmitting || !reportReason" class="btn btn-primary">
-                                {{ reportSubmitting ? (t('report.submitting') || 'Submitting...') : (t('report.submit') || 'Submit Report') }}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </Teleport>
+        <ReportModal
+            v-if="activeShort"
+            v-model="showReportModal"
+            :reportable-id="activeShort.id"
+            reportable-type="video"
+        />
     </div>
 </template>
 

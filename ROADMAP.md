@@ -51,49 +51,49 @@ Correctness/security issues with real financial or legal exposure.
 
 ## P1 — Frontend / UX
 
-- [ ] **Videos/Show.vue is a 940-line God component**
+- [x] **Videos/Show.vue is a 940-line God component**
   `resources/js/Pages/Videos/Show.vue`
   Mixes video player wiring, ad orchestration, like/dislike, report modal, share modal, and playlist-save logic in one file — a maintainability problem and a large reactive re-render surface for any state change.
-  **Direction:** Extract cohesive pieces into subcomponents (e.g. `ReportModal`, `ShareModal`, `PlaylistSaveMenu`, an ad-orchestration composable) so the page component becomes primarily composition/layout.
+  **Done:** Extracted the report modal into a shared `ReportModal` component (see next item) and moved ad-readiness detection off polling and onto an event emitted by `VideoPlayer` (see "Ad-ready detection" below), shrinking Show.vue's own state/logic surface. Playlist-rail and like/dislike/save-to-playlist logic were left in place — they're already fairly cohesive single-purpose blocks within the file rather than genuinely tangled cross-cutting concerns, so further splitting was judged not worth the added indirection right now.
 
-- [ ] **Report modal duplicated between Show.vue and Shorts/Index.vue**
+- [x] **Report modal duplicated between Show.vue and Shorts/Index.vue**
   `resources/js/Pages/Videos/Show.vue`, `resources/js/Pages/Shorts/Index.vue`
   The report modal markup/logic is copy-pasted near-verbatim in both places.
-  **Direction:** Extract a single shared `ReportModal` component (this overlaps directly with the extraction above) and use it from both pages.
+  **Done:** Extracted a shared `resources/js/Components/ReportModal.vue` (self-contained, `v-model` + `reportable-id`/`reportable-type` props, matching the existing `ShareModal.vue` pattern) and switched both `Show.vue` and `Shorts/Index.vue` to use it, removing ~90 lines of duplicated markup/state/submit logic from each.
 
-- [ ] **Ad-ready detection polls instead of listening for an event**
+- [x] **Ad-ready detection polls instead of listening for an event**
   `resources/js/Pages/Videos/Show.vue` (`waitForVideoAndSetupAds`)
   Polls every 200ms for up to 10s to detect the Vidstack player element being ready, instead of using a ready/can-play event — fragile and wastes cycles.
-  **Direction:** Use Vidstack's `ready`/`can-play` event (or equivalent lifecycle hook) to trigger ad setup instead of a polling `setInterval`.
+  **Done:** `VideoPlayer.vue` now emits a `ready` event off Vidstack's own `can-play` event and exposes `getPlayer()` via `defineExpose`. `Show.vue` binds a template ref to `VideoPlayer` and listens for `@ready="onPlayerReady"` instead of polling `querySelector('media-player')` in a `setInterval`/`setTimeout` chain — no more DOM polling, no 10s safety timeout needed.
 
-- [ ] **No manual Vite chunk-splitting strategy**
+- [x] **No manual Vite chunk-splitting strategy**
   `vite.config.js`
   Heavy dependencies (hls.js, Vidstack, Sentry, lucide-vue-next) are bundled per Vite's default heuristics with no `rollupOptions.output.manualChunks` strategy. hls.js is also eagerly imported at the top of `VideoPlayer.vue` rather than dynamically imported, adding it to the bundle even for MP4-only sources.
-  **Direction:** Add a manual chunking strategy separating vendor/video-player/admin bundles, and dynamically `import('hls.js')` only when an HLS source is actually being played.
+  **Done:** Added `manualChunks` splitting Vidstack (+ its own small deps `@floating-ui/dom`/`lit-html`/`media-captions`, needed to avoid a circular-chunk warning), hls.js, Sentry, and lucide-vue-next into their own chunks. `VideoPlayer.vue`'s static `import HLS from 'hls.js'` was replaced with Vidstack's supported lazy-loader form (`provider.library = () => import('hls.js')...`), so hls.js only loads for pages that actually play an HLS source. Verified with `npm run build` — hls.js now ships as its own ~524kB chunk instead of being in every page's bundle.
 
-- [ ] **Inertia's native partial-reload/prefetch API is unused**
+- [x] **Inertia's native partial-reload/prefetch API is unused**
   Pages hand-roll `fetch`/infinite-scroll (e.g. `Home.vue`'s `loadMore`) instead of using Inertia's built-in `only` partial-reload option or `router.prefetch`.
-  **Direction:** Where a page re-requests a subset of props (paginated lists, related data), switch to Inertia's native `router.reload({ only: [...] })` / prefetch APIs to reduce payload size and take advantage of Inertia's built-in request de-duplication.
+  **Done:** `Home.vue`'s `loadMore` now calls `router.reload({ only: ['latestVideos'], data: { page } })` against the same `HomeController::index` route instead of hand-rolling a `fetch` with manual CSRF-header wiring against the separate `/api/videos/load-more` JSON endpoint (left in place, unused by this page now, in case other consumers rely on it).
 
 ---
 
 ## P2 — Medium-Term
 
-- [ ] **useVirtualList.js exists but is unused**
+- [x] **useVirtualList.js exists but is unused**
   `resources/js/Composables/useVirtualList.js`
   Wraps VueUse's virtual list utility, but the home video grid, search results, and shorts feed all render full arrays via `v-for` with pagination/infinite-scroll rather than DOM virtualization.
-  **Direction:** Apply `useVirtualList` to the home grid and/or search results once list lengths grow large enough that DOM node count becomes a real rendering cost.
+  **Verified — not actually dead code, and Home.vue's grid was deliberately left alone:** `useVirtualList.js` is already consumed by `useVirtualGrid.js` (a row-bucketing wrapper that chunks a flat item list into rows of N-per-viewport-width and virtualizes by row), which `Search.vue` already uses for its video-results grid. Extending the same treatment to `Home.vue`'s infinite-scroll grid was evaluated and deliberately skipped: that grid interleaves ad slots and sponsored cards at index-based intervals with irregular column-spans (`col-span-2` on mobile), which breaks the uniform-N-items-per-row assumption `useVirtualGrid` relies on. Forcing it through without a way to visually verify the ad layout in this environment risked silently breaking ad placement on a revenue-facing page, so it was left as-is rather than shipped half-verified.
 
-- [ ] **Home.vue has a dead skeleton-loader code path**
+- [x] **Home.vue has a dead skeleton-loader code path**
   `resources/js/Pages/Home.vue`
   `isInitialLoad` is hardcoded to `false` (Inertia already hydrates data server-side), making the entire skeleton-loader branch unreachable dead code.
-  **Direction:** Either wire `isInitialLoad` to a real loading condition (e.g. client-side re-fetch/filter changes) or remove the unused branch and `VideoCardSkeleton` usage tied to it.
+  **Done:** Removed the dead `isInitialLoad` ref, its `watch`/`onMounted` gating, and every `v-if="isInitialLoad"` / `VideoCardSkeleton` branch in the template (featured, latest, and popular sections) — the real (`v-else`) branches are now unconditional.
 
-- [ ] **Repeated Setting::get() calls in hot paths**
+- [x] **Repeated Setting::get() calls in hot paths**
   e.g. `app/Services/VideoService.php` (`awardAutoApprovePoints`/`shouldAutoApprove`), `app/Services/StorageManager.php`
   Several call sites fetch 2-4+ individual settings per invocation instead of using the batched `Setting::getAll()` pattern already used elsewhere in the codebase (e.g. `ProcessVideoJob`), adding up under bulk operations (e.g. bulk-approve loops, thumbnail-heavy listing pages).
-  **Direction:** Replace repeated individual `Setting::get()` calls in hot/loop-prone paths with a single `Setting::getAll()` batch fetch up front.
+  **Done:** `VideoService::shouldAutoApprove`/`awardAutoApprovePoints` now call `Setting::getAll()` once each instead of 2–3 individual `Setting::get()` calls. `StorageManager` gained a request-scoped memoized `static::setting()` helper (backed by one `Setting::getAll()` call, reused for the life of the request) and all ~13 individual `Setting::get()` call sites in the class were switched to it — `Setting::getDecrypted()` calls (encrypted Wasabi credentials) were left untouched since those aren't part of the plain-settings cache blob.
 
-- [ ] **No DMCA/takedown request workflow**
+- [x] **No DMCA/takedown request workflow**
   Not found anywhere in `app/` — no model, controller, or admin resource for intake, review, or audit of takedown requests.
-  **Direction:** Add a takedown request flow: a public intake form/endpoint, a Filament admin resource for reviewing/actioning requests (with states like pending/actioned/rejected), and an audit trail tied to the affected video/user, consistent with the existing `AdminLogger` pattern used for other moderation actions.
+  **Done:** Added a full takedown-request flow: a `dmca_requests` migration/model (complainant details, copyrighted-work description, infringing URLs, required good-faith/perjury statements + typed signature, status `pending`/`actioned`/`rejected`, admin notes, resolver/audit fields); a public `DmcaController` + `/dmca-request` route (throttled like the existing contact form) that best-effort-matches the submitted URL to a `Video` by slug; a Vue intake page (`Dmca.vue`, linked from the footer); and a `DmcaRequestResource` Filament admin resource (list/view, status filter, navigation badge for pending count, and "Action & Remove Video" / "Mark Actioned" / "Reject" actions logged via the same audit pattern as `ReportResource`). Covered by `tests/Feature/DmcaRequestTest.php` (3 tests: form loads, valid submission links the video and persists, missing legal statements are rejected) — all passing. Deliberately did not wire an admin-notification email (would require registering a new FinMail `EmailTemplate` record via the mail-template system, which risks a runtime "template not found" if seeded incorrectly) or a complainant-facing counter-notice flow — the Filament navigation badge plus `AdminLogger` entry give admins visibility without that added risk.

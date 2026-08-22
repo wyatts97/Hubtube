@@ -185,13 +185,17 @@ class VideoService
 
     protected function shouldAutoApprove(Video $video): bool
     {
+        // Single Setting::getAll() batch fetch instead of two individual
+        // Setting::get() calls — matters under bulk-approve loops.
+        $settings = Setting::getAll();
+
         // Global auto-approve: all videos
-        if (Setting::get('video_auto_approve', false)) {
+        if ($settings['video_auto_approve'] ?? false) {
             return true;
         }
 
         // Per-user auto-approve: check if uploader's username is in the trusted list
-        $trustedUsernames = Setting::get('video_auto_approve_usernames', []);
+        $trustedUsernames = $settings['video_auto_approve_usernames'] ?? [];
         if (is_string($trustedUsernames)) {
             $trustedUsernames = json_decode($trustedUsernames, true) ?? [];
         }
@@ -205,11 +209,13 @@ class VideoService
 
     protected function awardAutoApprovePoints(Video $video): void
     {
-        if (!Setting::get('points_enabled', true) || !Setting::get('points_video_upload_enabled', true)) {
+        $settings = Setting::getAll();
+
+        if (!($settings['points_enabled'] ?? true) || !($settings['points_video_upload_enabled'] ?? true)) {
             return;
         }
 
-        $points = (int) Setting::get('points_per_video_upload', 100);
+        $points = (int) ($settings['points_per_video_upload'] ?? 100);
         if ($points <= 0) {
             return;
         }

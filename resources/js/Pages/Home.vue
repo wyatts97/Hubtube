@@ -4,7 +4,6 @@ import SeoHead from '@/Components/SeoHead.vue';
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
-import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import ShortsRail from '@/Components/ShortsRail.vue';
 import ImagesRail from '@/Components/ImagesRail.vue';
@@ -20,9 +19,6 @@ import { useVideoGrid } from '@/Composables/useVideoGrid';
 const { t, localizedUrl } = useI18n();
 const { translateVideos, tr } = useAutoTranslate(['title']);
 const { gridClass, mobileGrid } = useVideoGrid();
-
-// Server already hydrated the videos via Inertia props — no artificial delay.
-const isInitialLoad = ref(false);
 
 const props = defineProps({
     featuredVideos: Array,
@@ -71,41 +67,36 @@ const lastPage = ref(props.latestVideos?.last_page || 1);
 const loading = ref(false);
 const hasMore = computed(() => currentPage.value < lastPage.value);
 
-// Load more videos for infinite scroll
-const loadMore = async () => {
+// Load more videos for infinite scroll — uses Inertia's native partial-reload
+// API (only the `latestVideos` prop is re-requested and re-rendered) instead of
+// a hand-rolled fetch against a separate JSON endpoint, so it gets Inertia's
+// built-in request de-duplication/CSRF handling for free.
+const loadMore = () => {
     if (loading.value || !hasMore.value) return;
 
     loading.value = true;
-    try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        const response = await fetch(`/api/videos/load-more?page=${currentPage.value + 1}`, {
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrfToken || '',
-            },
-            credentials: 'same-origin',
-        });
-
-        if (!response.ok) {
-            console.error('Failed to load more videos:', response.status, await response.text());
-            return;
-        }
-
-        const data = await response.json();
-        if (!data?.data || !Array.isArray(data.data)) {
-            console.error('Invalid load-more response:', data);
-            return;
-        }
-
-        videos.value.push(...data.data);
-        currentPage.value = data.current_page;
-        lastPage.value = data.last_page;
-    } catch (error) {
-        console.error('Failed to load more videos:', error);
-    } finally {
-        loading.value = false;
-    }
+    router.reload({
+        only: ['latestVideos'],
+        data: { page: currentPage.value + 1 },
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: (visitedPage) => {
+            const newVideos = visitedPage.props.latestVideos;
+            if (newVideos?.data) {
+                videos.value.push(...newVideos.data);
+                currentPage.value = newVideos.current_page;
+                lastPage.value = newVideos.last_page;
+            } else {
+                console.error('Invalid load-more response:', newVideos);
+            }
+        },
+        onError: (errors) => {
+            console.error('Failed to load more videos:', errors);
+        },
+        onFinish: () => {
+            loading.value = false;
+        },
+    });
 };
 
 // Infinite scroll observer — attach when loadMoreTrigger becomes available (after isInitialLoad)
@@ -128,15 +119,8 @@ const setupObserver = () => {
     observer.observe(loadMoreTrigger.value);
 };
 
-// Trigger appears only when isInitialLoad is false; watch and attach observer after DOM update
-watch(isInitialLoad, (loading) => {
-    if (loading) return;
-    if (!infiniteScrollEnabled.value) return;
-    nextTick(setupObserver);
-}, { flush: 'post' });
-
 onMounted(() => {
-    if (!isInitialLoad.value && infiniteScrollEnabled.value) {
+    if (infiniteScrollEnabled.value) {
         nextTick(setupObserver);
     }
 });
@@ -185,17 +169,12 @@ const getSponsoredCard = (index) => {
 
     <AppLayout>
         <!-- Featured Videos -->
-        <section v-if="featuredVideos.length > 0 || isInitialLoad" class="mb-8">
+        <section v-if="featuredVideos.length > 0" class="mb-8">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold text-text-primary">{{ t('home.featured') || 'Featured' }}</h2>
             </div>
             <div :class="gridClass">
-                <template v-if="isInitialLoad">
-                    <VideoCardSkeleton v-for="i in 4" :key="'skeleton-featured-' + i" />
-                </template>
-                <template v-else>
-                    <VideoCard v-for="video in featuredVideos" :key="video.id" :video="withTranslation(video)" />
-                </template>
+                <VideoCard v-for="video in featuredVideos" :key="video.id" :video="withTranslation(video)" />
             </div>
         </section>
 
@@ -213,13 +192,8 @@ const getSponsoredCard = (index) => {
                 <a :href="localizedUrl('/videos')" class="text-sm font-medium text-accent">{{ t('common.view_all') || 'View All' }}</a>
             </div>
             
-            <!-- Skeleton Loading State -->
-            <div v-if="isInitialLoad" :class="gridClass">
-                <VideoCardSkeleton v-for="i in 8" :key="'skeleton-latest-' + i" />
-            </div>
-            
             <!-- Infinite Scroll Mode -->
-            <template v-else-if="infiniteScrollEnabled">
+            <template v-if="infiniteScrollEnabled">
                 <div :class="gridClass">
                     <template v-for="(video, index) in videos" :key="'scroll-' + video.id">
                         <VideoCard :video="withTranslation(video)" />
@@ -289,18 +263,13 @@ const getSponsoredCard = (index) => {
         <BannerAd :config="adSettings?.rail4" />
 
         <!-- Popular Videos -->
-        <section v-if="popularVideos.length > 0 || isInitialLoad" class="mb-8">
+        <section v-if="popularVideos.length > 0" class="mb-8">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold text-text-primary">{{ t('home.popular') || 'Popular' }}</h2>
                 <a :href="localizedUrl('/trending')" class="text-sm font-medium text-accent">{{ t('common.view_all') || 'View All' }}</a>
             </div>
             <div :class="gridClass">
-                <template v-if="isInitialLoad">
-                    <VideoCardSkeleton v-for="i in 4" :key="'skeleton-popular-' + i" />
-                </template>
-                <template v-else>
-                    <VideoCard v-for="video in popularVideos" :key="video.id" :video="withTranslation(video)" />
-                </template>
+                <VideoCard v-for="video in popularVideos" :key="video.id" :video="withTranslation(video)" />
             </div>
         </section>
     </AppLayout>

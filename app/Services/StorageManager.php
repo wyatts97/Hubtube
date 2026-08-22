@@ -19,6 +19,23 @@ class StorageManager
     protected static ?string $wasabiDiskCacheKey = null;
 
     /**
+     * In-process memo of Setting::getAll() so a request rendering dozens of thumbnail/
+     * video URLs pays for one cached-settings read instead of a Setting::get() Redis
+     * round-trip per individual key on every single StorageManager call.
+     */
+    protected static ?array $settingsCache = null;
+
+    protected static function settings(): array
+    {
+        return static::$settingsCache ??= Setting::getAll();
+    }
+
+    protected static function setting(string $key, mixed $default = null): mixed
+    {
+        return static::settings()[$key] ?? $default;
+    }
+
+    /**
      * Wasabi region-to-endpoint mapping per Wasabi docs.
      * @see https://docs.wasabi.com/docs/service-urls-for-wasabis-storage-regions
      */
@@ -47,11 +64,11 @@ class StorageManager
      */
     public static function getActiveDiskName(): string
     {
-        if (!Setting::get('cloud_offloading_enabled', false)) {
+        if (!static::setting('cloud_offloading_enabled', false)) {
             return 'public';
         }
 
-        $driver = Setting::get('storage_driver', 'local');
+        $driver = static::setting('storage_driver', 'local');
 
         return match ($driver) {
             'wasabi' => 'wasabi',
@@ -85,9 +102,9 @@ class StorageManager
     {
         $key      = Setting::getDecrypted('wasabi_key', '');
         $secret   = Setting::getDecrypted('wasabi_secret', '');
-        $region   = Setting::get('wasabi_region', 'us-east-1');
-        $bucket   = Setting::get('wasabi_bucket', '');
-        $endpoint = Setting::get('wasabi_endpoint', '');
+        $region   = static::setting('wasabi_region', 'us-east-1');
+        $bucket   = static::setting('wasabi_bucket', '');
+        $endpoint = static::setting('wasabi_endpoint', '');
 
         // Auto-resolve endpoint from region if not explicitly set
         if (empty($endpoint)) {
@@ -134,8 +151,8 @@ class StorageManager
     public static function getWasabiPublicUrl(string $bucket, string $region, ?string $endpoint = null): string
     {
         // CDN URL takes priority if configured
-        $cdnUrl = Setting::get('cdn_url', '');
-        if (!empty($cdnUrl) && Setting::get('cdn_enabled', false)) {
+        $cdnUrl = static::setting('cdn_url', '');
+        if (!empty($cdnUrl) && static::setting('cdn_enabled', false)) {
             return rtrim($cdnUrl, '/');
         }
 
@@ -159,8 +176,8 @@ class StorageManager
 
         if ($diskName === 'public') {
             // CDN override for local storage
-            if (Setting::get('cdn_enabled', false)) {
-                $cdnUrl = Setting::get('cdn_url', '');
+            if (static::setting('cdn_enabled', false)) {
+                $cdnUrl = static::setting('cdn_url', '');
                 if (!empty($cdnUrl)) {
                     return rtrim($cdnUrl, '/') . '/' . ltrim($path, '/');
                 }
@@ -169,7 +186,7 @@ class StorageManager
         }
 
         // For cloud disks, use pre-signed URLs unless bucket is public
-        if (Setting::get('cloud_storage_public_bucket', false)) {
+        if (static::setting('cloud_storage_public_bucket', false)) {
             try {
                 return static::disk($diskName)->url($path);
             } catch (Throwable $e) {
@@ -183,7 +200,7 @@ class StorageManager
         }
 
         // Default: pre-signed temporary URL (works with private buckets)
-        $minutes = (int) Setting::get('cloud_url_expiry_minutes', 120);
+        $minutes = (int) static::setting('cloud_url_expiry_minutes', 120);
         return static::temporaryUrl($path, $minutes, $diskName);
     }
 
@@ -197,8 +214,8 @@ class StorageManager
         $diskName = $diskName ?? static::getActiveDiskName();
 
         if ($diskName === 'public') {
-            if (Setting::get('cdn_enabled', false)) {
-                $cdnUrl = Setting::get('cdn_url', '');
+            if (static::setting('cdn_enabled', false)) {
+                $cdnUrl = static::setting('cdn_url', '');
                 if (!empty($cdnUrl)) {
                     return rtrim($cdnUrl, '/') . '/' . ltrim($path, '/');
                 }

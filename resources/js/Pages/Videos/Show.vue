@@ -11,6 +11,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import CommentSection from '@/Components/CommentSection.vue';
 import ShareModal from '@/Components/ShareModal.vue';
+import ReportModal from '@/Components/ReportModal.vue';
 import VideoPlayer from '@/Components/VideoPlayer.vue';
 import EmbeddedVideoPlayer from '@/Components/EmbeddedVideoPlayer.vue';
 import VideoAdPlayer from '@/Components/VideoAdPlayer.vue';
@@ -36,21 +37,15 @@ const { t, localizedUrl } = useI18n();
 
 // Ad system refs
 const adPlayerRef = ref(null);
-const videoWrapperRef = ref(null);
+const videoPlayerRef = ref(null);
 const preRollDone = ref(false);
 const postRollDone = ref(false);
 
-// Get the Vidstack media-player element from the wrapper
-const getPlayerElement = () => {
-    if (!videoWrapperRef.value) return null;
-    return videoWrapperRef.value.querySelector('media-player');
-};
+// Get the Vidstack player instance exposed by VideoPlayer
+const getPlayerElement = () => videoPlayerRef.value?.getPlayer() ?? null;
 
 // Get the underlying <video> element (used for ad event listeners)
-const getVideoElement = () => {
-    if (!videoWrapperRef.value) return null;
-    return videoWrapperRef.value.querySelector('video');
-};
+const getVideoElement = () => getPlayerElement()?.querySelector('video') ?? null;
 
 // Ad event handlers — use media-player API for pause/play
 const onAdStarted = (placement) => {
@@ -89,27 +84,12 @@ const onAdRequestPlay = () => {
     if (player) resumePlayer(player);
 };
 
-// Ad setup cleanup — clear timers and remove listeners on unmount
-let adCheckIntervalId = null;
-let adSafetyTimeoutId = null;
-let adSetupDelayId = null;
+// Ad setup cleanup — remove listeners on unmount
 let adVideoEl = null;
 let adTimeupdateHandler = null;
 let adEndedHandler = null;
 
 const cleanupAdSetup = () => {
-    if (adCheckIntervalId) {
-        clearInterval(adCheckIntervalId);
-        adCheckIntervalId = null;
-    }
-    if (adSafetyTimeoutId) {
-        clearTimeout(adSafetyTimeoutId);
-        adSafetyTimeoutId = null;
-    }
-    if (adSetupDelayId) {
-        clearTimeout(adSetupDelayId);
-        adSetupDelayId = null;
-    }
     if (adVideoEl && (adTimeupdateHandler || adEndedHandler)) {
         if (adTimeupdateHandler) adVideoEl.removeEventListener('timeupdate', adTimeupdateHandler);
         if (adEndedHandler) adVideoEl.removeEventListener('ended', adEndedHandler);
@@ -155,25 +135,10 @@ const setupAdTriggers = async () => {
     video.addEventListener('ended', adEndedHandler);
 };
 
-// Wait for Vidstack player to be ready, then setup ad triggers
-const waitForVideoAndSetupAds = () => {
-    adCheckIntervalId = setInterval(() => {
-        const player = getPlayerElement();
-        if (player) {
-            clearInterval(adCheckIntervalId);
-            adCheckIntervalId = null;
-            // Small delay to let Vidstack fully initialize
-            adSetupDelayId = setTimeout(setupAdTriggers, 500);
-        }
-    }, 200);
-    // Safety: stop checking after 10s
-    adSafetyTimeoutId = setTimeout(() => {
-        if (adCheckIntervalId) {
-            clearInterval(adCheckIntervalId);
-            adCheckIntervalId = null;
-        }
-        adSafetyTimeoutId = null;
-    }, 10000);
+// Fired by VideoPlayer's `ready` event (Vidstack's own `can-play` event) once the
+// player is genuinely ready to play — no DOM polling needed.
+const onPlayerReady = () => {
+    setupAdTriggers();
 };
 
 const hlsPlaylistUrl = computed(() => props.video.hls_playlist_url || '');
@@ -419,10 +384,8 @@ const closePlaylistMenu = (e) => {
 
 onMounted(() => {
     document.addEventListener('click', closePlaylistMenu);
-    // Setup ad triggers after component mounts (only for non-embedded videos)
-    if (!props.video.is_embedded) {
-        waitForVideoAndSetupAds();
-    }
+    // Ad triggers are set up via the VideoPlayer `ready` event (see onPlayerReady)
+    // rather than here, since the player element doesn't exist until it mounts.
     window.addEventListener('resize', updatePlaylistRailButtons);
     setTimeout(updatePlaylistRailButtons, 0);
 });
@@ -438,30 +401,6 @@ watch([hasPlaylistContext, currentPlaylistIndex], () => {
 
 // Report modal
 const showReportModal = ref(false);
-const reportReason = ref('');
-const reportDescription = ref('');
-const reportSubmitting = ref(false);
-const reportSuccess = ref(false);
-
-const submitReport = async () => {
-    if (!reportReason.value || !user.value) return;
-    reportSubmitting.value = true;
-    const { ok, data, status } = await post('/reports', {
-        reportable_type: 'video',
-        reportable_id: props.video.id,
-        reason: reportReason.value,
-        description: reportDescription.value,
-    });
-    reportSubmitting.value = false;
-    if (ok) {
-        reportSuccess.value = true;
-        toast.success(data?.message || 'Report submitted successfully!');
-        setTimeout(() => { showReportModal.value = false; reportSuccess.value = false; reportReason.value = ''; reportDescription.value = ''; }, 1500);
-    } else {
-        const msg = data?.error || data?.message || (status === 422 ? 'You have already reported this content' : 'Failed to submit report. Please try again.');
-        toast.error(msg);
-    }
-};
 
 // Share modal
 const showShareModal = ref(false);
@@ -540,13 +479,15 @@ const getRelatedTitle = (video) => {
                         :show-info="false"
                     />
                 </div>
-                <div v-else ref="videoWrapperRef" class="aspect-video bg-black rounded-xl overflow-hidden relative">
+                <div v-else class="aspect-video bg-black rounded-xl overflow-hidden relative">
                     <VideoPlayer
+                        ref="videoPlayerRef"
                         :src="video.video_url"
                         :poster="video.thumbnail_url"
                         :hls-playlist="hlsPlaylistUrl"
                         :autoplay="false"
                         :preview-thumbnails="video.preview_thumbnails_url || ''"
+                        @ready="onPlayerReady"
                     />
                     <VideoAdPlayer
                         v-if="videoAdsEnabled"
@@ -898,43 +839,6 @@ const getRelatedTitle = (video) => {
         </div>
     </AppLayout>
 
-    <!-- Report Modal -->
-    <Teleport to="body">
-        <div v-if="showReportModal" class="fixed inset-0 z-50 flex items-center justify-center px-4" style="background-color: rgba(0,0,0,0.6);" @click.self="showReportModal = false">
-            <div class="w-full max-w-md card p-6 shadow-xl bg-bg-card">
-                <h3 class="text-lg font-bold mb-4 text-text-primary">{{ t('report.title') || 'Report Video' }}</h3>
-
-                <div v-if="reportSuccess" class="text-center py-4">
-                    <p class="text-green-500 font-medium">{{ t('report.success') || 'Report submitted successfully!' }}</p>
-                </div>
-
-                <form v-else @submit.prevent="submitReport" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-2 text-text-secondary">{{ t('report.reason') || 'Reason' }}</label>
-                        <select v-model="reportReason" class="input" required>
-                            <option value="" disabled>{{ t('report.select_reason') || 'Select a reason' }}</option>
-                            <option value="spam">{{ t('report.spam') || 'Spam or misleading' }}</option>
-                            <option value="harassment">{{ t('report.harassment') || 'Harassment or bullying' }}</option>
-                            <option value="illegal">{{ t('report.illegal') || 'Illegal content' }}</option>
-                            <option value="copyright">{{ t('report.copyright') || 'Copyright violation' }}</option>
-                            <option value="underage">{{ t('report.underage') || 'Underage content' }}</option>
-                            <option value="other">{{ t('report.other') || 'Other' }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('report.details') || 'Details (optional)' }}</label>
-                        <textarea v-model="reportDescription" class="input" rows="3" :placeholder="t('report.details_placeholder') || 'Provide additional details...'" maxlength="2000"></textarea>
-                    </div>
-                    <div class="flex gap-3 justify-end">
-                        <button type="button" @click="showReportModal = false" class="btn btn-secondary">{{ t('common.cancel') || 'Cancel' }}</button>
-                        <button type="submit" :disabled="reportSubmitting || !reportReason" class="btn btn-primary">
-                            {{ reportSubmitting ? (t('report.submitting') || 'Submitting...') : (t('report.submit') || 'Submit Report') }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </Teleport>
-
     <ShareModal v-model="showShareModal" :url="shareUrl" :title="props.video.title" />
+    <ReportModal v-model="showReportModal" :reportable-id="props.video.id" reportable-type="video" />
 </template>

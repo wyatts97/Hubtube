@@ -3,7 +3,6 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { VidstackPlayer, VidstackPlayerLayout } from 'vidstack/global/player';
 import 'vidstack/player/styles/default/theme.css';
 import 'vidstack/player/styles/default/layouts/video.css';
-import HLS from 'hls.js';
 
 const props = defineProps({
     src: {
@@ -27,6 +26,8 @@ const props = defineProps({
         default: '',
     },
 });
+
+const emit = defineEmits(['ready']);
 
 const containerRef = ref(null);
 let player = null;
@@ -61,13 +62,18 @@ const initPlayer = async () => {
             }),
         });
 
-        // Use locally bundled hls.js instead of loading from CDN.
+        // Use locally bundled hls.js instead of loading from CDN — loaded lazily
+        // via dynamic import so MP4-only sources never pay for the hls.js chunk.
         player.addEventListener('provider-change', (event) => {
             const provider = event.detail;
             if (provider?.type === 'hls') {
-                provider.library = HLS;
+                provider.library = () => import('hls.js').then((mod) => mod.default ?? mod);
             }
         });
+
+        // Let parents (e.g. ad orchestration) react to the player actually being
+        // ready instead of polling the DOM for a <media-player> element to appear.
+        player.addEventListener('can-play', () => emit('ready', player), { once: true });
 
         if (props.autoplay) {
             player.play().catch(() => {});
@@ -83,6 +89,10 @@ const destroyPlayer = () => {
         player = null;
     }
 };
+
+defineExpose({
+    getPlayer: () => player,
+});
 
 onMounted(() => {
     initPlayer();
