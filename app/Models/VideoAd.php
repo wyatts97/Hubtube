@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Jobs\ProcessAdCreativeJob;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,6 +16,8 @@ class VideoAd extends Model
         'placement',
         'content',
         'file_path',
+        'hls_path',
+        'hls_status',
         'outstream_thumbnail',
         'click_url',
         'weight',
@@ -22,6 +25,29 @@ class VideoAd extends Model
         'category_ids',
         'target_roles',
     ];
+
+    protected static function booted(): void
+    {
+        // Split into `created`/`updated` rather than a single `saved` listener:
+        // Eloquent only calls syncChanges() (which powers wasChanged()) from
+        // performUpdate(), never from performInsert() — so wasChanged('file_path')
+        // is always false on a brand-new record's `saved` event, and `saved` fires
+        // on both. `created` reliably tells us this is a fresh row with the default
+        // hls_path/hls_status already correct (no reset needed); `updated` needs
+        // wasChanged() to only react to an actual file_path change.
+        static::created(function (self $ad) {
+            if ($ad->type === 'mp4' && $ad->file_path) {
+                ProcessAdCreativeJob::dispatch($ad)->onQueue('ad-processing');
+            }
+        });
+
+        static::updated(function (self $ad) {
+            if ($ad->type === 'mp4' && $ad->file_path && $ad->wasChanged('file_path')) {
+                $ad->update(['hls_path' => null, 'hls_status' => 'pending']);
+                ProcessAdCreativeJob::dispatch($ad)->onQueue('ad-processing');
+            }
+        });
+    }
 
     protected function casts(): array
     {
@@ -136,6 +162,11 @@ class VideoAd extends Model
             'type'                => $ad->type,
             'placement'           => $ad->placement,
             'content'             => $content,
+            // HLS variant of a local mp4 ad, when ready — the player prefers this
+            // for a faster start and falls back to `content` (the raw mp4) otherwise.
+            'hls_url'             => ($ad->type === 'mp4' && $ad->hls_status === 'ready' && $ad->hls_path)
+                ? asset('storage/' . $ad->hls_path)
+                : null,
             'click_url'           => $ad->click_url,
             'name'                => $ad->name,
             'outstream_thumbnail' => $ad->outstream_thumbnail

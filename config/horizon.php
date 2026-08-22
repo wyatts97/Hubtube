@@ -69,6 +69,21 @@ return [
                 'timeout' => 3600,
                 'nice' => 0,
             ],
+            // Ad creatives are small (a few MB) and their HLS conversion is quick —
+            // kept on its own queue/supervisor so these tiny jobs never queue behind
+            // long-running video-processing jobs on the shared queue.
+            'ad-processing' => [
+                'connection' => 'redis',
+                'queue' => ['ad-processing'],
+                'balance' => 'simple',
+                'maxProcesses' => 2,
+                'maxTime' => 0,
+                'maxJobs' => 0,
+                'memory' => 256,
+                'tries' => 2,
+                'timeout' => 300,
+                'nice' => 0,
+            ],
         ],
         'local' => [
             'supervisor-1' => [
@@ -84,6 +99,18 @@ return [
                 'memory' => 512,
                 'tries' => 3,
                 'timeout' => 3600,
+                'nice' => 0,
+            ],
+            'ad-processing' => [
+                'connection' => 'redis',
+                'queue' => ['ad-processing'],
+                'balance' => 'simple',
+                'maxProcesses' => 1,
+                'maxTime' => 0,
+                'maxJobs' => 0,
+                'memory' => 256,
+                'tries' => 2,
+                'timeout' => 300,
                 'nice' => 0,
             ],
         ],

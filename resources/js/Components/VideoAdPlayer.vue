@@ -12,6 +12,11 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useFetch } from '@/Composables/useFetch';
 import { useImaAd } from '@/Composables/useImaAd';
+// Static import — a lazy `() => import('hls.js')` loader form was tried for the
+// main VideoPlayer and broke HLS playback in production (Vidstack fell back to
+// a native <video type="application/x-mpegurl"> source, which only Safari
+// supports). Keep this the reliable, known-working synchronous form.
+import Hls from 'hls.js';
 
 const props = defineProps({
     categoryId: { type: Number, default: null },
@@ -61,6 +66,9 @@ const lastMidRollTime = ref(0);
 let elapsedTimer = null;
 let startWatchdog = null;
 let stallWatchdog = null;
+
+// HLS.js instance for local MP4 ads that have a ready HLS variant
+let adHls = null;
 
 // ── Ad loading ──
 let adsLoadedPromise = null;
@@ -116,6 +124,34 @@ const fireClick = (ad) => {
     post('/api/ad-click', { ad_id: ad.id }).catch(() => {});
 };
 
+// ── Local ad video source (HLS-preferred, MP4 fallback) ──
+const destroyAdHls = () => {
+    if (adHls) {
+        adHls.destroy();
+        adHls = null;
+    }
+};
+
+// Prefers the HLS variant (faster start — short segments, no full-file download
+// before playback) when the backend has finished converting it; otherwise falls
+// back to the raw MP4 exactly as before conversion existed.
+const attachAdSource = (ad) => {
+    const el = adVideoRef.value;
+    if (!el || !ad) return;
+
+    destroyAdHls();
+
+    if (ad.hls_url && Hls.isSupported()) {
+        adHls = new Hls();
+        adHls.loadSource(ad.hls_url);
+        adHls.attachMedia(el);
+    } else if (ad.hls_url && el.canPlayType('application/vnd.apple.mpegurl')) {
+        el.src = ad.hls_url;
+    } else {
+        el.src = ad.content;
+    }
+};
+
 // ── Local ad playback (MP4 / HTML) ──
 const playLocalAd = (ad, placement) => {
     adElapsed.value = 0;
@@ -143,6 +179,9 @@ const playLocalAd = (ad, placement) => {
             console.warn('[VideoAdPlayer] Local ad failed to start within timeout, ending ad');
             endAd();
         }, 8000);
+
+        // Video element only mounts once isPlaying/currentAd flip in the template.
+        nextTick(() => attachAdSource(ad));
     }
 
     if (ad.type === 'html') {
@@ -186,6 +225,7 @@ const skipAd = () => {
 // ── End ad ──
 const endAd = () => {
     clearTimers();
+    destroyAdHls();
     const placement = adType.value;
     currentAd.value = null;
     adPhase.value   = 'idle';
@@ -302,7 +342,7 @@ const checkMidRoll = (currentTime) => {
 defineExpose({ loadAds, triggerPreRoll, triggerPostRoll, checkMidRoll, isPlaying, hasAds: (p) => hasAds(p) });
 
 onMounted(() => loadAds());
-onUnmounted(() => { clearTimers(); destroyIma(); });
+onUnmounted(() => { clearTimers(); destroyIma(); destroyAdHls(); });
 </script>
 
 <template>
@@ -334,7 +374,7 @@ onUnmounted(() => { clearTimers(); destroyIma(); });
 
             <!-- Local MP4 -->
             <template v-if="isLocalVideoAd">
-                <video ref="adVideoRef" :src="currentAd.content"
+                <video ref="adVideoRef"
                     class="w-full h-full object-contain"
                     preload="auto" muted playsinline crossorigin="anonymous"
                     @ended="onAdVideoEnded" @error="onAdVideoError"

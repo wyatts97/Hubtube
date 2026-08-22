@@ -5,8 +5,11 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\VideoAdResource\Pages\CreateVideoAd;
 use App\Filament\Resources\VideoAdResource\Pages\EditVideoAd;
 use App\Filament\Resources\VideoAdResource\Pages\ListVideoAds;
+use App\Jobs\ProcessAdCreativeJob;
 use App\Models\Category;
 use App\Models\VideoAd;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -254,6 +257,19 @@ class VideoAdResource extends Resource
                     ->color('gray')
                     ->size('sm'),
 
+                TextColumn::make('hls_status')
+                    ->label('HLS')
+                    ->badge()
+                    ->formatStateUsing(fn (string $state, VideoAd $record) => $record->type === 'mp4' ? ucfirst($state) : '—')
+                    ->color(fn (string $state, VideoAd $record): string => $record->type !== 'mp4' ? 'gray' : match ($state) {
+                        'ready' => 'success',
+                        'processing' => 'info',
+                        'pending' => 'gray',
+                        'failed' => 'danger',
+                        'skipped' => 'gray',
+                        default => 'gray',
+                    }),
+
                 TextColumn::make('weight')
                     ->alignCenter()
                     ->sortable(),
@@ -306,21 +322,45 @@ class VideoAdResource extends Resource
             ])
             ->recordActions([
                 EditAction::make(),
+                Action::make('reprocess_hls')
+                    ->label('Reprocess HLS')
+                    ->icon('phosphor-arrows-clockwise')
+                    ->color('info')
+                    ->visible(fn (VideoAd $record) => $record->type === 'mp4' && $record->file_path)
+                    ->action(function (VideoAd $record) {
+                        $record->update(['hls_path' => null, 'hls_status' => 'pending']);
+                        ProcessAdCreativeJob::dispatch($record)->onQueue('ad-processing');
+                    }),
                 DeleteAction::make()
                     ->after(function (VideoAd $record) {
                         if ($record->file_path && Storage::disk('public')->exists($record->file_path)) {
                             Storage::disk('public')->delete($record->file_path);
                         }
+                        static::deleteHlsDirectory($record);
                     }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('reprocess_hls')
+                        ->label('Reprocess HLS')
+                        ->icon('phosphor-arrows-clockwise')
+                        ->color('info')
+                        ->action(function ($records) {
+                            foreach ($records as $record) {
+                                if ($record->type === 'mp4' && $record->file_path) {
+                                    $record->update(['hls_path' => null, 'hls_status' => 'pending']);
+                                    ProcessAdCreativeJob::dispatch($record)->onQueue('ad-processing');
+                                }
+                            }
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     DeleteBulkAction::make()
                         ->after(function ($records) {
                             foreach ($records as $record) {
                                 if ($record->file_path && Storage::disk('public')->exists($record->file_path)) {
                                     Storage::disk('public')->delete($record->file_path);
                                 }
+                                static::deleteHlsDirectory($record);
                             }
                         }),
                 ]),
@@ -329,6 +369,14 @@ class VideoAdResource extends Resource
             ->emptyStateDescription('Create your first video ad creative to start serving pre-roll, mid-roll, or post-roll ads.')
             ->emptyStateIcon('phosphor-film-strip')
             ->striped();
+    }
+
+    protected static function deleteHlsDirectory(VideoAd $record): void
+    {
+        $dir = "media/ads/hls/{$record->id}";
+        if (Storage::disk('public')->exists($dir)) {
+            Storage::disk('public')->deleteDirectory($dir);
+        }
     }
 
     public static function mutateFormDataBeforeSave(array $data): array
