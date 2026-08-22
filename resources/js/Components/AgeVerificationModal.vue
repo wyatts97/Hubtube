@@ -145,7 +145,7 @@ const buttonColor = computed(() => ageSettings.value.buttonColor || 'var(--color
                             :style="{ backgroundColor: buttonColor }"
                         >
                             <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin" />
-                            {{ isSubmitting ? (t('common.loading') || 'Entering...') : confirmText }}
+                            {{ isSubmitting ? (t('common.loading')) : confirmText }}
                         </button>
                         <button 
                             @click="decline" 

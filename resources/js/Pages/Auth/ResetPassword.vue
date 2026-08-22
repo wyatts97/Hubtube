@@ -40,21 +40,21 @@ const onSubmit = () => {
                         <span class="text-2xl font-bold text-white">H</span>
                     </div>
                 </Link>
-                <h1 class="text-2xl font-bold mt-4 text-text-primary">{{ t('auth.reset_password') || 'Reset Password' }}</h1>
-                <p class="mt-2 text-text-secondary">{{ t('auth.reset_password_desc') || 'Enter your new password' }}</p>
+                <h1 class="text-2xl font-bold mt-4 text-text-primary">{{ t('auth.reset_password') }}</h1>
+                <p class="mt-2 text-text-secondary">{{ t('auth.reset_password_desc') }}</p>
             </div>
 
             <div class="card p-6">
                 <form @submit.prevent="onSubmit" class="space-y-4">
                     <input type="hidden" v-model="form.token" />
                     <div>
-                        <label for="email" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.email') || 'Email' }}</label>
+                        <label for="email" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.email') }}</label>
                         <input id="email" v-model="form.email" type="email" class="input" required />
                         <p v-if="form.errors.email" class="text-red-500 text-sm mt-1">{{ form.errors.email }}</p>
                     </div>
 
                     <div>
-                        <label for="password" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.new_password') || 'New Password' }}</label>
+                        <label for="password" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.new_password') }}</label>
                         <div class="relative">
                             <input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'" class="input pr-10" required />
                             <button type="button" @click="showPassword = !showPassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary">
@@ -66,7 +66,7 @@ const onSubmit = () => {
                     </div>
 
                     <div>
-                        <label for="password_confirmation" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.confirm_password') || 'Confirm Password' }}</label>
+                        <label for="password_confirmation" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.confirm_password') }}</label>
                         <div class="relative">
                             <input id="password_confirmation" v-model="form.password_confirmation" :type="showConfirm ? 'text' : 'password'" class="input pr-10" required />
                             <button type="button" @click="showConfirm = !showConfirm" class="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary">
@@ -78,8 +78,8 @@ const onSubmit = () => {
                     </div>
 
                     <button type="submit" :disabled="form.processing" class="btn btn-primary w-full">
-                        <span v-if="form.processing">{{ t('common.loading') || 'Resetting...' }}</span>
-                        <span v-else>{{ t('auth.reset_password') || 'Reset Password' }}</span>
+                        <span v-if="form.processing">{{ t('common.loading') }}</span>
+                        <span v-else>{{ t('auth.reset_password') }}</span>
                     </button>
                 </form>
             </div>

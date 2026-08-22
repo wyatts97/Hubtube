@@ -15,9 +15,9 @@ const { t, localizedUrl } = useI18n();
 <template>
     <section v-if="images?.length" class="mb-8">
         <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-bold text-text-primary">{{ t('home.images') || 'Latest Images' }}</h2>
+            <h2 class="text-xl font-bold text-text-primary">{{ t('home.images') }}</h2>
             <Link :href="localizedUrl('/images')" class="text-sm font-medium text-accent hover:opacity-80">
-                {{ t('common.view_all') || 'View All' }}
+                {{ t('common.view_all') }}
             </Link>
         </div>
 

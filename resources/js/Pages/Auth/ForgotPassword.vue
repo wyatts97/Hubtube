@@ -33,8 +33,8 @@ const onSubmit = () => {
                         <span class="text-2xl font-bold text-white">H</span>
                     </div>
                 </Link>
-                <h1 class="text-2xl font-bold mt-4 text-text-primary">{{ t('auth.forgot_password') || 'Forgot Password' }}</h1>
-                <p class="mt-2 text-text-secondary">{{ t('auth.forgot_password_desc') || "Enter your email and we'll send you a reset link" }}</p>
+                <h1 class="text-2xl font-bold mt-4 text-text-primary">{{ t('auth.forgot_password') }}</h1>
+                <p class="mt-2 text-text-secondary">{{ t('auth.forgot_password_desc') }}</p>
             </div>
 
             <div class="card p-6">
@@ -45,7 +45,7 @@ const onSubmit = () => {
                 <form @submit.prevent="onSubmit" class="space-y-4">
                     <div>
                         <label for="email" class="block text-sm font-medium mb-1 text-text-secondary">
-                            {{ t('settings.email') || 'Email Address' }}
+                            {{ t('settings.email') }}
                         </label>
                         <input
                             id="email"
@@ -59,15 +59,15 @@ const onSubmit = () => {
                     </div>
 
                     <button type="submit" :disabled="form.processing" class="btn btn-primary w-full">
-                        <span v-if="form.processing">{{ t('common.loading') || 'Sending...' }}</span>
-                        <span v-else>{{ t('auth.send_reset_link') || 'Send Reset Link' }}</span>
+                        <span v-if="form.processing">{{ t('common.loading') }}</span>
+                        <span v-else>{{ t('auth.send_reset_link') }}</span>
                     </button>
                 </form>
 
                 <div class="mt-6 text-center">
                     <Link href="/login" class="flex items-center justify-center gap-2 text-sm text-text-secondary">
                         <ArrowLeft class="w-4 h-4" />
-                        {{ t('auth.back_to_login') || 'Back to Sign In' }}
+                        {{ t('auth.back_to_login') }}
                     </Link>
                 </div>
             </div>

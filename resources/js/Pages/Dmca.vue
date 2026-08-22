@@ -31,11 +31,11 @@ const onSubmit = () => {
 </script>
 
 <template>
-    <SeoHead :title="t('dmca.title') || 'DMCA Takedown Request'" />
+    <SeoHead :title="t('dmca.title')" />
 
     <AppLayout>
         <div class="max-w-2xl mx-auto py-8">
-            <h1 class="text-2xl font-bold mb-2 text-text-primary">{{ t('dmca.title') || 'DMCA Takedown Request' }}</h1>
+            <h1 class="text-2xl font-bold mb-2 text-text-primary">{{ t('dmca.title') }}</h1>
             <p class="mb-8 text-text-secondary">
                 If you believe content on this site infringes your copyright, submit a takedown request below. See our
                 <a href="/pages/dmca" class="text-accent hover:opacity-80">DMCA policy</a> for details on the process.
@@ -56,7 +56,7 @@ const onSubmit = () => {
                     <!-- Name -->
                     <div>
                         <label class="block text-sm font-medium mb-1.5 text-text-secondary">
-                            {{ t('dmca.name') || 'Full Name' }} <span class="text-accent">*</span>
+                            {{ t('dmca.name') }} <span class="text-accent">*</span>
                         </label>
                         <div class="relative">
                             <User class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
@@ -68,7 +68,7 @@ const onSubmit = () => {
                     <!-- Email -->
                     <div>
                         <label class="block text-sm font-medium mb-1.5 text-text-secondary">
-                            {{ t('dmca.email') || 'Email' }} <span class="text-accent">*</span>
+                            {{ t('dmca.email') }} <span class="text-accent">*</span>
                         </label>
                         <div class="relative">
                             <Mail class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
@@ -81,7 +81,7 @@ const onSubmit = () => {
                 <!-- Company -->
                 <div>
                     <label class="block text-sm font-medium mb-1.5 text-text-secondary">
-                        {{ t('dmca.company') || 'Company / Agency (optional)' }}
+                        {{ t('dmca.company') }}
                     </label>
                     <div class="relative">
                         <Building2 class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
@@ -92,7 +92,7 @@ const onSubmit = () => {
                 <!-- Copyrighted work description -->
                 <div>
                     <label class="block text-sm font-medium mb-1.5 text-text-secondary">
-                        {{ t('dmca.work_description') || 'Description of the copyrighted work' }} <span class="text-accent">*</span>
+                        {{ t('dmca.work_description') }} <span class="text-accent">*</span>
                     </label>
                     <div class="relative">
                         <FileText class="absolute left-3 top-3 w-4 h-4 text-text-muted" />
@@ -110,7 +110,7 @@ const onSubmit = () => {
                 <!-- Infringing URLs -->
                 <div>
                     <label class="block text-sm font-medium mb-1.5 text-text-secondary">
-                        {{ t('dmca.infringing_urls') || 'URL(s) of the infringing content' }} <span class="text-accent">*</span>
+                        {{ t('dmca.infringing_urls') }} <span class="text-accent">*</span>
                     </label>
                     <div class="relative">
                         <LinkIcon class="absolute left-3 top-3 w-4 h-4 text-text-muted" />
@@ -129,13 +129,13 @@ const onSubmit = () => {
                 <div class="space-y-3 p-4 rounded-lg border border-border">
                     <label class="flex items-start gap-3 text-sm text-text-secondary cursor-pointer">
                         <input v-model="form.good_faith_statement" type="checkbox" class="mt-0.5" required />
-                        <span>{{ t('dmca.good_faith') || 'I have a good faith belief that use of the copyrighted material described above is not authorized by the copyright owner, its agent, or the law.' }}</span>
+                        <span>{{ t('dmca.good_faith') }}</span>
                     </label>
                     <p v-if="form.errors.good_faith_statement" class="text-red-400 text-xs">{{ form.errors.good_faith_statement }}</p>
 
                     <label class="flex items-start gap-3 text-sm text-text-secondary cursor-pointer">
                         <input v-model="form.accuracy_statement" type="checkbox" class="mt-0.5" required />
-                        <span>{{ t('dmca.accuracy') || 'I swear, under penalty of perjury, that the information in this notification is accurate and that I am the copyright owner or authorized to act on the copyright owner\'s behalf.' }}</span>
+                        <span>{{ t('dmca.accuracy') }}</span>
                     </label>
                     <p v-if="form.errors.accuracy_statement" class="text-red-400 text-xs">{{ form.errors.accuracy_statement }}</p>
                 </div>
@@ -143,7 +143,7 @@ const onSubmit = () => {
                 <!-- Signature -->
                 <div>
                     <label class="block text-sm font-medium mb-1.5 text-text-secondary">
-                        {{ t('dmca.signature') || 'Electronic Signature (type your full legal name)' }} <span class="text-accent">*</span>
+                        {{ t('dmca.signature') }} <span class="text-accent">*</span>
                     </label>
                     <div class="relative">
                         <PenLine class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
@@ -154,7 +154,7 @@ const onSubmit = () => {
 
                 <button type="submit" class="btn btn-primary inline-flex items-center gap-2" :disabled="form.processing">
                     <Send class="w-4 h-4" />
-                    {{ form.processing ? (t('common.loading') || 'Submitting...') : (t('dmca.submit') || 'Submit Request') }}
+                    {{ form.processing ? (t('common.loading')) : (t('dmca.submit')) }}
                 </button>
             </form>
         </div>

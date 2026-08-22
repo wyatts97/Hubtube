@@ -89,12 +89,12 @@ const flash = computed(() => ({
 </script>
 
 <template>
-    <SeoHead :title="t('rewards.title') || 'Rewards'" />
+    <SeoHead :title="t('rewards.title')" />
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">
             <div class="mb-4 sm:mb-6">
-                <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('rewards.title') || 'Rewards' }}</h1>
+                <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('rewards.title') }}</h1>
             </div>
 
             <!-- Flash messages -->
@@ -109,7 +109,7 @@ const flash = computed(() => ({
             <div class="card p-4 sm:p-6 mb-4 sm:mb-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-text-secondary">{{ t('rewards.points_balance') || 'Points Balance' }}</p>
+                        <p class="text-sm font-medium text-text-secondary">{{ t('rewards.points_balance') }}</p>
                         <p class="text-2xl sm:text-3xl font-bold mt-1 text-text-primary">{{ balance.toLocaleString() }}</p>
                     </div>
                     <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shrink-0 bg-amber-500/15">
@@ -149,7 +149,7 @@ const flash = computed(() => ({
                     <div class="p-4 border-b border-border shrink-0">
                         <h2 class="font-semibold text-text-primary flex items-center gap-2">
                             <TrendingUp class="w-4 h-4" />
-                            {{ t('rewards.how_to_earn') || 'How to Earn Points' }}
+                            {{ t('rewards.how_to_earn') }}
                         </h2>
                     </div>
                     <div class="p-4 space-y-3">
@@ -172,7 +172,7 @@ const flash = computed(() => ({
                     <div class="p-4 border-b border-border shrink-0">
                         <h2 class="font-semibold text-text-primary flex items-center gap-2">
                             <Sparkles class="w-4 h-4" />
-                            {{ t('rewards.redeem') || 'Redeem Points' }}
+                            {{ t('rewards.redeem') }}
                         </h2>
                     </div>
                     <div class="p-4 flex flex-col flex-1">
@@ -216,7 +216,7 @@ const flash = computed(() => ({
             <!-- Transaction History -->
             <div class="card">
                 <div class="p-4 border-b border-border">
-                    <h2 class="font-semibold text-text-primary">{{ t('rewards.history') || 'Points History' }}</h2>
+                    <h2 class="font-semibold text-text-primary">{{ t('rewards.history') }}</h2>
                 </div>
 
                 <div v-if="transactions.data?.length">
@@ -254,11 +254,11 @@ const flash = computed(() => ({
                     <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-bg-secondary">
                         <Award class="w-8 h-8 text-text-muted" />
                     </div>
-                    <p class="font-semibold text-text-secondary">{{ t('rewards.no_activity') || 'No points activity yet' }}</p>
-                    <p class="text-sm mt-1 text-text-muted">{{ t('rewards.no_activity_desc') || 'Upload videos, images, or post comments to start earning' }}</p>
+                    <p class="font-semibold text-text-secondary">{{ t('rewards.no_activity') }}</p>
+                    <p class="text-sm mt-1 text-text-muted">{{ t('rewards.no_activity_desc') }}</p>
                     <Link href="/upload" class="btn btn-primary mt-5 gap-2">
                         <TrendingUp class="w-4 h-4" />
-                        {{ t('dashboard.upload_video') || 'Upload a Video' }}
+                        {{ t('dashboard.upload_video') }}
                     </Link>
                 </div>
 

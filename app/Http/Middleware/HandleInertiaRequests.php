@@ -281,20 +281,18 @@ class HandleInertiaRequests extends Middleware
             $enabledLanguages = TranslationService::getEnabledLanguages();
             $isTranslated = $currentLocale !== $defaultLocale;
 
-            // Load UI translations from JSON file for current locale (always, including default)
-            $translations = [];
-            $file = resource_path("js/i18n/{$currentLocale}.json");
-            if (file_exists($file)) {
-                $translations = json_decode(file_get_contents($file), true) ?: [];
-            }
-
             return [
                 'current' => $currentLocale,
                 'default' => $defaultLocale,
                 'languages' => $enabledLanguages,
                 'enabled' => count($enabledLanguages) > 1,
                 'prefix' => $isTranslated ? "/{$currentLocale}" : '',
-                'translations' => $translations,
+                'translations' => $this->uiTranslations($currentLocale),
+                // Default-locale catalogue, so useI18n()'s t() can fall back to
+                // English for any key the active locale is missing. Only sent
+                // when the locale differs — otherwise it would duplicate the
+                // payload on every response.
+                'fallback' => $isTranslated ? $this->uiTranslations($defaultLocale) : [],
             ];
         }
         catch (Exception $e) {
@@ -305,8 +303,29 @@ class HandleInertiaRequests extends Middleware
                 'enabled' => false,
                 'prefix' => '',
                 'translations' => [],
+                'fallback' => [],
             ];
         }
+    }
+
+    /**
+     * Read a UI translation catalogue from resources/js/i18n.
+     *
+     * Cached forever: these files only change when translations:generate runs,
+     * which clears the cache. Without it every request — including partial
+     * Inertia reloads — re-read and re-decoded a ~16KB JSON file from disk.
+     */
+    protected function uiTranslations(string $locale): array
+    {
+        return Cache::rememberForever("i18n:ui:{$locale}", function () use ($locale) {
+            $file = resource_path("js/i18n/{$locale}.json");
+
+            if (!file_exists($file)) {
+                return [];
+            }
+
+            return json_decode(file_get_contents($file), true) ?: [];
+        });
     }
 
     /**

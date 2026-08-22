@@ -16,9 +16,9 @@ const { t, localizedUrl } = useI18n();
 <template>
     <section v-if="playlists?.length" class="mb-8">
         <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-bold text-text-primary">{{ t('home.playlists') || 'Playlists' }}</h2>
+            <h2 class="text-xl font-bold text-text-primary">{{ t('home.playlists') }}</h2>
             <Link :href="localizedUrl('/public-playlists')" class="text-sm font-medium text-accent hover:opacity-80">
-                {{ t('common.view_all') || 'View All' }}
+                {{ t('common.view_all') }}
             </Link>
         </div>
 
@@ -41,7 +41,7 @@ const { t, localizedUrl } = useI18n();
                         <ListVideo class="w-12 h-12 text-text-muted" />
                     </div>
                     <div class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-medium bg-black/80 text-white">
-                        {{ playlist.video_count }} {{ playlist.video_count === 1 ? 'video' : 'videos' }}
+                        {{ t('playlist.videos_count', { count: playlist.video_count }) }}
                     </div>
                     <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
                     <div class="absolute bottom-2 left-2 right-2">

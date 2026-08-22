@@ -25,7 +25,7 @@ defineProps({
             </div>
 
             <h1 class="text-2xl font-bold mb-3 text-text-primary">
-                {{ t('video.upload_thanks') || 'Thank You for Your Upload!' }}
+                {{ t('video.upload_thanks') }}
             </h1>
 
             <p class="text-lg mb-2 text-text-secondary">
@@ -39,11 +39,11 @@ defineProps({
             <div class="flex items-center justify-center gap-4">
                 <Link href="/upload" class="btn btn-primary inline-flex items-center gap-2">
                     <Upload class="w-4 h-4" />
-                    {{ t('video.upload_another') || 'Upload Another' }}
+                    {{ t('video.upload_another') }}
                 </Link>
                 <Link href="/" class="btn inline-flex items-center gap-2 bg-bg-secondary text-text-primary">
                     <Home class="w-4 h-4" />
-                    {{ t('errors.go_home') || 'Go Home' }}
+                    {{ t('errors.go_home') }}
                 </Link>
             </div>
         </div>

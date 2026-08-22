@@ -30,8 +30,8 @@ const placeholderImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/
 
     <AppLayout>
         <div class="mb-6">
-            <h1 class="text-2xl font-bold text-text-primary">{{ t('tags.title') !== 'tags.title' ? t('tags.title') : 'Tags' }}</h1>
-            <p class="text-sm mt-1 text-text-muted">{{ t('tags.browse') !== 'tags.browse' ? t('tags.browse') : 'Browse videos by tag' }}</p>
+            <h1 class="text-2xl font-bold text-text-primary">{{ t('tags.title') }}</h1>
+            <p class="text-sm mt-1 text-text-muted">{{ t('tags.browse') }}</p>
         </div>
 
         <div v-if="tags.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -69,14 +69,14 @@ const placeholderImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/
                     >
                         #{{ tag.name }}
                     </span>
-                    <span class="text-xs mt-1 text-white/70">{{ tag.count }} {{ t('common.videos') !== 'common.videos' ? t('common.videos') : 'videos' }}</span>
+                    <span class="text-xs mt-1 text-white/70">{{ tag.count }} {{ t('common.videos') }}</span>
                 </div>
             </Link>
         </div>
 
         <div v-else class="text-center py-12">
             <Hash class="w-12 h-12 mx-auto mb-3 text-text-muted" />
-            <p class="text-lg text-text-secondary">{{ t('tags.no_tags') !== 'tags.no_tags' ? t('tags.no_tags') : 'No tags yet' }}</p>
+            <p class="text-lg text-text-secondary">{{ t('tags.no_tags') }}</p>
         </div>
     </AppLayout>
 </template>

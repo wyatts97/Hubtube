@@ -8,10 +8,6 @@ import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
-const tSafe = (key, fallback) => {
-    const val = t(key);
-    return val === key ? fallback : val;
-};
 
 const props = defineProps({
     channel: Object,
@@ -26,16 +22,16 @@ const currentTab = ref(props.activeTab);
 
 const channelTabs = computed(() => {
     const items = [
-        { name: tSafe('channel.videos', 'Videos'), href: `/channel/${props.channel.username}` },
-        { name: tSafe('channel.playlists', 'Playlists'), href: `/channel/${props.channel.username}/playlists`, active: true },
+        { name: t('channel.videos'), href: `/channel/${props.channel.username}` },
+        { name: t('channel.playlists'), href: `/channel/${props.channel.username}/playlists`, active: true },
     ];
     if (props.showLikedVideos) {
-        items.push({ name: tSafe('channel.liked_videos', 'Liked Videos'), href: `/channel/${props.channel.username}/liked` });
+        items.push({ name: t('channel.liked_videos'), href: `/channel/${props.channel.username}/liked` });
     }
     if (props.showWatchHistory) {
-        items.push({ name: tSafe('channel.recently_watched', 'Recently Watched'), href: `/channel/${props.channel.username}/history` });
+        items.push({ name: t('channel.recently_watched'), href: `/channel/${props.channel.username}/history` });
     }
-    items.push({ name: tSafe('channel.about', 'About'), href: `/channel/${props.channel.username}/about` });
+    items.push({ name: t('channel.about'), href: `/channel/${props.channel.username}/about` });
     return items;
 });
 
@@ -58,7 +54,7 @@ const activeList = ref(null);
             </div>
             <div>
                 <h1 class="text-xl font-bold text-text-primary">{{ channel.username }}</h1>
-                <p class="text-text-muted">{{ t('channel.playlists') || 'Playlists' }}</p>
+                <p class="text-text-muted">{{ t('channel.playlists') }}</p>
             </div>
         </div>
 
@@ -93,7 +89,7 @@ const activeList = ref(null);
                 }"
             >
                 <ListVideo class="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
-                {{ t('playlist.your_playlists') || 'User Playlists' }}
+                {{ t('playlist.your_playlists') }}
             </button>
             <button
                 @click="switchTab('favorites')"
@@ -104,7 +100,7 @@ const activeList = ref(null);
                 }"
             >
                 <Heart class="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
-                {{ t('playlist.favorites') || 'Favorite Playlists' }}
+                {{ t('playlist.favorites') }}
             </button>
         </div>
 
@@ -123,13 +119,13 @@ const activeList = ref(null);
                     </div>
                     <div class="p-3">
                         <h3 class="font-medium truncate text-text-primary">{{ playlist.title }}</h3>
-                        <p class="text-sm text-text-muted">{{ playlist.videos_count }} {{ t('common.videos') || 'videos' }}</p>
+                        <p class="text-sm text-text-muted">{{ playlist.videos_count }} {{ t('common.videos') }}</p>
                     </div>
                 </Link>
             </div>
             <div v-else class="text-center py-12">
                 <ListVideo class="w-12 h-12 mx-auto mb-3 text-text-muted" />
-                <p class="text-text-muted">{{ t('channel.no_playlists') || 'No playlists yet' }}</p>
+                <p class="text-text-muted">{{ t('channel.no_playlists') }}</p>
             </div>
         </template>
 
@@ -149,7 +145,7 @@ const activeList = ref(null);
                     <div class="p-3">
                         <h3 class="font-medium truncate text-text-primary">{{ playlist.title }}</h3>
                         <p class="text-sm text-text-muted">
-                            {{ playlist.videos_count }} {{ t('common.videos') || 'videos' }}
+                            {{ playlist.videos_count }} {{ t('common.videos') }}
                             <span v-if="playlist.user"> • by {{ playlist.user.username }}</span>
                         </p>
                     </div>
@@ -157,7 +153,7 @@ const activeList = ref(null);
             </div>
             <div v-else class="text-center py-12">
                 <Heart class="w-12 h-12 mx-auto mb-3 text-text-muted" />
-                <p class="text-text-muted">{{ t('channel.no_playlists') || 'No favorite playlists yet' }}</p>
+                <p class="text-text-muted">{{ t('channel.no_playlists') }}</p>
             </div>
         </template>
     </AppLayout>

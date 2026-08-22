@@ -20,7 +20,7 @@ const props = defineProps({
 });
 
 const breadcrumbs = computed(() => [
-    { label: t('nav.tags') || 'Tags', href: localizedUrl('/tags') },
+    { label: t('nav.tags'), href: localizedUrl('/tags') },
     { label: props.translatedTag || props.tag },
 ]);
 
@@ -48,7 +48,7 @@ const goToPage = (pageNum) => {
 
         <div v-else class="text-center py-12">
             <Hash class="w-12 h-12 mx-auto mb-3 text-text-muted" />
-            <p class="text-lg text-text-secondary">{{ t('tags.no_videos') || 'No videos with this tag yet' }}</p>
+            <p class="text-lg text-text-secondary">{{ t('tags.no_videos') }}</p>
         </div>
 
         <!-- Pagination -->

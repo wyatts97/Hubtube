@@ -33,9 +33,9 @@ const close = () => {
 const copyLink = async () => {
     try {
         await copy(props.url);
-        toast.success(t('share.copy_link') || 'Link copied to clipboard');
+        toast.success(t('share.copy_link'));
     } catch (e) {
-        toast.error(t('share.copy_failed') || 'Failed to copy link');
+        toast.error(t('share.copy_failed'));
     }
 };
 
@@ -65,7 +65,7 @@ const shareToSocial = (platform) => {
         >
             <div class="w-full max-w-md card p-6 shadow-xl bg-bg-card">
                 <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-lg font-bold text-text-primary">{{ t('share.title') || 'Share Video' }}</h3>
+                    <h3 class="text-lg font-bold text-text-primary">{{ t('share.title') }}</h3>
                     <button @click="close" class="p-1 rounded hover:bg-white/10">
                         <svg class="w-5 h-5 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
@@ -113,7 +113,7 @@ const shareToSocial = (platform) => {
                         @click="$event.target.select()"
                     />
                     <button @click="copyLink" class="btn btn-primary whitespace-nowrap text-sm px-4">
-                        {{ copied ? (t('common.copied') || 'Copied!') : (t('common.copy') || 'Copy') }}
+                        {{ copied ? (t('common.copied')) : (t('common.copy')) }}
                     </button>
                 </div>
             </div>

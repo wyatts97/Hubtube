@@ -254,24 +254,24 @@ const disableTwoFactor = async () => {
 
 const tabs = computed(() => {
     const items = [
-        { id: 'profile', name: t('settings.profile') || 'Profile', icon: User },
-        { id: 'password', name: t('settings.password') || 'Password', icon: Lock },
-        { id: 'notifications', name: t('settings.notifications') || 'Notifications', icon: Bell },
-        { id: 'privacy', name: t('settings.privacy') || 'Privacy', icon: Shield },
+        { id: 'profile', name: t('settings.profile'), icon: User },
+        { id: 'password', name: t('settings.password'), icon: Lock },
+        { id: 'notifications', name: t('settings.notifications'), icon: Bell },
+        { id: 'privacy', name: t('settings.privacy'), icon: Shield },
     ];
     if (monetizationEnabled.value) {
-        items.push({ id: 'billing', name: t('settings.billing') || 'Billing & Subscription', icon: Wallet });
+        items.push({ id: 'billing', name: t('settings.billing'), icon: Wallet });
     }
     return items;
 });
 </script>
 
 <template>
-    <SeoHead :title="t('settings.title') || 'Settings'" />
+    <SeoHead :title="t('settings.title')" />
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">
-            <h1 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-text-primary">{{ t('settings.title') || 'Settings' }}</h1>
+            <h1 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-text-primary">{{ t('settings.title') }}</h1>
 
             <div class="flex flex-col md:flex-row gap-4 sm:gap-6">
                 <!-- Sidebar / Horizontal tabs on mobile -->
@@ -298,11 +298,11 @@ const tabs = computed(() => {
                     <div v-if="activeTab === 'profile'" class="space-y-6">
                         <!-- Profile Photo -->
                         <div class="card p-6">
-                            <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.profile_images') || 'Profile Photo' }}</h2>
+                            <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.profile_images') }}</h2>
 
                             <!-- Avatar Upload -->
                             <div>
-                                <label class="block text-sm font-medium mb-2 text-text-secondary">{{ t('settings.avatar') || 'Avatar' }}</label>
+                                <label class="block text-sm font-medium mb-2 text-text-secondary">{{ t('settings.avatar') }}</label>
                                 <div class="flex items-center gap-4">
                                     <div class="relative w-20 h-20 rounded-full overflow-hidden shrink-0 bg-bg-secondary">
                                         <img
@@ -316,15 +316,15 @@ const tabs = computed(() => {
                                         </label>
                                     </div>
                                     <div>
-                                        <p class="text-sm text-text-secondary">{{ t('settings.change_avatar') || 'Click to change your avatar' }}</p>
+                                        <p class="text-sm text-text-secondary">{{ t('settings.change_avatar') }}</p>
                                         <p class="text-xs text-text-muted">Max 2MB (JPG, PNG, WebP, GIF)</p>
                                         <p v-if="avatarForm.errors.avatar" class="text-red-500 text-sm mt-1">{{ avatarForm.errors.avatar }}</p>
                                         <div v-if="avatarPreview" class="flex items-center gap-2 mt-2">
                                             <button @click="uploadAvatar" :disabled="avatarForm.processing" class="btn btn-primary text-sm">
                                                 <Loader2 v-if="avatarForm.processing" class="w-4 h-4 animate-spin mr-1" />
-                                                {{ t('settings.save_avatar') || 'Save Avatar' }}
+                                                {{ t('settings.save_avatar') }}
                                             </button>
-                                            <button @click="avatarPreview = null; avatarForm.reset()" class="btn btn-ghost text-sm">{{ t('common.cancel') || 'Cancel' }}</button>
+                                            <button @click="avatarPreview = null; avatarForm.reset()" class="btn btn-ghost text-sm">{{ t('common.cancel') }}</button>
                                         </div>
                                     </div>
                                 </div>
@@ -332,28 +332,28 @@ const tabs = computed(() => {
                         </div>
 
                         <div class="card p-6">
-                        <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.profile_settings') || 'Profile Settings' }}</h2>
+                        <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.profile_settings') }}</h2>
                         <form @submit.prevent="updateProfile" class="space-y-4">
                             <div>
-                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.username') || 'Username' }}</label>
+                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.username') }}</label>
                                 <input v-model="profileForm.username" type="text" class="input" />
                                 <p v-if="profileForm.errors.username" class="text-red-500 text-sm mt-1">
                                     {{ profileForm.errors.username }}
                                 </p>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.email') || 'Email' }}</label>
+                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.email') }}</label>
                                 <input v-model="profileForm.email" type="email" class="input" />
                                 <p v-if="profileForm.errors.email" class="text-red-500 text-sm mt-1">
                                     {{ profileForm.errors.email }}
                                 </p>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.bio') || 'Bio' }}</label>
+                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.bio') }}</label>
                                 <textarea v-model="profileForm.bio" rows="4" class="input resize-none"></textarea>
                             </div>
                             <button type="submit" :disabled="profileForm.processing" class="btn btn-primary">
-                                {{ t('settings.save_changes') || 'Save Changes' }}
+                                {{ t('settings.save_changes') }}
                             </button>
                         </form>
                         </div>
@@ -379,28 +379,28 @@ const tabs = computed(() => {
 
                     <!-- Password Tab -->
                     <div v-if="activeTab === 'password'" class="card p-6">
-                        <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.change_password') || 'Change Password' }}</h2>
+                        <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.change_password') }}</h2>
                         <form @submit.prevent="updatePassword" class="space-y-4">
                             <div>
-                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.current_password') || 'Current Password' }}</label>
+                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.current_password') }}</label>
                                 <input v-model="passwordForm.current_password" type="password" autocomplete="current-password" class="input" />
                                 <p v-if="passwordForm.errors.current_password" class="text-red-500 text-sm mt-1">
                                     {{ passwordForm.errors.current_password }}
                                 </p>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.new_password') || 'New Password' }}</label>
+                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.new_password') }}</label>
                                 <input v-model="passwordForm.password" type="password" autocomplete="new-password" class="input" />
                                 <p v-if="passwordForm.errors.password" class="text-red-500 text-sm mt-1">
                                     {{ passwordForm.errors.password }}
                                 </p>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.confirm_password') || 'Confirm New Password' }}</label>
+                                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.confirm_password') }}</label>
                                 <input v-model="passwordForm.password_confirmation" type="password" autocomplete="new-password" class="input" />
                             </div>
                             <button type="submit" :disabled="passwordForm.processing" class="btn btn-primary">
-                                {{ t('settings.update_password') || 'Update Password' }}
+                                {{ t('settings.update_password') }}
                             </button>
                         </form>
                     </div>
@@ -494,12 +494,12 @@ const tabs = computed(() => {
 
                     <!-- Notifications Tab -->
                     <div v-if="activeTab === 'notifications'" class="card p-6">
-                        <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.notification_prefs') || 'Notification Preferences' }}</h2>
+                        <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.notification_prefs') }}</h2>
                         <form @submit.prevent="updateNotifications" class="space-y-4">
                             <div v-if="adminNotifs.email_notifications !== false" class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-text-primary">{{ t('settings.email_notifications') || 'Email Notifications' }}</p>
-                                    <p class="text-sm text-text-secondary">{{ t('settings.email_notifications_desc') || 'Receive notifications via email' }}</p>
+                                    <p class="text-text-primary">{{ t('settings.email_notifications') }}</p>
+                                    <p class="text-sm text-text-secondary">{{ t('settings.email_notifications_desc') }}</p>
                                 </div>
                                 <input 
                                     v-model="notificationForm.email_notifications" 
@@ -509,8 +509,8 @@ const tabs = computed(() => {
                             </div>
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-text-primary">{{ t('settings.push_notifications') || 'Push Notifications' }}</p>
-                                    <p class="text-sm text-text-secondary">{{ t('settings.push_notifications_desc') || 'Receive push notifications in browser' }}</p>
+                                    <p class="text-text-primary">{{ t('settings.push_notifications') }}</p>
+                                    <p class="text-sm text-text-secondary">{{ t('settings.push_notifications_desc') }}</p>
                                 </div>
                                 <input 
                                     v-model="notificationForm.push_notifications" 
@@ -522,7 +522,7 @@ const tabs = computed(() => {
                             <!-- Browser Push Subscription -->
                             <div v-if="pushSupported" class="flex items-center justify-between p-3 rounded-lg bg-bg-secondary">
                                 <div>
-                                    <p class="text-text-primary">{{ t('settings.browser_push') || 'Browser Push' }}</p>
+                                    <p class="text-text-primary">{{ t('settings.browser_push') }}</p>
                                     <p class="text-sm text-text-secondary">
                                         {{ pushSubscribed ? 'This browser is receiving push notifications' : 'Enable push notifications for this browser' }}
                                     </p>
@@ -538,8 +538,8 @@ const tabs = computed(() => {
                             </div>
                             <div v-if="adminNotifs.subscription_notifications !== false" class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-text-primary">{{ t('settings.subscription_updates') || 'Subscription Updates' }}</p>
-                                    <p class="text-sm text-text-secondary">{{ t('settings.subscription_updates_desc') || 'Get notified when channels you subscribe to upload' }}</p>
+                                    <p class="text-text-primary">{{ t('settings.subscription_updates') }}</p>
+                                    <p class="text-sm text-text-secondary">{{ t('settings.subscription_updates_desc') }}</p>
                                 </div>
                                 <input 
                                     v-model="notificationForm.subscription_notifications" 
@@ -548,19 +548,19 @@ const tabs = computed(() => {
                                 />
                             </div>
                             <button type="submit" :disabled="notificationForm.processing" class="btn btn-primary">
-                                {{ t('settings.save_preferences') || 'Save Preferences' }}
+                                {{ t('settings.save_preferences') }}
                             </button>
                         </form>
                     </div>
 
                     <!-- Privacy Tab -->
                     <div v-if="activeTab === 'privacy'" class="card p-6">
-                        <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.privacy_settings') || 'Privacy Settings' }}</h2>
+                        <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.privacy_settings') }}</h2>
                         <form @submit.prevent="updatePrivacy" class="space-y-4">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-text-primary">{{ t('settings.show_watch_history') || 'Show Watch History' }}</p>
-                                    <p class="text-sm text-text-secondary">{{ t('settings.show_watch_history_desc') || "Allow others to see what you've watched" }}</p>
+                                    <p class="text-text-primary">{{ t('settings.show_watch_history') }}</p>
+                                    <p class="text-sm text-text-secondary">{{ t('settings.show_watch_history_desc') }}</p>
                                 </div>
                                 <input 
                                     v-model="privacyForm.show_watch_history"
@@ -570,8 +570,8 @@ const tabs = computed(() => {
                             </div>
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-text-primary">{{ t('settings.show_liked_videos') || 'Show Liked Videos' }}</p>
-                                    <p class="text-sm text-text-secondary">{{ t('settings.show_liked_videos_desc') || "Allow others to see videos you've liked" }}</p>
+                                    <p class="text-text-primary">{{ t('settings.show_liked_videos') }}</p>
+                                    <p class="text-sm text-text-secondary">{{ t('settings.show_liked_videos_desc') }}</p>
                                 </div>
                                 <input 
                                     v-model="privacyForm.show_liked_videos"
@@ -581,8 +581,8 @@ const tabs = computed(() => {
                             </div>
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-text-primary">{{ t('settings.allow_comments') || 'Allow Comments' }}</p>
-                                    <p class="text-sm text-text-secondary">{{ t('settings.allow_comments_desc') || 'Allow others to comment on your videos by default' }}</p>
+                                    <p class="text-text-primary">{{ t('settings.allow_comments') }}</p>
+                                    <p class="text-sm text-text-secondary">{{ t('settings.allow_comments_desc') }}</p>
                                 </div>
                                 <input 
                                     v-model="privacyForm.allow_comments"
@@ -591,7 +591,7 @@ const tabs = computed(() => {
                                 />
                             </div>
                             <button type="submit" :disabled="privacyForm.processing" class="btn btn-primary">
-                                {{ t('settings.save_changes') || 'Save Privacy Settings' }}
+                                {{ t('settings.save_changes') }}
                             </button>
                         </form>
 
@@ -610,17 +610,17 @@ const tabs = computed(() => {
 
                     <!-- Billing Tab -->
                     <div v-if="activeTab === 'billing'" class="card p-6">
-                        <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.billing') || 'Billing & Subscription' }}</h2>
+                        <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.billing') }}</h2>
                         <div class="space-y-4">
                             <div class="p-4 rounded-lg bg-bg-secondary">
                                 <div class="flex items-center justify-between flex-wrap gap-3">
                                     <div>
-                                        <p class="font-medium text-text-primary">{{ t('settings.current_plan') || 'Current Plan' }}</p>
+                                        <p class="font-medium text-text-primary">{{ t('settings.current_plan') }}</p>
                                         <p class="text-text-secondary">{{ user?.is_pro ? 'Pro' : 'Free' }}</p>
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <button v-if="!user?.is_pro" @click="upgradeToPro" class="btn btn-primary">
-                                            {{ t('settings.upgrade_pro') || 'Upgrade to Pro' }}
+                                            {{ t('settings.upgrade_pro') }}
                                         </button>
                                         <button v-else @click="goToProPortal" class="btn btn-secondary">
                                             Manage Subscription
@@ -634,12 +634,12 @@ const tabs = computed(() => {
                             <div class="p-4 rounded-lg bg-bg-secondary">
                                 <div class="flex items-center justify-between">
                                     <div>
-                                        <p class="font-medium mb-2 text-text-primary">{{ t('settings.wallet_balance') || 'Wallet Balance' }}</p>
+                                        <p class="font-medium mb-2 text-text-primary">{{ t('settings.wallet_balance') }}</p>
                                         <p class="text-2xl font-bold text-accent">${{ user?.wallet_balance || '0.00' }}</p>
                                     </div>
                                     <div class="flex gap-2">
-                                        <a href="/wallet/deposit" class="btn btn-primary">{{ t('settings.deposit') || 'Deposit' }}</a>
-                                        <a href="/wallet/withdraw" class="btn btn-secondary">{{ t('settings.withdraw') || 'Withdraw' }}</a>
+                                        <a href="/wallet/deposit" class="btn btn-primary">{{ t('settings.deposit') }}</a>
+                                        <a href="/wallet/withdraw" class="btn btn-secondary">{{ t('settings.withdraw') }}</a>
                                     </div>
                                 </div>
                             </div>

@@ -100,7 +100,10 @@ class SitemapController extends Controller
         $staticPages = [
             ['/', 'daily', '1.0'],
             ['/trending', 'daily', '0.8'],
-            ['/live', 'daily', '0.7'],
+            // No /live entry: live streaming was removed in
+            // 2025_02_24_000001_drop_live_streaming_tables, and advertising a
+            // route that 404s costs crawl budget and shows up in Search Console.
+            ['/shorts', 'daily', '0.7'],
             ['/categories', 'weekly', '0.7'],
             ['/tags', 'weekly', '0.5'],
             ['/videos', 'daily', '0.8'],

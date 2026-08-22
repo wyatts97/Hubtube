@@ -317,17 +317,17 @@ const monetizationEnabled = computed(() => page.props.app?.monetization_enabled 
 const pointsEnabled = computed(() => page.props.app?.points_enabled !== false);
 
 const navigation = computed(() => [
-    { name: tSafe('nav.home', 'Home'), href: localizedUrl('/'), icon: Home, key: 'home' },
-    { name: tSafe('nav.shorts', 'Shorts'), href: localizedUrl('/shorts'), icon: Smartphone, key: 'shorts' },
-    { name: tSafe('nav.trending', 'Trending'), href: localizedUrl('/trending'), icon: TrendingUp, key: 'trending' },
-    { name: tSafe('nav.categories', 'Categories'), href: localizedUrl('/categories'), icon: LayoutGrid, key: 'categories' },
-    { name: tSafe('nav.images', 'Images'), href: localizedUrl('/images'), icon: ImageIcon, key: 'images' },
-    { name: tSafe('nav.tags', 'Tags'), href: localizedUrl('/tags'), icon: Tag, key: 'tags' },
+    { name: t('nav.home'), href: localizedUrl('/'), icon: Home, key: 'home' },
+    { name: t('nav.shorts'), href: localizedUrl('/shorts'), icon: Smartphone, key: 'shorts' },
+    { name: t('nav.trending'), href: localizedUrl('/trending'), icon: TrendingUp, key: 'trending' },
+    { name: t('nav.categories'), href: localizedUrl('/categories'), icon: LayoutGrid, key: 'categories' },
+    { name: t('nav.images'), href: localizedUrl('/images'), icon: ImageIcon, key: 'images' },
+    { name: t('nav.tags'), href: localizedUrl('/tags'), icon: Tag, key: 'tags' },
 ]);
 
 const libraryNav = computed(() => [
-    { name: t('nav.playlists') || 'Playlists', href: '/playlists', icon: ListVideo, key: 'playlists' },
-    { name: t('nav.history') || 'History', href: '/history', icon: History, key: 'history' },
+    { name: t('nav.playlists'), href: '/playlists', icon: ListVideo, key: 'playlists' },
+    { name: t('nav.history'), href: '/history', icon: History, key: 'history' },
 ]);
 
 // handleSearch moved above with suggestion logic
@@ -361,28 +361,24 @@ watch(windowScrollY, (currentY, previousY) => {
     }
 });
 
-const tSafe = (key, fallback) => {
-    const val = t(key);
-    return val !== key ? val : fallback;
-};
 
 const showMobileUploadMenu = ref(false);
 const showMobileMoreMenu = ref(false);
 
 const mobileNavItems = computed(() => [
-    { name: tSafe('nav.home', 'Home'), href: localizedUrl('/'), icon: Home },
-    { name: tSafe('common.search', 'Search'), href: null, action: 'search', icon: Search },
+    { name: t('nav.home'), href: localizedUrl('/'), icon: Home },
+    { name: t('common.search'), href: null, action: 'search', icon: Search },
     { name: '+', href: null, action: 'upload', icon: Plus, isCenter: true },
-    { name: tSafe('nav.categories', 'Categories'), href: localizedUrl('/categories'), icon: LayoutGrid },
-    { name: tSafe('nav.more', 'More'), href: null, action: 'more', icon: MoreHorizontal },
+    { name: t('nav.categories'), href: localizedUrl('/categories'), icon: LayoutGrid },
+    { name: t('nav.more'), href: null, action: 'more', icon: MoreHorizontal },
 ]);
 
 const mobileMoreItems = computed(() => [
-    { name: tSafe('nav.shorts', 'Shorts'), href: localizedUrl('/shorts'), icon: Smartphone },
-    { name: tSafe('nav.trending', 'Trending'), href: localizedUrl('/trending'), icon: TrendingUp },
-    { name: tSafe('nav.images', 'Images'), href: localizedUrl('/images'), icon: ImageIcon },
-    { name: tSafe('nav.tags', 'Tags'), href: localizedUrl('/tags'), icon: Tag },
-    { name: tSafe('nav.playlists', 'Playlists'), href: localizedUrl('/public-playlists'), icon: ListVideo },
+    { name: t('nav.shorts'), href: localizedUrl('/shorts'), icon: Smartphone },
+    { name: t('nav.trending'), href: localizedUrl('/trending'), icon: TrendingUp },
+    { name: t('nav.images'), href: localizedUrl('/images'), icon: ImageIcon },
+    { name: t('nav.tags'), href: localizedUrl('/tags'), icon: Tag },
+    { name: t('nav.playlists'), href: localizedUrl('/public-playlists'), icon: ListVideo },
 ]);
 
 const handleMobileNavClick = (item) => {
@@ -437,7 +433,7 @@ const handleMobileNavClick = (item) => {
                         <input
                             v-model="searchQuery"
                             type="text"
-                            :placeholder="t('common.search_placeholder') || 'Search videos...'"
+                            :placeholder="t('common.search_placeholder')"
                             class="input pr-12 w-full"
                             aria-label="Search videos"
                             @input="onSearchInput"
@@ -458,13 +454,13 @@ const handleMobileNavClick = (item) => {
                     >
                         <div v-if="suggestLoading" class="p-3 text-sm text-text-muted flex items-center gap-2">
                             <Loader2 class="w-4 h-4 animate-spin" />
-                            <span>{{ t('common.loading') || 'Loading...' }}</span>
+                            <span>{{ t('common.loading') }}</span>
                         </div>
 
                         <template v-if="!suggestLoading">
                             <!-- Videos -->
                             <div v-if="searchSuggestions.videos.length">
-                                <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted bg-bg-secondary">{{ t('common.videos') || 'Videos' }}</div>
+                                <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted bg-bg-secondary">{{ t('common.videos') }}</div>
                                 <button
                                     v-for="(video, idx) in searchSuggestions.videos"
                                     :key="video.id"
@@ -487,7 +483,7 @@ const handleMobileNavClick = (item) => {
 
                             <!-- Channels -->
                             <div v-if="searchSuggestions.channels.length">
-                                <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted bg-bg-secondary">{{ t('common.channels') || 'Channels' }}</div>
+                                <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted bg-bg-secondary">{{ t('common.channels') }}</div>
                                 <button
                                     v-for="(channel, idx) in searchSuggestions.channels"
                                     :key="channel.id"
@@ -509,7 +505,7 @@ const handleMobileNavClick = (item) => {
                             </div>
 
                             <div v-if="!searchSuggestions.videos.length && !searchSuggestions.channels.length" class="p-3 text-sm text-text-muted text-center">
-                                {{ t('search.no_results') || 'No results found' }}
+                                {{ t('search.no_results') }}
                             </div>
                         </template>
                     </div>
@@ -533,11 +529,11 @@ const handleMobileNavClick = (item) => {
                             <div v-if="showUploadMenu" class="upload-menu-dropdown absolute right-0 mt-2 min-w-34 card p-1 shadow-xl bg-bg-card border border-border z-50">
                                 <Link href="/upload" class="flex items-center justify-center gap-2 px-2.5 py-2 rounded-lg hover:opacity-80 transition-opacity text-text-primary" @click="showUploadMenu = false">
                                     <Film class="w-4 h-4 text-text-secondary" />
-                                    <span class="text-sm">{{ t('nav.upload_video') || 'Video' }}</span>
+                                    <span class="text-sm">{{ t('nav.upload_video') }}</span>
                                 </Link>
                                 <Link href="/image-upload" class="flex items-center justify-center gap-2 px-2.5 py-2 rounded-lg hover:opacity-80 transition-opacity text-text-primary" @click="showUploadMenu = false">
                                     <ImageIcon class="w-4 h-4 text-text-secondary" />
-                                    <span class="text-sm">{{ t('nav.upload_image') || 'Image' }}</span>
+                                    <span class="text-sm">{{ t('nav.upload_image') }}</span>
                                 </Link>
                             </div>
                         </div>
@@ -551,9 +547,9 @@ const handleMobileNavClick = (item) => {
                             <!-- Notification Dropdown -->
                             <div v-if="showNotifications" class="notification-dropdown absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto scrollbar-hide card shadow-xl bg-bg-card border border-border z-50">
                                 <div class="flex items-center justify-between p-3 border-b border-border">
-                                    <h3 class="font-semibold text-sm text-text-primary">{{ t('nav.notifications') || 'Notifications' }}</h3>
+                                    <h3 class="font-semibold text-sm text-text-primary">{{ t('nav.notifications') }}</h3>
                                     <button v-if="unreadCount > 0" @click="markAllRead" class="text-xs hover:opacity-80 text-accent">
-                                        {{ t('nav.mark_all_read') || 'Mark all read' }}
+                                        {{ t('nav.mark_all_read') }}
                                     </button>
                                 </div>
                                 <div v-if="notifications.length">
@@ -583,7 +579,7 @@ const handleMobileNavClick = (item) => {
                                 </div>
                                 <div v-else class="p-6 text-center">
                                     <Bell class="w-8 h-8 mx-auto mb-2 text-text-muted" />
-                                    <p class="text-sm text-text-secondary">{{ t('nav.no_notifications') || 'No notifications' }}</p>
+                                    <p class="text-sm text-text-secondary">{{ t('nav.no_notifications') }}</p>
                                 </div>
                             </div>
                         </div>
@@ -608,37 +604,37 @@ const handleMobileNavClick = (item) => {
                                         class="flex items-center gap-3 px-3 py-2 rounded-lg text-accent"
                                     >
                                         <Shield class="w-4 h-4" />
-                                        <span>{{ t('nav.admin_panel') || 'Admin Panel' }}</span>
+                                        <span>{{ t('nav.admin_panel') }}</span>
                                     </a>
                                     <Link href="/dashboard" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
                                         <LayoutDashboard class="w-4 h-4" />
-                                        <span>{{ t('nav.dashboard') || 'Dashboard' }}</span>
+                                        <span>{{ t('nav.dashboard') }}</span>
                                     </Link>
                                     <Link :href="`/channel/${user.username}`" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
                                         <User class="w-4 h-4" />
-                                        <span>{{ t('nav.your_channel') || 'Your Channel' }}</span>
+                                        <span>{{ t('nav.your_channel') }}</span>
                                     </Link>
                                     <Link href="/feed" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
                                         <Rss class="w-4 h-4" />
-                                        <span>{{ t('nav.subscriptions') || 'Subscriptions' }}</span>
+                                        <span>{{ t('nav.subscriptions') }}</span>
                                     </Link>
                                     <Link v-if="monetizationEnabled" href="/wallet" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
                                         <Wallet class="w-4 h-4" />
-                                        <span>{{ t('nav.wallet') || 'Wallet' }}: ${{ user.wallet_balance }}</span>
+                                        <span>{{ t('nav.wallet') }}: ${{ user.wallet_balance }}</span>
                                     </Link>
                                     <Link v-if="pointsEnabled" href="/rewards" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
                                         <Award class="w-4 h-4" />
-                                        <span>{{ t('nav.rewards') || 'Rewards' }}: {{ user.points_balance?.toLocaleString() || 0 }} pts</span>
+                                        <span>{{ t('nav.rewards') }}: {{ user.points_balance?.toLocaleString() || 0 }} pts</span>
                                     </Link>
                                     <Link href="/settings" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
                                         <Settings class="w-4 h-4" />
-                                        <span>{{ t('nav.settings') || 'Settings' }}</span>
+                                        <span>{{ t('nav.settings') }}</span>
                                     </Link>
                                 </div>
                                 <div class="pt-2 border-t border-border">
                                     <Link href="/logout" method="post" as="button" class="flex items-center gap-3 px-3 py-2 rounded-lg w-full text-left text-red-400">
                                         <LogOut class="w-4 h-4" />
-                                        <span>{{ t('nav.sign_out') || 'Sign Out' }}</span>
+                                        <span>{{ t('nav.sign_out') }}</span>
                                     </Link>
                                 </div>
                             </div>
@@ -762,7 +758,7 @@ const handleMobileNavClick = (item) => {
 
                 <template v-if="user && !sidebarCollapsed">
                     <div class="mt-6 pt-6 border-t border-border">
-                        <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2 text-text-muted">{{ t('nav.library') || 'Library' }}</h3>
+                        <h3 class="px-3 text-xs font-semibold uppercase tracking-wider mb-2 text-text-muted">{{ t('nav.library') }}</h3>
                         <ul class="space-y-1">
                             <li v-for="item in libraryNav" :key="item.name">
                                 <Link :href="item.href" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:opacity-80 text-text-secondary">
@@ -827,7 +823,7 @@ const handleMobileNavClick = (item) => {
                     <input
                         v-model="mobileSearchQuery"
                         type="text"
-                        :placeholder="t('common.search_placeholder') || 'Search videos...'"
+                        :placeholder="t('common.search_placeholder')"
                         class="input flex-1"
                         aria-label="Search videos"
                         autofocus
@@ -851,13 +847,13 @@ const handleMobileNavClick = (item) => {
                 >
                     <div v-if="suggestLoading" class="p-3 text-sm text-text-muted flex items-center gap-2">
                         <Loader2 class="w-4 h-4 animate-spin" />
-                        <span>{{ t('common.loading') || 'Loading...' }}</span>
+                        <span>{{ t('common.loading') }}</span>
                     </div>
 
                     <template v-if="!suggestLoading">
                         <!-- Videos -->
                         <div v-if="searchSuggestions.videos.length">
-                            <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted bg-bg-secondary">{{ t('common.videos') || 'Videos' }}</div>
+                            <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted bg-bg-secondary">{{ t('common.videos') }}</div>
                             <button
                                 v-for="(video, idx) in searchSuggestions.videos"
                                 :key="video.id"
@@ -880,7 +876,7 @@ const handleMobileNavClick = (item) => {
 
                         <!-- Channels -->
                         <div v-if="searchSuggestions.channels.length">
-                            <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted bg-bg-secondary">{{ t('common.channels') || 'Channels' }}</div>
+                            <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted bg-bg-secondary">{{ t('common.channels') }}</div>
                             <button
                                 v-for="(channel, idx) in searchSuggestions.channels"
                                 :key="channel.id"
@@ -902,7 +898,7 @@ const handleMobileNavClick = (item) => {
                         </div>
 
                         <div v-if="!searchSuggestions.videos.length && !searchSuggestions.channels.length" class="p-3 text-sm text-text-muted text-center">
-                            {{ t('search.no_results') || 'No results found' }}
+                            {{ t('search.no_results') }}
                         </div>
                     </template>
                 </div>
@@ -945,13 +941,13 @@ const handleMobileNavClick = (item) => {
 
                 <!-- Legal Links -->
                 <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-text-muted">
-                    <a href="/pages/terms-of-service" class="hover:opacity-80 text-text-muted">{{ t('footer.terms') || 'Terms of Service' }}</a>
-                    <a href="/pages/privacy-policy" class="hover:opacity-80 text-text-muted">{{ t('footer.privacy') || 'Privacy Policy' }}</a>
-                    <a href="/pages/dmca" class="hover:opacity-80 text-text-muted">{{ t('footer.dmca') || 'DMCA' }}</a>
-                    <a href="/dmca-request" class="hover:opacity-80 text-text-muted">{{ t('footer.dmca_request') || 'Submit Takedown Request' }}</a>
-                    <a href="/pages/community-guidelines" class="hover:opacity-80 text-text-muted">{{ t('footer.guidelines') || 'Community Guidelines' }}</a>
-                    <a href="/pages/cookie-policy" class="hover:opacity-80 text-text-muted">{{ t('footer.cookies') || 'Cookie Policy' }}</a>
-                    <a href="/contact" class="hover:opacity-80 text-text-muted">{{ t('footer.contact') || 'Contact' }}</a>
+                    <a href="/pages/terms-of-service" class="hover:opacity-80 text-text-muted">{{ t('footer.terms') }}</a>
+                    <a href="/pages/privacy-policy" class="hover:opacity-80 text-text-muted">{{ t('footer.privacy') }}</a>
+                    <a href="/pages/dmca" class="hover:opacity-80 text-text-muted">{{ t('footer.dmca') }}</a>
+                    <a href="/dmca-request" class="hover:opacity-80 text-text-muted">{{ t('footer.dmca_request') }}</a>
+                    <a href="/pages/community-guidelines" class="hover:opacity-80 text-text-muted">{{ t('footer.guidelines') }}</a>
+                    <a href="/pages/cookie-policy" class="hover:opacity-80 text-text-muted">{{ t('footer.cookies') }}</a>
+                    <a href="/contact" class="hover:opacity-80 text-text-muted">{{ t('footer.contact') }}</a>
                 </div>
             </div>
         </footer>
@@ -982,7 +978,7 @@ const handleMobileNavClick = (item) => {
                                     </Link>
                                     <Link href="/image-upload" class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity text-text-primary" @click="showMobileUploadMenu = false">
                                         <ImageIcon class="w-4 h-4 shrink-0 text-text-secondary" />
-                                        <span class="text-sm">{{ t('nav.upload_image') || 'Image' }}</span>
+                                        <span class="text-sm">{{ t('nav.upload_image') }}</span>
                                     </Link>
                                 </div>
                             </Transition>
@@ -1068,14 +1064,14 @@ const handleMobileNavClick = (item) => {
                                         <span class="text-2xl font-bold text-white">{{ (themeSettings.siteTitle || 'H').charAt(0).toUpperCase() }}</span>
                                     </div>
                                 </Link>
-                                <h2 class="text-xl font-bold mt-3 text-text-primary">{{ t('auth.welcome_back') || 'Welcome back' }}</h2>
-                                <p class="text-sm mt-1 text-text-secondary">{{ t('auth.sign_in_desc') || 'Sign in to your account' }}</p>
+                                <h2 class="text-xl font-bold mt-3 text-text-primary">{{ t('auth.welcome_back') }}</h2>
+                                <p class="text-sm mt-1 text-text-secondary">{{ t('auth.sign_in_desc') }}</p>
                             </div>
 
                             <form @submit.prevent="submitLogin" class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-medium mb-1 text-text-secondary">
-                                        {{ t('auth.email_or_username') || 'Email or Username' }}
+                                        {{ t('auth.email_or_username') }}
                                     </label>
                                     <input
                                         v-model="loginForm.login"
@@ -1089,7 +1085,7 @@ const handleMobileNavClick = (item) => {
 
                                 <div>
                                     <label class="block text-sm font-medium mb-1 text-text-secondary">
-                                        {{ t('auth.password') || 'Password' }}
+                                        {{ t('auth.password') }}
                                     </label>
                                     <div class="relative">
                                         <input
@@ -1114,10 +1110,10 @@ const handleMobileNavClick = (item) => {
                                 <div class="flex items-center justify-between">
                                     <label class="flex items-center gap-2 cursor-pointer">
                                         <input v-model="loginForm.remember" type="checkbox" class="w-4 h-4 rounded" />
-                                        <span class="text-sm text-text-secondary">{{ t('auth.remember_me') || 'Remember me' }}</span>
+                                        <span class="text-sm text-text-secondary">{{ t('auth.remember_me') }}</span>
                                     </label>
                                     <Link href="/forgot-password" class="text-sm text-accent" @click="showLoginModal = false">
-                                        {{ t('auth.forgot_password') || 'Forgot password?' }}
+                                        {{ t('auth.forgot_password') }}
                                     </Link>
                                 </div>
 
@@ -1126,16 +1122,16 @@ const handleMobileNavClick = (item) => {
                                     :disabled="loginForm.processing"
                                     class="btn btn-primary w-full"
                                 >
-                                    <span v-if="loginForm.processing">{{ t('auth.signing_in') || 'Signing in...' }}</span>
-                                    <span v-else>{{ t('auth.login') || 'Sign In' }}</span>
+                                    <span v-if="loginForm.processing">{{ t('auth.signing_in') }}</span>
+                                    <span v-else>{{ t('auth.login') }}</span>
                                 </button>
                             </form>
 
                             <div class="mt-6 text-center">
                                 <p class="text-text-secondary">
-                                    {{ t('auth.no_account') || "Don't have an account?" }}
+                                    {{ t('auth.no_account') }}
                                     <Link href="/register" class="font-medium text-accent" @click="showLoginModal = false">
-                                        {{ t('auth.sign_up') || 'Sign up' }}
+                                        {{ t('auth.sign_up') }}
                                     </Link>
                                 </p>
                             </div>
@@ -1159,7 +1155,7 @@ const handleMobileNavClick = (item) => {
             <div v-if="showOverlay" class="fixed inset-0 z-[9999] flex items-center justify-center" style="background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
                 <div class="flex flex-col items-center gap-4">
                     <img src="/images/globe.svg" alt="" class="w-16 h-16 animate-spin-slow" style="filter: invert(1) brightness(2);" />
-                    <span class="text-base font-semibold text-white tracking-wide">{{ t('common.translating') || 'Translating...' }}</span>
+                    <span class="text-base font-semibold text-white tracking-wide">{{ t('common.translating') }}</span>
                 </div>
             </div>
         </Transition>

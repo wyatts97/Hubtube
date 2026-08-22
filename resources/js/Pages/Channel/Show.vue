@@ -52,28 +52,24 @@ const handleSubscribe = async () => {
         }
         subscribed.value = !subscribed.value;
     } else {
-        toast.error(data?.message || t('common.error') || 'Something went wrong');
+        toast.error(data?.message || t('common.error'));
     }
     subscribing.value = false;
 };
 
-const tSafe = (key, fallback) => {
-    const val = t(key);
-    return val === key ? fallback : val;
-};
 
 const tabs = computed(() => {
     const items = [
-        { name: tSafe('channel.videos', 'Videos'), href: `/channel/${props.channel.username}` },
-        { name: tSafe('channel.playlists', 'Playlists'), href: `/channel/${props.channel.username}/playlists` },
+        { name: t('channel.videos'), href: `/channel/${props.channel.username}` },
+        { name: t('channel.playlists'), href: `/channel/${props.channel.username}/playlists` },
     ];
     if (props.showLikedVideos) {
-        items.push({ name: tSafe('channel.liked_videos', 'Liked Videos'), href: `/channel/${props.channel.username}/liked` });
+        items.push({ name: t('channel.liked_videos'), href: `/channel/${props.channel.username}/liked` });
     }
     if (props.showWatchHistory) {
-        items.push({ name: tSafe('channel.recently_watched', 'Recently Watched'), href: `/channel/${props.channel.username}/history` });
+        items.push({ name: t('channel.recently_watched'), href: `/channel/${props.channel.username}/history` });
     }
-    items.push({ name: tSafe('channel.about', 'About'), href: `/channel/${props.channel.username}/about` });
+    items.push({ name: t('channel.about'), href: `/channel/${props.channel.username}/about` });
     return items;
 });
 </script>
@@ -106,15 +102,15 @@ const tabs = computed(() => {
                 <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-text-muted">
                     <span class="inline-flex items-center gap-1.5">
                         <Video class="w-4 h-4" />
-                        {{ videos.total }} {{ t('common.videos') || 'videos' }}
+                        {{ videos.total }} {{ t('common.videos') }}
                     </span>
                     <span class="inline-flex items-center gap-1.5">
                         <Bell class="w-4 h-4" />
-                        <span class="font-medium text-text-primary">{{ subCount.toLocaleString() }}</span>&nbsp;{{ t('common.subscribers') || 'subscribers' }}
+                        <span class="font-medium text-text-primary">{{ subCount.toLocaleString() }}</span>&nbsp;{{ t('common.subscribers') }}
                     </span>
                     <span v-if="channel.channel?.total_views" class="inline-flex items-center gap-1.5">
                         <Eye class="w-4 h-4" />
-                        {{ Number(channel.channel.total_views).toLocaleString() }} {{ t('common.views') || 'views' }}
+                        {{ Number(channel.channel.total_views).toLocaleString() }} {{ t('common.views') }}
                     </span>
                 </div>
                 <p v-if="channel.channel?.description" class="mt-2 line-clamp-2 text-text-secondary">
@@ -133,7 +129,7 @@ const tabs = computed(() => {
                     ]"
                 >
                     <Loader2 v-if="subscribing" class="w-4 h-4 animate-spin" />
-                    <template v-else>{{ subscribed ? (t('common.subscribed') || 'Subscribed') : (t('common.subscribe') || 'Subscribe') }}</template>
+                    <template v-else>{{ subscribed ? (t('common.subscribed')) : (t('common.subscribe')) }}</template>
                 </button>
             </div>
         </div>
@@ -166,11 +162,11 @@ const tabs = computed(() => {
 
         <div v-else class="text-center py-16">
             <Video class="w-14 h-14 mx-auto mb-4 text-text-muted" />
-            <p class="text-lg font-semibold text-text-secondary">{{ t('channel.no_videos') || 'No videos yet' }}</p>
-            <p class="mt-2 text-sm text-text-muted">{{ t('channel.no_videos_desc') || "This channel hasn't uploaded any videos" }}</p>
+            <p class="text-lg font-semibold text-text-secondary">{{ t('channel.no_videos') }}</p>
+            <p class="mt-2 text-sm text-text-muted">{{ t('channel.no_videos_desc') }}</p>
             <Link v-if="user && user.id === channel.id" href="/upload" class="btn btn-primary mt-5 gap-2">
                 <Video class="w-4 h-4" />
-                {{ t('dashboard.upload_video') || 'Upload Your First Video' }}
+                {{ t('dashboard.upload_video') }}
             </Link>
         </div>
 

@@ -7,7 +7,7 @@ import { timeAgo } from '@/Composables/useFormatters';
 import { useI18n } from '@/Composables/useI18n';
 import ProBadge from '@/Components/ProBadge.vue';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const props = defineProps({
     videoId: {
@@ -106,7 +106,7 @@ fetchComments();
 <template>
     <div class="mt-6">
         <h3 class="text-lg font-semibold mb-4 text-text-primary">
-            {{ comments.length }} {{ t('video.comments') || 'Comments' }}
+            {{ comments.length }} {{ t('video.comments') }}
         </h3>
 
         <!-- Comment Input -->
@@ -117,7 +117,7 @@ fetchComments();
             <div class="flex-1">
                 <textarea
                     v-model="newComment"
-                    :placeholder="t('video.add_comment') || 'Add a comment...'"
+                    :placeholder="t('video.add_comment')"
                     rows="2"
                     class="input resize-none w-full"
                     @keydown.ctrl.enter="submitComment"
@@ -128,14 +128,14 @@ fetchComments();
                         class="btn btn-ghost"
                         :disabled="!newComment.trim()"
                     >
-                        {{ t('common.cancel') || 'Cancel' }}
+                        {{ t('common.cancel') }}
                     </button>
                     <button 
                         @click="submitComment" 
                         class="btn btn-primary"
                         :disabled="!newComment.trim() || submitting"
                     >
-                        {{ submitting ? (t('common.loading') || 'Posting...') : (t('video.comments') || 'Comment') }}
+                        {{ submitting ? (t('common.loading')) : (t('video.comments')) }}
                     </button>
                 </div>
             </div>
@@ -143,7 +143,7 @@ fetchComments();
 
         <div v-else class="card p-4 mb-6 text-center">
             <p class="text-text-secondary">
-                <Link href="/login" class="hover:underline text-accent">{{ t('auth.login') || 'Sign in' }}</Link>
+                <Link href="/login" class="hover:underline text-accent">{{ t('auth.login') }}</Link>
             </p>
         </div>
 
@@ -166,7 +166,7 @@ fetchComments();
                             {{ comment.user?.username }}
                         </Link>
                         <ProBadge v-if="comment.user?.is_pro" size="sm" />
-                        <span class="text-sm text-text-muted">{{ timeAgo(comment.created_at) }}</span>
+                        <span class="text-sm text-text-muted">{{ timeAgo(comment.created_at, locale) }}</span>
                     </div>
                     <p class="mt-1 whitespace-pre-wrap text-text-secondary">{{ comment.content }}</p>
                     
@@ -192,7 +192,7 @@ fetchComments();
                             @click="replyingTo = replyingTo === comment.id ? null : comment.id"
                             class="text-sm hover:opacity-80 text-text-muted"
                         >
-                            {{ t('video.reply') || 'Reply' }}
+                            {{ t('video.reply') }}
                         </button>
                         <button 
                             v-if="user && (user.id === comment.user_id || user.is_admin)"
@@ -213,18 +213,18 @@ fetchComments();
                         <div class="flex-1">
                             <textarea
                                 v-model="replyContent"
-                                :placeholder="t('video.reply') || 'Add a reply...'"
+                                :placeholder="t('video.reply')"
                                 rows="2"
                                 class="input resize-none w-full text-sm"
                             ></textarea>
                             <div class="flex justify-end gap-2 mt-2">
-                                <button @click="replyingTo = null" class="btn btn-ghost btn-sm">{{ t('common.cancel') || 'Cancel' }}</button>
+                                <button @click="replyingTo = null" class="btn btn-ghost btn-sm">{{ t('common.cancel') }}</button>
                                 <button 
                                     @click="submitReply(comment.id)" 
                                     class="btn btn-primary btn-sm"
                                     :disabled="!replyContent.trim() || submitting"
                                 >
-                                    {{ t('video.reply') || 'Reply' }}
+                                    {{ t('video.reply') }}
                                 </button>
                             </div>
                         </div>
@@ -240,7 +240,7 @@ fetchComments();
                                 <div class="flex items-center gap-2">
                                     <span class="font-medium text-sm text-text-primary">{{ reply.user?.username }}</span>
                                     <ProBadge v-if="reply.user?.is_pro" size="sm" />
-                                    <span class="text-xs text-text-muted">{{ timeAgo(reply.created_at) }}</span>
+                                    <span class="text-xs text-text-muted">{{ timeAgo(reply.created_at, locale) }}</span>
                                 </div>
                                 <p class="text-sm mt-1 text-text-secondary">{{ reply.content }}</p>
                             </div>
@@ -250,7 +250,7 @@ fetchComments();
             </div>
 
             <div v-if="!loading && comments.length === 0" class="text-center py-8">
-                <p class="text-text-muted">{{ t('video.no_comments') || 'No comments yet' }}</p>
+                <p class="text-text-muted">{{ t('video.no_comments') }}</p>
             </div>
         </div>
     </div>

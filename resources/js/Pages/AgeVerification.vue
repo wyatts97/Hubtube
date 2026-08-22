@@ -43,7 +43,7 @@ const decline = () => {
                 <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style="background-color: color-mix(in srgb, var(--color-accent) 20%, transparent);">
                     <ShieldAlert class="w-10 h-10 text-accent" />
                 </div>
-                <h1 class="text-3xl font-bold mb-4 text-text-primary">{{ t('age.title') || 'Age Verification Required' }}</h1>
+                <h1 class="text-3xl font-bold mb-4 text-text-primary">{{ t('age.title') }}</h1>
                 <p class="text-lg text-text-muted">
                     This website contains age-restricted content. You must be at least 18 years old to enter.
                 </p>
@@ -61,10 +61,10 @@ const decline = () => {
                         class="btn btn-primary flex-1 py-3 inline-flex items-center justify-center gap-2"
                     >
                         <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin" />
-                        {{ isSubmitting ? (t('common.loading') || 'Entering...') : (t('age.confirm') || 'I am 18 or older') }}
+                        {{ isSubmitting ? (t('common.loading')) : (t('age.confirm')) }}
                     </button>
                     <button type="button" @click="decline" :disabled="isSubmitting" class="btn btn-secondary flex-1 py-3">
-                        {{ t('age.exit') || 'Exit' }}
+                        {{ t('age.exit') }}
                     </button>
                 </div>
 

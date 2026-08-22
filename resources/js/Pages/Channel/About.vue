@@ -8,10 +8,6 @@ import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
-const tSafe = (key, fallback) => {
-    const val = t(key);
-    return val === key ? fallback : val;
-};
 
 const props = defineProps({
     channel: Object,
@@ -22,16 +18,16 @@ const props = defineProps({
 
 const tabs = computed(() => {
     const items = [
-        { name: tSafe('channel.videos', 'Videos'), href: `/channel/${props.channel.username}` },
-        { name: tSafe('channel.playlists', 'Playlists'), href: `/channel/${props.channel.username}/playlists` },
+        { name: t('channel.videos'), href: `/channel/${props.channel.username}` },
+        { name: t('channel.playlists'), href: `/channel/${props.channel.username}/playlists` },
     ];
     if (props.showLikedVideos) {
-        items.push({ name: tSafe('channel.liked_videos', 'Liked Videos'), href: `/channel/${props.channel.username}/liked` });
+        items.push({ name: t('channel.liked_videos'), href: `/channel/${props.channel.username}/liked` });
     }
     if (props.showWatchHistory) {
-        items.push({ name: tSafe('channel.recently_watched', 'Recently Watched'), href: `/channel/${props.channel.username}/history` });
+        items.push({ name: t('channel.recently_watched'), href: `/channel/${props.channel.username}/history` });
     }
-    items.push({ name: tSafe('channel.about', 'About'), href: `/channel/${props.channel.username}/about`, active: true });
+    items.push({ name: t('channel.about'), href: `/channel/${props.channel.username}/about`, active: true });
     return items;
 });
 
@@ -55,7 +51,7 @@ const formatDate = (date) => {
             </div>
             <div>
                 <h1 class="text-xl font-bold text-text-primary">{{ channel.username }}</h1>
-                <p class="text-text-muted">{{ tSafe('channel.about', 'About') }}</p>
+                <p class="text-text-muted">{{ t('channel.about') }}</p>
             </div>
         </div>
 
@@ -83,7 +79,7 @@ const formatDate = (date) => {
             <!-- Description -->
             <div class="lg:col-span-2">
                 <div class="card p-6">
-                    <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ tSafe('channel.description', 'Description') }}</h2>
+                    <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('channel.description') }}</h2>
                     <p v-if="channel.channel?.description" class="whitespace-pre-wrap text-text-secondary">
                         {{ channel.channel.description }}
                     </p>
@@ -94,26 +90,26 @@ const formatDate = (date) => {
             <!-- Stats -->
             <div class="space-y-4">
                 <div class="card p-6">
-                    <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ tSafe('channel.stats', 'Stats') }}</h2>
+                    <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('channel.stats') }}</h2>
                     <div class="space-y-4">
                         <div class="flex items-center gap-3">
                             <Calendar class="w-5 h-5 text-text-muted" />
                             <div>
-                                <p class="text-sm text-text-muted">{{ tSafe('channel.joined', 'Joined') }}</p>
+                                <p class="text-sm text-text-muted">{{ t('channel.joined') }}</p>
                                 <p class="text-text-primary">{{ formatDate(stats.joinedAt) }}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
                             <Eye class="w-5 h-5 text-text-muted" />
                             <div>
-                                <p class="text-sm text-text-muted">{{ tSafe('channel.total_views', 'Total Views') }}</p>
+                                <p class="text-sm text-text-muted">{{ t('channel.total_views') }}</p>
                                 <p class="text-text-primary">{{ stats.totalViews?.toLocaleString() || 0 }}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
                             <Video class="w-5 h-5 text-text-muted" />
                             <div>
-                                <p class="text-sm text-text-muted">{{ tSafe('channel.video_count', 'Videos') }}</p>
+                                <p class="text-sm text-text-muted">{{ t('channel.video_count') }}</p>
                                 <p class="text-text-primary">{{ stats.videoCount }}</p>
                             </div>
                         </div>

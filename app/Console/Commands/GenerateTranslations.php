@@ -97,6 +97,9 @@ class GenerateTranslations extends Command
                 json_encode($translated, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n"
             );
 
+            // HandleInertiaRequests caches these catalogues forever.
+            \Illuminate\Support\Facades\Cache::forget("i18n:ui:{$locale}");
+
             $this->line("  <info>✓</info> Written to resources/js/i18n/{$locale}.json");
 
             // Small delay to avoid rate limiting

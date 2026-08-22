@@ -28,8 +28,8 @@ const titleStyle = computed(() => ({
 
     <AppLayout>
         <div class="mb-6">
-            <h1 class="text-2xl font-bold text-text-primary">{{ t('categories.title') || 'Categories' }}</h1>
-            <p class="text-sm mt-1 text-text-muted">{{ t('categories.browse') || 'Browse videos by category' }}</p>
+            <h1 class="text-2xl font-bold text-text-primary">{{ t('categories.title') }}</h1>
+            <p class="text-sm mt-1 text-text-muted">{{ t('categories.browse') }}</p>
         </div>
 
         <div v-if="categories.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -65,14 +65,14 @@ const titleStyle = computed(() => ({
                     >
                         {{ category.name }}
                     </span>
-                    <span class="text-xs mt-1 text-white/70">{{ category.videos_count }} {{ t('common.videos') || 'videos' }}</span>
+                    <span class="text-xs mt-1 text-white/70">{{ category.videos_count }} {{ t('common.videos') }}</span>
                 </div>
             </Link>
         </div>
 
         <div v-else class="text-center py-12">
             <Folder class="w-12 h-12 mx-auto mb-3 text-text-muted" />
-            <p class="text-lg text-text-secondary">{{ t('categories.no_categories') || 'No categories yet' }}</p>
+            <p class="text-lg text-text-secondary">{{ t('categories.no_categories') }}</p>
         </div>
     </AppLayout>
 </template>

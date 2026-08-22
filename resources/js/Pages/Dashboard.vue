@@ -7,7 +7,7 @@ import { timeAgo, formatViews } from '@/Composables/useFormatters';
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const formatNumber = (n) => {
     if (n == null) return '0';
@@ -31,16 +31,16 @@ const formatCurrency = (amount) => {
 
 const statCards = computed(() => {
     const cards = [
-        { label: t('dashboard.total_videos') || 'Total Videos', value: () => formatViews(props.stats.totalVideos), icon: Video, color: '#3b82f6' },
-        { label: t('dashboard.total_views') || 'Total Views', value: () => formatViews(props.stats.totalViews), icon: Eye, color: '#8b5cf6' },
-        { label: t('dashboard.total_likes') || 'Total Likes', value: () => formatViews(props.stats.totalLikes), icon: ThumbsUp, color: '#ef4444' },
-        { label: t('dashboard.subscribers') || 'Subscribers', value: () => formatViews(props.stats.subscriberCount), icon: Users, color: '#22c55e' },
+        { label: t('dashboard.total_videos'), value: () => formatViews(props.stats.totalVideos), icon: Video, color: '#3b82f6' },
+        { label: t('dashboard.total_views'), value: () => formatViews(props.stats.totalViews), icon: Eye, color: '#8b5cf6' },
+        { label: t('dashboard.total_likes'), value: () => formatViews(props.stats.totalLikes), icon: ThumbsUp, color: '#ef4444' },
+        { label: t('dashboard.subscribers'), value: () => formatViews(props.stats.subscriberCount), icon: Users, color: '#22c55e' },
     ];
     if (monetizationEnabled.value) {
-        cards.push({ label: t('dashboard.wallet_balance') || 'Wallet Balance', value: () => formatCurrency(props.stats.walletBalance), icon: Wallet, color: '#f59e0b' });
+        cards.push({ label: t('dashboard.wallet_balance'), value: () => formatCurrency(props.stats.walletBalance), icon: Wallet, color: '#f59e0b' });
     }
     if (pointsEnabled.value) {
-        cards.push({ label: t('dashboard.points_balance') || 'Reward Points', value: () => formatNumber(props.stats.pointsBalance), icon: Award, color: '#f59e0b', href: '/rewards' });
+        cards.push({ label: t('dashboard.points_balance'), value: () => formatNumber(props.stats.pointsBalance), icon: Award, color: '#f59e0b', href: '/rewards' });
     }
     return cards;
 });
@@ -49,19 +49,19 @@ const statsGridCols = computed(() => monetizationEnabled.value ? 'grid-cols-2 sm
 </script>
 
 <template>
-    <SeoHead :title="t('dashboard.title') || 'Creator Dashboard'" />
+    <SeoHead :title="t('dashboard.title')" />
 
     <AppLayout>
         <div class="max-w-6xl mx-auto">
             <div class="flex items-center justify-between gap-3 mb-6">
                 <div class="min-w-0">
-                    <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('dashboard.title') || 'Creator Dashboard' }}</h1>
-                    <p class="mt-1 text-sm sm:text-base text-text-secondary">{{ t('dashboard.overview') || 'Overview of your channel performance' }}</p>
+                    <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('dashboard.title') }}</h1>
+                    <p class="mt-1 text-sm sm:text-base text-text-secondary">{{ t('dashboard.overview') }}</p>
                 </div>
                 <Link href="/upload" class="btn btn-primary gap-2 flex-shrink-0 text-sm sm:text-base">
                     <Video class="w-4 h-4" />
-                    <span class="hidden sm:inline">{{ t('dashboard.upload_video') || 'Upload Video' }}</span>
-                    <span class="sm:hidden">{{ t('nav.upload') || 'Upload' }}</span>
+                    <span class="hidden sm:inline">{{ t('dashboard.upload_video') }}</span>
+                    <span class="sm:hidden">{{ t('nav.upload') }}</span>
                 </Link>
             </div>
 
@@ -91,8 +91,8 @@ const statsGridCols = computed(() => monetizationEnabled.value ? 'grid-cols-2 sm
                 <!-- Recent Videos -->
                 <div class="card">
                     <div class="p-4 border-b flex items-center justify-between border-border">
-                        <h2 class="font-semibold text-text-primary">{{ t('dashboard.recent_videos') || 'Recent Videos' }}</h2>
-                        <Link href="/settings" class="text-sm text-accent">{{ t('common.manage') || 'Manage' }}</Link>
+                        <h2 class="font-semibold text-text-primary">{{ t('dashboard.recent_videos') }}</h2>
+                        <Link href="/settings" class="text-sm text-accent">{{ t('common.manage') }}</Link>
                     </div>
                     <div v-if="recentVideos?.length">
                         <div
@@ -106,8 +106,8 @@ const statsGridCols = computed(() => monetizationEnabled.value ? 'grid-cols-2 sm
                             <div class="flex-1 min-w-0">
                                 <Link :href="`/${video.slug}`" class="text-sm font-medium truncate block text-text-primary">{{ video.title }}</Link>
                                 <div class="flex items-center gap-2 sm:gap-3 mt-1 flex-wrap">
-                                    <span class="text-xs text-text-muted">{{ formatNumber(video.views_count) }} {{ t('common.videos') ? '' : '' }}{{ t('video.views', { count: '' }).replace('{count}', '').trim() || 'views' }}</span>
-                                    <span class="text-xs hidden sm:inline text-text-muted">{{ timeAgo(video.created_at) }}</span>
+                                    <span class="text-xs text-text-muted">{{ t('video.views', { count: formatNumber(video.views_count), n: video.views_count }) }}</span>
+                                    <span class="text-xs hidden sm:inline text-text-muted">{{ timeAgo(video.created_at, locale) }}</span>
                                     <span
                                         class="text-xs px-1.5 py-0.5 rounded"
                                         :style="{
@@ -127,7 +127,7 @@ const statsGridCols = computed(() => monetizationEnabled.value ? 'grid-cols-2 sm
                     </div>
                     <div v-else class="p-8 text-center">
                         <Video class="w-10 h-10 mx-auto mb-2 text-text-muted" />
-                        <p class="text-sm text-text-secondary">{{ t('dashboard.no_videos') || 'No videos yet' }}</p>
+                        <p class="text-sm text-text-secondary">{{ t('dashboard.no_videos') }}</p>
                     </div>
                 </div>
 
@@ -136,7 +136,7 @@ const statsGridCols = computed(() => monetizationEnabled.value ? 'grid-cols-2 sm
                     <div class="p-4 border-b border-border">
                         <h2 class="font-semibold flex items-center gap-2 text-text-primary">
                             <TrendingUp class="w-4 h-4 text-accent" />
-                            {{ t('dashboard.top_performing') || 'Top Performing' }}
+                            {{ t('dashboard.top_performing') }}
                         </h2>
                     </div>
                     <div v-if="topVideos?.length">
@@ -164,7 +164,7 @@ const statsGridCols = computed(() => monetizationEnabled.value ? 'grid-cols-2 sm
                     </div>
                     <div v-else class="p-8 text-center">
                         <BarChart3 class="w-10 h-10 mx-auto mb-2 text-text-muted" />
-                        <p class="text-sm text-text-secondary">{{ t('dashboard.upload_to_see') || 'Upload videos to see analytics' }}</p>
+                        <p class="text-sm text-text-secondary">{{ t('dashboard.upload_to_see') }}</p>
                     </div>
                 </div>
             </div>

@@ -70,8 +70,10 @@ Also resolve the trailing-slash contradiction: `public/.htaccess` 301-redirects 
 
 ## Phase 3 — Sitemap, robots and settings reconciliation
 
-- **`/live` 404** — `app/Http/Controllers/SitemapController.php:103` emits `/live` into `sitemap-pages.xml`, but the route was deleted (migration `2025_02_24_000001_drop_live_streaming_tables.php`). Remove the entry, and delete the dead `SeoService::forLive()` alongside it.
+- **`/live` 404** — `app/Http/Controllers/SitemapController.php:103` emits `/live` into `sitemap-pages.xml`, but the route was deleted (migration `2025_02_24_000001_drop_live_streaming_tables.php`). Remove the entry, and delete the dead `SeoService::forLive()` and the `seo_live_*` settings alongside it. `/shorts` is a real route that was missing from the sitemap — add it in place of `/live`.
 - **Orphaned settings** — `seo_noindex_user_pages`, `seo_locale`, and `seo_sitemap_max_videos` are exposed in `app/Filament/Pages/SeoSettings.php` (lines 211, 172, 396) and read by nothing. Either wire them up or remove the form fields; recommend wiring `seo_noindex_user_pages` into the Phase 1.3 `forPrivatePage()` helper, and deleting the other two (`SeoService` uses `App::getLocale()`; `SitemapController` reads `seo_sitemap_chunk_size`).
+  - `forPrivatePage()` is shared with error responses, so it takes an `$alwaysNoindex` flag: the setting governs signed-in account pages, while 404/500/419 stay noindex regardless of how it's toggled.
+  - The setting's default must be `true` on both sides — `SeoSettings::mount()` previously defaulted it to `false`, which would have shown the toggle off while the directive was being emitted.
 - **Unexposed settings** — ~17 keys the code reads have no admin UI (`seo_sitemap_chunk_size`, `seo_sitemap_max_{tags,images,galleries,playlists}`, `seo_sitemap_{images,galleries,playlists}_enabled`, `seo_{videos,categories,tags,images,galleries}_index_{title,description}`, `seo_public_playlists_*`, `seo_shorts_*`). Add them to the existing Sitemap and Page Templates tabs so the defaults are visible and editable.
 - **`truncate()` doesn't do what its docblock says** — `SeoService.php:70-79` claims "word boundary" but cuts mid-word. Cut at the last space before the limit.
 
@@ -116,12 +118,15 @@ Migrate the existing hand-rolled ternaries at `Components/PlaylistsRail.vue:44`,
 
 ### 4.5 Backfill and clean the key catalogue
 - **24 keys used in code but absent from `en.json`** currently render as raw dot-paths to users. The entire `dmca` namespace (11 keys) is missing while `Pages/Dmca.vue` uses it. Also: `auth.continue_with`, `auth.or`, `channel.no_liked_videos`, `common.{channels,error,remove,views}`, `footer.dmca_request`, `search.no_results`, `tags.{browse,no_tags}`, `video.shortcuts.title`, `video.tap_play_to_resume`, `wallet.no_transactions_desc`. Add all to `en.json`, then regenerate `es.json`.
-- **`es.json` is 14 keys behind** — the whole `rewards` namespace is absent, so the Rewards page renders raw keys in Spanish. Run `php artisan translations:generate es --force` after the `en.json` backfill.
-- **Strip the 180+ dead `|| 'Fallback'` guards** now that 4.1 makes fallback real. Highest concentrations: `Layouts/AppLayout.vue` (24), `Pages/Settings.vue` (15), `Components/ReportModal.vue` (13), `Pages/Videos/Show.vue` (10). Mechanical find/replace on `t('…') || '…'` → `t('…')`; the discarded literal should first be checked against `en.json` and added there if the key is one of the 24 missing.
-- **Delete the 90 orphan keys** with no consumer — the entire `live` namespace (13 keys, feature removed) and `embedded` namespace (4 keys).
+- **`es.json` is 14 keys behind** — the whole `rewards` namespace is absent, so the Rewards page renders raw keys in Spanish. Run `php artisan translations:generate es --force` after the `en.json` backfill. **Still outstanding:** the command needs DB access (it applies `TranslationOverride` rows) and `pdo_mysql` isn't available locally, so `es.json` sits 47 keys behind. 4.1 makes that render English rather than dot-paths, so it is no longer user-breaking — but the command should be run once on a machine with a database.
+- **Strip the dead `|| 'Fallback'` guards** now that 4.1 makes fallback real — 386 of them, plus 59 `tSafe(key, fallback)` calls and 6 `t('x') !== 'x' ? … : …` ternaries. `tSafe` was a *working* fallback helper duplicated verbatim in 8 files; it becomes redundant and its literals are the best source of English text for keys `en.json` never defined. Recover those literals into `en.json` **before** stripping.
+  - Watch for literals containing an escaped quote (`copyright owner\'s`): a naive non-greedy regex stops at the backslash and leaves a fragment behind. Two lines hit this — `Pages/Dmca.vue` and `Pages/History.vue`.
+- **Delete orphan keys**: the `live` namespace (13 keys, feature removed) and `embedded` (4 keys) are gone for good and were dropped. The other ~61 orphans are generic UI vocabulary (`common.close`, `errors.*`, `toast.*`); they were **kept** — the orphan set proved sensitive to scan quality (adding `tSafe` coverage moved 18 keys out of it), and ~2KB of payload doesn't justify deleting strings a future component may need.
 
-### 4.6 Retire the dead third composable
-`resources/js/Composables/useAutoTranslate.js` (92 lines) is imported by no `.vue` file — superseded by `useGlobalAutoTranslate.js`. Delete it. Also drop the unused `router` import in `useI18n.js` and the unused `useFetch`/`post`/`router` imports in `useTranslation.js`.
+### 4.6 Composable cleanup
+Drop the unused `router` import in `useI18n.js` and the unused `router`/`useFetch`/`post` imports in `useTranslation.js`.
+
+**Correction:** the plan claimed `resources/js/Composables/useAutoTranslate.js` is imported by no `.vue` file. It is — `Pages/{Home,Search,Trending,Videos/Index}.vue` all call `useAutoTranslate(['title'])` and use both `translateVideos` and `tr`. It was **not** deleted.
 
 ---
 

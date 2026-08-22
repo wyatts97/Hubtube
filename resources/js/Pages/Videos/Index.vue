@@ -130,7 +130,7 @@ const getOutstreamAd = (index) => {
 
         <div class="mb-5">
             <div class="flex items-center justify-between gap-3 flex-wrap">
-                <h1 class="text-xl font-bold text-text-primary">{{ t('common.browse_videos') || 'Browse Videos' }}</h1>
+                <h1 class="text-xl font-bold text-text-primary">{{ t('common.browse_videos') }}</h1>
 
                 <div class="flex items-center gap-2">
                     <!-- Sort Buttons -->
@@ -179,7 +179,7 @@ const getOutstreamAd = (index) => {
                                 class="w-full text-left px-4 py-2 text-sm transition-colors hover:opacity-80"
                                 :style="!category ? 'color: var(--color-accent); font-weight: 600;' : 'color: var(--color-text-primary);'"
                             >
-                                {{ t('categories.all') || 'All Categories' }}
+                                {{ t('categories.all') }}
                             </button>
                             <div class="border-t border-border" style="margin: 2px 0;"></div>
                             <button
@@ -229,8 +229,8 @@ const getOutstreamAd = (index) => {
         </div>
 
         <div v-else class="text-center py-16">
-            <p class="text-lg text-text-secondary">{{ t('common.no_videos_found') || 'No videos found' }}</p>
-            <p class="mt-2 text-sm text-text-muted">{{ t('common.try_different') || 'Try adjusting your filters' }}</p>
+            <p class="text-lg text-text-secondary">{{ t('common.no_videos_found') }}</p>
+            <p class="mt-2 text-sm text-text-muted">{{ t('common.try_different') }}</p>
         </div>
 
         <!-- Pagination -->

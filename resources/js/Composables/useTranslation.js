@@ -1,6 +1,5 @@
 import { computed, ref, reactive } from 'vue';
-import { usePage, router } from '@inertiajs/vue3';
-import { useFetch } from '@/Composables/useFetch';
+import { usePage } from '@inertiajs/vue3';
 
 const translationCache = reactive({});
 
@@ -9,7 +8,6 @@ export { translationCache as _translationCache };
 
 export function useTranslation() {
     const page = usePage();
-    const { post } = useFetch();
     const translating = ref(false);
 
     const localeData = computed(() => page.props.locale || {

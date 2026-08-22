@@ -166,7 +166,17 @@ class SeoService
             return $text;
         }
 
-        return mb_substr($text, 0, $max - 3).'...';
+        // Cut back to the last whole word so descriptions don't end mid-word.
+        // A single word longer than the limit has no space to fall back to, so
+        // it's cut hard rather than returned empty.
+        $cut = mb_substr($text, 0, $max - 3);
+        $lastSpace = mb_strrpos($cut, ' ');
+
+        if ($lastSpace !== false && $lastSpace > 0) {
+            $cut = mb_substr($cut, 0, $lastSpace);
+        }
+
+        return rtrim($cut, " \t\n\r\0\x0B.,;:!?").'...';
     }
 
     /**
@@ -563,21 +573,6 @@ class SeoService
     }
 
     /**
-     * Generate SEO data for live streams page.
-     */
-    public function forLive(): array
-    {
-        $vars = ['site_name' => $this->siteName()];
-        $title = $this->template($this->s('seo_live_title', 'Live Streams | {site_name}'), $vars);
-        $description = $this->truncate($this->template($this->s('seo_live_description', 'Watch live streams on {site_name}.'), $vars));
-
-        $seo = $this->baseMeta($title, $description, '/live');
-        static::$currentSeo = $seo;
-
-        return $seo;
-    }
-
-    /**
      * Generate SEO data for search results.
      */
     public function forSearch(?string $query): array
@@ -942,15 +937,23 @@ class SeoService
      * that app.blade.php and SeoHead.vue render from the same source. Without
      * one, the Inertia head manager would strip the server-rendered tags on
      * hydration instead of replacing them.
+     *
+     * For account pages the noindex directive is gated on seo_noindex_user_pages
+     * (default on) — turning it off doesn't make them reachable, they're still
+     * behind auth, it just stops emitting the directive. Error responses pass
+     * $alwaysNoindex so they never depend on that setting.
      */
-    public function forPrivatePage(?string $title = null): array
+    public function forPrivatePage(?string $title = null, bool $alwaysNoindex = false): array
     {
         $fullTitle = $title
             ? "{$title} {$this->separator()} {$this->siteName()}"
             : $this->siteName();
 
         $seo = $this->baseMeta($fullTitle, '', null);
-        $seo['robots'] = 'noindex, nofollow';
+
+        if ($alwaysNoindex || $this->s('seo_noindex_user_pages', true)) {
+            $seo['robots'] = 'noindex, nofollow';
+        }
         // Private URLs shouldn't advertise a canonical.
         $seo['canonical'] = null;
         $seo['og']['url'] = null;

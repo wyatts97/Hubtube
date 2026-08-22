@@ -56,15 +56,15 @@ const providerMeta = {
                         <span class="text-2xl font-bold text-white">{{ siteTitle.charAt(0).toUpperCase() }}</span>
                     </div>
                 </Link>
-                <h1 class="text-2xl font-bold mt-4 text-text-primary">{{ t('auth.welcome_back') || 'Welcome back' }}</h1>
-                <p class="mt-2 text-text-secondary">{{ t('auth.sign_in_desc') || 'Sign in to your account' }}</p>
+                <h1 class="text-2xl font-bold mt-4 text-text-primary">{{ t('auth.welcome_back') }}</h1>
+                <p class="mt-2 text-text-secondary">{{ t('auth.sign_in_desc') }}</p>
             </div>
 
             <div class="card p-6">
                 <form @submit.prevent="onSubmit" class="space-y-4">
                     <div>
                         <label for="login" class="block text-sm font-medium mb-1 text-text-secondary">
-                            {{ t('auth.email_or_username') || 'Email or Username' }}
+                            {{ t('auth.email_or_username') }}
                         </label>
                         <input
                             id="login"
@@ -79,7 +79,7 @@ const providerMeta = {
 
                     <div>
                         <label for="password" class="block text-sm font-medium mb-1 text-text-secondary">
-                            {{ t('auth.password') || 'Password' }}
+                            {{ t('auth.password') }}
                         </label>
                         <div class="relative">
                             <input
@@ -108,10 +108,10 @@ const providerMeta = {
                                 type="checkbox"
                                 class="w-4 h-4 rounded border-dark-600 bg-dark-800 text-primary-600 focus:ring-primary-500"
                             />
-                            <span class="text-sm text-text-secondary">{{ t('auth.remember_me') || 'Remember me' }}</span>
+                            <span class="text-sm text-text-secondary">{{ t('auth.remember_me') }}</span>
                         </label>
                         <Link href="/forgot-password" class="text-sm text-accent">
-                            {{ t('auth.forgot_password') || 'Forgot password?' }}
+                            {{ t('auth.forgot_password') }}
                         </Link>
                     </div>
 
@@ -120,8 +120,8 @@ const providerMeta = {
                         :disabled="form.processing"
                         class="btn btn-primary w-full"
                     >
-                        <span v-if="form.processing">{{ t('auth.signing_in') || 'Signing in...' }}</span>
-                        <span v-else>{{ t('auth.login') || 'Sign In' }}</span>
+                        <span v-if="form.processing">{{ t('auth.signing_in') }}</span>
+                        <span v-else>{{ t('auth.login') }}</span>
                     </button>
                 </form>
 
@@ -129,7 +129,7 @@ const providerMeta = {
                 <template v-if="socialProviders.length > 0">
                     <div class="mt-6 flex items-center gap-3">
                         <div class="flex-1 h-px" style="background-color: var(--color-border);"></div>
-                        <span class="text-sm shrink-0 text-text-muted">{{ t('auth.or') || 'or' }}</span>
+                        <span class="text-sm shrink-0 text-text-muted">{{ t('auth.or') }}</span>
                         <div class="flex-1 h-px" style="background-color: var(--color-border);"></div>
                     </div>
 
@@ -143,16 +143,16 @@ const providerMeta = {
                             @mouseleave="$event.target.style.backgroundColor = 'var(--color-bg-secondary)'"
                         >
                             <span v-html="providerMeta[provider]?.icon" class="shrink-0"></span>
-                            <span>{{ t('auth.continue_with', { provider: providerMeta[provider]?.label }) || 'Continue with ' + providerMeta[provider]?.label }}</span>
+                            <span>{{ t('auth.continue_with', { provider: providerMeta[provider]?.label }) + providerMeta[provider]?.label }}</span>
                         </a>
                     </div>
                 </template>
 
                 <div class="mt-6 text-center">
                     <p class="text-text-secondary">
-                        {{ t('auth.no_account') || "Don't have an account?" }}
+                        {{ t('auth.no_account') }}
                         <Link href="/register" class="font-medium text-accent">
-                            {{ t('auth.sign_up') || 'Sign up' }}
+                            {{ t('auth.sign_up') }}
                         </Link>
                     </p>
                 </div>

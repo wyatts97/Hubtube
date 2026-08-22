@@ -52,14 +52,14 @@ const formatType = (type) => {
     <AppLayout>
         <div class="max-w-4xl mx-auto">
             <div class="mb-4 sm:mb-6">
-                <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('nav.wallet') || 'Wallet' }}</h1>
+                <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('nav.wallet') }}</h1>
             </div>
 
             <!-- Balance Card -->
             <div class="card p-4 sm:p-6 mb-4 sm:mb-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-text-secondary">{{ t('settings.wallet_balance') || 'Available Balance' }}</p>
+                        <p class="text-sm font-medium text-text-secondary">{{ t('settings.wallet_balance') }}</p>
                         <p class="text-2xl sm:text-3xl font-bold mt-1 text-text-primary">{{ formatCurrency(balance) }}</p>
                     </div>
                     <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shrink-0 bg-accent" style="opacity: 0.15;">
@@ -73,7 +73,7 @@ const formatType = (type) => {
                         class="btn btn-primary gap-2"
                     >
                         <Plus class="w-4 h-4" />
-                        {{ t('settings.deposit') || 'Deposit' }}
+                        {{ t('settings.deposit') }}
                     </Link>
                     <button
                         v-else
@@ -82,11 +82,11 @@ const formatType = (type) => {
                         disabled
                     >
                         <Plus class="w-4 h-4" />
-                        {{ t('settings.deposit') || 'Deposit' }}
+                        {{ t('settings.deposit') }}
                     </button>
                     <Link href="/wallet/withdraw" class="btn btn-secondary gap-2">
                         <ArrowDown class="w-4 h-4" />
-                        {{ t('settings.withdraw') || 'Withdraw' }}
+                        {{ t('settings.withdraw') }}
                     </Link>
                 </div>
                 <p v-if="!depositEnabled" class="text-xs mt-3 text-text-muted">
@@ -97,7 +97,7 @@ const formatType = (type) => {
             <!-- Transactions -->
             <div class="card">
                 <div class="p-4 border-b border-border">
-                    <h2 class="font-semibold text-text-primary">{{ t('wallet.transaction_history') || 'Transaction History' }}</h2>
+                    <h2 class="font-semibold text-text-primary">{{ t('wallet.transaction_history') }}</h2>
                 </div>
 
                 <div v-if="transactions.data?.length">
@@ -135,11 +135,11 @@ const formatType = (type) => {
                     <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-bg-secondary">
                         <Wallet class="w-8 h-8 text-text-muted" />
                     </div>
-                    <p class="font-semibold text-text-secondary">{{ t('wallet.no_transactions') || 'No transactions yet' }}</p>
-                    <p class="text-sm mt-1 text-text-muted">{{ t('wallet.no_transactions_desc') || 'Your earnings and payments will appear here' }}</p>
+                    <p class="font-semibold text-text-secondary">{{ t('wallet.no_transactions') }}</p>
+                    <p class="text-sm mt-1 text-text-muted">{{ t('wallet.no_transactions_desc') }}</p>
                     <Link href="/upload" class="btn btn-primary mt-5 gap-2">
                         <TrendingUp class="w-4 h-4" />
-                        {{ t('dashboard.upload_video') || 'Start Uploading to Earn' }}
+                        {{ t('dashboard.upload_video') }}
                     </Link>
                 </div>
 

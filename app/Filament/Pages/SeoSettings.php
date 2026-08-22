@@ -45,7 +45,6 @@ class SeoSettings extends Page implements HasForms
             'seo_og_type' => Setting::get('seo_og_type', 'website'),
             'seo_twitter_card' => Setting::get('seo_twitter_card', 'summary_large_image'),
             'seo_twitter_site' => Setting::get('seo_twitter_site', ''),
-            'seo_locale' => Setting::get('seo_locale', 'en_US'),
 
             // Verification Codes
             'seo_google_verification' => Setting::get('seo_google_verification', ''),
@@ -56,7 +55,7 @@ class SeoSettings extends Page implements HasForms
             // Robots & Indexing
             'seo_robots_txt' => Setting::get('seo_robots_txt', "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nDisallow: /install\nDisallow: /login\nDisallow: /register\nDisallow: /settings\nDisallow: /wallet\nDisallow: /upload\nDisallow: /email/\n\nSitemap: " . url('/sitemap.xml')),
             'seo_noindex_private_videos' => Setting::get('seo_noindex_private_videos', true),
-            'seo_noindex_user_pages' => Setting::get('seo_noindex_user_pages', false),
+            'seo_noindex_user_pages' => Setting::get('seo_noindex_user_pages', true),
 
             // Schema / Structured Data
             'seo_schema_enabled' => Setting::get('seo_schema_enabled', true),
@@ -87,13 +86,32 @@ class SeoSettings extends Page implements HasForms
             'seo_home_description' => Setting::get('seo_home_description', ''),
             'seo_trending_title' => Setting::get('seo_trending_title', 'Trending Videos | {site_name}'),
             'seo_trending_description' => Setting::get('seo_trending_description', 'Watch the most popular trending videos on {site_name} right now.'),
+            'seo_videos_index_title' => Setting::get('seo_videos_index_title', 'All Videos | {site_name}'),
+            'seo_videos_index_description' => Setting::get('seo_videos_index_description', 'Browse all videos on {site_name}.'),
+            'seo_categories_index_title' => Setting::get('seo_categories_index_title', 'All Categories | {site_name}'),
+            'seo_categories_index_description' => Setting::get('seo_categories_index_description', 'Browse video categories on {site_name}.'),
+            'seo_tags_index_title' => Setting::get('seo_tags_index_title', 'All Tags | {site_name}'),
+            'seo_tags_index_description' => Setting::get('seo_tags_index_description', 'Browse all video tags on {site_name}.'),
+            'seo_shorts_title' => Setting::get('seo_shorts_title', 'Shorts | {site_name}'),
+            'seo_shorts_description' => Setting::get('seo_shorts_description', 'Watch quick vertical short-form videos on {site_name}.'),
+            'seo_images_index_title' => Setting::get('seo_images_index_title', 'Photos | {site_name}'),
+            'seo_images_index_description' => Setting::get('seo_images_index_description', 'Browse photos uploaded to {site_name}.'),
+            'seo_galleries_index_title' => Setting::get('seo_galleries_index_title', 'Photo Galleries | {site_name}'),
+            'seo_galleries_index_description' => Setting::get('seo_galleries_index_description', 'Browse photo galleries on {site_name}.'),
+            'seo_public_playlists_title' => Setting::get('seo_public_playlists_title', 'Public Playlists | {site_name}'),
+            'seo_public_playlists_description' => Setting::get('seo_public_playlists_description', 'Discover community-created public playlists on {site_name}.'),
+            'seo_sitemap_chunk_size' => Setting::get('seo_sitemap_chunk_size', 10000),
+            'seo_sitemap_max_tags' => Setting::get('seo_sitemap_max_tags', 5000),
+            'seo_sitemap_images_enabled' => Setting::get('seo_sitemap_images_enabled', true),
+            'seo_sitemap_max_images' => Setting::get('seo_sitemap_max_images', 5000),
+            'seo_sitemap_galleries_enabled' => Setting::get('seo_sitemap_galleries_enabled', true),
+            'seo_sitemap_max_galleries' => Setting::get('seo_sitemap_max_galleries', 5000),
+            'seo_sitemap_playlists_enabled' => Setting::get('seo_sitemap_playlists_enabled', true),
+            'seo_sitemap_max_playlists' => Setting::get('seo_sitemap_max_playlists', 5000),
             'seo_search_title' => Setting::get('seo_search_title', 'Search Results for "{query}" | {site_name}'),
-            'seo_live_title' => Setting::get('seo_live_title', 'Live Streams | {site_name}'),
-            'seo_live_description' => Setting::get('seo_live_description', 'Watch live streams on {site_name}.'),
 
             // Sitemap
             'seo_sitemap_video_enabled' => Setting::get('seo_sitemap_video_enabled', true),
-            'seo_sitemap_max_videos' => Setting::get('seo_sitemap_max_videos', 10000),
             'seo_sitemap_max_channels' => Setting::get('seo_sitemap_max_channels', 5000),
 
             // Canonical
@@ -168,10 +186,6 @@ class SeoSettings extends Page implements HasForms
                                             ->label('Twitter @username')
                                             ->placeholder('@yoursitehandle')
                                             ->helperText('Your site\'s Twitter handle for attribution.'),
-                                        TextInput::make('seo_locale')
-                                            ->label('OG Locale')
-                                            ->placeholder('en_US')
-                                            ->helperText('Language/region code (e.g. en_US, de_DE, ja_JP).'),
                                     ])->columns(2),
                             ]),
 
@@ -209,7 +223,8 @@ class SeoSettings extends Page implements HasForms
                                             ->helperText('Add noindex to private and unlisted video pages.'),
                                         Toggle::make('seo_noindex_user_pages')
                                             ->label('Noindex User Settings/Wallet Pages')
-                                            ->helperText('Prevent indexing of user account pages.'),
+                                            ->default(true)
+                                            ->helperText('Adds noindex to signed-in account pages (settings, dashboard, wallet) and auth screens. Error pages are always noindex.'),
                                         Toggle::make('seo_canonical_enabled')
                                             ->label('Enable Canonical URLs')
                                             ->helperText('Adds <link rel="canonical"> to prevent duplicate content issues.'),
@@ -310,17 +325,52 @@ class SeoSettings extends Page implements HasForms
                                             ->placeholder('Browse {category_name} videos on {site_name}.'),
                                     ])->columns(2),
 
+                                Section::make('Browse & Index Pages')
+                                    ->description('Titles and descriptions for the listing pages. {site_name} is substituted at render time.')
+                                    ->schema([
+                                        TextInput::make('seo_videos_index_title')
+                                            ->label('/videos Title'),
+                                        Textarea::make('seo_videos_index_description')
+                                            ->label('/videos Description')
+                                            ->rows(2),
+                                        TextInput::make('seo_categories_index_title')
+                                            ->label('/categories Title'),
+                                        Textarea::make('seo_categories_index_description')
+                                            ->label('/categories Description')
+                                            ->rows(2),
+                                        TextInput::make('seo_tags_index_title')
+                                            ->label('/tags Title'),
+                                        Textarea::make('seo_tags_index_description')
+                                            ->label('/tags Description')
+                                            ->rows(2),
+                                        TextInput::make('seo_shorts_title')
+                                            ->label('/shorts Title'),
+                                        Textarea::make('seo_shorts_description')
+                                            ->label('/shorts Description')
+                                            ->rows(2),
+                                        TextInput::make('seo_images_index_title')
+                                            ->label('/images Title'),
+                                        Textarea::make('seo_images_index_description')
+                                            ->label('/images Description')
+                                            ->rows(2),
+                                        TextInput::make('seo_galleries_index_title')
+                                            ->label('/galleries Title'),
+                                        Textarea::make('seo_galleries_index_description')
+                                            ->label('/galleries Description')
+                                            ->rows(2),
+                                        TextInput::make('seo_public_playlists_title')
+                                            ->label('/public-playlists Title'),
+                                        Textarea::make('seo_public_playlists_description')
+                                            ->label('/public-playlists Description')
+                                            ->rows(2),
+                                    ])->columns(2),
+
                                 Section::make('Other Pages')
                                     ->schema([
                                         TextInput::make('seo_trending_title')
                                             ->label('Trending Page Title'),
                                         Textarea::make('seo_trending_description')
                                             ->label('Trending Page Description')
-                                            ->rows(2),
-                                        TextInput::make('seo_live_title')
-                                            ->label('Live Streams Page Title'),
-                                        Textarea::make('seo_live_description')
-                                            ->label('Live Streams Page Description')
                                             ->rows(2),
                                         TextInput::make('seo_search_title')
                                             ->label('Search Results Title Template')
@@ -389,15 +439,56 @@ class SeoSettings extends Page implements HasForms
                                         Toggle::make('seo_sitemap_video_enabled')
                                             ->label('Enable Video Sitemap Extensions')
                                             ->helperText('Adds video:video namespace with thumbnail, duration, description, view count, and tags to sitemap entries.'),
-                                        TextInput::make('seo_sitemap_max_videos')
-                                            ->label('Max Videos in Sitemap')
+                                        TextInput::make('seo_sitemap_chunk_size')
+                                            ->label('URLs Per Sitemap File')
                                             ->numeric()
                                             ->minValue(100)
                                             ->maxValue(50000)
                                             ->default(10000)
-                                            ->helperText('Google supports up to 50,000 URLs per sitemap.'),
+                                            ->helperText('Videos are split across sitemap-videos-N.xml files of this size. Google allows up to 50,000 URLs per file.'),
                                         TextInput::make('seo_sitemap_max_channels')
                                             ->label('Max Channels in Sitemap')
+                                            ->numeric()
+                                            ->minValue(100)
+                                            ->maxValue(50000)
+                                            ->default(5000),
+                                        TextInput::make('seo_sitemap_max_tags')
+                                            ->label('Max Tags in Sitemap')
+                                            ->numeric()
+                                            ->minValue(100)
+                                            ->maxValue(50000)
+                                            ->default(5000),
+                                    ])->columns(2),
+
+                                Section::make('Images, Galleries & Playlists')
+                                    ->description('Each type gets its own sitemap file, linked from the sitemap index.')
+                                    ->schema([
+                                        Toggle::make('seo_sitemap_images_enabled')
+                                            ->label('Include Images')
+                                            ->default(true)
+                                            ->helperText('Generates sitemap-images.xml with image:image metadata.'),
+                                        TextInput::make('seo_sitemap_max_images')
+                                            ->label('Max Images')
+                                            ->numeric()
+                                            ->minValue(100)
+                                            ->maxValue(50000)
+                                            ->default(5000),
+                                        Toggle::make('seo_sitemap_galleries_enabled')
+                                            ->label('Include Galleries')
+                                            ->default(true)
+                                            ->helperText('Generates sitemap-galleries.xml.'),
+                                        TextInput::make('seo_sitemap_max_galleries')
+                                            ->label('Max Galleries')
+                                            ->numeric()
+                                            ->minValue(100)
+                                            ->maxValue(50000)
+                                            ->default(5000),
+                                        Toggle::make('seo_sitemap_playlists_enabled')
+                                            ->label('Include Public Playlists')
+                                            ->default(true)
+                                            ->helperText('Generates sitemap-playlists.xml.'),
+                                        TextInput::make('seo_sitemap_max_playlists')
+                                            ->label('Max Playlists')
                                             ->numeric()
                                             ->minValue(100)
                                             ->maxValue(50000)

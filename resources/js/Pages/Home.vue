@@ -171,7 +171,7 @@ const getSponsoredCard = (index) => {
         <!-- Featured Videos -->
         <section v-if="featuredVideos.length > 0" class="mb-8">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-text-primary">{{ t('home.featured') || 'Featured' }}</h2>
+                <h2 class="text-xl font-bold text-text-primary">{{ t('home.featured') }}</h2>
             </div>
             <div :class="gridClass">
                 <VideoCard v-for="video in featuredVideos" :key="video.id" :video="withTranslation(video)" />
@@ -188,8 +188,8 @@ const getSponsoredCard = (index) => {
         <!-- Latest Videos -->
         <section class="mb-8">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-text-primary">{{ t('home.latest') || 'Latest Videos' }}</h2>
-                <a :href="localizedUrl('/videos')" class="text-sm font-medium text-accent">{{ t('common.view_all') || 'View All' }}</a>
+                <h2 class="text-xl font-bold text-text-primary">{{ t('home.latest') }}</h2>
+                <a :href="localizedUrl('/videos')" class="text-sm font-medium text-accent">{{ t('common.view_all') }}</a>
             </div>
             
             <!-- Infinite Scroll Mode -->
@@ -216,10 +216,10 @@ const getSponsoredCard = (index) => {
                 <div ref="loadMoreTrigger" class="flex justify-center py-8">
                     <div v-if="loading" class="flex items-center gap-2 text-text-secondary">
                         <Loader2 class="w-5 h-5 animate-spin" />
-                        <span>{{ t('home.loading_more') || 'Loading more videos...' }}</span>
+                        <span>{{ t('home.loading_more') }}</span>
                     </div>
                     <p v-else-if="!hasMore && videos.length > 0" class="text-sm text-text-muted">
-                        {{ t('home.reached_end') || "You've reached the end" }}
+                        {{ t('home.reached_end') }}
                     </p>
                 </div>
             </template>
@@ -265,8 +265,8 @@ const getSponsoredCard = (index) => {
         <!-- Popular Videos -->
         <section v-if="popularVideos.length > 0" class="mb-8">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-text-primary">{{ t('home.popular') || 'Popular' }}</h2>
-                <a :href="localizedUrl('/trending')" class="text-sm font-medium text-accent">{{ t('common.view_all') || 'View All' }}</a>
+                <h2 class="text-xl font-bold text-text-primary">{{ t('home.popular') }}</h2>
+                <a :href="localizedUrl('/trending')" class="text-sm font-medium text-accent">{{ t('common.view_all') }}</a>
             </div>
             <div :class="gridClass">
                 <VideoCard v-for="video in popularVideos" :key="video.id" :video="withTranslation(video)" />

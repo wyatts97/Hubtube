@@ -54,15 +54,15 @@ const onSubmit = () => {
                         <span class="text-2xl font-bold text-white">{{ siteTitle.charAt(0).toUpperCase() }}</span>
                     </div>
                 </Link>
-                <h1 class="text-2xl font-bold mt-4 text-text-primary">{{ t('auth.create_account') || 'Create your account' }}</h1>
-                <p class="mt-2 text-text-secondary">{{ t('auth.join_community') || 'Join the community today' }}</p>
+                <h1 class="text-2xl font-bold mt-4 text-text-primary">{{ t('auth.create_account') }}</h1>
+                <p class="mt-2 text-text-secondary">{{ t('auth.join_community') }}</p>
             </div>
 
             <div class="card p-6">
                 <form @submit.prevent="onSubmit" class="space-y-4">
                     <div>
                         <label for="username" class="block text-sm font-medium mb-1 text-text-secondary">
-                            {{ t('settings.username') || 'Username' }}
+                            {{ t('settings.username') }}
                         </label>
                         <input
                             id="username"
@@ -77,7 +77,7 @@ const onSubmit = () => {
 
                     <div>
                         <label for="email" class="block text-sm font-medium mb-1 text-text-secondary">
-                            {{ t('settings.email') || 'Email' }}
+                            {{ t('settings.email') }}
                         </label>
                         <input
                             id="email"
@@ -91,7 +91,7 @@ const onSubmit = () => {
 
                     <div>
                         <label for="password" class="block text-sm font-medium mb-1 text-text-secondary">
-                            {{ t('auth.password') || 'Password' }}
+                            {{ t('auth.password') }}
                         </label>
                         <div class="relative">
                             <input
@@ -115,7 +115,7 @@ const onSubmit = () => {
 
                     <div>
                         <label for="password_confirmation" class="block text-sm font-medium mb-1 text-text-secondary">
-                            {{ t('settings.confirm_password') || 'Confirm Password' }}
+                            {{ t('settings.confirm_password') }}
                         </label>
                         <input
                             id="password_confirmation"
@@ -139,8 +139,8 @@ const onSubmit = () => {
                         :disabled="form.processing"
                         class="btn btn-primary w-full"
                     >
-                        <span v-if="form.processing">{{ t('auth.creating_account') || 'Creating account...' }}</span>
-                        <span v-else>{{ t('auth.create_account') || 'Create Account' }}</span>
+                        <span v-if="form.processing">{{ t('auth.creating_account') }}</span>
+                        <span v-else>{{ t('auth.create_account') }}</span>
                     </button>
                 </form>
 
@@ -148,7 +148,7 @@ const onSubmit = () => {
                 <template v-if="socialProviders.length > 0">
                     <div class="mt-6 flex items-center gap-3">
                         <div class="flex-1 h-px" style="background-color: var(--color-border);"></div>
-                        <span class="text-sm shrink-0 text-text-muted">{{ t('auth.or') || 'or' }}</span>
+                        <span class="text-sm shrink-0 text-text-muted">{{ t('auth.or') }}</span>
                         <div class="flex-1 h-px" style="background-color: var(--color-border);"></div>
                     </div>
 
@@ -162,16 +162,16 @@ const onSubmit = () => {
                             @mouseleave="$event.target.style.backgroundColor = 'var(--color-bg-secondary)'"
                         >
                             <span v-html="providerMeta[provider]?.icon" class="shrink-0"></span>
-                            <span>{{ t('auth.continue_with', { provider: providerMeta[provider]?.label }) || 'Continue with ' + providerMeta[provider]?.label }}</span>
+                            <span>{{ t('auth.continue_with', { provider: providerMeta[provider]?.label }) + providerMeta[provider]?.label }}</span>
                         </a>
                     </div>
                 </template>
 
                 <div class="mt-6 text-center">
                     <p class="text-text-secondary">
-                        {{ t('auth.has_account') || 'Already have an account?' }}
+                        {{ t('auth.has_account') }}
                         <Link href="/login" class="font-medium text-accent">
-                            {{ t('auth.login') || 'Sign in' }}
+                            {{ t('auth.login') }}
                         </Link>
                     </p>
                 </div>

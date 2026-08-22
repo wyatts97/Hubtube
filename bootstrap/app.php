@@ -156,7 +156,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     return Inertia::render('Error', [
                         'status' => 419,
                         'message' => 'Your session has expired. Please refresh the page.',
-                        'seo' => app(SeoService::class)->forPrivatePage('Session Expired'),
+                        'seo' => app(SeoService::class)->forPrivatePage('Session Expired', alwaysNoindex: true),
                     ])->toResponse($request)->setStatusCode(419);
                 }
 
@@ -174,7 +174,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return Inertia::render('Error', [
                     'status' => $status,
                     'message' => $e->getMessage() ?: null,
-                    'seo' => app(SeoService::class)->forPrivatePage((string) $status),
+                    'seo' => app(SeoService::class)->forPrivatePage((string) $status, alwaysNoindex: true),
                 ])->toResponse($request)->setStatusCode($status);
             }
         });

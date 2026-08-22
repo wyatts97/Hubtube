@@ -161,7 +161,7 @@ const onPreviewLoad = (event) => {
                     <ProBadge v-if="video.user.is_pro" size="sm" />
                 </Link>
                 <p v-if="showViews || showTimestamp" :style="{ ...metaStyle, color: metaColor }">
-                    <template v-if="showViews">{{ t('video.views', { count: formattedViews }) }}</template>
+                    <template v-if="showViews">{{ t('video.views', { count: formattedViews, n: video.views_count }) }}</template>
                     <template v-if="showViews && showTimestamp"> • </template>
                     <template v-if="showTimestamp">{{ timeAgo }}</template>
                 </p>

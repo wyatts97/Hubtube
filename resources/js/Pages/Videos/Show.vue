@@ -57,7 +57,7 @@ const onAdStarted = (placement) => {
 const resumePlayer = (player) => {
     player.play().catch((err) => {
         console.warn('[Show.vue] Failed to resume video after ad:', err);
-        toast.error(t('video.tap_play_to_resume') || 'Tap play to resume the video');
+        toast.error(t('video.tap_play_to_resume'));
     });
 };
 
@@ -299,7 +299,7 @@ const handleLike = async () => {
         likesCount.value = data.likesCount;
         dislikesCount.value = data.dislikesCount;
     } else if (!ok) {
-        toast.error(data?.message || t('common.error') || 'Something went wrong');
+        toast.error(data?.message || t('common.error'));
     }
 };
 
@@ -312,7 +312,7 @@ const handleDislike = async () => {
         likesCount.value = data.likesCount;
         dislikesCount.value = data.dislikesCount;
     } else if (!ok) {
-        toast.error(data?.message || t('common.error') || 'Something went wrong');
+        toast.error(data?.message || t('common.error'));
     }
 };
 
@@ -324,7 +324,7 @@ const handleSubscribe = async () => {
     if (ok) {
         subscribed.value = !subscribed.value;
     } else {
-        toast.error(data?.message || t('common.error') || 'Something went wrong');
+        toast.error(data?.message || t('common.error'));
     }
     subscribing.value = false;
 };
@@ -648,7 +648,7 @@ const getRelatedTitle = (video) => {
                         <h1 class="text-base sm:text-xl font-bold flex-1 line-clamp-2 sm:line-clamp-none text-text-primary">{{ translatedTitle }}</h1>
                         <div class="flex items-center gap-1.5 sm:gap-2 shrink-0 text-xs sm:text-sm font-medium whitespace-nowrap text-text-secondary">
                             <Eye class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                            <span>{{ formattedViews }} {{ t('video.views', { count: '' }).replace('{count}', '').trim() || 'views' }}</span>
+                            <span>{{ t('video.views', { count: formattedViews, n: video.views_count }) }}</span>
                             <span class="text-text-muted">•</span>
                             <span>{{ video.published_at ? new Date(video.published_at).toLocaleDateString() : new Date(video.created_at).toLocaleDateString() }}</span>
                         </div>
@@ -663,7 +663,7 @@ const getRelatedTitle = (video) => {
                                 </div>
                                 <div class="min-w-0">
                                     <p class="font-medium text-xs sm:text-base truncate text-text-primary">{{ video.user.username }}</p>
-                                    <p class="text-[10px] sm:text-sm hidden sm:block text-text-muted">{{ video.user.subscriber_count }} {{ t('common.subscribers') || 'subscribers' }}</p>
+                                    <p class="text-[10px] sm:text-sm hidden sm:block text-text-muted">{{ video.user.subscriber_count }} {{ t('common.subscribers') }}</p>
                                 </div>
                             </Link>
                             
@@ -677,7 +677,7 @@ const getRelatedTitle = (video) => {
                                 ]"
                             >
                                 <Loader2 v-if="subscribing" class="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
-                                <template v-else>{{ subscribed ? (t('common.subscribed') || 'Subscribed') : (t('common.subscribe') || 'Subscribe') }}</template>
+                                <template v-else>{{ subscribed ? (t('common.subscribed')) : (t('common.subscribe')) }}</template>
                             </button>
                         </div>
 
@@ -702,7 +702,7 @@ const getRelatedTitle = (video) => {
 
                             <button @click="handleShare" class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
                                 <Share2 class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                <span class="hidden sm:inline">{{ t('common.share') || 'Share' }}</span>
+                                <span class="hidden sm:inline">{{ t('common.share') }}</span>
                             </button>
 
                             <a
@@ -712,20 +712,20 @@ const getRelatedTitle = (video) => {
                                 download
                             >
                                 <Download class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                <span class="hidden sm:inline">{{ t('common.download') || 'Download' }}</span>
+                                <span class="hidden sm:inline">{{ t('common.download') }}</span>
                             </a>
 
                             <!-- Save to Playlist -->
                             <div ref="playlistMenuRef" class="relative playlist-menu-area shrink-0">
                                 <button @click.stop="user ? (showPlaylistMenu = !showPlaylistMenu) : router.visit('/login')" class="btn btn-secondary gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
                                     <ListVideo class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                    <span class="hidden sm:inline">{{ t('common.save') || 'Save' }}</span>
+                                    <span class="hidden sm:inline">{{ t('common.save') }}</span>
                                 </button>
                                 <div
                                     v-if="showPlaylistMenu"
                                     class="absolute right-0 sm:right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-72 max-w-72 rounded-xl shadow-xl z-50 overflow-hidden bg-bg-card border border-border"
                                 >
-                                    <div class="p-3 font-medium text-sm border-b border-border text-text-primary">{{ t('video.save_to_playlist') || 'Save to playlist' }}</div>
+                                    <div class="p-3 font-medium text-sm border-b border-border text-text-primary">{{ t('video.save_to_playlist') }}</div>
                                     <div class="max-h-60 overflow-y-auto scrollbar-hide">
                                         <button
                                             v-for="pl in playlists"
@@ -746,14 +746,14 @@ const getRelatedTitle = (video) => {
                                             <Loader2 v-if="savingPlaylist === pl.id" class="w-4 h-4 animate-spin shrink-0" />
                                             <span v-else class="text-xs shrink-0 text-text-muted">{{ pl.videos_count }} videos</span>
                                         </button>
-                                        <div v-if="!playlists.length" class="px-3 py-4 text-center text-sm text-text-muted">{{ t('playlist.no_playlists') || 'No playlists yet' }}</div>
+                                        <div v-if="!playlists.length" class="px-3 py-4 text-center text-sm text-text-muted">{{ t('playlist.no_playlists') }}</div>
                                     </div>
                                     <div class="p-2 border-t border-border">
                                         <div class="flex items-center gap-2">
                                             <input
                                                 v-model="newPlaylistTitle"
                                                 type="text"
-                                                :placeholder="t('playlist.new_name') || 'New playlist name...'"
+                                                :placeholder="t('playlist.new_name')"
                                                 class="input text-sm flex-1"
                                                 @keydown.enter.prevent="createAndAddPlaylist"
                                             />
@@ -772,7 +772,7 @@ const getRelatedTitle = (video) => {
 
                             <button @click="user ? (showReportModal = true) : router.visit('/login')" class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
                                 <Flag class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                <span class="hidden sm:inline">{{ t('common.report') || 'Report' }}</span>
+                                <span class="hidden sm:inline">{{ t('common.report') }}</span>
                             </button>
 
                         </div>
@@ -826,7 +826,7 @@ const getRelatedTitle = (video) => {
                     </div>
                 </div>
 
-                <h3 class="font-medium mb-4 text-text-primary">{{ t('video.related') || 'Related Videos' }}</h3>
+                <h3 class="font-medium mb-4 text-text-primary">{{ t('video.related') }}</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
                     <VideoCard
                         v-for="relatedVideo in relatedVideos"

@@ -9,10 +9,6 @@ import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
-const tSafe = (key, fallback) => {
-    const val = t(key);
-    return val === key ? fallback : val;
-};
 
 const props = defineProps({
     channel: Object,
@@ -24,16 +20,16 @@ const props = defineProps({
 
 const tabs = computed(() => {
     const items = [
-        { name: tSafe('channel.videos', 'Videos'), href: `/channel/${props.channel.username}` },
-        { name: tSafe('channel.playlists', 'Playlists'), href: `/channel/${props.channel.username}/playlists` },
+        { name: t('channel.videos'), href: `/channel/${props.channel.username}` },
+        { name: t('channel.playlists'), href: `/channel/${props.channel.username}/playlists` },
     ];
     if (props.showLikedVideos) {
-        items.push({ name: tSafe('channel.liked_videos', 'Liked Videos'), href: `/channel/${props.channel.username}/liked`, active: true });
+        items.push({ name: t('channel.liked_videos'), href: `/channel/${props.channel.username}/liked`, active: true });
     }
     if (props.showWatchHistory) {
-        items.push({ name: tSafe('channel.recently_watched', 'Recently Watched'), href: `/channel/${props.channel.username}/history` });
+        items.push({ name: t('channel.recently_watched'), href: `/channel/${props.channel.username}/history` });
     }
-    items.push({ name: tSafe('channel.about', 'About'), href: `/channel/${props.channel.username}/about` });
+    items.push({ name: t('channel.about'), href: `/channel/${props.channel.username}/about` });
     return items;
 });
 </script>
@@ -49,7 +45,7 @@ const tabs = computed(() => {
             </div>
             <div>
                 <h1 class="text-xl font-bold text-text-primary">{{ channel.username }}</h1>
-                <p class="text-text-muted">{{ tSafe('channel.liked_videos', 'Liked Videos') }}</p>
+                <p class="text-text-muted">{{ t('channel.liked_videos') }}</p>
             </div>
         </div>
 
@@ -80,7 +76,7 @@ const tabs = computed(() => {
 
         <div v-else class="text-center py-12">
             <Heart class="w-12 h-12 mx-auto mb-3 text-text-muted" />
-            <p class="text-text-muted">{{ t('channel.no_liked_videos') || 'No liked videos yet' }}</p>
+            <p class="text-text-muted">{{ t('channel.no_liked_videos') }}</p>
         </div>
 
         <!-- Pagination -->

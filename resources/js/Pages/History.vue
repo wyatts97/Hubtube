@@ -23,29 +23,29 @@ onMounted(() => { setTimeout(() => { isInitialLoad.value = false; }, 100); });
 const { del } = useFetch();
 
 const clearHistory = async () => {
-    if (!confirm(t('history.clear_confirm') || 'Are you sure you want to clear your watch history?')) return;
+    if (!confirm(t('history.clear_confirm'))) return;
     
     const { ok, data } = await del('/history', null);
     if (ok) {
         router.reload();
     } else {
-        toast.error(data?.message || t('common.error') || 'Failed to clear history');
+        toast.error(data?.message || t('common.error'));
     }
 };
 </script>
 
 <template>
-    <SeoHead :title="t('history.title') || 'Watch History'" />
+    <SeoHead :title="t('history.title')" />
 
     <AppLayout>
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-text-primary">{{ t('history.title') || 'Watch History' }}</h1>
-                <p class="mt-1 text-text-secondary">{{ t('history.description') || 'Videos you\'ve watched recently' }}</p>
+                <h1 class="text-2xl font-bold text-text-primary">{{ t('history.title') }}</h1>
+                <p class="mt-1 text-text-secondary">{{ t('history.description') }}</p>
             </div>
             <button v-if="videos?.data?.length" @click="clearHistory" class="btn btn-ghost text-red-400 gap-2">
                 <Trash2 class="w-4 h-4" />
-                {{ t('history.clear') || 'Clear History' }}
+                {{ t('history.clear') }}
             </button>
         </div>
 
@@ -60,10 +60,10 @@ const clearHistory = async () => {
 
         <div v-else class="text-center py-12">
             <History class="w-16 h-16 mx-auto mb-4 text-text-muted" />
-            <p class="text-lg text-text-secondary">{{ t('history.empty') || 'No watch history yet' }}</p>
-            <p class="mt-2 text-text-muted">{{ t('history.empty_desc') || 'Videos you watch will appear here' }}</p>
+            <p class="text-lg text-text-secondary">{{ t('history.empty') }}</p>
+            <p class="mt-2 text-text-muted">{{ t('history.empty_desc') }}</p>
             <Link href="/" class="btn btn-primary mt-4">
-                {{ t('common.browse_videos') || 'Browse Videos' }}
+                {{ t('common.browse_videos') }}
             </Link>
         </div>
 

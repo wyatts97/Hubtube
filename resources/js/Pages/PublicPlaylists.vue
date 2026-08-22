@@ -8,10 +8,6 @@ import SeoHead from '@/Components/SeoHead.vue';
 
 const { t } = useI18n();
 
-const tSafe = (key, fallback) => {
-    const val = t(key);
-    return val === key ? fallback : val;
-};
 
 const props = defineProps({
     playlists: Object,
@@ -42,8 +38,8 @@ const changeSort = (sort) => {
     <AppLayout>
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-text-primary">{{ tSafe('playlist.public_playlists', 'Public Playlists') }}</h1>
-                <p class="mt-1 text-text-secondary">{{ tSafe('playlist.browse_all', 'Browse playlists from all creators') }}</p>
+                <h1 class="text-2xl font-bold text-text-primary">{{ t('playlist.public_playlists') }}</h1>
+                <p class="mt-1 text-text-secondary">{{ t('playlist.browse_all') }}</p>
             </div>
 
             <!-- Sort Buttons -->
@@ -97,12 +93,12 @@ const changeSort = (sort) => {
                 <div class="p-3">
                     <h3 class="font-medium truncate text-text-primary">{{ playlist.title }}</h3>
                     <p class="text-sm mt-1 text-text-secondary">
-                        {{ playlist.videos_count || 0 }} {{ tSafe('common.videos', 'videos') }}
+                        {{ playlist.videos_count || 0 }} {{ t('common.videos') }}
                         <span v-if="playlist.user"> &middot; {{ playlist.user.username }}</span>
                     </p>
                     <p v-if="playlist.favorited_by_count > 0" class="text-xs mt-1 flex items-center gap-1 text-text-muted">
                         <Heart class="w-3 h-3" />
-                        {{ playlist.favorited_by_count }} {{ playlist.favorited_by_count === 1 ? 'favorite' : 'favorites' }}
+                        {{ t('playlist.favorites_count', { count: playlist.favorited_by_count }) }}
                     </p>
                 </div>
             </Link>
@@ -111,8 +107,8 @@ const changeSort = (sort) => {
         <!-- Empty State -->
         <div v-else class="text-center py-12">
             <ListVideo class="w-16 h-16 mx-auto mb-4 text-text-muted" />
-            <p class="text-lg text-text-secondary">{{ tSafe('playlist.no_public_playlists', 'No playlists yet') }}</p>
-            <p class="mt-2 text-text-muted">{{ tSafe('playlist.no_public_playlists_desc', 'Be the first to create a playlist!') }}</p>
+            <p class="text-lg text-text-secondary">{{ t('playlist.no_public_playlists') }}</p>
+            <p class="mt-2 text-text-muted">{{ t('playlist.no_public_playlists_desc') }}</p>
         </div>
 
         <!-- Pagination -->

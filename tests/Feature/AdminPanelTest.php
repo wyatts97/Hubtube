@@ -42,3 +42,21 @@ test('expired session on Livewire request returns graceful 401', function () {
         ])
         ->assertHeader('X-Refresh-Required', 'true');
 });
+
+test('SEO settings page renders with every setting the code reads', function () {
+    asAdmin();
+
+    $this->get(App\Filament\Pages\SeoSettings::getUrl())->assertStatus(200);
+
+    // Spot-check keys that previously had no admin UI at all, so a schema that
+    // silently drops them fails here rather than in production.
+    $state = Livewire\Livewire::test(App\Filament\Pages\SeoSettings::class)->get('data');
+
+    expect($state)->toHaveKeys([
+        'seo_videos_index_title',
+        'seo_shorts_title',
+        'seo_sitemap_chunk_size',
+        'seo_sitemap_max_images',
+        'seo_sitemap_playlists_enabled',
+    ]);
+});

@@ -358,3 +358,108 @@ test('artisan route:list runs without error', function () {
     $exitCode = \Illuminate\Support\Facades\Artisan::call('route:list', ['--json' => true]);
     expect($exitCode)->toBe(0);
 });
+
+// ── i18n Catalogue Integrity ────────────────────────────────────────────
+
+/**
+ * Flatten a nested translation catalogue into dot-notation keys.
+ */
+function flattenTranslations(array $catalogue, string $prefix = ''): array
+{
+    $keys = [];
+
+    foreach ($catalogue as $key => $value) {
+        $keys = array_merge(
+            $keys,
+            is_array($value) ? flattenTranslations($value, "{$prefix}{$key}.") : ["{$prefix}{$key}"]
+        );
+    }
+
+    return $keys;
+}
+
+/**
+ * Every t('some.key') literal used anywhere under resources/js.
+ */
+function usedTranslationKeys(): array
+{
+    $keys = [];
+
+    $files = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator(resource_path('js'), FilesystemIterator::SKIP_DOTS)
+    );
+
+    foreach ($files as $file) {
+        if (! in_array($file->getExtension(), ['vue', 'js'], true)) {
+            continue;
+        }
+        if (str_contains(str_replace(DIRECTORY_SEPARATOR, '/', $file->getPathname()), '/i18n/')) {
+            continue;
+        }
+
+        preg_match_all("/\bt\(\s*'([a-z0-9_.]+)'/i", file_get_contents($file->getPathname()), $matches);
+
+        foreach ($matches[1] as $key) {
+            $keys[$key] = true;
+        }
+    }
+
+    return array_keys($keys);
+}
+
+test('every translation key used in the UI exists in en.json', function () {
+    // en.json is the fallback catalogue every other locale resolves through,
+    // so a key missing here renders as a raw dot-path to the user.
+    $defined = flattenTranslations(
+        json_decode(file_get_contents(resource_path('js/i18n/en.json')), true)
+    );
+
+    $missing = array_values(array_diff(usedTranslationKeys(), $defined));
+
+    expect($missing)->toBeEmpty(
+        'Keys used in resources/js but absent from en.json: '.implode(', ', $missing)
+    );
+});
+
+test('translation catalogues define no keys en.json is missing', function () {
+    // A key only a translated locale defines can never be reached, since t()
+    // resolves against en.json's shape.
+    $en = flattenTranslations(json_decode(file_get_contents(resource_path('js/i18n/en.json')), true));
+
+    foreach (glob(resource_path('js/i18n/*.json')) as $path) {
+        if (basename($path) === 'en.json') {
+            continue;
+        }
+
+        $stale = array_values(array_diff(
+            flattenTranslations(json_decode(file_get_contents($path), true)),
+            $en
+        ));
+
+        expect($stale)->toBeEmpty(
+            basename($path).' defines keys en.json does not: '.implode(', ', $stale)
+        );
+    }
+});
+
+test('a translated locale ships the English catalogue as a fallback', function () {
+    // Without this, any key the active locale is missing renders as a raw
+    // dot-path — which is what every locale with no JSON file used to do.
+    enableLocales(['en', 'es']);
+
+    $locale = inertiaPagePayload($this->get('/es/videos'))['props']['locale'];
+
+    expect($locale['current'])->toBe('es')
+        ->and($locale['fallback'])->not->toBeEmpty()
+        ->and($locale['fallback'])->toHaveKey('rewards');
+});
+
+test('the default locale ships no fallback catalogue', function () {
+    // It would just duplicate `translations` on every response.
+    enableLocales(['en', 'es']);
+
+    $locale = inertiaPagePayload($this->get('/videos'))['props']['locale'];
+
+    expect($locale['current'])->toBe('en')
+        ->and($locale['fallback'])->toBeEmpty();
+});

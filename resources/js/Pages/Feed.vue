@@ -27,12 +27,12 @@ const goToPage = (pageNum) => {
 </script>
 
 <template>
-    <SeoHead :title="t('feed.title') || 'Subscriptions Feed'" />
+    <SeoHead :title="t('feed.title')" />
 
     <AppLayout>
         <div class="mb-6">
-            <h1 class="text-2xl font-bold text-text-primary">{{ t('feed.title') || 'Subscriptions' }}</h1>
-            <p class="mt-1 text-text-secondary">{{ t('feed.description') || 'Latest videos from channels you follow' }}</p>
+            <h1 class="text-2xl font-bold text-text-primary">{{ t('feed.title') }}</h1>
+            <p class="mt-1 text-text-secondary">{{ t('feed.description') }}</p>
         </div>
 
         <div
@@ -50,8 +50,8 @@ const goToPage = (pageNum) => {
 
         <div v-else class="text-center py-16">
             <Rss class="w-12 h-12 mx-auto mb-4 text-text-muted" />
-            <p class="text-lg text-text-secondary">{{ t('feed.empty') || 'No videos in your feed yet' }}</p>
-            <p class="mt-1 text-text-muted">{{ t('feed.empty_desc') || 'Subscribe to channels to see their latest videos here' }}</p>
+            <p class="text-lg text-text-secondary">{{ t('feed.empty') }}</p>
+            <p class="mt-1 text-text-muted">{{ t('feed.empty_desc') }}</p>
         </div>
 
         <Pagination

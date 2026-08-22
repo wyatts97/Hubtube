@@ -12,10 +12,6 @@ const { t } = useI18n();
 const isInitialLoad = ref(true);
 onMounted(() => { setTimeout(() => { isInitialLoad.value = false; }, 100); });
 
-const tSafe = (key, fallback) => {
-    const val = t(key);
-    return val === key ? fallback : val;
-};
 
 const props = defineProps({
     channel: Object,
@@ -26,16 +22,16 @@ const props = defineProps({
 
 const tabs = computed(() => {
     const items = [
-        { name: tSafe('channel.videos', 'Videos'), href: `/channel/${props.channel.username}`, active: true },
-        { name: tSafe('channel.playlists', 'Playlists'), href: `/channel/${props.channel.username}/playlists` },
+        { name: t('channel.videos'), href: `/channel/${props.channel.username}`, active: true },
+        { name: t('channel.playlists'), href: `/channel/${props.channel.username}/playlists` },
     ];
     if (props.showLikedVideos) {
-        items.push({ name: tSafe('channel.liked_videos', 'Liked Videos'), href: `/channel/${props.channel.username}/liked` });
+        items.push({ name: t('channel.liked_videos'), href: `/channel/${props.channel.username}/liked` });
     }
     if (props.showWatchHistory) {
-        items.push({ name: tSafe('channel.recently_watched', 'Recently Watched'), href: `/channel/${props.channel.username}/history` });
+        items.push({ name: t('channel.recently_watched'), href: `/channel/${props.channel.username}/history` });
     }
-    items.push({ name: tSafe('channel.about', 'About'), href: `/channel/${props.channel.username}/about` });
+    items.push({ name: t('channel.about'), href: `/channel/${props.channel.username}/about` });
     return items;
 });
 </script>
@@ -51,7 +47,7 @@ const tabs = computed(() => {
             </div>
             <div>
                 <h1 class="text-xl font-bold text-white">{{ channel.username }}</h1>
-                <p class="text-dark-400">{{ videos.total }} {{ t('common.videos') || 'videos' }}</p>
+                <p class="text-dark-400">{{ videos.total }} {{ t('common.videos') }}</p>
             </div>
         </div>
 
@@ -86,7 +82,7 @@ const tabs = computed(() => {
         </div>
 
         <div v-else class="text-center py-12">
-            <p class="text-dark-400">{{ t('channel.no_videos') || 'No videos yet' }}</p>
+            <p class="text-dark-400">{{ t('channel.no_videos') }}</p>
         </div>
     </AppLayout>
 </template>

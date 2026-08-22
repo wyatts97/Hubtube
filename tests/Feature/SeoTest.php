@@ -19,6 +19,27 @@ test('sitemap.xml returns valid XML', function () {
     expect($response->headers->get('Content-Type'))->toStartWith('application/xml');
 });
 
+test('every static URL in the sitemap actually resolves', function () {
+    // A sitemap entry pointing at a 404 burns crawl budget and shows up as an
+    // error in Search Console — /live sat here after live streaming was removed.
+    $xml = simplexml_load_string($this->get('/sitemap-pages.xml')->getContent());
+
+    // Note: collect($xml->url) wraps the whole node list as a single item —
+    // iterate the SimpleXMLElement directly.
+    $paths = [];
+    foreach ($xml->url as $url) {
+        $paths[] = parse_url((string) $url->loc, PHP_URL_PATH) ?: '/';
+    }
+    $paths = array_unique($paths);
+
+    expect($paths)->not->toBeEmpty();
+
+    foreach ($paths as $path) {
+        expect($this->get($path)->status())
+            ->not->toBe(404, "Sitemap advertises {$path}, which 404s");
+    }
+});
+
 test('robots.txt returns plain text', function () {
     $response = $this->get('/robots.txt');
     $response->assertStatus(200);
@@ -136,6 +157,32 @@ test('gated pages are noindex', function (string $path) {
     $response->assertStatus(200);
     expect($response->getContent())->toContain('content="noindex, nofollow"');
 })->with(['/login', '/register', '/forgot-password']);
+
+test('long descriptions are truncated at a word boundary', function () {
+    $words = trim(str_repeat('alpha bravo charlie delta echo foxtrot ', 20));
+    $video = Video::factory()->create(['description' => $words]);
+
+    preg_match('/<meta name="description" content="([^"]+)"/', $this->get("/{$video->slug}")->getContent(), $m);
+    $description = $m[1];
+
+    expect($description)->toEndWith('...');
+
+    // Whatever survived must be a whole-word prefix of the original, so the
+    // next character in the source is a space rather than mid-word.
+    $kept = substr($description, 0, -3);
+    expect($words)->toStartWith($kept)
+        ->and(substr($words, strlen($kept), 1))->toBe(' ');
+});
+
+test('user page noindex honours its setting, but error pages never do', function () {
+    App\Models\Setting::set('seo_noindex_user_pages', false, 'seo', 'boolean');
+    App\Models\Setting::clearCache();
+
+    expect($this->get('/login')->getContent())->not->toContain('content="noindex, nofollow"');
+
+    // Error responses pass alwaysNoindex, so the toggle can't expose them.
+    expect($this->get('/no-such-page-'.uniqid())->getContent())->toContain('content="noindex, nofollow"');
+});
 
 test('404 responses are noindex', function () {
     $response = $this->get('/this-route-does-not-exist-'.uniqid());

@@ -111,7 +111,7 @@ const isPublished = computed(() => {
 
     <AppLayout>
         <div class="max-w-2xl mx-auto">
-            <h1 class="text-2xl font-bold mb-6 text-text-primary">{{ t('video.video_status') || 'Video Status' }}</h1>
+            <h1 class="text-2xl font-bold mb-6 text-text-primary">{{ t('video.video_status') }}</h1>
 
             <!-- Video Info Card -->
             <div class="card p-4 mb-6">
@@ -214,7 +214,7 @@ const isPublished = computed(() => {
                     class="btn bg-red-600 hover:bg-red-700 text-white"
                 >
                     <Trash2 class="w-4 h-4 mr-2" />
-                    {{ t('video.delete_video') || 'Delete Video' }}
+                    {{ t('video.delete_video') }}
                 </button>
 
                 <!-- If user gets upgraded to pro/admin later, show edit link -->
@@ -224,7 +224,7 @@ const isPublished = computed(() => {
                     class="btn btn-primary"
                 >
                     <Edit class="w-4 h-4 mr-2" />
-                    {{ t('video.edit_video') || 'Edit Video' }}
+                    {{ t('video.edit_video') }}
                 </a>
             </div>
         </div>

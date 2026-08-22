@@ -177,8 +177,8 @@ const getSponsoredCard = (index) => {
         <div class="mb-6">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <h1 class="text-2xl font-bold text-text-primary">{{ t('nav.trending') || 'Trending' }}</h1>
-                    <p class="mt-1 text-text-secondary">{{ t('home.popular') || 'Most viewed videos' }}</p>
+                    <h1 class="text-2xl font-bold text-text-primary">{{ t('nav.trending') }}</h1>
+                    <p class="mt-1 text-text-secondary">{{ t('home.popular') }}</p>
                 </div>
                 <div class="flex gap-1 flex-wrap">
                     <button
@@ -222,10 +222,10 @@ const getSponsoredCard = (index) => {
             <div ref="loadMoreTrigger" class="flex justify-center py-8">
                 <div v-if="loading" class="flex items-center gap-2 text-text-secondary">
                     <Loader2 class="w-5 h-5 animate-spin" />
-                    <span>{{ t('home.loading_more') || 'Loading more videos...' }}</span>
+                    <span>{{ t('home.loading_more') }}</span>
                 </div>
                 <p v-else-if="!hasMore && videoList.length > 0" class="text-sm text-text-muted">
-                    {{ t('home.reached_end') || "You've reached the end" }}
+                    {{ t('home.reached_end') }}
                 </p>
             </div>
         </template>
@@ -247,8 +247,8 @@ const getSponsoredCard = (index) => {
             </div>
 
             <div v-else class="text-center py-12">
-                <p class="text-lg text-text-secondary">{{ t('trending.no_videos') || 'No trending videos yet' }}</p>
-                <p class="mt-2 text-text-muted">{{ t('trending.check_back') || 'Check back later for popular content' }}</p>
+                <p class="text-lg text-text-secondary">{{ t('trending.no_videos') }}</p>
+                <p class="mt-2 text-text-muted">{{ t('trending.check_back') }}</p>
             </div>
 
             <Pagination

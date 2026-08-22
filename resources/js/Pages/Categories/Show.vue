@@ -49,7 +49,7 @@ const getSponsoredCard = (index) => {
 
 const displayName = props.translatedName || props.category.name;
 const breadcrumbs = computed(() => [
-    { label: t('categories.title') || 'Categories', href: localizedUrl('/categories') },
+    { label: t('categories.title'), href: localizedUrl('/categories') },
     { label: displayName },
 ]);
 const displayDescription = props.translatedDescription || props.category.description;
@@ -93,7 +93,7 @@ const goToPage = (pageNum) => {
         </div>
 
         <div v-else class="text-center py-12">
-            <p class="text-lg text-text-secondary">{{ t('categories.no_videos') || 'No videos in this category yet' }}</p>
+            <p class="text-lg text-text-secondary">{{ t('categories.no_videos') }}</p>
         </div>
 
         <!-- Pagination -->

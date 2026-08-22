@@ -42,10 +42,10 @@ onUnmounted(() => document.removeEventListener('keydown', handleKeydown));
     <button
         @click="show = true"
         class="btn btn-secondary gap-2"
-        :title="t('video.shortcuts.title') || 'Keyboard shortcuts (?)'"
+        :title="t('video.shortcuts.title')"
     >
         <Keyboard class="w-5 h-5" />
-        <span class="hidden sm:inline">{{ t('video.shortcuts') || 'Shortcuts' }}</span>
+        <span class="hidden sm:inline">{{ t('video.shortcuts.label') }}</span>
     </button>
 
     <!-- Overlay -->
@@ -60,7 +60,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKeydown));
                 <div class="flex items-center justify-between mb-5">
                     <h3 class="text-lg font-bold flex items-center gap-2 text-text-primary">
                         <Keyboard class="w-5 h-5" />
-                        {{ t('video.keyboard_shortcuts') || 'Keyboard Shortcuts' }}
+                        {{ t('video.keyboard_shortcuts') }}
                     </h3>
                     <button @click="show = false" class="p-1 rounded hover:opacity-70" aria-label="Close keyboard shortcuts">
                         <X class="w-5 h-5 text-text-secondary" />

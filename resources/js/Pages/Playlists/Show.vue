@@ -69,7 +69,7 @@ const removeVideo = (videoId) => {
         <div class="max-w-6xl mx-auto">
             <Link href="/playlists" class="flex items-center gap-2 mb-6 text-sm hover:opacity-80 text-text-secondary">
                 <ArrowLeft class="w-4 h-4" />
-                {{ t('playlist.back_to_playlists') || 'Back to Playlists' }}
+                {{ t('playlist.back_to_playlists') }}
             </Link>
 
             <!-- Playlist Header -->
@@ -80,7 +80,7 @@ const removeVideo = (videoId) => {
                         <p v-if="playlist.description" class="mt-2 text-text-secondary">{{ playlist.description }}</p>
                         <div class="flex items-center gap-4 mt-3">
                             <span class="text-sm text-text-muted">
-                                {{ playlist.videos?.length || playlist.videos_count || 0 }} {{ t('common.videos') || 'videos' }}
+                                {{ playlist.videos?.length || playlist.videos_count || 0 }} {{ t('common.videos') }}
                             </span>
                             <span v-if="playlist.user" class="text-sm text-text-muted">
                                 by <Link :href="`/channel/${playlist.user.username}`" class="text-accent">{{ playlist.user.username }}</Link>
@@ -100,11 +100,11 @@ const removeVideo = (videoId) => {
                             :class="favorited ? 'btn-primary' : 'btn-secondary'"
                         >
                             <Heart class="w-4 h-4" :fill="favorited ? 'currentColor' : 'none'" />
-                            {{ favorited ? (t('playlist.favorited') || 'Favorited') : (t('playlist.favorite') || 'Favorite') }}
+                            {{ favorited ? (t('playlist.favorited')) : (t('playlist.favorite')) }}
                         </button>
                         <Link v-if="playlist.videos?.length" :href="firstVideoHref" class="btn btn-primary gap-2">
                             <Play class="w-4 h-4" />
-                            {{ t('playlist.play_all') || 'Play All' }}
+                            {{ t('playlist.play_all') }}
                         </Link>
                     </div>
                 </div>
@@ -122,8 +122,8 @@ const removeVideo = (videoId) => {
 
             <div v-else class="text-center py-16">
                 <Play class="w-12 h-12 mx-auto mb-4 text-text-muted" />
-                <p class="text-lg text-text-secondary">{{ t('playlist.empty') || 'This playlist is empty' }}</p>
-                <p class="mt-1 text-text-muted">{{ t('playlist.add_videos') || 'Add videos to get started' }}</p>
+                <p class="text-lg text-text-secondary">{{ t('playlist.empty') }}</p>
+                <p class="mt-1 text-text-muted">{{ t('playlist.add_videos') }}</p>
             </div>
         </div>
     </AppLayout>

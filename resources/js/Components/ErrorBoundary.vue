@@ -35,7 +35,7 @@ const retry = () => {
         <p class="text-sm mb-4 text-text-muted">{{ fallbackDescription }}</p>
         <button @click="retry" class="btn btn-secondary gap-2 text-sm mx-auto">
             <RefreshCw class="w-4 h-4" />
-            {{ t('common.try_again') || 'Try Again' }}
+            {{ t('common.try_again') }}
         </button>
     </div>
     <slot v-else />

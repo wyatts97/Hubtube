@@ -58,10 +58,10 @@ const availableBalance = () => {
         <div class="max-w-lg mx-auto">
             <Link href="/wallet" class="flex items-center gap-2 mb-6 text-sm hover:opacity-80 text-text-secondary">
                 <ArrowLeft class="w-4 h-4" />
-                {{ t('wallet.back_to_wallet') || 'Back to Wallet' }}
+                {{ t('wallet.back_to_wallet') }}
             </Link>
 
-            <h1 class="text-2xl font-bold mb-2 text-text-primary">{{ t('wallet.withdraw_funds') || 'Withdraw Funds' }}</h1>
+            <h1 class="text-2xl font-bold mb-2 text-text-primary">{{ t('wallet.withdraw_funds') }}</h1>
             <p class="mb-1 text-text-secondary">Available: {{ formatCurrency(availableBalance()) }}</p>
             <p v-if="parseFloat(pendingWithdrawals) > 0" class="text-sm mb-6 text-text-muted">
                 Pending withdrawals: {{ formatCurrency(pendingWithdrawals) }}
@@ -71,7 +71,7 @@ const availableBalance = () => {
             <div class="card p-6">
                 <form @submit.prevent="submit" class="space-y-5">
                     <div>
-                        <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('wallet.amount') || 'Amount (USD)' }}</label>
+                        <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('wallet.amount') }}</label>
                         <input
                             v-model="form.amount"
                             type="number"
@@ -86,7 +86,7 @@ const availableBalance = () => {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium mb-2 text-text-secondary">{{ t('wallet.payment_method') || 'Payment Method' }}</label>
+                        <label class="block text-sm font-medium mb-2 text-text-secondary">{{ t('wallet.payment_method') }}</label>
                         <div class="grid grid-cols-3 gap-3">
                             <button
                                 type="button"
@@ -155,8 +155,8 @@ const availableBalance = () => {
                     <p v-if="form.errors.payment_details" class="text-red-500 text-sm">{{ form.errors.payment_details }}</p>
 
                     <button type="submit" :disabled="form.processing" class="btn btn-primary w-full">
-                        <span v-if="form.processing">{{ t('common.loading') || 'Submitting...' }}</span>
-                        <span v-else>{{ t('wallet.request_withdrawal') || 'Request Withdrawal' }}</span>
+                        <span v-if="form.processing">{{ t('common.loading') }}</span>
+                        <span v-else>{{ t('wallet.request_withdrawal') }}</span>
                     </button>
 
                     <p class="text-xs text-center text-text-muted">

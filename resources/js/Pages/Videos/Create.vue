@@ -317,7 +317,7 @@ const submitLabel = computed(() => {
     if (upload.status.value === 'paused') return 'Paused — Resume to continue';
     if (upload.status.value === 'complete' && !formValid.value) return 'Complete required fields';
     if (enableScheduling.value && form.scheduled_at) return 'Schedule';
-    return t('upload.title') || 'Publish Video';
+    return t('upload.title');
 });
 
 const submitDisabled = computed(() => {
@@ -374,13 +374,13 @@ watch(fieldErrors, (errs) => {
 </script>
 
 <template>
-    <SeoHead :title="t('upload.title') || 'Upload Video'" />
+    <SeoHead :title="t('upload.title')" />
 
     <AppLayout>
         <div class="max-w-4xl mx-auto">
             <div class="flex items-center gap-3 mb-6">
                 <div>
-                    <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('upload.title') || 'Upload Video' }}</h1>
+                    <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('upload.title') }}</h1>
                 </div>
             </div>
 
@@ -431,10 +431,10 @@ watch(fieldErrors, (errs) => {
                     <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-bg-secondary">
                         <Upload class="w-8 h-8 text-text-muted" />
                     </div>
-                    <p class="text-lg font-medium mb-2 text-text-primary">{{ t('upload.drag_drop') || 'Drag and drop video file' }}</p>
-                    <p class="mb-4 text-text-muted">{{ t('upload.or_browse') || 'or click to browse' }}</p>
+                    <p class="text-lg font-medium mb-2 text-text-primary">{{ t('upload.drag_drop') }}</p>
+                    <p class="mb-4 text-text-muted">{{ t('upload.or_browse') }}</p>
                     <label class="btn btn-primary cursor-pointer">
-                        {{ t('upload.select_file') || 'Select File' }}
+                        {{ t('upload.select_file') }}
                         <input
                             type="file"
                             accept="video/*"
@@ -483,7 +483,7 @@ watch(fieldErrors, (errs) => {
                             <div v-if="upload.status.value === 'uploading' || upload.status.value === 'paused'" class="mt-3">
                                 <div class="flex items-center justify-between text-sm mb-1">
                                     <span class="text-text-secondary">
-                                        {{ upload.status.value === 'paused' ? 'Paused' : (t('video.uploading') || 'Uploading…') }}
+                                        {{ upload.status.value === 'paused' ? 'Paused' : (t('video.uploading')) }}
                                         <span v-if="speedFormatted && upload.status.value === 'uploading'" class="text-text-muted"> · {{ speedFormatted }}</span>
                                         <span v-if="etaFormatted && upload.status.value === 'uploading'" class="text-text-muted"> · {{ etaFormatted }}</span>
                                     </span>
@@ -531,7 +531,7 @@ watch(fieldErrors, (errs) => {
                             type="button"
                             @click="removeVideo"
                             class="p-2 rounded-full hover:opacity-80 bg-bg-secondary"
-                            :title="t('common.remove') || 'Remove'"
+                            :title="t('common.remove')"
                         >
                             <X class="w-5 h-5 text-text-muted" />
                         </button>
@@ -545,7 +545,7 @@ watch(fieldErrors, (errs) => {
                     <!-- Title -->
                     <div>
                         <label for="title" class="block text-sm font-medium mb-1 text-text-secondary">
-                            {{ t('upload.video_title') || 'Title' }} <span class="text-red-500">*</span>
+                            {{ t('upload.video_title') }} <span class="text-red-500">*</span>
                         </label>
                         <input
                             id="title"
@@ -573,7 +573,7 @@ watch(fieldErrors, (errs) => {
                     <!-- Description -->
                     <div>
                         <label for="description" class="block text-sm font-medium mb-1 text-text-secondary">
-                            {{ t('upload.video_description') || 'Description' }} <span class="text-red-500">*</span>
+                            {{ t('upload.video_description') }} <span class="text-red-500">*</span>
                         </label>
                         <textarea
                             id="description"
@@ -601,7 +601,7 @@ watch(fieldErrors, (errs) => {
                     <!-- Category (privacy removed) -->
                     <div>
                         <label for="category" class="block text-sm font-medium mb-1 text-text-secondary">
-                            {{ t('video.category') || 'Category' }} <span class="text-red-500">*</span>
+                            {{ t('video.category') }} <span class="text-red-500">*</span>
                         </label>
                         <select
                             id="category"
@@ -621,7 +621,7 @@ watch(fieldErrors, (errs) => {
                     <!-- Tags -->
                     <div>
                         <label class="block text-sm font-medium mb-1 text-text-secondary">
-                            {{ t('video.tags') || 'Tags' }} <span class="text-red-500">*</span>
+                            {{ t('video.tags') }} <span class="text-red-500">*</span>
                             <span class="ml-1 text-xs font-normal text-text-muted">(at least 3, up to 20)</span>
                         </label>
                         <div
@@ -649,7 +649,7 @@ watch(fieldErrors, (errs) => {
                                 v-model="tagInput"
                                 type="text"
                                 class="input"
-                                :placeholder="t('upload.add_tag') || 'Type a tag and press Enter (or paste comma-separated)'"
+                                :placeholder="t('upload.add_tag')"
                                 @keydown="handleTagKeydown"
                                 @focus="showTagSuggestions = true"
                                 @blur="setTimeout(() => showTagSuggestions = false, 200)"
@@ -708,8 +708,8 @@ watch(fieldErrors, (errs) => {
                         <div class="flex items-center gap-3">
                             <Calendar class="w-5 h-5 text-accent" />
                             <div>
-                                <p class="font-medium text-text-primary">{{ t('upload.schedule') || 'Schedule Upload' }}</p>
-                                <p class="text-sm text-text-muted">{{ t('upload.schedule_desc') || 'Set a future date and time to publish' }}</p>
+                                <p class="font-medium text-text-primary">{{ t('upload.schedule') }}</p>
+                                <p class="text-sm text-text-muted">{{ t('upload.schedule_desc') }}</p>
                             </div>
                         </div>
                         <input
@@ -720,7 +720,7 @@ watch(fieldErrors, (errs) => {
                         />
                     </div>
                     <div v-if="enableScheduling" class="mt-4">
-                        <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('upload.publish_date') || 'Publish Date & Time' }}</label>
+                        <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('upload.publish_date') }}</label>
                         <input
                             v-model="form.scheduled_at"
                             type="datetime-local"

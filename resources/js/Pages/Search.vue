@@ -57,9 +57,9 @@ const searchQuery = ref(props.query || '');
 const activeType = ref(props.type || 'videos');
 
 const tabs = computed(() => [
-    { key: 'videos', label: t('search.videos') || 'Videos', icon: SearchIcon },
-    { key: 'channels', label: t('search.channels') || 'Channels', icon: Users },
-    { key: 'hashtags', label: t('search.hashtags') || 'Hashtags', icon: Hash },
+    { key: 'videos', label: t('search.videos'), icon: SearchIcon },
+    { key: 'channels', label: t('search.channels'), icon: Users },
+    { key: 'hashtags', label: t('search.hashtags'), icon: Hash },
 ]);
 
 const switchTab = (type) => {
@@ -124,7 +124,7 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
         </div>
 
         <div class="mb-4 sm:mb-6">
-            <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('search.title') || 'Search' }}</h1>
+            <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('search.title') }}</h1>
         </div>
 
         <!-- Search Bar -->
@@ -133,7 +133,7 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
                 <input
                     v-model="searchQuery"
                     type="text"
-                    :placeholder="t('search.placeholder') || 'Search videos, channels, hashtags...'"
+                    :placeholder="t('search.placeholder')"
                     class="input pr-12"
                 />
                 <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80 text-text-muted">
@@ -161,7 +161,7 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
         <!-- Results -->
         <div v-if="query">
             <p class="text-sm mb-4 text-text-secondary">
-                {{ t('common.results_for') || 'Results for' }} "<span class="font-medium text-text-primary">{{ query }}</span>"
+                {{ t('common.results_for') }} "<span class="font-medium text-text-primary">{{ query }}</span>"
             </p>
 
             <!-- Skeleton Loading -->
@@ -189,8 +189,8 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
                 </div>
                 <div v-else class="text-center py-12">
                     <SearchIcon class="w-12 h-12 mx-auto mb-4 text-text-muted" />
-                    <p class="text-lg text-text-secondary">{{ t('common.no_videos_found') || 'No videos found' }}</p>
-                    <p class="mt-1 text-text-muted">{{ t('common.try_different') || 'Try different keywords' }}</p>
+                    <p class="text-lg text-text-secondary">{{ t('common.no_videos_found') }}</p>
+                    <p class="mt-1 text-text-muted">{{ t('common.try_different') }}</p>
                 </div>
             </template>
 
@@ -215,14 +215,14 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
                                 {{ channel.channel?.name || channel.username }}
                             </p>
                             <p class="text-sm text-text-muted">
-                                {{ channel.subscriber_count || 0 }} {{ t('common.subscribers') || 'subscribers' }}
+                                {{ channel.subscriber_count || 0 }} {{ t('common.subscribers') }}
                             </p>
                         </div>
                     </a>
                 </div>
                 <div v-else class="text-center py-12">
                     <Users class="w-12 h-12 mx-auto mb-4 text-text-muted" />
-                    <p class="text-lg text-text-secondary">{{ t('common.no_channels_found') || 'No channels found' }}</p>
+                    <p class="text-lg text-text-secondary">{{ t('common.no_channels_found') }}</p>
                 </div>
             </template>
 
@@ -235,12 +235,12 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
                         class="card p-4"
                     >
                         <h3 class="font-medium text-accent">#{{ hashtag.name }}</h3>
-                        <p class="text-sm mt-1 text-text-muted">{{ hashtag.usage_count || 0 }} {{ t('common.videos') || 'videos' }}</p>
+                        <p class="text-sm mt-1 text-text-muted">{{ hashtag.usage_count || 0 }} {{ t('common.videos') }}</p>
                     </div>
                 </div>
                 <div v-else class="text-center py-12">
                     <Hash class="w-12 h-12 mx-auto mb-4 text-text-muted" />
-                    <p class="text-lg text-text-secondary">{{ t('common.no_hashtags_found') || 'No hashtags found' }}</p>
+                    <p class="text-lg text-text-secondary">{{ t('common.no_hashtags_found') }}</p>
                 </div>
             </template>
 
@@ -255,7 +255,7 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
         <!-- No Query State -->
         <div v-else class="text-center py-16">
             <SearchIcon class="w-16 h-16 mx-auto mb-4 text-text-muted" />
-            <p class="text-lg text-text-secondary">{{ t('common.search_prompt') || 'Search for videos, channels, and more' }}</p>
+            <p class="text-lg text-text-secondary">{{ t('common.search_prompt') }}</p>
         </div>
     </AppLayout>
 </template>
