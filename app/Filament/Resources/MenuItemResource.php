@@ -118,6 +118,11 @@ class MenuItemResource extends Resource
                                 'list-video' => 'Playlist',
                                 'history' => 'History',
                                 'search' => 'Search',
+                                'gender-male' => 'Male Symbol',
+                                'gender-female' => 'Female Symbol',
+                                'gender-gay' => 'Gay Symbol',
+                                'gender-lesbian' => 'Lesbian Symbol',
+                                'gender-transgender' => 'Transgender Symbol',
                             ])
                             ->searchable()
                             ->nullable()

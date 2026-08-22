@@ -20,6 +20,11 @@ import AgeVerificationModal from '@/Components/AgeVerificationModal.vue';
 import AdInterstitial from '@/Components/AdInterstitial.vue';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
 import AdSlot from '@/Components/AdSlot.vue';
+import GenderMaleIcon from '@/Components/Icons/GenderMaleIcon.vue';
+import GenderFemaleIcon from '@/Components/Icons/GenderFemaleIcon.vue';
+import GaySymbolIcon from '@/Components/Icons/GaySymbolIcon.vue';
+import LesbianSymbolIcon from '@/Components/Icons/LesbianSymbolIcon.vue';
+import TransgenderSymbolIcon from '@/Components/Icons/TransgenderSymbolIcon.vue';
 
 const toast = useToast();
 const { get, post } = useFetch();
@@ -79,9 +84,20 @@ const lucideIconMap = {
     'list-video': ListVideo, history: History, search: Search,
 };
 
+// Gender/orientation category symbols (custom SVGs, not part of lucide-vue-next)
+const genderIconMap = {
+    'gender-male': GenderMaleIcon,
+    'gender-female': GenderFemaleIcon,
+    'gender-gay': GaySymbolIcon,
+    'gender-lesbian': LesbianSymbolIcon,
+    'gender-transgender': TransgenderSymbolIcon,
+};
+
+const menuIconMap = { ...lucideIconMap, ...genderIconMap };
+
 const getMenuIcon = (iconName) => {
     if (!iconName) return null;
-    return lucideIconMap[iconName] || Tag;
+    return menuIconMap[iconName] || Tag;
 };
 
 const toggleMegaMenu = (itemId) => {
@@ -512,7 +528,7 @@ const handleMobileNavClick = (item) => {
                             >
                                 <Upload class="w-5 h-5" />
                             </button>
-                            <div v-if="showUploadMenu" class="upload-menu-dropdown absolute right-0 mt-2 min-w-34 card p-1 shadow-xl bg-bg-card border border-border">
+                            <div v-if="showUploadMenu" class="upload-menu-dropdown absolute right-0 mt-2 min-w-34 card p-1 shadow-xl bg-bg-card border border-border z-50">
                                 <Link href="/upload" class="flex items-center justify-center gap-2 px-2.5 py-2 rounded-lg hover:opacity-80 transition-opacity text-text-primary" @click="showUploadMenu = false">
                                     <Film class="w-4 h-4 text-text-secondary" />
                                     <span class="text-sm">{{ t('nav.upload_video') || 'Video' }}</span>
@@ -531,7 +547,7 @@ const handleMobileNavClick = (item) => {
                             </button>
 
                             <!-- Notification Dropdown -->
-                            <div v-if="showNotifications" class="notification-dropdown absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto scrollbar-hide card shadow-xl bg-bg-card border border-border">
+                            <div v-if="showNotifications" class="notification-dropdown absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto scrollbar-hide card shadow-xl bg-bg-card border border-border z-50">
                                 <div class="flex items-center justify-between p-3 border-b border-border">
                                     <h3 class="font-semibold text-sm text-text-primary">{{ t('nav.notifications') || 'Notifications' }}</h3>
                                     <button v-if="unreadCount > 0" @click="markAllRead" class="text-xs hover:opacity-80 text-accent">
@@ -577,7 +593,7 @@ const handleMobileNavClick = (item) => {
                                 </div>
                             </button>
 
-                            <div v-if="showUserMenu" class="user-menu-dropdown absolute right-0 mt-2 w-56 card p-2 shadow-xl bg-bg-card border border-border">
+                            <div v-if="showUserMenu" class="user-menu-dropdown absolute right-0 mt-2 w-56 card p-2 shadow-xl bg-bg-card border border-border z-50">
                                 <div class="px-3 py-2 border-b border-border">
                                     <p class="font-medium text-text-primary">{{ user.username }}</p>
                                     <p class="text-sm text-text-secondary">{{ user.email }}</p>
