@@ -637,17 +637,15 @@ const handleMobileNavClick = (item) => {
                     </template>
 
                     <template v-else>
-                        <!-- Mobile: icon-only, matching the language switcher's understated style -->
+                        <!-- Icon-only at all screen sizes, matching the language switcher's understated style -->
                         <button
                             @click="showLoginModal = true"
-                            class="sm:hidden p-2 rounded-full transition-all text-text-secondary opacity-70 hover:opacity-100"
+                            class="p-2 rounded-full transition-all text-text-secondary opacity-70 hover:opacity-100"
                             title="Login / Register"
                             aria-label="Login / Register"
                         >
                             <LogIn class="w-5 h-5" />
                         </button>
-                        <!-- Desktop: full labeled button -->
-                        <button @click="showLoginModal = true" class="hidden sm:inline-flex btn btn-primary">Login / Register</button>
                     </template>
                 </div>
             </div>
