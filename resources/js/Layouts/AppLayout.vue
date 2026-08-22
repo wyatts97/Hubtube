@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { useDebounceFn, useWindowScroll } from '@vueuse/core';
 import { Link, usePage, useForm, router } from '@inertiajs/vue3';
 import { 
     Menu, Search, Upload, Bell, User, LogOut, Settings, Wallet, 
@@ -62,7 +63,6 @@ const openMegaMenu = ref(null);
 const searchSuggestions = ref({ videos: [], channels: [] });
 const showSuggestions = ref(false);
 const suggestLoading = ref(false);
-let suggestTimeout = null;
 const searchInputRef = ref(null);
 const suggestionsRef = ref(null);
 const activeSuggestionIndex = ref(-1);
@@ -161,10 +161,7 @@ const fetchSuggestions = async (query) => {
     }
 };
 
-const debouncedFetchSuggestions = (query) => {
-    if (suggestTimeout) clearTimeout(suggestTimeout);
-    suggestTimeout = setTimeout(() => fetchSuggestions(query), 250);
-};
+const debouncedFetchSuggestions = useDebounceFn((query) => fetchSuggestions(query), 250);
 
 const navigateToSuggestion = (item, type) => {
     showSuggestions.value = false;
@@ -237,7 +234,6 @@ const closeDropdowns = (e) => {
 
 onMounted(() => {
     document.addEventListener('click', closeDropdowns);
-    window.addEventListener('scroll', handleScroll, { passive: true });
     if (user.value) {
         // Fetch unread count on mount
         fetch('/notifications/unread-count', {
@@ -253,7 +249,6 @@ onMounted(() => {
 
 onUnmounted(() => {
     document.removeEventListener('click', closeDropdowns);
-    window.removeEventListener('scroll', handleScroll);
 });
 
 // Site is dark-only. useTheme() is still called to apply CSS variables on mount.
@@ -325,32 +320,28 @@ const toggleSidebar = () => {
 
 // Mobile bottom navbar — scroll-aware show/hide
 const showMobileNav = ref(true);
-const lastScrollY = ref(0);
 const footerRef = ref(null);
+const { y: windowScrollY } = useWindowScroll();
 
-const handleScroll = () => {
-    const currentY = window.scrollY;
-    const scrollingDown = currentY > lastScrollY.value;
+watch(windowScrollY, (currentY, previousY) => {
+    const scrollingDown = currentY > previousY;
 
     // Hide when near footer
     if (footerRef.value) {
         const footerRect = footerRef.value.getBoundingClientRect();
         if (footerRect.top < window.innerHeight + 20) {
             showMobileNav.value = false;
-            lastScrollY.value = currentY;
             return;
         }
     }
 
-    // Hide on scroll down, show on scroll up (with 10px threshold)
+    // Hide on scroll down, show on scroll up
     if (scrollingDown && currentY > 80) {
         showMobileNav.value = false;
     } else if (!scrollingDown) {
         showMobileNav.value = true;
     }
-
-    lastScrollY.value = currentY;
-};
+});
 
 const tSafe = (key, fallback) => {
     const val = t(key);

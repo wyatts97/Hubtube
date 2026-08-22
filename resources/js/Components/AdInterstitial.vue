@@ -12,8 +12,9 @@
  * Page view count is stored in sessionStorage so it resets on tab close.
  * Never shown on the home page (/), login, register, or admin routes.
  */
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { usePage, router } from '@inertiajs/vue3';
+import { useMediaQuery, useStorage } from '@vueuse/core';
 import { X } from 'lucide-vue-next';
 import AdSlot from '@/Components/AdSlot.vue';
 
@@ -31,13 +32,13 @@ const visible = ref(false);
 const countdown = ref(0);
 let countdownTimer = null;
 
-const isMobile = () => window.innerWidth < 768;
+const isMobile = useMediaQuery('(max-width: 767px)');
 
 const adHtml = computed(() => {
     if (!config.value.enabled || suppressAds.value || (config.value.mode || 'manual') !== 'manual') return '';
     const mobile = config.value.mobileCode?.trim();
     const desktop = config.value.code?.trim();
-    if (isMobile() && mobile) return mobile;
+    if (isMobile.value && mobile) return mobile;
     return desktop || '';
 });
 
@@ -45,8 +46,7 @@ const isExemptPath = (path) => {
     return EXEMPT_PATHS.some(p => path === p || path.startsWith('/admin') || path.startsWith('/install'));
 };
 
-const getPageViews = () => parseInt(sessionStorage.getItem(STORAGE_KEY) || '0', 10);
-const setPageViews = (n) => sessionStorage.setItem(STORAGE_KEY, String(n));
+const pageViews = useStorage(STORAGE_KEY, 0, sessionStorage);
 
 const show = () => {
     visible.value = true;
@@ -72,11 +72,10 @@ const close = () => {
 const checkAndShow = (path) => {
     if (!config.value.enabled || !adHtml.value || isExemptPath(path)) return;
 
-    const views = getPageViews() + 1;
-    setPageViews(views);
+    pageViews.value++;
 
     const freq = config.value.frequency || 5;
-    if (views % freq === 0) {
+    if (pageViews.value % freq === 0) {
         nextTick(() => show());
     }
 };

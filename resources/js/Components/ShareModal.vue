@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { computed, watch } from 'vue';
+import { useClipboard } from '@vueuse/core';
 import { useI18n } from '@/Composables/useI18n';
 import { useToast } from '@/Composables/useToast';
 
@@ -14,8 +15,7 @@ const emit = defineEmits(['update:modelValue']);
 const { t } = useI18n();
 const toast = useToast();
 
-const linkCopied = ref(false);
-let copyResetTimeout = null;
+const { copy, copied } = useClipboard({ legacy: true, copiedDuring: 2000 });
 
 const show = computed({
     get: () => props.modelValue,
@@ -23,7 +23,7 @@ const show = computed({
 });
 
 watch(show, (visible) => {
-    if (visible) linkCopied.value = false;
+    if (visible) copied.value = false;
 });
 
 const close = () => {
@@ -32,22 +32,8 @@ const close = () => {
 
 const copyLink = async () => {
     try {
-        if (navigator.clipboard && window.isSecureContext) {
-            await navigator.clipboard.writeText(props.url);
-        } else {
-            const textarea = document.createElement('textarea');
-            textarea.value = props.url;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-        }
-        linkCopied.value = true;
+        await copy(props.url);
         toast.success(t('share.copy_link') || 'Link copied to clipboard');
-        if (copyResetTimeout) clearTimeout(copyResetTimeout);
-        copyResetTimeout = setTimeout(() => { linkCopied.value = false; }, 2000);
     } catch (e) {
         toast.error(t('share.copy_failed') || 'Failed to copy link');
     }
@@ -127,7 +113,7 @@ const shareToSocial = (platform) => {
                         @click="$event.target.select()"
                     />
                     <button @click="copyLink" class="btn btn-primary whitespace-nowrap text-sm px-4">
-                        {{ linkCopied ? (t('common.copied') || 'Copied!') : (t('common.copy') || 'Copy') }}
+                        {{ copied ? (t('common.copied') || 'Copied!') : (t('common.copy') || 'Copy') }}
                     </button>
                 </div>
             </div>

@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed } from 'vue';
+import { onClickOutside } from '@vueuse/core';
 import { useI18n } from '@/Composables/useI18n';
 import { Globe, Check, ChevronDown, Languages } from 'lucide-vue-next';
 
@@ -39,14 +40,9 @@ const currentLocaleData = computed(() => {
     return supportedLocales.value?.find(l => l.code === locale.value) || { label: 'English', code: 'en' };
 });
 
-const handleClickOutside = (e) => {
-    if (dropdownRef.value && !dropdownRef.value.contains(e.target)) {
-        showDropdown.value = false;
-    }
-};
-
-onMounted(() => document.addEventListener('click', handleClickOutside));
-onUnmounted(() => document.removeEventListener('click', handleClickOutside));
+onClickOutside(dropdownRef, () => {
+    showDropdown.value = false;
+});
 </script>
 
 <template>

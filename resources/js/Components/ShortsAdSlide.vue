@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue';
+import { useIntersectionObserver } from '@vueuse/core';
 import { useFetch } from '@/Composables/useFetch';
 import { useImaAd } from '@/Composables/useImaAd';
 import { Play } from 'lucide-vue-next';
@@ -101,31 +102,25 @@ const injectHtml = () => {
     fireImpression();
 };
 
-let observer = null;
+useIntersectionObserver(
+    containerRef,
+    ([entry]) => {
+        const v = localVideoRef.value || videoRef.value;
+        if (!v) return;
+        if (entry.isIntersecting) {
+            v.play?.().catch(() => {});
+        } else {
+            v.pause?.();
+        }
+    },
+    { threshold: 0.5 }
+);
 
 onMounted(() => {
     fetchAd();
-
-    observer = new IntersectionObserver(
-        (entries) => {
-            entries.forEach((entry) => {
-                const v = localVideoRef.value || videoRef.value;
-                if (!v) return;
-                if (entry.isIntersecting) {
-                    v.play?.().catch(() => {});
-                } else {
-                    v.pause?.();
-                }
-            });
-        },
-        { threshold: 0.5 }
-    );
-
-    if (containerRef.value) observer.observe(containerRef.value);
 });
 
 onUnmounted(() => {
-    if (observer) observer.disconnect();
     destroyIma();
 });
 </script>

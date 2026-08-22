@@ -1,4 +1,5 @@
 import { ref, nextTick } from 'vue';
+import { useScriptTag } from '@vueuse/core';
 
 export function useImaAd(containerRef, videoRef, callbacks = {}) {
     let imaDisplayContainer = null;
@@ -8,14 +9,16 @@ export function useImaAd(containerRef, videoRef, callbacks = {}) {
 
     const cb = callbacks || {};
 
-    const loadImaSdk = () => new Promise((resolve, reject) => {
-        if (window.google?.ima) { resolve(); return; }
-        const s = document.createElement('script');
-        s.src = 'https://imasdk.googleapis.com/js/sdkloader/ima3.js';
-        s.onload = resolve;
-        s.onerror = reject;
-        document.head.appendChild(s);
-    });
+    const { load: loadImaScript } = useScriptTag(
+        'https://imasdk.googleapis.com/js/sdkloader/ima3.js',
+        () => {},
+        { manual: true }
+    );
+
+    const loadImaSdk = () => {
+        if (window.google?.ima) return Promise.resolve();
+        return loadImaScript();
+    };
 
     const destroy = () => {
         try { imaAdsManager?.destroy(); } catch (_) {}

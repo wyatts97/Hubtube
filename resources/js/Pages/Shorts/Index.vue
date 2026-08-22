@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { useEventListener } from '@vueuse/core';
 import { useFetch } from '@/Composables/useFetch';
 import { useI18n } from '@/Composables/useI18n';
 import { useToast } from '@/Composables/useToast';
@@ -274,11 +275,12 @@ const setupIntersectionTracking = () => {
 
 let observerInstance = null;
 
+useEventListener(window, 'keydown', handleKeydown);
+useEventListener(feedContainer, 'scroll', onScroll);
+
 onMounted(() => {
     items.value = buildFeedItems(props.initialShorts?.data || []);
 
-    window.addEventListener('keydown', handleKeydown);
-    feedContainer.value?.addEventListener('scroll', onScroll);
     nextTick(() => {
         observerInstance = setupIntersectionTracking();
         if (feedContainer.value && currentIndex.value > 0) {
@@ -288,8 +290,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-    window.removeEventListener('keydown', handleKeydown);
-    feedContainer.value?.removeEventListener('scroll', onScroll);
     if (observerInstance) observerInstance.disconnect();
 });
 

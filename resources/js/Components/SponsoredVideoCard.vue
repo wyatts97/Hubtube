@@ -1,6 +1,7 @@
 <script setup>
 import { usePage } from '@inertiajs/vue3';
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onUnmounted } from 'vue';
+import { useIntersectionObserver } from '@vueuse/core';
 import { useFetch } from '@/Composables/useFetch';
 
 const page = usePage();
@@ -15,7 +16,6 @@ const props = defineProps({
 
 const cardEl = ref(null);
 let impressionFired = false;
-let impressionObserver = null;
 
 const vc = computed(() => page.props.theme?.videoCard || {});
 
@@ -92,30 +92,16 @@ const fireImpression = () => {
     post(`/api/sponsored/${props.card.id}/impression`, {}).catch(() => {});
 };
 
-onMounted(() => {
-    if (!cardEl.value) return;
-    impressionObserver = new IntersectionObserver(
-        (entries) => {
-            const entry = entries?.[0];
-            if (entry?.isIntersecting) {
-                fireImpression();
-                if (impressionObserver) {
-                    impressionObserver.disconnect();
-                    impressionObserver = null;
-                }
-            }
-        },
-        { threshold: 0.5 }
-    );
-    impressionObserver.observe(cardEl.value);
-});
-
-onUnmounted(() => {
-    if (impressionObserver) {
-        impressionObserver.disconnect();
-        impressionObserver = null;
-    }
-});
+const { stop: stopImpressionObserver } = useIntersectionObserver(
+    cardEl,
+    ([entry]) => {
+        if (entry?.isIntersecting) {
+            fireImpression();
+            stopImpressionObserver();
+        }
+    },
+    { threshold: 0.5 }
+);
 
 // Price display
 const hasPrice = computed(() => props.card.price || props.card.formatted_price);

@@ -13,7 +13,8 @@
  *    and the wrapper height is set to the scaled height, so the grid row
  *    stays aligned and the creative never paints over neighboring cards.
  */
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { useMediaQuery, useResizeObserver } from '@vueuse/core';
 import AdSlot from '@/Components/AdSlot.vue';
 
 const props = defineProps({
@@ -29,8 +30,7 @@ const variant = props.ads.length
     : null;
 
 // Reactive breakpoint matching Tailwind's `sm`
-const isDesktop = ref(false);
-let mediaQuery = null;
+const isDesktop = useMediaQuery('(min-width: 640px)');
 
 const activeCode = computed(() => {
     if (!variant) return '';
@@ -76,8 +76,9 @@ function measureAndScale() {
 // Ad networks inject their creative asynchronously — watch for DOM changes
 // and re-measure. A couple of delayed retries catch slow iframe loads.
 let mutationObserver = null;
-let resizeObserver = null;
 let retryTimers = [];
+
+useResizeObserver(wrapper, () => measureAndScale());
 
 function scheduleMeasurements() {
     retryTimers.forEach(clearTimeout);
@@ -87,16 +88,10 @@ function scheduleMeasurements() {
 }
 
 onMounted(() => {
-    mediaQuery = window.matchMedia('(min-width: 640px)');
-    isDesktop.value = mediaQuery.matches;
-    mediaQuery.addEventListener('change', onMediaChange);
-
     mutationObserver = new MutationObserver(() => nextTick(measureAndScale));
-    resizeObserver = new ResizeObserver(() => measureAndScale());
 
     nextTick(() => {
         if (!wrapper.value) return;
-        resizeObserver.observe(wrapper.value);
         const slot = wrapper.value.querySelector('.ad-slot');
         if (slot) {
             // Note: no attribute observation — measureAndScale mutates the
@@ -107,8 +102,7 @@ onMounted(() => {
     });
 });
 
-function onMediaChange(e) {
-    isDesktop.value = e.matches;
+watch(isDesktop, () => {
     scaledHeight.value = null;
     nextTick(() => {
         const slot = wrapper.value?.querySelector('.ad-slot');
@@ -118,13 +112,11 @@ function onMediaChange(e) {
         }
         scheduleMeasurements();
     });
-}
+});
 
 onBeforeUnmount(() => {
     retryTimers.forEach(clearTimeout);
-    if (mediaQuery) mediaQuery.removeEventListener('change', onMediaChange);
     if (mutationObserver) mutationObserver.disconnect();
-    if (resizeObserver) resizeObserver.disconnect();
 });
 </script>
 

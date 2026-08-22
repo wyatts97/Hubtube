@@ -1,6 +1,7 @@
 <script setup>
 import { Link, router } from '@inertiajs/vue3';
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed } from 'vue';
+import { onClickOutside } from '@vueuse/core';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import SeoHead from '@/Components/SeoHead.vue';
 import ImageCard from '@/Components/ImageCard.vue';
@@ -52,13 +53,9 @@ const clearCategory = () => {
 };
 
 const filterRef = ref(null);
-const onClickOutside = (e) => {
-    if (filterRef.value && !filterRef.value.contains(e.target)) {
-        showFilters.value = false;
-    }
-};
-onMounted(() => document.addEventListener('click', onClickOutside));
-onUnmounted(() => document.removeEventListener('click', onClickOutside));
+onClickOutside(filterRef, () => {
+    showFilters.value = false;
+});
 </script>
 
 <template>

@@ -1,5 +1,6 @@
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { ref, onMounted, watch } from 'vue';
+import { useResizeObserver } from '@vueuse/core';
 
 const props = defineProps({
     columns: { type: Number, default: 4 },
@@ -17,17 +18,9 @@ const updateColumns = () => {
     else columnCount.value = props.columns;
 };
 
-let resizeObserver = null;
+onMounted(updateColumns);
 
-onMounted(() => {
-    updateColumns();
-    resizeObserver = new ResizeObserver(() => updateColumns());
-    if (container.value) resizeObserver.observe(container.value);
-});
-
-onUnmounted(() => {
-    if (resizeObserver) resizeObserver.disconnect();
-});
+useResizeObserver(container, () => updateColumns());
 
 watch(() => props.columns, updateColumns);
 </script>

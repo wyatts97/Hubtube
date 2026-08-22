@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue';
+import { useStorage } from '@vueuse/core';
 
 /**
  * Resumable, parallel chunked uploader for the /upload/chunk + /upload/finalize backend.
@@ -42,6 +43,8 @@ export function useChunkedUpload(options = {}) {
     let abortedFlag     = false;
     let activeQueue     = [];
 
+    const persisted = useStorage(sessionKey, null, sessionStorage);
+
     const isUploading = computed(() => status.value === 'uploading');
 
     function csrfToken() {
@@ -60,27 +63,22 @@ export function useChunkedUpload(options = {}) {
     }
 
     function persist() {
-        try {
-            sessionStorage.setItem(sessionKey, JSON.stringify({
-                uploadId: uploadId.value,
-                extension: extension.value,
-                filename: filename.value,
-                fileSize: fileSize.value,
-                completed: Array.from(completedChunks),
-                totalChunks,
-            }));
-        } catch (e) { /* quota / disabled — non-fatal */ }
+        persisted.value = {
+            uploadId: uploadId.value,
+            extension: extension.value,
+            filename: filename.value,
+            fileSize: fileSize.value,
+            completed: Array.from(completedChunks),
+            totalChunks,
+        };
     }
 
     function clearPersisted() {
-        try { sessionStorage.removeItem(sessionKey); } catch (e) {}
+        persisted.value = null;
     }
 
     function getPersisted() {
-        try {
-            const raw = sessionStorage.getItem(sessionKey);
-            return raw ? JSON.parse(raw) : null;
-        } catch (e) { return null; }
+        return persisted.value;
     }
 
     function updateProgress() {

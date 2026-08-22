@@ -2,6 +2,7 @@
 import { Link, router, usePage } from '@inertiajs/vue3';
 import SeoHead from '@/Components/SeoHead.vue';
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { onClickOutside } from '@vueuse/core';
 import { useFetch } from '@/Composables/useFetch';
 import AdSlot from '@/Components/AdSlot.vue';
 import { useToast } from '@/Composables/useToast';
@@ -330,6 +331,7 @@ const handleSubscribe = async () => {
 
 // Save to Playlist
 const showPlaylistMenu = ref(false);
+const playlistMenuRef = ref(null);
 const playlists = ref(props.userPlaylists.map(p => ({ ...p })));
 const savingPlaylist = ref(null);
 const newPlaylistTitle = ref('');
@@ -376,21 +378,17 @@ const createAndAddPlaylist = async () => {
 };
 
 // Close playlist menu on outside click
-const closePlaylistMenu = (e) => {
-    if (!e.target.closest('.playlist-menu-area')) {
-        showPlaylistMenu.value = false;
-    }
-};
+onClickOutside(playlistMenuRef, () => {
+    showPlaylistMenu.value = false;
+});
 
 onMounted(() => {
-    document.addEventListener('click', closePlaylistMenu);
     // Ad triggers are set up via the VideoPlayer `ready` event (see onPlayerReady)
     // rather than here, since the player element doesn't exist until it mounts.
     window.addEventListener('resize', updatePlaylistRailButtons);
     setTimeout(updatePlaylistRailButtons, 0);
 });
 onUnmounted(() => {
-    document.removeEventListener('click', closePlaylistMenu);
     window.removeEventListener('resize', updatePlaylistRailButtons);
     cleanupAdSetup();
 });
@@ -717,7 +715,7 @@ const getRelatedTitle = (video) => {
                             </a>
 
                             <!-- Save to Playlist -->
-                            <div class="relative playlist-menu-area shrink-0">
+                            <div ref="playlistMenuRef" class="relative playlist-menu-area shrink-0">
                                 <button @click.stop="user ? (showPlaylistMenu = !showPlaylistMenu) : router.visit('/login')" class="btn btn-secondary gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
                                     <ListVideo class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
                                     <span class="hidden sm:inline">{{ t('common.save') || 'Save' }}</span>

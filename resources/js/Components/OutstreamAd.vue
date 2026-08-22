@@ -7,7 +7,8 @@
  *   - Pause when it leaves
  * Fires impression on first play, click on CTA interaction.
  */
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onUnmounted } from 'vue';
+import { useIntersectionObserver } from '@vueuse/core';
 import { useFetch } from '@/Composables/useFetch';
 
 const props = defineProps({
@@ -23,7 +24,6 @@ const videoRef = ref(null);
 const containerRef = ref(null);
 const isPlaying = ref(false);
 const impressionFired = ref(false);
-let observer = null;
 
 const fireImpression = () => {
     if (impressionFired.value || !props.ad?.id) return;
@@ -57,27 +57,19 @@ const pause = () => {
     isPlaying.value = false;
 };
 
-onMounted(() => {
-    if (!containerRef.value) return;
-
-    observer = new IntersectionObserver(
-        (entries) => {
-            for (const entry of entries) {
-                if (entry.isIntersecting) {
-                    tryPlay();
-                } else {
-                    pause();
-                }
-            }
-        },
-        { threshold: 0.5 }
-    );
-
-    observer.observe(containerRef.value);
-});
+useIntersectionObserver(
+    containerRef,
+    ([entry]) => {
+        if (entry.isIntersecting) {
+            tryPlay();
+        } else {
+            pause();
+        }
+    },
+    { threshold: 0.5 }
+);
 
 onUnmounted(() => {
-    observer?.disconnect();
     pause();
 });
 </script>

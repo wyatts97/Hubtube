@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
+import { onClickOutside } from '@vueuse/core';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
@@ -64,17 +65,13 @@ const clearCategory = () => {
 
 // Close filter dropdown on outside click
 const filterRef = ref(null);
-const onClickOutside = (e) => {
-    if (filterRef.value && !filterRef.value.contains(e.target)) {
-        showFilters.value = false;
-    }
-};
+onClickOutside(filterRef, () => {
+    showFilters.value = false;
+});
 onMounted(() => {
-    document.addEventListener('click', onClickOutside);
     const allVideos = props.videos?.data || [];
     if (allVideos.length) translateVideos(allVideos);
 });
-onUnmounted(() => document.removeEventListener('click', onClickOutside));
 
 const withTranslation = (video) => {
     const title = tr(video, 'title');
