@@ -106,7 +106,7 @@ onUnmounted(() => {
             >
                 <div class="relative w-full max-w-lg mx-4">
                     <!-- Skip / close button -->
-                    <div class="absolute -top-10 right-0 flex items-center gap-2">
+                    <div class="absolute -top-10 end-0 flex items-center gap-2">
                         <span v-if="countdown > 0" class="text-white/70 text-sm">
                             Skip in {{ countdown }}s
                         </span>

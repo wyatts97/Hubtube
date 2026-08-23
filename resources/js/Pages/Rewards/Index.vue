@@ -242,7 +242,7 @@ const flash = computed(() => ({
                                 <p class="text-xs mt-0.5 text-text-muted">{{ formatDate(tx.created_at) }}</p>
                             </div>
                         </div>
-                        <div class="text-right shrink-0">
+                        <div class="text-end shrink-0">
                             <p class="font-semibold text-sm" :style="{ color: isCredit(tx) ? '#22c55e' : '#f59e0b' }">
                                 {{ isCredit(tx) ? '+' : '' }}{{ tx.points.toLocaleString() }} pts
                             </p>

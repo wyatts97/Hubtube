@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use Throwable;
+use Illuminate\Support\Facades\Log;
 
 class TranslationOverride extends Model
 {
@@ -26,12 +28,33 @@ class TranslationOverride extends Model
      */
     public static function getOverrides(string $locale): array
     {
-        return Cache::remember("translation_overrides:{$locale}", 3600, function () use ($locale) {
-            return static::where('locale', $locale)
-                ->where('is_active', true)
-                ->get()
-                ->toArray();
-        });
+        return static::fetchOverrides($locale);
+    }
+
+    /**
+     * Load the active overrides for one locale.
+     *
+     * Overrides are a post-processing correction layer, so an unreachable
+     * database must not take translation down with it — CLI runs such as
+     * `translations:generate` only need the provider and the filesystem.
+     */
+    protected static function fetchOverrides(string $locale): array
+    {
+        try {
+            return Cache::remember("translation_overrides:{$locale}", 3600, function () use ($locale) {
+                return static::where('locale', $locale)
+                    ->where('is_active', true)
+                    ->get()
+                    ->toArray();
+            });
+        } catch (Throwable $e) {
+            Log::warning('Translation overrides unavailable, continuing without them', [
+                'locale' => $locale,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
     }
 
     /**
@@ -39,12 +62,7 @@ class TranslationOverride extends Model
      */
     public static function getGlobalOverrides(): array
     {
-        return Cache::remember('translation_overrides:*', 3600, function () {
-            return static::where('locale', '*')
-                ->where('is_active', true)
-                ->get()
-                ->toArray();
-        });
+        return static::fetchOverrides('*');
     }
 
     /**

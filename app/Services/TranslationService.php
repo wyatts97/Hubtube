@@ -24,6 +24,18 @@ class TranslationService
     /**
      * Supported languages with native names and flag emoji.
      */
+    /**
+     * Locales written right-to-left. Single source of truth: app.blade.php sets
+     * the document `dir` from this, and it is shipped to the client in the
+     * locale payload so useI18n() doesn't keep its own copy.
+     */
+    public const RTL_LOCALES = ['ar', 'he'];
+
+    public static function isRtl(string $locale): bool
+    {
+        return in_array($locale, static::RTL_LOCALES, true);
+    }
+
     public const LANGUAGES = [
         'en' => ['name' => 'English', 'native' => 'English', 'flag' => '🇺🇸'],
         'es' => ['name' => 'Spanish', 'native' => 'Español', 'flag' => '🇪🇸'],
@@ -100,7 +112,9 @@ class TranslationService
         $languages = [];
         foreach ($enabled as $code) {
             if (isset(static::LANGUAGES[$code])) {
-                $languages[$code] = static::LANGUAGES[$code];
+                $languages[$code] = static::LANGUAGES[$code] + [
+                    'dir' => static::isRtl($code) ? 'rtl' : 'ltr',
+                ];
             }
         }
         return $languages;
@@ -264,6 +278,39 @@ class TranslationService
      * Batch translate multiple items (e.g. video listings).
      * Returns array keyed by model ID with translated fields.
      */
+    /**
+     * Cache key for a free-standing string translation (tags, and anything
+     * else that isn't a model field and so has no translations-table row).
+     */
+    public static function textCacheKey(string $text, string $locale): string
+    {
+        return 'translation:text:'.$locale.':'.sha1($text);
+    }
+
+    /**
+     * Previously translated free-standing string, or null if not yet known.
+     *
+     * translateText() itself is an uncached provider call, so request handlers
+     * must go through this and queue TranslateTextJob for misses — otherwise
+     * the same tag is re-translated on every single page view.
+     */
+    public function cachedText(string $text, string $targetLocale): ?string
+    {
+        if ($targetLocale === static::getDefaultLocale() || trim($text) === '') {
+            return $text;
+        }
+
+        return Cache::get(static::textCacheKey($text, $targetLocale));
+    }
+
+    /**
+     * Store a translated free-standing string.
+     */
+    public function rememberText(string $text, string $targetLocale, string $translated): void
+    {
+        Cache::put(static::textCacheKey($text, $targetLocale), $translated, now()->addDays(30));
+    }
+
     /**
      * Is background translation of user content switched on?
      */

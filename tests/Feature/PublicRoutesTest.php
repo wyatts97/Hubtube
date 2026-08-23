@@ -102,3 +102,61 @@ test('health check endpoint returns 200', function () {
     $response = $this->get('/up');
     $response->assertStatus(200);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Locale-prefixed routes
+|--------------------------------------------------------------------------
+|
+| These used to be served by parallel locale*() controller methods whose only
+| job was to absorb a leading string $locale. SetLocale now forgets that route
+| parameter, so one action serves both URL shapes — which only holds if the
+| prefixed route behaves identically to its unprefixed twin.
+*/
+
+test('every locale-prefixed route behaves like its unprefixed twin', function () {
+    enableLocales(['en', 'es']);
+
+    $user = App\Models\User::factory()->create(['username' => 'parityuser']);
+    $category = App\Models\Category::factory()->create(['slug' => 'paritycat']);
+    App\Models\Page::create([
+        'title' => 'Parity', 'slug' => 'paritypage', 'content' => 'x', 'is_published' => true,
+    ]);
+
+    $paths = [
+        '/', '/trending', '/shorts', '/search', '/videos', '/contact',
+        '/categories', "/category/{$category->slug}", '/tags', '/tag/foo',
+        "/channel/{$user->username}",
+        "/channel/{$user->username}/videos",
+        "/channel/{$user->username}/playlists",
+        "/channel/{$user->username}/liked",
+        "/channel/{$user->username}/history",
+        "/channel/{$user->username}/about",
+        '/public-playlists', '/images', '/galleries', '/pages/paritypage',
+    ];
+
+    foreach ($paths as $path) {
+        $bare = $this->get($path)->status();
+        $prefixed = $this->get('/es'.rtrim($path, '/'))->status();
+
+        expect($prefixed)->toBe($bare, "/es{$path} returned {$prefixed} but {$path} returned {$bare}");
+    }
+});
+
+test('a locale-prefixed video page resolves its translated slug', function () {
+    enableLocales(['en', 'es']);
+
+    $video = App\Models\Video::factory()->create(['slug' => 'parity-video']);
+    App\Models\Translation::create([
+        'translatable_type' => App\Models\Video::class,
+        'translatable_id' => $video->id,
+        'field' => 'title',
+        'locale' => 'es',
+        'value' => 'Video de paridad',
+        'translated_slug' => 'video-de-paridad',
+    ]);
+
+    // Both the canonical and the translated slug resolve under the prefix.
+    $this->get('/es/parity-video')->assertStatus(200);
+    $this->get('/es/video-de-paridad')->assertStatus(200);
+});

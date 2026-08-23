@@ -50,14 +50,14 @@ const formatViews = (count) => {
                             :class="['px-3 py-1.5 text-xs font-medium transition-colors', !sort ? 'text-white' : '']"
                             :style="!sort ? 'background-color: var(--color-accent); color: #fff;' : 'color: var(--color-text-secondary);'"
                         >
-                            <Clock class="w-3.5 h-3.5 inline -mt-0.5 mr-1" />Latest
+                            <Clock class="w-3.5 h-3.5 inline -mt-0.5 me-1" />Latest
                         </button>
                         <button
                             @click="setSort('popular')"
                             :class="['px-3 py-1.5 text-xs font-medium transition-colors', sort === 'popular' ? 'text-white' : '']"
                             :style="sort === 'popular' ? 'background-color: var(--color-accent); color: #fff;' : 'color: var(--color-text-secondary); border-left: 1px solid var(--color-border);'"
                         >
-                            <Flame class="w-3.5 h-3.5 inline -mt-0.5 mr-1" />Popular
+                            <Flame class="w-3.5 h-3.5 inline -mt-0.5 me-1" />Popular
                         </button>
                     </div>
 
@@ -89,7 +89,7 @@ const formatViews = (count) => {
                         <div v-else class="w-full h-full flex items-center justify-center">
                             <ImageIcon class="w-10 h-10 text-text-muted" />
                         </div>
-                        <div class="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-black/70 text-white">
+                        <div class="absolute bottom-2 end-2 flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-black/70 text-white">
                             <ImageIcon class="w-3 h-3" />
                             {{ gallery.images_count || 0 }}
                         </div>

@@ -88,7 +88,7 @@ const activeList = ref(null);
                     color: currentTab === 'user' ? '#fff' : 'var(--color-text-secondary)',
                 }"
             >
-                <ListVideo class="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
+                <ListVideo class="w-4 h-4 inline-block me-1.5 -mt-0.5" />
                 {{ t('playlist.your_playlists') }}
             </button>
             <button
@@ -99,7 +99,7 @@ const activeList = ref(null);
                     color: currentTab === 'favorites' ? '#fff' : 'var(--color-text-secondary)',
                 }"
             >
-                <Heart class="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
+                <Heart class="w-4 h-4 inline-block me-1.5 -mt-0.5" />
                 {{ t('playlist.favorites') }}
             </button>
         </div>

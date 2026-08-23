@@ -514,15 +514,15 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/contact', [ContactController::class, 'show'])->name('locale.contact');
         Route::get('/dmca-request', [DmcaController::class, 'show'])->name('locale.dmca.request');
         Route::get('/categories', [HomeController::class, 'categories'])->name('locale.categories.index');
-        Route::get('/category/{slug}', [HomeController::class, 'localeCategory'])->name('locale.categories.show');
-        Route::get('/tags', [HomeController::class, 'localeTags'])->name('locale.tags.index');
-        Route::get('/tag/{tag}', [HomeController::class, 'localeTag'])->name('locale.tags.show');
-        Route::get('/channel/{username}', [ChannelController::class, 'localeShow'])->name('locale.channel.show');
-        Route::get('/channel/{username}/videos', [ChannelController::class, 'localeVideos'])->name('locale.channel.videos');
-        Route::get('/channel/{username}/playlists', [ChannelController::class, 'localePlaylists'])->name('locale.channel.playlists');
-        Route::get('/channel/{username}/liked', [ChannelController::class, 'localeLikedVideos'])->name('locale.channel.liked');
-        Route::get('/channel/{username}/history', [ChannelController::class, 'localeWatchHistory'])->name('locale.channel.history');
-        Route::get('/channel/{username}/about', [ChannelController::class, 'localeAbout'])->name('locale.channel.about');
+        Route::get('/category/{category:slug}', [HomeController::class, 'category'])->name('locale.categories.show');
+        Route::get('/tags', [HomeController::class, 'tags'])->name('locale.tags.index');
+        Route::get('/tag/{tag}', [HomeController::class, 'tag'])->name('locale.tags.show');
+        Route::get('/channel/{user:username}', [ChannelController::class, 'show'])->name('locale.channel.show');
+        Route::get('/channel/{user:username}/videos', [ChannelController::class, 'videos'])->name('locale.channel.videos');
+        Route::get('/channel/{user:username}/playlists', [ChannelController::class, 'playlists'])->name('locale.channel.playlists');
+        Route::get('/channel/{user:username}/liked', [ChannelController::class, 'likedVideos'])->name('locale.channel.liked');
+        Route::get('/channel/{user:username}/history', [ChannelController::class, 'watchHistory'])->name('locale.channel.history');
+        Route::get('/channel/{user:username}/about', [ChannelController::class, 'about'])->name('locale.channel.about');
         Route::get('/public-playlists', [PlaylistController::class, 'publicIndex'])->name('locale.playlists.public');
 
         // Image & Gallery routes (locale-prefixed)
@@ -531,7 +531,7 @@ Route::middleware('age.verified')->group(function () {
         Route::get('/galleries', [GalleryController::class, 'index'])->name('locale.galleries.index');
         Route::get('/gallery/{gallery:slug}', [GalleryController::class, 'show'])->name('locale.galleries.show');
 
-        Route::get('/pages/{slug}', [PageController::class, 'localeShow'])->name('locale.pages.show');
+        Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('locale.pages.show');
 
         // Locale-prefixed search autocomplete
         Route::get('/api/search-suggest', [SearchController::class, 'suggest'])->middleware('throttle:30,1')->name('locale.search.suggest');

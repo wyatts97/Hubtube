@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ in_array(app()->getLocale(), ['ar', 'he']) ? 'rtl' : 'ltr' }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ \App\Services\TranslationService::isRtl(app()->getLocale()) ? 'rtl' : 'ltr' }}" class="dark">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -209,6 +209,15 @@
             --color-border: #262626;
         }
     </style>
+
+    {{-- Paginated series links. Google retired rel=prev/next as an indexing
+         signal, but Bing and others still consume it. Unkeyed, like hreflang. --}}
+    @if(!empty($seo['pagination']['prev']))
+    <link rel="prev" href="{{ $seo['pagination']['prev'] }}">
+    @endif
+    @if(!empty($seo['pagination']['next']))
+    <link rel="next" href="{{ $seo['pagination']['next'] }}">
+    @endif
 
     {{-- hreflang tags for multi-language SEO. Built by SeoService from the SEO
          payload the controller already produced — no re-querying here.

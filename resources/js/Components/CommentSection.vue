@@ -231,7 +231,7 @@ fetchComments();
                     </div>
 
                     <!-- Replies -->
-                    <div v-if="comment.replies?.length" class="mt-4 space-y-4 pl-4 border-l-2 border-border">
+                    <div v-if="comment.replies?.length" class="mt-4 space-y-4 ps-4 border-s-2 border-border">
                         <div v-for="reply in comment.replies" :key="reply.id" class="flex gap-3">
                             <div class="w-8 h-8 avatar flex-shrink-0">
                                 <img :src="reply.user?.avatar_url || reply.user?.avatar || '/images/default_avatar.webp'" class="w-full h-full object-cover" />

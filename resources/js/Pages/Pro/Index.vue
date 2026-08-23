@@ -119,7 +119,7 @@ const goToPortal = () => {
 
                 <!-- Annual -->
                 <div class="card p-6 sm:p-8 flex flex-col relative border-2" style="border-color: var(--color-accent);">
-                    <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <div class="absolute -top-3 start-1/2 -translate-x-1/2">
                         <span class="px-3 py-1 rounded-full text-xs font-semibold bg-accent text-white">Best Value</span>
                     </div>
                     <div class="mb-4">

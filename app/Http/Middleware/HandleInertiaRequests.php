@@ -287,6 +287,7 @@ class HandleInertiaRequests extends Middleware
                 'languages' => $enabledLanguages,
                 'enabled' => count($enabledLanguages) > 1,
                 'prefix' => $isTranslated ? "/{$currentLocale}" : '',
+                'dir' => TranslationService::isRtl($currentLocale) ? 'rtl' : 'ltr',
                 'translations' => $this->uiTranslations($currentLocale),
                 // Default-locale catalogue, so useI18n()'s t() can fall back to
                 // English for any key the active locale is missing. Only sent
@@ -302,6 +303,7 @@ class HandleInertiaRequests extends Middleware
                 'languages' => ['en' => ['name' => 'English', 'native' => 'English', 'flag' => '🇺🇸']],
                 'enabled' => false,
                 'prefix' => '',
+                'dir' => 'ltr',
                 'translations' => [],
                 'fallback' => [],
             ];

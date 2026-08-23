@@ -25,10 +25,10 @@ const formatViews = (count) => {
                     loading="lazy"
                 />
             </div>
-            <div v-if="image.is_animated" class="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-600 text-white">
+            <div v-if="image.is_animated" class="absolute top-2 start-2 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-600 text-white">
                 GIF
             </div>
-            <div class="absolute bottom-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-black/70 text-white">
+            <div class="absolute bottom-2 end-2 flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-black/70 text-white">
                 <Eye class="w-3 h-3" />
                 {{ formatViews(image.views_count) }}
             </div>

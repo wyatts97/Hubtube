@@ -110,10 +110,10 @@ onUnmounted(() => {
             @click.self="close"
         >
             <!-- Top Bar -->
-            <div class="absolute top-0 left-0 right-0 flex items-center justify-between p-4 z-10">
+            <div class="absolute top-0 start-0 end-0 flex items-center justify-between p-4 z-10">
                 <div class="text-white text-sm">
                     <span v-if="currentImage?.title" class="font-medium">{{ currentImage.title }}</span>
-                    <span class="opacity-60 ml-2">{{ currentIndex + 1 }} / {{ images.length }}</span>
+                    <span class="opacity-60 ms-2">{{ currentIndex + 1 }} / {{ images.length }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <button @click="zoomOut" class="p-2 rounded-full hover:bg-white/10 text-white transition-colors" title="Zoom out" aria-label="Zoom out">
@@ -135,7 +135,7 @@ onUnmounted(() => {
             <button
                 v-if="images.length > 1"
                 @click.stop="prev"
-                class="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full hover:bg-white/10 text-white transition-colors z-10"
+                class="absolute start-4 top-1/2 -translate-y-1/2 p-3 rounded-full hover:bg-white/10 text-white transition-colors z-10"
                 aria-label="Previous image"
             >
                 <ChevronLeft class="w-8 h-8" />
@@ -143,7 +143,7 @@ onUnmounted(() => {
             <button
                 v-if="images.length > 1"
                 @click.stop="next"
-                class="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full hover:bg-white/10 text-white transition-colors z-10"
+                class="absolute end-4 top-1/2 -translate-y-1/2 p-3 rounded-full hover:bg-white/10 text-white transition-colors z-10"
                 aria-label="Next image"
             >
                 <ChevronRight class="w-8 h-8" />
@@ -163,7 +163,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Thumbnail Strip -->
-            <div v-if="images.length > 1" class="absolute bottom-0 left-0 right-0 p-3 flex justify-center gap-1.5 overflow-x-auto">
+            <div v-if="images.length > 1" class="absolute bottom-0 start-0 end-0 p-3 flex justify-center gap-1.5 overflow-x-auto">
                 <button
                     v-for="(img, idx) in images"
                     :key="idx"

@@ -281,7 +281,7 @@ const tabs = computed(() => {
                             v-for="tab in tabs"
                             :key="tab.id"
                             @click="activeTab = tab.id"
-                            :class="['flex items-center gap-2 sm:gap-3 px-3 py-2 rounded-lg text-left transition-colors whitespace-nowrap shrink-0 md:w-full text-sm sm:text-base']"
+                            :class="['flex items-center gap-2 sm:gap-3 px-3 py-2 rounded-lg text-start transition-colors whitespace-nowrap shrink-0 md:w-full text-sm sm:text-base']"
                             :style="activeTab === tab.id 
                                 ? { backgroundColor: 'var(--color-accent)', color: 'white' } 
                                 : { color: 'var(--color-text-secondary)' }"
@@ -321,7 +321,7 @@ const tabs = computed(() => {
                                         <p v-if="avatarForm.errors.avatar" class="text-red-500 text-sm mt-1">{{ avatarForm.errors.avatar }}</p>
                                         <div v-if="avatarPreview" class="flex items-center gap-2 mt-2">
                                             <button @click="uploadAvatar" :disabled="avatarForm.processing" class="btn btn-primary text-sm">
-                                                <Loader2 v-if="avatarForm.processing" class="w-4 h-4 animate-spin mr-1" />
+                                                <Loader2 v-if="avatarForm.processing" class="w-4 h-4 animate-spin me-1" />
                                                 {{ t('settings.save_avatar') }}
                                             </button>
                                             <button @click="avatarPreview = null; avatarForm.reset()" class="btn btn-ghost text-sm">{{ t('common.cancel') }}</button>
@@ -427,7 +427,7 @@ const tabs = computed(() => {
                                 </button>
                             </div>
                             <button v-else @click="startTwoFactorSetup" :disabled="twoFactorProcessing" class="btn btn-primary text-sm">
-                                <Loader2 v-if="twoFactorProcessing" class="w-4 h-4 animate-spin mr-1" />
+                                <Loader2 v-if="twoFactorProcessing" class="w-4 h-4 animate-spin me-1" />
                                 Enable Two-Factor Authentication
                             </button>
                             <p v-if="twoFactorError" class="text-red-500 text-sm mt-2">{{ twoFactorError }}</p>

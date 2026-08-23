@@ -75,14 +75,4 @@ class PageController extends Controller
         ]);
     }
 
-    /**
-     * Locale-prefixed page show.
-     * Uses plain {slug} param to avoid model binding conflict with {locale} prefix.
-     */
-    public function localeShow(string $locale, string $slug): Response
-    {
-        $page = Page::where('slug', $slug)->firstOrFail();
-
-        return $this->show($page);
-    }
 }

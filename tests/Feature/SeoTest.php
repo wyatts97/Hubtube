@@ -73,20 +73,11 @@ test('channel page returns Inertia response with seo prop', function () {
     $response = $this->get("/channel/{$user->username}");
 
     $response->assertStatus(200);
-
-    // assertInertia() can't be used here: it reads $response->original, which
-    // must still be the View. On this one route something downstream of
-    // Router::prepareResponse() re-sets the response content with the rendered
-    // string, so original is a string and the helper reports "Not a valid
-    // Inertia response". Narrowed to the forChannel() call — swapping in any
-    // other SeoService builder keeps original a View — but not root-caused.
-    // The response itself is correct, so assert against the data-page payload
-    // the browser actually consumes.
-    $page = inertiaPagePayload($response);
-
-    expect($page['component'])->toBe('Channel/Show')
-        ->and($page['props'])->toHaveKey('seo')
-        ->and($page['props']['seo']['title'])->toContain($user->username);
+    $response->assertInertia(
+        fn ($page) => $page->component('Channel/Show')
+            ->has('seo')
+            ->where('seo.title', fn ($title) => str_contains($title, $user->username))
+    );
 });
 
 /*
@@ -288,4 +279,64 @@ test('locale-prefixed homepage loads', function () {
 test('locale-prefixed trending loads', function () {
     $response = $this->get('/fr/trending');
     $response->assertStatus(200);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Breadcrumbs & paginated series
+|--------------------------------------------------------------------------
+*/
+
+test('a category page emits BreadcrumbList structured data', function () {
+    $category = Category::factory()->create(['name' => 'Cars', 'slug' => 'cars']);
+
+    $html = $this->get('/category/cars')->getContent();
+
+    $breadcrumbs = null;
+    preg_match_all('/<script type="application\/ld\+json"[^>]*>(.*?)<\/script>/s', $html, $matches);
+
+    foreach ($matches[1] as $json) {
+        $decoded = json_decode($json, true);
+        foreach ((isset($decoded['@type']) ? [$decoded] : $decoded) as $node) {
+            if (($node['@type'] ?? null) === 'BreadcrumbList') {
+                $breadcrumbs = $node;
+            }
+        }
+    }
+
+    expect($breadcrumbs)->not->toBeNull()
+        ->and($breadcrumbs['itemListElement'])->toHaveCount(3)
+        ->and(array_column($breadcrumbs['itemListElement'], 'name'))->toBe(['Home', 'Categories', 'Cars'])
+        ->and(array_column($breadcrumbs['itemListElement'], 'position'))->toBe([1, 2, 3]);
+});
+
+test('a video page emits BreadcrumbList structured data', function () {
+    $category = Category::factory()->create(['name' => 'Cars', 'slug' => 'cars']);
+    $video = Video::factory()->create(['category_id' => $category->id]);
+
+    expect($this->get("/{$video->slug}")->getContent())->toContain('BreadcrumbList');
+});
+
+test('a paginated listing advertises the next page', function () {
+    $category = Category::factory()->create(['slug' => 'cars']);
+    Video::factory()->count(30)->create([
+        'category_id' => $category->id,
+        'privacy' => 'public',
+        'is_approved' => true,
+        'status' => 'processed',
+    ]);
+
+    $html = $this->get('/category/cars')->getContent();
+
+    expect($html)->toContain('<link rel="next"')
+        ->and($html)->not->toContain('<link rel="prev"');
+});
+
+test('an unpaginated listing advertises no series links', function () {
+    Category::factory()->create(['slug' => 'empty']);
+
+    $html = $this->get('/category/empty')->getContent();
+
+    expect($html)->not->toContain('<link rel="next"')
+        ->and($html)->not->toContain('<link rel="prev"');
 });

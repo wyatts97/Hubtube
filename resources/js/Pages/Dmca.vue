@@ -59,8 +59,8 @@ const onSubmit = () => {
                             {{ t('dmca.name') }} <span class="text-accent">*</span>
                         </label>
                         <div class="relative">
-                            <User class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                            <input v-model="form.complainant_name" type="text" class="input pl-14 w-full" placeholder="Your full name" required />
+                            <User class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                            <input v-model="form.complainant_name" type="text" class="input ps-14 w-full" placeholder="Your full name" required />
                         </div>
                         <p v-if="form.errors.complainant_name" class="text-red-400 text-xs mt-1">{{ form.errors.complainant_name }}</p>
                     </div>
@@ -71,8 +71,8 @@ const onSubmit = () => {
                             {{ t('dmca.email') }} <span class="text-accent">*</span>
                         </label>
                         <div class="relative">
-                            <Mail class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                            <input v-model="form.complainant_email" type="email" class="input pl-14 w-full" placeholder="your@email.com" required />
+                            <Mail class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                            <input v-model="form.complainant_email" type="email" class="input ps-14 w-full" placeholder="your@email.com" required />
                         </div>
                         <p v-if="form.errors.complainant_email" class="text-red-400 text-xs mt-1">{{ form.errors.complainant_email }}</p>
                     </div>
@@ -84,8 +84,8 @@ const onSubmit = () => {
                         {{ t('dmca.company') }}
                     </label>
                     <div class="relative">
-                        <Building2 class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                        <input v-model="form.complainant_company" type="text" class="input pl-14 w-full" placeholder="Representing a company or agency?" />
+                        <Building2 class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                        <input v-model="form.complainant_company" type="text" class="input ps-14 w-full" placeholder="Representing a company or agency?" />
                     </div>
                 </div>
 
@@ -95,10 +95,10 @@ const onSubmit = () => {
                         {{ t('dmca.work_description') }} <span class="text-accent">*</span>
                     </label>
                     <div class="relative">
-                        <FileText class="absolute left-3 top-3 w-4 h-4 text-text-muted" />
+                        <FileText class="absolute start-3 top-3 w-4 h-4 text-text-muted" />
                         <textarea
                             v-model="form.copyrighted_work_description"
-                            class="input pl-10 w-full"
+                            class="input ps-10 w-full"
                             rows="4"
                             placeholder="Describe the copyrighted work you believe is being infringed..."
                             required
@@ -113,10 +113,10 @@ const onSubmit = () => {
                         {{ t('dmca.infringing_urls') }} <span class="text-accent">*</span>
                     </label>
                     <div class="relative">
-                        <LinkIcon class="absolute left-3 top-3 w-4 h-4 text-text-muted" />
+                        <LinkIcon class="absolute start-3 top-3 w-4 h-4 text-text-muted" />
                         <textarea
                             v-model="form.infringing_urls"
-                            class="input pl-10 w-full"
+                            class="input ps-10 w-full"
                             rows="3"
                             placeholder="One URL per line"
                             required
@@ -146,8 +146,8 @@ const onSubmit = () => {
                         {{ t('dmca.signature') }} <span class="text-accent">*</span>
                     </label>
                     <div class="relative">
-                        <PenLine class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                        <input v-model="form.signature" type="text" class="input pl-14 w-full" placeholder="Full legal name" required />
+                        <PenLine class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                        <input v-model="form.signature" type="text" class="input ps-14 w-full" placeholder="Full legal name" required />
                     </div>
                     <p v-if="form.errors.signature" class="text-red-400 text-xs mt-1">{{ form.errors.signature }}</p>
                 </div>

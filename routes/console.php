@@ -31,4 +31,7 @@ Schedule::command('backup:clean')->weekly()->sundays()->at('02:00')
 
 // Spatie Health: run checks every 10 minutes
 Schedule::command('health:check')->everyTenMinutes();
+// Heartbeat backing QueueCheck — proves the worker is draining jobs, which is
+// what surfaces a stalled background-translation pipeline.
+Schedule::command('health:queue-check-heartbeat')->everyMinute();
 Schedule::command('model:prune', ['--model' => [\Spatie\Health\Models\HealthCheckResultHistoryItem::class]])->daily();

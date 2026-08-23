@@ -86,13 +86,13 @@ const providerMeta = {
                                 id="password"
                                 v-model="form.password"
                                 :type="showPassword ? 'text' : 'password'"
-                                class="input pr-10"
+                                class="input pe-10"
                                 required
                             />
                             <button
                                 type="button"
                                 @click="showPassword = !showPassword"
-                                class="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary"
+                                class="absolute end-3 top-1/2 -translate-y-1/2 text-text-secondary"
                             >
                                 <EyeOff v-if="showPassword" class="w-5 h-5" />
                                 <Eye v-else class="w-5 h-5" />

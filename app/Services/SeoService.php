@@ -11,6 +11,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
 use Exception;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\App;
 
 class SeoService
@@ -353,6 +354,14 @@ class SeoService
             $seo['schema'][] = $schema;
         }
 
+        // Breadcrumbs: Home > Category > Video
+        $crumbs = [];
+        if ($video->category) {
+            $crumbs[] = ['name' => $video->category->name, 'path' => "/category/{$video->category->slug}"];
+        }
+        $crumbs[] = ['name' => $video->title, 'path' => $canonicalPath];
+        $seo['schema'][] = $this->breadcrumbSchema($crumbs);
+
         // Multi-language SEO: og:locale:alternate + alternateUrls for hreflang
         $enabledLocales = TranslationService::getEnabledLocales();
         if (count($enabledLocales) > 1) {
@@ -423,6 +432,9 @@ class SeoService
             $schema['description'] = $this->truncate($user->bio, 300);
         }
         $seo['schema'][] = $schema;
+        $seo['schema'][] = $this->breadcrumbSchema([
+            ['name' => $vars['channel_name'], 'path' => "/channel/{$user->username}"],
+        ]);
 
         static::$currentSeo = $seo;
 
@@ -511,7 +523,7 @@ class SeoService
     /**
      * Generate SEO data for a category page.
      */
-    public function forCategory(Category $category): array
+    public function forCategory(Category $category, mixed $paginator = null): array
     {
         $vars = [
             'category_name' => $category->name,
@@ -534,6 +546,12 @@ class SeoService
             'description' => $description,
             'url' => url("/category/{$category->slug}"),
         ];
+
+        $seo['schema'][] = $this->breadcrumbSchema([
+            ['name' => 'Categories', 'path' => '/categories'],
+            ['name' => $category->name, 'path' => "/category/{$category->slug}"],
+        ]);
+        $seo['pagination'] = $this->paginationLinks($paginator);
 
         static::$currentSeo = $seo;
 
@@ -591,12 +609,19 @@ class SeoService
     /**
      * Generate SEO data for a tag page.
      */
-    public function forTag(string $tag): array
+    public function forTag(string $tag, mixed $paginator = null): array
     {
         $title = "#{$tag} Videos {$this->separator()} {$this->siteName()}";
         $description = $this->truncate("Watch videos tagged with #{$tag} on {$this->siteName()}.");
 
         $seo = $this->baseMeta($title, $description, "/tag/{$tag}");
+
+        $seo['schema'][] = $this->breadcrumbSchema([
+            ['name' => 'Tags', 'path' => '/tags'],
+            ['name' => "#{$tag}", 'path' => "/tag/{$tag}"],
+        ]);
+        $seo['pagination'] = $this->paginationLinks($paginator);
+
         static::$currentSeo = $seo;
 
         return $seo;
@@ -605,7 +630,7 @@ class SeoService
     /**
      * Generate SEO data for the videos browse index page (/videos).
      */
-    public function forVideosIndex(?string $category = null, ?string $sort = null): array
+    public function forVideosIndex(?string $category = null, ?string $sort = null, mixed $paginator = null): array
     {
         $vars = ['site_name' => $this->siteName()];
         $title = $this->template($this->s('seo_videos_index_title', 'All Videos | {site_name}'), $vars);
@@ -631,6 +656,9 @@ class SeoService
                 'url' => url('/videos'),
             ];
         }
+
+        $seo['schema'][] = $this->breadcrumbSchema([['name' => 'Videos', 'path' => '/videos']]);
+        $seo['pagination'] = $this->paginationLinks($paginator);
 
         static::$currentSeo = $seo;
 
@@ -1012,6 +1040,7 @@ class SeoService
             'schema' => [],
             'thumbnailAlt' => '',
             'alternateUrls' => [],
+            'pagination' => [],
             // Exposed so SeoHead.vue can compose override titles with the same
             // separator the server uses. Not rendered as a tag.
             'separator' => $this->separator(),
@@ -1029,6 +1058,53 @@ class SeoService
         }
 
         return $meta;
+    }
+
+    /**
+     * Build BreadcrumbList JSON-LD from an ordered list of crumbs.
+     *
+     * Home is prepended automatically. Crumbs are ['name' => …, 'path' => …];
+     * the final crumb is the current page and still carries its own URL, which
+     * Google accepts and prefers over an item-less last entry.
+     */
+    protected function breadcrumbSchema(array $crumbs): array
+    {
+        $items = [];
+        $position = 1;
+
+        foreach (array_merge([['name' => 'Home', 'path' => '/']], $crumbs) as $crumb) {
+            $items[] = [
+                '@type' => 'ListItem',
+                'position' => $position++,
+                'name' => $crumb['name'],
+                'item' => url($crumb['path']),
+            ];
+        }
+
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => $items,
+        ];
+    }
+
+    /**
+     * Previous/next URLs for a paginated listing.
+     *
+     * Google retired rel=prev/next as an indexing signal, but Bing and other
+     * crawlers still consume it, and it remains valid markup for describing a
+     * paginated series.
+     */
+    protected function paginationLinks(mixed $paginator): array
+    {
+        if (! $paginator instanceof LengthAwarePaginator) {
+            return [];
+        }
+
+        return array_filter([
+            'prev' => $paginator->currentPage() > 1 ? $paginator->previousPageUrl() : null,
+            'next' => $paginator->hasMorePages() ? $paginator->nextPageUrl() : null,
+        ]);
     }
 
     /**

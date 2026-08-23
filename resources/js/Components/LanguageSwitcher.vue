@@ -88,7 +88,7 @@ onClickOutside(dropdownRef, () => {
             />
             <span class="truncate min-w-0 font-medium">{{ currentLocaleData.label }}</span>
             <ChevronDown
-                class="w-3 h-3 ml-auto shrink-0 transition-transform"
+                class="w-3 h-3 ms-auto shrink-0 transition-transform"
                 :class="{ 'rotate-180': showDropdown }"
             />
         </button>
@@ -99,7 +99,7 @@ onClickOutside(dropdownRef, () => {
             class="absolute z-50 w-48 rounded-lg shadow-2xl overflow-hidden bg-bg-card border border-border"
             :class="[
                 direction === 'up' ? 'bottom-full mb-1' : 'top-full mt-1',
-                compact ? 'left-full ml-2' : (align === 'right' ? 'right-0' : 'left-0')
+                compact ? 'start-full ms-2' : (align === 'right' ? 'end-0' : 'start-0')
             ]"
         >
             <div class="max-h-72 overflow-y-auto scrollbar-hide">
@@ -107,7 +107,7 @@ onClickOutside(dropdownRef, () => {
                     v-for="loc in supportedLocales"
                     :key="loc.code"
                     @click="selectLocale(loc.code)"
-                    class="flex items-center gap-2.5 w-full px-3 py-2 text-left text-[13px] transition-colors"
+                    class="flex items-center gap-2.5 w-full px-3 py-2 text-start text-[13px] transition-colors"
                     :style="loc.code === locale
                         ? { backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }
                         : { color: 'var(--color-text-secondary)' }"

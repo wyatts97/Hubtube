@@ -150,7 +150,7 @@ const submit = () => {
                             </div>
                             <div
                                 v-if="isSelected(image.id)"
-                                class="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center bg-accent"
+                                class="absolute top-1 end-1 w-5 h-5 rounded-full flex items-center justify-center bg-accent"
                             >
                                 <Check class="w-3 h-3 text-white" />
                             </div>

@@ -213,7 +213,7 @@ const isPublished = computed(() => {
                     @click="deleteVideo"
                     class="btn bg-red-600 hover:bg-red-700 text-white"
                 >
-                    <Trash2 class="w-4 h-4 mr-2" />
+                    <Trash2 class="w-4 h-4 me-2" />
                     {{ t('video.delete_video') }}
                 </button>
 
@@ -223,7 +223,7 @@ const isPublished = computed(() => {
                     :href="`/videos/${video.id}/edit`"
                     class="btn btn-primary"
                 >
-                    <Edit class="w-4 h-4 mr-2" />
+                    <Edit class="w-4 h-4 me-2" />
                     {{ t('video.edit_video') }}
                 </a>
             </div>

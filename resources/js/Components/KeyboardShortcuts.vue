@@ -74,7 +74,7 @@ onUnmounted(() => document.removeEventListener('keydown', handleKeydown));
                     >
                         <span class="text-sm text-text-secondary">{{ shortcut.description }}</span>
                         <kbd
-                            class="px-2 py-0.5 rounded text-xs font-mono font-medium ml-3 bg-bg-secondary text-text-primary border border-border"
+                            class="px-2 py-0.5 rounded text-xs font-mono font-medium ms-3 bg-bg-secondary text-text-primary border border-border"
                         >
                             {{ shortcut.key }}
                         </kbd>

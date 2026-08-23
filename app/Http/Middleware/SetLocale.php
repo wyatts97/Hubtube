@@ -49,6 +49,15 @@ class SetLocale
             URL::defaults(['locale' => $currentLocale]);
         }
 
+        // 4. Drop {locale} from the route parameters now that it has been read.
+        //
+        // Controller actions receive route parameters positionally, so without
+        // this every localised route needed a parallel method whose only job was
+        // to absorb a leading string $locale. Forgetting it lets one action
+        // serve both /category/foo and /es/category/foo. URL::defaults above is
+        // unaffected — it feeds route generation, not the current parameter bag.
+        $request->route()?->forgetParameter('locale');
+
         $response = $next($request);
 
         // Set Content-Language header for search engine crawlers

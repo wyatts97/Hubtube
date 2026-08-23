@@ -22,7 +22,6 @@ yarn-error.log
 node_modules
 /scraper/.cache
 package-lock.json
-/tests
 TODO-PLAN.md
 .env
 .env.example

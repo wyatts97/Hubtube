@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\TranslateModelJob;
+use App\Jobs\TranslateTextJob;
 use App\Models\Category;
 use App\Models\Image;
 use App\Models\Playlist;
@@ -327,7 +328,7 @@ class HomeController extends Controller
             'translatedName' => $translatedName,
             'translatedDescription' => $translatedDescription,
             'videos' => $videos,
-            'seo' => $this->seoService->forCategory($category),
+            'seo' => $this->seoService->forCategory($category, $videos),
             'bannerAd' => $this->shouldSuppressAds() ? ['enabled' => false] : [
                 'enabled' => (bool) Setting::get('category_banner_ad_enabled', false),
                 'code' => (string) Setting::get('category_banner_ad_html', ''),
@@ -350,12 +351,6 @@ class HomeController extends Controller
         ]);
     }
 
-    public function localeCategory(string $locale, string $slug): Response
-    {
-        $category = Category::where('slug', $slug)->firstOrFail();
-
-        return $this->category($category);
-    }
 
     public function tags(): Response
     {
@@ -398,15 +393,7 @@ class HomeController extends Controller
         ]);
     }
 
-    public function localeTags(string $locale): Response
-    {
-        return $this->tags();
-    }
 
-    public function localeTag(string $locale, string $tag): Response
-    {
-        return $this->tag($tag);
-    }
 
     public function tag(string $tag): Response
     {
@@ -430,14 +417,18 @@ class HomeController extends Controller
 
         if ($locale !== $defaultLocale) {
             $translationService = app(TranslationService::class);
-            $translatedTag = $translationService->translateText($tag, $locale, $defaultLocale);
+            $translatedTag = $translationService->cachedText($tag, $locale);
+
+            if ($translatedTag === null && TranslationService::autoTranslateEnabled()) {
+                TranslateTextJob::dispatch($tag, $locale);
+            }
         }
 
         return Inertia::render('Tags/Show', [
             'tag' => $tag,
             'translatedTag' => $translatedTag,
             'videos' => $videos,
-            'seo' => $this->seoService->forTag($tag),
+            'seo' => $this->seoService->forTag($tag, $videos),
         ]);
     }
 

@@ -105,7 +105,7 @@ onUnmounted(() => {
             />
 
             <!-- Ad badge -->
-            <div class="absolute top-2 left-2 z-10">
+            <div class="absolute top-2 start-2 z-10">
                 <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-500 text-black uppercase tracking-wide">Ad</span>
             </div>
 
@@ -115,7 +115,7 @@ onUnmounted(() => {
                 class="absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity duration-200"
             >
                 <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <svg class="w-5 h-5 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 text-white ms-1" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z"/>
                     </svg>
                 </div>

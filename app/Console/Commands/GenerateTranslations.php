@@ -19,6 +19,9 @@ class GenerateTranslations extends Command
     protected int $newKeysCount = 0;
     protected int $removedKeysCount = 0;
 
+    /** Keys the provider could not translate; deliberately left out of the file. */
+    protected int $failedKeysCount = 0;
+
     public function handle(): int
     {
         $sourcePath = resource_path('js/i18n/en.json');
@@ -76,15 +79,27 @@ class GenerateTranslations extends Command
                 // Merge mode: only translate missing keys, remove stale keys
                 $this->newKeysCount = 0;
                 $this->removedKeysCount = 0;
+                $this->failedKeysCount = 0;
                 $this->info("Syncing {$locale} ({$langName}) — merging new keys...");
                 $translated = $this->mergeTranslations($source, $existing, $translator, $locale);
 
                 if ($this->newKeysCount === 0 && $this->removedKeysCount === 0) {
-                    $this->line("  <info>✓</info> {$locale} is already up to date");
+                    if ($this->failedKeysCount > 0) {
+                        // Don't claim success: the provider refused every key
+                        // (rate limit, network), so the file is still short.
+                        $this->warn("  {$locale}: {$this->failedKeysCount} key(s) could not be translated — nothing written, rerun to retry.");
+                    } else {
+                        $this->line("  <info>✓</info> {$locale} is already up to date");
+                    }
+
                     continue;
                 }
 
                 $this->line("  Added <info>{$this->newKeysCount}</info> new key(s), removed <comment>{$this->removedKeysCount}</comment> stale key(s)");
+
+                if ($this->failedKeysCount > 0) {
+                    $this->warn("  {$this->failedKeysCount} key(s) could not be translated and were left out — rerun to retry them.");
+                }
             }
 
             $dir = dirname($targetPath);
@@ -132,9 +147,14 @@ class GenerateTranslations extends Command
                     // Key exists — keep existing translation
                     $result[$key] = $existing[$key];
                 } else {
-                    // New key — translate it
-                    $result[$key] = $this->translateString($value, $key, $translator, $locale);
-                    $this->newKeysCount++;
+                    // New key — translate it. A failure leaves the key out so
+                    // the next run retries it.
+                    $translated = $this->translateString($value, $key, $translator, $locale);
+
+                    if ($translated !== null) {
+                        $result[$key] = $translated;
+                        $this->newKeysCount++;
+                    }
                 }
             } else {
                 $result[$key] = $value;
@@ -162,7 +182,11 @@ class GenerateTranslations extends Command
             if (is_array($value)) {
                 $result[$key] = $this->translateArray($value, $translator, $locale);
             } elseif (is_string($value)) {
-                $result[$key] = $this->translateString($value, $key, $translator, $locale);
+                $translated = $this->translateString($value, $key, $translator, $locale);
+
+                if ($translated !== null) {
+                    $result[$key] = $translated;
+                }
             } else {
                 $result[$key] = $value;
             }
@@ -174,8 +198,34 @@ class GenerateTranslations extends Command
     /**
      * Translate a single string value, preserving interpolation placeholders.
      */
-    protected function translateString(string $value, string $key, GoogleTranslate $translator, string $locale): string
+    /**
+     * Translate one message, or return null if the provider could not.
+     *
+     * Null matters: writing the English source under a translated key would
+     * make the catalogue *look* complete, so useI18n()'s fallback chain would
+     * stop supplying English and a later merge run would never retry the key.
+     * Omitting it leaves both behaviours intact.
+     */
+    protected function translateString(string $value, string $key, GoogleTranslate $translator, string $locale): ?string
     {
+        // Plural messages are pipe-separated forms ("{count} view | {count} views").
+        // Translate each form on its own so the separator and the form count survive.
+        if (str_contains($value, '|')) {
+            $forms = [];
+
+            foreach (explode('|', $value) as $form) {
+                $translatedForm = $this->translateString(trim($form), $key, $translator, $locale);
+
+                if ($translatedForm === null) {
+                    return null;
+                }
+
+                $forms[] = $translatedForm;
+            }
+
+            return implode(' | ', $forms);
+        }
+
         // Preserve interpolation placeholders like {count}, {name}
         $placeholders = [];
         $text = preg_replace_callback('/\{(\w+)\}/', function ($match) use (&$placeholders) {
@@ -187,11 +237,15 @@ class GenerateTranslations extends Command
         try {
             $translated = $translator->translate($text);
             if ($translated === null) {
-                $translated = $text;
+                $this->failedKeysCount++;
+
+                return null;
             }
         } catch (Exception $e) {
             $this->warn("  Failed to translate key: {$key} — {$e->getMessage()}");
-            $translated = $text;
+            $this->failedKeysCount++;
+
+            return null;
         }
 
         // Restore placeholders

@@ -137,7 +137,7 @@ const onPreviewLoad = (event) => {
             </div>
             
             <!-- Duration Badge -->
-            <span v-if="showDuration" class="duration absolute bottom-2 right-2 bg-black/80 text-white text-xs font-medium px-1.5 py-0.5 rounded">
+            <span v-if="showDuration" class="duration absolute bottom-2 end-2 bg-black/80 text-white text-xs font-medium px-1.5 py-0.5 rounded">
                 {{ video.duration_formatted || video.formatted_duration || formattedDuration }}
             </span>
             

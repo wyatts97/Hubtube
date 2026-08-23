@@ -123,7 +123,7 @@ const formatType = (type) => {
                                 <p class="text-xs mt-0.5 text-text-muted">{{ formatDate(tx.created_at) }}</p>
                             </div>
                         </div>
-                        <div class="text-right">
+                        <div class="text-end">
                             <p class="font-semibold text-sm" :style="{ color: isCredit(tx.type) ? '#22c55e' : '#ef4444' }">
                                 {{ isCredit(tx.type) ? '+' : '' }}{{ formatCurrency(tx.amount) }}
                             </p>

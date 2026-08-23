@@ -40,11 +40,11 @@ const { t, localizedUrl } = useI18n();
                     <div v-else class="w-full h-full flex items-center justify-center">
                         <ListVideo class="w-12 h-12 text-text-muted" />
                     </div>
-                    <div class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-medium bg-black/80 text-white">
+                    <div class="absolute top-2 end-2 px-2 py-0.5 rounded-full text-xs font-medium bg-black/80 text-white">
                         {{ t('playlist.videos_count', { count: playlist.video_count }) }}
                     </div>
                     <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
-                    <div class="absolute bottom-2 left-2 right-2">
+                    <div class="absolute bottom-2 start-2 end-2">
                         <p class="text-sm font-medium text-white line-clamp-2">{{ playlist.title }}</p>
                         <p v-if="playlist.user" class="text-xs text-white/80 mt-0.5">{{ playlist.user.username }}</p>
                     </div>

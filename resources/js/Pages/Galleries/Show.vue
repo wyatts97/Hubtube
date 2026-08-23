@@ -137,7 +137,7 @@ const deleteGallery = () => {
                                 loading="lazy"
                             />
                         </div>
-                        <div v-if="image.is_animated" class="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-600 text-white">
+                        <div v-if="image.is_animated" class="absolute top-2 start-2 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-600 text-white">
                             GIF
                         </div>
                     </div>

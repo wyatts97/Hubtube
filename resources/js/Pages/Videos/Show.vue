@@ -584,7 +584,7 @@ const getRelatedTitle = (video) => {
                         <button
                             v-if="canScrollLeft"
                             type="button"
-                            class="absolute left-1 top-1/2 -translate-y-1/2 z-10 btn btn-secondary p-2 shadow"
+                            class="absolute start-1 top-1/2 -translate-y-1/2 z-10 btn btn-secondary p-2 shadow"
                             @click="scrollPlaylistRail('left')"
                             :title="t('playlist.scroll_left')"
                             :aria-label="t('playlist.scroll_left')"
@@ -619,8 +619,8 @@ const getRelatedTitle = (video) => {
                                         loading="lazy"
                                         decoding="async"
                                     />
-                                    <span class="absolute top-2 left-2 text-[11px] px-1.5 py-0.5 rounded bg-black/80 text-white">{{ idx + 1 }}</span>
-                                    <span v-if="playlistVideo.duration_formatted" class="absolute bottom-2 right-2 text-[11px] px-1.5 py-0.5 rounded bg-black/80 text-white">{{ playlistVideo.duration_formatted }}</span>
+                                    <span class="absolute top-2 start-2 text-[11px] px-1.5 py-0.5 rounded bg-black/80 text-white">{{ idx + 1 }}</span>
+                                    <span v-if="playlistVideo.duration_formatted" class="absolute bottom-2 end-2 text-[11px] px-1.5 py-0.5 rounded bg-black/80 text-white">{{ playlistVideo.duration_formatted }}</span>
                                 </div>
                                 <div class="p-2.5">
                                     <p class="text-xs font-medium line-clamp-2 text-text-primary">{{ playlistVideo.title }}</p>
@@ -632,7 +632,7 @@ const getRelatedTitle = (video) => {
                         <button
                             v-if="canScrollRight"
                             type="button"
-                            class="absolute right-1 top-1/2 -translate-y-1/2 z-10 btn btn-secondary p-2 shadow"
+                            class="absolute end-1 top-1/2 -translate-y-1/2 z-10 btn btn-secondary p-2 shadow"
                             @click="scrollPlaylistRail('right')"
                             :title="t('playlist.scroll_right')"
                             :aria-label="t('playlist.scroll_right')"
@@ -723,7 +723,7 @@ const getRelatedTitle = (video) => {
                                 </button>
                                 <div
                                     v-if="showPlaylistMenu"
-                                    class="absolute right-0 sm:right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-72 max-w-72 rounded-xl shadow-xl z-50 overflow-hidden bg-bg-card border border-border"
+                                    class="absolute end-0 sm:end-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-72 max-w-72 rounded-xl shadow-xl z-50 overflow-hidden bg-bg-card border border-border"
                                 >
                                     <div class="p-3 font-medium text-sm border-b border-border text-text-primary">{{ t('video.save_to_playlist') }}</div>
                                     <div class="max-h-60 overflow-y-auto scrollbar-hide">
@@ -732,7 +732,7 @@ const getRelatedTitle = (video) => {
                                             :key="pl.id"
                                             @click="toggleVideoInPlaylist(pl)"
                                             :disabled="savingPlaylist === pl.id"
-                                            class="flex items-center gap-3 w-full px-3 py-2.5 text-left text-sm hover:opacity-80 transition-colors text-text-secondary"
+                                            class="flex items-center gap-3 w-full px-3 py-2.5 text-start text-sm hover:opacity-80 transition-colors text-text-secondary"
                                         >
                                             <div
                                                 class="w-5 h-5 rounded flex items-center justify-center shrink-0"

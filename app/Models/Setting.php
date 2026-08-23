@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use Throwable;
 use Illuminate\Support\Facades\Crypt;
 
 class Setting extends Model
@@ -29,25 +30,20 @@ class Setting extends Model
 
     public static function get(string $key, mixed $default = null): mixed
     {
-        $cacheKey = static::$cachePrefix . $key;
-        
-        // Try to get from cache first
-        $cached = Cache::get($cacheKey);
-        if ($cached !== null) {
-            return $cached;
-        }
-
-        // Query database
-        $setting = static::where('key', $key)->first();
-
-        if (!$setting) {
+        // Read through the single cached map rather than querying per key.
+        //
+        // The previous implementation issued one SELECT per key and only cached
+        // non-null results, so any key absent from the table — i.e. every
+        // setting still on its default — re-queried on *every* request. A single
+        // channel page was firing 43 identical settings queries.
+        try {
+            $all = static::getAll();
+        } catch (Throwable $e) {
+            // Table may not exist yet (install flow).
             return $default;
         }
 
-        $value = static::castValue($setting->value, $setting->type);
-        Cache::put($cacheKey, $value, static::$cacheTtl);
-
-        return $value;
+        return array_key_exists($key, $all) ? $all[$key] : $default;
     }
 
     public static function set(string $key, mixed $value, string $group = 'general', string $type = 'string'): void

@@ -399,7 +399,7 @@ const handleMobileNavClick = (item) => {
 <template>
     <div class="min-h-screen bg-bg-primary">
         <!-- Header -->
-        <header class="fixed top-0 left-0 right-0 z-50 w-full bg-bg-secondary border-b border-border">
+        <header class="fixed top-0 start-0 end-0 z-50 w-full bg-bg-secondary border-b border-border">
             <div class="flex items-center justify-between h-14 px-4 w-full">
                 <!-- Left: Logo & Menu -->
                 <div class="flex items-center gap-4">
@@ -434,14 +434,14 @@ const handleMobileNavClick = (item) => {
                             v-model="searchQuery"
                             type="text"
                             :placeholder="t('common.search_placeholder')"
-                            class="input pr-12 w-full"
+                            class="input pe-12 w-full"
                             aria-label="Search videos"
                             @input="onSearchInput"
                             @keydown="onSearchKeydown"
                             autocomplete="off"
                             autocapitalize="off"
                         />
-                        <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80 text-text-muted" aria-label="Search">
+                        <button type="submit" class="absolute end-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80 text-text-muted" aria-label="Search">
                             <Search class="w-5 h-5" />
                         </button>
                     </form>
@@ -450,7 +450,7 @@ const handleMobileNavClick = (item) => {
                     <div
                         v-if="showSuggestions && (searchSuggestions.videos.length || searchSuggestions.channels.length || suggestLoading)"
                         ref="suggestionsRef"
-                        class="absolute top-full left-0 right-0 mt-1 card shadow-xl bg-bg-card border border-border z-50 max-h-80 overflow-y-auto scrollbar-hide"
+                        class="absolute top-full start-0 end-0 mt-1 card shadow-xl bg-bg-card border border-border z-50 max-h-80 overflow-y-auto scrollbar-hide"
                     >
                         <div v-if="suggestLoading" class="p-3 text-sm text-text-muted flex items-center gap-2">
                             <Loader2 class="w-4 h-4 animate-spin" />
@@ -465,7 +465,7 @@ const handleMobileNavClick = (item) => {
                                     v-for="(video, idx) in searchSuggestions.videos"
                                     :key="video.id"
                                     type="button"
-                                    class="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-secondary transition-colors text-left"
+                                    class="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-secondary transition-colors text-start"
                                     :class="{ 'bg-bg-secondary': isActiveSuggestion(idx) }"
                                     @click="navigateToSuggestion(video, 'video')"
                                     @mouseenter="activeSuggestionIndex = idx"
@@ -475,7 +475,7 @@ const handleMobileNavClick = (item) => {
                                     </div>
                                     <div class="min-w-0 flex-1">
                                         <p class="text-sm font-medium truncate text-text-primary">{{ video.title }}</p>
-                                        <p class="text-[11px] text-text-muted">{{ video.username }} <span v-if="video.duration_formatted" class="ml-1">• {{ video.duration_formatted }}</span></p>
+                                        <p class="text-[11px] text-text-muted">{{ video.username }} <span v-if="video.duration_formatted" class="ms-1">• {{ video.duration_formatted }}</span></p>
                                     </div>
                                     <Film class="w-4 h-4 text-text-muted shrink-0" />
                                 </button>
@@ -488,7 +488,7 @@ const handleMobileNavClick = (item) => {
                                     v-for="(channel, idx) in searchSuggestions.channels"
                                     :key="channel.id"
                                     type="button"
-                                    class="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-secondary transition-colors text-left"
+                                    class="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-secondary transition-colors text-start"
                                     :class="{ 'bg-bg-secondary': isActiveSuggestion(searchSuggestions.videos.length + idx) }"
                                     @click="navigateToSuggestion(channel, 'channel')"
                                     @mouseenter="activeSuggestionIndex = searchSuggestions.videos.length + idx"
@@ -526,7 +526,7 @@ const handleMobileNavClick = (item) => {
                             >
                                 <Upload class="w-5 h-5" />
                             </button>
-                            <div v-if="showUploadMenu" class="upload-menu-dropdown absolute right-0 mt-2 min-w-34 card p-1 shadow-xl bg-bg-card border border-border z-50">
+                            <div v-if="showUploadMenu" class="upload-menu-dropdown absolute end-0 mt-2 min-w-34 card p-1 shadow-xl bg-bg-card border border-border z-50">
                                 <Link href="/upload" class="flex items-center justify-center gap-2 px-2.5 py-2 rounded-lg hover:opacity-80 transition-opacity text-text-primary" @click="showUploadMenu = false">
                                     <Film class="w-4 h-4 text-text-secondary" />
                                     <span class="text-sm">{{ t('nav.upload_video') }}</span>
@@ -541,11 +541,11 @@ const handleMobileNavClick = (item) => {
                         <div class="relative">
                             <button @click="toggleNotifications" class="notification-trigger p-2 rounded-full relative text-text-secondary" aria-label="Notifications">
                                 <Bell class="w-5 h-5" />
-                                <span v-if="unreadCount > 0" class="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent"></span>
+                                <span v-if="unreadCount > 0" class="absolute top-1 end-1 w-2 h-2 rounded-full bg-accent"></span>
                             </button>
 
                             <!-- Notification Dropdown -->
-                            <div v-if="showNotifications" class="notification-dropdown absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto scrollbar-hide card shadow-xl bg-bg-card border border-border z-50">
+                            <div v-if="showNotifications" class="notification-dropdown absolute end-0 mt-2 w-80 max-h-96 overflow-y-auto scrollbar-hide card shadow-xl bg-bg-card border border-border z-50">
                                 <div class="flex items-center justify-between p-3 border-b border-border">
                                     <h3 class="font-semibold text-sm text-text-primary">{{ t('nav.notifications') }}</h3>
                                     <button v-if="unreadCount > 0" @click="markAllRead" class="text-xs hover:opacity-80 text-accent">
@@ -591,7 +591,7 @@ const handleMobileNavClick = (item) => {
                                 </div>
                             </button>
 
-                            <div v-if="showUserMenu" class="user-menu-dropdown absolute right-0 mt-2 w-56 card p-2 shadow-xl bg-bg-card border border-border z-50">
+                            <div v-if="showUserMenu" class="user-menu-dropdown absolute end-0 mt-2 w-56 card p-2 shadow-xl bg-bg-card border border-border z-50">
                                 <div class="px-3 py-2 border-b border-border">
                                     <p class="font-medium text-text-primary">{{ user.username }}</p>
                                     <p class="text-sm text-text-secondary">{{ user.email }}</p>
@@ -632,7 +632,7 @@ const handleMobileNavClick = (item) => {
                                     </Link>
                                 </div>
                                 <div class="pt-2 border-t border-border">
-                                    <Link href="/logout" method="post" as="button" class="flex items-center gap-3 px-3 py-2 rounded-lg w-full text-left text-red-400">
+                                    <Link href="/logout" method="post" as="button" class="flex items-center gap-3 px-3 py-2 rounded-lg w-full text-start text-red-400">
                                         <LogOut class="w-4 h-4" />
                                         <span>{{ t('nav.sign_out') }}</span>
                                     </Link>
@@ -676,7 +676,7 @@ const handleMobileNavClick = (item) => {
                             <!-- Mega dropdown -->
                             <div
                                 v-if="openMegaMenu === item.id"
-                                class="absolute left-0 top-full mt-1 card shadow-xl p-4 z-50"
+                                class="absolute start-0 top-full mt-1 card shadow-xl p-4 z-50"
                                 :style="{
                                     backgroundColor: 'var(--color-bg-card)',
                                     border: '1px solid var(--color-border)',
@@ -717,14 +717,14 @@ const handleMobileNavClick = (item) => {
                     </template>
                 </div>
 
-                <LanguageSwitcher align="right" class="shrink-0 ml-4" />
+                <LanguageSwitcher align="right" class="shrink-0 ms-4" />
             </div>
         </header>
 
         <!-- Sidebar -->
         <aside 
             :class="[
-                'fixed left-0 bottom-0 overflow-y-auto scrollbar-hide hidden lg:block transition-all duration-300 z-30',
+                'fixed start-0 bottom-0 overflow-y-auto scrollbar-hide hidden lg:block transition-all duration-300 z-30',
                 sidebarCollapsed ? 'w-16' : 'sidebar-expanded'
             ]"
             :style="{
@@ -803,7 +803,7 @@ const handleMobileNavClick = (item) => {
             :initial="{ opacity: 0, y: 8 }"
             :enter="{ opacity: 1, y: 0, transition: { duration: 0.2 } }"
             :leave="{ opacity: 0, y: -8, transition: { duration: 0.15 } }"
-            :class="['transition-all duration-300 pt-14 md:pt-24', sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-sidebar']"
+            :class="['transition-all duration-300 pt-14 md:pt-24', sidebarCollapsed ? 'lg:ps-16' : 'lg:pl-sidebar']"
         >
             <div class="px-3 py-4 pb-20 lg:pb-4 sm:p-4 sm:pb-20 lg:p-6">
                 <slot />
@@ -858,7 +858,7 @@ const handleMobileNavClick = (item) => {
                                 v-for="(video, idx) in searchSuggestions.videos"
                                 :key="video.id"
                                 type="button"
-                                class="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-secondary transition-colors text-left"
+                                class="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-secondary transition-colors text-start"
                                 :class="{ 'bg-bg-secondary': isActiveSuggestion(idx) }"
                                 @click="navigateToSuggestion(video, 'video')"
                                 @mouseenter="activeSuggestionIndex = idx"
@@ -868,7 +868,7 @@ const handleMobileNavClick = (item) => {
                                 </div>
                                 <div class="min-w-0 flex-1">
                                     <p class="text-sm font-medium truncate text-text-primary">{{ video.title }}</p>
-                                    <p class="text-[11px] text-text-muted">{{ video.username }} <span v-if="video.duration_formatted" class="ml-1">• {{ video.duration_formatted }}</span></p>
+                                    <p class="text-[11px] text-text-muted">{{ video.username }} <span v-if="video.duration_formatted" class="ms-1">• {{ video.duration_formatted }}</span></p>
                                 </div>
                                 <Film class="w-4 h-4 text-text-muted shrink-0" />
                             </button>
@@ -881,7 +881,7 @@ const handleMobileNavClick = (item) => {
                                 v-for="(channel, idx) in searchSuggestions.channels"
                                 :key="channel.id"
                                 type="button"
-                                class="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-secondary transition-colors text-left"
+                                class="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-secondary transition-colors text-start"
                                 :class="{ 'bg-bg-secondary': isActiveSuggestion(searchSuggestions.videos.length + idx) }"
                                 @click="navigateToSuggestion(channel, 'channel')"
                                 @mouseenter="activeSuggestionIndex = searchSuggestions.videos.length + idx"
@@ -908,7 +908,7 @@ const handleMobileNavClick = (item) => {
         <!-- Footer -->
         <footer
             ref="footerRef"
-            :class="['transition-all duration-300 py-6 px-4 mt-8', sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-sidebar']"
+            :class="['transition-all duration-300 py-6 px-4 mt-8', sidebarCollapsed ? 'lg:ps-16' : 'lg:pl-sidebar']"
             class="border-t border-border"
         >
             <div class="max-w-6xl mx-auto">
@@ -956,7 +956,7 @@ const handleMobileNavClick = (item) => {
         <Transition name="mobile-nav">
             <nav
                 v-if="showMobileNav"
-                class="fixed bottom-4 left-0 right-0 z-40 mx-auto w-[calc(100%-32px)] max-w-lg lg:hidden"
+                class="fixed bottom-4 start-0 end-0 z-40 mx-auto w-[calc(100%-32px)] max-w-lg lg:hidden"
                 aria-label="Mobile navigation"
             >
                 <div
@@ -997,7 +997,7 @@ const handleMobileNavClick = (item) => {
                             <Transition name="fade">
                                 <div
                                     v-if="showMobileMoreMenu"
-                                    class="absolute bottom-full mb-3 right-0 rounded-xl shadow-xl p-2 min-w-[160px] bg-bg-card border border-border"
+                                    class="absolute bottom-full mb-3 end-0 rounded-xl shadow-xl p-2 min-w-[160px] bg-bg-card border border-border"
                                 >
                                     <Link
                                         v-for="moreItem in mobileMoreItems"
@@ -1052,7 +1052,7 @@ const handleMobileNavClick = (item) => {
                     <div class="fixed inset-0 bg-black/60" style="backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);" @click="showLoginModal = false"></div>
                     <div class="relative w-full max-w-md rounded-xl shadow-2xl bg-bg-card">
                         <!-- Close button -->
-                        <button @click="showLoginModal = false" class="absolute top-3 right-3 p-1 rounded-full hover:opacity-80 text-text-muted" aria-label="Close login">
+                        <button @click="showLoginModal = false" class="absolute top-3 end-3 p-1 rounded-full hover:opacity-80 text-text-muted" aria-label="Close login">
                             <X class="w-5 h-5" />
                         </button>
 
@@ -1091,13 +1091,13 @@ const handleMobileNavClick = (item) => {
                                         <input
                                             v-model="loginForm.password"
                                             :type="showLoginPassword ? 'text' : 'password'"
-                                            class="input pr-10"
+                                            class="input pe-10"
                                             required
                                         />
                                         <button
                                             type="button"
                                             @click="showLoginPassword = !showLoginPassword"
-                                            class="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary"
+                                            class="absolute end-3 top-1/2 -translate-y-1/2 text-text-secondary"
                                             :aria-label="showLoginPassword ? 'Hide password' : 'Show password'"
                                         >
                                             <EyeOff v-if="showLoginPassword" class="w-5 h-5" />

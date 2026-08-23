@@ -84,7 +84,7 @@ const lightboxImages = computed(() => {
                                 <Maximize2 class="w-6 h-6" />
                             </div>
                         </div>
-                        <div v-if="image.is_animated" class="absolute top-3 left-3 px-2 py-1 rounded text-xs font-bold uppercase bg-purple-600 text-white">
+                        <div v-if="image.is_animated" class="absolute top-3 start-3 px-2 py-1 rounded text-xs font-bold uppercase bg-purple-600 text-white">
                             GIF
                         </div>
                     </div>

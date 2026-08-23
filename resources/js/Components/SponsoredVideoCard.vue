@@ -124,7 +124,7 @@ const discountPercent = computed(() => props.card.discount_percent);
     >
         <div class="thumbnail relative overflow-hidden" :style="{ borderRadius: thumbRadius }">
             <!-- Sale Badge -->
-            <div v-if="discountPercent" class="absolute top-2 right-2 z-20">
+            <div v-if="discountPercent" class="absolute top-2 end-2 z-20">
                 <span class="sale-badge">-{{ discountPercent }}%</span>
             </div>
 
@@ -139,7 +139,7 @@ const discountPercent = computed(() => props.card.discount_percent);
             />
 
             <!-- Preview Progress Dots -->
-            <div v-if="isHovering && previewImages.length > 1" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+            <div v-if="isHovering && previewImages.length > 1" class="absolute bottom-2 start-1/2 -translate-x-1/2 flex gap-1 z-10">
                 <span
                     v-for="(_, idx) in previewImages"
                     :key="idx"
@@ -149,7 +149,7 @@ const discountPercent = computed(() => props.card.discount_percent);
             </div>
 
             <!-- Duration Badge (no clock icon, matches regular video cards) -->
-            <div v-if="card.formatted_duration" class="absolute bottom-2 right-2 z-10">
+            <div v-if="card.formatted_duration" class="absolute bottom-2 end-2 z-10">
                 <span class="duration-badge">{{ card.formatted_duration }}</span>
             </div>
 
@@ -183,7 +183,7 @@ const discountPercent = computed(() => props.card.discount_percent);
                 <!-- Price only (no studio, no description) -->
                 <p v-else-if="hasPrice" class="mt-1" :style="{ ...metaStyle, color: metaColor }">
                     {{ displayPrice }}
-                    <span v-if="originalPrice" class="line-through opacity-60 ml-2">{{ originalPrice }}</span>
+                    <span v-if="originalPrice" class="line-through opacity-60 ms-2">{{ originalPrice }}</span>
                 </p>
 
                 <!-- Description only (no price) -->

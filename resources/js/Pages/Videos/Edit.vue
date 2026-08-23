@@ -360,7 +360,7 @@ const statusColors = {
                                     v-for="suggestion in filteredTags"
                                     :key="suggestion"
                                     type="button"
-                                    class="w-full text-left px-3 py-2 text-sm hover:opacity-80 transition-opacity text-text-primary"
+                                    class="w-full text-start px-3 py-2 text-sm hover:opacity-80 transition-opacity text-text-primary"
                                     @mousedown.prevent="addTag(suggestion)"
                                 >
                                     #{{ suggestion }}
@@ -421,7 +421,7 @@ const statusColors = {
                         @click="deleteVideo"
                         class="btn bg-red-600 hover:bg-red-700 text-white"
                     >
-                        <Trash2 class="w-4 h-4 mr-2" />
+                        <Trash2 class="w-4 h-4 me-2" />
                         {{ t('video.delete_video') }}
                     </button>
                     
@@ -430,7 +430,7 @@ const statusColors = {
                         :disabled="form.processing"
                         class="btn btn-primary"
                     >
-                        <Save class="w-4 h-4 mr-2" />
+                        <Save class="w-4 h-4 me-2" />
                         <span v-if="form.processing">{{ t('common.loading') }}</span>
                         <span v-else>{{ t('settings.save_changes') }}</span>
                     </button>

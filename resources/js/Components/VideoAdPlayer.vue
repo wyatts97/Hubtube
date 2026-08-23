@@ -348,12 +348,12 @@ onUnmounted(() => { clearTimers(); destroyIma(); destroyAdHls(); });
 <template>
     <div v-if="isPlaying && currentAd" class="absolute inset-0 z-30 bg-black flex flex-col">
         <!-- Ad Label -->
-        <div class="absolute top-2 left-2 z-40">
+        <div class="absolute top-2 start-2 z-40">
             <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-500 text-black uppercase tracking-wide">Ad</span>
         </div>
 
         <!-- Skip Button — local ads only; IMA SDK renders its own skip UI -->
-        <div v-if="!isVastAd" class="absolute bottom-4 right-2 z-40">
+        <div v-if="!isVastAd" class="absolute bottom-4 end-2 z-40">
             <button v-if="canSkip" @click.stop="skipAd"
                 class="px-2.5 py-1 bg-black/60 hover:bg-black/80 text-white text-xs font-medium rounded border border-white/40 transition-all">
                 Skip →
@@ -392,7 +392,7 @@ onUnmounted(() => { clearTimers(); destroyIma(); destroyAdHls(); });
                     class="absolute inset-0 flex items-center justify-center bg-black/40 cursor-pointer z-10"
                     @click.stop="manualPlay">
                     <div class="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-6 h-6 text-white ms-1" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M8 5v14l11-7z"/>
                         </svg>
                     </div>
@@ -409,7 +409,7 @@ onUnmounted(() => { clearTimers(); destroyIma(); destroyAdHls(); });
             <div v-if="isHtmlAd" ref="adHtmlRef" class="w-full h-full flex items-center justify-center"></div>
 
             <!-- Click CTA (local only, not covering center) -->
-            <div v-if="currentAd?.click_url && !isVastAd && !autoplayBlocked" class="absolute bottom-4 left-2 z-40">
+            <div v-if="currentAd?.click_url && !isVastAd && !autoplayBlocked" class="absolute bottom-4 start-2 z-40">
                 <button @click.stop="onAdClick"
                     class="px-2.5 py-1 bg-black/60 hover:bg-black/80 text-white text-xs font-medium rounded border border-white/40 transition-all inline-flex items-center gap-1">
                     Learn More ↗

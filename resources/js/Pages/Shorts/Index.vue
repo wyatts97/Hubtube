@@ -334,7 +334,7 @@ const goBack = () => router.visit(localizedUrl('/'));
         <!-- Desktop back button -->
         <button
             @click="goBack"
-            class="hidden lg:flex absolute top-4 left-4 z-50 items-center gap-2 px-3 py-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+            class="hidden lg:flex absolute top-4 start-4 z-50 items-center gap-2 px-3 py-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
         >
             <ChevronLeft class="w-5 h-5" />
             <span class="text-sm font-medium">Back</span>
@@ -364,7 +364,7 @@ const goBack = () => router.visit(localizedUrl('/'));
                     />
 
                     <!-- Right action bar -->
-                    <div class="absolute right-3 bottom-24 lg:bottom-12 z-20 flex flex-col items-center gap-5">
+                    <div class="absolute end-3 bottom-24 lg:bottom-12 z-20 flex flex-col items-center gap-5">
                         <Link :href="localizedUrl(`/channel/${item.data.user?.username}`)" class="flex flex-col items-center">
                             <div class="w-10 h-10 rounded-full overflow-hidden border border-white/30 bg-bg-secondary">
                                 <img :src="item.data.user?.avatar || '/images/default_avatar.webp'" class="w-full h-full object-cover" />
@@ -389,7 +389,7 @@ const goBack = () => router.visit(localizedUrl('/'));
                     <!-- More menu popover -->
                     <div
                         v-if="showMoreMenu && currentIndex === index"
-                        class="absolute right-3 bottom-12 lg:bottom-8 z-30 bg-black/80 backdrop-blur-sm rounded-xl p-2 min-w-[140px] border border-white/10"
+                        class="absolute end-3 bottom-12 lg:bottom-8 z-30 bg-black/80 backdrop-blur-sm rounded-xl p-2 min-w-[140px] border border-white/10"
                     >
                         <button @click="shareShort" class="flex items-center gap-3 w-full px-3 py-2 text-white rounded-lg hover:bg-white/10">
                             <Share2 class="w-5 h-5" />
@@ -402,7 +402,7 @@ const goBack = () => router.visit(localizedUrl('/'));
                     </div>
 
                     <!-- Bottom info -->
-                    <div class="absolute left-0 right-16 lg:right-24 bottom-12 lg:bottom-8 p-4 z-20">
+                    <div class="absolute start-0 end-16 lg:end-24 bottom-12 lg:bottom-8 p-4 z-20">
                         <Link :href="localizedUrl(`/channel/${item.data.user?.username}`)" class="flex items-center gap-2 mb-2">
                             <span class="text-sm font-semibold text-white">{{ item.data.user?.username }}</span>
                         </Link>
@@ -411,7 +411,7 @@ const goBack = () => router.visit(localizedUrl('/'));
                     </div>
 
                     <!-- Top controls -->
-                    <div class="absolute top-4 left-0 lg:left-auto lg:right-4 right-0 px-4 lg:px-0 z-[60] flex items-center justify-between lg:justify-end gap-3">
+                    <div class="absolute top-4 start-0 lg:start-auto lg:end-4 end-0 px-4 lg:px-0 z-[60] flex items-center justify-between lg:justify-end gap-3">
                         <button @click="goBack" class="lg:hidden text-white/80 hover:text-white">
                             <ChevronLeft class="w-6 h-6" />
                         </button>
@@ -443,7 +443,7 @@ const goBack = () => router.visit(localizedUrl('/'));
         </div>
 
         <!-- Desktop prev/next chevrons -->
-        <div class="hidden lg:flex absolute right-6 top-1/2 -translate-y-1/2 z-40 flex-col gap-4">
+        <div class="hidden lg:flex absolute end-6 top-1/2 -translate-y-1/2 z-40 flex-col gap-4">
             <button
                 @click="goPrev"
                 :disabled="currentIndex === 0"

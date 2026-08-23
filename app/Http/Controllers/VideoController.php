@@ -9,6 +9,7 @@ use App\Http\Requests\Video\FinalizeVideoRequest;
 use App\Http\Requests\Video\StoreVideoRequest;
 use App\Models\Playlist;
 use App\Http\Requests\Video\UpdateVideoRequest;
+use App\Jobs\TranslateTextJob;
 use App\Models\Video;
 use App\Models\WatchHistory;
 use App\Models\Category;
@@ -98,6 +99,7 @@ class VideoController extends Controller
             'seo' => $this->seoService->forVideosIndex(
                 $request->category ? (string) $request->category : null,
                 $request->sort ? (string) $request->sort : null,
+                $videos,
             ),
             'bannerAd' => $this->shouldSuppressAds() ? ['enabled' => false] : [
                 'enabled' => (bool) Setting::get('browse_banner_ad_enabled', false),
@@ -130,7 +132,15 @@ class VideoController extends Controller
      * model binding conflict with the {locale} route prefix parameter.
      * Also checks for translated slugs in the translations table.
      */
-    public function localeShow(string $locale, string $slug): Response
+    /**
+     * Locale-prefixed video page.
+     *
+     * Kept separate from show() because this is the one localised route with
+     * real work to do: the slug in the URL may be a per-locale translated slug
+     * rather than the canonical one, which implicit model binding can't resolve.
+     * SetLocale forgets the {locale} parameter, so it isn't in the signature.
+     */
+    public function localeShow(string $slug): Response
     {
         // Try original slug first
         $video = Video::where('slug', $slug)->first();
@@ -298,9 +308,23 @@ class VideoController extends Controller
         $defaultLocale = TranslationService::getDefaultLocale();
 
         if ($locale !== $defaultLocale && !empty($video->tags)) {
+            // Cache-only: translateText() is an uncached, throttled provider
+            // call, so doing it inline re-translated every tag on every view.
             $translationService = app(TranslationService::class);
             $translatedTags = array_map(
-                fn (string $tag) => $translationService->translateText($tag, $locale, $defaultLocale),
+                function (string $tag) use ($translationService, $locale) {
+                    $cached = $translationService->cachedText($tag, $locale);
+
+                    if ($cached === null) {
+                        if (TranslationService::autoTranslateEnabled()) {
+                            TranslateTextJob::dispatch($tag, $locale);
+                        }
+
+                        return $tag;
+                    }
+
+                    return $cached;
+                },
                 $video->tags
             );
         }

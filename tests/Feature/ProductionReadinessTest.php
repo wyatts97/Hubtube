@@ -569,3 +569,87 @@ test('a private video is not pre-translated', function () {
 
     Illuminate\Support\Facades\Queue::assertNothingPushed();
 });
+
+test('the translation queue check surfaces failed translation jobs', function () {
+    // Background translation fails silently by design — pages just keep showing
+    // the source language — so this check is the only thing that reveals it.
+    enableLocales(['en', 'es']);
+
+    Illuminate\Support\Facades\DB::table('failed_jobs')->insert([
+        'uuid' => (string) Illuminate\Support\Str::uuid(),
+        'connection' => 'redis',
+        'queue' => 'default',
+        'payload' => json_encode(['displayName' => App\Jobs\TranslateModelJob::class]),
+        'exception' => 'boom',
+        'failed_at' => now(),
+    ]);
+
+    $result = (new App\Health\Checks\TranslationQueueCheck)->run();
+
+    expect($result->status)->toBe(Spatie\Health\Enums\Status::failed())
+        ->and($result->notificationMessage)->toContain('translation job');
+});
+
+test('the translation queue check stays quiet on single-language installs', function () {
+    enableLocales(['en']);
+
+    expect((new App\Health\Checks\TranslationQueueCheck)->run()->status)
+        ->toBe(Spatie\Health\Enums\Status::ok());
+});
+
+// ── RTL ─────────────────────────────────────────────────────────────────
+
+test('an RTL locale sets the document direction', function () {
+    enableLocales(['en', 'ar']);
+
+    expect($this->get('/ar/videos')->getContent())->toContain('dir="rtl"');
+});
+
+test('an LTR locale keeps the document direction', function () {
+    enableLocales(['en', 'es']);
+
+    expect($this->get('/es/videos')->getContent())->toContain('dir="ltr"');
+});
+
+test('the locale payload carries the direction so the client keeps no RTL list', function () {
+    enableLocales(['en', 'ar']);
+
+    $locale = inertiaPagePayload($this->get('/ar/videos'))['props']['locale'];
+
+    expect($locale['dir'])->toBe('rtl')
+        ->and($locale['languages']['ar']['dir'])->toBe('rtl')
+        ->and($locale['languages']['en']['dir'])->toBe('ltr');
+});
+
+test('templates use logical spacing utilities so RTL mirrors correctly', function () {
+    // ml-/mr-/pl-/pr-/left-/right- are physical and do not flip under dir=rtl;
+    // ms-/me-/ps-/pe-/start-/end- do. Custom classes (pl-sidebar) are exempt.
+    $offenders = [];
+    $value = '(?:\d+(?:\.\d+)?|px|auto|full|screen|\d+\/\d+|\[[^\]\s]+\])';
+
+    $files = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator(resource_path('js'), FilesystemIterator::SKIP_DOTS)
+    );
+
+    foreach ($files as $file) {
+        if ($file->getExtension() !== 'vue') {
+            continue;
+        }
+
+        $source = file_get_contents($file->getPathname());
+        $start = strpos($source, '<template>');
+        $end = strrpos($source, '</template>');
+
+        if ($start === false || $end === false) {
+            continue;
+        }
+
+        $template = substr($source, $start, $end - $start);
+
+        if (preg_match('/[\s"\'`]-?(?:ml|mr|pl|pr|left|right)-'.$value.'[\s"\'`]/', $template)) {
+            $offenders[] = basename($file->getPathname());
+        }
+    }
+
+    expect($offenders)->toBeEmpty('Physical spacing utilities found in: '.implode(', ', $offenders));
+});

@@ -46,7 +46,7 @@ const getStyles = (type) => {
 
 <template>
     <Teleport to="body">
-        <div class="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-3 pointer-events-none">
+        <div class="fixed top-4 start-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-3 pointer-events-none">
             <TransitionGroup name="toast">
                 <div
                     v-for="toast in toasts"

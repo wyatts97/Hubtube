@@ -22,36 +22,11 @@ class ChannelController extends Controller
         return $user && $user->is_pro && (bool) Setting::get('pro_ad_free', true);
     }
 
-    public function localeShow(string $locale, string $username): Response
-    {
-        $user = User::where('username', $username)->firstOrFail();
-        return $this->show($user);
-    }
 
-    public function localeVideos(string $locale, string $username): Response
-    {
-        return $this->videos(User::where('username', $username)->firstOrFail());
-    }
 
-    public function localePlaylists(string $locale, string $username, Request $request): Response
-    {
-        return $this->playlists(User::where('username', $username)->firstOrFail(), $request);
-    }
 
-    public function localeLikedVideos(string $locale, string $username): Response
-    {
-        return $this->likedVideos(User::where('username', $username)->firstOrFail());
-    }
 
-    public function localeWatchHistory(string $locale, string $username): Response
-    {
-        return $this->watchHistory(User::where('username', $username)->firstOrFail());
-    }
 
-    public function localeAbout(string $locale, string $username): Response
-    {
-        return $this->about(User::where('username', $username)->firstOrFail());
-    }
 
     public function show(User $user): Response
     {

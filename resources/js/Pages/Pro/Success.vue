@@ -23,7 +23,7 @@ const goHome = () => router.visit('/');
 
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
                 <button @click="goToSettings" class="btn btn-primary">
-                    <Crown class="w-4 h-4 mr-2" />
+                    <Crown class="w-4 h-4 me-2" />
                     Manage Subscription
                 </button>
                 <button @click="goHome" class="btn btn-secondary">

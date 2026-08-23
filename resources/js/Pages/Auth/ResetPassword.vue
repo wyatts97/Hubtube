@@ -56,8 +56,8 @@ const onSubmit = () => {
                     <div>
                         <label for="password" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.new_password') }}</label>
                         <div class="relative">
-                            <input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'" class="input pr-10" required />
-                            <button type="button" @click="showPassword = !showPassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary">
+                            <input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'" class="input pe-10" required />
+                            <button type="button" @click="showPassword = !showPassword" class="absolute end-3 top-1/2 -translate-y-1/2 text-text-secondary">
                                 <EyeOff v-if="showPassword" class="w-5 h-5" />
                                 <Eye v-else class="w-5 h-5" />
                             </button>
@@ -68,8 +68,8 @@ const onSubmit = () => {
                     <div>
                         <label for="password_confirmation" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('settings.confirm_password') }}</label>
                         <div class="relative">
-                            <input id="password_confirmation" v-model="form.password_confirmation" :type="showConfirm ? 'text' : 'password'" class="input pr-10" required />
-                            <button type="button" @click="showConfirm = !showConfirm" class="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary">
+                            <input id="password_confirmation" v-model="form.password_confirmation" :type="showConfirm ? 'text' : 'password'" class="input pe-10" required />
+                            <button type="button" @click="showConfirm = !showConfirm" class="absolute end-3 top-1/2 -translate-y-1/2 text-text-secondary">
                                 <EyeOff v-if="showConfirm" class="w-5 h-5" />
                                 <Eye v-else class="w-5 h-5" />
                             </button>

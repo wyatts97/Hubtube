@@ -74,21 +74,21 @@ onClickOutside(filterRef, () => {
                             :class="['px-3 py-1.5 text-xs font-medium transition-colors', !sort ? 'text-white' : '']"
                             :style="!sort ? 'background-color: var(--color-accent); color: #fff;' : 'color: var(--color-text-secondary);'"
                         >
-                            <Clock class="w-3.5 h-3.5 inline -mt-0.5 mr-1" />Latest
+                            <Clock class="w-3.5 h-3.5 inline -mt-0.5 me-1" />Latest
                         </button>
                         <button
                             @click="setSort('popular')"
                             :class="['px-3 py-1.5 text-xs font-medium transition-colors', sort === 'popular' ? 'text-white' : '']"
                             :style="sort === 'popular' ? 'background-color: var(--color-accent); color: #fff;' : 'color: var(--color-text-secondary); border-left: 1px solid var(--color-border);'"
                         >
-                            <Flame class="w-3.5 h-3.5 inline -mt-0.5 mr-1" />Popular
+                            <Flame class="w-3.5 h-3.5 inline -mt-0.5 me-1" />Popular
                         </button>
                         <button
                             @click="setSort('oldest')"
                             :class="['px-3 py-1.5 text-xs font-medium transition-colors', sort === 'oldest' ? 'text-white' : '']"
                             :style="sort === 'oldest' ? 'background-color: var(--color-accent); color: #fff;' : 'color: var(--color-text-secondary); border-left: 1px solid var(--color-border);'"
                         >
-                            <CalendarDays class="w-3.5 h-3.5 inline -mt-0.5 mr-1" />Oldest
+                            <CalendarDays class="w-3.5 h-3.5 inline -mt-0.5 me-1" />Oldest
                         </button>
                     </div>
 
@@ -106,11 +106,11 @@ onClickOutside(filterRef, () => {
                         <!-- Category Dropdown -->
                         <div
                             v-if="showFilters"
-                            class="absolute right-0 top-full mt-2 w-56 rounded-lg shadow-xl z-50 py-1 max-h-80 overflow-y-auto bg-bg-card border border-border"
+                            class="absolute end-0 top-full mt-2 w-56 rounded-lg shadow-xl z-50 py-1 max-h-80 overflow-y-auto bg-bg-card border border-border"
                         >
                             <button
                                 @click="setCategory('')"
-                                class="w-full text-left px-4 py-2 text-sm transition-colors hover:opacity-80"
+                                class="w-full text-start px-4 py-2 text-sm transition-colors hover:opacity-80"
                                 :style="!category ? 'color: var(--color-accent); font-weight: 600;' : 'color: var(--color-text-primary);'"
                             >
                                 All Categories
@@ -120,7 +120,7 @@ onClickOutside(filterRef, () => {
                                 v-for="cat in categories"
                                 :key="cat.id"
                                 @click="setCategory(cat.id)"
-                                class="w-full text-left px-4 py-2 text-sm transition-colors hover:opacity-80"
+                                class="w-full text-start px-4 py-2 text-sm transition-colors hover:opacity-80"
                                 :style="category == cat.id ? 'color: var(--color-accent); font-weight: 600;' : 'color: var(--color-text-primary);'"
                             >
                                 {{ cat.name }}

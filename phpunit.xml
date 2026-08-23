@@ -17,6 +17,11 @@
              files through GD, which exhausts PHP's 128M default. -->
         <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
+        <!-- The query detector injects an N+1 alert by calling setContent() on
+             the response without preserving ->original, which breaks
+             assertInertia() on any page it flags. Useful in local dev, harmful
+             to a test harness. -->
+        <env name="QUERY_DETECTOR_ENABLED" value="false"/>
         <env name="APP_KEY" value="base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>

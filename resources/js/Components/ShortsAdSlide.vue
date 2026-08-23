@@ -128,7 +128,7 @@ onUnmounted(() => {
 <template>
     <div ref="containerRef" class="relative w-full h-full bg-black overflow-hidden">
         <!-- Ad label -->
-        <div class="absolute top-3 left-3 z-30">
+        <div class="absolute top-3 start-3 z-30">
             <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-500 text-black uppercase tracking-wide">Ad</span>
         </div>
 
@@ -176,7 +176,7 @@ onUnmounted(() => {
                 @click.stop="manualPlay"
             >
                 <div class="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center">
-                    <Play class="w-6 h-6 text-white ml-1" fill="currentColor" />
+                    <Play class="w-6 h-6 text-white ms-1" fill="currentColor" />
                 </div>
             </div>
         </template>
@@ -185,7 +185,7 @@ onUnmounted(() => {
         <div v-if="isHtml" ref="htmlRef" class="w-full h-full flex items-center justify-center"></div>
         <div
             v-if="isHtml && ad.click_url"
-            class="absolute bottom-4 left-4 z-20"
+            class="absolute bottom-4 start-4 z-20"
         >
             <button
                 @click.stop="onAdClick"

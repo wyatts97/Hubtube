@@ -54,11 +54,11 @@ const onSubmit = () => {
                             {{ t('contact.name') }} <span class="text-accent">*</span>
                         </label>
                         <div class="relative">
-                            <User class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                            <User class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                             <input
                                 v-model="form.name"
                                 type="text"
-                                class="input pl-14 w-full"
+                                class="input ps-14 w-full"
                                 placeholder="Your name"
                                 required
                             />
@@ -72,11 +72,11 @@ const onSubmit = () => {
                             {{ t('contact.email') }} <span class="text-accent">*</span>
                         </label>
                         <div class="relative">
-                            <Mail class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                            <Mail class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                             <input
                                 v-model="form.email"
                                 type="email"
-                                class="input pl-14 w-full"
+                                class="input ps-14 w-full"
                                 placeholder="your@email.com"
                                 required
                             />
@@ -105,10 +105,10 @@ const onSubmit = () => {
                         {{ t('contact.message') }} <span class="text-accent">*</span>
                     </label>
                     <div class="relative">
-                        <MessageSquare class="absolute left-3 top-3 w-4 h-4 text-text-muted" />
+                        <MessageSquare class="absolute start-3 top-3 w-4 h-4 text-text-muted" />
                         <textarea
                             v-model="form.message"
-                            class="input pl-10 w-full"
+                            class="input ps-10 w-full"
                             rows="6"
                             placeholder="Your message..."
                             required

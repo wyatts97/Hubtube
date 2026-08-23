@@ -35,11 +35,11 @@ const { t, localizedUrl } = useI18n();
                         class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         loading="lazy"
                     />
-                    <div v-if="image.is_animated" class="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-600 text-white">
+                    <div v-if="image.is_animated" class="absolute top-2 start-2 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-600 text-white">
                         GIF
                     </div>
                     <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
-                    <div class="absolute bottom-2 left-2 right-2">
+                    <div class="absolute bottom-2 start-2 end-2">
                         <p class="text-xs font-medium text-white line-clamp-2">{{ image.title || 'Untitled' }}</p>
                         <p v-if="image.user" class="text-[11px] text-white/80 mt-0.5">{{ image.user.username }}</p>
                     </div>

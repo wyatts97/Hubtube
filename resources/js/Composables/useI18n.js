@@ -15,8 +15,6 @@ import { usePage } from '@inertiajs/vue3';
  *   localizedUrl('/trending')         // → "/es/trending"
  */
 
-const RTL_LOCALES = ['ar', 'he'];
-
 // Plural categories in the order forms are written in a message, filtered per
 // locale. English uses [one, other] → "{count} view | {count} views".
 const CATEGORY_ORDER = ['zero', 'one', 'two', 'few', 'many', 'other'];
@@ -100,7 +98,9 @@ export function useI18n() {
     const translations = computed(() => page.props.locale?.translations || {});
     const fallbackTranslations = computed(() => page.props.locale?.fallback || {});
     const isTranslated = computed(() => locale.value !== defaultLocale.value);
-    const localeDir = computed(() => (RTL_LOCALES.includes(locale.value) ? 'rtl' : 'ltr'));
+    // Direction comes from the server (TranslationService::RTL_LOCALES) so the
+    // RTL locale list lives in exactly one place.
+    const localeDir = computed(() => page.props.locale?.dir || 'ltr');
 
     // Build supportedLocales array from server data
     const supportedLocales = computed(() => {
@@ -108,7 +108,7 @@ export function useI18n() {
             code,
             label: data.native || data.name,
             flag: data.flag || '',
-            dir: RTL_LOCALES.includes(code) ? 'rtl' : 'ltr',
+            dir: data.dir || 'ltr',
         }));
     });
 

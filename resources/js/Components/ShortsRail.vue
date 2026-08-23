@@ -36,7 +36,7 @@ const { t, localizedUrl } = useI18n();
                         loading="lazy"
                     />
                     <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
-                    <div class="absolute bottom-2 left-2 right-2">
+                    <div class="absolute bottom-2 start-2 end-2">
                         <p class="text-xs font-medium text-white line-clamp-2">{{ video.title }}</p>
                         <p class="text-[11px] text-white/80 mt-0.5">{{ video.user?.username }}</p>
                     </div>

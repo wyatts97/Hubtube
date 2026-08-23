@@ -134,9 +134,9 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
                     v-model="searchQuery"
                     type="text"
                     :placeholder="t('search.placeholder')"
-                    class="input pr-12"
+                    class="input pe-12"
                 />
-                <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80 text-text-muted">
+                <button type="submit" class="absolute end-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80 text-text-muted">
                     <SearchIcon class="w-5 h-5" />
                 </button>
             </div>
@@ -209,7 +209,7 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
                         <div class="min-w-0">
                             <h3 class="font-medium truncate text-text-primary">
                                 {{ channel.username }}
-                                <span v-if="channel.is_verified" class="ml-1">✓</span>
+                                <span v-if="channel.is_verified" class="ms-1">✓</span>
                             </h3>
                             <p class="text-sm text-text-secondary">
                                 {{ channel.channel?.name || channel.username }}

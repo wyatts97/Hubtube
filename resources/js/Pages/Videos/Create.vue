@@ -464,7 +464,7 @@ watch(fieldErrors, (errs) => {
                         <div class="w-full sm:w-48 aspect-video rounded-lg overflow-hidden shrink-0 relative bg-bg-secondary">
                             <img v-if="previewThumb" :src="previewThumb" class="w-full h-full object-cover" alt="Video preview" />
                             <video v-else :src="videoPreview" preload="metadata" class="w-full h-full object-cover" muted></video>
-                            <div v-if="durationFormatted" class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-xs font-medium bg-black/80 text-white">
+                            <div v-if="durationFormatted" class="absolute bottom-2 end-2 px-1.5 py-0.5 rounded text-xs font-medium bg-black/80 text-white">
                                 {{ durationFormatted }}
                             </div>
                         </div>
@@ -622,7 +622,7 @@ watch(fieldErrors, (errs) => {
                     <div>
                         <label class="block text-sm font-medium mb-1 text-text-secondary">
                             {{ t('video.tags') }} <span class="text-red-500">*</span>
-                            <span class="ml-1 text-xs font-normal text-text-muted">(at least 3, up to 20)</span>
+                            <span class="ms-1 text-xs font-normal text-text-muted">(at least 3, up to 20)</span>
                         </label>
                         <div
                             class="flex flex-wrap gap-2 mb-2 min-h-[2rem] p-2 rounded-md bg-bg-secondary"
@@ -661,7 +661,7 @@ watch(fieldErrors, (errs) => {
                                     v-for="suggestion in filteredTags"
                                     :key="suggestion"
                                     type="button"
-                                    class="w-full text-left px-3 py-2 text-sm hover:opacity-80 transition-opacity text-text-primary"
+                                    class="w-full text-start px-3 py-2 text-sm hover:opacity-80 transition-opacity text-text-primary"
                                     @mousedown.prevent="addTag(suggestion)"
                                 >
                                     #{{ suggestion }}
