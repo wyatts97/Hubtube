@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { useDebounceFn, useWindowScroll } from '@vueuse/core';
+import { ref, computed, nextTick, onMounted, watch } from 'vue';
+import { useDebounceFn, useWindowScroll, onClickOutside } from '@vueuse/core';
+import { DropdownMenuItem, DropdownMenuLabel } from 'reka-ui';
 import { Link, usePage, useForm, router } from '@inertiajs/vue3';
 import { 
     Menu, Search, Upload, Bell, User, LogOut, Settings, Wallet, 
@@ -20,6 +21,8 @@ import AgeVerificationModal from '@/Components/AgeVerificationModal.vue';
 import AdInterstitial from '@/Components/AdInterstitial.vue';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
 import AdSlot from '@/Components/AdSlot.vue';
+import BaseDialog from '@/Components/UI/BaseDialog.vue';
+import BaseDropdown from '@/Components/UI/BaseDropdown.vue';
 import GenderMaleIcon from '@/Components/Icons/GenderMaleIcon.vue';
 import GenderFemaleIcon from '@/Components/Icons/GenderFemaleIcon.vue';
 import GaySymbolIcon from '@/Components/Icons/GaySymbolIcon.vue';
@@ -36,13 +39,27 @@ const page = usePage();
 const user = computed(() => page.props.auth?.user);
 const themeSettings = computed(() => page.props.theme || {});
 const iconSettings = computed(() => themeSettings.value?.icons || {});
-const showUserMenu = ref(false);
-const showUploadMenu = ref(false);
 const sidebarCollapsed = ref(false);
 const searchQuery = ref('');
 const showMobileSearch = ref(false);
 const showLoginModal = ref(false);
 const showLoginPassword = ref(false);
+
+// The old markup gated the modal on `showLoginModal && !user`; keep that guard
+// so a session that becomes authenticated can never leave the dialog mounted.
+const loginModalOpen = computed({
+    get: () => showLoginModal.value && !user.value,
+    set: (value) => { showLoginModal.value = value; },
+});
+
+const loginFieldRef = ref(null);
+
+// Reka focuses the first tabbable element (the close button); focus the
+// login field instead, matching the `autofocus` the old markup carried.
+const focusLoginField = (event) => {
+    event.preventDefault();
+    nextTick(() => loginFieldRef.value?.focus());
+};
 
 const loginForm = useForm({
     login: '',
@@ -63,7 +80,6 @@ const submitLogin = () => {
     });
 };
 const mobileSearchQuery = ref('');
-const openMegaMenu = ref(null);
 
 // Live search autocomplete state
 const searchSuggestions = ref({ videos: [], channels: [] });
@@ -102,14 +118,6 @@ const getMenuIcon = (iconName) => {
     return menuIconMap[iconName] || Tag;
 };
 
-const toggleMegaMenu = (itemId) => {
-    openMegaMenu.value = openMegaMenu.value === itemId ? null : itemId;
-};
-
-const closeMegaMenu = () => {
-    openMegaMenu.value = null;
-};
-
 // Notification state
 const showNotifications = ref(false);
 const notifications = ref([]);
@@ -126,10 +134,9 @@ const fetchNotifications = async () => {
     }
 };
 
-const toggleNotifications = async () => {
-    showNotifications.value = !showNotifications.value;
-    showUserMenu.value = false;
-    if (showNotifications.value) {
+const onNotificationsOpenChange = async (open) => {
+    showNotifications.value = open;
+    if (open) {
         // Always refresh notifications when opening the dropdown
         await fetchNotifications();
         // Auto-mark all as read when opening the dropdown
@@ -224,34 +231,13 @@ const onSearchKeydown = (e) => {
 
 const isActiveSuggestion = (index) => index === activeSuggestionIndex.value;
 
-const closeSuggestionsOnOutside = (e) => {
-    if (suggestionsRef.value && !suggestionsRef.value.contains(e.target) && searchInputRef.value && !searchInputRef.value.contains(e.target)) {
-        showSuggestions.value = false;
-    }
-};
-
-// Close dropdowns on outside click
-const closeDropdowns = (e) => {
-    if (!e.target.closest('.notification-dropdown') && !e.target.closest('.notification-trigger')) {
-        showNotifications.value = false;
-    }
-    if (!e.target.closest('.user-menu-dropdown') && !e.target.closest('.user-menu-trigger')) {
-        showUserMenu.value = false;
-    }
-    if (!e.target.closest('.upload-menu-dropdown') && !e.target.closest('.upload-menu-trigger')) {
-        showUploadMenu.value = false;
-    }
-    if (!e.target.closest('.mega-menu-area')) {
-        openMegaMenu.value = null;
-    }
-    if (!e.target.closest('.mobile-upload-menu')) {
-        showMobileUploadMenu.value = false;
-    }
-    closeSuggestionsOnOutside(e);
-};
+// Every other dropdown in this layout is now a Reka DropdownMenu, which
+// dismisses itself on outside click. The search-suggestions panel is still
+// hand-rolled (Combobox conversion is deferred to Phase 5), so it keeps its own
+// outside-click handler — via `onClickOutside`, which cleans itself up.
+onClickOutside(suggestionsRef, () => { showSuggestions.value = false; }, { ignore: [searchInputRef] });
 
 onMounted(() => {
-    document.addEventListener('click', closeDropdowns);
     if (user.value) {
         // Fetch unread count on mount
         fetch('/notifications/unread-count', {
@@ -263,10 +249,6 @@ onMounted(() => {
             console.warn('[AppLayout] Failed to fetch unread count:', err);
         });
     }
-});
-
-onUnmounted(() => {
-    document.removeEventListener('click', closeDropdowns);
 });
 
 // Site is dark-only. useTheme() is still called to apply CSS variables on mount.
@@ -362,9 +344,6 @@ watch(windowScrollY, (currentY, previousY) => {
 });
 
 
-const showMobileUploadMenu = ref(false);
-const showMobileMoreMenu = ref(false);
-
 const mobileNavItems = computed(() => [
     { name: t('nav.home'), href: localizedUrl('/'), icon: Home },
     { name: t('common.search'), href: null, action: 'search', icon: Search },
@@ -381,17 +360,11 @@ const mobileMoreItems = computed(() => [
     { name: t('nav.playlists'), href: localizedUrl('/public-playlists'), icon: ListVideo },
 ]);
 
+// The 'upload' and 'more' items are now BaseDropdown triggers that manage
+// their own open state, so only 'search' is left to handle here.
 const handleMobileNavClick = (item) => {
-    if (item.action === 'more') {
-        showMobileMoreMenu.value = !showMobileMoreMenu.value;
-        showMobileUploadMenu.value = false;
-        return;
-    }
-    showMobileMoreMenu.value = false;
     if (item.action === 'search') {
         showMobileSearch.value = true;
-    } else if (item.action === 'upload') {
-        showMobileUploadMenu.value = !showMobileUploadMenu.value;
     }
 };
 </script>
@@ -517,49 +490,62 @@ const handleMobileNavClick = (item) => {
 
                     <template v-if="user">
                         <!-- Upload Dropdown -->
-                        <div class="relative hidden sm:block">
-                            <button 
-                                @click="showUploadMenu = !showUploadMenu; showNotifications = false; showUserMenu = false"
-                                class="upload-menu-trigger p-2 rounded-full hover:opacity-80 transition-opacity text-text-secondary"
-                                title="Upload"
-                                aria-label="Upload"
-                            >
-                                <Upload class="w-5 h-5" />
-                            </button>
-                            <div v-if="showUploadMenu" class="upload-menu-dropdown absolute end-0 mt-2 min-w-34 card p-1 shadow-xl bg-bg-card border border-border z-50">
-                                <Link href="/upload" class="flex items-center justify-center gap-2 px-2.5 py-2 rounded-lg hover:opacity-80 transition-opacity text-text-primary" @click="showUploadMenu = false">
+                        <BaseDropdown content-class="min-w-34 p-1">
+                            <template #trigger>
+                                <button
+                                    class="hidden sm:block p-2 rounded-full hover:opacity-80 transition-opacity text-text-secondary"
+                                    title="Upload"
+                                    aria-label="Upload"
+                                >
+                                    <Upload class="w-5 h-5" />
+                                </button>
+                            </template>
+
+                            <DropdownMenuItem as-child>
+                                <Link href="/upload" class="flex items-center justify-center gap-2 px-2.5 py-2 rounded-lg hover:opacity-80 transition-opacity text-text-primary cursor-pointer">
                                     <Film class="w-4 h-4 text-text-secondary" />
                                     <span class="text-sm">{{ t('nav.upload_video') }}</span>
                                 </Link>
-                                <Link href="/image-upload" class="flex items-center justify-center gap-2 px-2.5 py-2 rounded-lg hover:opacity-80 transition-opacity text-text-primary" @click="showUploadMenu = false">
+                            </DropdownMenuItem>
+                            <DropdownMenuItem as-child>
+                                <Link href="/image-upload" class="flex items-center justify-center gap-2 px-2.5 py-2 rounded-lg hover:opacity-80 transition-opacity text-text-primary cursor-pointer">
                                     <ImageIcon class="w-4 h-4 text-text-secondary" />
                                     <span class="text-sm">{{ t('nav.upload_image') }}</span>
                                 </Link>
+                            </DropdownMenuItem>
+                        </BaseDropdown>
+
+                        <!-- Notification Dropdown -->
+                        <BaseDropdown
+                            :model-value="showNotifications"
+                            content-class="w-[min(20rem,calc(100vw-1rem))] max-h-96 overflow-y-auto scrollbar-hide"
+                            @update:model-value="onNotificationsOpenChange"
+                        >
+                            <template #trigger>
+                                <button class="p-2 rounded-full relative text-text-secondary" aria-label="Notifications">
+                                    <Bell class="w-5 h-5" />
+                                    <span v-if="unreadCount > 0" class="absolute top-1 end-1 w-2 h-2 rounded-full bg-accent"></span>
+                                </button>
+                            </template>
+
+                            <div class="flex items-center justify-between p-3 border-b border-border">
+                                <h3 class="font-semibold text-sm text-text-primary">{{ t('nav.notifications') }}</h3>
+                                <button v-if="unreadCount > 0" @click="markAllRead" class="text-xs hover:opacity-80 text-accent">
+                                    {{ t('nav.mark_all_read') }}
+                                </button>
                             </div>
-                        </div>
-
-                        <div class="relative">
-                            <button @click="toggleNotifications" class="notification-trigger p-2 rounded-full relative text-text-secondary" aria-label="Notifications">
-                                <Bell class="w-5 h-5" />
-                                <span v-if="unreadCount > 0" class="absolute top-1 end-1 w-2 h-2 rounded-full bg-accent"></span>
-                            </button>
-
-                            <!-- Notification Dropdown -->
-                            <div v-if="showNotifications" class="notification-dropdown absolute end-0 mt-2 w-80 max-h-96 overflow-y-auto scrollbar-hide card shadow-xl bg-bg-card border border-border z-50">
-                                <div class="flex items-center justify-between p-3 border-b border-border">
-                                    <h3 class="font-semibold text-sm text-text-primary">{{ t('nav.notifications') }}</h3>
-                                    <button v-if="unreadCount > 0" @click="markAllRead" class="text-xs hover:opacity-80 text-accent">
-                                        {{ t('nav.mark_all_read') }}
-                                    </button>
-                                </div>
-                                <div v-if="notifications.length">
+                            <div v-if="notifications.length">
+                                <DropdownMenuItem
+                                    v-for="notif in notifications"
+                                    :key="notif.id"
+                                    as-child
+                                    @select="notif.data?.url ? null : $event.preventDefault()"
+                                >
                                     <component
                                         :is="notif.data?.url ? 'a' : 'div'"
-                                        v-for="notif in notifications"
-                                        :key="notif.id"
                                         :href="notif.data?.url || undefined"
-                                        @click="notif.data?.url ? (showNotifications = false) : null"
                                         class="flex items-start gap-3 p-3 border-b last:border-b-0 transition-colors hover:opacity-80"
+                                        :class="{ 'cursor-pointer': notif.data?.url }"
                                         :style="{
                                             borderColor: 'var(--color-border)',
                                             backgroundColor: !notif.read_at ? 'rgba(var(--color-accent-rgb, 220, 38, 38), 0.03)' : 'transparent',
@@ -576,69 +562,85 @@ const handleMobileNavClick = (item) => {
                                         </div>
                                         <div v-if="!notif.read_at" class="w-2 h-2 rounded-full shrink-0 mt-2 bg-accent"></div>
                                     </component>
-                                </div>
-                                <div v-else class="p-6 text-center">
-                                    <Bell class="w-8 h-8 mx-auto mb-2 text-text-muted" />
-                                    <p class="text-sm text-text-secondary">{{ t('nav.no_notifications') }}</p>
-                                </div>
+                                </DropdownMenuItem>
                             </div>
-                        </div>
+                            <div v-else class="p-6 text-center">
+                                <Bell class="w-8 h-8 mx-auto mb-2 text-text-muted" />
+                                <p class="text-sm text-text-secondary">{{ t('nav.no_notifications') }}</p>
+                            </div>
+                        </BaseDropdown>
 
-                        <div class="relative">
-                            <button @click="showUserMenu = !showUserMenu; showNotifications = false" class="user-menu-trigger flex items-center gap-2" aria-label="User menu">
-                                <div class="w-8 h-8 avatar">
-                                    <img :src="user.avatar || '/images/default_avatar.webp'" :alt="user.username" class="w-full h-full object-cover" />
-                                </div>
-                            </button>
+                        <!-- User Account Menu -->
+                        <BaseDropdown content-class="w-56 p-2">
+                            <template #trigger>
+                                <button class="flex items-center gap-2" aria-label="User menu">
+                                    <div class="w-8 h-8 avatar">
+                                        <img :src="user.avatar || '/images/default_avatar.webp'" :alt="user.username" class="w-full h-full object-cover" />
+                                    </div>
+                                </button>
+                            </template>
 
-                            <div v-if="showUserMenu" class="user-menu-dropdown absolute end-0 mt-2 w-56 card p-2 shadow-xl bg-bg-card border border-border z-50">
-                                <div class="px-3 py-2 border-b border-border">
-                                    <p class="font-medium text-text-primary">{{ user.username }}</p>
-                                    <p class="text-sm text-text-secondary">{{ user.email }}</p>
-                                </div>
-                                <div class="py-2">
-                                    <!-- Admin Panel Link - Only for admins -->
-                                    <a 
-                                        v-if="user.is_admin" 
-                                        href="/admin" 
-                                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-accent"
+                            <DropdownMenuLabel class="px-3 py-2 border-b border-border">
+                                <p class="font-medium text-text-primary">{{ user.username }}</p>
+                                <p class="text-sm text-text-secondary">{{ user.email }}</p>
+                            </DropdownMenuLabel>
+                            <div class="py-2">
+                                <!-- Admin Panel Link - Only for admins -->
+                                <DropdownMenuItem v-if="user.is_admin" as-child>
+                                    <a
+                                        href="/admin"
+                                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-accent cursor-pointer"
                                     >
                                         <Shield class="w-4 h-4" />
                                         <span>{{ t('nav.admin_panel') }}</span>
                                     </a>
-                                    <Link href="/dashboard" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
+                                </DropdownMenuItem>
+                                <DropdownMenuItem as-child>
+                                    <Link href="/dashboard" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary cursor-pointer">
                                         <LayoutDashboard class="w-4 h-4" />
                                         <span>{{ t('nav.dashboard') }}</span>
                                     </Link>
-                                    <Link :href="`/channel/${user.username}`" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
+                                </DropdownMenuItem>
+                                <DropdownMenuItem as-child>
+                                    <Link :href="`/channel/${user.username}`" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary cursor-pointer">
                                         <User class="w-4 h-4" />
                                         <span>{{ t('nav.your_channel') }}</span>
                                     </Link>
-                                    <Link href="/feed" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
+                                </DropdownMenuItem>
+                                <DropdownMenuItem as-child>
+                                    <Link href="/feed" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary cursor-pointer">
                                         <Rss class="w-4 h-4" />
                                         <span>{{ t('nav.subscriptions') }}</span>
                                     </Link>
-                                    <Link v-if="monetizationEnabled" href="/wallet" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
+                                </DropdownMenuItem>
+                                <DropdownMenuItem v-if="monetizationEnabled" as-child>
+                                    <Link href="/wallet" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary cursor-pointer">
                                         <Wallet class="w-4 h-4" />
                                         <span>{{ t('nav.wallet') }}: ${{ user.wallet_balance }}</span>
                                     </Link>
-                                    <Link v-if="pointsEnabled" href="/rewards" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
+                                </DropdownMenuItem>
+                                <DropdownMenuItem v-if="pointsEnabled" as-child>
+                                    <Link href="/rewards" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary cursor-pointer">
                                         <Award class="w-4 h-4" />
                                         <span>{{ t('nav.rewards') }}: {{ user.points_balance?.toLocaleString() || 0 }} pts</span>
                                     </Link>
-                                    <Link href="/settings" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary">
+                                </DropdownMenuItem>
+                                <DropdownMenuItem as-child>
+                                    <Link href="/settings" class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-primary cursor-pointer">
                                         <Settings class="w-4 h-4" />
                                         <span>{{ t('nav.settings') }}</span>
                                     </Link>
-                                </div>
-                                <div class="pt-2 border-t border-border">
-                                    <Link href="/logout" method="post" as="button" class="flex items-center gap-3 px-3 py-2 rounded-lg w-full text-start text-red-400">
+                                </DropdownMenuItem>
+                            </div>
+                            <div class="pt-2 border-t border-border">
+                                <DropdownMenuItem as-child>
+                                    <Link href="/logout" method="post" as="button" class="flex items-center gap-3 px-3 py-2 rounded-lg w-full text-start text-red-400 cursor-pointer">
                                         <LogOut class="w-4 h-4" />
                                         <span>{{ t('nav.sign_out') }}</span>
                                     </Link>
-                                </div>
+                                </DropdownMenuItem>
                             </div>
-                        </div>
+                        </BaseDropdown>
                     </template>
 
                     <template v-else>
@@ -656,53 +658,49 @@ const handleMobileNavClick = (item) => {
             </div>
 
             <!-- Menu Bar (tablet & desktop): site menu items on the left, language switcher on the far right -->
-            <div class="hidden md:flex items-center justify-between border-t mega-menu-area border-border h-10 px-4">
+            <div class="hidden md:flex items-center justify-between border-t border-border h-10 px-4">
                 <div class="flex items-center gap-1 min-w-0">
                     <template v-for="item in headerMenuItems" :key="item.id">
                         <!-- Divider -->
                         <div v-if="item.type === 'divider'" class="w-px h-5 mx-1" style="background-color: var(--color-border);"></div>
 
                         <!-- Dropdown / Mega menu parent -->
-                        <div v-else-if="(item.type === 'dropdown' || item.is_mega) && item.children?.length" class="relative">
-                            <button
-                                @click.stop="toggleMegaMenu(item.id)"
-                                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:opacity-80 text-text-secondary"
-                            >
-                                <component v-if="item.icon && getMenuIcon(item.icon)" :is="getMenuIcon(item.icon)" class="w-4 h-4" />
-                                <span>{{ item.label }}</span>
-                                <ChevronDown class="w-3.5 h-3.5 transition-transform" :class="{ 'rotate-180': openMegaMenu === item.id }" />
-                            </button>
-
-                            <!-- Mega dropdown -->
-                            <div
-                                v-if="openMegaMenu === item.id"
-                                class="absolute start-0 top-full mt-1 card shadow-xl p-4 z-50"
-                                :style="{
-                                    backgroundColor: 'var(--color-bg-card)',
-                                    border: '1px solid var(--color-border)',
-                                    minWidth: item.is_mega ? (item.mega_columns * 160 + 'px') : '200px',
-                                }"
-                            >
-                                <div
-                                    :class="item.is_mega ? 'grid gap-3' : 'flex flex-col gap-1'"
-                                    :style="item.is_mega ? { gridTemplateColumns: `repeat(${item.mega_columns || 4}, minmax(0, 1fr))` } : {}"
+                        <BaseDropdown
+                            v-else-if="(item.type === 'dropdown' || item.is_mega) && item.children?.length"
+                            align="start"
+                            :side-offset="4"
+                            content-class="p-4"
+                            :content-style="{ minWidth: item.is_mega ? (item.mega_columns * 160 + 'px') : '200px' }"
+                        >
+                            <template #trigger="{ open }">
+                                <button
+                                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors hover:opacity-80 text-text-secondary"
                                 >
-                                    <template v-for="child in item.children" :key="child.id">
+                                    <component v-if="item.icon && getMenuIcon(item.icon)" :is="getMenuIcon(item.icon)" class="w-4 h-4" />
+                                    <span>{{ item.label }}</span>
+                                    <ChevronDown class="w-3.5 h-3.5 transition-transform" :class="{ 'rotate-180': open }" />
+                                </button>
+                            </template>
+
+                            <div
+                                :class="item.is_mega ? 'grid gap-3' : 'flex flex-col gap-1'"
+                                :style="item.is_mega ? { gridTemplateColumns: `repeat(${item.mega_columns || 4}, minmax(0, 1fr))` } : {}"
+                            >
+                                <template v-for="child in item.children" :key="child.id">
+                                    <DropdownMenuItem v-if="child.type !== 'divider'" as-child>
                                         <Link
-                                            v-if="child.type !== 'divider'"
                                             :href="child.url || '#'"
                                             :target="child.target || '_self'"
-                                            class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:opacity-80 text-text-secondary"
-                                            @click="closeMegaMenu"
+                                            class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:opacity-80 text-text-secondary cursor-pointer"
                                         >
                                             <component v-if="child.icon && getMenuIcon(child.icon)" :is="getMenuIcon(child.icon)" class="w-4 h-4 shrink-0" />
                                             <span>{{ child.label }}</span>
                                         </Link>
-                                        <div v-else class="border-t my-1 border-border"></div>
-                                    </template>
-                                </div>
+                                    </DropdownMenuItem>
+                                    <div v-else class="border-t my-1 border-border"></div>
+                                </template>
                             </div>
-                        </div>
+                        </BaseDropdown>
 
                         <!-- Regular link -->
                         <Link
@@ -964,61 +962,59 @@ const handleMobileNavClick = (item) => {
                 >
                     <template v-for="item in mobileNavItems" :key="item.name">
                         <!-- Center Upload Button -->
-                        <div v-if="item.isCenter" class="mobile-upload-menu relative flex flex-col items-center justify-center" style="flex: 1 1 0%; min-width: 0;">
-                            <!-- Upload Menu Popup -->
-                            <Transition name="fade">
-                                <div
-                                    v-if="showMobileUploadMenu"
-                                    class="absolute bottom-full mb-3 rounded-xl shadow-xl p-1.5 w-[120px] bg-bg-card border border-border"
-                                    style="left: 50%; transform: translateX(-50%);"
-                                >
-                                    <Link href="/upload" class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity text-text-primary" @click="showMobileUploadMenu = false">
+                        <div v-if="item.isCenter" class="flex flex-col items-center justify-center" style="flex: 1 1 0%; min-width: 0;">
+                            <BaseDropdown side="top" align="center" :side-offset="12" content-class="rounded-xl p-1.5 w-[120px]">
+                                <template #trigger>
+                                    <button
+                                        class="flex items-center justify-center w-11 h-11 rounded-full shadow-lg active:scale-95 transition-all duration-200 mx-auto"
+                                        :style="{ backgroundColor: 'var(--color-accent)' }"
+                                        :aria-label="item.name"
+                                    >
+                                        <component :is="item.icon" class="w-6 h-6 text-white" />
+                                    </button>
+                                </template>
+
+                                <DropdownMenuItem as-child>
+                                    <Link href="/upload" class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity text-text-primary cursor-pointer">
                                         <Video class="w-4 h-4 shrink-0 text-text-secondary" />
                                         <span class="text-sm">Video</span>
                                     </Link>
-                                    <Link href="/image-upload" class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity text-text-primary" @click="showMobileUploadMenu = false">
+                                </DropdownMenuItem>
+                                <DropdownMenuItem as-child>
+                                    <Link href="/image-upload" class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity text-text-primary cursor-pointer">
                                         <ImageIcon class="w-4 h-4 shrink-0 text-text-secondary" />
                                         <span class="text-sm">{{ t('nav.upload_image') }}</span>
                                     </Link>
-                                </div>
-                            </Transition>
-                            <button
-                                class="flex items-center justify-center w-11 h-11 rounded-full shadow-lg active:scale-95 transition-all duration-200 mx-auto"
-                                :style="{ backgroundColor: 'var(--color-accent)' }"
-                                :aria-label="item.name"
-                                @click="handleMobileNavClick(item)"
-                            >
-                                <component :is="item.icon" class="w-6 h-6 text-white" />
-                            </button>
+                                </DropdownMenuItem>
+                            </BaseDropdown>
                         </div>
                         <!-- More Button with popup menu -->
-                        <div v-else-if="item.action === 'more'" class="relative flex flex-col items-center justify-center" style="flex: 1 1 0%; min-width: 0;">
-                            <!-- More Menu Popup -->
-                            <Transition name="fade">
-                                <div
-                                    v-if="showMobileMoreMenu"
-                                    class="absolute bottom-full mb-3 end-0 rounded-xl shadow-xl p-2 min-w-[160px] bg-bg-card border border-border"
+                        <div v-else-if="item.action === 'more'" class="flex flex-col items-center justify-center" style="flex: 1 1 0%; min-width: 0;">
+                            <BaseDropdown side="top" align="end" :side-offset="12" content-class="rounded-xl p-2 min-w-[160px]">
+                                <template #trigger>
+                                    <button
+                                        class="flex flex-col items-center justify-center p-2 group"
+                                        :aria-label="item.name"
+                                    >
+                                        <component :is="item.icon" class="w-5 h-5 transition-colors" :style="{ color: 'var(--color-text-secondary)' }" />
+                                        <span class="text-[10px] mt-0.5 transition-colors text-text-muted">{{ item.name }}</span>
+                                    </button>
+                                </template>
+
+                                <DropdownMenuItem
+                                    v-for="moreItem in mobileMoreItems"
+                                    :key="moreItem.name"
+                                    as-child
                                 >
                                     <Link
-                                        v-for="moreItem in mobileMoreItems"
-                                        :key="moreItem.name"
                                         :href="moreItem.href"
-                                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity text-text-primary"
-                                        @click="showMobileMoreMenu = false"
+                                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:opacity-80 transition-opacity text-text-primary cursor-pointer"
                                     >
                                         <component :is="moreItem.icon" class="w-4 h-4 text-text-secondary" />
                                         <span class="text-sm">{{ moreItem.name }}</span>
                                     </Link>
-                                </div>
-                            </Transition>
-                            <button
-                                class="flex flex-col items-center justify-center p-2 group"
-                                :aria-label="item.name"
-                                @click="handleMobileNavClick(item)"
-                            >
-                                <component :is="item.icon" class="w-5 h-5 transition-colors" :style="{ color: 'var(--color-text-secondary)' }" />
-                                <span class="text-[10px] mt-0.5 transition-colors text-text-muted">{{ item.name }}</span>
-                            </button>
+                                </DropdownMenuItem>
+                            </BaseDropdown>
                         </div>
 
                         <!-- Regular Nav Button -->
@@ -1046,17 +1042,19 @@ const handleMobileNavClick = (item) => {
         </Transition>
 
         <!-- Login Modal -->
-        <Teleport to="body">
-            <Transition name="login-modal">
-                <div v-if="showLoginModal && !user" class="fixed inset-0 z-[9998] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Sign in" @click.self="showLoginModal = false">
-                    <div class="fixed inset-0 bg-black/60" style="backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);" @click="showLoginModal = false"></div>
-                    <div class="relative w-full max-w-md rounded-xl shadow-2xl bg-bg-card">
+        <BaseDialog
+            v-model="loginModalOpen"
+            aria-label="Sign in"
+            transition-name="login-modal"
+            @open-auto-focus="focusLoginField"
+        >
+            <template #default>
                         <!-- Close button -->
-                        <button @click="showLoginModal = false" class="absolute top-3 end-3 p-1 rounded-full hover:opacity-80 text-text-muted" aria-label="Close login">
+                        <button @click="loginModalOpen = false" class="absolute top-3 end-3 p-1 rounded-full hover:opacity-80 text-text-muted" aria-label="Close login">
                             <X class="w-5 h-5" />
                         </button>
 
-                        <div class="p-6">
+                        <div>
                             <div class="text-center mb-6">
                                 <Link href="/" class="inline-block">
                                     <img v-if="themeSettings.site_logo" :src="themeSettings.site_logo" alt="Logo" class="h-12 w-auto mx-auto object-contain" />
@@ -1074,11 +1072,11 @@ const handleMobileNavClick = (item) => {
                                         {{ t('auth.email_or_username') }}
                                     </label>
                                     <input
+                                        ref="loginFieldRef"
                                         v-model="loginForm.login"
                                         type="text"
                                         class="input"
                                         required
-                                        autofocus
                                     />
                                     <p v-if="loginForm.errors.login" class="text-red-500 text-sm mt-1">{{ loginForm.errors.login }}</p>
                                 </div>
@@ -1112,7 +1110,7 @@ const handleMobileNavClick = (item) => {
                                         <input v-model="loginForm.remember" type="checkbox" class="w-4 h-4 rounded" />
                                         <span class="text-sm text-text-secondary">{{ t('auth.remember_me') }}</span>
                                     </label>
-                                    <Link href="/forgot-password" class="text-sm text-accent" @click="showLoginModal = false">
+                                    <Link href="/forgot-password" class="text-sm text-accent" @click="loginModalOpen = false">
                                         {{ t('auth.forgot_password') }}
                                     </Link>
                                 </div>
@@ -1130,16 +1128,14 @@ const handleMobileNavClick = (item) => {
                             <div class="mt-6 text-center">
                                 <p class="text-text-secondary">
                                     {{ t('auth.no_account') }}
-                                    <Link href="/register" class="font-medium text-accent" @click="showLoginModal = false">
+                                    <Link href="/register" class="font-medium text-accent" @click="loginModalOpen = false">
                                         {{ t('auth.sign_up') }}
                                     </Link>
                                 </p>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </Transition>
-        </Teleport>
+            </template>
+        </BaseDialog>
 
         <!-- Toast Notifications -->
         <ToastContainer />

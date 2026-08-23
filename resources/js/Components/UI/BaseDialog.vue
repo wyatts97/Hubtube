@@ -51,7 +51,12 @@ const props = defineProps({
     contentClass: { type: String, default: '' },
 });
 
-const emit = defineEmits(['update:modelValue']);
+/**
+ * `openAutoFocus` forwards Reka's own event: Reka focuses the first tabbable
+ * element on open, so a caller that wants a specific field focused instead
+ * calls `event.preventDefault()` and focuses it itself.
+ */
+const emit = defineEmits(['update:modelValue', 'openAutoFocus']);
 
 const slots = useSlots();
 
@@ -118,6 +123,7 @@ const close = () => {
                         :is="parts.Content"
                         :class="[maxWidth, contentClass]"
                         class="relative w-full card rounded-xl shadow-2xl bg-bg-card pointer-events-auto focus:outline-none"
+                        @open-auto-focus="emit('openAutoFocus', $event)"
                         @escape-key-down="guardDismiss"
                         @pointer-down-outside="guardDismiss"
                         @interact-outside="guardDismiss"

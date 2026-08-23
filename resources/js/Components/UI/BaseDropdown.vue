@@ -28,11 +28,19 @@ import {
 const props = defineProps({
     /** Optional controlled open state. Leave unbound to let the menu manage itself. */
     modelValue: { type: Boolean, default: null },
+    /**
+     * Non-modal by default: a nav dropdown must not lock page scroll, and a
+     * modal menu swallows the click that opens a sibling menu (so switching
+     * between two header menus would take two clicks instead of one).
+     */
+    modal: { type: Boolean, default: false },
     align: { type: String, default: 'end' },
     side: { type: String, default: 'bottom' },
     sideOffset: { type: Number, default: 8 },
     /** Appended to the panel — width, max-height and padding overrides live here. */
     contentClass: { type: String, default: '' },
+    /** Inline styles on the panel, for values Tailwind can't express statically. */
+    contentStyle: { type: Object, default: () => ({}) },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -53,7 +61,7 @@ const close = () => {
 </script>
 
 <template>
-    <DropdownMenuRoot v-model:open="isOpen">
+    <DropdownMenuRoot v-model:open="isOpen" :modal="modal">
         <DropdownMenuTrigger as-child>
             <slot name="trigger" :open="isOpen" />
         </DropdownMenuTrigger>
@@ -64,6 +72,7 @@ const close = () => {
                 :side="side"
                 :side-offset="sideOffset"
                 :class="contentClass"
+                :style="contentStyle"
                 class="card shadow-xl bg-bg-card border border-border z-[9999] focus:outline-none"
             >
                 <slot :close="close" />
