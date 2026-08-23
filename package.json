@@ -19,6 +19,7 @@
         "lucide-vue-next": "^0.323.0",
         "nprogress": "^0.2.0",
         "pusher-js": "^8.4.0-rc2",
+        "reka-ui": "^2.10.3",
         "vidstack": "^1.12.13",
         "vue": "^3.4.15"
     },

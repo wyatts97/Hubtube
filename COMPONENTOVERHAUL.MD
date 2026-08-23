@@ -31,24 +31,27 @@ No new dependency. Mechanical replacements of hand-rolled browser-interaction lo
 
 **Note — deliberately NOT converted:** `Pages/Shorts/Index.vue`'s `setupIntersectionTracking()` (~lines 240-273), the multi-slide autoplay-tracking `IntersectionObserver`. It observes a *dynamic array* of slide elements that grows as more shorts load via infinite scroll; today's code only ever observes whatever slides exist at the moment it's called (a pre-existing limitation, not introduced by this overhaul). Converting it cleanly means deciding whether to preserve that limitation or fix it by reactively re-observing newly-added slides — the latter is a behavior change beyond Phase 0's "mechanical replacement, no behavior change" scope. Left as manual `IntersectionObserver` code for now; revisit as a deliberate, called-out change if wanted (either in a follow-up to Phase 0, or bundled into whichever later phase touches Shorts/Index.vue's dropdown, per Phase 5 below).
 
-**Not committed yet** — these edits are made on disk but no git commits have been created. Decide commit granularity (one per table row above vs. one for the whole phase) before committing.
+**Committed** — this note previously said the Phase 0 edits were uncommitted, but they landed in `56ef7fc` ("Refactor SEO and translation fallback system") along with unrelated work, and the working tree is clean of them.
 
 ---
 
-## Phase 1 — Shared wrapper components (not started)
+## Phase 1 — Shared wrapper components ✅ DONE
 
-Add to the existing (currently thin, 4-file) `resources/js/Components/UI/` folder, alongside `BannerAd.vue`, `Breadcrumbs.vue`, `EmptyState.vue`, `PageHeader.vue`.
+Added to the existing `resources/js/Components/UI/` folder, alongside `BannerAd.vue`, `Breadcrumbs.vue`, `EmptyState.vue`, `PageHeader.vue`.
 
-- [ ] `npm install reka-ui`
-- [ ] `Components/UI/BaseDialog.vue` — wraps `DialogRoot`/`DialogPortal`/`DialogOverlay`/`DialogContent` (or `AlertDialogRoot`/`AlertDialogContent` when `variant="alert"`).
-  - Props: `modelValue: Boolean` (matches `ShareModal.vue`/`ReportModal.vue`'s existing `v-model:modelValue` pattern), `variant: 'dialog' | 'alert'` (alert = no close button, no outside-dismiss, no Escape-dismiss), `dismissable: Boolean` (explicit override for the age-gate belt-and-suspenders case), `maxWidth` (Tailwind class passthrough), `title` (optional standard header + close button; omit for a custom `header` slot), `transitionName` (passthrough to preserve named transitions like `login-modal` in `resources/css/app.css`).
-  - Slots: default (body), `header` (override), `footer` (action-button row).
-  - Always portals to `<body>` internally.
-  - Default panel styling: `.card`/`bg-bg-card` + `rounded-xl shadow-2xl`, overridable via `contentClass`.
-- [ ] `Components/UI/BaseDropdown.vue` — wraps `DropdownMenuRoot`/`DropdownMenuTrigger`/`DropdownMenuPortal`/`DropdownMenuContent`.
-  - Props: `align` (default `'end'`), `side` (default `'bottom'`), `contentClass` (width/max-height overrides).
-  - Slots: `trigger` (caller controls its own visual state), default (raw `DropdownMenuContent` — do NOT force every child into `DropdownMenuItem`, so the Save-to-Playlist dropdown can mix real items with a plain create-input using `@select.prevent`).
-- [ ] Not building `BaseCombobox.vue`/`BaseTabs.vue` yet — each pattern has only 2-3 call sites with meaningfully different data shapes; revisit after Phase 5 if duplication actually appears.
+- [x] `npm install reka-ui` — installed `reka-ui@2.10.3`. No CSS import, no plugin registration; imported per-component.
+- [x] `Components/UI/BaseDialog.vue` — wraps `DialogRoot`/`DialogPortal`/`DialogOverlay`/`DialogContent` (or the `AlertDialog*` set when `variant="alert"`), selected via a `parts` computed map so both variants share one template.
+  - Props: `modelValue: Boolean` (matches `ShareModal.vue`/`ReportModal.vue`'s existing `v-model:modelValue` pattern), `variant: 'dialog' | 'alert'`, `dismissable: Boolean` (default `null` = follow the variant; explicit override for the age-gate belt-and-suspenders case), `maxWidth` (Tailwind class passthrough, default `max-w-md`), `title` (optional standard header + close button; omit for a custom `header` slot), `transitionName` (default `base-dialog`), `contentClass`.
+  - Two props added beyond the plan, both for accessibility: `ariaLabel` and `description`. Reka needs a `DialogTitle` for the accessible name and warns without one, so when `title` is omitted the component always renders a `VisuallyHidden` title from `ariaLabel`; `description` renders a `VisuallyHidden` `DialogDescription`.
+  - Slots: default (body), `header` (override), `footer` (action-button row). Default and footer slots expose a `close` scope prop.
+  - Always portals to `<body>` internally (`DialogPortal`).
+  - Non-dismissability is enforced by preventing Reka's `escape-key-down`, `pointer-down-outside` and `interact-outside` events, and by hiding the close button — the plan's Phase 3 requirement to not trust Reka's `AlertDialog` defaults is handled here rather than per-call-site, but still needs the hands-on verification Phase 3 calls for.
+  - Panel styling: `card rounded-xl shadow-2xl bg-bg-card`, appended-to by `contentClass`. The backdrop always plain-fades (its own `base-dialog-overlay` transition) so a scaling `transitionName` can't reveal the page edges.
+- [x] `Components/UI/BaseDropdown.vue` — wraps `DropdownMenuRoot`/`DropdownMenuTrigger`/`DropdownMenuPortal`/`DropdownMenuContent`.
+  - Props: `align` (default `'end'`), `side` (default `'bottom'`), `sideOffset` (default `8`), `contentClass` (width/max-height/padding overrides), plus an optional `modelValue` for the call sites that need to drive open state themselves (default `null` = uncontrolled).
+  - Slots: `trigger` (rendered with `as-child`, so the caller's own button element is the trigger; receives an `open` scope prop for chevron/active state), default (raw `DropdownMenuContent` — children are NOT forced into `DropdownMenuItem`, so the Save-to-Playlist dropdown can mix real items with a plain create-input using `@select.prevent`).
+  - Default panel styling deliberately carries no padding (`card shadow-xl bg-bg-card border border-border z-[9999]`) — menus that want `p-1` pass it via `contentClass`, since Tailwind can't reliably override a padding utility by appending another one.
+- [x] Not building `BaseCombobox.vue`/`BaseTabs.vue` yet — each pattern has only 2-3 call sites with meaningfully different data shapes; revisit after Phase 5 if duplication actually appears.
 
 ---
 
@@ -63,7 +66,7 @@ Highest-value, highest-traffic file — proves the wrapper API before it's baked
 - [ ] Mobile Upload popup (~lines 966+) and mobile "More" popup (~lines 994+) → `BaseDropdown`. **Note:** the More popup gains outside-click dismissal it never had — intentional, call out in the commit message.
 - [ ] Header "mega menu" (~lines 654+, admin-configurable, grid layout + hover-open semantics) — leave for last; decide concretely whether `DropdownMenu` or `NavigationMenu` fits once the other 5 are done. Don't let it block shipping the rest.
 - [ ] Once all 5 are converted: delete `closeDropdowns()` and its `addEventListener`/`removeEventListener` pair, **except** `closeSuggestionsOnOutside` — extract that into its own `onClickOutside` call now (small bonus cleanup) since Combobox work is deferred to Phase 5.
-- [ ] Check `resources/css/app.css` for styling keyed off `.notification-dropdown`/`.user-menu-dropdown`/`.upload-menu-dropdown` class-name selectors used by the old `.closest()` checks — port to `contentClass` on `BaseDropdown` if needed, don't silently drop styling.
+- [ ] Check `resources/css/app.css` for styling keyed off `.notification-dropdown`/`.user-menu-dropdown`/`.upload-menu-dropdown` class-name selectors used by the old `.closest()` checks — port to `contentClass` on `BaseDropdown` if needed, don't silently drop styling. **Checked during Phase 1:** those three selectors do exist, at `resources/css/app.css:356-373`, inside a `@media (max-width: 480px)` block that forces `position: fixed !important` plus `left`/`right`/`width` overrides to make the panels near-full-width on small phones. Do not just re-apply those class names via `contentClass` — `position: fixed !important` will fight Reka's popper, which positions the content with its own absolute/transform styles. Either rewrite that media query for the Reka panels (e.g. drop the `position` override and constrain width only) or use Reka's collision/`avoidCollisions` handling and delete the block.
 
 **Note:** line numbers above reflect `AppLayout.vue` as of this session (after the Phase 0 edits and the earlier menu-bar/language-switcher relocation work) — re-verify exact ranges at implementation time since further edits shift them.
 
