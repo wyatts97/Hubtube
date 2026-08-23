@@ -73,13 +73,37 @@ Highest-value, highest-traffic file — proves the wrapper API before it's baked
 
 ---
 
-## Phase 3 — Safety-critical AlertDialogs (not started)
+## Phase 3 — Safety-critical AlertDialogs ✅ CODE DONE, MANUAL TESTING PENDING
 
-Do these right after the pilot, while the `BaseDialog` API is fresh. Treat as one reviewed, isolated unit.
+Done right after the pilot, while the `BaseDialog` API was fresh. **Not committed** — sits in the working tree with Phases 1-2.
 
-- [ ] `Components/AgeVerificationModal.vue` (~lines 90-169) → `BaseDialog variant="alert"`. **Before converting, write down today's exact behavior** (no close button, backdrop click does nothing, no Escape handler) and explicitly verify all three are preserved after conversion — do not assume Reka's `AlertDialogContent` defaults match; test Escape and backdrop-click by hand.
-- [ ] `Pages/Settings.vue` Disable 2FA modal (~lines 678-708) → `BaseDialog variant="alert"`.
-- [ ] `Pages/Settings.vue` Delete Account modal (~lines 711-765) → `BaseDialog variant="alert"`. After conversion, re-verify Cancel sends no request and closes cleanly, and Confirm still fires the correct Inertia request (check network tab) with the right success/error toast.
+### Age gate: behavior recorded before conversion
+
+Read off `AgeVerificationModal.vue` as it stood before any edit:
+
+1. **No close button** — none existed in the markup.
+2. **Backdrop click does nothing** — the overlay `div` carried no `@click` handler at all. (The inner `@click.stop` was dead defensive code, since there was no parent handler to stop.)
+3. **No Escape handling** — no `keydown` listener was registered anywhere in the component.
+4. **No focus trap** — Tab could walk into the page behind the gate and even follow its links.
+5. **No body scroll lock** — the page behind the fixed overlay scrolled freely.
+
+### Age gate: how each was verified after conversion
+
+The plan said not to assume Reka's `AlertDialogContent` defaults match, so this was checked against Reka's actual source rather than by inspection of the docs:
+
+- `DismissableLayer` has exactly three dismiss paths (`node_modules/reka-ui/dist/DismissableLayer/DismissableLayer.js`): `pointerDownOutside`, `focusOutside` and the Escape `onKeyStroke`. Each emits its event and then emits `dismiss` **only** `if (!event.defaultPrevented)`. `focusOutside` and `pointerDownOutside` both also emit `interactOutside`.
+- `BaseDialog` calls `event.preventDefault()` on `escapeKeyDown`, `pointerDownOutside` **and** `interactOutside` whenever it is non-dismissable, which covers all three paths — `focusOutside` included, via `interactOutside`.
+- Independently, `AlertDialogContent` itself hard-prevents `pointerDownOutside` and `interactOutside` (`withModifiers(() => {}, ["prevent"])`), and `mergeProps` array-merges those with ours, so outside-click is blocked twice over. **It does not prevent Escape** — that one is blocked only by `BaseDialog`, which is exactly why the plan's "don't assume the defaults match" warning was right.
+- Items 4 and 5 are now **fixed rather than preserved**, and both tighten the gate: Reka traps focus inside the dialog and locks body scroll. Worth knowing, since it means the page behind the gate is no longer reachable by keyboard.
+- Focus on open lands on the "I am 18 or older" button (Reka's first-tabbable default; `AlertDialogContent` also tries to focus an `AlertDialogCancel`, which this dialog does not use).
+
+**Still needs a hands-on pass**: reload with the `age_verified` cookie cleared and confirm by hand that Escape, backdrop click, and Tab all fail to dismiss or escape it, per the plan's verification section.
+
+- [x] `Components/AgeVerificationModal.vue` → `BaseDialog variant="alert" :dismissable="false"`. Needed three new `BaseDialog` props: `unstyled` (the gate paints its own shell — heading block outside a card, buttons inside one — so the default card panel and body padding had to go), `overlayStyle` (the gate's backdrop color and blur are admin-configurable) and `contentStyle` (its `fontFamily` is too, and the panel is no longer a child of the overlay so it can't inherit).
+- [x] `Pages/Settings.vue` Disable 2FA modal → `BaseDialog variant="alert"`.
+- [x] `Pages/Settings.vue` Delete Account modal → `BaseDialog variant="alert"`. Cancel is now a named `cancelDeleteAccount` / `cancelDisable2fa` handler rather than an inline expression; both close the dialog and clear the typed password, and neither sends a request. Confirm paths (`confirmDeleteAccount`, `disableTwoFactor`) were not touched. **Still to check by hand:** that Confirm fires the correct request in the network tab with the right success/error toast.
+
+**Behavior change on the two Settings modals — worth a decision.** Both were previously dismissable by backdrop click (`@click.self` plus an overlay `@click`); as `variant="alert"` they no longer are, so the user must click Cancel. That follows the plan, and it incidentally fixes a real inconsistency — backdrop-dismissing the 2FA modal used to leave the typed password sitting in `disable2faPassword`, while the Cancel button cleared it. But it does remove a familiar escape hatch from two dialogs where dismissing was the *safe* outcome. If that reads as too strict, `:dismissable="true"` on either one restores backdrop and Escape dismissal without giving up the AlertDialog role.
 
 ---
 
@@ -120,7 +144,7 @@ Order: `ShareModal.vue` (already has `v-model:modelValue`, near drop-in) → `Re
 
 ## Risk Callouts (apply across all remaining phases)
 
-- **`AgeVerificationModal.vue` non-dismissability** is the single highest-stakes behavior to preserve — verify explicitly in Phase 3, don't assume Reka defaults match.
+- ~~**`AgeVerificationModal.vue` non-dismissability**~~ — verified against Reka's `DismissableLayer` source in Phase 3; see that section. The warning was well-placed: `AlertDialogContent` blocks outside-click on its own but **not** Escape, so `BaseDialog`'s explicit `escapeKeyDown` guard is load-bearing. Do not remove it. A hands-on confirmation is still outstanding.
 - **Singleton composable state must survive untouched**: `Composables/useToast.js`'s module-level `toasts` (`reactive([])` at module scope), `Composables/useTheme.js`'s `currentTheme`, `Composables/useGlobalAutoTranslate.js`'s `_translationCache`. The Phase 5 Toast conversion must render Reka's `ToastRoot`s directly off the existing shared array, not a local copy.
 - **`Videos/Show.vue` Save-to-Playlist dropdown**: Reka's default "close on item select" could break the inline create-new-playlist input — needs explicit `@select.prevent` and dedicated manual testing, not just a generic dropdown smoke test.
 - **`Lightbox.vue`'s dual scroll-lock risk** — must delete the manual implementation once Reka's Dialog scroll-lock is in place; running both could double-toggle and fail to unlock cleanly.

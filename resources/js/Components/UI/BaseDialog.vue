@@ -49,6 +49,16 @@ const props = defineProps({
     transitionName: { type: String, default: 'base-dialog' },
     /** Appended to the panel, to override the default card styling. */
     contentClass: { type: String, default: '' },
+    /** Inline styles on the panel. Inline wins over the default classes. */
+    contentStyle: { type: Object, default: () => ({}) },
+    /** Inline styles on the backdrop — how a caller replaces the default dim/blur. */
+    overlayStyle: { type: Object, default: () => ({}) },
+    /**
+     * Drop the default card panel and its body padding, leaving only the
+     * centring, width and focus management. For dialogs that paint their own
+     * shell (the age gate, the lightbox).
+     */
+    unstyled: { type: Boolean, default: false },
 });
 
 /**
@@ -110,7 +120,10 @@ const close = () => {
                     :is="parts.Overlay"
                     v-if="open"
                     class="fixed inset-0 z-[9998] bg-black/60"
-                    style="backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+                    :style="[
+                        { backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' },
+                        overlayStyle,
+                    ]"
                 />
             </Transition>
 
@@ -121,8 +134,14 @@ const close = () => {
                 >
                     <component
                         :is="parts.Content"
-                        :class="[maxWidth, contentClass]"
-                        class="relative w-full card rounded-xl shadow-2xl bg-bg-card pointer-events-auto focus:outline-none"
+                        :class="[
+                            maxWidth,
+                            contentClass,
+                            unstyled ? '' : 'card rounded-xl shadow-2xl bg-bg-card',
+                        ]"
+                        :style="contentStyle"
+                        :aria-describedby="description ? undefined : 'undefined'"
+                        class="relative w-full pointer-events-auto focus:outline-none"
                         @open-auto-focus="emit('openAutoFocus', $event)"
                         @escape-key-down="guardDismiss"
                         @pointer-down-outside="guardDismiss"
@@ -154,7 +173,7 @@ const close = () => {
                             </div>
                         </slot>
 
-                        <div :class="title || slots.header ? 'px-6 pb-6' : 'p-6'">
+                        <div :class="unstyled ? '' : (title || slots.header ? 'px-6 pb-6' : 'p-6')">
                             <slot :close="close" />
                         </div>
 

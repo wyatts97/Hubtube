@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import { ShieldAlert, Loader2 } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import BaseDialog from '@/Components/UI/BaseDialog.vue';
 
 const { t } = useI18n();
 
@@ -88,82 +89,87 @@ const buttonColor = computed(() => ageSettings.value.buttonColor || 'var(--color
 </script>
 
 <template>
-    <Teleport to="body">
-        <div 
-            v-if="showModal"
-            class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-            :style="{
-                backgroundColor: overlayColor,
-                backdropFilter: `blur(${overlayBlur}px)`,
-                fontFamily: fontFamily
-            }"
-        >
-            <div 
-                class="w-full max-w-lg text-center"
-                @click.stop
-            >
-                <!-- Logo/Icon -->
-                <div class="mb-8">
-                    <template v-if="showLogo && logoUrl">
-                        <img :src="logoUrl" alt="Site Logo" class="h-16 mx-auto mb-6" />
-                    </template>
-                    <template v-else>
-                        <div 
-                            class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" 
-                            :style="{ backgroundColor: `color-mix(in srgb, ${buttonColor} 20%, transparent)` }"
-                        >
-                            <ShieldAlert class="w-10 h-10" :style="{ color: buttonColor }" />
-                        </div>
-                    </template>
-                    
-                    <h1 
-                        class="font-bold mb-4" 
-                        :style="{ 
-                            color: headerColor,
-                            fontSize: headerSize + 'px'
-                        }"
-                    >
-                        {{ headerText }}
-                    </h1>
-                    <p class="text-lg" :style="{ color: textColor }">
-                        {{ descriptionText }}
-                    </p>
-                </div>
-
+    <!--
+        Non-dismissable by design: no close button, no backdrop dismissal, no
+        Escape. `variant="alert"` already implies that; `:dismissable="false"`
+        is deliberate belt-and-suspenders on the one gate that must not be
+        bypassable. The only ways out are the two buttons below.
+    -->
+    <BaseDialog
+        v-model="showModal"
+        variant="alert"
+        :dismissable="false"
+        unstyled
+        max-width="max-w-lg"
+        content-class="text-center"
+        :aria-label="headerText"
+        :overlay-style="{
+            backgroundColor: overlayColor,
+            backdropFilter: `blur(${overlayBlur}px)`,
+            WebkitBackdropFilter: `blur(${overlayBlur}px)`,
+        }"
+        :content-style="{ fontFamily: fontFamily }"
+    >
+        <!-- Logo/Icon -->
+        <div class="mb-8">
+            <template v-if="showLogo && logoUrl">
+                <img :src="logoUrl" alt="Site Logo" class="h-16 mx-auto mb-6" />
+            </template>
+            <template v-else>
                 <div 
-                    class="rounded-xl p-8 bg-bg-card border border-border"
+                    class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" 
+                    :style="{ backgroundColor: `color-mix(in srgb, ${buttonColor} 20%, transparent)` }"
                 >
-                    <p class="mb-6" :style="{ color: textColor }">
-                        {{ disclaimerText.replace('{confirm}', confirmText) }}
-                    </p>
-
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <button 
-                            @click="confirm"
-                            :disabled="isSubmitting"
-                            class="flex-1 py-3 px-6 rounded-lg font-medium text-white inline-flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-50"
-                            :style="{ backgroundColor: buttonColor }"
-                        >
-                            <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin" />
-                            {{ isSubmitting ? (t('common.loading')) : confirmText }}
-                        </button>
-                        <button 
-                            @click="decline" 
-                            :disabled="isSubmitting" 
-                            class="flex-1 py-3 px-6 rounded-lg font-medium transition-opacity hover:opacity-80 bg-bg-secondary text-text-primary"
-                        >
-                            {{ declineText }}
-                        </button>
-                    </div>
-
-                    <p class="text-sm mt-6" :style="{ color: 'var(--color-text-muted)' }">
-                        {{ termsText }}
-                        <a href="/terms" :style="{ color: buttonColor }" class="hover:opacity-80">Terms of Service</a>
-                        and
-                        <a href="/privacy" :style="{ color: buttonColor }" class="hover:opacity-80">Privacy Policy</a>.
-                    </p>
+                    <ShieldAlert class="w-10 h-10" :style="{ color: buttonColor }" />
                 </div>
-            </div>
+            </template>
+            
+            <h1 
+                class="font-bold mb-4" 
+                :style="{ 
+                    color: headerColor,
+                    fontSize: headerSize + 'px'
+                }"
+            >
+                {{ headerText }}
+            </h1>
+            <p class="text-lg" :style="{ color: textColor }">
+                {{ descriptionText }}
+            </p>
         </div>
-    </Teleport>
+
+        <div 
+            class="rounded-xl p-8 bg-bg-card border border-border"
+        >
+            <p class="mb-6" :style="{ color: textColor }">
+                {{ disclaimerText.replace('{confirm}', confirmText) }}
+            </p>
+
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button 
+                    @click="confirm"
+                    :disabled="isSubmitting"
+                    class="flex-1 py-3 px-6 rounded-lg font-medium text-white inline-flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-50"
+                    :style="{ backgroundColor: buttonColor }"
+                >
+                    <Loader2 v-if="isSubmitting" class="w-5 h-5 animate-spin" />
+                    {{ isSubmitting ? (t('common.loading')) : confirmText }}
+                </button>
+                <button 
+                    @click="decline" 
+                    :disabled="isSubmitting" 
+                    class="flex-1 py-3 px-6 rounded-lg font-medium transition-opacity hover:opacity-80 bg-bg-secondary text-text-primary"
+                >
+                    {{ declineText }}
+                </button>
+            </div>
+
+            <p class="text-sm mt-6" :style="{ color: 'var(--color-text-muted)' }">
+                {{ termsText }}
+                <a href="/terms" :style="{ color: buttonColor }" class="hover:opacity-80">Terms of Service</a>
+                and
+                <a href="/privacy" :style="{ color: buttonColor }" class="hover:opacity-80">Privacy Policy</a>.
+            </p>
+        </div>
+    </BaseDialog>
 </template>

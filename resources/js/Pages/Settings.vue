@@ -6,6 +6,7 @@ import { User, Lock, Bell, Shield, Wallet, ExternalLink, Loader2, Camera, ImageI
 import { usePushNotifications } from '@/Composables/usePushNotifications';
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
+import BaseDialog from '@/Components/UI/BaseDialog.vue';
 
 const { t } = useI18n();
 
@@ -147,6 +148,12 @@ const confirmDeleteAccount = () => {
     });
 };
 
+// Cancel closes the dialog and clears the typed password — no request is sent.
+const cancelDeleteAccount = () => {
+    showDeleteConfirm.value = false;
+    deleteForm.reset();
+};
+
 const monetizationEnabled = computed(() => page.props.app?.monetization_enabled !== false);
 
 // --- Two-Factor Authentication ---
@@ -250,6 +257,13 @@ const disableTwoFactor = async () => {
     } finally {
         twoFactorProcessing.value = false;
     }
+};
+
+// Cancel closes the dialog and clears the typed password — no request is sent.
+const cancelDisable2fa = () => {
+    showDisable2fa.value = false;
+    disable2faPassword.value = '';
+    disable2faError.value = '';
 };
 
 const tabs = computed(() => {
@@ -676,93 +690,90 @@ const tabs = computed(() => {
         </div>
 
         <!-- Disable 2FA Confirmation Modal -->
-        <Teleport to="body">
-            <div v-if="showDisable2fa" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showDisable2fa = false">
-                <div class="fixed inset-0 bg-black/60" @click="showDisable2fa = false"></div>
-                <div class="relative w-full max-w-md rounded-xl p-6 shadow-2xl bg-bg-card">
-                    <h3 class="text-lg font-semibold mb-4 text-text-primary">Disable Two-Factor Authentication</h3>
-                    <form @submit.prevent="disableTwoFactor">
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium mb-1 text-text-secondary">Password</label>
-                            <input
-                                v-model="disable2faPassword"
-                                type="password"
-                                autocomplete="current-password"
-                                class="w-full px-3 py-2 rounded-lg border text-sm bg-bg-secondary border-border text-text-primary"
-                                placeholder="Enter your password"
-                                required
-                            />
-                            <p v-if="disable2faError" class="text-red-500 text-sm mt-1">{{ disable2faError }}</p>
-                        </div>
-                        <div class="flex gap-3 justify-end">
-                            <button type="button" @click="showDisable2fa = false; disable2faPassword = ''" class="px-4 py-2 rounded-lg text-sm font-medium text-text-secondary bg-bg-secondary">
-                                Cancel
-                            </button>
-                            <button type="submit" :disabled="twoFactorProcessing || !disable2faPassword" class="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
-                                <Loader2 v-if="twoFactorProcessing" class="w-4 h-4 animate-spin inline" />
-                                <span v-else>Disable</span>
-                            </button>
-                        </div>
-                    </form>
+        <BaseDialog
+            v-model="showDisable2fa"
+            variant="alert"
+            title="Disable Two-Factor Authentication"
+        >
+            <form @submit.prevent="disableTwoFactor">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-1 text-text-secondary">Password</label>
+                    <input
+                        v-model="disable2faPassword"
+                        type="password"
+                        autocomplete="current-password"
+                        class="w-full px-3 py-2 rounded-lg border text-sm bg-bg-secondary border-border text-text-primary"
+                        placeholder="Enter your password"
+                        required
+                    />
+                    <p v-if="disable2faError" class="text-red-500 text-sm mt-1">{{ disable2faError }}</p>
                 </div>
-            </div>
-        </Teleport>
+                <div class="flex gap-3 justify-end">
+                    <button type="button" @click="cancelDisable2fa" class="px-4 py-2 rounded-lg text-sm font-medium text-text-secondary bg-bg-secondary">
+                        Cancel
+                    </button>
+                    <button type="submit" :disabled="twoFactorProcessing || !disable2faPassword" class="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
+                        <Loader2 v-if="twoFactorProcessing" class="w-4 h-4 animate-spin inline" />
+                        <span v-else>Disable</span>
+                    </button>
+                </div>
+            </form>
+        </BaseDialog>
 
         <!-- Delete Account Confirmation Modal -->
-        <Teleport to="body">
-            <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showDeleteConfirm = false">
-                <div class="fixed inset-0 bg-black/60" @click="showDeleteConfirm = false"></div>
-                <div class="relative w-full max-w-md rounded-xl p-6 shadow-2xl bg-bg-card">
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
-                            <AlertTriangle class="w-5 h-5 text-red-500" />
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-semibold text-text-primary">Are you sure?</h3>
-                            <p class="text-sm text-text-secondary">This action is permanent and cannot be undone.</p>
-                        </div>
-                    </div>
-
-                    <p class="text-sm mb-4 text-text-secondary">
-                        All your videos, comments, playlists, subscriptions, and wallet balance will be permanently deleted.
-                        Enter your password to confirm.
-                    </p>
-
-                    <form @submit.prevent="confirmDeleteAccount">
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium mb-1 text-text-secondary">Password</label>
-                            <input
-                                v-model="deleteForm.password"
-                                type="password"
-                                autocomplete="current-password"
-                                class="w-full px-3 py-2 rounded-lg border text-sm bg-bg-secondary border-border text-text-primary"
-                                placeholder="Enter your password"
-                                required
-                            />
-                            <p v-if="deleteForm.errors.password" class="text-red-500 text-sm mt-1">{{ deleteForm.errors.password }}</p>
-                        </div>
-
-                        <div class="flex gap-3 justify-end">
-                            <button
-                                type="button"
-                                @click="showDeleteConfirm = false; deleteForm.reset();"
-                                class="px-4 py-2 rounded-lg text-sm font-medium text-text-secondary bg-bg-secondary"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                :disabled="deleteForm.processing || !deleteForm.password"
-                                class="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                            >
-                                <Loader2 v-if="deleteForm.processing" class="w-4 h-4 animate-spin" />
-                                <Trash2 v-else class="w-4 h-4" />
-                                Delete Permanently
-                            </button>
-                        </div>
-                    </form>
+        <BaseDialog
+            v-model="showDeleteConfirm"
+            variant="alert"
+            aria-label="Delete account"
+        >
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                    <AlertTriangle class="w-5 h-5 text-red-500" />
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-text-primary">Are you sure?</h3>
+                    <p class="text-sm text-text-secondary">This action is permanent and cannot be undone.</p>
                 </div>
             </div>
-        </Teleport>
+
+            <p class="text-sm mb-4 text-text-secondary">
+                All your videos, comments, playlists, subscriptions, and wallet balance will be permanently deleted.
+                Enter your password to confirm.
+            </p>
+
+            <form @submit.prevent="confirmDeleteAccount">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-1 text-text-secondary">Password</label>
+                    <input
+                        v-model="deleteForm.password"
+                        type="password"
+                        autocomplete="current-password"
+                        class="w-full px-3 py-2 rounded-lg border text-sm bg-bg-secondary border-border text-text-primary"
+                        placeholder="Enter your password"
+                        required
+                    />
+                    <p v-if="deleteForm.errors.password" class="text-red-500 text-sm mt-1">{{ deleteForm.errors.password }}</p>
+                </div>
+
+                <div class="flex gap-3 justify-end">
+                    <button
+                        type="button"
+                        @click="cancelDeleteAccount"
+                        class="px-4 py-2 rounded-lg text-sm font-medium text-text-secondary bg-bg-secondary"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        :disabled="deleteForm.processing || !deleteForm.password"
+                        class="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                    >
+                        <Loader2 v-if="deleteForm.processing" class="w-4 h-4 animate-spin" />
+                        <Trash2 v-else class="w-4 h-4" />
+                        Delete Permanently
+                    </button>
+                </div>
+            </form>
+        </BaseDialog>
     </AppLayout>
 </template>
