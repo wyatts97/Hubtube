@@ -34,4 +34,7 @@ Schedule::command('health:check')->everyTenMinutes();
 // Heartbeat backing QueueCheck — proves the worker is draining jobs, which is
 // what surfaces a stalled background-translation pipeline.
 Schedule::command('health:queue-check-heartbeat')->everyMinute();
+// Heartbeat backing ScheduleCheck. Without it that check can never pass, since
+// it only reports whether this command has run recently.
+Schedule::command('health:schedule-check-heartbeat')->everyMinute();
 Schedule::command('model:prune', ['--model' => [\Spatie\Health\Models\HealthCheckResultHistoryItem::class]])->daily();
