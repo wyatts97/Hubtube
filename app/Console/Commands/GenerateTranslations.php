@@ -6,13 +6,16 @@ use Exception;
 use App\Models\TranslationOverride;
 use App\Services\TranslationService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Str;
 use Stichoza\GoogleTranslate\GoogleTranslate;
 
 class GenerateTranslations extends Command
 {
     protected $signature = 'translations:generate
                             {locale? : Target locale code (e.g. es, fr, de). Omit to generate all enabled locales}
-                            {--force : Overwrite existing translation files completely (re-translates everything)}';
+                            {--force : Overwrite existing translation files completely (re-translates everything)}
+                            {--retry-untranslated : Also re-translate keys whose stored value is still identical to the English source}
+                            {--delay=250 : Milliseconds to wait between provider calls (raise if you hit rate limits)}';
 
     protected $description = 'Auto-generate i18n JSON files for UI strings using Google Translate. By default, merges new/missing keys into existing files without overwriting existing translations.';
 
@@ -21,6 +24,23 @@ class GenerateTranslations extends Command
 
     /** Keys the provider could not translate; deliberately left out of the file. */
     protected int $failedKeysCount = 0;
+
+    /** Consecutive provider failures — used to bail out of a hard rate limit. */
+    protected int $consecutiveFailures = 0;
+
+    /** Set once the provider is clearly refusing everything. */
+    protected bool $rateLimited = false;
+
+    protected int $delayMs = 250;
+
+    protected bool $retryUntranslated = false;
+
+    /**
+     * Give up on a locale after this many provider failures in a row. Grinding
+     * through hundreds of keys against a hard 429 wastes time and deepens the
+     * block; better to stop and let the operator retry later.
+     */
+    protected const MAX_CONSECUTIVE_FAILURES = 8;
 
     public function handle(): int
     {
@@ -38,6 +58,8 @@ class GenerateTranslations extends Command
 
         $targetLocale = $this->argument('locale');
         $force = $this->option('force');
+        $this->retryUntranslated = (bool) $this->option('retry-untranslated');
+        $this->delayMs = max(0, (int) $this->option('delay'));
 
         if ($targetLocale) {
             if (!isset(TranslationService::LANGUAGES[$targetLocale])) {
@@ -63,18 +85,27 @@ class GenerateTranslations extends Command
             $langName = TranslationService::LANGUAGES[$locale]['name'] ?? $locale;
             $existing = [];
 
-            // Load existing translations if file exists
-            if (file_exists($targetPath) && !$force) {
+            // Always load the existing file. Even in --force mode it is needed as
+            // a safety net: a key the provider refuses must keep whatever
+            // translation it already had rather than being dropped from the file.
+            if (file_exists($targetPath)) {
                 $existing = json_decode(file_get_contents($targetPath), true) ?: [];
             }
 
             $translator->setTarget($locale);
+            $this->consecutiveFailures = 0;
+            $this->rateLimited = false;
 
             if ($force || empty($existing)) {
                 // Full generation: translate everything from scratch
                 $mode = empty($existing) ? 'new' : 'force';
                 $this->info("Generating {$locale} ({$langName}) [{$mode}]...");
-                $translated = $this->translateArray($source, $translator, $locale);
+                $this->failedKeysCount = 0;
+                $translated = $this->translateArray($source, $existing, $translator, $locale);
+
+                if ($this->failedKeysCount > 0) {
+                    $this->warn("  {$this->failedKeysCount} key(s) could not be translated; their previous values were kept.");
+                }
             } else {
                 // Merge mode: only translate missing keys, remove stale keys
                 $this->newKeysCount = 0;
@@ -143,7 +174,12 @@ class GenerateTranslations extends Command
                 $existingChild = (isset($existing[$key]) && is_array($existing[$key])) ? $existing[$key] : [];
                 $result[$key] = $this->mergeTranslations($value, $existingChild, $translator, $locale);
             } elseif (is_string($value)) {
-                if (isset($existing[$key]) && is_string($existing[$key])) {
+                $stale = $this->retryUntranslated
+                    && isset($existing[$key])
+                    && is_string($existing[$key])
+                    && $existing[$key] === $value;
+
+                if (isset($existing[$key]) && is_string($existing[$key]) && !$stale) {
                     // Key exists — keep existing translation
                     $result[$key] = $existing[$key];
                 } else {
@@ -154,6 +190,9 @@ class GenerateTranslations extends Command
                     if ($translated !== null) {
                         $result[$key] = $translated;
                         $this->newKeysCount++;
+                    } elseif ($stale) {
+                        // Retry failed — leave the untranslated value in place.
+                        $result[$key] = $existing[$key];
                     }
                 }
             } else {
@@ -174,18 +213,24 @@ class GenerateTranslations extends Command
     /**
      * Recursively translate all string values in a nested array (full generation).
      */
-    protected function translateArray(array $source, GoogleTranslate $translator, string $locale): array
+    protected function translateArray(array $source, array $existing, GoogleTranslate $translator, string $locale): array
     {
         $result = [];
 
         foreach ($source as $key => $value) {
+            $previous = $existing[$key] ?? null;
+
             if (is_array($value)) {
-                $result[$key] = $this->translateArray($value, $translator, $locale);
+                $result[$key] = $this->translateArray($value, is_array($previous) ? $previous : [], $translator, $locale);
             } elseif (is_string($value)) {
                 $translated = $this->translateString($value, $key, $translator, $locale);
 
                 if ($translated !== null) {
                     $result[$key] = $translated;
+                } elseif (is_string($previous) && $previous !== $value) {
+                    // Provider refused, but a real translation already existed —
+                    // keep it rather than regressing the file.
+                    $result[$key] = $previous;
                 }
             } else {
                 $result[$key] = $value;
@@ -234,16 +279,52 @@ class GenerateTranslations extends Command
             return $token;
         }, $value);
 
-        try {
-            $translated = $translator->translate($text);
-            if ($translated === null) {
-                $this->failedKeysCount++;
-
-                return null;
-            }
-        } catch (Exception $e) {
-            $this->warn("  Failed to translate key: {$key} — {$e->getMessage()}");
+        // Once the provider is hard-limiting us, stop asking. Continuing just
+        // burns time and deepens the block.
+        if ($this->rateLimited) {
             $this->failedKeysCount++;
+
+            return null;
+        }
+
+        $translated = null;
+
+        foreach ([0, 5, 15, 45] as $attempt => $waitSeconds) {
+            if ($waitSeconds > 0) {
+                sleep($waitSeconds);
+            }
+
+            try {
+                $translated = $translator->translate($text);
+
+                if ($translated !== null) {
+                    $this->consecutiveFailures = 0;
+                    break;
+                }
+            } catch (Exception $e) {
+                $isRateLimit = str_contains($e->getMessage(), '429');
+
+                // Only rate limits are worth waiting out; anything else will
+                // fail again immediately.
+                if (!$isRateLimit || $attempt === 3) {
+                    $this->warn("  Failed to translate key: {$key} — ".Str::limit($e->getMessage(), 120));
+                    break;
+                }
+
+                $this->line("  <comment>Rate limited</comment> on {$key}, retrying in {$waitSeconds}s...");
+            }
+        }
+
+        if ($translated === null) {
+            $this->failedKeysCount++;
+            $this->consecutiveFailures++;
+
+            if ($this->consecutiveFailures >= self::MAX_CONSECUTIVE_FAILURES) {
+                $this->rateLimited = true;
+                $this->newLine();
+                $this->warn('  Provider refused '.self::MAX_CONSECUTIVE_FAILURES.' keys in a row — abandoning the rest of this locale.');
+                $this->warn('  Existing translations are preserved. Retry later, optionally with --delay=1000.');
+            }
 
             return null;
         }
@@ -256,8 +337,8 @@ class GenerateTranslations extends Command
         // Apply admin-defined word/phrase overrides
         $translated = TranslationOverride::applyOverrides($translated, $locale);
 
-        // Tiny delay between strings to avoid rate limiting
-        usleep(100000); // 0.1s
+        // Pace requests; --delay raises this when the provider is touchy.
+        usleep($this->delayMs * 1000);
 
         return $translated;
     }
