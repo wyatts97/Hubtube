@@ -47,7 +47,17 @@ class TranslateModelJob implements ShouldBeUnique, ShouldQueue
         public int $modelId,
         public array $fields,
         public string $locale,
-    ) {}
+    ) {
+        // Its own queue, matching video-processing and ad-processing. Provider
+        // calls are slow and, with several locales enabled, bursty — on the
+        // shared default queue (60s worker timeout) they risk being killed and
+        // starve everything else waiting behind them.
+        //
+        // Set here rather than as a $queue property: the Queueable trait
+        // declares $queue with no default, and PHP rejects a redeclaration
+        // whose default differs.
+        $this->onQueue('translations');
+    }
 
     public function uniqueId(): string
     {

@@ -635,11 +635,13 @@ class LanguageSettings extends Page implements HasForms, HasTable
 
     public function runTranslationsNow(): void
     {
-        Artisan::queue('translations:run');
+        // Must not run on the default queue: a full sweep takes minutes and its
+        // 60s worker timeout killed this with TimeoutExceededException.
+        Artisan::queue('translations:run')->onQueue('translations');
 
         Notification::make()
             ->title('Translation run queued')
-            ->body('Progress appears here once it finishes. Requires a running queue worker.')
+            ->body('Runs on the translations queue and can take several minutes. Progress appears here once it finishes.')
             ->success()
             ->send();
     }

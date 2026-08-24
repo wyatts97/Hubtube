@@ -69,6 +69,25 @@ return [
                 'timeout' => 3600,
                 'nice' => 0,
             ],
+            // A full translations:run sweeps every locale and can take many
+            // minutes. On the default queue (60s timeout) it was killed with
+            // TimeoutExceededException, and while running it would occupy a
+            // worker other jobs need. Same isolation rationale as the two
+            // supervisors around it.
+            'translations' => [
+                'connection' => 'redis',
+                'queue' => ['translations'],
+                'balance' => 'simple',
+                'maxProcesses' => 2,
+                'maxTime' => 0,
+                'maxJobs' => 0,
+                'memory' => 256,
+                // The sweep is idempotent and resumable, so a retry would only
+                // repeat provider calls that already succeeded.
+                'tries' => 1,
+                'timeout' => 3600,
+                'nice' => 0,
+            ],
             // Ad creatives are small (a few MB) and their HLS conversion is quick —
             // kept on its own queue/supervisor so these tiny jobs never queue behind
             // long-running video-processing jobs on the shared queue.
@@ -111,6 +130,18 @@ return [
                 'memory' => 256,
                 'tries' => 2,
                 'timeout' => 300,
+                'nice' => 0,
+            ],
+            'translations' => [
+                'connection' => 'redis',
+                'queue' => ['translations'],
+                'balance' => 'simple',
+                'maxProcesses' => 1,
+                'maxTime' => 0,
+                'maxJobs' => 0,
+                'memory' => 256,
+                'tries' => 1,
+                'timeout' => 3600,
                 'nice' => 0,
             ],
         ],

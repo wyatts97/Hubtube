@@ -318,3 +318,83 @@ test('language settings persist with correct types and never expose the API key'
 
     expect(App\Models\Setting::getDecrypted('libretranslate_api_key'))->toBe('super-secret');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Admin overrides and queue routing
+|--------------------------------------------------------------------------
+*/
+
+test('admin translation overrides are applied to single and batch translations', function () {
+    // Overrides are the correction layer for terms the engine gets wrong
+    // ("Segunda corda" for "second string"). They must apply on every path.
+    enableLocales(['en', 'es']);
+    useFakeTranslationProvider();
+
+    App\Models\TranslationOverride::create([
+        'locale' => 'es',
+        'original_text' => 'corda',
+        'replacement_text' => 'cadena',
+        'case_sensitive' => false,
+        'is_active' => true,
+    ]);
+    App\Models\TranslationOverride::clearCache();
+
+    $service = app(TranslationService::class);
+
+    // Single: the fake returns "[es] <text>", so feed it text containing the term.
+    expect($service->tryTranslateText('corda', 'es'))->toBe('[es] cadena');
+
+    // Batch: the path used by translations:run.
+    expect($service->tryTranslateBatch(['a' => 'corda', 'b' => 'plain'], 'es'))
+        ->toBe(['a' => '[es] cadena', 'b' => '[es] plain']);
+});
+
+test('overrides survive a scheduled run and reach the stored translation', function () {
+    enableLocales(['en', 'es']);
+    useFakeTranslationProvider();
+
+    App\Models\TranslationOverride::create([
+        'locale' => 'es',
+        'original_text' => 'Wedgie',
+        'replacement_text' => 'Calzón',
+        'case_sensitive' => false,
+        'is_active' => true,
+    ]);
+    App\Models\TranslationOverride::clearCache();
+
+    $video = App\Models\Video::factory()->create([
+        'title' => 'Wedgie Compilation',
+        'privacy' => 'public', 'is_approved' => true, 'status' => 'processed',
+    ]);
+
+    $this->artisan('translations:run', ['--section' => ['videos']])->assertSuccessful();
+
+    $stored = Translation::where('translatable_id', $video->id)
+        ->where('field', 'title')->where('locale', 'es')->value('value');
+
+    expect($stored)->toContain('Calzón')->not->toContain('Wedgie');
+});
+
+test('translation work runs on its own queue, not the 60s default', function () {
+    // A full sweep takes minutes; the default supervisor kills at 60s.
+    expect((new TranslateModelJob(App\Models\Video::class, 1, ['title'], 'es'))->queue)
+        ->toBe('translations');
+
+    expect(config('horizon.environments.production.translations.timeout'))->toBe(3600)
+        ->and(config('horizon.environments.local.translations.timeout'))->toBe(3600);
+});
+
+test('the queue retry window exceeds every declared job timeout', function () {
+    // retry_after below a job's timeout means a merely-slow job is handed to a
+    // second worker and runs twice — duplicate transcodes, duplicate provider calls.
+    $longest = 0;
+
+    foreach (glob(app_path('Jobs/*.php')) as $file) {
+        if (preg_match('/public int \$timeout\s*=\s*(\d+)/', file_get_contents($file), $m)) {
+            $longest = max($longest, (int) $m[1]);
+        }
+    }
+
+    expect(config('queue.connections.redis.retry_after'))->toBeGreaterThan($longest);
+});
