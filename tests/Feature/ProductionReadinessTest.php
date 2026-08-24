@@ -466,7 +466,10 @@ test('the default locale ships no fallback catalogue', function () {
 
 // ── Content Translation Is Off The Request Path ─────────────────────────
 
-test('batch translate never calls the provider inline and queues the misses', function () {
+test('batch translate returns source text and queues nothing', function () {
+    // Updated for scheduled-only translation: this endpoint used to queue a job
+    // per miss. Nothing on the request path may reach the provider now, so it
+    // reports what is outstanding and leaves it to translations:run.
     Illuminate\Support\Facades\Queue::fake();
     enableLocales(['en', 'es']);
 
@@ -481,11 +484,10 @@ test('batch translate never calls the provider inline and queues the misses', fu
 
     $response->assertStatus(200);
 
-    // Source text comes straight back; nothing was translated synchronously.
     expect($response->json('pending'))->toBe(3)
         ->and($response->json('translations.0.title'))->toBe($videos[0]->title);
 
-    Illuminate\Support\Facades\Queue::assertPushed(App\Jobs\TranslateModelJob::class, 3);
+    Illuminate\Support\Facades\Queue::assertNothingPushed();
 });
 
 test('batch translate returns stored translations without queueing', function () {

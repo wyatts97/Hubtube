@@ -6,20 +6,38 @@ use Exception;
 use App\Models\Setting;
 use App\Models\Translation;
 use App\Models\TranslationOverride;
+use App\Services\Translation\Contracts\TranslationProvider;
+use App\Services\Translation\TranslationProviderException;
+use App\Services\Translation\TranslationProviderManager;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Stichoza\GoogleTranslate\GoogleTranslate;
 
 class TranslationService
 {
-    protected ?GoogleTranslate $translator = null;
-
     protected float $lastRequestTime = 0;
 
-    protected int $minDelayMs = 1200;
+    public function __construct(protected TranslationProviderManager $providers) {}
 
-    protected int $maxRetries = 4;
+    /**
+     * The engine chosen in Admin -> Languages.
+     */
+    protected function provider(): TranslationProvider
+    {
+        return $this->providers->default();
+    }
+
+    /**
+     * Pacing and retry budget are per-driver: the Google scraper needs heavy
+     * throttling to avoid a ban, a self-hosted LibreTranslate needs none.
+     */
+    protected function throttleConfig(string $key): array
+    {
+        return array_merge(
+            ['min_delay_ms' => 1200, 'max_retries' => 4, 'backoff' => [5, 10, 20, 40]],
+            config("translation.throttle.{$key}", []),
+        );
+    }
 
     /**
      * Supported languages with native names and flag emoji.
@@ -129,26 +147,20 @@ class TranslationService
     }
 
     /**
-     * Get or create the Google Translate instance.
+     * Enforce a minimum delay between provider requests.
+     *
+     * Note this is per-instance, so parallel queue workers do not share the
+     * budget — another reason the scraper is paced conservatively.
      */
-    protected function getTranslator(): GoogleTranslate
+    protected function throttle(int $minDelayMs): void
     {
-        if (!$this->translator) {
-            $this->translator = new GoogleTranslate();
+        if ($minDelayMs <= 0) {
+            return;
         }
-        return $this->translator;
-    }
 
-    /**
-     * Enforce a minimum delay between Google Translate API requests
-     * to avoid 429 Too Many Responses rate limiting.
-     */
-    protected function throttle(): void
-    {
-        $now = microtime(true);
-        $elapsed = ($now - $this->lastRequestTime) * 1000;
-        if ($elapsed < $this->minDelayMs) {
-            usleep((int)(($this->minDelayMs - $elapsed) * 1000));
+        $elapsed = (microtime(true) - $this->lastRequestTime) * 1000;
+        if ($elapsed < $minDelayMs) {
+            usleep((int) (($minDelayMs - $elapsed) * 1000));
         }
         $this->lastRequestTime = microtime(true);
     }
@@ -184,36 +196,99 @@ class TranslationService
             return $text;
         }
 
-        $translator = $this->getTranslator();
-        $translator->setSource($source);
-        $translator->setTarget($targetLocale);
+        $result = $this->withRetries(
+            fn (TranslationProvider $provider) => $provider->translate($text, $targetLocale, $source),
+            $targetLocale,
+            Str::limit($text, 100),
+        );
 
-        $attempt = 0;
-        while ($attempt <= $this->maxRetries) {
+        return $result === null ? null : TranslationOverride::applyOverrides($result, $targetLocale);
+    }
+
+    /**
+     * Translate several strings in one provider round-trip.
+     *
+     * Returns a map with the input's keys; a key is null only when the whole
+     * chunk failed. Callers that care about partial success re-split and retry.
+     *
+     * @param  array<int|string, string>  $texts
+     * @return array<int|string, ?string>
+     */
+    public function tryTranslateBatch(array $texts, string $targetLocale, ?string $sourceLocale = null): array
+    {
+        if ($texts === []) {
+            return [];
+        }
+
+        $source = $sourceLocale ?? static::getDefaultLocale();
+
+        if ($source === $targetLocale) {
+            return $texts;
+        }
+
+        $translated = $this->withRetries(
+            fn (TranslationProvider $provider) => $provider->translateBatch($texts, $targetLocale, $source),
+            $targetLocale,
+            count($texts).' string(s)',
+        );
+
+        if ($translated === null) {
+            return array_fill_keys(array_keys($texts), null);
+        }
+
+        return array_map(
+            fn (string $value) => TranslationOverride::applyOverrides($value, $targetLocale),
+            $translated,
+        );
+    }
+
+    /**
+     * Run a provider call with the driver's throttle and retry policy.
+     *
+     * Fatal failures (bad credentials, unsupported language) abort immediately
+     * rather than burning the retry budget on every string in the catalogue.
+     *
+     * @template T
+     *
+     * @param  callable(TranslationProvider): T  $call
+     * @return T|null
+     */
+    protected function withRetries(callable $call, string $targetLocale, string $subject): mixed
+    {
+        $provider = $this->provider();
+        $policy = $this->throttleConfig($provider->key());
+        $maxRetries = (int) $policy['max_retries'];
+        $backoff = (array) $policy['backoff'];
+
+        for ($attempt = 0; $attempt <= $maxRetries; $attempt++) {
             try {
-                $this->throttle();
-                $translated = $translator->translate($text) ?? $text;
+                $this->throttle((int) $policy['min_delay_ms']);
 
-                // Apply admin-defined overrides (word/phrase corrections)
-                $translated = TranslationOverride::applyOverrides($translated, $targetLocale);
+                return $call($provider);
+            } catch (TranslationProviderException $e) {
+                $lastAttempt = $attempt === $maxRetries;
 
-                return $translated;
-            } catch (Exception $e) {
-                $is429 = str_contains($e->getMessage(), '429');
-                if (!$is429 || $attempt === $this->maxRetries) {
+                if ($e->isFatal() || ! $e->isRetryable() || $lastAttempt) {
                     Log::warning("Translation failed: {$e->getMessage()}", [
-                        'text' => Str::limit($text, 100),
+                        'subject' => $subject,
                         'target' => $targetLocale,
+                        'provider' => $provider->key(),
+                        'reason' => $e->reason,
                         'attempt' => $attempt + 1,
                     ]);
 
                     return null;
                 }
 
-                // Exponential backoff: 5s, 10s, 20s, 40s
-                $backoff = pow(2, $attempt) * 5000000; // microseconds
-                usleep((int) $backoff);
-                $attempt++;
+                sleep((int) ($backoff[$attempt] ?? end($backoff) ?: 5));
+            } catch (Exception $e) {
+                Log::warning("Translation failed: {$e->getMessage()}", [
+                    'subject' => $subject,
+                    'target' => $targetLocale,
+                    'provider' => $provider->key(),
+                ]);
+
+                return null;
             }
         }
 
@@ -253,6 +328,8 @@ class TranslationService
             'field' => $field,
             'locale' => $targetLocale,
             'value' => $translated,
+            'provider' => $this->provider()->key(),
+            'source_locale' => $defaultLocale,
         ];
 
         // Generate translated slug for title fields
@@ -305,17 +382,22 @@ class TranslationService
      * Cache key for a free-standing string translation (tags, and anything
      * else that isn't a model field and so has no translations-table row).
      */
-    public static function textCacheKey(string $text, string $locale): string
+    public static function textCacheKey(string $text, string $locale, ?string $provider = null): string
     {
-        return 'translation:text:'.$locale.':'.sha1($text);
+        // The provider is part of the key so switching engines invalidates
+        // cached tag translations naturally — there is no column to record
+        // provenance on a cache entry.
+        $provider ??= app(TranslationProviderManager::class)->configuredKey();
+
+        return "translation:text:{$provider}:{$locale}:".sha1($text);
     }
 
     /**
      * Previously translated free-standing string, or null if not yet known.
      *
      * translateText() itself is an uncached provider call, so request handlers
-     * must go through this and queue TranslateTextJob for misses — otherwise
-     * the same tag is re-translated on every single page view.
+     * must go through this and never call the provider — tags are translated
+     * by the scheduled translations:run sweep instead.
      */
     public function cachedText(string $text, string $targetLocale): ?string
     {
@@ -483,6 +565,8 @@ class TranslationService
                         'field' => $field,
                         'locale' => $targetLocale,
                         'value' => $translatedValue,
+                        'provider' => $this->provider()->key(),
+                        'source_locale' => $defaultLocale,
                     ];
 
                     if ($field === 'title') {

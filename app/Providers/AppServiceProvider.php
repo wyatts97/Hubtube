@@ -8,6 +8,8 @@ use App\Observers\CategoryObserver;
 use Filament\Auth\Http\Responses\Contracts\LogoutResponse;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\ServiceProvider;
+use App\Services\Translation\Contracts\TranslationProvider;
+use App\Services\Translation\TranslationProviderManager;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
@@ -32,6 +34,15 @@ class AppServiceProvider extends ServiceProvider
             \App\Http\Responses\LogoutResponse::class,
         );
 
+        $this->app->singleton(TranslationProviderManager::class);
+
+        // scoped(), not singleton(): queue workers and Octane reuse the
+        // container across jobs, and a provider swapped in the admin panel must
+        // take effect on the next job rather than the next deploy.
+        $this->app->scoped(
+            TranslationProvider::class,
+            fn ($app) => $app->make(TranslationProviderManager::class)->default(),
+        );
     }
 
     public function boot(): void

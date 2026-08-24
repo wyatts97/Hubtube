@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\TranslateModelJob;
 use App\Models\Video;
 use App\Services\TranslationService;
 use Illuminate\Http\Request;
@@ -73,12 +72,6 @@ class DashboardController extends Controller
         }
 
         $cached = $this->translationService->batchFromCache(Video::class, $items, ['title'], $locale);
-
-        if (TranslationService::autoTranslateEnabled()) {
-            foreach ($cached['missing'] as $id) {
-                TranslateModelJob::dispatch(Video::class, $id, ['title'], $locale);
-            }
-        }
 
         return $cached['items'];
     }

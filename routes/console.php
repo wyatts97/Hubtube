@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Setting;
+use App\Services\Translation\TranslationSchedule;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -28,6 +29,16 @@ Schedule::command('backup:run')->dailyAt('01:00')->withoutOverlapping()
     ->skip(fn () => !Setting::get('backup_enabled', true));
 Schedule::command('backup:clean')->weekly()->sundays()->at('02:00')
     ->skip(fn () => !Setting::get('backup_enabled', true));
+
+// Scheduled content translation. Registered every minute with a lazily
+// evaluated gate: Schedule::cron() needs its expression as a string at
+// registration time, which would mean a DB read on every console bootstrap.
+Schedule::command('translations:run')
+    ->everyMinute()
+    ->withoutOverlapping(120)
+    ->onOneServer()
+    ->runInBackground()
+    ->skip(fn () => ! TranslationSchedule::isDueNow());
 
 // Spatie Health: run checks every 10 minutes
 Schedule::command('health:check')->everyTenMinutes();

@@ -96,3 +96,28 @@ function inertiaPagePayload(Illuminate\Testing\TestResponse $response): array
 
     return $page;
 }
+
+/**
+ * Swap in the deterministic fake translation provider.
+ *
+ * Returns nothing — assert against Tests\Support\FakeTranslationProvider's
+ * static call log.
+ */
+function useFakeTranslationProvider(array $config = []): void
+{
+    Tests\Support\FakeTranslationProvider::reset();
+
+    config([
+        'translation.drivers.fake' => array_merge(
+            ['class' => Tests\Support\FakeTranslationProvider::class],
+            $config,
+        ),
+        'translation.batch.fake' => array_merge(['max_items' => 25, 'max_chars' => 4000], $config),
+        'translation.throttle.fake' => ['min_delay_ms' => 0, 'max_retries' => 1, 'backoff' => [0]],
+        'translation.locale_map.fake' => ['pt' => 'pt-BR'],
+    ]);
+
+    App\Models\Setting::set('translation_provider', 'fake', 'translation', 'string');
+    App\Models\Setting::clearCache();
+    app(App\Services\Translation\TranslationProviderManager::class)->forget();
+}

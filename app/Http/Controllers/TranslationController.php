@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\TranslateModelJob;
 use App\Models\Category;
 use App\Models\Page;
 use App\Models\Translation;
@@ -66,12 +65,6 @@ class TranslationController extends Controller
 
         $cached = $this->translationService->modelFromCache($modelClass, $model->id, $fields, $locale);
 
-        // Anything not already stored is translated in the background; the
-        // caller gets the source text now and the translation on a later visit.
-        if (!$cached['complete'] && TranslationService::autoTranslateEnabled()) {
-            TranslateModelJob::dispatch($modelClass, $model->id, array_keys($fields), $locale);
-        }
-
         return response()->json([
             'translations' => $cached['fields'],
             'locale' => $locale,
@@ -116,12 +109,6 @@ class TranslationController extends Controller
             $validated['fields'],
             $locale
         );
-
-        if (TranslationService::autoTranslateEnabled()) {
-            foreach ($cached['missing'] as $id) {
-                TranslateModelJob::dispatch($modelClass, $id, $validated['fields'], $locale);
-            }
-        }
 
         return response()->json([
             'translations' => $cached['items'],

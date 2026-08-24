@@ -14,6 +14,8 @@ class Translation extends Model
         'locale',
         'value',
         'translated_slug',
+        'provider',
+        'source_locale',
     ];
 
     public function translatable(): MorphTo

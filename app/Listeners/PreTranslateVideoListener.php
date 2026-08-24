@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Events\VideoProcessed;
 use App\Jobs\TranslateModelJob;
+use App\Models\Setting;
 use App\Models\Video;
 use App\Services\TranslationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -33,6 +34,10 @@ class PreTranslateVideoListener implements ShouldQueue
 
             // Nothing to show publicly means nothing worth translating yet.
             if ($video->privacy !== 'public' || ! $video->is_approved) {
+                return;
+            }
+
+            if (! (bool) Setting::get('translation_pretranslate_on_upload', true)) {
                 return;
             }
 

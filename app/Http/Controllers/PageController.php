@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Exception;
 use Throwable;
 use Illuminate\Support\Facades\Log;
-use App\Jobs\TranslateModelJob;
 use App\Models\Page;
 use App\Services\SeoService;
 use App\Services\TranslationService;
@@ -51,10 +50,6 @@ class PageController extends Controller
 
                 $title = $cached['fields']['title'] ?: $title;
                 $content = $cached['fields']['content'] ?: $content;
-
-                if (!$cached['complete'] && TranslationService::autoTranslateEnabled()) {
-                    TranslateModelJob::dispatch(Page::class, $page->id, ['title', 'content'], $locale);
-                }
             } catch (Throwable $e) {
                 // Lookup failed — fall back to original content
                 Log::warning('Page translation lookup failed: ' . $e->getMessage(), [

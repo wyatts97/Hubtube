@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\TranslateModelJob;
-use App\Jobs\TranslateTextJob;
 use App\Models\Category;
 use App\Models\Image;
 use App\Models\Playlist;
@@ -317,10 +315,6 @@ class HomeController extends Controller
 
             $translatedName = $cached['fields']['name'] ?? null;
             $translatedDescription = $cached['fields']['description'] ?? null;
-
-            if (!$cached['complete'] && TranslationService::autoTranslateEnabled()) {
-                TranslateModelJob::dispatch(Category::class, $category->id, array_keys($fields), $locale);
-            }
         }
 
         return Inertia::render('Categories/Show', [
@@ -418,10 +412,6 @@ class HomeController extends Controller
         if ($locale !== $defaultLocale) {
             $translationService = app(TranslationService::class);
             $translatedTag = $translationService->cachedText($tag, $locale);
-
-            if ($translatedTag === null && TranslationService::autoTranslateEnabled()) {
-                TranslateTextJob::dispatch($tag, $locale);
-            }
         }
 
         return Inertia::render('Tags/Show', [
@@ -454,11 +444,5 @@ class HomeController extends Controller
 
             return $category;
         });
-
-        if (TranslationService::autoTranslateEnabled()) {
-            foreach ($cached['missing'] as $id) {
-                TranslateModelJob::dispatch(Category::class, $id, ['name'], $locale);
-            }
-        }
     }
 }

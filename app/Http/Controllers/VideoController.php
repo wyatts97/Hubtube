@@ -9,7 +9,6 @@ use App\Http\Requests\Video\FinalizeVideoRequest;
 use App\Http\Requests\Video\StoreVideoRequest;
 use App\Models\Playlist;
 use App\Http\Requests\Video\UpdateVideoRequest;
-use App\Jobs\TranslateTextJob;
 use App\Models\Video;
 use App\Models\WatchHistory;
 use App\Models\Category;
@@ -313,17 +312,7 @@ class VideoController extends Controller
             $translationService = app(TranslationService::class);
             $translatedTags = array_map(
                 function (string $tag) use ($translationService, $locale) {
-                    $cached = $translationService->cachedText($tag, $locale);
-
-                    if ($cached === null) {
-                        if (TranslationService::autoTranslateEnabled()) {
-                            TranslateTextJob::dispatch($tag, $locale);
-                        }
-
-                        return $tag;
-                    }
-
-                    return $cached;
+                    return $translationService->cachedText($tag, $locale) ?? $tag;
                 },
                 $video->tags
             );

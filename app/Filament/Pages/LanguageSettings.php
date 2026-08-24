@@ -15,6 +15,8 @@ use Filament\Actions\DeleteBulkAction;
 use Exception;
 use App\Models\Setting;
 use App\Services\AdminLogger;
+use App\Services\Translation\TranslationProviderManager;
+use App\Services\Translation\TranslationSchedule;
 use App\Services\TranslationService;
 use App\Models\TranslationOverride;
 use Illuminate\Support\Facades\Artisan;
@@ -24,7 +26,12 @@ use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\TimePicker;
+use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Text;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -66,6 +73,18 @@ class LanguageSettings extends Page implements HasForms, HasTable
             'default_language' => Setting::get('default_language', 'en'),
             'enabled_languages' => $enabledLanguages ?: ['en'],
             'auto_translate_content' => (bool) Setting::get('auto_translate_content', true),
+            'translation_pretranslate_on_upload' => (bool) Setting::get('translation_pretranslate_on_upload', true),
+
+            'translation_provider' => app(TranslationProviderManager::class)->configuredKey(),
+            'libretranslate_endpoint' => (string) Setting::get('libretranslate_endpoint', ''),
+            // Never load the stored key into form state; blank means "keep".
+            'libretranslate_api_key' => '',
+            'translation_locale_overrides' => $this->localeOverrides(),
+
+            'translation_schedule_frequency' => TranslationSchedule::frequency(),
+            'translation_schedule_time' => TranslationSchedule::time(),
+            'translation_schedule_day' => TranslationSchedule::day(),
+            'translation_run_limit' => (int) Setting::get('translation_run_limit', config('translation.schedule.default_limit', 500)),
         ]);
     }
 
@@ -93,7 +112,107 @@ class LanguageSettings extends Page implements HasForms, HasTable
 
                         Toggle::make('auto_translate_content')
                             ->label('Auto-Translate Dynamic Content')
-                            ->helperText('Automatically translate video titles, descriptions, etc. when users switch languages. Uses Google Translate (free).'),
+                            ->helperText('Master switch for translating video titles, descriptions, categories and pages. Translation runs on a schedule — never while a visitor is loading a page.'),
+
+                        Toggle::make('translation_pretranslate_on_upload')
+                            ->label('Translate New Videos Immediately')
+                            ->helperText('Queue a translation as soon as a video finishes processing, instead of waiting for the next scheduled run. Recommended on weekly or monthly schedules.'),
+                    ]),
+
+                Section::make('Translation Provider')
+                    ->description('The engine used for all translation. There is no automatic fallback: if it fails, content simply stays untranslated until the next run.')
+                    ->schema([
+                        Select::make('translation_provider')
+                            ->label('Provider')
+                            ->options(fn () => app(TranslationProviderManager::class)->available())
+                            ->live()
+                            ->required()
+                            ->helperText('LibreTranslate can be self-hosted or paid. Google is an unofficial scraper with no rate-limit guarantees.'),
+
+                        TextInput::make('libretranslate_endpoint')
+                            ->label('LibreTranslate Endpoint')
+                            ->placeholder('http://127.0.0.1:5000')
+                            ->url()
+                            ->visible(fn (Get $get) => $get('translation_provider') === 'libretranslate')
+                            ->helperText('Base URL only — no trailing /translate.'),
+
+                        TextInput::make('libretranslate_api_key')
+                            ->label('LibreTranslate API Key')
+                            ->password()
+                            ->revealable()
+                            ->visible(fn (Get $get) => $get('translation_provider') === 'libretranslate')
+                            ->helperText('Leave blank to keep the current key. Stored encrypted.'),
+
+                        Actions::make([
+                            Action::make('testTranslationProvider')
+                                ->label('Test Connection')
+                                ->icon('phosphor-wifi-high')
+                                ->color('gray')
+                                ->action('testTranslationProvider'),
+                        ])->columnSpanFull(),
+                    ])->columns(2),
+
+                Section::make('Translation Schedule')
+                    ->description('When outstanding content is translated. Runs are resumable and skip anything already translated.')
+                    ->schema([
+                        Select::make('translation_schedule_frequency')
+                            ->label('Frequency')
+                            ->options([
+                                'disabled' => 'Disabled',
+                                'hourly' => 'Hourly',
+                                'daily' => 'Daily',
+                                'weekly' => 'Weekly',
+                                'monthly' => 'Monthly',
+                            ])
+                            ->live()
+                            ->required(),
+
+                        TimePicker::make('translation_schedule_time')
+                            ->label(fn (Get $get) => $get('translation_schedule_frequency') === 'hourly' ? 'Minute past the hour' : 'Time of day')
+                            ->seconds(false)
+                            ->visible(fn (Get $get) => $get('translation_schedule_frequency') !== 'disabled')
+                            ->helperText('Timezone: ' . TranslationSchedule::timezone()),
+
+                        Select::make('translation_schedule_day')
+                            ->label('Day of week')
+                            ->options([0 => 'Sunday', 1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday'])
+                            ->visible(fn (Get $get) => $get('translation_schedule_frequency') === 'weekly'),
+
+                        Select::make('translation_schedule_day')
+                            ->label('Day of month')
+                            ->options(array_combine(range(1, 28), range(1, 28)))
+                            ->visible(fn (Get $get) => $get('translation_schedule_frequency') === 'monthly'),
+
+                        TextInput::make('translation_run_limit')
+                            ->label('Items per section per run')
+                            ->numeric()
+                            ->minValue(10)
+                            ->maxValue(10000)
+                            ->helperText('Caps a single run so it stays bounded; the next run continues where this one stopped.'),
+
+                        Text::make(fn () => new \Illuminate\Support\HtmlString($this->scheduleSummaryHtml()))
+                            ->columnSpanFull(),
+
+                        Actions::make([
+                            Action::make('runTranslationsNow')
+                                ->label('Run Translations Now')
+                                ->icon('phosphor-play')
+                                ->color('success')
+                                ->requiresConfirmation()
+                                ->modalDescription('Queues a full translation sweep in the background using the configured provider.')
+                                ->action('runTranslationsNow'),
+                        ])->columnSpanFull(),
+                    ])->columns(2),
+
+                Section::make('Language Code Overrides')
+                    ->description('Some engines use non-standard codes. LibreTranslate calls Brazilian Portuguese "pb" — plain "pt" is European Portuguese.')
+                    ->collapsed()
+                    ->schema([
+                        KeyValue::make('translation_locale_overrides')
+                            ->label('Site locale → provider code')
+                            ->keyLabel('Site locale')
+                            ->valueLabel('Provider code')
+                            ->helperText('Only affects the outbound API call. Your URLs and stored translations keep using the site locale.'),
                     ]),
 
                 Section::make('Enabled Languages')
@@ -131,10 +250,39 @@ class LanguageSettings extends Page implements HasForms, HasTable
             $enabled[] = $default;
         }
 
-        Setting::set('translation_enabled', $data['translation_enabled'] ?? false);
-        Setting::set('default_language', $default);
-        Setting::set('enabled_languages', json_encode(array_values($enabled)));
-        Setting::set('auto_translate_content', $data['auto_translate_content'] ?? true);
+        Setting::set('translation_enabled', $data['translation_enabled'] ?? false, 'language', 'boolean');
+        Setting::set('default_language', $default, 'language', 'string');
+        Setting::set('enabled_languages', json_encode(array_values($enabled)), 'language', 'string');
+        Setting::set('auto_translate_content', $data['auto_translate_content'] ?? true, 'language', 'boolean');
+
+        // Persist with explicit types: these are read back in a scheduler
+        // closure, where a boolean arriving as the string "1" (or a day arriving
+        // as "3") would quietly misbehave.
+        $typed = [
+            'translation_pretranslate_on_upload' => 'boolean',
+            'translation_provider' => 'string',
+            'libretranslate_endpoint' => 'string',
+            'translation_schedule_frequency' => 'string',
+            'translation_schedule_time' => 'string',
+            'translation_schedule_day' => 'integer',
+            'translation_run_limit' => 'integer',
+        ];
+
+        foreach ($typed as $key => $type) {
+            if (array_key_exists($key, $data)) {
+                Setting::set($key, $data[$key], 'translation', $type);
+            }
+        }
+
+        Setting::set('translation_locale_overrides', json_encode($this->mergedOverrides($data)), 'translation', 'json');
+
+        // Blank means "keep the existing key" — the form never holds plaintext.
+        if (filled($data['libretranslate_api_key'] ?? null)) {
+            Setting::setEncrypted('libretranslate_api_key', $data['libretranslate_api_key'], 'translation');
+        }
+
+        Setting::clearCache();
+        app(TranslationProviderManager::class)->forget();
 
         AdminLogger::settingsSaved('Language', array_keys($data));
 
@@ -425,5 +573,108 @@ class LanguageSettings extends Page implements HasForms, HasTable
                     ->send();
             }
         }
+    }
+
+    /**
+     * Per-driver locale overrides, seeded from config so `pt -> pb` is visible
+     * and editable rather than mysterious.
+     */
+    protected function localeOverrides(): array
+    {
+        $driver = app(TranslationProviderManager::class)->configuredKey();
+        $stored = Setting::get('translation_locale_overrides');
+
+        if (is_string($stored)) {
+            $stored = json_decode($stored, true);
+        }
+
+        $stored = is_array($stored) ? ($stored[$driver] ?? []) : [];
+
+        return $stored ?: (array) config("translation.locale_map.{$driver}", []);
+    }
+
+    /**
+     * Overrides are stored keyed by driver so switching engines does not lose
+     * the other engine's mapping.
+     */
+    protected function mergedOverrides(array $data): array
+    {
+        $stored = Setting::get('translation_locale_overrides');
+
+        if (is_string($stored)) {
+            $stored = json_decode($stored, true);
+        }
+
+        $stored = is_array($stored) ? $stored : [];
+        $driver = $data['translation_provider'] ?? app(TranslationProviderManager::class)->configuredKey();
+        $stored[$driver] = $data['translation_locale_overrides'] ?? [];
+
+        return $stored;
+    }
+
+    public function testTranslationProvider(): void
+    {
+        // Save first so the test uses the credentials just typed in.
+        $this->save();
+
+        $manager = app(TranslationProviderManager::class);
+        $manager->forget();
+
+        try {
+            $result = $manager->default()->testConnection();
+        } catch (\Throwable $e) {
+            $result = ['success' => false, 'message' => $e->getMessage()];
+        }
+
+        Notification::make()
+            ->title($result['success'] ? 'Connection Successful' : 'Connection Failed')
+            ->body($result['message'])
+            ->{$result['success'] ? 'success' : 'danger'}()
+            ->send();
+    }
+
+    public function runTranslationsNow(): void
+    {
+        Artisan::queue('translations:run');
+
+        Notification::make()
+            ->title('Translation run queued')
+            ->body('Progress appears here once it finishes. Requires a running queue worker.')
+            ->success()
+            ->send();
+    }
+
+    protected function scheduleSummaryHtml(): string
+    {
+        $describe = e(TranslationSchedule::describe());
+        $cron = TranslationSchedule::cronExpression();
+        $next = TranslationSchedule::nextRunAt();
+        $last = TranslationSchedule::lastRunAt();
+
+        $rows = ['<strong>' . $describe . '</strong>'];
+
+        if ($cron) {
+            $rows[] = 'Cron equivalent: <code>' . e($cron) . '</code>';
+        }
+        if ($next) {
+            $rows[] = 'Next run: ' . e($next->toDayDateTimeString());
+        }
+        $rows[] = $last
+            ? 'Last run: ' . e($last->diffForHumans())
+            : '<em>Has not run yet.</em>';
+
+        $summary = Setting::get('translation_last_run_summary');
+        if (is_string($summary)) {
+            $summary = json_decode($summary, true);
+        }
+        if (is_array($summary) && ! empty($summary['reason'])) {
+            $rows[] = 'Last result: ' . e($summary['reason']) . ' (' . e($summary['provider'] ?? '?') . ')';
+        }
+
+        if (Setting::get('translation_ui_rebuild_needed', false)) {
+            $rows[] = '<span style="color:#f59e0b">Interface translations changed — run <code>npm run build</code> to publish them.</span>';
+        }
+
+        return '<div class="text-sm space-y-1">' . implode('<br>', $rows) . '</div>';
     }
 }
