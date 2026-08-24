@@ -10,6 +10,7 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Artisan;
@@ -47,6 +48,13 @@ class Backups extends Page implements HasForms
                         Toggle::make('backup_enabled')
                             ->label('Enable automatic daily backups')
                             ->helperText('When enabled, a full backup runs nightly at 1:00 AM. Old backups are cleaned weekly.'),
+
+                        Actions::make([
+                            Action::make('saveBackupSettings')
+                                ->label('Save Settings')
+                                ->icon('phosphor-floppy-disk')
+                                ->action('saveBackupSettings'),
+                        ])->columnSpanFull(),
                     ]),
             ])
             ->statePath('settingsData');

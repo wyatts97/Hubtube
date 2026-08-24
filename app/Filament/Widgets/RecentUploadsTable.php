@@ -26,7 +26,7 @@ class RecentUploadsTable extends Widget
         return Video::query()
             ->with('user:id,username,avatar')
             ->latest()
-            ->limit(8)
+            ->limit(5)
             ->get();
     }
 

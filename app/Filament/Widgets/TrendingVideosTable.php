@@ -60,7 +60,7 @@ class TrendingVideosTable extends Widget
             ->approved()
             ->processed()
             ->orderByDesc('views_count')
-            ->limit(8);
+            ->limit(5);
 
         match ($this->trendingPeriod) {
             'today' => $query->where('published_at', '>=', now()->startOfDay()),

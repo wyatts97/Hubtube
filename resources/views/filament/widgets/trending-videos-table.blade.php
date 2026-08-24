@@ -47,13 +47,9 @@
     </div>
 
     <div class="ht-vidwidget__body">
-        @forelse($videos as $index => $video)
+        @forelse($videos as $video)
             <a href="{{ route('filament.admin.resources.videos.edit', $video) }}"
                class="ht-vidrow" wire:navigate>
-                <span class="ht-vidrow__rank" data-rank="{{ $index + 1 }}">
-                    {{ $index + 1 }}
-                </span>
-
                 <div class="ht-vidrow__thumb">
                     @if($video->thumbnail_url)
                         <img src="{{ $video->thumbnail_url }}"
@@ -62,7 +58,7 @@
                              decoding="async">
                     @else
                         <div class="ht-vidrow__thumb-fallback">
-                            <x-phosphor-film-strip class="w-5 h-5" />
+                            <x-phosphor-film-strip class="w-6 h-6" />
                         </div>
                     @endif
                 </div>
@@ -78,11 +74,11 @@
 
                 <div class="ht-vidrow__stats">
                     <span class="ht-vidstat ht-vidstat--views">
-                        <x-phosphor-eye class="w-3 h-3" />
+                        <x-phosphor-eye class="w-3.5 h-3.5" />
                         {{ number_format($video->views_count ?? 0) }}
                     </span>
                     <span class="ht-vidstat ht-vidstat--likes">
-                        <x-phosphor-thumbs-up class="w-3 h-3" />
+                        <x-phosphor-thumbs-up class="w-3.5 h-3.5" />
                         {{ number_format($video->likes_count ?? 0) }}
                     </span>
                 </div>

@@ -2,11 +2,6 @@
     <div class="space-y-6">
         <form wire:submit="saveBackupSettings">
             {{ $this->settingsForm }}
-            <div class="flex justify-end mt-4">
-                <x-filament::button type="submit" icon="phosphor-floppy-disk">
-                    Save Settings
-                </x-filament::button>
-            </div>
         </form>
 
         @if ($running)

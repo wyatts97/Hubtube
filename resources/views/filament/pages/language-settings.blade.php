@@ -21,7 +21,7 @@
                     {{ $this->regenerationStatus }}
                 </x-filament::button>
             @else
-                <x-filament::button wire:click="syncTranslations" color="primary" size="sm" icon="phosphor-arrows-clockwise">
+                <x-filament::button wire:click="syncTranslations" color="gray" size="sm" icon="phosphor-arrows-clockwise">
                     Sync New Keys &amp; Rebuild
                 </x-filament::button>
                 <x-filament::button wire:click="regenerateTranslations" color="warning" size="sm" icon="phosphor-arrows-clockwise">

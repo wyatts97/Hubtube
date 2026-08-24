@@ -89,7 +89,7 @@ class SeoDiagnostics extends Page implements HasForms
                                 Placeholder::make('description_help')
                                     ->label('')
                                     ->content(new HtmlString(
-                                        '<div class="text-sm p-3 rounded-lg" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3);">' .
+                                        '<div class="ht-info-banner">' .
                                         '<strong>📝 Mass-fill missing video descriptions</strong><br>' .
                                         'Apply a description template to every video that currently has no description. ' .
                                         'This is purely a content fill — search engines and viewers prefer pages with body text, ' .
