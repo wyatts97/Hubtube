@@ -157,7 +157,23 @@ class TranslationService
      * Translate a raw string (no caching, no DB).
      * Includes throttling and retry with exponential backoff on 429s.
      */
+    /**
+     * Translate text, returning the source unchanged if the provider fails.
+     *
+     * Convenient, but lossy: callers cannot tell a genuine translation from a
+     * failure, and storing the result of a failure permanently poisons a cache
+     * with source-language text. Anything that persists the result should use
+     * tryTranslateText() instead.
+     */
     public function translateText(string $text, string $targetLocale, ?string $sourceLocale = null): string
+    {
+        return $this->tryTranslateText($text, $targetLocale, $sourceLocale) ?? $text;
+    }
+
+    /**
+     * Translate text, or return null if the provider could not.
+     */
+    public function tryTranslateText(string $text, string $targetLocale, ?string $sourceLocale = null): ?string
     {
         if (empty(trim($text))) {
             return $text;
@@ -190,7 +206,8 @@ class TranslationService
                         'target' => $targetLocale,
                         'attempt' => $attempt + 1,
                     ]);
-                    return $text;
+
+                    return null;
                 }
 
                 // Exponential backoff: 5s, 10s, 20s, 40s
@@ -200,7 +217,7 @@ class TranslationService
             }
         }
 
-        return $text;
+        return null;
     }
 
     /**
@@ -220,8 +237,14 @@ class TranslationService
             return $cached;
         }
 
-        // Translate
-        $translated = $this->translateText($originalValue, $targetLocale, $defaultLocale);
+        // Translate. A failure must not be written: storing the source text
+        // under a translated locale makes the row look done forever, so it is
+        // never retried and the reader never falls back.
+        $translated = $this->tryTranslateText($originalValue, $targetLocale, $defaultLocale);
+
+        if ($translated === null) {
+            return $originalValue;
+        }
 
         // Store in DB
         $data = [
@@ -309,6 +332,18 @@ class TranslationService
     public function rememberText(string $text, string $targetLocale, string $translated): void
     {
         Cache::put(static::textCacheKey($text, $targetLocale), $translated, now()->addDays(30));
+    }
+
+    /**
+     * Briefly cache the source text after a failed translation.
+     *
+     * This is a negative cache, not a result: it stops the page re-queueing the
+     * same doomed job on every view, and expires soon enough that a transient
+     * provider outage heals itself without any intervention.
+     */
+    public function rememberFailedText(string $text, string $targetLocale): void
+    {
+        Cache::put(static::textCacheKey($text, $targetLocale), $text, now()->addHours(6));
     }
 
     /**
@@ -431,8 +466,15 @@ class TranslationService
                         $translated['translated_slug'] = $cachedTranslation->translated_slug;
                     }
                 } else {
-                    // Translate on-the-fly and cache
-                    $translatedValue = $this->translateText($item[$field], $targetLocale, $defaultLocale);
+                    // Translate on-the-fly and cache. A failed attempt is not
+                    // persisted — a row holding source text would look complete
+                    // forever and never be retried.
+                    $translatedValue = $this->tryTranslateText($item[$field], $targetLocale, $defaultLocale);
+
+                    if ($translatedValue === null) {
+                        continue;
+                    }
+
                     $translated[$field] = $translatedValue;
 
                     $data = [

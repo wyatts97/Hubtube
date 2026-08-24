@@ -653,3 +653,18 @@ test('templates use logical spacing utilities so RTL mirrors correctly', functio
 
     expect($offenders)->toBeEmpty('Physical spacing utilities found in: '.implode(', ', $offenders));
 });
+
+test('a failed text translation is negatively cached so it is not re-queued forever', function () {
+    // The provider returns the source text on failure. Caching nothing meant the
+    // next page view found no cache entry, queued the job again, failed again —
+    // an unbounded loop that rate-limited the whole site.
+    enableLocales(['en', 'es']);
+
+    $service = app(App\Services\TranslationService::class);
+
+    // Simulate the failure path directly; the job calls this on a null result.
+    $service->rememberFailedText('sometag', 'es');
+
+    // The page now finds *something* cached, so it stops dispatching.
+    expect($service->cachedText('sometag', 'es'))->toBe('sometag');
+});

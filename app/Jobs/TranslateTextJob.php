@@ -53,13 +53,20 @@ class TranslateTextJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $translated = $translations->translateText($this->text, $this->locale);
+        $translated = $translations->tryTranslateText($this->text, $this->locale);
 
-        // translateText() returns the source unchanged when the provider fails.
-        // Caching that would make the failure permanent.
-        if ($translated !== $this->text) {
+        if ($translated !== null) {
             $translations->rememberText($this->text, $this->locale, $translated);
+
+            return;
         }
+
+        // Negative cache. Without this the page finds nothing cached on the very
+        // next view, queues this job again, fails again, and repeats forever —
+        // which hammers the provider hard enough to get the whole site rate
+        // limited. Caching the source briefly makes the page render (in the
+        // source language) and stay quiet until the TTL lets it retry.
+        $translations->rememberFailedText($this->text, $this->locale);
     }
 
     public function failed(Throwable $e): void
