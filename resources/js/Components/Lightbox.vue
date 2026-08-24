@@ -1,6 +1,8 @@
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { ref, watch } from 'vue';
+import { useEventListener } from '@vueuse/core';
 import { X, ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut } from 'lucide-vue-next';
+import BaseDialog from '@/Components/UI/BaseDialog.vue';
 
 const props = defineProps({
     images: { type: Array, default: () => [] },
@@ -21,13 +23,10 @@ watch(() => props.startIndex, (val) => {
     resetZoom();
 });
 
-watch(() => props.modelValue, (val) => {
-    if (val) {
-        document.body.style.overflow = 'hidden';
-    } else {
-        document.body.style.overflow = '';
-    }
-});
+// Body scroll lock is Reka's job now (BaseDialog's Dialog locks it while open).
+// The manual `document.body.style.overflow` pair that used to live here was
+// deleted deliberately: running both could double-toggle and leave the body
+// stuck unscrollable after a close.
 
 const currentImage = ref(null);
 watch(currentIndex, () => {
@@ -85,28 +84,38 @@ const downloadImage = () => {
     document.body.removeChild(a);
 };
 
+// Escape is handled by BaseDialog's Dialog; this covers the lightbox's own
+// navigation and zoom keys only.
 const onKeydown = (e) => {
     if (!props.modelValue) return;
-    if (e.key === 'Escape') close();
     if (e.key === 'ArrowLeft') prev();
     if (e.key === 'ArrowRight') next();
     if (e.key === '+' || e.key === '=') zoomIn();
     if (e.key === '-') zoomOut();
 };
 
-onMounted(() => document.addEventListener('keydown', onKeydown));
-onUnmounted(() => {
-    document.removeEventListener('keydown', onKeydown);
-    document.body.style.overflow = '';
-});
+useEventListener(document, 'keydown', onKeydown);
 </script>
 
 <template>
-    <Teleport to="body">
+    <!--
+        Shell only: BaseDialog supplies the portal, focus trap, Escape and body
+        scroll lock. Everything inside — pan/zoom, arrow navigation, the
+        thumbnail strip — stays this component's own logic.
+        `contentClass` uses `fixed inset-0` so the panel fills the viewport
+        instead of sitting in BaseDialog's padded, centred wrapper.
+    -->
+    <BaseDialog
+        :model-value="modelValue"
+        unstyled
+        max-width="max-w-none"
+        content-class="fixed inset-0 z-[100]"
+        aria-label="Image viewer"
+        :overlay-style="{ backgroundColor: 'rgba(0, 0, 0, 0.95)', backdropFilter: 'none', WebkitBackdropFilter: 'none' }"
+        @update:model-value="!$event && close()"
+    >
         <div
-            v-if="modelValue"
-            class="fixed inset-0 z-[100] flex items-center justify-center"
-            style="background-color: rgba(0, 0, 0, 0.95);"
+            class="absolute inset-0 flex items-center justify-center"
             @click.self="close"
         >
             <!-- Top Bar -->
@@ -180,5 +189,5 @@ onUnmounted(() => {
                 </button>
             </div>
         </div>
-    </Teleport>
+    </BaseDialog>
 </template>

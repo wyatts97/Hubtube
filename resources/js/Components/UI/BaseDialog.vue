@@ -137,11 +137,11 @@ const close = () => {
                         :class="[
                             maxWidth,
                             contentClass,
-                            unstyled ? '' : 'card rounded-xl shadow-2xl bg-bg-card',
+                            unstyled ? '' : 'relative card rounded-xl shadow-2xl bg-bg-card',
                         ]"
                         :style="contentStyle"
                         :aria-describedby="description ? undefined : 'undefined'"
-                        class="relative w-full pointer-events-auto focus:outline-none"
+                        class="w-full pointer-events-auto focus:outline-none"
                         @open-auto-focus="emit('openAutoFocus', $event)"
                         @escape-key-down="guardDismiss"
                         @pointer-down-outside="guardDismiss"
@@ -156,7 +156,7 @@ const close = () => {
                             <VisuallyHidden>{{ description }}</VisuallyHidden>
                         </component>
 
-                        <slot name="header">
+                        <slot name="header" :close="close">
                             <div v-if="title" class="flex items-center justify-between gap-4 p-6 pb-4">
                                 <component :is="parts.Title" class="text-lg font-bold text-text-primary">
                                     {{ title }}

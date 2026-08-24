@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import { useFetch } from '@/Composables/useFetch';
 import { useToast } from '@/Composables/useToast';
 import { useI18n } from '@/Composables/useI18n';
+import BaseDialog from '@/Components/UI/BaseDialog.vue';
 
 const props = defineProps({
     modelValue: { type: Boolean, default: false },
@@ -65,45 +66,34 @@ const submitReport = async () => {
 </script>
 
 <template>
-    <Teleport to="body">
-        <div
-            v-if="show"
-            class="fixed inset-0 z-50 flex items-center justify-center px-4"
-            style="background-color: rgba(0,0,0,0.6);"
-            @click.self="close"
-        >
-            <div class="w-full max-w-md card p-6 shadow-xl bg-bg-card">
-                <h3 class="text-lg font-bold mb-4 text-text-primary">{{ t('report.title') }}</h3>
-
-                <div v-if="reportSuccess" class="text-center py-4">
-                    <p class="text-green-500 font-medium">{{ t('report.success') }}</p>
-                </div>
-
-                <form v-else @submit.prevent="submitReport" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-2 text-text-secondary">{{ t('report.reason') }}</label>
-                        <select v-model="reportReason" class="input" required>
-                            <option value="" disabled>{{ t('report.select_reason') }}</option>
-                            <option value="spam">{{ t('report.spam') }}</option>
-                            <option value="harassment">{{ t('report.harassment') }}</option>
-                            <option value="illegal">{{ t('report.illegal') }}</option>
-                            <option value="copyright">{{ t('report.copyright') }}</option>
-                            <option value="underage">{{ t('report.underage') }}</option>
-                            <option value="other">{{ t('report.other') }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('report.details') }}</label>
-                        <textarea v-model="reportDescription" class="input" rows="3" :placeholder="t('report.details_placeholder')" maxlength="2000"></textarea>
-                    </div>
-                    <div class="flex gap-3 justify-end">
-                        <button type="button" @click="close" class="btn btn-secondary">{{ t('common.cancel') }}</button>
-                        <button type="submit" :disabled="reportSubmitting || !reportReason" class="btn btn-primary">
-                            {{ reportSubmitting ? (t('report.submitting')) : (t('report.submit')) }}
-                        </button>
-                    </div>
-                </form>
-            </div>
+    <BaseDialog v-model="show" :title="t('report.title')">
+        <div v-if="reportSuccess" class="text-center py-4">
+            <p class="text-green-500 font-medium">{{ t('report.success') }}</p>
         </div>
-    </Teleport>
+
+        <form v-else @submit.prevent="submitReport" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium mb-2 text-text-secondary">{{ t('report.reason') }}</label>
+                <select v-model="reportReason" class="input" required>
+                    <option value="" disabled>{{ t('report.select_reason') }}</option>
+                    <option value="spam">{{ t('report.spam') }}</option>
+                    <option value="harassment">{{ t('report.harassment') }}</option>
+                    <option value="illegal">{{ t('report.illegal') }}</option>
+                    <option value="copyright">{{ t('report.copyright') }}</option>
+                    <option value="underage">{{ t('report.underage') }}</option>
+                    <option value="other">{{ t('report.other') }}</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('report.details') }}</label>
+                <textarea v-model="reportDescription" class="input" rows="3" :placeholder="t('report.details_placeholder')" maxlength="2000"></textarea>
+            </div>
+            <div class="flex gap-3 justify-end">
+                <button type="button" @click="close" class="btn btn-secondary">{{ t('common.cancel') }}</button>
+                <button type="submit" :disabled="reportSubmitting || !reportReason" class="btn btn-primary">
+                    {{ reportSubmitting ? (t('report.submitting')) : (t('report.submit')) }}
+                </button>
+            </div>
+        </form>
+    </BaseDialog>
 </template>

@@ -69,6 +69,13 @@ const close = () => {
     countdownTimer = null;
 };
 
+// BaseDialog drives its own open state; the only value it ever sets is `false`
+// (backdrop click or Escape, both already gated on the countdown), so route
+// that through the same teardown the Close button uses.
+const onDismiss = (open) => {
+    if (!open) close();
+};
+
 const checkAndShow = (path) => {
     if (!config.value.enabled || !adHtml.value || isExemptPath(path)) return;
 
@@ -96,44 +103,54 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <Teleport to="body">
-        <Transition name="interstitial">
-            <div
-                v-if="visible && adHtml"
-                class="fixed inset-0 z-[9999] flex items-center justify-center"
-                style="background-color: rgba(0,0,0,0.85);"
-                @click.self="countdown <= 0 ? close() : null"
-            >
-                <div class="relative w-full max-w-lg mx-4">
-                    <!-- Skip / close button -->
-                    <div class="absolute -top-10 end-0 flex items-center gap-2">
-                        <span v-if="countdown > 0" class="text-white/70 text-sm">
-                            Skip in {{ countdown }}s
-                        </span>
-                        <button
-                            v-else
-                            @click="close"
-                            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-white/20 hover:bg-white/30 transition-colors"
-                        >
-                            <X class="w-3.5 h-3.5" />
-                            Close
-                        </button>
-                    </div>
-
-                    <!-- Ad content -->
-                    <div class="rounded-xl overflow-hidden bg-black flex items-center justify-center min-h-[250px]">
-                        <AdSlot :html="adHtml" />
-                    </div>
-
-                    <!-- Ad label -->
-                    <p class="text-center text-white/40 text-xs mt-2">Advertisement</p>
-                </div>
+    <!--
+        Only dismissable once the skip countdown reaches zero — that gate used to
+        be a `@click.self` check on the backdrop, and is now expressed as
+        `:dismissable`, which covers Escape as well as backdrop clicks.
+    -->
+    <BaseDialog
+        :model-value="visible && !!adHtml"
+        :dismissable="countdown <= 0"
+        unstyled
+        max-width="max-w-lg"
+        aria-label="Advertisement"
+        transition-name="interstitial"
+        :overlay-style="{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'none', WebkitBackdropFilter: 'none' }"
+        @update:model-value="onDismiss"
+    >
+        <div class="relative">
+            <!-- Skip / close button -->
+            <div class="absolute -top-10 end-0 flex items-center gap-2">
+                <span v-if="countdown > 0" class="text-white/70 text-sm">
+                    Skip in {{ countdown }}s
+                </span>
+                <button
+                    v-else
+                    @click="close"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-white/20 hover:bg-white/30 transition-colors"
+                >
+                    <X class="w-3.5 h-3.5" />
+                    Close
+                </button>
             </div>
-        </Transition>
-    </Teleport>
+
+            <!-- Ad content -->
+            <div class="rounded-xl overflow-hidden bg-black flex items-center justify-center min-h-[250px]">
+                <AdSlot :html="adHtml" />
+            </div>
+
+            <!-- Ad label -->
+            <p class="text-center text-white/40 text-xs mt-2">Advertisement</p>
+        </div>
+    </BaseDialog>
 </template>
 
-<style scoped>
+<!--
+    Not scoped: the transition classes are applied by BaseDialog to elements it
+    renders itself, so a scoped rule (keyed to this component's data-v attribute)
+    would never match them.
+-->
+<style>
 .interstitial-enter-active,
 .interstitial-leave-active {
     transition: opacity 0.25s ease;

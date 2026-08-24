@@ -107,16 +107,20 @@ The plan said not to assume Reka's `AlertDialogContent` defaults match, so this 
 
 ---
 
-## Phase 4 — Remaining Dialogs (not started)
+## Phase 4 — Remaining Dialogs ✅ CODE DONE, MANUAL TESTING PENDING
 
-Order: `ShareModal.vue` (already has `v-model:modelValue`, near drop-in) → `ReportModal.vue` (same pattern) → `Pages/Playlists.vue` Create-Playlist modal (**note:** also fixes its non-portalled clipping bug — intentional, call out in commit) → `AdInterstitial.vue` → `KeyboardShortcuts.vue` (delete its hand-rolled Escape handler in favor of Dialog's built-in) → `Lightbox.vue` (shell only; keep custom pan/zoom/arrow-key logic inside `Dialog.Content`; **reconcile its manual body-scroll-lock with Reka's own** — pick one (Reka's), delete the manual one, verify no leftover `overflow:hidden`/scrollbar-padding on `<body>` after repeated open/close).
+Converted in the planned order. **Not committed** — sits in the working tree with Phases 1-3.
 
-- [ ] `Components/ShareModal.vue`
-- [ ] `Components/ReportModal.vue`
-- [ ] `Pages/Playlists.vue` Create-Playlist modal
-- [ ] `Components/AdInterstitial.vue`
-- [ ] `Components/KeyboardShortcuts.vue`
-- [ ] `Components/Lightbox.vue`
+- [x] `Components/ShareModal.vue` — near drop-in as expected. Its local `close()` became unused (BaseDialog's header close button replaced the hand-rolled one) and was deleted.
+- [x] `Components/ReportModal.vue` — same pattern. **Gains a close button** it didn't have: it used the `title` prop, which renders BaseDialog's standard header. Cancel and backdrop-dismiss both still work.
+- [x] `Pages/Playlists.vue` Create-Playlist modal — **now portalled to `<body>`, fixing the clipping bug**, as intended. Its `v-motion` enter/leave directive was dropped in favour of BaseDialog's own transition, since the panel is BaseDialog's element now and can't carry the directive; the visual difference is a 0.2s slide-up becoming a 0.15s fade/scale. The `X` icon import went unused and was removed.
+- [x] `Components/AdInterstitial.vue` — the countdown gate (`@click.self="countdown <= 0 ? close() : null"`) is now `:dismissable="countdown <= 0"`, which **also gates Escape** — previously Escape did nothing at all, so post-countdown Escape-to-close is new behavior. Its `<style scoped>` block had to become unscoped: the `interstitial-*` transition classes are applied by BaseDialog to elements it renders, so a scoped rule keyed to this component's `data-v` attribute would never have matched them.
+- [x] `Components/KeyboardShortcuts.vue` — hand-rolled Escape branch deleted in favour of Dialog's built-in; the remaining `?`-toggle listener moved to `useEventListener`, dropping its `onMounted`/`onUnmounted` pair. Uses the `#header` slot (its heading carries an icon), which is why `BaseDialog`'s `header` slot now also exposes `close`.
+- [x] `Components/Lightbox.vue` — shell only. All pan/zoom, arrow-key and thumbnail logic stayed put; only Escape moved out of `onKeydown` into Dialog's handler, and the remaining listener moved to `useEventListener`. **The manual body-scroll-lock is deleted** (both the `watch` that set `document.body.style.overflow` and the `onUnmounted` reset) — Reka's is now the only one, per the plan's "pick one". A grep confirms no `document.body.style` writes remain anywhere in `resources/js/`. Because the lightbox fills the viewport, `contentClass="fixed inset-0"` lets the panel escape BaseDialog's padded centring wrapper; its own inner `absolute inset-0` div keeps the click-background-to-close behavior, which Reka's outside-click could not provide here (nothing is ever "outside" a full-viewport panel).
+
+**Two `BaseDialog` changes this phase**: the `relative` class moved into the styled (non-`unstyled`) branch, so an `unstyled` caller can position its panel itself; and the `header` slot now receives `close`.
+
+**Still to verify by hand** (`npm run dev`), on top of the generic dialog checklist: the lightbox opened and closed repeatedly, confirming `<body>` is left with no leftover `overflow: hidden` or scrollbar padding; the interstitial ad's third-party `AdSlot` markup behaving inside a focus-trapped, `aria-hidden`-siblings modal (this is the one conversion where a third party renders inside the dialog); and the Playlists modal no longer clipping.
 
 ---
 
@@ -147,7 +151,7 @@ Order: `ShareModal.vue` (already has `v-model:modelValue`, near drop-in) → `Re
 - ~~**`AgeVerificationModal.vue` non-dismissability**~~ — verified against Reka's `DismissableLayer` source in Phase 3; see that section. The warning was well-placed: `AlertDialogContent` blocks outside-click on its own but **not** Escape, so `BaseDialog`'s explicit `escapeKeyDown` guard is load-bearing. Do not remove it. A hands-on confirmation is still outstanding.
 - **Singleton composable state must survive untouched**: `Composables/useToast.js`'s module-level `toasts` (`reactive([])` at module scope), `Composables/useTheme.js`'s `currentTheme`, `Composables/useGlobalAutoTranslate.js`'s `_translationCache`. The Phase 5 Toast conversion must render Reka's `ToastRoot`s directly off the existing shared array, not a local copy.
 - **`Videos/Show.vue` Save-to-Playlist dropdown**: Reka's default "close on item select" could break the inline create-new-playlist input — needs explicit `@select.prevent` and dedicated manual testing, not just a generic dropdown smoke test.
-- **`Lightbox.vue`'s dual scroll-lock risk** — must delete the manual implementation once Reka's Dialog scroll-lock is in place; running both could double-toggle and fail to unlock cleanly.
+- ~~**`Lightbox.vue`'s dual scroll-lock risk**~~ — resolved in Phase 4: the manual implementation is deleted and Reka's is the only scroll lock. Confirmed by grep that no `document.body.style` write remains in `resources/js/`. The repeated open/close check is still outstanding.
 - **`AppLayout.vue` is the most-trafficked file in the app** — each Phase 2 sub-conversion should be its own commit so a regression is bisectable.
 - **CSS selector dependency check**: before deleting `closeDropdowns()`'s class-name references, confirm `resources/css/app.css` doesn't separately style-key off those same class names.
 

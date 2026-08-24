@@ -2,9 +2,10 @@
 import { Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ListVideo, Plus, X } from 'lucide-vue-next';
+import { ListVideo, Plus } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
+import BaseDialog from '@/Components/UI/BaseDialog.vue';
 
 const { t } = useI18n();
 
@@ -97,38 +98,23 @@ const createPlaylist = () => {
         </div>
 
         <!-- Create Playlist Modal -->
-        <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div class="absolute inset-0 bg-black/50" @click="showCreateModal = false"></div>
-            <div
-                v-motion
-                :initial="{ opacity: 0, y: 12 }"
-                :enter="{ opacity: 1, y: 0, transition: { duration: 0.2 } }"
-                :leave="{ opacity: 0, y: 12, transition: { duration: 0.15 } }"
-                class="card p-6 w-full max-w-md relative z-10"
-            >
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-lg font-semibold text-text-primary">{{ t('playlist.create_playlist') }}</h2>
-                    <button @click="showCreateModal = false" class="p-1 rounded text-text-secondary">
-                        <X class="w-5 h-5" />
-                    </button>
+        <BaseDialog v-model="showCreateModal" :title="t('playlist.create_playlist')">
+            <form @submit.prevent="createPlaylist" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('common.title') }}</label>
+                    <input v-model="form.title" type="text" class="input" required />
+                    <p v-if="form.errors.title" class="text-red-500 text-sm mt-1">{{ form.errors.title }}</p>
                 </div>
-                <form @submit.prevent="createPlaylist" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('common.title') }}</label>
-                        <input v-model="form.title" type="text" class="input" required />
-                        <p v-if="form.errors.title" class="text-red-500 text-sm mt-1">{{ form.errors.title }}</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('common.description') }}</label>
-                        <textarea v-model="form.description" rows="3" class="input resize-none"></textarea>
-                        <p v-if="form.errors.description" class="text-red-500 text-sm mt-1">{{ form.errors.description }}</p>
-                    </div>
-                    <div class="flex justify-end gap-2">
-                        <button type="button" @click="showCreateModal = false" class="btn btn-ghost">{{ t('common.cancel') }}</button>
-                        <button type="submit" :disabled="form.processing" class="btn btn-primary">{{ t('common.create') }}</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('common.description') }}</label>
+                    <textarea v-model="form.description" rows="3" class="input resize-none"></textarea>
+                    <p v-if="form.errors.description" class="text-red-500 text-sm mt-1">{{ form.errors.description }}</p>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" @click="showCreateModal = false" class="btn btn-ghost">{{ t('common.cancel') }}</button>
+                    <button type="submit" :disabled="form.processing" class="btn btn-primary">{{ t('common.create') }}</button>
+                </div>
+            </form>
+        </BaseDialog>
     </AppLayout>
 </template>
