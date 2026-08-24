@@ -7,6 +7,8 @@ import { usePushNotifications } from '@/Composables/usePushNotifications';
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
 import BaseDialog from '@/Components/UI/BaseDialog.vue';
+import BaseSwitch from '@/Components/UI/BaseSwitch.vue';
+import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui';
 
 const { t } = useI18n();
 
@@ -287,29 +289,29 @@ const tabs = computed(() => {
         <div class="max-w-4xl mx-auto">
             <h1 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-text-primary">{{ t('settings.title') }}</h1>
 
-            <div class="flex flex-col md:flex-row gap-4 sm:gap-6">
+            <TabsRoot v-model="activeTab" orientation="vertical" class="flex flex-col md:flex-row gap-4 sm:gap-6">
                 <!-- Sidebar / Horizontal tabs on mobile -->
                 <div class="md:w-48 shrink-0">
-                    <nav class="flex md:flex-col gap-1 overflow-x-auto scrollbar-hide -mx-1 px-1 md:mx-0 md:px-0 pb-2 md:pb-0">
-                        <button
+                    <TabsList class="flex md:flex-col gap-1 overflow-x-auto scrollbar-hide -mx-1 px-1 md:mx-0 md:px-0 pb-2 md:pb-0">
+                        <TabsTrigger
                             v-for="tab in tabs"
                             :key="tab.id"
-                            @click="activeTab = tab.id"
+                            :value="tab.id"
                             :class="['flex items-center gap-2 sm:gap-3 px-3 py-2 rounded-lg text-start transition-colors whitespace-nowrap shrink-0 md:w-full text-sm sm:text-base']"
-                            :style="activeTab === tab.id 
-                                ? { backgroundColor: 'var(--color-accent)', color: 'white' } 
+                            :style="activeTab === tab.id
+                                ? { backgroundColor: 'var(--color-accent)', color: 'white' }
                                 : { color: 'var(--color-text-secondary)' }"
                         >
                             <component :is="tab.icon" class="w-4 h-4 sm:w-5 sm:h-5" />
                             <span>{{ tab.name }}</span>
-                        </button>
-                    </nav>
+                        </TabsTrigger>
+                    </TabsList>
                 </div>
 
                 <!-- Content -->
                 <div class="flex-1">
                     <!-- Profile Tab -->
-                    <div v-if="activeTab === 'profile'" class="space-y-6">
+                    <TabsContent value="profile" class="space-y-6">
                         <!-- Profile Photo -->
                         <div class="card p-6">
                             <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.profile_images') }}</h2>
@@ -389,10 +391,11 @@ const tabs = computed(() => {
                                 Delete My Account
                             </button>
                         </div>
-                    </div>
+                    </TabsContent>
 
                     <!-- Password Tab -->
-                    <div v-if="activeTab === 'password'" class="card p-6">
+                    <TabsContent value="password" class="focus:outline-none">
+                    <div class="card p-6">
                         <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.change_password') }}</h2>
                         <form @submit.prevent="updatePassword" class="space-y-4">
                             <div>
@@ -420,7 +423,7 @@ const tabs = computed(() => {
                     </div>
 
                     <!-- Two-Factor Authentication -->
-                    <div v-if="activeTab === 'password'" class="card p-6 mt-6">
+                    <div class="card p-6 mt-6">
                         <div class="flex items-center gap-3 mb-4">
                             <ShieldCheck class="w-5 h-5 text-accent" />
                             <h2 class="text-lg font-semibold text-text-primary">Two-Factor Authentication</h2>
@@ -505,9 +508,10 @@ const tabs = computed(() => {
                             <button @click="finishTwoFactorSetup" class="btn btn-primary text-sm">I've saved these codes</button>
                         </template>
                     </div>
+                    </TabsContent>
 
                     <!-- Notifications Tab -->
-                    <div v-if="activeTab === 'notifications'" class="card p-6">
+                    <TabsContent value="notifications" class="card p-6">
                         <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.notification_prefs') }}</h2>
                         <form @submit.prevent="updateNotifications" class="space-y-4">
                             <div v-if="adminNotifs.email_notifications !== false" class="flex items-center justify-between">
@@ -515,22 +519,14 @@ const tabs = computed(() => {
                                     <p class="text-text-primary">{{ t('settings.email_notifications') }}</p>
                                     <p class="text-sm text-text-secondary">{{ t('settings.email_notifications_desc') }}</p>
                                 </div>
-                                <input 
-                                    v-model="notificationForm.email_notifications" 
-                                    type="checkbox" 
-                                    class="w-5 h-5 rounded bg-dark-700 border-dark-600"
-                                />
+                                <BaseSwitch v-model="notificationForm.email_notifications" :label="t('settings.email_notifications')" />
                             </div>
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-text-primary">{{ t('settings.push_notifications') }}</p>
                                     <p class="text-sm text-text-secondary">{{ t('settings.push_notifications_desc') }}</p>
                                 </div>
-                                <input 
-                                    v-model="notificationForm.push_notifications" 
-                                    type="checkbox" 
-                                    class="w-5 h-5 rounded bg-dark-700 border-dark-600"
-                                />
+                                <BaseSwitch v-model="notificationForm.push_notifications" :label="t('settings.push_notifications')" />
                             </div>
 
                             <!-- Browser Push Subscription -->
@@ -555,20 +551,16 @@ const tabs = computed(() => {
                                     <p class="text-text-primary">{{ t('settings.subscription_updates') }}</p>
                                     <p class="text-sm text-text-secondary">{{ t('settings.subscription_updates_desc') }}</p>
                                 </div>
-                                <input 
-                                    v-model="notificationForm.subscription_notifications" 
-                                    type="checkbox" 
-                                    class="w-5 h-5 rounded bg-dark-700 border-dark-600"
-                                />
+                                <BaseSwitch v-model="notificationForm.subscription_notifications" :label="t('settings.subscription_updates')" />
                             </div>
                             <button type="submit" :disabled="notificationForm.processing" class="btn btn-primary">
                                 {{ t('settings.save_preferences') }}
                             </button>
                         </form>
-                    </div>
+                    </TabsContent>
 
                     <!-- Privacy Tab -->
-                    <div v-if="activeTab === 'privacy'" class="card p-6">
+                    <TabsContent value="privacy" class="card p-6">
                         <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.privacy_settings') }}</h2>
                         <form @submit.prevent="updatePrivacy" class="space-y-4">
                             <div class="flex items-center justify-between">
@@ -576,33 +568,21 @@ const tabs = computed(() => {
                                     <p class="text-text-primary">{{ t('settings.show_watch_history') }}</p>
                                     <p class="text-sm text-text-secondary">{{ t('settings.show_watch_history_desc') }}</p>
                                 </div>
-                                <input 
-                                    v-model="privacyForm.show_watch_history"
-                                    type="checkbox" 
-                                    class="w-5 h-5 rounded bg-dark-700 border-dark-600" 
-                                />
+                                <BaseSwitch v-model="privacyForm.show_watch_history" :label="t('settings.show_watch_history')" />
                             </div>
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-text-primary">{{ t('settings.show_liked_videos') }}</p>
                                     <p class="text-sm text-text-secondary">{{ t('settings.show_liked_videos_desc') }}</p>
                                 </div>
-                                <input 
-                                    v-model="privacyForm.show_liked_videos"
-                                    type="checkbox" 
-                                    class="w-5 h-5 rounded bg-dark-700 border-dark-600" 
-                                />
+                                <BaseSwitch v-model="privacyForm.show_liked_videos" :label="t('settings.show_liked_videos')" />
                             </div>
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-text-primary">{{ t('settings.allow_comments') }}</p>
                                     <p class="text-sm text-text-secondary">{{ t('settings.allow_comments_desc') }}</p>
                                 </div>
-                                <input 
-                                    v-model="privacyForm.allow_comments"
-                                    type="checkbox" 
-                                    class="w-5 h-5 rounded bg-dark-700 border-dark-600" 
-                                />
+                                <BaseSwitch v-model="privacyForm.allow_comments" :label="t('settings.allow_comments')" />
                             </div>
                             <button type="submit" :disabled="privacyForm.processing" class="btn btn-primary">
                                 {{ t('settings.save_changes') }}
@@ -620,10 +600,10 @@ const tabs = computed(() => {
                                 Download My Data
                             </button>
                         </div>
-                    </div>
+                    </TabsContent>
 
                     <!-- Billing Tab -->
-                    <div v-if="activeTab === 'billing'" class="card p-6">
+                    <TabsContent value="billing" class="card p-6">
                         <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.billing') }}</h2>
                         <div class="space-y-4">
                             <div class="p-4 rounded-lg bg-bg-secondary">
@@ -683,10 +663,10 @@ const tabs = computed(() => {
                                 </ul>
                             </div>
                         </div>
-                    </div>
+                    </TabsContent>
 
                 </div>
-            </div>
+            </TabsRoot>
         </div>
 
         <!-- Disable 2FA Confirmation Modal -->

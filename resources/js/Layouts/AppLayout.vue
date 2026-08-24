@@ -1,7 +1,10 @@
 <script setup>
 import { ref, computed, nextTick, onMounted, watch } from 'vue';
-import { useDebounceFn, useWindowScroll, onClickOutside } from '@vueuse/core';
-import { DropdownMenuItem, DropdownMenuLabel } from 'reka-ui';
+import { useWindowScroll } from '@vueuse/core';
+import {
+    ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxRoot,
+    DropdownMenuItem, DropdownMenuLabel,
+} from 'reka-ui';
 import { Link, usePage, useForm, router } from '@inertiajs/vue3';
 import { 
     Menu, Search, Upload, Bell, User, LogOut, Settings, Wallet, 
@@ -16,6 +19,7 @@ import { useToast } from '@/Composables/useToast';
 import { useFetch } from '@/Composables/useFetch';
 import { useI18n } from '@/Composables/useI18n';
 import { useGlobalAutoTranslate } from '@/Composables/useGlobalAutoTranslate';
+import { useSearchSuggestions } from '@/Composables/useSearchSuggestions';
 import ToastContainer from '@/Components/ToastContainer.vue';
 import AgeVerificationModal from '@/Components/AgeVerificationModal.vue';
 import AdInterstitial from '@/Components/AdInterstitial.vue';
@@ -23,6 +27,7 @@ import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
 import AdSlot from '@/Components/AdSlot.vue';
 import BaseDialog from '@/Components/UI/BaseDialog.vue';
 import BaseDropdown from '@/Components/UI/BaseDropdown.vue';
+import SearchSuggestionList from '@/Components/SearchSuggestionList.vue';
 import GenderMaleIcon from '@/Components/Icons/GenderMaleIcon.vue';
 import GenderFemaleIcon from '@/Components/Icons/GenderFemaleIcon.vue';
 import GaySymbolIcon from '@/Components/Icons/GaySymbolIcon.vue';
@@ -81,14 +86,18 @@ const submitLogin = () => {
 };
 const mobileSearchQuery = ref('');
 
-// Live search autocomplete state
-const searchSuggestions = ref({ videos: [], channels: [] });
-const showSuggestions = ref(false);
-const suggestLoading = ref(false);
-const searchInputRef = ref(null);
-const suggestionsRef = ref(null);
-const activeSuggestionIndex = ref(-1);
-const totalSuggestions = computed(() => searchSuggestions.value.videos.length + searchSuggestions.value.channels.length);
+// Live search autocomplete. The fetch/debounce logic lives in the composable;
+// the arrow/Enter/Escape handling that used to sit here is Reka Combobox's job
+// now, so `activeSuggestionIndex` and its modular arithmetic are gone.
+const {
+    suggestions: searchSuggestions,
+    hasResults: hasSuggestions,
+    isLoading: suggestLoading,
+    isOpen: showSuggestions,
+    search: searchSuggest,
+    clear: clearSuggestions,
+    urlFor: suggestionUrl,
+} = useSearchSuggestions();
 
 // Menu items from admin panel
 const menuItems = computed(() => page.props.menuItems || { header: [], mobile: [] });
@@ -158,84 +167,24 @@ const handleMobileSearch = () => {
     if (mobileSearchQuery.value.trim()) {
         window.location.href = `${localizedUrl('/search')}?q=${encodeURIComponent(mobileSearchQuery.value)}`;
         showMobileSearch.value = false;
-        showSuggestions.value = false;
+        clearSuggestions();
     }
 };
 
 const handleSearch = () => {
     if (searchQuery.value.trim()) {
         window.location.href = `${localizedUrl('/search')}?q=${encodeURIComponent(searchQuery.value)}`;
-        showSuggestions.value = false;
+        clearSuggestions();
     }
 };
 
-const fetchSuggestions = async (query) => {
-    if (!query || query.length < 2) {
-        searchSuggestions.value = { videos: [], channels: [] };
-        showSuggestions.value = false;
-        suggestLoading.value = false;
-        return;
-    }
-    suggestLoading.value = true;
-    const { ok, data } = await get(`${localizedUrl('/api/search-suggest')}?q=${encodeURIComponent(query)}`);
-    suggestLoading.value = false;
-    if (ok && data) {
-        searchSuggestions.value = { videos: data.videos || [], channels: data.channels || [] };
-        showSuggestions.value = true;
-        activeSuggestionIndex.value = -1;
-    }
+// Combobox emits the whole suggestion object as its model value on select.
+const onSuggestionSelect = (suggestion) => {
+    if (!suggestion) return;
+    clearSuggestions();
+    showMobileSearch.value = false;
+    router.visit(suggestionUrl(suggestion));
 };
-
-const debouncedFetchSuggestions = useDebounceFn((query) => fetchSuggestions(query), 250);
-
-const navigateToSuggestion = (item, type) => {
-    showSuggestions.value = false;
-    if (type === 'video') {
-        router.visit(localizedUrl(`/${item.slug}`));
-    } else if (type === 'channel') {
-        router.visit(localizedUrl(`/channel/${item.username}`));
-    }
-};
-
-const onSearchInput = () => {
-    debouncedFetchSuggestions(searchQuery.value);
-};
-
-const onSearchKeydown = (e) => {
-    if (!showSuggestions.value || totalSuggestions.value === 0) return;
-    if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        activeSuggestionIndex.value = (activeSuggestionIndex.value + 1) % totalSuggestions.value;
-    } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        activeSuggestionIndex.value = (activeSuggestionIndex.value - 1 + totalSuggestions.value) % totalSuggestions.value;
-    } else if (e.key === 'Enter') {
-        e.preventDefault();
-        if (activeSuggestionIndex.value >= 0) {
-            const videoCount = searchSuggestions.value.videos.length;
-            if (activeSuggestionIndex.value < videoCount) {
-                navigateToSuggestion(searchSuggestions.value.videos[activeSuggestionIndex.value], 'video');
-            } else {
-                navigateToSuggestion(searchSuggestions.value.channels[activeSuggestionIndex.value - videoCount], 'channel');
-            }
-        } else if (showMobileSearch.value) {
-            handleMobileSearch();
-        } else {
-            handleSearch();
-        }
-    } else if (e.key === 'Escape') {
-        showSuggestions.value = false;
-        activeSuggestionIndex.value = -1;
-    }
-};
-
-const isActiveSuggestion = (index) => index === activeSuggestionIndex.value;
-
-// Every other dropdown in this layout is now a Reka DropdownMenu, which
-// dismisses itself on outside click. The search-suggestions panel is still
-// hand-rolled (Combobox conversion is deferred to Phase 5), so it keeps its own
-// outside-click handler — via `onClickOutside`, which cleans itself up.
-onClickOutside(suggestionsRef, () => { showSuggestions.value = false; }, { ignore: [searchInputRef] });
 
 onMounted(() => {
     if (user.value) {
@@ -273,8 +222,7 @@ watch(flash, (newFlash) => {
 
 // Hide search suggestions on page navigation
 watch(() => page.url, () => {
-    showSuggestions.value = false;
-    activeSuggestionIndex.value = -1;
+    clearSuggestions();
 });
 
 const getIconColor = (navKey) => {
@@ -401,88 +349,40 @@ const handleMobileNavClick = (item) => {
                 </div>
 
                 <!-- Center: Search -->
-                <div class="flex-1 max-w-2xl mx-4 hidden md:block relative">
-                    <form @submit.prevent="handleSearch" class="relative" role="search" ref="searchInputRef">
-                        <input
-                            v-model="searchQuery"
-                            type="text"
-                            :placeholder="t('common.search_placeholder')"
-                            class="input pe-12 w-full"
-                            aria-label="Search videos"
-                            @input="onSearchInput"
-                            @keydown="onSearchKeydown"
-                            autocomplete="off"
-                            autocapitalize="off"
-                        />
-                        <button type="submit" class="absolute end-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80 text-text-muted" aria-label="Search">
-                            <Search class="w-5 h-5" />
-                        </button>
-                    </form>
+                <ComboboxRoot
+                    v-model:open="showSuggestions"
+                    ignore-filter
+                    :reset-search-term-on-blur="false"
+                    class="flex-1 max-w-2xl mx-4 hidden md:block relative"
+                    @update:model-value="onSuggestionSelect"
+                >
+                    <ComboboxAnchor as-child>
+                        <form @submit.prevent="handleSearch" class="relative" role="search">
+                            <ComboboxInput
+                                v-model="searchQuery"
+                                :placeholder="t('common.search_placeholder')"
+                                class="input pe-12 w-full"
+                                aria-label="Search videos"
+                                autocomplete="off"
+                                autocapitalize="off"
+                                @input="searchSuggest($event.target.value)"
+                            />
+                            <button type="submit" class="absolute end-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80 text-text-muted" aria-label="Search">
+                                <Search class="w-5 h-5" />
+                            </button>
+                        </form>
+                    </ComboboxAnchor>
 
                     <!-- Autocomplete Dropdown -->
-                    <div
-                        v-if="showSuggestions && (searchSuggestions.videos.length || searchSuggestions.channels.length || suggestLoading)"
-                        ref="suggestionsRef"
-                        class="absolute top-full start-0 end-0 mt-1 card shadow-xl bg-bg-card border border-border z-50 max-h-80 overflow-y-auto scrollbar-hide"
+                    <ComboboxContent
+                        v-if="hasSuggestions || suggestLoading"
+                        position="popper"
+                        :side-offset="4"
+                        class="card shadow-xl bg-bg-card border border-border z-[9999] max-h-80 overflow-y-auto scrollbar-hide w-[var(--reka-combobox-trigger-width)]"
                     >
-                        <div v-if="suggestLoading" class="p-3 text-sm text-text-muted flex items-center gap-2">
-                            <Loader2 class="w-4 h-4 animate-spin" />
-                            <span>{{ t('common.loading') }}</span>
-                        </div>
-
-                        <template v-if="!suggestLoading">
-                            <!-- Videos -->
-                            <div v-if="searchSuggestions.videos.length">
-                                <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted bg-bg-secondary">{{ t('common.videos') }}</div>
-                                <button
-                                    v-for="(video, idx) in searchSuggestions.videos"
-                                    :key="video.id"
-                                    type="button"
-                                    class="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-secondary transition-colors text-start"
-                                    :class="{ 'bg-bg-secondary': isActiveSuggestion(idx) }"
-                                    @click="navigateToSuggestion(video, 'video')"
-                                    @mouseenter="activeSuggestionIndex = idx"
-                                >
-                                    <div class="w-10 h-7 shrink-0 rounded overflow-hidden bg-black">
-                                        <img :src="video.thumbnail_url || '/images/default_avatar.webp'" :alt="video.title" class="w-full h-full object-cover" loading="lazy" />
-                                    </div>
-                                    <div class="min-w-0 flex-1">
-                                        <p class="text-sm font-medium truncate text-text-primary">{{ video.title }}</p>
-                                        <p class="text-[11px] text-text-muted">{{ video.username }} <span v-if="video.duration_formatted" class="ms-1">• {{ video.duration_formatted }}</span></p>
-                                    </div>
-                                    <Film class="w-4 h-4 text-text-muted shrink-0" />
-                                </button>
-                            </div>
-
-                            <!-- Channels -->
-                            <div v-if="searchSuggestions.channels.length">
-                                <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted bg-bg-secondary">{{ t('common.channels') }}</div>
-                                <button
-                                    v-for="(channel, idx) in searchSuggestions.channels"
-                                    :key="channel.id"
-                                    type="button"
-                                    class="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-secondary transition-colors text-start"
-                                    :class="{ 'bg-bg-secondary': isActiveSuggestion(searchSuggestions.videos.length + idx) }"
-                                    @click="navigateToSuggestion(channel, 'channel')"
-                                    @mouseenter="activeSuggestionIndex = searchSuggestions.videos.length + idx"
-                                >
-                                    <div class="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-bg-secondary">
-                                        <img :src="channel.avatar_url || '/images/default_avatar.webp'" :alt="channel.channel_name" class="w-full h-full object-cover" loading="lazy" />
-                                    </div>
-                                    <div class="min-w-0 flex-1">
-                                        <p class="text-sm font-medium truncate text-text-primary">{{ channel.channel_name }}</p>
-                                        <p class="text-[11px] text-text-muted">@{{ channel.username }}</p>
-                                    </div>
-                                    <User class="w-4 h-4 text-text-muted shrink-0" />
-                                </button>
-                            </div>
-
-                            <div v-if="!searchSuggestions.videos.length && !searchSuggestions.channels.length" class="p-3 text-sm text-text-muted text-center">
-                                {{ t('search.no_results') }}
-                            </div>
-                        </template>
-                    </div>
-                </div>
+                        <SearchSuggestionList :suggestions="searchSuggestions" :loading="suggestLoading" />
+                    </ComboboxContent>
+                </ComboboxRoot>
 
                 <!-- Right: Actions -->
                 <div class="flex items-center gap-2">
@@ -817,89 +717,42 @@ const handleMobileNavClick = (item) => {
                 :leave="{ opacity: 0, y: -10, transition: { duration: 0.12 } }"
                 class="w-full max-w-lg card p-4 shadow-xl bg-bg-card"
             >
-                <form @submit.prevent="handleMobileSearch" class="flex items-center gap-2" role="search">
-                    <input
-                        v-model="mobileSearchQuery"
-                        type="text"
-                        :placeholder="t('common.search_placeholder')"
-                        class="input flex-1"
-                        aria-label="Search videos"
-                        autofocus
-                        @input="debouncedFetchSuggestions(mobileSearchQuery.value)"
-                        @keydown="onSearchKeydown"
-                        autocomplete="off"
-                        autocapitalize="off"
-                    />
-                    <button type="submit" class="btn btn-primary p-2" aria-label="Search">
-                        <Search class="w-5 h-5" />
-                    </button>
-                    <button type="button" @click="showMobileSearch = false; showSuggestions = false" class="p-2 rounded-full text-text-secondary" aria-label="Close search">
-                        <X class="w-5 h-5" />
-                    </button>
-                </form>
-
-                <!-- Mobile Autocomplete Dropdown -->
-                <div
-                    v-if="showSuggestions && (searchSuggestions.videos.length || searchSuggestions.channels.length || suggestLoading)"
-                    class="mt-2 max-h-72 overflow-y-auto scrollbar-hide"
+                <ComboboxRoot
+                    v-model:open="showSuggestions"
+                    ignore-filter
+                    :reset-search-term-on-blur="false"
+                    @update:model-value="onSuggestionSelect"
                 >
-                    <div v-if="suggestLoading" class="p-3 text-sm text-text-muted flex items-center gap-2">
-                        <Loader2 class="w-4 h-4 animate-spin" />
-                        <span>{{ t('common.loading') }}</span>
-                    </div>
-
-                    <template v-if="!suggestLoading">
-                        <!-- Videos -->
-                        <div v-if="searchSuggestions.videos.length">
-                            <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted bg-bg-secondary">{{ t('common.videos') }}</div>
-                            <button
-                                v-for="(video, idx) in searchSuggestions.videos"
-                                :key="video.id"
-                                type="button"
-                                class="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-secondary transition-colors text-start"
-                                :class="{ 'bg-bg-secondary': isActiveSuggestion(idx) }"
-                                @click="navigateToSuggestion(video, 'video')"
-                                @mouseenter="activeSuggestionIndex = idx"
-                            >
-                                <div class="w-10 h-7 shrink-0 rounded overflow-hidden bg-black">
-                                    <img :src="video.thumbnail_url || '/images/default_avatar.webp'" :alt="video.title" class="w-full h-full object-cover" loading="lazy" />
-                                </div>
-                                <div class="min-w-0 flex-1">
-                                    <p class="text-sm font-medium truncate text-text-primary">{{ video.title }}</p>
-                                    <p class="text-[11px] text-text-muted">{{ video.username }} <span v-if="video.duration_formatted" class="ms-1">• {{ video.duration_formatted }}</span></p>
-                                </div>
-                                <Film class="w-4 h-4 text-text-muted shrink-0" />
+                    <ComboboxAnchor as-child>
+                        <form @submit.prevent="handleMobileSearch" class="flex items-center gap-2" role="search">
+                            <ComboboxInput
+                                v-model="mobileSearchQuery"
+                                :placeholder="t('common.search_placeholder')"
+                                class="input flex-1"
+                                aria-label="Search videos"
+                                auto-focus
+                                autocomplete="off"
+                                autocapitalize="off"
+                                @input="searchSuggest($event.target.value)"
+                            />
+                            <button type="submit" class="btn btn-primary p-2" aria-label="Search">
+                                <Search class="w-5 h-5" />
                             </button>
-                        </div>
-
-                        <!-- Channels -->
-                        <div v-if="searchSuggestions.channels.length">
-                            <div class="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted bg-bg-secondary">{{ t('common.channels') }}</div>
-                            <button
-                                v-for="(channel, idx) in searchSuggestions.channels"
-                                :key="channel.id"
-                                type="button"
-                                class="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-secondary transition-colors text-start"
-                                :class="{ 'bg-bg-secondary': isActiveSuggestion(searchSuggestions.videos.length + idx) }"
-                                @click="navigateToSuggestion(channel, 'channel')"
-                                @mouseenter="activeSuggestionIndex = searchSuggestions.videos.length + idx"
-                            >
-                                <div class="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-bg-secondary">
-                                    <img :src="channel.avatar_url || '/images/default_avatar.webp'" :alt="channel.channel_name" class="w-full h-full object-cover" loading="lazy" />
-                                </div>
-                                <div class="min-w-0 flex-1">
-                                    <p class="text-sm font-medium truncate text-text-primary">{{ channel.channel_name }}</p>
-                                    <p class="text-[11px] text-text-muted">@{{ channel.username }}</p>
-                                </div>
-                                <User class="w-4 h-4 text-text-muted shrink-0" />
+                            <button type="button" @click="showMobileSearch = false; clearSuggestions()" class="p-2 rounded-full text-text-secondary" aria-label="Close search">
+                                <X class="w-5 h-5" />
                             </button>
-                        </div>
+                        </form>
+                    </ComboboxAnchor>
 
-                        <div v-if="!searchSuggestions.videos.length && !searchSuggestions.channels.length" class="p-3 text-sm text-text-muted text-center">
-                            {{ t('search.no_results') }}
-                        </div>
-                    </template>
-                </div>
+                    <!-- Mobile Autocomplete Dropdown: rendered inline under the input,
+                         not portalled, so it stays inside the overlay card. -->
+                    <ComboboxContent
+                        v-if="hasSuggestions || suggestLoading"
+                        class="mt-2 max-h-72 overflow-y-auto scrollbar-hide"
+                    >
+                        <SearchSuggestionList :suggestions="searchSuggestions" :loading="suggestLoading" />
+                    </ComboboxContent>
+                </ComboboxRoot>
             </div>
         </div>
 

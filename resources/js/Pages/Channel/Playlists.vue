@@ -5,6 +5,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import { ListVideo, Heart } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
+import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui';
 
 const { t } = useI18n();
 
@@ -78,10 +79,16 @@ const activeList = ref(null);
             </nav>
         </div>
 
-        <!-- Playlist Sub-tabs: User Playlists / Favorite Playlists -->
-        <div class="flex gap-3 mb-6">
-            <button
-                @click="switchTab('user')"
+        <!--
+            Playlist Sub-tabs. `switchTab` stays the single source of truth: it
+            is wired to Reka's @update:model-value rather than being replaced by
+            a second v-model binding, so the URL query param and the tab state
+            can never drift apart.
+        -->
+        <TabsRoot :model-value="currentTab" @update:model-value="switchTab">
+        <TabsList class="flex gap-3 mb-6">
+            <TabsTrigger
+                value="user"
                 class="px-4 py-2 rounded-full text-sm font-medium transition-colors"
                 :style="{
                     backgroundColor: currentTab === 'user' ? 'var(--color-accent)' : 'var(--color-bg-card)',
@@ -90,9 +97,9 @@ const activeList = ref(null);
             >
                 <ListVideo class="w-4 h-4 inline-block me-1.5 -mt-0.5" />
                 {{ t('playlist.your_playlists') }}
-            </button>
-            <button
-                @click="switchTab('favorites')"
+            </TabsTrigger>
+            <TabsTrigger
+                value="favorites"
                 class="px-4 py-2 rounded-full text-sm font-medium transition-colors"
                 :style="{
                     backgroundColor: currentTab === 'favorites' ? 'var(--color-accent)' : 'var(--color-bg-card)',
@@ -101,11 +108,11 @@ const activeList = ref(null);
             >
                 <Heart class="w-4 h-4 inline-block me-1.5 -mt-0.5" />
                 {{ t('playlist.favorites') }}
-            </button>
-        </div>
+            </TabsTrigger>
+        </TabsList>
 
         <!-- User Playlists Grid -->
-        <template v-if="currentTab === 'user'">
+        <TabsContent value="user">
             <div v-if="playlists.data.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 <Link
                     v-for="playlist in playlists.data"
@@ -127,10 +134,10 @@ const activeList = ref(null);
                 <ListVideo class="w-12 h-12 mx-auto mb-3 text-text-muted" />
                 <p class="text-text-muted">{{ t('channel.no_playlists') }}</p>
             </div>
-        </template>
+        </TabsContent>
 
         <!-- Favorite Playlists Grid -->
-        <template v-if="currentTab === 'favorites'">
+        <TabsContent value="favorites">
             <div v-if="favoritePlaylists?.data?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 <Link
                     v-for="playlist in favoritePlaylists.data"
@@ -155,6 +162,7 @@ const activeList = ref(null);
                 <Heart class="w-12 h-12 mx-auto mb-3 text-text-muted" />
                 <p class="text-text-muted">{{ t('channel.no_playlists') }}</p>
             </div>
-        </template>
+        </TabsContent>
+        </TabsRoot>
     </AppLayout>
 </template>

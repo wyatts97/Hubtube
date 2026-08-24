@@ -2,8 +2,9 @@
 import { Link, router, usePage } from '@inertiajs/vue3';
 import SeoHead from '@/Components/SeoHead.vue';
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { onClickOutside } from '@vueuse/core';
+import { DropdownMenuItem } from 'reka-ui';
 import { useFetch } from '@/Composables/useFetch';
+import BaseDropdown from '@/Components/UI/BaseDropdown.vue';
 import AdSlot from '@/Components/AdSlot.vue';
 import { useToast } from '@/Composables/useToast';
 import { useI18n } from '@/Composables/useI18n';
@@ -330,8 +331,6 @@ const handleSubscribe = async () => {
 };
 
 // Save to Playlist
-const showPlaylistMenu = ref(false);
-const playlistMenuRef = ref(null);
 const playlists = ref(props.userPlaylists.map(p => ({ ...p })));
 const savingPlaylist = ref(null);
 const newPlaylistTitle = ref('');
@@ -376,11 +375,6 @@ const createAndAddPlaylist = async () => {
     }
     creatingPlaylist.value = false;
 };
-
-// Close playlist menu on outside click
-onClickOutside(playlistMenuRef, () => {
-    showPlaylistMenu.value = false;
-});
 
 onMounted(() => {
     // Ad triggers are set up via the VideoPlayer `ready` event (see onPlayerReady)
@@ -715,24 +709,33 @@ const getRelatedTitle = (video) => {
                                 <span class="hidden sm:inline">{{ t('common.download') }}</span>
                             </a>
 
-                            <!-- Save to Playlist -->
-                            <div ref="playlistMenuRef" class="relative playlist-menu-area shrink-0">
-                                <button @click.stop="user ? (showPlaylistMenu = !showPlaylistMenu) : router.visit('/login')" class="btn btn-secondary gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
-                                    <ListVideo class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                    <span class="hidden sm:inline">{{ t('common.save') }}</span>
-                                </button>
-                                <div
-                                    v-if="showPlaylistMenu"
-                                    class="absolute end-0 sm:end-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-72 max-w-72 rounded-xl shadow-xl z-50 overflow-hidden bg-bg-card border border-border"
+                            <!--
+                                Save to Playlist. Every row uses `@select.prevent`:
+                                Reka closes a menu on item-select by default, but this
+                                panel is a multi-toggle checklist plus an inline create
+                                form, so no interaction inside it should close the menu.
+                            -->
+                            <div class="shrink-0">
+                                <BaseDropdown
+                                    v-if="user"
+                                    :side-offset="8"
+                                    content-class="w-[calc(100vw-2rem)] sm:w-72 max-w-72 rounded-xl shadow-xl overflow-hidden"
                                 >
+                                    <template #trigger>
+                                        <button class="btn btn-secondary gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
+                                            <ListVideo class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                                            <span class="hidden sm:inline">{{ t('common.save') }}</span>
+                                        </button>
+                                    </template>
+
                                     <div class="p-3 font-medium text-sm border-b border-border text-text-primary">{{ t('video.save_to_playlist') }}</div>
                                     <div class="max-h-60 overflow-y-auto scrollbar-hide">
-                                        <button
+                                        <DropdownMenuItem
                                             v-for="pl in playlists"
                                             :key="pl.id"
-                                            @click="toggleVideoInPlaylist(pl)"
                                             :disabled="savingPlaylist === pl.id"
-                                            class="flex items-center gap-3 w-full px-3 py-2.5 text-start text-sm hover:opacity-80 transition-colors text-text-secondary"
+                                            class="flex items-center gap-3 w-full px-3 py-2.5 text-start text-sm transition-colors text-text-secondary cursor-pointer outline-none data-[highlighted]:bg-bg-secondary data-[disabled]:opacity-60"
+                                            @select.prevent="toggleVideoInPlaylist(pl)"
                                         >
                                             <div
                                                 class="w-5 h-5 rounded flex items-center justify-center shrink-0"
@@ -745,10 +748,18 @@ const getRelatedTitle = (video) => {
                                             <span class="truncate flex-1">{{ pl.title }}</span>
                                             <Loader2 v-if="savingPlaylist === pl.id" class="w-4 h-4 animate-spin shrink-0" />
                                             <span v-else class="text-xs shrink-0 text-text-muted">{{ pl.videos_count }} videos</span>
-                                        </button>
+                                        </DropdownMenuItem>
                                         <div v-if="!playlists.length" class="px-3 py-4 text-center text-sm text-text-muted">{{ t('playlist.no_playlists') }}</div>
                                     </div>
-                                    <div class="p-2 border-t border-border">
+                                    <!--
+                                        Reka's menu typeahead ignores keydowns whose target is an
+                                        input/textarea, so typing a playlist name here does not
+                                        hijack focus into the list above.
+                                    -->
+                                    <DropdownMenuItem
+                                        class="p-2 border-t border-border outline-none"
+                                        @select.prevent
+                                    >
                                         <div class="flex items-center gap-2">
                                             <input
                                                 v-model="newPlaylistTitle"
@@ -766,8 +777,13 @@ const getRelatedTitle = (video) => {
                                                 <Plus v-else class="w-4 h-4" />
                                             </button>
                                         </div>
-                                    </div>
-                                </div>
+                                    </DropdownMenuItem>
+                                </BaseDropdown>
+
+                                <button v-else @click="router.visit('/login')" class="btn btn-secondary gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
+                                    <ListVideo class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                                    <span class="hidden sm:inline">{{ t('common.save') }}</span>
+                                </button>
                             </div>
 
                             <button @click="user ? (showReportModal = true) : router.visit('/login')" class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">

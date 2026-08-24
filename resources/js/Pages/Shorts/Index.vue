@@ -1,7 +1,7 @@
 <script setup>
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
-import { useEventListener } from '@vueuse/core';
+import { ref, computed, onMounted, nextTick, watch } from 'vue';
+import { useEventListener, useIntersectionObserver } from '@vueuse/core';
 import { useFetch } from '@/Composables/useFetch';
 import { useI18n } from '@/Composables/useI18n';
 import { useToast } from '@/Composables/useToast';
@@ -9,6 +9,8 @@ import { formatViews } from '@/Composables/useFormatters';
 import ShortsAdSlide from '@/Components/ShortsAdSlide.vue';
 import ShareModal from '@/Components/ShareModal.vue';
 import ReportModal from '@/Components/ReportModal.vue';
+import BaseDropdown from '@/Components/UI/BaseDropdown.vue';
+import { DropdownMenuItem } from 'reka-ui';
 import SeoHead from '@/Components/SeoHead.vue';
 import {
     Heart, MessageCircle, Share2, MoreVertical, Volume2, VolumeX,
@@ -41,7 +43,6 @@ const muted = ref(true);
 const showComments = ref(false);
 const showFilters = ref(false);
 const showShareModal = ref(false);
-const showMoreMenu = ref(false);
 const showReportModal = ref(false);
 const comments = ref([]);
 const loadingComments = ref(false);
@@ -109,7 +110,6 @@ const likeShort = async () => {
 
 const shareShort = () => {
     if (!activeShort.value) return;
-    showMoreMenu.value = false;
     showShareModal.value = true;
 };
 
@@ -119,7 +119,6 @@ const openReport = () => {
         router.visit(localizedUrl('/login'));
         return;
     }
-    showMoreMenu.value = false;
     showReportModal.value = true;
 };
 
@@ -239,42 +238,45 @@ const pauseAllVideos = (exceptIndex) => {
     });
 };
 
-const setupIntersectionTracking = () => {
-    if (!feedContainer.value) return;
-    const observer = new IntersectionObserver(
-        (entries) => {
-            entries.forEach((entry) => {
-                const idx = Number(entry.target.dataset.index);
-                if (isNaN(idx)) return;
-                const item = items.value[idx];
-                const video = entry.target.querySelector('video');
-                if (!video) return;
+/**
+ * Autoplay tracking for the slide feed.
+ *
+ * This was deliberately left as a hand-rolled IntersectionObserver during the
+ * VueUse pass because it observes a *dynamic* array: `slides` grows as more
+ * shorts load via infinite scroll, and the old code only ever observed the
+ * slides that existed at the single moment `setupIntersectionTracking()` ran,
+ * so slides appended later were never tracked.
+ *
+ * `useIntersectionObserver` accepts an array target and rebuilds the observer
+ * whenever that array changes, which fixes that limitation rather than
+ * preserving it — an intentional behavior change, not a mechanical swap.
+ */
+useIntersectionObserver(
+    slides,
+    (entries) => {
+        entries.forEach((entry) => {
+            const idx = Number(entry.target.dataset.index);
+            if (isNaN(idx)) return;
+            const item = items.value[idx];
+            const video = entry.target.querySelector('video');
+            if (!video) return;
 
-                if (entry.isIntersecting && idx === currentIndex.value) {
-                    // Pause all other videos first to prevent overlap
-                    pauseAllVideos(idx);
-                    video.muted = muted.value;
-                    video.play().catch(() => {});
-                    if (item?.type === 'short') {
-                        video.setAttribute('data-viewed', 'true');
-                    }
-                } else {
-                    video.pause();
-                    video.currentTime = 0;
+            if (entry.isIntersecting && idx === currentIndex.value) {
+                // Pause all other videos first to prevent overlap
+                pauseAllVideos(idx);
+                video.muted = muted.value;
+                video.play().catch(() => {});
+                if (item?.type === 'short') {
+                    video.setAttribute('data-viewed', 'true');
                 }
-            });
-        },
-        { root: feedContainer.value, threshold: 0.6 }
-    );
-
-    slides.value.forEach((slide) => {
-        if (slide) observer.observe(slide);
-    });
-
-    return observer;
-};
-
-let observerInstance = null;
+            } else {
+                video.pause();
+                video.currentTime = 0;
+            }
+        });
+    },
+    { root: feedContainer, threshold: 0.6 }
+);
 
 useEventListener(window, 'keydown', handleKeydown);
 useEventListener(feedContainer, 'scroll', onScroll);
@@ -283,19 +285,13 @@ onMounted(() => {
     items.value = buildFeedItems(props.initialShorts?.data || []);
 
     nextTick(() => {
-        observerInstance = setupIntersectionTracking();
         if (feedContainer.value && currentIndex.value > 0) {
             feedContainer.value.scrollTop = currentIndex.value * feedContainer.value.clientHeight;
         }
     });
 });
 
-onUnmounted(() => {
-    if (observerInstance) observerInstance.disconnect();
-});
-
 watch(currentIndex, async (newIndex, oldIndex) => {
-    showMoreMenu.value = false;
     
     // Pause previous video
     if (oldIndex !== undefined && slides.value[oldIndex]) {
@@ -381,24 +377,33 @@ const goBack = () => router.visit(localizedUrl('/'));
                             <span class="text-xs font-medium">{{ item.data.comments_count || 0 }}</span>
                         </button>
 
-                        <button @click="showMoreMenu = !showMoreMenu" class="text-white relative">
-                            <MoreVertical class="w-7 h-7" />
-                        </button>
-                    </div>
+                        <BaseDropdown
+                            side="top"
+                            align="end"
+                            :side-offset="8"
+                            content-class="bg-black/80 backdrop-blur-sm rounded-xl p-2 min-w-[140px] border-white/10"
+                        >
+                            <template #trigger>
+                                <button class="text-white relative">
+                                    <MoreVertical class="w-7 h-7" />
+                                </button>
+                            </template>
 
-                    <!-- More menu popover -->
-                    <div
-                        v-if="showMoreMenu && currentIndex === index"
-                        class="absolute end-3 bottom-12 lg:bottom-8 z-30 bg-black/80 backdrop-blur-sm rounded-xl p-2 min-w-[140px] border border-white/10"
-                    >
-                        <button @click="shareShort" class="flex items-center gap-3 w-full px-3 py-2 text-white rounded-lg hover:bg-white/10">
-                            <Share2 class="w-5 h-5" />
-                            <span class="text-sm">{{ t('common.share') }}</span>
-                        </button>
-                        <button @click="openReport" class="flex items-center gap-3 w-full px-3 py-2 text-white rounded-lg hover:bg-white/10">
-                            <Flag class="w-5 h-5" />
-                            <span class="text-sm">{{ t('common.report') }}</span>
-                        </button>
+                            <DropdownMenuItem
+                                class="flex items-center gap-3 w-full px-3 py-2 text-white rounded-lg cursor-pointer outline-none data-[highlighted]:bg-white/10"
+                                @select="shareShort"
+                            >
+                                <Share2 class="w-5 h-5" />
+                                <span class="text-sm">{{ t('common.share') }}</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                class="flex items-center gap-3 w-full px-3 py-2 text-white rounded-lg cursor-pointer outline-none data-[highlighted]:bg-white/10"
+                                @select="openReport"
+                            >
+                                <Flag class="w-5 h-5" />
+                                <span class="text-sm">{{ t('common.report') }}</span>
+                            </DropdownMenuItem>
+                        </BaseDropdown>
                     </div>
 
                     <!-- Bottom info -->
