@@ -11,14 +11,14 @@ class NotificationController extends Controller
     public function index(Request $request): JsonResponse
     {
         $notifications = $request->user()
-            ->notifications()
+            ->appNotifications()
             ->with('fromUser')
             ->latest()
             ->limit(30)
             ->get();
 
         $unreadCount = $request->user()
-            ->notifications()
+            ->appNotifications()
             ->unread()
             ->count();
 
@@ -42,7 +42,7 @@ class NotificationController extends Controller
     public function markAllRead(Request $request): JsonResponse
     {
         $request->user()
-            ->notifications()
+            ->appNotifications()
             ->unread()
             ->update(['read_at' => now()]);
 
@@ -63,7 +63,7 @@ class NotificationController extends Controller
     public function unreadCount(Request $request): JsonResponse
     {
         $count = $request->user()
-            ->notifications()
+            ->appNotifications()
             ->unread()
             ->count();
 

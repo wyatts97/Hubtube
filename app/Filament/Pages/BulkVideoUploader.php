@@ -92,6 +92,24 @@ class BulkVideoUploader extends Page implements HasForms
         $this->bulkSettings['user_id'] = auth()->id();
         $this->uploadForm->fill([]);
         $this->bulkSettingsForm->fill($this->bulkSettings);
+
+        // Re-derive in-progress/completed batch state from cache so a page
+        // refresh doesn't orphan an in-flight CreateBulkVideosJob (the job
+        // keeps writing progress to cache regardless of the Livewire
+        // component's lifetime — only the $bulkToken pointer to it was
+        // previously held solely in browser/session-bound component state).
+        $actorId = (int) (auth()->id() ?? 0);
+        if ($actorId > 0) {
+            $this->createdVideoIds = Cache::get(self::resultsCacheKey($actorId), []);
+            $this->bulkToken = Cache::get(self::activeTokenCacheKey($actorId));
+            $this->isCreating = ! empty($this->createdVideoIds) || ! empty($this->bulkToken);
+
+            if ($this->bulkToken) {
+                // Hydrate immediately in case the job already finished while
+                // the admin was away from the page.
+                $this->pollBulkResults();
+            }
+        }
     }
 
     public function uploadForm(Schema $schema): Schema
@@ -354,10 +372,21 @@ class BulkVideoUploader extends Page implements HasForms
         $actorId = (int) (auth()->id() ?? 0);
         $count = count($this->entries);
 
+        // Starting a fresh batch — clear out any stale cached state from a
+        // previous batch before writing the new one.
+        if ($actorId > 0) {
+            Cache::forget(self::resultsCacheKey($actorId));
+            Cache::forget(self::activeTokenCacheKey($actorId));
+        }
+
         if ($count <= self::ASYNC_THRESHOLD) {
             // Small batch — create synchronously for immediate feedback.
             $this->createdVideoIds = app(BulkVideoCreator::class)
                 ->createMany($this->entries, $addToQueue, $actorId);
+
+            if ($actorId > 0) {
+                Cache::put(self::resultsCacheKey($actorId), $this->createdVideoIds, now()->addHours(6));
+            }
 
             AdminLogger::settingsSaved('Bulk Video Upload', [
                 'created_' . count($this->createdVideoIds) . '_videos',
@@ -368,9 +397,29 @@ class BulkVideoUploader extends Page implements HasForms
                 ->title('Created ' . count($this->createdVideoIds) . ' video(s) — processing will begin shortly')
                 ->success()
                 ->send();
+
+            if ($actorId > 0) {
+                $actor = User::find($actorId);
+                if ($actor) {
+                    $failed = $count - count($this->createdVideoIds);
+                    Notification::make()
+                        ->title('Bulk video upload finished')
+                        ->body(count($this->createdVideoIds) . " video(s) processed, {$failed} failed.")
+                        ->icon('phosphor-tray-arrow-up')
+                        ->success()
+                        ->sendToDatabase($actor);
+                }
+            }
         } else {
             // Larger batch — dispatch and poll the cache for the result.
             $this->bulkToken = (string) Str::uuid();
+            if ($actorId > 0) {
+                // Persisted separately from the job's own cache entry so
+                // mount() can rediscover the token (and thus resume polling)
+                // after a page refresh.
+                Cache::put(self::activeTokenCacheKey($actorId), $this->bulkToken, now()->addHours(6));
+            }
+
             CreateBulkVideosJob::dispatch(
                 $this->entries,
                 $addToQueue,
@@ -415,10 +464,52 @@ class BulkVideoUploader extends Page implements HasForms
             $this->createdVideoIds = array_values(array_unique(array_merge($this->createdVideoIds, $ids)));
         }
 
+        // Keep the durable results cache in sync so a refresh mid-job still
+        // shows whatever has been created so far.
+        Cache::put(self::resultsCacheKey($actorId), $this->createdVideoIds, now()->addHours(6));
+
         if (($payload['status'] ?? null) === 'done' || ($payload['status'] ?? null) === 'failed') {
             $this->bulkToken = null;
             Cache::forget($key);
+            Cache::forget(self::activeTokenCacheKey($actorId));
         }
+    }
+
+    /**
+     * Clear the "Processing Status" list and its cached backing so a fresh
+     * batch can start. Invoked from the "Upload More Videos" button.
+     */
+    public function clearCreatedVideos(): void
+    {
+        $this->createdVideoIds = [];
+        $this->isCreating = false;
+        $this->bulkToken = null;
+
+        $actorId = (int) (auth()->id() ?? 0);
+        if ($actorId > 0) {
+            Cache::forget(self::resultsCacheKey($actorId));
+            Cache::forget(self::activeTokenCacheKey($actorId));
+        }
+    }
+
+    /**
+     * Cache key under which a batch's created video IDs are stored, keyed
+     * per-admin so progress can be re-derived on mount() after a refresh.
+     */
+    protected static function resultsCacheKey(int $actorId): string
+    {
+        return "bulk_video_upload_results:{$actorId}";
+    }
+
+    /**
+     * Cache key holding the currently-active async bulk token for an admin,
+     * so mount() can rediscover an in-flight CreateBulkVideosJob after the
+     * Livewire component's in-memory $bulkToken property is lost (e.g. on
+     * page refresh).
+     */
+    protected static function activeTokenCacheKey(int $actorId): string
+    {
+        return "bulk_video_upload_active_token:{$actorId}";
     }
 
     /**

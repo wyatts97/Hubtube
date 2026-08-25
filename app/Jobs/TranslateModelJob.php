@@ -2,7 +2,9 @@
 
 namespace App\Jobs;
 
+use App\Models\User;
 use App\Services\TranslationService;
+use Filament\Notifications\Notification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -106,5 +108,17 @@ class TranslateModelJob implements ShouldBeUnique, ShouldQueue
             'locale' => $this->locale,
             'error' => $e->getMessage(),
         ]);
+
+        $modelName = class_basename($this->modelClass);
+
+        $admins = User::admins()->get();
+        if ($admins->isNotEmpty()) {
+            Notification::make()
+                ->title('Translation job failed')
+                ->body("Translation job failed for {$modelName} #{$this->modelId} ({$this->locale}) — {$e->getMessage()}")
+                ->icon('phosphor-translate')
+                ->danger()
+                ->sendToDatabase($admins);
+        }
     }
 }

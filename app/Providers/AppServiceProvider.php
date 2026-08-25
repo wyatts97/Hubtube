@@ -13,6 +13,8 @@ use App\Services\Translation\TranslationProviderManager;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
+use STS\FilamentImpersonate\Events\EnterImpersonation;
+use STS\FilamentImpersonate\Events\LeaveImpersonation;
 use Spatie\Health\Facades\Health;
 use Spatie\Health\Checks\Checks\CacheCheck;
 use Spatie\Health\Checks\Checks\DatabaseCheck;
@@ -56,6 +58,44 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Event::listen(JobProcessing::class, fn () => SetAdminTimezone::setTimezone());
+
+        // Log admin impersonation start/stop to the activity log for auditability.
+        //
+        // AdminLogger::log() attributes the entry to Auth::user(), but by the
+        // time these events fire the session's auth identity has already been
+        // swapped to the impersonated user (see ImpersonateManager::enter()),
+        // so Auth::user() would misattribute the action to the target. Call
+        // activity() directly instead, with causedBy() forced to the real
+        // admin from the event payload.
+        Event::listen(EnterImpersonation::class, function (EnterImpersonation $event) {
+            activity('admin')
+                ->causedBy($event->impersonator)
+                ->performedOn($event->impersonated)
+                ->withProperties([
+                    'impersonator_id' => $event->impersonator->getAuthIdentifier(),
+                    'impersonator_username' => $event->impersonator->username ?? null,
+                    'impersonated_id' => $event->impersonated->getAuthIdentifier(),
+                    'impersonated_username' => $event->impersonated->username ?? null,
+                ])
+                ->log("Impersonated user \"{$event->impersonated->username}\" (#{$event->impersonated->getAuthIdentifier()})");
+        });
+
+        Event::listen(LeaveImpersonation::class, function (LeaveImpersonation $event) {
+            $logger = activity('admin')
+                ->causedBy($event->impersonator)
+                ->withProperties([
+                    'impersonator_id' => $event->impersonator->getAuthIdentifier(),
+                    'impersonator_username' => $event->impersonator->username ?? null,
+                    'impersonated_id' => $event->impersonated?->getAuthIdentifier(),
+                    'impersonated_username' => $event->impersonated->username ?? null,
+                ]);
+
+            if ($event->impersonated) {
+                $logger->performedOn($event->impersonated);
+            }
+
+            $logger->log('Stopped impersonating user' . ($event->impersonated ? " \"{$event->impersonated->username}\" (#{$event->impersonated->getAuthIdentifier()})" : ''));
+        });
 
         Health::checks([
             DatabaseCheck::new(),

@@ -237,7 +237,7 @@ class SettingsController extends Controller
             $user->likes()->delete();
             $user->channelSubscriptions()->delete();
             $user->playlists()->delete();
-            $user->notifications()->delete();
+            $user->appNotifications()->delete();
             $user->walletTransactions()->delete();
 
             // Log out before deleting

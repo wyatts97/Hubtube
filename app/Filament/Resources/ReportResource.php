@@ -38,7 +38,7 @@ class ReportResource extends Resource
 
     protected static ?string $navigationLabel = 'Reports';
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Content';
+    protected static string | \UnitEnum | null $navigationGroup = 'Moderation';
 
     protected static ?int $navigationSort = 5;
 
@@ -206,6 +206,35 @@ class ReportResource extends Resource
                                 }
                             });
                         })
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('resolve')
+                        ->label('Resolve')
+                        ->icon('phosphor-check-circle')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->schema([
+                            Textarea::make('resolution_notes')
+                                ->label('Resolution Notes')
+                                ->rows(3),
+                        ])
+                        ->action(function (Collection $records, array $data) {
+                            $user = auth()->user();
+                            $records->each(function (Report $r) use ($user, $data) {
+                                if (in_array($r->status, [Report::STATUS_PENDING, Report::STATUS_REVIEWING])) {
+                                    $r->resolve($user, $data['resolution_notes'] ?? null);
+                                }
+                            });
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('start_review')
+                        ->label('Start Reviewing')
+                        ->icon('phosphor-magnifying-glass')
+                        ->color('info')
+                        ->action(fn (Collection $records) => $records->each(function (Report $r) {
+                            if ($r->status === Report::STATUS_PENDING) {
+                                $r->update(['status' => Report::STATUS_REVIEWING]);
+                            }
+                        }))
                         ->deselectRecordsAfterCompletion(),
                 ]),
             ])

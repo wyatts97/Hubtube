@@ -19,6 +19,7 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class PageResource extends Resource
@@ -28,6 +29,19 @@ class PageResource extends Resource
     protected static ?string $navigationLabel = 'Legal Pages';
     protected static string | \UnitEnum | null $navigationGroup = 'System';
     protected static ?int $navigationSort = 10;
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['title', 'slug'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Slug' => $record->slug,
+            'Published' => $record->is_published ? 'Yes' : 'No',
+        ];
+    }
 
     public static function form(Schema $schema): Schema
     {

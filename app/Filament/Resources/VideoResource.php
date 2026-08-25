@@ -37,6 +37,9 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ExportAction;
+use Filament\Actions\ExportBulkAction;
+use App\Filament\Exports\VideoExporter;
 use App\Filament\Resources\VideoResource\Widgets\VideoStatsOverview;
 use App\Filament\Resources\VideoResource\Pages\ListVideos;
 use App\Filament\Resources\VideoResource\Pages\CreateVideo;
@@ -458,6 +461,11 @@ class VideoResource extends Resource
                         return $indicators;
                     }),
             ], layout: FiltersLayout::AboveContentCollapsible)
+            ->headerActions([
+                ExportAction::make()
+                    ->exporter(VideoExporter::class)
+                    ->label('Export CSV'),
+            ])
             ->recordActions([
                 // Always-visible approve button for videos needing moderation
                 Action::make('quickApprove')
@@ -711,6 +719,27 @@ class VideoResource extends Resource
                             app(VideoService::class)->recalculateScheduleQueue();
                         })
                         ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('reassignCategory')
+                        ->label('Change Category')
+                        ->icon('phosphor-tag')
+                        ->color('info')
+                        ->schema([
+                            Select::make('category_id')
+                                ->label('Category')
+                                ->relationship('category', 'name')
+                                ->required()
+                                ->searchable()
+                                ->preload(),
+                        ])
+                        ->action(fn (Collection $records, array $data) => $records->each(
+                            fn (Video $v) => $v->update(['category_id' => $data['category_id']])
+                        ))
+                        ->deselectRecordsAfterCompletion(),
+
+                    ExportBulkAction::make()
+                        ->exporter(VideoExporter::class)
+                        ->label('Export Selected'),
 
                     DeleteBulkAction::make(),
                 ]),

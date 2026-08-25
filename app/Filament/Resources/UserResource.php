@@ -18,6 +18,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use STS\FilamentImpersonate\Actions\Impersonate;
 use App\Filament\Resources\UserResource\Pages\ListUsers;
 use App\Filament\Resources\UserResource\Pages\CreateUser;
 use App\Filament\Resources\UserResource\Pages\EditUser;
@@ -222,6 +223,18 @@ class UserResource extends Resource
                     ->label('Videos')
                     ->url(fn (User $record): string => route('filament.admin.resources.videos.index') . '?tableFilters[user_id][value]=' . $record->id)
                     ->visible(fn (User $record) => $record->videos_count > 0 || true),
+
+                // Log in as this user to see the site exactly as they do, without
+                // knowing their password. Only visible for non-admin targets
+                // (User::canBeImpersonated()) and only usable by admins
+                // (User::canImpersonate()) — both enforced by the package itself.
+                // Entering/leaving impersonation is logged via the package's
+                // EnterImpersonation/LeaveImpersonation events (see
+                // AppServiceProvider::boot()).
+                Impersonate::make()
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->redirectTo('/'),
 
                 EditAction::make(),
                 DeleteAction::make(),

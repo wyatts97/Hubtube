@@ -45,6 +45,7 @@
         "spatie/laravel-health": "^1.40",
         "spatie/laravel-medialibrary": "^11.4",
         "spatie/laravel-permission": "^6.4",
+        "stechstudio/filament-impersonate": "^5.6",
         "stichoza/google-translate-php": "^5.1",
         "tightenco/ziggy": "^2.0"
     },

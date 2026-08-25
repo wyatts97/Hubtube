@@ -7,10 +7,12 @@ use Illuminate\Support\Facades\URL;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Cashier\Billable;
@@ -134,9 +136,41 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         return $this->hasMany(WatchHistory::class);
     }
 
-    public function notifications(): HasMany
+    /**
+     * The app's own in-app notification feed (bell in the front-end UI).
+     *
+     * Named distinctly from notifications() because that method name is
+     * claimed by Illuminate\Notifications\Notifiable's HasDatabaseNotifications
+     * trait, which Filament's admin database-notification bell relies on
+     * (its Livewire component calls $user->notifications() directly). See
+     * notifications() below and the filament_notifications migration.
+     */
+    public function appNotifications(): HasMany
     {
         return $this->hasMany(Notification::class);
+    }
+
+    /**
+     * Overrides Notifiable's HasDatabaseNotifications::notifications() to
+     * back Filament's admin database-notification bell with a dedicated
+     * FilamentNotification model/table instead of the standard
+     * Illuminate\Notifications\DatabaseNotification (which defaults to a
+     * `notifications` table — already taken by App\Models\Notification's
+     * incompatible schema, see appNotifications() above).
+     *
+     * @return MorphMany<FilamentNotification, $this>
+     */
+    public function notifications(): MorphMany
+    {
+        return $this->morphMany(FilamentNotification::class, 'notifiable')->latest();
+    }
+
+    /**
+     * Local scope: admin users, per canAccessPanel()/is_admin.
+     */
+    public function scopeAdmins(Builder $query): Builder
+    {
+        return $query->where('is_admin', true);
     }
 
     public function walletTransactions(): HasMany
@@ -291,6 +325,25 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->is_admin;
+    }
+
+    /**
+     * Only admins may impersonate other users (stechstudio/filament-impersonate
+     * checks this method on the currently authenticated user).
+     */
+    public function canImpersonate(): bool
+    {
+        return $this->is_admin;
+    }
+
+    /**
+     * Admins may never be impersonated, avoiding privilege ping-pong / confusion
+     * between two admin sessions (stechstudio/filament-impersonate checks this
+     * method on the target user).
+     */
+    public function canBeImpersonated(): bool
+    {
+        return !$this->is_admin;
     }
 
     /**

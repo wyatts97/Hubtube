@@ -24,7 +24,7 @@ class UserDataExportService
             'channelSubscriptions.channel:id,username',
             'watchHistory.video:id,title,slug',
             'walletTransactions',
-            'notifications',
+            'appNotifications',
             'socialAccounts',
         ]);
 
@@ -98,7 +98,7 @@ class UserDataExportService
                 'description' => $t->description,
                 'created_at' => $t->created_at?->toIso8601String(),
             ])->values(),
-            'notifications' => $user->notifications->map(fn ($n) => [
+            'notifications' => $user->appNotifications->map(fn ($n) => [
                 'type' => $n->type,
                 'title' => $n->title,
                 'message' => $n->message,

@@ -27,16 +27,30 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 
 class ContactMessageResource extends Resource
 {
     protected static ?string $model = ContactMessage::class;
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-envelope';
     protected static ?string $navigationLabel = 'Contact & Reports';
-    protected static string | \UnitEnum | null $navigationGroup = 'Users & Email';
+    protected static string | \UnitEnum | null $navigationGroup = 'Moderation';
     protected static ?int $navigationSort = 2;
 
     // Unread count is surfaced as a topbar pill (see SystemStatusBar::getActionItems).
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'email', 'subject', 'message'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Email' => $record->email,
+            'Type' => ucfirst($record->type ?? 'contact'),
+        ];
+    }
 
     public static function form(Schema $schema): Schema
     {

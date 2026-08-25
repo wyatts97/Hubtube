@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Filament\Resources\WithdrawalRequestResource;
 use App\Models\Setting;
+use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Models\WithdrawalRequest;
 use App\Services\WalletService;
+use Filament\Actions\Action as NotificationAction;
+use Filament\Notifications\Notification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -95,6 +99,22 @@ class WalletController extends Controller
             "Withdrawal request #{$withdrawal->id}",
             $withdrawal
         );
+
+        $admins = User::admins()->get();
+        if ($admins->isNotEmpty()) {
+            Notification::make()
+                ->title('New withdrawal request')
+                ->body("New withdrawal request — \${$validated['amount']} from {$request->user()->username}")
+                ->icon('phosphor-currency-dollar')
+                ->actions([
+                    NotificationAction::make('view')
+                        ->label('Review')
+                        ->url(WithdrawalRequestResource::getUrl('index'))
+                        ->button(),
+                ])
+                ->warning()
+                ->sendToDatabase($admins);
+        }
 
         return redirect()->route('wallet.index')
             ->with('success', 'Withdrawal request submitted. Processing takes 3-5 business days.');

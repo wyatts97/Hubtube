@@ -1,7 +1,18 @@
 /*
  * HubTube Admin Theme — Custom components only.
  * Generic Filament aesthetics are handled by the Edinburgh theme.
+ *
+ * Compiled by Vite/Tailwind (see vite.config.js) and linked via the
+ * `@vite` asset tag in AdminPanelProvider's HEAD_END render hook — NOT
+ * injected raw. This lets Tailwind utility classes used in custom admin
+ * blades (app/Filament/**, resources/views/filament/**) resolve normally,
+ * so new components don't need the manual `!important` re-declarations
+ * further down this file (those remain only for pre-existing markup).
  */
+@import "tailwindcss";
+
+@source "../../../../app/Filament/**/*.php";
+@source "../../../../resources/views/filament/**/*.blade.php";
 
 /* ============================================================
    Design tokens — tied to the Filament shadcn color system.

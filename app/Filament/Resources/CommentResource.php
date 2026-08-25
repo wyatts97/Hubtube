@@ -25,16 +25,30 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class CommentResource extends Resource
 {
     protected static ?string $model = Comment::class;
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-chat-text';
-    protected static string | \UnitEnum | null $navigationGroup = 'Content';
+    protected static string | \UnitEnum | null $navigationGroup = 'Moderation';
     protected static ?int $navigationSort = 4;
     protected static ?string $recordTitleAttribute = 'content';
 
     // Approval count is surfaced as a topbar pill (see SystemStatusBar::getActionItems).
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['content', 'user.username', 'video.title'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'By' => $record->user?->username,
+            'Video' => $record->video?->title,
+        ];
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -151,6 +165,7 @@ class CommentResource extends Resource
                     DeleteBulkAction::make(),
                     BulkAction::make('approve')
                         ->icon('phosphor-check')
+                        ->color('success')
                         ->action(function ($records) {
                             $records->each(function (Comment $comment) {
                                 $wasApproved = $comment->is_approved;
@@ -159,7 +174,27 @@ class CommentResource extends Resource
                                     app(PointsService::class)->awardCommentPoints($comment->user, $comment);
                                 }
                             });
-                        }),
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('unapprove')
+                        ->label('Unapprove')
+                        ->icon('phosphor-x-circle')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->action(fn ($records) => $records->each(fn (Comment $comment) => $comment->update(['is_approved' => false])))
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('pin')
+                        ->label('Pin')
+                        ->icon('phosphor-bookmark')
+                        ->color('warning')
+                        ->action(fn ($records) => $records->each(fn (Comment $comment) => $comment->update(['is_pinned' => true])))
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('unpin')
+                        ->label('Unpin')
+                        ->icon('phosphor-bookmark')
+                        ->color('gray')
+                        ->action(fn ($records) => $records->each(fn (Comment $comment) => $comment->update(['is_pinned' => false])))
+                        ->deselectRecordsAfterCompletion(),
                 ]),
             ])
             ->striped();

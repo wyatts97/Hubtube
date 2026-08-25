@@ -88,7 +88,7 @@
 
                 <div class="pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
                     <x-filament::button
-                        wire:click="$set('createdImageIds', []); $set('isCreating', false)"
+                        wire:click="clearCreatedImages"
                         icon="phosphor-plus"
                         color="gray"
                     >

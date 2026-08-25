@@ -9,10 +9,12 @@ use App\Models\DmcaRequest;
 use App\Models\Video;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
+use Illuminate\Database\Eloquent\Collection;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -32,7 +34,7 @@ class DmcaRequestResource extends Resource
 
     protected static ?string $navigationLabel = 'DMCA Requests';
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Content';
+    protected static string | \UnitEnum | null $navigationGroup = 'Moderation';
 
     protected static ?int $navigationSort = 6;
 
@@ -144,6 +146,40 @@ class DmcaRequestResource extends Resource
                         ->icon('phosphor-trash')
                         ->color('danger')
                         ->requiresConfirmation()
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('action')
+                        ->label('Mark Actioned')
+                        ->icon('phosphor-check-circle')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->schema([
+                            Textarea::make('admin_notes')->label('Notes')->rows(3),
+                        ])
+                        ->action(function (Collection $records, array $data) {
+                            $user = auth()->user();
+                            $records->each(function (DmcaRequest $r) use ($user, $data) {
+                                if ($r->status === DmcaRequest::STATUS_PENDING) {
+                                    $r->action($user, $data['admin_notes'] ?? null);
+                                }
+                            });
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('reject')
+                        ->label('Reject')
+                        ->icon('phosphor-x-circle')
+                        ->color('gray')
+                        ->requiresConfirmation()
+                        ->schema([
+                            Textarea::make('admin_notes')->label('Reason (optional)')->rows(3),
+                        ])
+                        ->action(function (Collection $records, array $data) {
+                            $user = auth()->user();
+                            $records->each(function (DmcaRequest $r) use ($user, $data) {
+                                if ($r->status === DmcaRequest::STATUS_PENDING) {
+                                    $r->reject($user, $data['admin_notes'] ?? null);
+                                }
+                            });
+                        })
                         ->deselectRecordsAfterCompletion(),
                 ]),
             ])

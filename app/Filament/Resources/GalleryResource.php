@@ -25,6 +25,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 
 class GalleryResource extends Resource
 {
@@ -32,6 +33,19 @@ class GalleryResource extends Resource
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-squares-four';
     protected static string | \UnitEnum | null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 3;
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['title', 'slug', 'user.username'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Owner' => $record->user?->username,
+            'Privacy' => ucfirst($record->privacy),
+        ];
+    }
 
     public static function form(Schema $schema): Schema
     {

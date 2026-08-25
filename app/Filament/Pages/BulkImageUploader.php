@@ -27,6 +27,7 @@ use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -83,6 +84,15 @@ class BulkImageUploader extends Page implements HasForms
         $this->bulkSettings['user_id'] = auth()->id();
         $this->uploadForm->fill([]);
         $this->bulkSettingsForm->fill($this->bulkSettings);
+
+        // Re-derive in-progress/completed batch results from cache so a page
+        // refresh (Livewire snapshot loss) doesn't lose the list of images
+        // that were already created by this admin's last batch.
+        $actorId = (int) (auth()->id() ?? 0);
+        if ($actorId > 0) {
+            $this->createdImageIds = Cache::get(self::resultsCacheKey($actorId), []);
+            $this->isCreating = ! empty($this->createdImageIds);
+        }
     }
 
     public function uploadForm(Schema $schema): Schema
@@ -382,6 +392,14 @@ class BulkImageUploader extends Page implements HasForms
             $this->createdImageIds[] = $image->id;
         }
 
+        // Persist the batch result so it survives a page refresh — the images
+        // are already committed to the DB at this point, but the Livewire
+        // component's $createdImageIds property (which drives the "Created
+        // Images" list) would otherwise be lost on reload.
+        if ($actorId > 0) {
+            Cache::put(self::resultsCacheKey($actorId), $this->createdImageIds, now()->addHours(6));
+        }
+
         AdminLogger::settingsSaved('Bulk Image Upload', [
             'created_'.count($this->createdImageIds).'_images',
         ]);
@@ -391,7 +409,43 @@ class BulkImageUploader extends Page implements HasForms
             ->success()
             ->send();
 
+        if ($actorId) {
+            $actor = User::find($actorId);
+            if ($actor) {
+                Notification::make()
+                    ->title('Bulk image upload finished')
+                    ->body(count($this->createdImageIds).' image(s) processed.')
+                    ->icon('phosphor-images')
+                    ->success()
+                    ->sendToDatabase($actor);
+            }
+        }
+
         $this->entries = [];
+    }
+
+    /**
+     * Clear the "Created Images" list and its cached backing so a fresh
+     * batch can start. Invoked from the "Upload More Images" button.
+     */
+    public function clearCreatedImages(): void
+    {
+        $this->createdImageIds = [];
+        $this->isCreating = false;
+
+        $actorId = (int) (auth()->id() ?? 0);
+        if ($actorId > 0) {
+            Cache::forget(self::resultsCacheKey($actorId));
+        }
+    }
+
+    /**
+     * Cache key under which a batch's created image IDs are stored, keyed
+     * per-admin so progress can be re-derived on mount() after a refresh.
+     */
+    protected static function resultsCacheKey(int $actorId): string
+    {
+        return "bulk_image_upload_results:{$actorId}";
     }
 
     /**

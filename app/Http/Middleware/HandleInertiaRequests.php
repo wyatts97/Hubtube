@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
+use STS\FilamentImpersonate\Facades\Impersonation;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -70,6 +71,7 @@ class HandleInertiaRequests extends Middleware
                 'info' => fn() => $request->session()->get('info'),
             ],
             'csrf_token' => csrf_token(),
+            'impersonating' => fn () => $this->getImpersonationData(),
             'app' => fn() => $this->getAppSettings(),
             'socialLogin' => fn() => $this->getSocialLoginProviders(),
             'theme' => fn() => $this->getThemeSettings(),
@@ -77,6 +79,30 @@ class HandleInertiaRequests extends Middleware
             'locale' => fn() => $this->getLocaleData(),
             'seo' => fn() => $this->getSeoData($request),
         ];
+    }
+
+    /**
+     * Whether the current session is an active admin impersonation, and who
+     * the real admin is — powers the "You are impersonating X" banner on the
+     * public frontend (stechstudio/filament-impersonate's own banner only
+     * renders inside the Filament admin panel, not here).
+     */
+    protected function getImpersonationData(): ?array
+    {
+        try {
+            if (!Impersonation::isImpersonating()) {
+                return null;
+            }
+
+            $impersonator = Impersonation::getImpersonator();
+
+            return [
+                'impersonator' => $impersonator?->username ?? $impersonator?->email,
+                'leave_url' => route('filament-impersonate.leave'),
+            ];
+        } catch (Exception $e) {
+            return null;
+        }
     }
 
     /**

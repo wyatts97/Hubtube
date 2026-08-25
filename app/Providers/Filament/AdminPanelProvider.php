@@ -107,6 +107,7 @@ class AdminPanelProvider extends PanelProvider
         $groups = [
             ['key' => 'Overview',         'collapsed' => false, 'icon' => 'phosphor-squares-four'],
             ['key' => 'Content',          'collapsed' => false, 'icon' => 'phosphor-video-camera'],
+            ['key' => 'Moderation',       'collapsed' => false, 'icon' => 'phosphor-shield-warning'],
             ['key' => 'Users & Email',    'collapsed' => false, 'icon' => 'phosphor-users'],
             ['key' => 'Monetization',     'collapsed' => false, 'icon' => 'phosphor-currency-dollar'],
             ['key' => 'Appearance',       'collapsed' => false, 'icon' => 'phosphor-paint-brush'],
@@ -220,6 +221,9 @@ class AdminPanelProvider extends PanelProvider
             ->darkMode(true, true)
             ->brandName($brandName)
             ->font('Inter')
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('30s')
+            ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
             ->colors([
                 'primary' => static::mutedRed(),
                 'danger'  => static::firetruckRed(),
@@ -277,7 +281,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => '<style>' . file_get_contents(resource_path('css/filament/admin/theme.css')) . '</style>',
+                fn (): string => (string) app(\Illuminate\Foundation\Vite::class)(['resources/css/filament/admin/theme.css']),
             )
             ->renderHook(
                 PanelsRenderHook::BODY_END,

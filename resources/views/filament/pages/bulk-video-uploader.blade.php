@@ -131,7 +131,7 @@
                 @if ($this->createdVideos->every(fn ($v) => $v->status === 'processed' || $v->status === 'failed'))
                     <div class="pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
                         <x-filament::button
-                            wire:click="$set('createdVideoIds', []); $set('isCreating', false)"
+                            wire:click="clearCreatedVideos"
                             icon="phosphor-plus"
                             color="gray"
                         >

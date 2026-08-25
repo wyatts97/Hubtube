@@ -3,7 +3,9 @@
 namespace App\Jobs;
 
 use Throwable;
+use App\Models\User;
 use App\Services\BulkVideoCreator;
+use Filament\Notifications\Notification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -49,6 +51,17 @@ class CreateBulkVideosJob implements ShouldQueue
                 'created_ids' => $createdIds,
                 'total' => count($this->entries),
             ], now()->addHours(6));
+
+            $actor = User::find($this->actorId);
+            if ($actor) {
+                $failed = count($this->entries) - count($createdIds);
+                Notification::make()
+                    ->title('Bulk video upload finished')
+                    ->body(count($createdIds) . " video(s) processed, {$failed} failed.")
+                    ->icon('phosphor-tray-arrow-up')
+                    ->success()
+                    ->sendToDatabase($actor);
+            }
         } catch (Throwable $e) {
             Log::error('CreateBulkVideosJob failed', [
                 'actor_id' => $this->actorId,

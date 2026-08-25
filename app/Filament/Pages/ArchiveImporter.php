@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use Throwable;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use App\Models\User;
 use App\Models\Video;
@@ -74,6 +75,21 @@ class ArchiveImporter extends Page
 
         // Check if archive exists at default path
         $this->checkArchive();
+
+        // Re-derive scan results / in-progress import state from cache so a
+        // page refresh doesn't lose everything — scanArchive() and
+        // importNext() are entirely synchronous/in-memory (no queued jobs),
+        // so without this the admin would have to re-scan the whole archive
+        // and lose visibility into an import that's still running via
+        // wire:poll.
+        $state = Cache::get(self::stateCacheKey((int) (auth()->id() ?? 0)));
+        if (is_array($state)) {
+            foreach ($state as $key => $value) {
+                if (property_exists($this, $key)) {
+                    $this->{$key} = $value;
+                }
+            }
+        }
     }
 
     public function getTitle(): string
@@ -170,6 +186,7 @@ class ArchiveImporter extends Page
 
             $this->isScanned = true;
             $this->isScanning = false;
+            $this->persistState();
 
             Notification::make()
                 ->title('Scan Complete')
@@ -202,6 +219,7 @@ class ArchiveImporter extends Page
         $this->importErrors = [];
         $this->importLog = [];
         $this->shouldPoll = true;
+        $this->persistState();
     }
 
     /**
@@ -221,12 +239,24 @@ class ArchiveImporter extends Page
             $this->isImporting = false;
             $this->importComplete = true;
             $this->shouldPoll = false;
+            $this->persistState();
 
             Notification::make()
                 ->title('Import Complete')
                 ->body("Imported: {$this->importedCount}, Skipped: {$this->skippedCount}, Errors: {$this->errorCount}")
                 ->success()
                 ->send();
+
+            $actor = auth()->user();
+            if ($actor) {
+                Notification::make()
+                    ->title('Bulk upload finished')
+                    ->body("Archive import finished — {$this->importedCount} video(s) processed, {$this->errorCount} failed ({$this->skippedCount} skipped).")
+                    ->icon('phosphor-folder-open')
+                    ->success()
+                    ->sendToDatabase($actor);
+            }
+
             return;
         }
 
@@ -266,6 +296,8 @@ class ArchiveImporter extends Page
                 ];
                 break;
         }
+
+        $this->persistState();
     }
 
     /**
@@ -275,6 +307,7 @@ class ArchiveImporter extends Page
     {
         $this->shouldPoll = false;
         $this->isImporting = false;
+        $this->persistState();
 
         Notification::make()
             ->title('Import Stopped')
@@ -330,6 +363,57 @@ class ArchiveImporter extends Page
         $this->importErrors = [];
         $this->importLog = [];
         $this->shouldPoll = false;
+
+        $actorId = (int) (auth()->id() ?? 0);
+        if ($actorId > 0) {
+            Cache::forget(self::stateCacheKey($actorId));
+        }
+    }
+
+    /**
+     * Persist the scan/import progress fields to cache, keyed per-admin, so
+     * mount() can rebuild them after a page refresh. scanArchive() and
+     * importNext() run entirely in Livewire component memory (no queued
+     * jobs), so without this a refresh mid-import would silently lose all
+     * progress even though already-imported Video rows remain in the DB.
+     */
+    private function persistState(): void
+    {
+        $actorId = (int) (auth()->id() ?? 0);
+        if ($actorId <= 0) {
+            return;
+        }
+
+        Cache::put(self::stateCacheKey($actorId), [
+            'archivePath' => $this->archivePath,
+            'sqlFilePath' => $this->sqlFilePath,
+            'importUserId' => $this->importUserId,
+            'archiveDetected' => $this->archiveDetected,
+            'archiveStatus' => $this->archiveStatus,
+            'isScanning' => false, // scanning is a single blocking call; never resumable mid-scan
+            'isScanned' => $this->isScanned,
+            'archiveStats' => $this->archiveStats,
+            'parseStats' => $this->parseStats,
+            'fileValidation' => $this->fileValidation,
+            'previewVideos' => $this->previewVideos,
+            'totalImportable' => $this->totalImportable,
+            'allVideos' => $this->allVideos,
+            'isImporting' => $this->isImporting,
+            'importComplete' => $this->importComplete,
+            'processedCount' => $this->processedCount,
+            'importedCount' => $this->importedCount,
+            'skippedCount' => $this->skippedCount,
+            'errorCount' => $this->errorCount,
+            'importErrors' => $this->importErrors,
+            'importLog' => $this->importLog,
+            'alreadyImported' => $this->alreadyImported,
+            'shouldPoll' => $this->shouldPoll,
+        ], now()->addHours(6));
+    }
+
+    private static function stateCacheKey(int $actorId): string
+    {
+        return "archive_import_state:{$actorId}";
     }
 
     public function getProgressPercent(): int

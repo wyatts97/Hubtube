@@ -21,6 +21,7 @@ import { useI18n } from '@/Composables/useI18n';
 import { useGlobalAutoTranslate } from '@/Composables/useGlobalAutoTranslate';
 import { useSearchSuggestions } from '@/Composables/useSearchSuggestions';
 import ToastContainer from '@/Components/ToastContainer.vue';
+import ImpersonationBar from '@/Components/ImpersonationBar.vue';
 import AgeVerificationModal from '@/Components/AgeVerificationModal.vue';
 import AdInterstitial from '@/Components/AdInterstitial.vue';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
@@ -989,6 +990,9 @@ const handleMobileNavClick = (item) => {
                         </div>
             </template>
         </BaseDialog>
+
+        <!-- Impersonation Banner (visible while an admin is logged in as this user) -->
+        <ImpersonationBar />
 
         <!-- Toast Notifications -->
         <ToastContainer />

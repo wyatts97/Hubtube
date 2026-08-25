@@ -38,6 +38,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 
 class ImageResource extends Resource
 {
@@ -47,6 +48,19 @@ class ImageResource extends Resource
     protected static ?int $navigationSort = 3;
 
     // Moderation count is surfaced as a topbar pill (see SystemStatusBar::getActionItems).
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['title', 'description', 'user.username'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Uploader' => $record->user?->username,
+            'Approved' => $record->is_approved ? 'Yes' : 'No',
+        ];
+    }
 
     public static function form(Schema $schema): Schema
     {
