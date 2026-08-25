@@ -972,15 +972,22 @@
 
 /* Log viewer level icons: keep colored rounded-square backgrounds
    but force the actual icon shapes (bug, fire, warning, etc.) to
-   pure white. The plugin sets inline `style="color: #xxx"` which
-   controls both the background tint (via fi-icon's color-mix) and
-   the SVG stroke (via currentColor). We override only the SVG
-   stroke/fill so the background color is preserved. */
-.fi-ta-ctn .fi-icon svg,
-.fi-ta-ctn .fi-icon svg path,
-.fi-ta-ctn .fi-icon svg circle,
-.fi-ta-ctn .fi-icon svg rect,
-.fi-ta-ctn .fi-icon svg line {
+   pure white. The plugin sets inline `style="color: #xxx"` directly
+   on the <svg> (see Boquizo\FilamentLogViewer\Utils\Icons::get()),
+   which controls both the background tint (via fi-icon's color-mix)
+   and the SVG stroke (via currentColor). We override only the SVG
+   stroke/fill so the background color is preserved.
+   Scoped to `svg[style*="color"]` specifically — NOT all `.fi-icon
+   svg` in a table — because ordinary Filament badge/icon-column
+   icons (e.g. the Approved checkmark on Comments/Videos/etc.) size
+   and color themselves via classes, not an inline style attribute.
+   The previous unscoped selector was forcing every table icon's
+   stroke to white, silently overriding their intended status color. */
+.fi-ta-ctn .fi-icon svg[style*="color"],
+.fi-ta-ctn .fi-icon svg[style*="color"] path,
+.fi-ta-ctn .fi-icon svg[style*="color"] circle,
+.fi-ta-ctn .fi-icon svg[style*="color"] rect,
+.fi-ta-ctn .fi-icon svg[style*="color"] line {
     stroke: #ffffff !important;
     fill: none !important;
 }
