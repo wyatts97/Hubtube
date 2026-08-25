@@ -27,7 +27,6 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Filters\Filter;
 use Filament\Forms\Components\DatePicker;
 use Carbon\Carbon;
-use Filament\Tables\Enums\FiltersLayout;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\ViewAction;
@@ -37,7 +36,6 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\ExportAction;
 use Filament\Actions\ExportBulkAction;
 use App\Filament\Exports\VideoExporter;
 use App\Filament\Resources\VideoResource\Widgets\VideoStatsOverview;
@@ -460,11 +458,6 @@ class VideoResource extends Resource
                         }
                         return $indicators;
                     }),
-            ], layout: FiltersLayout::AboveContentCollapsible)
-            ->headerActions([
-                ExportAction::make()
-                    ->exporter(VideoExporter::class)
-                    ->label('Export CSV'),
             ])
             ->recordActions([
                 // Always-visible approve button for videos needing moderation

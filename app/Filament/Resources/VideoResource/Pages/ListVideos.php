@@ -3,7 +3,9 @@
 namespace App\Filament\Resources\VideoResource\Pages;
 
 use Filament\Actions\Action;
+use Filament\Actions\ExportAction;
 use Filament\Schemas\Components\Tabs\Tab;
+use App\Filament\Exports\VideoExporter;
 use App\Filament\Resources\VideoResource;
 use App\Filament\Resources\VideoResource\Widgets\VideoStatsOverview;
 use App\Models\Video;
@@ -27,6 +29,10 @@ class ListVideos extends ListRecords
                 ->label('Bulk Upload')
                 ->icon('phosphor-tray-arrow-up')
                 ->url('/admin/bulk-video-uploader'),
+
+            ExportAction::make()
+                ->exporter(VideoExporter::class)
+                ->label('Export CSV'),
         ];
     }
 
