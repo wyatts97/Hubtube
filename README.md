@@ -326,6 +326,8 @@ The scheduler runs: Horizon snapshots, batch pruning, expired token cleanup, sof
 |-------|-----------|
 | **Backend** | Laravel 12 (PHP 8.3+), Filament 4 Admin |
 | **Frontend** | Vue 3 (Composition API), Inertia.js, Tailwind CSS v4 |
+| **UI Primitives** | Reka UI (unstyled, accessible), VueUse (browser-interaction composables) |
+| **Translation** | LibreTranslate (self-hosted or libretranslate.com) or Google Translate |
 | **Database** | MySQL 8+ / MariaDB 10.6+ |
 | **Queue** | Laravel Horizon + Redis |
 | **Real-time** | Laravel Reverb (WebSockets) |
@@ -424,7 +426,8 @@ Pro access is granted **only** by verified webhooks — never by the browser red
 - Responsive mobile-first design with touch-optimized interactions
 - Age verification gate (configurable text, styling, behavior)
 - Custom navigation menu builder
-- Multi-language with auto-translation (Google Translate), translated slugs, hreflang, RTL support
+- Multi-language with auto-translation, translated slugs, hreflang, RTL support — see [Translation Providers](#translation-providers)
+- Accessible interactive UI built on Reka UI primitives: dialogs and dropdowns get focus trapping, Escape handling, body scroll lock, arrow-key navigation and viewport-aware positioning
 - Custom 404/500 error pages for both Inertia and non-Inertia requests
 
 ## Environment Configuration
@@ -467,6 +470,43 @@ Storage is configured entirely via **Admin → Settings → Storage & CDN**. Sup
 Videos are always processed locally first (FFmpeg needs filesystem access), then automatically offloaded to cloud storage by `ProcessVideoJob`. Each video tracks its `storage_disk` for correct URL resolution.
 
 The `StorageManager` service handles all disk operations, URL generation (including pre-signed URLs for private buckets), and CDN URL overrides. Cloud storage credentials are **encrypted at rest** in the database.
+
+## Translation Providers
+
+Auto-translation is configured entirely via **Admin → Languages**. Two drivers ship with the app, selected by the `translation_provider` setting:
+
+| Driver | What it is | Trade-offs |
+|--------|-----------|-----------|
+| **LibreTranslate** | Open-source engine you self-host, or the paid libretranslate.com | No rate-limit bans, batches up to 25 strings per request, and translates HTML fields intact. Needs a server to run. |
+| **Google Translate** | Unofficial scraper endpoint, no key required | Zero setup, but unmetered and bans aggressively — paced at one request per 1.2s with backoff. Mangles HTML, so `Page.content` is not translated through it. |
+
+### Configuring LibreTranslate
+
+In **Admin → Languages**, set the provider to LibreTranslate and fill in:
+
+- **Endpoint** — your server's base URL (e.g. `http://127.0.0.1:5000`). Stored as the `libretranslate_endpoint` setting.
+- **API key** — optional; required by libretranslate.com and by self-hosted servers started with `--api-keys`. **Encrypted at rest**, like all other credentials.
+
+Nothing goes in `.env` — the endpoint and key are admin settings, and the driver defaults come from `config/translation.php` (throttling, batch sizes, locale mapping).
+
+### Locale mapping
+
+LibreTranslate does not use plain ISO 639-1 throughout, so `config/translation.php` maps a few app locales onto provider codes — `pt` → `pt-BR`, `no` → `nb`, `fil` → `tl`. Admins can override these per-driver via the `translation_locale_overrides` setting. Provider codes never leak outward: URLs, `translations.locale`, and the i18n filenames all stay on app locales.
+
+> **Note:** the LibreTranslate API code and the Argos *package* code differ. Brazilian Portuguese is packaged as `pb` (which is what `LT_LOAD_ONLY` expects) but the API reports and accepts `pt-BR`. Always trust `GET /languages` for the values in the locale map.
+
+### Running translations
+
+```bash
+php artisan translations:run            # sweep pending translations (also runs on schedule)
+php artisan translations:generate       # build i18n JSON files for UI strings
+php artisan translations:backfill-slugs # regenerate translated slugs
+php artisan translations:clear-cache
+```
+
+Scheduled runs are configured in **Admin → Languages** (frequency, time, per-run limit). The scheduler registers `translations:run` every minute behind a lazily-evaluated gate, so the Laravel cron entry must be installed — see [Laravel Scheduler (Cron)](#laravel-scheduler-cron).
+
+Per-model translation jobs (`TranslateModelJob`) and the admin panel's manual run both dispatch onto a dedicated **`translations` queue**, kept separate so a multi-locale sweep never blocks video processing. Horizon defines a supervisor for it — make sure your worker is consuming that queue as well as `default`, per [Background Services](#background-services-all-panels).
 
 ## Email Configuration
 
@@ -535,8 +575,11 @@ app/
 ├── Traits/                 # Translatable trait for multi-language models
 resources/
 ├── js/
-│   ├── Components/         # 15+ Vue components (VideoPlayer, VideoAdPlayer, ShortsViewer, SeoHead, etc.)
-│   ├── Composables/        # 8+ composables (useFetch, useToast, useTheme, useI18n, usePushNotifications)
+│   ├── Components/         # 30+ Vue components (VideoPlayer, VideoAdPlayer, ShortsViewer, SeoHead, etc.)
+│   │   └── UI/             # Shared primitives — BaseDialog, BaseDropdown, BaseSwitch (Reka UI wrappers),
+│   │                       #   plus Breadcrumbs, EmptyState, PageHeader, BannerAd
+│   ├── Composables/        # 17 composables (useFetch, useToast, useTheme, useI18n, usePushNotifications,
+│   │                       #   useSearchSuggestions, useChunkedUpload, ...)
 │   ├── Layouts/            # AppLayout with responsive sidebar
 │   └── Pages/              # 30+ Inertia pages
 ├── css/                    # Tailwind CSS v4 with custom utilities
@@ -584,6 +627,26 @@ npm run dev          # Vite dev server with HMR
 npm run build        # Production build
 php artisan test     # Run test suite
 ```
+
+### Frontend UI conventions
+
+Two libraries carry the interactive frontend. Both are tree-shakeable and imported per component — there is no plugin registration in `resources/js/app.js`, and neither ships CSS.
+
+- **[Reka UI](https://reka-ui.com)** — unstyled, accessible Vue 3 primitives (formerly Radix Vue). Used for dialogs, dropdown menus, combobox, tabs, toasts and switches. Because the primitives carry behavior but no styling, the site's Tailwind design is applied directly to them.
+- **[VueUse](https://vueuse.org)** — browser-interaction composables (`onClickOutside`, `useEventListener`, `useIntersectionObserver`, `useResizeObserver`, `useMediaQuery`, `useDebounceFn`, `useClipboard`, `useStorage`, `useScriptTag`). Prefer these over hand-rolled listeners: they clean up on unmount automatically.
+
+**Build new UI on the shared wrappers in `resources/js/Components/UI/` rather than on raw primitives:**
+
+| Wrapper | Wraps | Gives you |
+|---------|-------|-----------|
+| `BaseDialog.vue` | `Dialog` / `AlertDialog` | Portal to `<body>`, focus trap, Escape, body scroll lock. `variant="alert"` for destructive confirms — no close button, no backdrop or Escape dismissal. `unstyled` for dialogs that paint their own shell. |
+| `BaseDropdown.vue` | `DropdownMenu` | Outside-click, Escape, focus return, arrow-key navigation, viewport-aware positioning. Non-modal by default, so a nav menu never locks page scroll. |
+| `BaseSwitch.vue` | `Switch` | On/off toggle with keyboard and ARIA support. |
+
+Two conventions worth knowing when working with these:
+
+- **`BaseDropdown`'s root is a renderless fragment.** Layout classes passed to a component whose root is `BaseDropdown` will be dropped — wrap it in an element (see `LanguageSwitcher.vue`) or put the classes on the trigger.
+- **Reka closes a menu when an item is selected.** For panels that should stay open — multi-toggle checklists, rows containing an input — use `@select.prevent` (see the Save-to-Playlist menu in `Pages/Videos/Show.vue`).
 
 ## Default Credentials
 
