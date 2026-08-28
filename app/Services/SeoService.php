@@ -7,6 +7,7 @@ use App\Models\Gallery;
 use App\Models\Image;
 use App\Models\Page;
 use App\Models\Playlist;
+use App\Services\SocialLinkService;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
@@ -409,7 +410,10 @@ class SeoService
 
         $seo = $this->baseMeta($title, $description, "/channel/{$user->username}");
         $seo['og']['type'] = 'profile';
-        if ($user->avatar) {
+        // The banner is a far better share card than a 256px square avatar.
+        if ($banner = $user->channel?->banner_image) {
+            $seo['og']['image'] = $banner;
+        } elseif ($user->avatar) {
             $seo['og']['image'] = $user->avatar;
         }
 
@@ -428,9 +432,23 @@ class SeoService
         if ($user->avatar) {
             $schema['image'] = $user->avatar;
         }
-        if ($user->bio) {
-            $schema['description'] = $this->truncate($user->bio, 300);
+        // Prefer the channel description; users.bio is the legacy field and is
+        // not what the channel page renders.
+        $description = $user->channel?->description ?: $user->bio;
+        if ($description) {
+            $schema['description'] = $this->truncate($description, 300);
         }
+
+        // sameAs is the standard way to tell search engines which off-site
+        // profiles belong to this person. Only validated links go in.
+        $sameAs = array_column(
+            app(SocialLinkService::class)->forDisplay($user),
+            'url'
+        );
+        if ($sameAs) {
+            $schema['sameAs'] = $sameAs;
+        }
+
         $seo['schema'][] = $schema;
         $seo['schema'][] = $this->breadcrumbSchema([
             ['name' => $vars['channel_name'], 'path' => "/channel/{$user->username}"],

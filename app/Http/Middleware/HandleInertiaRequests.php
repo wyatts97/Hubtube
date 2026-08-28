@@ -54,12 +54,20 @@ class HandleInertiaRequests extends Middleware
                         'wallet_balance' => $user->wallet_balance,
                         'points_balance' => $user->points_balance,
                         'age_verified' => $user->isAgeVerified(),
+                        'email_verified' => $user->email_verified_at !== null,
                         'can_edit_video' => $user->canEditVideo(),
                         'settings' => $user->settings ?? [],
                         'channel' => $user->channel ? [
                             'id' => $user->channel->id,
                             'name' => $user->channel->name,
                             'banner_image' => $user->channel->banner_image,
+                            // The owner's raw saved links, so the Settings form
+                            // can edit them. Unlike the public channel payload
+                            // these are not filtered for display — the owner
+                            // must still see a link the kill switch is hiding.
+                            'social_links' => is_array($user->channel->social_links)
+                                ? $user->channel->social_links
+                                : [],
                         ] : null,
                     ];
         })() : null,

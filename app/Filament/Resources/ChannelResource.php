@@ -4,6 +4,9 @@ namespace App\Filament\Resources;
 
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -40,7 +43,7 @@ class ChannelResource extends Resource
     {
         return [
             'Subscribers' => number_format($record->subscriber_count ?? 0),
-            'Views'       => number_format($record->total_views ?? 0),
+            'Views'       => number_format($record->user?->totalVideoViews() ?? 0),
         ];
     }
     protected static ?string $model = Channel::class;
@@ -70,6 +73,40 @@ class ChannelResource extends Resource
                         TextInput::make('custom_url')
                             ->maxLength(50),
                     ])->columns(2),
+                Section::make('Branding')
+                    ->schema([
+                        // Neither of these was editable in admin before, so a
+                        // reported banner or spam link could only be cleared
+                        // by impersonating the user.
+                        FileUpload::make('banner_image')
+                            ->image()
+                            ->directory('banners')
+                            ->disk('public')
+                            ->imageEditor()
+                            ->helperText('Recommended 1920x320.')
+                            ->columnSpanFull(),
+                        Repeater::make('social_links')
+                            ->label('Outbound links')
+                            ->schema([
+                                Select::make('platform')
+                                    ->options(fn () => collect(config('social_links'))
+                                        ->map(fn (array $c) => $c['label'])
+                                        ->all())
+                                    ->required(),
+                                TextInput::make('url')
+                                    ->url()
+                                    ->required()
+                                    ->maxLength(300),
+                                TextInput::make('label')
+                                    ->maxLength(40)
+                                    ->helperText('Only shown for Website links.'),
+                            ])
+                            ->columns(3)
+                            ->maxItems(8)
+                            ->defaultItems(0)
+                            ->helperText('Links are re-checked against the allowed hosts when the channel page renders.')
+                            ->columnSpanFull(),
+                    ])->columns(1),
                 Section::make('Monetization')
                     ->schema([
                         Toggle::make('subscription_enabled')
@@ -85,9 +122,11 @@ class ChannelResource extends Resource
                         TextInput::make('subscriber_count')
                             ->numeric()
                             ->disabled(),
-                        TextInput::make('total_views')
-                            ->numeric()
-                            ->disabled(),
+                        // Derived, not the stored column — nothing writes to
+                        // channels.total_views.
+                        Placeholder::make('total_views_display')
+                            ->label('Total views')
+                            ->content(fn (?Channel $record) => number_format($record?->user?->totalVideoViews() ?? 0)),
                     ])->columns(3),
             ]);
     }
@@ -95,6 +134,7 @@ class ChannelResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with('user'))
             ->columns([
                 TextColumn::make('name')
                     ->searchable()
@@ -106,9 +146,13 @@ class ChannelResource extends Resource
                 TextColumn::make('subscriber_count')
                     ->numeric()
                     ->sortable(),
+                // channels.total_views has no writer anywhere in the app, so
+                // this column showed 0 for every channel. Derive it from the
+                // owner's videos instead (cached — see User::totalVideoViews()).
                 TextColumn::make('total_views')
-                    ->numeric()
-                    ->sortable(),
+                    ->label('Views')
+                    ->state(fn (Channel $record) => $record->user?->totalVideoViews() ?? 0)
+                    ->numeric(),
 
                 IconColumn::make('is_verified')
                     ->boolean(),

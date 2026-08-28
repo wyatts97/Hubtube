@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Cashier\Billable;
 use Laravel\Sanctum\HasApiTokens;
@@ -277,6 +278,32 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         $this->setRelation('channel', $channel);
 
         return $channel;
+    }
+
+    /**
+     * Total views across this channel's public videos.
+     *
+     * Deliberately derived from videos.views_count rather than read from
+     * channels.total_views. That column is a denormalised counter that nothing
+     * ever writes to — Channel::incrementViews() exists but has no callers, so
+     * the column has been 0 for every channel since launch. Video::incrementViews()
+     * only ever touches the video's own counter.
+     *
+     * Summing on read rather than fanning out a channel write on every video
+     * view keeps the hot path cheap; the result is cached because the channel
+     * page is public and heavily hit.
+     */
+    public function totalVideoViews(): int
+    {
+        return (int) Cache::remember(
+            "channel:{$this->id}:total_views",
+            now()->addMinutes(10),
+            fn () => (int) $this->videos()
+                ->public()
+                ->approved()
+                ->processed()
+                ->sum('views_count'),
+        );
     }
 
     /**

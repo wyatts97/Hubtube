@@ -17,6 +17,8 @@ use Illuminate\Validation\Rules\Password;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use App\Models\Setting;
+use App\Http\Requests\UpdateSocialLinksRequest;
+use App\Services\SocialLinkService;
 use App\Services\UserDataExportService;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -31,6 +33,18 @@ class SettingsController extends Controller
                 'subscription_notifications' => (bool) filter_var(Setting::get('email_notify_new-subscriber', true), FILTER_VALIDATE_BOOLEAN),
             ],
             'twoFactorEnabled' => $request->user()->hasTwoFactorEnabled(),
+            // Page-scoped rather than a global shared prop: only this form
+            // needs the platform list, and shared props are built on every
+            // request.
+            'socialPlatforms' => collect(config('social_links'))
+                ->map(fn (array $config, string $key) => [
+                    'value' => $key,
+                    'label' => $config['label'],
+                    'freeform' => ($config['hosts'] ?? null) === null,
+                ])
+                ->values()
+                ->all(),
+            'socialLinksEnabled' => app(SocialLinkService::class)->outboundLinksEnabled(),
         ]);
     }
 
@@ -146,6 +160,17 @@ class SettingsController extends Controller
         $channel->update(['banner_image' => null]);
 
         return redirect()->route('settings')->with('success', 'Banner removed.');
+    }
+
+    public function updateSocialLinks(
+        UpdateSocialLinksRequest $request,
+        SocialLinkService $socialLinks,
+    ): RedirectResponse {
+        $request->user()->ensureChannel()->update([
+            'social_links' => $socialLinks->normalize($request->validated('social_links', [])),
+        ]);
+
+        return redirect()->route('settings')->with('success', 'Links updated successfully.');
     }
 
     public function updatePassword(Request $request): RedirectResponse

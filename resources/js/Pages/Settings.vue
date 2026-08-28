@@ -74,6 +74,42 @@ const removeBanner = () => {
     });
 };
 
+/*
+ * Channel social links.
+ *
+ * Rows are edited as a plain array and submitted whole — the server replaces
+ * the stored list rather than patching it, so ordering is whatever the user
+ * left here. Empty rows are stripped server-side, so an unfilled row that the
+ * user never got to is not an error.
+ */
+const socialPlatforms = computed(() => page.props.socialPlatforms ?? []);
+const socialLinksEnabled = computed(() => page.props.socialLinksEnabled !== false);
+const maxSocialLinks = 8;
+
+const socialForm = useForm({
+    social_links: (user.value?.channel?.social_links ?? []).map((link) => ({
+        platform: link.platform ?? 'website',
+        url: link.url ?? '',
+        label: link.label ?? '',
+    })),
+});
+
+const isFreeformPlatform = (platform) =>
+    socialPlatforms.value.find((p) => p.value === platform)?.freeform === true;
+
+const addSocialLink = () => {
+    if (socialForm.social_links.length >= maxSocialLinks) return;
+    socialForm.social_links.push({ platform: 'website', url: '', label: '' });
+};
+
+const removeSocialLink = (index) => {
+    socialForm.social_links.splice(index, 1);
+};
+
+const updateSocialLinks = () => {
+    socialForm.put('/settings/social-links', { preserveScroll: true });
+};
+
 const passwordForm = useForm({
     current_password: '',
     password: '',
@@ -281,6 +317,7 @@ const cancelDisable2fa = () => {
 const tabs = computed(() => {
     const items = [
         { id: 'profile', name: t('settings.profile'), icon: User },
+        { id: 'channel', name: t('settings.channel'), icon: ImageIcon },
         { id: 'password', name: t('settings.password'), icon: Lock },
         { id: 'notifications', name: t('settings.notifications'), icon: Bell },
         { id: 'privacy', name: t('settings.privacy'), icon: Shield },
@@ -355,52 +392,6 @@ const tabs = computed(() => {
                                     </div>
                                 </div>
                             </div>
-
-                            <!--
-                                Banner upload. bannerForm/handleBannerSelect/uploadBanner
-                                and POST /settings/banner all already existed; only this
-                                markup was missing, so the feature was unreachable.
-                            -->
-                            <div class="mt-6 pt-6 border-t border-border">
-                                <label class="block text-sm font-medium mb-2 text-text-secondary">{{ t('settings.banner') }}</label>
-                                <div class="relative w-full aspect-[6/1] rounded-card overflow-hidden bg-bg-input">
-                                    <img
-                                        v-if="bannerPreview || user?.channel?.banner_image"
-                                        :src="bannerPreview || user?.channel?.banner_image"
-                                        :alt="t('settings.banner')"
-                                        class="w-full h-full object-cover"
-                                    />
-                                    <label class="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/40 cursor-pointer transition-opacity"
-                                        :class="(bannerPreview || user?.channel?.banner_image) ? 'opacity-0 hover:opacity-100' : 'opacity-100'"
-                                    >
-                                        <ImageIcon class="w-6 h-6 text-white" />
-                                        <span class="text-xs text-white">{{ t('settings.change_banner') }}</span>
-                                        <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="handleBannerSelect" />
-                                    </label>
-                                </div>
-                                <p class="mt-2 text-xs text-text-muted">{{ t('settings.banner_hint') }}</p>
-                                <p v-if="bannerForm.errors.banner" class="text-red-500 text-sm mt-1">{{ bannerForm.errors.banner }}</p>
-                                <div class="flex items-center gap-2 mt-2">
-                                    <template v-if="bannerPreview">
-                                        <button @click="uploadBanner" :disabled="bannerForm.processing" class="btn btn-primary text-sm">
-                                            <Loader2 v-if="bannerForm.processing" class="w-4 h-4 animate-spin me-1" />
-                                            {{ t('settings.save_banner') }}
-                                        </button>
-                                        <button @click="bannerPreview = null; bannerForm.reset()" class="btn btn-ghost text-sm">
-                                            {{ t('common.cancel') }}
-                                        </button>
-                                    </template>
-                                    <button
-                                        v-else-if="user?.channel?.banner_image"
-                                        @click="removeBanner"
-                                        :disabled="bannerForm.processing"
-                                        class="btn btn-ghost text-sm text-red-500"
-                                    >
-                                        <Trash2 class="w-4 h-4 me-1" />
-                                        {{ t('settings.remove_banner') }}
-                                    </button>
-                                </div>
-                            </div>
                         </div>
 
                         <div class="card p-6">
@@ -449,7 +440,132 @@ const tabs = computed(() => {
                         </div>
                     </TabsContent>
 
-                    <!-- Password Tab -->
+                    <!-- Channel Tab -->
+                    <TabsContent value="channel" class="space-y-6">
+                        <!--
+                            Banner upload. bannerForm/handleBannerSelect/uploadBanner
+                            and POST /settings/banner all already existed; only this
+                            markup was missing, so the feature was unreachable.
+                        -->
+                        <div class="card p-6">
+                            <h2 class="text-lg font-semibold text-text-primary">{{ t('settings.banner') }}</h2>
+                            <p class="mt-1 mb-4 text-sm text-text-secondary">{{ t('settings.banner_hint') }}</p>
+
+                            <div class="relative w-full aspect-[6/1] rounded-card overflow-hidden bg-bg-input">
+                                <img
+                                    v-if="bannerPreview || user?.channel?.banner_image"
+                                    :src="bannerPreview || user?.channel?.banner_image"
+                                    :alt="t('settings.banner')"
+                                    class="w-full h-full object-cover"
+                                />
+                                <label
+                                    class="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/40 cursor-pointer transition-opacity"
+                                    :class="(bannerPreview || user?.channel?.banner_image) ? 'opacity-0 hover:opacity-100' : 'opacity-100'"
+                                >
+                                    <ImageIcon class="w-6 h-6 text-white" />
+                                    <span class="text-xs text-white">{{ t('settings.change_banner') }}</span>
+                                    <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="handleBannerSelect" />
+                                </label>
+                            </div>
+
+                            <p v-if="bannerForm.errors.banner" class="text-red-500 text-sm mt-2">{{ bannerForm.errors.banner }}</p>
+
+                            <div class="flex items-center gap-2 mt-3">
+                                <template v-if="bannerPreview">
+                                    <button @click="uploadBanner" :disabled="bannerForm.processing" class="btn btn-primary text-sm">
+                                        <Loader2 v-if="bannerForm.processing" class="w-4 h-4 animate-spin me-1" />
+                                        {{ t('settings.save_banner') }}
+                                    </button>
+                                    <button @click="bannerPreview = null; bannerForm.reset()" class="btn btn-ghost text-sm">
+                                        {{ t('common.cancel') }}
+                                    </button>
+                                </template>
+                                <button
+                                    v-else-if="user?.channel?.banner_image"
+                                    @click="removeBanner"
+                                    :disabled="bannerForm.processing"
+                                    class="btn btn-ghost text-sm text-red-500"
+                                >
+                                    <Trash2 class="w-4 h-4 me-1" />
+                                    {{ t('settings.remove_banner') }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card p-6">
+                            <h2 class="text-lg font-semibold text-text-primary">{{ t('settings.social_links') }}</h2>
+                            <p class="mt-1 text-sm text-text-secondary">{{ t('settings.social_links_desc') }}</p>
+
+                            <p v-if="!socialLinksEnabled" class="mt-3 text-sm text-amber-500">
+                                {{ t('settings.social_links_disabled') }}
+                            </p>
+                            <p v-else-if="!user?.email_verified" class="mt-3 text-sm text-amber-500">
+                                {{ t('settings.social_links_unverified') }}
+                            </p>
+
+                            <form @submit.prevent="updateSocialLinks" class="mt-4 space-y-3">
+                                <div
+                                    v-for="(link, index) in socialForm.social_links"
+                                    :key="index"
+                                    class="flex flex-col sm:flex-row gap-2"
+                                >
+                                    <select v-model="link.platform" class="input sm:w-44 shrink-0">
+                                        <option v-for="p in socialPlatforms" :key="p.value" :value="p.value">
+                                            {{ p.label }}
+                                        </option>
+                                    </select>
+                                    <div class="flex-1 min-w-0">
+                                        <input
+                                            v-model="link.url"
+                                            type="url"
+                                            inputmode="url"
+                                            :placeholder="t('settings.social_links_placeholder')"
+                                            class="input"
+                                        />
+                                        <p v-if="socialForm.errors[`social_links.${index}.url`]" class="text-red-500 text-sm mt-1">
+                                            {{ socialForm.errors[`social_links.${index}.url`] }}
+                                        </p>
+                                        <input
+                                            v-if="isFreeformPlatform(link.platform)"
+                                            v-model="link.label"
+                                            type="text"
+                                            maxlength="40"
+                                            :placeholder="t('settings.social_links_label')"
+                                            class="input mt-2"
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        @click="removeSocialLink(index)"
+                                        class="btn btn-ghost text-red-500 shrink-0"
+                                        :aria-label="t('common.remove')"
+                                    >
+                                        <Trash2 class="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                <p v-if="socialForm.errors.social_links" class="text-red-500 text-sm">
+                                    {{ socialForm.errors.social_links }}
+                                </p>
+
+                                <div class="flex items-center gap-2 pt-1">
+                                    <button
+                                        type="button"
+                                        @click="addSocialLink"
+                                        :disabled="socialForm.social_links.length >= maxSocialLinks"
+                                        class="btn btn-secondary text-sm"
+                                    >
+                                        {{ t('settings.social_links_add') }}
+                                    </button>
+                                    <button type="submit" :disabled="socialForm.processing" class="btn btn-primary text-sm">
+                                        <Loader2 v-if="socialForm.processing" class="w-4 h-4 animate-spin me-1" />
+                                        {{ t('settings.save_changes') }}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </TabsContent>
+
                     <TabsContent value="password" class="focus:outline-none">
                     <div class="card p-6">
                         <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.change_password') }}</h2>

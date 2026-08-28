@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\SocialLinkService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -41,7 +42,10 @@ class ChannelProfileResource extends JsonResource
             'is_verified' => (bool) $this->is_verified,
             'is_pro' => (bool) $this->is_pro,
             'custom_url' => $channel?->custom_url,
-            'social_links' => [],
+            // Filtered on read, not just on write: a platform can be removed
+            // from config/social_links.php, or an admin can flip the site-wide
+            // kill switch, after a link was already saved.
+            'social_links' => app(SocialLinkService::class)->forDisplay($this->resource),
             'created_at' => $this->created_at?->toIso8601String(),
             'stats' => [
                 'subscribers' => (int) $this->subscriber_count,
@@ -53,7 +57,10 @@ class ChannelProfileResource extends JsonResource
                     $this->resource->getAttributes()['public_video_count']
                         ?? $this->resource->publicVideoCount()
                 ),
-                'views' => (int) ($channel?->total_views ?? 0),
+                // Not $channel->total_views: that counter has no writer
+                // anywhere in the app and is 0 for every channel. See
+                // User::totalVideoViews().
+                'views' => $this->resource->totalVideoViews(),
             ],
             'is_owner' => $request->user()?->id === $this->id,
         ];

@@ -525,6 +525,12 @@ sudo -u www-data npm run build
 # Run migrations
 sudo -u www-data php artisan migrate --force
 
+# Clear the cached UI translation catalogues.
+# resources/js/i18n/*.json is cached with rememberForever, so any release that
+# adds or changes a translation key will render the raw dot-path (e.g.
+# "common.verified") to users until this runs. config:cache does NOT cover it.
+sudo -u www-data php artisan translations:clear-cache
+
 # Clear and rebuild caches
 sudo -u www-data php artisan config:cache
 sudo -u www-data php artisan route:cache
