@@ -65,6 +65,7 @@ class HandleInertiaRequests extends Middleware
                             // can edit them. Unlike the public channel payload
                             // these are not filtered for display — the owner
                             // must still see a link the kill switch is hiding.
+                            'description' => $user->channel->description,
                             'social_links' => is_array($user->channel->social_links)
                                 ? $user->channel->social_links
                                 : [],
@@ -347,19 +348,41 @@ class HandleInertiaRequests extends Middleware
     /**
      * Read a UI translation catalogue from resources/js/i18n.
      *
-     * Cached forever: these files only change when translations:generate runs,
-     * which clears the cache. Without it every request — including partial
-     * Inertia reloads — re-read and re-decoded a ~16KB JSON file from disk.
+     * Cached, keyed on the catalogue's modification time. Without it every
+     * request — including partial Inertia reloads — re-read and re-decoded a
+     * ~16KB JSON file from disk.
+     *
+     * The mtime is part of the cache key on purpose. This used to be a plain
+     * rememberForever() cleared only by translations:generate, so any deploy
+     * that edited a catalogue by hand served the stale copy and every new key
+     * rendered to users as its raw dot-path ("common.verified") until someone
+     * remembered to run translations:clear-cache. Keying on mtime makes a
+     * changed file invalidate itself; a stat() per request is far cheaper than
+     * re-decoding the JSON, and translations:clear-cache still works.
      */
+    /**
+     * Cache key for a locale's catalogue, versioned by the file's mtime.
+     *
+     * Shared with translations:clear-cache and translations:generate so they
+     * forget the key this actually writes.
+     */
+    public static function uiTranslationCacheKey(string $locale): string
+    {
+        $file = resource_path("js/i18n/{$locale}.json");
+        $version = (file_exists($file) ? @filemtime($file) : 0) ?: 0;
+
+        return "i18n:ui:{$locale}:{$version}";
+    }
+
     protected function uiTranslations(string $locale): array
     {
-        return Cache::rememberForever("i18n:ui:{$locale}", function () use ($locale) {
-            $file = resource_path("js/i18n/{$locale}.json");
+        $file = resource_path("js/i18n/{$locale}.json");
 
-            if (!file_exists($file)) {
-                return [];
-            }
+        if (!file_exists($file)) {
+            return [];
+        }
 
+        return Cache::rememberForever(static::uiTranslationCacheKey($locale), function () use ($file) {
             return json_decode(file_get_contents($file), true) ?: [];
         });
     }

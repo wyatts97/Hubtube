@@ -53,6 +53,8 @@ class SiteSettings extends Page implements HasForms
             'registration_enabled' => Setting::get('registration_enabled', true),
             'email_verification_required' => Setting::get('email_verification_required', true),
             'age_verification_required' => Setting::get('age_verification_required', true),
+            'private_profiles_enabled' => Setting::get('private_profiles_enabled', false),
+            'channel_social_links_enabled' => Setting::get('channel_social_links_enabled', true),
             'minimum_age' => Setting::get('minimum_age', 18),
             'max_upload_size_free' => Setting::get('max_upload_size_free', 500),
             'max_upload_size_pro' => Setting::get('max_upload_size_pro', 5000),
@@ -355,6 +357,15 @@ class SiteSettings extends Page implements HasForms
                                             ->numeric()
                                             ->minValue(13)
                                             ->maxValue(21),
+                                    ])->columns(2),
+                                Section::make('Channels & Privacy')
+                                    ->schema([
+                                        Toggle::make('private_profiles_enabled')
+                                            ->label('Allow Private Profiles')
+                                            ->helperText('Lets users hide their channel from everyone but themselves. While off, the option is hidden in user settings and any profile already set to private becomes visible again.'),
+                                        Toggle::make('channel_social_links_enabled')
+                                            ->label('Allow Outbound Channel Links')
+                                            ->helperText('Turn off to hide every creator social link site-wide without deleting them — useful during a spam wave.'),
                                     ])->columns(2),
                             ]),
                         Tab::make('Videos')

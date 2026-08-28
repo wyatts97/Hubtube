@@ -45,18 +45,32 @@ class SettingsController extends Controller
                 ->values()
                 ->all(),
             'socialLinksEnabled' => app(SocialLinkService::class)->outboundLinksEnabled(),
+            'privateProfilesEnabled' => filter_var(
+                Setting::get('private_profiles_enabled', false),
+                FILTER_VALIDATE_BOOLEAN,
+            ),
         ]);
     }
 
     public function updateProfile(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'username' => ['required', 'string', 'max:50', 'unique:users,username,' . $request->user()->id],
-            'email' => ['required', 'email', 'unique:users,email,' . $request->user()->id],
+            'username' => ['required', 'string', 'max:50', 'unique:users,username,'.$request->user()->id],
+            'email' => ['required', 'email', 'unique:users,email,'.$request->user()->id],
             'bio' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $request->user()->update($validated);
+        $user = $request->user();
+        $bio = $validated['bio'] ?? null;
+        unset($validated['bio']);
+
+        $user->update($validated);
+
+        // channels.description is what the channel page renders. Editing
+        // users.bio used to change nothing the visitor could see; it is still
+        // written for one release as a rollback path.
+        $user->ensureChannel()->update(['description' => $bio]);
+        $user->update(['bio' => $bio]);
 
         return redirect()->route('settings')->with('success', 'Profile updated successfully.');
     }
@@ -235,6 +249,14 @@ class SettingsController extends Controller
             'show_liked_videos' => ['boolean'],
             'allow_comments' => ['boolean'],
         ]);
+
+        // Private profiles are an admin-enabled feature. While it is off the
+        // toggle is hidden in the UI, so drop the field rather than trusting
+        // the request body — a hand-crafted POST must not be able to hide a
+        // channel on a site where the operator disabled the feature.
+        if (! filter_var(Setting::get('private_profiles_enabled', false), FILTER_VALIDATE_BOOLEAN)) {
+            unset($validated['private_profile']);
+        }
 
         $user = $request->user();
         $settings = $user->settings ?? [];

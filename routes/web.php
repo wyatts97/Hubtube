@@ -489,6 +489,7 @@ Route::middleware('age.verified')->group(function () {
 
         // Subscriptions Feed
         Route::get('/feed', FeedController::class)->name('feed');
+        Route::get('/api/feed', [FeedController::class, 'more'])->middleware('throttle:60,1')->name('feed.more');
 
         // Creator Dashboard
         Route::get('/dashboard', DashboardController::class)->name('dashboard');

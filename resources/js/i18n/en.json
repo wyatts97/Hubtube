@@ -55,6 +55,8 @@
         "notifications_off": "Notifications off",
         "notifications_on": "All notifications",
         "playlists": "Playlists",
+        "private_desc": "The owner has chosen not to show their channel publicly.",
+        "private_title": "This channel is private",
         "recently_watched": "Recently Watched",
         "stats": "Channel Stats",
         "total_views": "Total views",
@@ -159,9 +161,14 @@
         "unauthorized": "You are not authorized to perform this action."
     },
     "feed": {
+        "created_playlist": "created a playlist",
         "description": "Latest videos from channels you follow",
+        "discover": "Discover channels",
         "empty": "No videos in your feed yet",
         "empty_desc": "Subscribe to channels to see their latest videos here",
+        "no_subscriptions": "You are not subscribed to any channels yet",
+        "no_subscriptions_desc": "Subscribe to a channel and their new uploads will show up here.",
+        "posted_videos": "posted a video|posted {count} videos",
         "title": "Subscriptions"
     },
     "footer": {
@@ -323,7 +330,7 @@
         "privacy": "Privacy",
         "privacy_settings": "Privacy Settings",
         "private_profile": "Private Profile",
-        "private_profile_desc": "Only approved followers can see your content",
+        "private_profile_desc": "Hide your channel from everyone except you. Your videos stay accessible by direct link.",
         "profile": "Profile",
         "profile_images": "Profile Images",
         "profile_settings": "Profile Settings",

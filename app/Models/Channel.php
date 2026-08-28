@@ -10,6 +10,12 @@ class Channel extends Model
 {
     use HasFactory;
 
+    /**
+     * Note: there is no is_verified here. Verification lives on
+     * users.is_verified — the column on this table was dropped by the
+     * consolidate_channel_profile_fields migration because nothing read it
+     * (the frontend badge has always read the user flag).
+     */
     protected $fillable = [
         'user_id',
         'name',
@@ -19,7 +25,6 @@ class Channel extends Model
         'custom_url',
         'subscriber_count',
         'total_views',
-        'is_verified',
         'subscription_price',
         'subscription_enabled',
         'social_links',
@@ -29,7 +34,6 @@ class Channel extends Model
     protected function casts(): array
     {
         return [
-            'is_verified' => 'boolean',
             'subscription_enabled' => 'boolean',
             'subscription_price' => 'decimal:2',
             'social_links' => 'array',

@@ -53,6 +53,8 @@
         "notifications_off": "Notificaciones desactivadas",
         "notifications_on": "Todas las notificaciones",
         "playlists": "Listas",
+        "private_desc": "El propietario ha decidido no mostrar su canal públicamente.",
+        "private_title": "Este canal es privado",
         "recently_watched": "Visto recientemente",
         "stats": "Estadísticas del Canal",
         "total_views": "Vistas totales",
@@ -142,9 +144,14 @@
         "unauthorized": "No estás autorizado para realizar esta acción."
     },
     "feed": {
+        "created_playlist": "creó una lista de reproducción",
         "description": "Últimos videos de los canales que sigues",
+        "discover": "Descubrir canales",
         "empty": "Aún no hay videos en tu feed",
         "empty_desc": "Suscríbete a canales para ver sus últimos videos aquí",
+        "no_subscriptions": "Aún no sigues ningún canal",
+        "no_subscriptions_desc": "Suscríbete a un canal y sus nuevas subidas aparecerán aquí.",
+        "posted_videos": "publicó un vídeo|publicó {count} vídeos",
         "title": "Suscripciones"
     },
     "footer": {
@@ -284,7 +291,7 @@
         "privacy": "Privacidad",
         "privacy_settings": "Ajustes de Privacidad",
         "private_profile": "Perfil Privado",
-        "private_profile_desc": "Solo seguidores aprobados pueden ver tu contenido",
+        "private_profile_desc": "Oculta tu canal a todos excepto a ti. Tus vídeos siguen siendo accesibles por enlace directo.",
         "profile": "Perfil",
         "profile_images": "Imágenes de Perfil",
         "profile_settings": "Ajustes de Perfil",

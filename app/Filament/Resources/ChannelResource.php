@@ -117,8 +117,6 @@ class ChannelResource extends Resource
                     ])->columns(2),
                 Section::make('Status')
                     ->schema([
-                        Toggle::make('is_verified')
-                            ->label('Verified Channel'),
                         TextInput::make('subscriber_count')
                             ->numeric()
                             ->disabled(),
@@ -154,7 +152,11 @@ class ChannelResource extends Resource
                     ->state(fn (Channel $record) => $record->user?->totalVideoViews() ?? 0)
                     ->numeric(),
 
-                IconColumn::make('is_verified')
+                // Verification lives on users.is_verified — see the
+                // consolidate_channel_profile_fields migration. Managed from
+                // UserResource, shown here read-only.
+                IconColumn::make('user.is_verified')
+                    ->label('Verified')
                     ->boolean(),
                 IconColumn::make('subscription_enabled')
                     ->boolean(),
@@ -165,16 +167,18 @@ class ChannelResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                TernaryFilter::make('is_verified'),
                 TernaryFilter::make('subscription_enabled'),
             ])
             ->recordActions([
                 EditAction::make(),
+                // Writes the user flag, which is the one the frontend badge
+                // reads. This action previously set channels.is_verified and
+                // so had no visible effect anywhere.
                 Action::make('verify')
                     ->icon('phosphor-check-circle')
                     ->color('success')
-                    ->action(fn (Channel $record) => $record->update(['is_verified' => true]))
-                    ->visible(fn (Channel $record) => !$record->is_verified),
+                    ->action(fn (Channel $record) => $record->user?->forceFill(['is_verified' => true])->save())
+                    ->visible(fn (Channel $record) => $record->user && ! $record->user->is_verified),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

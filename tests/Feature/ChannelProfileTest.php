@@ -183,3 +183,39 @@ test('total views excludes private and unapproved videos', function () {
         ->assertOk()
         ->assertInertia(fn ($page) => $page->where('channel.stats.views', 500)->etc());
 });
+
+/*
+| Phase 3: channels.description is canonical. Settings used to edit users.bio
+| while the channel page rendered channels.description, so editing your bio
+| changed nothing a visitor could see.
+*/
+
+test('editing the profile bio updates what the channel page shows', function () {
+    $user = asUser();
+
+    $this->put('/settings/profile', [
+        'username' => $user->username,
+        'email' => $user->email,
+        'bio' => 'Updated from settings.',
+    ])->assertRedirect();
+
+    expect($user->fresh()->channel->description)->toBe('Updated from settings.');
+
+    $this->get("/channel/{$user->username}")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('channel.description', 'Updated from settings.')
+            ->etc());
+});
+
+test('the verified badge follows the user flag', function () {
+    $user = User::factory()->create();
+
+    $this->get("/channel/{$user->username}")
+        ->assertInertia(fn ($page) => $page->where('channel.is_verified', false)->etc());
+
+    $user->forceFill(['is_verified' => true])->save();
+
+    $this->get("/channel/{$user->username}")
+        ->assertInertia(fn ($page) => $page->where('channel.is_verified', true)->etc());
+});

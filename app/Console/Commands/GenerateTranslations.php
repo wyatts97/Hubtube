@@ -146,6 +146,9 @@ class GenerateTranslations extends Command
 
             // HandleInertiaRequests caches these catalogues forever.
             \Illuminate\Support\Facades\Cache::forget("i18n:ui:{$locale}");
+            \Illuminate\Support\Facades\Cache::forget(
+                \App\Http\Middleware\HandleInertiaRequests::uiTranslationCacheKey($locale)
+            );
 
             $this->line("  <info>✓</info> Written to resources/js/i18n/{$locale}.json");
 

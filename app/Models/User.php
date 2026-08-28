@@ -251,6 +251,35 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         return true;
     }
 
+    /**
+     * Whether this channel is hidden from everyone but its owner and admins.
+     *
+     * Gated by the site-wide private_profiles_enabled setting, so an admin
+     * turning the feature off restores visibility immediately without
+     * rewriting anyone's saved preference — flipping it back on restores
+     * their choice.
+     */
+    public function isPrivateProfile(): bool
+    {
+        if (! filter_var(Setting::get('private_profiles_enabled', false), FILTER_VALIDATE_BOOLEAN)) {
+            return false;
+        }
+
+        return ! empty(($this->settings ?? [])['private_profile']);
+    }
+
+    /**
+     * Whether the given viewer may see this channel's content.
+     */
+    public function isVisibleTo(?self $viewer): bool
+    {
+        if (! $this->isPrivateProfile()) {
+            return true;
+        }
+
+        return $viewer !== null && ($viewer->id === $this->id || $viewer->is_admin);
+    }
+
     public function isAgeVerified(): bool
     {
         return $this->age_verified_at !== null;

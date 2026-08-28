@@ -20,7 +20,8 @@ const activeTab = ref('profile');
 const profileForm = useForm({
     username: user.value?.username || '',
     email: user.value?.email || '',
-    bio: user.value?.bio || '',
+    // channels.description is canonical; users.bio is the legacy fallback.
+    bio: user.value?.channel?.description ?? user.value?.bio ?? '',
 });
 
 const avatarForm = useForm({ avatar: null });
@@ -132,7 +133,10 @@ const handlePushToggle = async () => {
     await togglePush();
 };
 
+const privateProfilesEnabled = computed(() => page.props.privateProfilesEnabled === true);
+
 const privacyForm = useForm({
+    private_profile: user.value?.settings?.private_profile ?? false,
     show_watch_history: user.value?.settings?.show_watch_history ?? true,
     show_liked_videos: user.value?.settings?.show_liked_videos ?? true,
     allow_comments: user.value?.settings?.allow_comments ?? true,
@@ -504,17 +508,26 @@ const tabs = computed(() => {
                             </p>
 
                             <form @submit.prevent="updateSocialLinks" class="mt-4 space-y-3">
+                                <!--
+                                    Widths live on wrappers, not on the .input
+                                    elements: .input applies w-full, which wins
+                                    against a sibling width utility and would
+                                    push the row out of the card.
+                                -->
                                 <div
                                     v-for="(link, index) in socialForm.social_links"
                                     :key="index"
-                                    class="flex flex-col sm:flex-row gap-2"
+                                    class="flex flex-col sm:flex-row sm:items-start gap-2"
                                 >
-                                    <select v-model="link.platform" class="input sm:w-44 shrink-0">
-                                        <option v-for="p in socialPlatforms" :key="p.value" :value="p.value">
-                                            {{ p.label }}
-                                        </option>
-                                    </select>
-                                    <div class="flex-1 min-w-0">
+                                    <div class="w-full sm:w-44 sm:shrink-0">
+                                        <select v-model="link.platform" class="input">
+                                            <option v-for="p in socialPlatforms" :key="p.value" :value="p.value">
+                                                {{ p.label }}
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                    <div class="flex-1 min-w-0 space-y-2">
                                         <input
                                             v-model="link.url"
                                             type="url"
@@ -522,7 +535,7 @@ const tabs = computed(() => {
                                             :placeholder="t('settings.social_links_placeholder')"
                                             class="input"
                                         />
-                                        <p v-if="socialForm.errors[`social_links.${index}.url`]" class="text-red-500 text-sm mt-1">
+                                        <p v-if="socialForm.errors[`social_links.${index}.url`]" class="text-red-500 text-sm">
                                             {{ socialForm.errors[`social_links.${index}.url`] }}
                                         </p>
                                         <input
@@ -531,14 +544,16 @@ const tabs = computed(() => {
                                             type="text"
                                             maxlength="40"
                                             :placeholder="t('settings.social_links_label')"
-                                            class="input mt-2"
+                                            class="input"
                                         />
                                     </div>
+
                                     <button
                                         type="button"
                                         @click="removeSocialLink(index)"
-                                        class="btn btn-ghost text-red-500 shrink-0"
+                                        class="inline-flex items-center justify-center w-10 h-10 shrink-0 self-end sm:self-start rounded-lg text-red-500 transition-colors hover:bg-bg-hover"
                                         :aria-label="t('common.remove')"
+                                        :title="t('common.remove')"
                                     >
                                         <Trash2 class="w-4 h-4" />
                                     </button>
@@ -735,6 +750,19 @@ const tabs = computed(() => {
                     <TabsContent value="privacy" class="card p-6">
                         <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.privacy_settings') }}</h2>
                         <form @submit.prevent="updatePrivacy" class="space-y-4">
+                            <!--
+                                Private profiles are opt-in per site. While the
+                                admin setting is off this toggle is hidden and
+                                the server drops the field, so the preference
+                                cannot be set out of band.
+                            -->
+                            <div v-if="privateProfilesEnabled" class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-text-primary">{{ t('settings.private_profile') }}</p>
+                                    <p class="text-sm text-text-secondary">{{ t('settings.private_profile_desc') }}</p>
+                                </div>
+                                <BaseSwitch v-model="privacyForm.private_profile" :label="t('settings.private_profile')" />
+                            </div>
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-text-primary">{{ t('settings.show_watch_history') }}</p>

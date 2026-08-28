@@ -33,6 +33,17 @@ class ChannelController extends Controller
         $settings = $user->settings ?? [];
         $isOwner = auth()->id() === $user->id;
 
+        // A locked channel returns before $props is touched. The actions pass
+        // their data as closures precisely so those queries never run for a
+        // viewer who is not allowed to see the results.
+        if (! $user->isVisibleTo(auth()->user())) {
+            return Inertia::render('Channel/Private', [
+                'channel' => (new ChannelProfileResource($user))->resolve(),
+                'isOwner' => $isOwner,
+                'seo' => $this->seoService->forChannel($user),
+            ]);
+        }
+
         $subscription = auth()->check()
             ? auth()->user()->channelSubscriptions()->where('channel_id', $user->id)->first()
             : null;
@@ -104,7 +115,7 @@ class ChannelController extends Controller
     public function show(User $user): Response
     {
         return $this->renderTab($user, 'Show', 'videos', [
-            'videos' => $this->publicVideos($user),
+            'videos' => fn () => $this->publicVideos($user),
         ]);
     }
 
@@ -124,12 +135,12 @@ class ChannelController extends Controller
     public function playlists(User $user, Request $request): Response
     {
         return $this->renderTab($user, 'Playlists', 'playlists', [
-            'playlists' => $user->playlists()
+            'playlists' => fn () => $user->playlists()
                 ->withCount('videos')
                 ->latest()
                 ->paginate(24, ['*'], 'page')
                 ->withQueryString(),
-            'favoritePlaylists' => $user->favoritePlaylists()
+            'favoritePlaylists' => fn () => $user->favoritePlaylists()
                 ->with('user')
                 ->withCount('videos')
                 ->latest('playlist_favorites.created_at')
@@ -147,17 +158,15 @@ class ChannelController extends Controller
             abort(404);
         }
 
-        $videos = Video::query()
-            ->whereIn('id', $user->likes()->likes()->pluck('video_id'))
-            ->public()
-            ->approved()
-            ->processed()
-            ->latest('published_at')
-            ->paginate(24)
-            ->withQueryString();
-
         return $this->renderTab($user, 'LikedVideos', 'liked', [
-            'videos' => $videos,
+            'videos' => fn () => Video::query()
+                ->whereIn('id', $user->likes()->likes()->pluck('video_id'))
+                ->public()
+                ->approved()
+                ->processed()
+                ->latest('published_at')
+                ->paginate(24)
+                ->withQueryString(),
         ]);
     }
 
@@ -169,21 +178,14 @@ class ChannelController extends Controller
             abort(404);
         }
 
-        $videoIds = $user->watchHistory()
-            ->latest()
-            ->pluck('video_id')
-            ->unique();
-
-        $videos = Video::query()
-            ->whereIn('id', $videoIds)
-            ->public()
-            ->approved()
-            ->processed()
-            ->paginate(24)
-            ->withQueryString();
-
         return $this->renderTab($user, 'WatchHistory', 'history', [
-            'videos' => $videos,
+            'videos' => fn () => Video::query()
+                ->whereIn('id', $user->watchHistory()->latest()->pluck('video_id')->unique())
+                ->public()
+                ->approved()
+                ->processed()
+                ->paginate(24)
+                ->withQueryString(),
         ]);
     }
 

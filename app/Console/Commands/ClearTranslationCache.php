@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Services\TranslationService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -20,7 +21,10 @@ class ClearTranslationCache extends Command
         $locales = array_keys(TranslationService::LANGUAGES);
 
         foreach ($locales as $locale) {
+            // The legacy unversioned key, plus the mtime-versioned key the
+            // middleware writes today.
             Cache::forget("i18n:ui:{$locale}");
+            Cache::forget(HandleInertiaRequests::uiTranslationCacheKey($locale));
         }
 
         $this->info('Cleared cached UI translations for '.count($locales).' locales.');
