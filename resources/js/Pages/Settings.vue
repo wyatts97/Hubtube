@@ -64,6 +64,16 @@ const uploadBanner = () => {
     });
 };
 
+const removeBanner = () => {
+    bannerForm.delete('/settings/banner', {
+        preserveScroll: true,
+        onSuccess: () => {
+            bannerPreview.value = null;
+            bannerForm.reset();
+        },
+    });
+};
+
 const passwordForm = useForm({
     current_password: '',
     password: '',
@@ -343,6 +353,52 @@ const tabs = computed(() => {
                                             <button @click="avatarPreview = null; avatarForm.reset()" class="btn btn-ghost text-sm">{{ t('common.cancel') }}</button>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+
+                            <!--
+                                Banner upload. bannerForm/handleBannerSelect/uploadBanner
+                                and POST /settings/banner all already existed; only this
+                                markup was missing, so the feature was unreachable.
+                            -->
+                            <div class="mt-6 pt-6 border-t border-border">
+                                <label class="block text-sm font-medium mb-2 text-text-secondary">{{ t('settings.banner') }}</label>
+                                <div class="relative w-full aspect-[6/1] rounded-card overflow-hidden bg-bg-input">
+                                    <img
+                                        v-if="bannerPreview || user?.channel?.banner_image"
+                                        :src="bannerPreview || user?.channel?.banner_image"
+                                        :alt="t('settings.banner')"
+                                        class="w-full h-full object-cover"
+                                    />
+                                    <label class="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/40 cursor-pointer transition-opacity"
+                                        :class="(bannerPreview || user?.channel?.banner_image) ? 'opacity-0 hover:opacity-100' : 'opacity-100'"
+                                    >
+                                        <ImageIcon class="w-6 h-6 text-white" />
+                                        <span class="text-xs text-white">{{ t('settings.change_banner') }}</span>
+                                        <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="handleBannerSelect" />
+                                    </label>
+                                </div>
+                                <p class="mt-2 text-xs text-text-muted">{{ t('settings.banner_hint') }}</p>
+                                <p v-if="bannerForm.errors.banner" class="text-red-500 text-sm mt-1">{{ bannerForm.errors.banner }}</p>
+                                <div class="flex items-center gap-2 mt-2">
+                                    <template v-if="bannerPreview">
+                                        <button @click="uploadBanner" :disabled="bannerForm.processing" class="btn btn-primary text-sm">
+                                            <Loader2 v-if="bannerForm.processing" class="w-4 h-4 animate-spin me-1" />
+                                            {{ t('settings.save_banner') }}
+                                        </button>
+                                        <button @click="bannerPreview = null; bannerForm.reset()" class="btn btn-ghost text-sm">
+                                            {{ t('common.cancel') }}
+                                        </button>
+                                    </template>
+                                    <button
+                                        v-else-if="user?.channel?.banner_image"
+                                        @click="removeBanner"
+                                        :disabled="bannerForm.processing"
+                                        class="btn btn-ghost text-sm text-red-500"
+                                    >
+                                        <Trash2 class="w-4 h-4 me-1" />
+                                        {{ t('settings.remove_banner') }}
+                                    </button>
                                 </div>
                             </div>
                         </div>

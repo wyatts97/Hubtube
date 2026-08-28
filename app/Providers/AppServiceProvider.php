@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use App\Http\Middleware\SetAdminTimezone;
 use App\Models\Category;
+use App\Models\User;
 use App\Observers\CategoryObserver;
+use App\Observers\UserObserver;
 use Filament\Auth\Http\Responses\Contracts\LogoutResponse;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\ServiceProvider;
@@ -52,6 +54,7 @@ class AppServiceProvider extends ServiceProvider
         Model::shouldBeStrict(!$this->app->isProduction());
 
         Category::observe(CategoryObserver::class);
+        User::observe(UserObserver::class);
 
         if ($this->app->isProduction()) {
             URL::forceScheme('https');

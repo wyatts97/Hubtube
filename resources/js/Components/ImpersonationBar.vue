@@ -13,7 +13,7 @@ const impersonating = computed(() => page.props.impersonating || null);
 <template>
     <div
         v-if="impersonating"
-        class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 px-4 py-2 rounded-full shadow-lg border text-sm"
+        class="fixed bottom-4 inset-x-0 mx-auto w-fit z-[60] flex items-center gap-3 px-4 py-2 rounded-full shadow-lg border text-sm"
         style="background-color: var(--color-bg-card, #1f1f1f); border-color: var(--color-border, #374151); color: var(--color-text-primary, #f3f4f6);"
         role="status"
     >

@@ -22,7 +22,7 @@ class SubscriptionController extends Controller
         ]);
 
         if ($subscription->wasRecentlyCreated) {
-            $user->channel?->incrementSubscribers();
+            $user->ensureChannel()->incrementSubscribers();
             event(new NewSubscriber($subscription));
         }
 
@@ -40,7 +40,7 @@ class SubscriptionController extends Controller
         ])->delete();
 
         if ($deleted) {
-            $user->channel?->decrementSubscribers();
+            $user->ensureChannel()->decrementSubscribers();
         }
 
         return response()->json([

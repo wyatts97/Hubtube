@@ -456,6 +456,7 @@ Route::middleware('age.verified')->group(function () {
         Route::put('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile');
         Route::post('/settings/avatar', [SettingsController::class, 'updateAvatar'])->name('settings.avatar');
         Route::post('/settings/banner', [SettingsController::class, 'updateBanner'])->name('settings.banner');
+        Route::delete('/settings/banner', [SettingsController::class, 'destroyBanner'])->name('settings.banner.destroy');
         Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password');
         Route::put('/settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications');
         Route::put('/settings/privacy', [SettingsController::class, 'updatePrivacy'])->name('settings.privacy');

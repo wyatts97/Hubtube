@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ChannelService;
 use App\Services\EmailService;
 use Illuminate\Support\Facades\URL;
 use Filament\Models\Contracts\FilamentUser;
@@ -252,6 +253,42 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     public function isAgeVerified(): bool
     {
         return $this->age_verified_at !== null;
+    }
+
+    /**
+     * The user's channel row, creating it if it is somehow missing.
+     *
+     * UserObserver covers normal creation and a backfill migration covered
+     * existing rows, but the relation can still be null: saveQuietly() and
+     * Event::fake() both bypass observers, and a deploy can serve traffic
+     * before the backfill has run.
+     *
+     * Callers must use this rather than $user->channel?->... — that null-safe
+     * chain is what silently discarded subscriber-count increments.
+     */
+    public function ensureChannel(): Channel
+    {
+        if ($this->relationLoaded('channel') && $this->channel) {
+            return $this->channel;
+        }
+
+        $channel = $this->channel()->first() ?? ChannelService::createForUser($this);
+
+        $this->setRelation('channel', $channel);
+
+        return $channel;
+    }
+
+    /**
+     * Number of videos of this user that are actually visible on the channel.
+     *
+     * ChannelController::show() used $videos->total() (which filters
+     * ->processed()) while about() used ->public()->approved()->count(), so
+     * the header and the About tab disagreed. This is the one definition.
+     */
+    public function publicVideoCount(): int
+    {
+        return $this->videos()->public()->approved()->processed()->count();
     }
 
     public function getSubscriberCountAttribute(): int

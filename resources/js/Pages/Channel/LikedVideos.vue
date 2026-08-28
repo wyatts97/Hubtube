@@ -1,98 +1,41 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
-import AppLayout from '@/Layouts/AppLayout.vue';
-import VideoCard from '@/Components/VideoCard.vue';
 import { Heart } from 'lucide-vue-next';
-import { useI18n } from '@/Composables/useI18n';
+import ChannelLayout from '@/Layouts/ChannelLayout.vue';
 import SeoHead from '@/Components/SeoHead.vue';
-
-const { t } = useI18n();
-
+import VideoCard from '@/Components/VideoCard.vue';
+import ChannelPaginator from '@/Components/Channel/ChannelPaginator.vue';
+import EmptyState from '@/Components/UI/EmptyState.vue';
+import { useI18n } from '@/Composables/useI18n';
+import { useVideoGrid } from '@/Composables/useVideoGrid';
 
 const props = defineProps({
     channel: Object,
     videos: Object,
+    activeTab: String,
     isOwner: Boolean,
-    showLikedVideos: { type: Boolean, default: true },
-    showWatchHistory: { type: Boolean, default: false },
+    isSubscribed: Boolean,
+    notificationsEnabled: Boolean,
+    subscriberCount: Number,
+    showLikedVideos: Boolean,
+    showWatchHistory: Boolean,
+    seo: { type: Object, default: () => ({}) },
+    bannerAd: { type: Object, default: () => ({}) },
 });
 
-const tabs = computed(() => {
-    const items = [
-        { name: t('channel.videos'), href: `/channel/${props.channel.username}` },
-        { name: t('channel.playlists'), href: `/channel/${props.channel.username}/playlists` },
-    ];
-    if (props.showLikedVideos) {
-        items.push({ name: t('channel.liked_videos'), href: `/channel/${props.channel.username}/liked`, active: true });
-    }
-    if (props.showWatchHistory) {
-        items.push({ name: t('channel.recently_watched'), href: `/channel/${props.channel.username}/history` });
-    }
-    items.push({ name: t('channel.about'), href: `/channel/${props.channel.username}/about` });
-    return items;
-});
+const { t } = useI18n();
+const { gridClass } = useVideoGrid();
 </script>
 
 <template>
-    <SeoHead :title="`${channel.username} - Liked Videos`" />
+    <SeoHead :seo="seo" :title="`${channel.display_name} — ${t('channel.liked_videos')}`" />
 
-    <AppLayout>
-        <!-- Channel Header -->
-        <div class="flex items-center gap-4 mb-6">
-            <div class="w-16 h-16 avatar">
-                <img :src="channel.avatar_url || channel.avatar || '/images/default_avatar.webp'" :alt="channel.username" class="w-full h-full object-cover" />
-            </div>
-            <div>
-                <h1 class="text-xl font-bold text-text-primary">{{ channel.username }}</h1>
-                <p class="text-text-muted">{{ t('channel.liked_videos') }}</p>
-            </div>
-        </div>
-
-        <!-- Tabs -->
-        <div class="mb-6 border-b border-border">
-            <nav class="flex gap-6 overflow-x-auto scrollbar-hide">
-                <Link
-                    v-for="tab in tabs"
-                    :key="tab.name"
-                    :href="tab.href"
-                    :class="[
-                        'pb-3 px-1 border-b-2 transition-colors whitespace-nowrap shrink-0',
-                        tab.active
-                            ? 'border-current'
-                            : 'border-transparent'
-                    ]"
-                    :style="{ color: tab.active ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }"
-                >
-                    {{ tab.name }}
-                </Link>
-            </nav>
-        </div>
-
-        <!-- Videos Grid -->
-        <div v-if="videos.data.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <ChannelLayout v-bind="props">
+        <div v-if="videos.data.length" :class="gridClass">
             <VideoCard v-for="video in videos.data" :key="video.id" :video="video" />
         </div>
 
-        <div v-else class="text-center py-12">
-            <Heart class="w-12 h-12 mx-auto mb-3 text-text-muted" />
-            <p class="text-text-muted">{{ t('channel.no_liked_videos') }}</p>
-        </div>
+        <EmptyState v-else :icon="Heart" :title="t('channel.no_liked_videos')" />
 
-        <!-- Pagination -->
-        <div v-if="videos.links && videos.links.length > 3" class="mt-8 flex justify-center gap-2">
-            <template v-for="link in videos.links" :key="link.label">
-                <Link
-                    v-if="link.url"
-                    :href="link.url"
-                    class="px-4 py-2 rounded-lg text-sm"
-                    :style="{
-                        backgroundColor: link.active ? 'var(--color-accent)' : 'var(--color-bg-card)',
-                        color: link.active ? '#fff' : 'var(--color-text-secondary)',
-                    }"
-                    v-html="link.label"
-                />
-            </template>
-        </div>
-    </AppLayout>
+        <ChannelPaginator :paginator="videos" :only="['videos']" />
+    </ChannelLayout>
 </template>

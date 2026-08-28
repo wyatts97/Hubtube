@@ -8,7 +8,7 @@
  * which matches what these settings actually are.
  *
  * Usage:
- *   <BaseSwitch v-model="form.email_notifications" :label="t('...')" />
+ *   <BaseSwitch v-model="form.email_notifications" :label="settings.email_notifications" />
  */
 import { SwitchRoot, SwitchThumb } from 'reka-ui';
 

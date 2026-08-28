@@ -85,20 +85,23 @@ class SettingsController extends Controller
     public function updateBanner(Request $request): RedirectResponse
     {
         $request->validate([
-            'banner' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            // The banner is the channel page's LCP element, so bound the
+            // dimensions as well as the byte size — a 4096px-wide PNG served
+            // raw on every channel view is a real performance cost.
+            'banner' => [
+                'required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120',
+                'dimensions:min_width=1280,max_width=4096',
+            ],
         ]);
 
         $user = $request->user();
 
-        // Ensure user has a channel record
-        $channel = $user->channel;
-        if (!$channel) {
-            $user->channel()->create([
-                'name' => $user->username,
-                'slug' => $user->username,
-            ]);
-            $channel = $user->channel()->first();
-        }
+        // Not $user->channel: that can be null (saveQuietly, or a deploy
+        // serving traffic before the backfill migration runs). ensureChannel()
+        // creates the row through ChannelService, which owns slug uniqueness —
+        // the inline version here previously set slug = username, which
+        // collides with the unique index.
+        $channel = $user->ensureChannel();
 
         // Delete old banner if it exists
         if ($channel->banner_image) {
@@ -108,10 +111,41 @@ class SettingsController extends Controller
             }
         }
 
-        $path = $request->file('banner')->store("banners/{$user->id}", 'public');
+        // Re-encode to WebP the same way updateAvatar does. The banner was
+        // previously stored as the raw upload.
+        try {
+            $manager = new ImageManager(new GdDriver());
+            $image = $manager->read($request->file('banner')->getPathname());
+            $image->scaleDown(width: 2048);
+            $webp = (string) $image->toWebp(82);
+
+            $relativePath = "banners/{$user->id}/banner.webp";
+            Storage::disk('public')->put($relativePath, $webp);
+            $path = $relativePath;
+        } catch (Throwable $e) {
+            Log::warning('Banner WebP conversion failed, using original', ['error' => $e->getMessage()]);
+            $path = $request->file('banner')->store("banners/{$user->id}", 'public');
+        }
+
         $channel->update(['banner_image' => '/storage/' . $path]);
 
         return redirect()->route('settings')->with('success', 'Banner updated successfully.');
+    }
+
+    public function destroyBanner(Request $request): RedirectResponse
+    {
+        $channel = $request->user()->ensureChannel();
+
+        if ($channel->banner_image) {
+            $oldPath = str_replace('/storage/', '', $channel->banner_image);
+            if (Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
+        }
+
+        $channel->update(['banner_image' => null]);
+
+        return redirect()->route('settings')->with('success', 'Banner removed.');
     }
 
     public function updatePassword(Request $request): RedirectResponse
