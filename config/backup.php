@@ -9,42 +9,42 @@ return [
             'include' => [
                 base_path(),
             ],
+            // Exclude the media roots WHOLESALE rather than naming individual
+            // folders. The transcoder creates directories per video (hls/, sprite
+            // and preview output), so an allowlist of known subfolders silently
+            // leaks the entire library into the archive.
+            //
+            // Application code is in git, so this backup exists to capture the
+            // database plus .env and any local config drift.
             'exclude' => [
                 base_path('vendor'),
                 base_path('node_modules'),
                 base_path('.git'),
-                storage_path('app/videos'),
-                storage_path('app/public/videos'),
-                storage_path('app/backups'),
-                storage_path('app/laravel-backup-temp'),
-                storage_path('logs'),
-                storage_path('framework'),
-                storage_path('app/laravel-medialibrary'),
-                storage_path('app/public/thumbnails'),
-                storage_path('app/public/images'),
-                storage_path('app/public/galleries'),
-                storage_path('app/public/avatars'),
-                storage_path('app/public/channels'),
-                storage_path('app/public/banners'),
-                storage_path('app/public/sponsored-cards'),
-                storage_path('app/uploads'),
-                storage_path('app/temp'),
-                storage_path('app/tmp'),
-                public_path('videos'),
-                public_path('storage/videos'),
-                public_path('storage/thumbnails'),
-                public_path('storage/images'),
-                public_path('storage/galleries'),
-                public_path('storage/avatars'),
-                public_path('storage/channels'),
-                public_path('storage/banners'),
-                public_path('storage/sponsored-cards'),
-                base_path('.idea'),
-                base_path('.vscode'),
                 base_path('tests'),
                 base_path('bootstrap/cache'),
                 base_path('public/build'),
+
+                // Symlink to storage/app/public — the whole media library.
+                base_path('public/storage'),
+
+                // All user-uploaded and generated media.
+                storage_path('app/public'),
+                storage_path('app/videos'),
+                storage_path('app/uploads'),
+                storage_path('app/chunks'),
+                storage_path('app/temp'),
+                storage_path('app/tmp'),
+                storage_path('app/laravel-medialibrary'),
+
+                // Backups themselves, scratch space, caches and logs.
+                storage_path('app/backups'),
+                storage_path('app/laravel-backup-temp'),
+                storage_path('framework'),
+                storage_path('logs'),
                 storage_path('debugbar'),
+
+                base_path('.idea'),
+                base_path('.vscode'),
             ],
             'follow_links' => false,
             'ignore_unreadable_directories' => false,
