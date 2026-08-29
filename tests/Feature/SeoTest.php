@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Category;
+use App\Models\Setting;
 use App\Models\Translation;
 use App\Models\User;
 use App\Models\Video;
@@ -339,4 +340,35 @@ test('an unpaginated listing advertises no series links', function () {
 
     expect($html)->not->toContain('<link rel="next"')
         ->and($html)->not->toContain('<link rel="prev"');
+});
+
+test('a favicon is always advertised even with no admin-uploaded icon', function () {
+    Setting::set('site_favicon', '', 'general', 'string');
+
+    $html = $this->get('/')->assertStatus(200)->getContent();
+
+    // Without this the browser implicitly requests /favicon.ico, which 404s.
+    expect($html)->toContain('rel="icon"');
+    expect($html)->toContain('/favicon.ico');
+});
+
+test('an admin-uploaded favicon takes precedence', function () {
+    Setting::set('site_favicon', 'branding/custom.png', 'general', 'string');
+
+    $html = $this->get('/')->assertStatus(200)->getContent();
+
+    expect($html)->toContain('/storage/branding/custom.png');
+    expect($html)->not->toContain('href="/favicon.ico"');
+});
+
+test('the shipped favicon.ico is a valid multi-size icon', function () {
+    $path = public_path('favicon.ico');
+
+    expect(file_exists($path))->toBeTrue();
+
+    [$reserved, $type, $count] = array_values(unpack('vreserved/vtype/vcount', file_get_contents($path)));
+
+    expect($reserved)->toBe(0);
+    expect($type)->toBe(1);      // 1 = icon
+    expect($count)->toBeGreaterThan(0);
 });

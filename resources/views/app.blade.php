@@ -132,10 +132,17 @@
     <meta name="p:domain_verify" content="{{ $pinterestVerify }}">
     @endif
 
-    {{-- Favicon --}}
+    {{-- Favicon.
+         An admin-uploaded icon wins. Otherwise fall back to the shipped PWA icons
+         rather than emitting nothing: with no <link rel="icon"> the browser
+         requests /favicon.ico implicitly, which used to 404 on every page view. --}}
     @php $siteFavicon = \App\Models\Setting::get('site_favicon', ''); @endphp
     @if($siteFavicon)
     <link rel="icon" href="{{ str_starts_with($siteFavicon, 'http') || str_starts_with($siteFavicon, '/') ? $siteFavicon : '/storage/' . $siteFavicon }}">
+    @else
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="96x96" href="/icons/icon-96x96.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png">
     @endif
 
     <!-- PWA -->
