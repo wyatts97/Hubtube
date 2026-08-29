@@ -44,7 +44,7 @@ const itemClass =
                 :class="itemClass"
             >
                 <div class="w-10 h-7 shrink-0 rounded overflow-hidden bg-black">
-                    <img :src="video.thumbnail_url || '/images/default_avatar.webp'" :alt="video.title" class="w-full h-full object-cover" loading="lazy" />
+                    <img :src="video.thumbnail_url || '/assets/default_avatar.webp'" :alt="video.title" class="w-full h-full object-cover" loading="lazy" />
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-sm font-medium truncate text-text-primary">{{ video.title }}</p>
@@ -67,7 +67,7 @@ const itemClass =
                 :class="itemClass"
             >
                 <div class="w-8 h-8 shrink-0 rounded-full overflow-hidden bg-bg-secondary">
-                    <img :src="channel.avatar_url || '/images/default_avatar.webp'" :alt="channel.channel_name" class="w-full h-full object-cover" loading="lazy" />
+                    <img :src="channel.avatar_url || '/assets/default_avatar.webp'" :alt="channel.channel_name" class="w-full h-full object-cover" loading="lazy" />
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-sm font-medium truncate text-text-primary">{{ channel.channel_name }}</p>

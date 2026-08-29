@@ -373,7 +373,7 @@ const tabs = computed(() => {
                                 <div class="flex items-center gap-4">
                                     <div class="relative w-20 h-20 rounded-full overflow-hidden shrink-0 bg-bg-secondary">
                                         <img
-                                            :src="avatarPreview || user?.avatar || '/images/default_avatar.webp'"
+                                            :src="avatarPreview || user?.avatar || '/assets/default_avatar.webp'"
                                             alt="Avatar"
                                             class="w-full h-full object-cover"
                                         />

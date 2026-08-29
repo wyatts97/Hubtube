@@ -174,7 +174,7 @@ class SponsoredCardResource extends Resource
                     ->disk('public')
                     ->square()
                     ->size(60)
-                    ->defaultImageUrl(url('/images/placeholder.jpg')),
+                    ->defaultImageUrl(url('/assets/placeholder.svg')),
                 TextColumn::make('title')
                     ->searchable()
                     ->sortable()

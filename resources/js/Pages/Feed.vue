@@ -85,7 +85,7 @@ const isEmpty = computed(() => entries.value.length === 0);
                 <div class="flex items-center gap-3 mb-3">
                     <Link :href="localizedUrl(`/channel/${entry.actor.username}`)" class="w-9 h-9 avatar shrink-0">
                         <img
-                            :src="entry.actor.avatar_url || '/images/default_avatar.webp'"
+                            :src="entry.actor.avatar_url || '/assets/default_avatar.webp'"
                             :alt="entry.actor.username"
                             class="w-full h-full object-cover"
                             loading="lazy"

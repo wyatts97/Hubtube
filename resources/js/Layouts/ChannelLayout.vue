@@ -147,7 +147,7 @@ const stats = computed(() => props.channel.stats || {});
         <div class="flex flex-col sm:flex-row sm:items-end gap-4 px-1">
             <div class="w-20 h-20 sm:w-28 sm:h-28 avatar shrink-0 -mt-10 sm:-mt-14 ring-4 ring-bg-primary relative z-10">
                 <img
-                    :src="channel.avatar_url || '/images/default_avatar.webp'"
+                    :src="channel.avatar_url || '/assets/default_avatar.webp'"
                     :alt="channel.display_name"
                     class="w-full h-full object-cover"
                     loading="eager"

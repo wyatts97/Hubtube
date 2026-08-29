@@ -106,7 +106,7 @@ const lightboxImages = computed(() => {
                     <div v-if="image.user" class="card p-4">
                         <Link :href="`/channel/${image.user.username}`" class="flex items-center gap-3 hover:opacity-80">
                             <div class="w-10 h-10 avatar">
-                                <img :src="image.user.avatar || '/images/default_avatar.webp'" :alt="image.user.username" class="w-full h-full object-cover" />
+                                <img :src="image.user.avatar || '/assets/default_avatar.webp'" :alt="image.user.username" class="w-full h-full object-cover" />
                             </div>
                             <div>
                                 <p class="font-medium text-sm text-text-primary">{{ image.user.username }}</p>

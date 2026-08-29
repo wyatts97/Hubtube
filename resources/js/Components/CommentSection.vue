@@ -112,7 +112,7 @@ fetchComments();
         <!-- Comment Input -->
         <div v-if="user" class="flex gap-3 mb-6">
             <div class="w-10 h-10 avatar flex-shrink-0">
-                <img :src="user.avatar || '/images/default_avatar.webp'" :alt="user.username" class="w-full h-full object-cover" />
+                <img :src="user.avatar || '/assets/default_avatar.webp'" :alt="user.username" class="w-full h-full object-cover" />
             </div>
             <div class="flex-1">
                 <textarea
@@ -157,7 +157,7 @@ fetchComments();
             <div v-for="comment in comments" :key="comment.id" class="flex gap-3">
                 <Link :href="`/channel/${comment.user?.username}`" class="flex-shrink-0">
                     <div class="w-10 h-10 avatar">
-                        <img :src="comment.user?.avatar_url || comment.user?.avatar || '/images/default_avatar.webp'" :alt="comment.user?.username" class="w-full h-full object-cover" />
+                        <img :src="comment.user?.avatar_url || comment.user?.avatar || '/assets/default_avatar.webp'" :alt="comment.user?.username" class="w-full h-full object-cover" />
                     </div>
                 </Link>
                 <div class="flex-1">
@@ -234,7 +234,7 @@ fetchComments();
                     <div v-if="comment.replies?.length" class="mt-4 space-y-4 ps-4 border-s-2 border-border">
                         <div v-for="reply in comment.replies" :key="reply.id" class="flex gap-3">
                             <div class="w-8 h-8 avatar flex-shrink-0">
-                                <img :src="reply.user?.avatar_url || reply.user?.avatar || '/images/default_avatar.webp'" class="w-full h-full object-cover" />
+                                <img :src="reply.user?.avatar_url || reply.user?.avatar || '/assets/default_avatar.webp'" class="w-full h-full object-cover" />
                             </div>
                             <div class="flex-1">
                                 <div class="flex items-center gap-2">

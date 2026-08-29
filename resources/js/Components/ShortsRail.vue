@@ -30,7 +30,7 @@ const { t, localizedUrl } = useI18n();
             >
                 <div class="w-[140px] h-[250px] sm:w-[160px] sm:h-[285px] rounded-xl overflow-hidden bg-black border border-border">
                     <img
-                        :src="video.thumbnail_url || '/images/default_avatar.webp'"
+                        :src="video.thumbnail_url || '/assets/default_avatar.webp'"
                         :alt="video.title"
                         class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         loading="lazy"

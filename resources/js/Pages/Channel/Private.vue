@@ -28,7 +28,7 @@ const { t } = useI18n();
             <div class="flex flex-col items-center text-center">
                 <div class="w-24 h-24 avatar">
                     <img
-                        :src="channel.avatar_url || '/images/default_avatar.webp'"
+                        :src="channel.avatar_url || '/assets/default_avatar.webp'"
                         :alt="channel.display_name"
                         class="w-full h-full object-cover"
                     />

@@ -145,12 +145,12 @@ const onPreviewLoad = (event) => {
         <div class="flex gap-3 mt-3">
             <Link v-if="showAvatar && video.user" :href="localizedUrl(`/channel/${video.user.username}`)" class="shrink-0">
                 <div class="w-9 h-9 avatar">
-                    <img v-bind="avatarProps(video.user.avatar_url || video.user.avatar || '/images/default_avatar.webp', 36)" :alt="video.user.username || video.user.name" class="w-full h-full object-cover" />
+                    <img v-bind="avatarProps(video.user.avatar_url || video.user.avatar || '/assets/default_avatar.webp', 36)" :alt="video.user.username || video.user.name" class="w-full h-full object-cover" />
                 </div>
             </Link>
             <div v-else-if="showAvatar" class="shrink-0">
                 <div class="w-9 h-9 avatar">
-                    <img src="/images/default_avatar.webp" alt="User" class="w-full h-full object-cover" />
+                    <img src="/assets/default_avatar.webp" alt="User" class="w-full h-full object-cover" />
                 </div>
             </div>
             <div class="flex-1 min-w-0">

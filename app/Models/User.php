@@ -405,7 +405,7 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         if ($raw) {
             return $raw;
         }
-        return '/images/default_avatar.webp';
+        return '/assets/default_avatar.webp';
     }
 
     public function getNameAttribute(): string

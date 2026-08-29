@@ -476,7 +476,7 @@ const handleMobileNavClick = (item) => {
                             <template #trigger>
                                 <button class="flex items-center gap-2" aria-label="User menu">
                                     <div class="w-8 h-8 avatar">
-                                        <img :src="user.avatar || '/images/default_avatar.webp'" :alt="user.username" class="w-full h-full object-cover" />
+                                        <img :src="user.avatar || '/assets/default_avatar.webp'" :alt="user.username" class="w-full h-full object-cover" />
                                     </div>
                                 </button>
                             </template>

@@ -204,7 +204,7 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
                         class="card p-4 flex items-center gap-4 hover:opacity-90 transition-opacity"
                     >
                         <div class="w-14 h-14 rounded-full overflow-hidden shrink-0 bg-bg-secondary">
-                            <img :src="channel.avatar_url || channel.avatar || '/images/default_avatar.webp'" :alt="channel.username" class="w-full h-full object-cover" loading="lazy" decoding="async" />
+                            <img :src="channel.avatar_url || channel.avatar || '/assets/default_avatar.webp'" :alt="channel.username" class="w-full h-full object-cover" loading="lazy" decoding="async" />
                         </div>
                         <div class="min-w-0">
                             <h3 class="font-medium truncate text-text-primary">
