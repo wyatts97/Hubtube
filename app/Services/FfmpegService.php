@@ -33,9 +33,44 @@ class FfmpegService
         return !empty($output);
     }
 
+    /**
+     * Reject a configured binary path that is not a plain absolute filesystem path.
+     *
+     * These paths come from admin-editable settings and are interpolated into
+     * shell command strings, so anything carrying shell metacharacters, quotes,
+     * whitespace or a traversal segment is discarded in favour of the detected
+     * default rather than being executed.
+     */
+    protected static function isSafeBinaryPath(string $path): bool
+    {
+        if ($path === '' || strlen($path) > 4096) {
+            return false;
+        }
+
+        // Absolute paths only: POSIX "/usr/bin/ffmpeg" or Windows "C:\ffmpeg\ffmpeg.exe".
+        $isPosixAbsolute = str_starts_with($path, '/');
+        $isWindowsAbsolute = strlen($path) > 2
+            && ctype_alpha($path[0])
+            && $path[1] === ':'
+            && ($path[2] === '/' || $path[2] === chr(92));
+
+        if (! $isPosixAbsolute && ! $isWindowsAbsolute) {
+            return false;
+        }
+
+        if (str_contains($path, '..')) {
+            return false;
+        }
+
+        // Any shell metacharacter, quote or whitespace disqualifies the path.
+        return ! preg_match('/[\s;&|<>$`(){}\[\]!*?~#\x27"]/', $path);
+    }
+
     protected static function resolveBinaryPath(string $binary, ?string $configured, string $preferred, string $fallback): string
     {
-        if (!empty($configured) && file_exists($configured)) {
+        $configured = (string) $configured;
+
+        if ($configured !== '' && static::isSafeBinaryPath($configured) && file_exists($configured)) {
             return $configured;
         }
 

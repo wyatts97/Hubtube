@@ -56,7 +56,7 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
 
     /**
      * Fields that must NEVER be mass-assignable.
-     * is_admin, is_pro, is_verified, wallet_balance,
+     * is_admin, is_super_admin, is_pro, is_verified, wallet_balance,
      * points_balance, pro_expires_at, pro_source
      * must only be set via forceFill()/explicit assignment or admin panel.
      */
@@ -83,6 +83,7 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
             'is_verified' => 'boolean',
             'is_pro' => 'boolean',
             'is_admin' => 'boolean',
+            'is_super_admin' => 'boolean',
             'points_balance' => 'integer',
             'pro_expires_at' => 'datetime',
             'settings' => 'array',
@@ -418,6 +419,19 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->is_admin;
+    }
+
+    /**
+     * Whether this user holds the super-admin tier.
+     *
+     * Super-admin gates the parts of the panel that can escalate to full server
+     * or financial control: the settings pages that build ffmpeg commands, the
+     * payment credentials, user management (which can grant is_admin), and the
+     * importer. A plain admin can moderate content but cannot reach those.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return (bool) ($this->is_admin && $this->is_super_admin);
     }
 
     /**

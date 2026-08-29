@@ -99,13 +99,46 @@ class VideoService
         return $slug;
     }
 
+    /**
+     * Resolve a safe, allowlisted storage extension for an uploaded video.
+     *
+     * The client-supplied original filename is NEVER trusted here. Videos are
+     * written to the public disk, so letting the client dictate the extension
+     * allows dropping an executable file (e.g. ".php") into the webroot.
+     * Anything not in config('hubtube.video.allowed_extensions') falls back to mp4.
+     */
+    protected function safeVideoExtension(UploadedFile $file): string
+    {
+        $allowed = (array) config('hubtube.video.allowed_extensions', ['mp4']);
+
+        // Prefer the extension the server derived from the actual temp file;
+        // fall back to the client-provided one only to pick from the allowlist.
+        $candidates = [
+            $file->guessExtension(),
+            $file->getClientOriginalExtension(),
+        ];
+
+        foreach ($candidates as $candidate) {
+            $candidate = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string) $candidate));
+            if ($candidate !== '' && in_array($candidate, $allowed, true)) {
+                return $candidate;
+            }
+        }
+
+        return 'mp4';
+    }
+
     protected function handleVideoUpload(Video $video, UploadedFile $file): void
     {
         // All assets live in videos/{slug}/ with title-based filenames
         $slug = $video->slug;
         $directory = "videos/{$slug}";
-        $extension = $file->getClientOriginalExtension() ?: 'mp4';
-        $filename = Str::slug($video->title, '_') . '.' . $extension;
+        $extension = $this->safeVideoExtension($file);
+
+        // Str::slug() can return an empty string for titles with no ASCII-safe
+        // characters, which would produce a dotfile like ".mp4" — fall back to the slug.
+        $basename = Str::slug($video->title, '_') ?: $slug;
+        $filename = $basename . '.' . $extension;
 
         // Always upload to local first — FFmpeg needs local filesystem access for processing.
         // ProcessVideoJob will offload to cloud and update storage_disk after successful upload.

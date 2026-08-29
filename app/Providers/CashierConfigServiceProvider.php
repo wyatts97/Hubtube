@@ -27,8 +27,8 @@ class CashierConfigServiceProvider extends ServiceProvider
 
         try {
             $key = Setting::get('stripe_key', '');
-            $secret = Setting::get('stripe_secret', '');
-            $webhookSecret = Setting::get('stripe_webhook_secret', '');
+            $secret = Setting::getDecrypted('stripe_secret', '');
+            $webhookSecret = Setting::getDecrypted('stripe_webhook_secret', '');
 
             if ($key) {
                 config(['cashier.key' => $key]);

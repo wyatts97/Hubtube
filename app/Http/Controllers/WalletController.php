@@ -13,9 +13,11 @@ use Filament\Notifications\Notification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class WalletController extends Controller
 {
@@ -84,21 +86,39 @@ class WalletController extends Controller
             'payment_details' => 'required|array',
         ]);
 
-        $withdrawal = WithdrawalRequest::create([
-            'user_id' => $request->user()->id,
-            'amount' => $validated['amount'],
-            'payment_method' => $validated['payment_method'],
-            'payment_details' => $validated['payment_details'],
-        ]);
+        // The `max:` rule above reads the balance outside any lock, so it is only a
+        // UX check. Creating the request and debiting the balance must happen in one
+        // transaction: WalletService::debit() takes a row lock and throws on an
+        // overdraft, and without a surrounding transaction the WithdrawalRequest row
+        // stayed committed — leaving an orphaned request the admin queue would honour.
+        try {
+            $withdrawal = DB::transaction(function () use ($request, $validated) {
+                $withdrawal = WithdrawalRequest::create([
+                    'user_id' => $request->user()->id,
+                    'amount' => $validated['amount'],
+                    'payment_method' => $validated['payment_method'],
+                    'payment_details' => $validated['payment_details'],
+                ]);
 
-        // Deduct balance immediately to prevent double-withdrawal
-        $this->walletService->debit(
-            $request->user(),
-            $validated['amount'],
-            'withdrawal_hold',
-            "Withdrawal request #{$withdrawal->id}",
-            $withdrawal
-        );
+                // Deduct balance immediately to prevent double-withdrawal.
+                $this->walletService->debit(
+                    $request->user(),
+                    $validated['amount'],
+                    'withdrawal_hold',
+                    "Withdrawal request #{$withdrawal->id}",
+                    $withdrawal
+                );
+
+                return $withdrawal;
+            });
+        } catch (Throwable $e) {
+            report($e);
+
+            return back()->withErrors([
+                'amount' => 'Your balance changed while this request was being processed. '
+                    . 'Please check your balance and try again.',
+            ]);
+        }
 
         $admins = User::admins()->get();
         if ($admins->isNotEmpty()) {

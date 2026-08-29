@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\RequiresSuperAdmin;
 use Throwable;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
@@ -16,6 +17,8 @@ use Filament\Pages\Page;
 
 class ArchiveImporter extends Page
 {
+    use RequiresSuperAdmin;
+
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-folder-open';
     protected static ?string $navigationLabel = 'Archive Import';
     protected static string | \UnitEnum | null $navigationGroup = 'Tools';

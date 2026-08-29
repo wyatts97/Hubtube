@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\RequiresSuperAdmin;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Actions;
@@ -28,6 +29,8 @@ use Illuminate\Support\Facades\Mail;
 
 class IntegrationSettings extends Page implements HasForms
 {
+    use RequiresSuperAdmin;
+
     use InteractsWithForms;
 
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-puzzle-piece';

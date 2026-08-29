@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -81,7 +82,11 @@ class GalleryController extends Controller
             'description' => ['nullable', 'string', 'max:5000'],
             'privacy' => ['required', 'in:public,private,unlisted'],
             'image_ids' => ['required', 'array', 'min:1'],
-            'image_ids.*' => ['exists:images,id'],
+            // Must be an image the requester owns. `exists:images,id` alone let any
+            // user mount another user's private or unapproved images in a public gallery.
+            'image_ids.*' => [
+                Rule::exists('images', 'id')->where('user_id', $request->user()->id),
+            ],
             'sort_order' => ['nullable', 'in:manual,newest,oldest'],
         ]);
 
@@ -122,7 +127,11 @@ class GalleryController extends Controller
             'description' => ['nullable', 'string', 'max:5000'],
             'privacy' => ['required', 'in:public,private,unlisted'],
             'image_ids' => ['nullable', 'array'],
-            'image_ids.*' => ['exists:images,id'],
+            // Must be an image the requester owns. `exists:images,id` alone let any
+            // user mount another user's private or unapproved images in a public gallery.
+            'image_ids.*' => [
+                Rule::exists('images', 'id')->where('user_id', $request->user()->id),
+            ],
         ]);
 
         $gallery->update([

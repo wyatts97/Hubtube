@@ -4,6 +4,7 @@ namespace App\Http\Requests\Video;
 
 use App\Models\Video;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class FinalizeVideoRequest extends FormRequest
 {
@@ -27,7 +28,16 @@ class FinalizeVideoRequest extends FormRequest
     {
         $rules = [
             'upload_id' => 'required|string|max:64|regex:/^[a-zA-Z0-9_-]+$/',
-            'extension' => 'required|string|alpha_num|max:8',
+            // Constrained to the video allowlist: this value selects the assembled
+            // chunk file on disk and must never be able to name an executable type.
+            'extension' => [
+                'required',
+                'string',
+                'max:8',
+                Rule::in((array) config('hubtube.video.allowed_extensions', ['mp4'])),
+            ],
+            // Retained for display/logging only. VideoService never derives the
+            // stored filename from this — see VideoService::safeVideoExtension().
             'original_filename' => 'nullable|string|max:255',
             'title' => 'required|string|min:3|max:200',
             'description' => 'required|string|min:10|max:5000',

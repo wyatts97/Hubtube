@@ -153,7 +153,15 @@ server {
 
     error_page 404 /index.php;
 
+    # Never execute PHP out of user-writable upload paths. A regex location
+    # outranks the /storage/ prefix location, so this must come first.
+    location ~ ^/(storage|uploads)/.*\.(php|phar|phtml|php[0-9]*)$ {
+        deny all;
+        return 403;
+    }
+
     location ~ \.php$ {
+        try_files $uri =404;
         fastcgi_pass unix:/var/run/php/php8.4-fpm.sock;
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
         include fastcgi_params;
@@ -671,6 +679,24 @@ Ubuntu's default repositories ship **outdated** versions of PHP, Node.js, and Co
 ---
 
 ### Web Installer Issues
+
+#### Site redirects to `/install` after a restore or redeploy
+**Cause:** the `storage/installed` marker was lost (a restored backup, a wiped `storage/`, or a deploy that did not preserve it).
+
+HubTube treats a database containing an administrator as proof of install, so this should self-heal on the next request — the marker is rewritten automatically. If it does not, the web server cannot write to `storage/`:
+```bash
+sudo chown -R $USER:www-data ~/hubtube/storage
+sudo chmod -R 775 ~/hubtube/storage
+```
+
+#### Re-running the installer on a site that already has an admin
+The wizard is blocked once an administrator exists, so a half-finished install cannot be resumed from the browser by default. To reopen it, create the unlock file from the shell (this requires server access, so it is not reachable by a visitor):
+```bash
+touch ~/hubtube/storage/install-unlock
+```
+The installer removes this file automatically once it finishes successfully.
+
+> **Warning:** re-running the installer rewrites `.env`. Back it up first: `cp ~/hubtube/.env ~/hubtube/.env.bak`
 
 #### Installer page just reloads with no error (silent fail)
 **Cause:** CSRF token mismatch — the session driver (Redis/database) isn't working yet during installation. The installer auto-forces file sessions, but if you're running an older version of HubTube, update `bootstrap/app.php`.

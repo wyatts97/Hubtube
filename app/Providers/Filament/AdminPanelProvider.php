@@ -10,6 +10,7 @@ use App\Filament\Pages\Dashboard;
 use App\Services\SystemStatusBar;
 use Filament\Contracts\Plugin;
 use App\Http\Middleware\AuthenticateFilament;
+use App\Http\Middleware\EnsureAdminTwoFactor;
 use App\Http\Middleware\SetAdminTimezone;
 use App\Models\Setting;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -307,6 +308,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 AuthenticateFilament::class,
+                // Runs after authentication so it can inspect the logged-in user.
+                EnsureAdminTwoFactor::class,
             ])
             ->authGuard('web');
     }

@@ -288,24 +288,47 @@ class WatermarkService
         return implode(':', $parts) . $enable;
     }
 
+    /**
+     * Build a drawtext fontcolor value from an admin-supplied colour setting.
+     *
+     * The colour lands unquoted inside the filter string, so only ffmpeg's own
+     * colour syntax is permitted: a bare name (white, red), a #RRGGBB[AA] hex
+     * value, or either of those with an @opacity suffix. Anything else falls
+     * back to white rather than being passed through.
+     */
     protected static function buildFontColor(string $color, float $opacity): string
     {
-        // Color is already a named FFmpeg color (white, black, red, etc.)
-        // Just append opacity
-        if (!str_contains($color, '@')) {
+        $color = trim($color);
+
+        $pattern = '/^(?:[A-Za-z]{1,32}|#[0-9A-Fa-f]{6}(?:[0-9A-Fa-f]{2})?)(?:@(?:0|1|0?[.][0-9]{1,4}))?$/';
+
+        if ($color === '' || ! preg_match($pattern, $color)) {
+            $color = 'white';
+        }
+
+        if (! str_contains($color, '@')) {
             return $color . '@' . $opacity;
         }
+
         return $color;
     }
 
+    /**
+     * Escape a value for use inside an ffmpeg drawtext filter.
+     *
+     * This is only the filter-grammar layer. The assembled filter string is
+     * additionally passed through escapeshellarg() at every call site, because
+     * these values come from admin-editable settings and the filter is
+     * interpolated into a shell command.
+     */
     protected static function escapeDrawtextValue(string $value): string
     {
-        $value = str_replace('\\', '\\\\', $value);
-        $value = str_replace(';', '\\;', $value);
-        $value = str_replace(',', '\\,', $value);
-        $value = str_replace(':', '\\:', $value);
-        $value = str_replace("'", "\\'", $value);
-        $value = str_replace('%', '\\%', $value);
-        return $value;
+        // Drop characters that terminate a shell word or begin a substitution,
+        // plus control characters. None carry meaning in drawtext content.
+        $value = str_replace(['"', '`', '$', "\r", "\n", "\0"], '', $value);
+
+        // Backslash-escape the characters that are structural in filter syntax.
+        // chr(92) is the backslash itself and must be listed first.
+        return addcslashes($value, chr(92) . ";,:'%");
     }
 }

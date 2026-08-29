@@ -77,8 +77,10 @@ class TwoFactorChallengeController extends Controller
 
         $user->update(['last_active_at' => now()]);
 
-        // Get the intended URL from session, or use default based on user role
-        $intended = $request->session()->pull('two_factor.intended');
+        // Get the intended URL from session, or use default based on user role.
+        // `intended` originates from an attacker-controllable POST field on the login
+        // form, so it is only honoured when it resolves to this application's host.
+        $intended = $this->safeIntendedUrl($request->session()->pull('two_factor.intended'));
 
         if ($user->is_admin) {
             AdminLogger::auth('Admin login (2FA)', ['ip' => $request->ip()]);
@@ -87,5 +89,34 @@ class TwoFactorChallengeController extends Controller
         }
 
         return redirect($intended ?? '/')->with('success', 'Welcome back!');
+    }
+
+    /**
+     * Restrict a post-login redirect target to this application.
+     *
+     * Accepts only a root-relative path, or an absolute URL whose host matches
+     * the app host. Anything else (another origin, a protocol-relative "//evil",
+     * a javascript: URI) is discarded in favour of the caller's default.
+     */
+    protected function safeIntendedUrl(mixed $intended): ?string
+    {
+        if (! is_string($intended) || $intended === '') {
+            return null;
+        }
+
+        // Reject protocol-relative and backslash-obfuscated forms outright.
+        if (str_starts_with($intended, '//') || str_starts_with($intended, '\\')) {
+            return null;
+        }
+
+        if (str_starts_with($intended, '/')) {
+            return $intended;
+        }
+
+        $host = parse_url($intended, PHP_URL_HOST);
+
+        return $host !== null && $host === parse_url(config('app.url'), PHP_URL_HOST)
+            ? $intended
+            : null;
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\RequiresSuperAdmin;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -23,6 +24,8 @@ use Filament\Pages\Page;
 
 class StorageSettings extends Page implements HasForms
 {
+    use RequiresSuperAdmin;
+
     use InteractsWithForms;
 
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-cloud';

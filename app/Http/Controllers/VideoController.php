@@ -396,6 +396,21 @@ class VideoController extends Controller
     }
 
     /**
+     * Derive a per-user chunk identifier.
+     *
+     * The client chooses uploadId freely, so using it directly lets one user
+     * write into (or race the finalize of) another user's in-flight upload.
+     * Mixing in the authenticated user id keeps the client protocol unchanged
+     * while making another user's chunk directory unaddressable.
+     */
+    protected function scopedUploadId(int $userId, string $uploadId): string
+    {
+        $clean = preg_replace('/[^a-zA-Z0-9_-]/', '', $uploadId);
+
+        return substr(hash('sha256', $userId . ':' . $clean), 0, 40);
+    }
+
+    /**
      * Accept a file chunk for resumable uploads.
      * Frontend sends: chunk (file), chunkIndex, totalChunks, uploadId, filename, fileSize
      * On final chunk: assembles all chunks into a single file and returns the temp path.
@@ -424,7 +439,7 @@ class VideoController extends Controller
             return response()->json(['error' => 'Video file exceeds your maximum upload size.'], 422);
         }
 
-        $uploadId = preg_replace('/[^a-zA-Z0-9_-]/', '', $request->input('uploadId'));
+        $uploadId = $this->scopedUploadId($request->user()->id, $request->input('uploadId'));
         $chunkIndex = (int) $request->input('chunkIndex');
         $totalChunks = (int) $request->input('totalChunks');
         if ($chunkIndex >= $totalChunks) {
@@ -457,9 +472,9 @@ class VideoController extends Controller
             ]);
         }
 
-        // All chunks received — assemble the file
-        $filename = $request->input('filename');
-        $extension = pathinfo($filename, PATHINFO_EXTENSION) ?: 'mp4';
+        // All chunks received — assemble the file.
+        // Reuse the extension already validated against the allowlist above so the
+        // assembled path cannot differ from what finalize() will look for.
         $assembledPath = storage_path("app/chunks/{$uploadId}.{$extension}");
 
         $output = fopen($assembledPath, 'wb');
@@ -503,7 +518,7 @@ class VideoController extends Controller
         }
 
         $data = $request->validated();
-        $uploadId = preg_replace('/[^a-zA-Z0-9_-]/', '', $data['upload_id']);
+        $uploadId = $this->scopedUploadId($request->user()->id, $data['upload_id']);
         $extension = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $data['extension']));
         $assembledPath = storage_path("app/chunks/{$uploadId}.{$extension}");
 

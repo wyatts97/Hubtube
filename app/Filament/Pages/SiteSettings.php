@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\RequiresSuperAdmin;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -32,6 +33,8 @@ use Illuminate\Support\HtmlString;
 
 class SiteSettings extends Page implements HasForms
 {
+    use RequiresSuperAdmin;
+
     use InteractsWithForms;
 
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-gear';
@@ -52,6 +55,7 @@ class SiteSettings extends Page implements HasForms
             'maintenance_message' => Setting::get('maintenance_message', ''),
             'registration_enabled' => Setting::get('registration_enabled', true),
             'email_verification_required' => Setting::get('email_verification_required', true),
+            'admin_require_2fa' => Setting::get('admin_require_2fa', false),
             'age_verification_required' => Setting::get('age_verification_required', true),
             'private_profiles_enabled' => Setting::get('private_profiles_enabled', false),
             'channel_social_links_enabled' => Setting::get('channel_social_links_enabled', true),
@@ -203,7 +207,7 @@ class SiteSettings extends Page implements HasForms
         // Probe video dimensions
         $probeCmd = sprintf(
             '%s -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0:s=x %s 2>&1',
-            $ffprobe,
+            escapeshellarg($ffprobe),
             escapeshellarg($inputPath)
         );
         $probeResult = Process::timeout(15)->run($probeCmd);
@@ -224,15 +228,15 @@ class SiteSettings extends Page implements HasForms
         $filterComplex = WatermarkService::buildFilterComplex($width, $height);
 
         $cmd = sprintf(
-            '%s -y -i %s %s -filter_complex "%s" -map "[outv]" -map 0:a? -c:v libx264 -preset veryfast -crf 22 -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart %s 2>&1',
-            $ffmpeg,
+            '%s -y -i %s %s -filter_complex %s -map "[outv]" -map 0:a? -c:v libx264 -preset veryfast -crf 22 -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart %s 2>&1',
+            escapeshellarg($ffmpeg),
             escapeshellarg($inputPath),
             $watermarkInput,
-            $filterComplex,
+            escapeshellarg($filterComplex),
             escapeshellarg($outputPath)
         );
 
-        Log::info('Watermark preview command', ['cmd' => $cmd]);
+        Log::debug('Generating watermark preview', ['source' => $sourcePath]);
 
         $result = Process::timeout(600)->run($cmd);
 
@@ -350,6 +354,11 @@ class SiteSettings extends Page implements HasForms
                                             ->label('Allow Registration'),
                                         Toggle::make('email_verification_required')
                                             ->label('Require Email Verification'),
+                                        Toggle::make('admin_require_2fa')
+                                            ->label('Require 2FA for Admins')
+                                            ->helperText('Administrators without confirmed two-factor '
+                                                . 'authentication are redirected to set it up before '
+                                                . 'they can use the admin panel. Strongly recommended.'),
                                         Toggle::make('age_verification_required')
                                             ->label('Require Age Verification'),
                                         TextInput::make('minimum_age')

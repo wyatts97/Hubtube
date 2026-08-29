@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\RequiresSuperAdmin;
 use Filament\Actions\Action;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Tabs;
@@ -21,6 +22,8 @@ use Filament\Pages\Page;
 
 class PaymentSettings extends Page implements HasForms
 {
+    use RequiresSuperAdmin;
+
     use InteractsWithForms;
 
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-credit-card';
@@ -39,8 +42,8 @@ class PaymentSettings extends Page implements HasForms
             // Stripe
             'stripe_enabled' => Setting::get('stripe_enabled', false),
             'stripe_key' => Setting::get('stripe_key', ''),
-            'stripe_secret' => Setting::get('stripe_secret', ''),
-            'stripe_webhook_secret' => Setting::get('stripe_webhook_secret', ''),
+            'stripe_secret' => Setting::getDecrypted('stripe_secret', ''),
+            'stripe_webhook_secret' => Setting::getDecrypted('stripe_webhook_secret', ''),
             // PayPal
             'paypal_enabled' => Setting::get('paypal_enabled', false),
             'paypal_client_id' => Setting::get('paypal_client_id', ''),
@@ -386,7 +389,13 @@ class PaymentSettings extends Page implements HasForms
         $data = $this->form->getState();
 
         // Credentials that must be stored encrypted at rest.
-        $encryptedKeys = ['ccbill_salt', 'ccbill_webhook_secret'];
+        // Live API credentials — a DB dump or backup leak must not expose these.
+        $encryptedKeys = [
+            'ccbill_salt',
+            'ccbill_webhook_secret',
+            'stripe_secret',
+            'stripe_webhook_secret',
+        ];
 
         foreach ($data as $key => $value) {
             $group = str_starts_with($key, 'pro_') ? 'pro' : 'payments';

@@ -42,10 +42,26 @@ class UserFactory extends Factory
         ];
     }
 
+    /**
+     * A full administrator, including the super-admin tier.
+     */
     public function admin(): static
     {
         return $this->state(fn (array $attributes) => [
             'is_admin' => true,
+            'is_super_admin' => true,
+        ]);
+    }
+
+    /**
+     * An administrator WITHOUT the super-admin tier — can moderate content but
+     * cannot reach settings, payments, user management or the importer.
+     */
+    public function plainAdmin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_admin' => true,
+            'is_super_admin' => false,
         ]);
     }
 

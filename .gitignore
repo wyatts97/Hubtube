@@ -21,9 +21,10 @@ yarn-error.log
 /.vscode
 node_modules
 /scraper/.cache
-package-lock.json
 TODO-PLAN.md
 .env
-.env.example
 MARCH12THUPDATES.md
 *.log
+/storage/installed
+/bootstrap/cache/filament
+/storage/install-unlock

@@ -195,19 +195,37 @@ class CCBillService
      * Verify an inbound webhook request.
      *
      * Security layers (legacy Webhooks/Background-Post has no native signature):
-     *  1. Shared secret token (query param `secret` or `ht_secret`), if configured.
+     *  1. Shared secret token — REQUIRED. Read from the `X-Ht-Secret` header first,
+     *     falling back to the `secret`/`ht_secret` request parameters for CCBill
+     *     configurations that can only append query parameters.
      *  2. Optional source-IP allowlist (comma-separated setting `ccbill_webhook_ips`).
+     *
+     * This FAILS CLOSED. If no secret is configured the endpoint rejects everything:
+     * subscription lifecycle events key only on a guessable subscription id, so an
+     * unauthenticated caller could otherwise grant themselves Pro indefinitely or
+     * revoke another user's entitlement.
      */
     public function verifyWebhook(Request $request): bool
     {
         $secret = $this->webhookSecret();
 
-        if ($secret !== '') {
-            $provided = (string) ($request->input('secret', $request->input('ht_secret', '')));
-            if (! hash_equals($secret, $provided)) {
-                Log::warning('CCBill webhook rejected: bad secret', ['ip' => $request->ip()]);
-                return false;
-            }
+        if ($secret === '') {
+            Log::error('CCBill webhook rejected: no webhook secret configured. '
+                . 'Set one in Admin → Payment Settings before enabling CCBill.', [
+                    'ip' => $request->ip(),
+                ]);
+
+            return false;
+        }
+
+        // Prefer the header: query parameters land in web-server access logs.
+        $provided = (string) ($request->header('X-Ht-Secret')
+            ?: $request->input('secret', $request->input('ht_secret', '')));
+
+        if ($provided === '' || ! hash_equals($secret, $provided)) {
+            Log::warning('CCBill webhook rejected: bad secret', ['ip' => $request->ip()]);
+
+            return false;
         }
 
         $allowlist = trim((string) Setting::get('ccbill_webhook_ips', ''));

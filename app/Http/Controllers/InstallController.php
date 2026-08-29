@@ -55,7 +55,10 @@ class InstallController extends Controller
             'db_connection' => 'required|in:mysql,mariadb',
             'db_host' => 'required|string|max:255',
             'db_port' => 'required|integer|min:1|max:65535',
-            'db_database' => 'required|string|max:255',
+            // Interpolated into a backtick-quoted CREATE DATABASE identifier below,
+            // so it must be a bare identifier — a backtick would close the quote and
+            // pdo_mysql accepts stacked statements.
+            'db_database' => 'required|string|max:64|regex:/^[A-Za-z0-9_]+$/',
             'db_username' => 'required|string|max:255',
             'db_password' => 'nullable|string|max:255',
         ]);
@@ -73,7 +76,8 @@ class InstallController extends Controller
             return back()
                 ->withInput($request->except('db_password'))
                 ->with('db_password_value', $password)
-                ->withErrors(['db_connection' => 'Could not connect to MySQL: ' . $e->getMessage()]);
+                ->withErrors(['db_connection' => 'Could not connect to MySQL. Check the host, port, '
+                    . 'username and password, and that the server accepts connections from this host.']);
         }
 
         // Try to create the database if it doesn't exist
@@ -85,7 +89,8 @@ class InstallController extends Controller
             return back()
                 ->withInput($request->except('db_password'))
                 ->with('db_password_value', $password)
-                ->withErrors(['db_connection' => 'Connected to MySQL but failed on database: ' . $e->getMessage()]);
+                ->withErrors(['db_connection' => 'Connected to MySQL, but could not create or select that '
+                    . 'database. Check the user has CREATE privileges, or create the database manually first.']);
         }
 
         // Ensure .env is writable before writing
@@ -178,6 +183,16 @@ class InstallController extends Controller
             Artisan::call('key:generate', ['--force' => true]);
         }
 
+        // Generate per-install Reverb credentials. These ship blank in .env.example
+        // on purpose — a shared broadcast secret across every install would let any
+        // buyer authenticate against any other buyer's WebSocket server.
+        if (empty(env('REVERB_APP_KEY'))) {
+            $envUpdates['REVERB_APP_KEY'] = Str::random(32);
+        }
+        if (empty(env('REVERB_APP_SECRET'))) {
+            $envUpdates['REVERB_APP_SECRET'] = Str::random(40);
+        }
+
         $this->ensureEnvWritable();
         $this->updateEnv($envUpdates);
 
@@ -246,8 +261,10 @@ class InstallController extends Controller
             Artisan::call('migrate', ['--force' => true]);
             $steps[] = ['label' => 'Database migrations', 'status' => 'success'];
         } catch (Exception $e) {
-            // If table already exists, try migrate:fresh (only safe during installation)
-            if (str_contains($e->getMessage(), 'already exists')) {
+            // If tables already exist, fall back to migrate:fresh. This DROPS every
+            // table, so it is gated on the operator explicitly opting in during the
+            // install wizard — never inferred from the error alone.
+            if (str_contains($e->getMessage(), 'already exists') && $request->boolean('allow_destructive_migrate')) {
                 try {
                     Artisan::call('migrate:fresh', ['--force' => true]);
                     $steps[] = ['label' => 'Database migrations', 'status' => 'success', 'message' => 'Ran fresh migration (previous tables were cleared)'];
@@ -256,7 +273,12 @@ class InstallController extends Controller
                     return view('install.finalize', ['adminData' => $adminData, 'steps' => $steps, 'failed' => true]);
                 }
             } else {
-                $steps[] = ['label' => 'Database migrations', 'status' => 'error', 'message' => $e->getMessage()];
+                $message = str_contains($e->getMessage(), 'already exists')
+                    ? 'This database already contains HubTube tables. Point the installer at an empty '
+                        . 'database, or re-run this step with "Erase existing data" checked to drop and '
+                        . 'recreate every table. That action is irreversible.'
+                    : $e->getMessage();
+                $steps[] = ['label' => 'Database migrations', 'status' => 'error', 'message' => $message];
                 return view('install.finalize', ['adminData' => $adminData, 'steps' => $steps, 'failed' => true]);
             }
         }
@@ -266,6 +288,9 @@ class InstallController extends Controller
             Artisan::call('db:seed', ['--class' => 'CategorySeeder', '--force' => true]);
             Artisan::call('db:seed', ['--class' => 'SettingsSeeder', '--force' => true]);
             Artisan::call('db:seed', ['--class' => 'PageSeeder', '--force' => true]);
+            // PlanSeeder backs the Pro/subscription tiers. Without it a fresh
+            // install has no purchasable plans and the entire Pro funnel is dead.
+            Artisan::call('db:seed', ['--class' => 'PlanSeeder', '--force' => true]);
             $steps[] = ['label' => 'Seed default data', 'status' => 'success'];
         } catch (Exception $e) {
             $steps[] = ['label' => 'Seed default data', 'status' => 'error', 'message' => $e->getMessage()];
@@ -283,6 +308,7 @@ class InstallController extends Controller
                     'password' => Hash::make($adminData['password']),
                     'email_verified_at' => now(),
                     'is_admin' => true,
+                    'is_super_admin' => true,
                     'is_verified' => true,
                     'is_pro' => true,
                     'age_verified_at' => now(),
@@ -342,6 +368,10 @@ class InstallController extends Controller
 
         // 8. Mark as installed
         File::put(storage_path('installed'), now()->toDateTimeString());
+
+        // Close the operator escape hatch if one was used to re-run the wizard,
+        // so the installer does not stay reachable after a successful install.
+        File::delete(storage_path('install-unlock'));
         $steps[] = ['label' => 'Mark installation complete', 'status' => 'success'];
 
         // Clear session
@@ -805,18 +835,11 @@ class InstallController extends Controller
         $envContent = File::get($envPath);
 
         foreach ($values as $key => $value) {
-            // Always quote passwords and values with special characters
-            $needsQuotes = $value === ''
-                || str_contains($value, ' ')
-                || str_contains($value, '#')
-                || str_contains($value, '!')
-                || str_contains($value, '$')
-                || str_contains($value, '"')
-                || str_contains($value, '\\')
-                || $key === 'DB_PASSWORD'
-                || $key === 'MAIL_PASSWORD';
-
-            $formatted = $needsQuotes ? '"' . addcslashes($value, '"\\') . '"' : $value;
+            // Quote unconditionally. The previous conditional-quoting logic omitted
+            // newlines, so a value containing a line break appended arbitrary extra
+            // variables to .env. Strip CR/LF outright, then always quote and escape.
+            $value = str_replace(["\r", "\n"], '', (string) $value);
+            $formatted = '"' . addcslashes($value, '"\\') . '"';
 
             // Use preg_replace_callback to avoid replacement string escaping issues
             $pattern = "/^" . preg_quote($key, '/') . "=.*/m";

@@ -199,14 +199,24 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
         return FfmpegService::isAvailable();
     }
 
+    /**
+     * Shell-quoted path to the ffmpeg binary.
+     *
+     * Every caller interpolates this into a command string, so it is returned
+     * already escaped. FfmpegService additionally rejects configured paths that
+     * contain shell metacharacters before they get this far.
+     */
     protected function getFFmpegPath(): string
     {
-        return FfmpegService::ffmpegPath();
+        return escapeshellarg(FfmpegService::ffmpegPath());
     }
 
+    /**
+     * Shell-quoted path to the ffprobe binary. See getFFmpegPath().
+     */
     protected function getFFprobePath(): string
     {
-        return FfmpegService::ffprobePath();
+        return escapeshellarg(FfmpegService::ffprobePath());
     }
 
     protected function getQualityPreset(): string
@@ -773,11 +783,11 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
         // Encode at high quality (CRF 18) to preserve detail for downstream encodes.
         // Using faststart so the intermediate is seekable if needed.
         $cmd = sprintf(
-            '%s -y -i %s %s -filter_complex "%s" -map "[outv]" -map 0:a? -c:v libx264 -crf 18 -preset fast -c:a copy -movflags +faststart %s 2>&1',
+            '%s -y -i %s %s -filter_complex %s -map "[outv]" -map 0:a? -c:v libx264 -crf 18 -preset fast -c:a copy -movflags +faststart %s 2>&1',
             $ffmpeg,
             escapeshellarg($inputPath),
             $watermarkInput,
-            $filterComplex,
+            escapeshellarg($filterComplex),
             escapeshellarg($output)
         );
 

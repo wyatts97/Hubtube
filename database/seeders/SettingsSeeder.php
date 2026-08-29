@@ -18,6 +18,9 @@ class SettingsSeeder extends Seeder
             ['group' => 'general', 'key' => 'maintenance_mode', 'value' => '0', 'type' => 'boolean', 'is_public' => true],
             ['group' => 'general', 'key' => 'registration_enabled', 'value' => '1', 'type' => 'boolean', 'is_public' => true],
             ['group' => 'general', 'key' => 'email_verification_required', 'value' => '1', 'type' => 'boolean', 'is_public' => false],
+            // Off by default so enabling it is a deliberate choice; new installs are
+            // prompted to turn it on. See EnsureAdminTwoFactor middleware.
+            ['group' => 'general', 'key' => 'admin_require_2fa', 'value' => '0', 'type' => 'boolean', 'is_public' => false],
             ['group' => 'general', 'key' => 'age_verification_required', 'value' => '1', 'type' => 'boolean', 'is_public' => true],
             ['group' => 'general', 'key' => 'minimum_age', 'value' => '18', 'type' => 'integer', 'is_public' => true],
             

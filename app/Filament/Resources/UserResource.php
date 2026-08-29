@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\RequiresSuperAdmin;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
@@ -33,6 +35,8 @@ use Illuminate\Support\Facades\Hash;
 
 class UserResource extends Resource
 {
+    use RequiresSuperAdmin;
+
     protected static ?string $model = User::class;
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-users';
     protected static string | \UnitEnum | null $navigationGroup = 'Users & Email';
@@ -98,7 +102,14 @@ class UserResource extends Resource
                                     ->label('Pro User'),
                                 Toggle::make('is_admin')
                                     ->label('Administrator'),
-                            ])->columns(3)
+                                Toggle::make('is_super_admin')
+                                    ->label('Super Administrator')
+                                    ->helperText('Grants access to site, storage, payment and '
+                                        . 'integration settings, user management and the importer. '
+                                        . 'Only super administrators can grant this.')
+                                    ->disabled(fn () => ! Auth::user()?->isSuperAdmin())
+                                    ->dehydrated(fn () => (bool) Auth::user()?->isSuperAdmin()),
+                            ])->columns(4)
                             ->columnSpanFull()
                             ->compact(),
                         TextInput::make('wallet_balance')
