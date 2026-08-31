@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\AltTextService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,6 +23,7 @@ class Channel extends Model
         'slug',
         'description',
         'banner_image',
+        'banner_alt_text',
         'custom_url',
         'subscriber_count',
         'total_views',
@@ -48,6 +50,20 @@ class Channel extends Model
     public function featuredVideo(): BelongsTo
     {
         return $this->belongsTo(Video::class, 'featured_video_id');
+    }
+
+    /**
+     * Alt text for this channel's banner.
+     *
+     * Prefers the persisted column and only generates when it is null, so rows
+     * that predate seo:backfill-alt-text still render a real alt attribute.
+     * Generation is query-free (AltTextService reads loaded relations only),
+     * which keeps this safe to append on a paginated list.
+     */
+    public function getBannerAltAttribute(): string
+    {
+        return $this->attributes['banner_alt_text'] ?? null
+            ?: app(AltTextService::class)->forChannelBanner($this);
     }
 
     public function incrementSubscribers(): void

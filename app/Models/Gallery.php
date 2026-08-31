@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\AltTextService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,6 +28,7 @@ class Gallery extends Model
         'title',
         'slug',
         'description',
+        'cover_alt_text',
         'cover_image_id',
         'privacy',
         'images_count',
@@ -36,6 +38,7 @@ class Gallery extends Model
 
     protected $appends = [
         'cover_url',
+        'cover_alt',
     ];
 
     protected function casts(): array
@@ -93,6 +96,20 @@ class Gallery extends Model
     public function incrementViews(): void
     {
         $this->increment('views_count');
+    }
+
+    /**
+     * Alt text for this gallery's cover image.
+     *
+     * Prefers the persisted column and only generates when it is null, so rows
+     * that predate seo:backfill-alt-text still render a real alt attribute.
+     * Generation is query-free (AltTextService reads loaded relations only),
+     * which keeps this safe to append on a paginated list.
+     */
+    public function getCoverAltAttribute(): string
+    {
+        return $this->attributes['cover_alt_text'] ?? null
+            ?: app(AltTextService::class)->forGallery($this);
     }
 
     public function getCoverUrlAttribute(): ?string

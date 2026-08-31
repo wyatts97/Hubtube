@@ -363,7 +363,7 @@ const goBack = () => router.visit(localizedUrl('/'));
                     <div class="absolute end-3 bottom-24 lg:bottom-12 z-20 flex flex-col items-center gap-5">
                         <Link :href="localizedUrl(`/channel/${item.data.user?.username}`)" class="flex flex-col items-center">
                             <div class="w-10 h-10 rounded-full overflow-hidden border border-white/30 bg-bg-secondary">
-                                <img :src="item.data.user?.avatar || '/assets/default_avatar.webp'" class="w-full h-full object-cover" />
+                                <img :src="item.data.user?.avatar || '/assets/default_avatar.webp'" :alt="item.data.user?.avatar_alt || item.data.user?.username || 'User'" class="w-full h-full object-cover" />
                             </div>
                         </Link>
 
@@ -484,7 +484,7 @@ const goBack = () => router.visit(localizedUrl('/'));
                     </div>
                     <div v-for="comment in comments" :key="comment.id" class="flex gap-3">
                         <div class="w-9 h-9 rounded-full overflow-hidden shrink-0 bg-bg-secondary">
-                            <img :src="comment.user?.avatar || '/assets/default_avatar.webp'" class="w-full h-full object-cover" />
+                            <img :src="comment.user?.avatar || '/assets/default_avatar.webp'" :alt="comment.user?.avatar_alt || comment.user?.username || 'User'" class="w-full h-full object-cover" />
                         </div>
                         <div class="flex-1">
                             <p class="text-sm font-medium text-text-primary">{{ comment.user?.username }}</p>

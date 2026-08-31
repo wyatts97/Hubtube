@@ -291,7 +291,7 @@ class SitemapController extends Controller
         $images = Image::query()
             ->public()
             ->approved()
-            ->select(['id', 'uuid', 'title', 'file_path', 'thumbnail_path', 'storage_disk', 'updated_at'])
+            ->select(['id', 'uuid', 'slug', 'title', 'alt_text', 'file_path', 'thumbnail_path', 'storage_disk', 'updated_at'])
             ->latest('updated_at')
             ->limit($max)
             ->get();
@@ -313,6 +313,11 @@ class SitemapController extends Controller
                 $entry .= '      <image:loc>' . $this->xmlEscape($imageUrl) . "</image:loc>\n";
                 if (!empty($image->title)) {
                     $entry .= '      <image:title>' . $this->xmlEscape($image->title) . "</image:title>\n";
+                }
+                // The caption is what Google Images shows beneath a result,
+                // so it gets the descriptive alt text rather than the bare title.
+                if (!empty($image->alt_text)) {
+                    $entry .= '      <image:caption>' . $this->xmlEscape($image->alt_text) . "</image:caption>\n";
                 }
                 $entry .= "    </image:image>\n";
             }
@@ -337,7 +342,7 @@ class SitemapController extends Controller
         $galleries = Gallery::query()
             ->public()
             ->with('coverImage:id,thumbnail_path,file_path,storage_disk')
-            ->select(['id', 'slug', 'title', 'cover_image_id', 'updated_at'])
+            ->select(['id', 'slug', 'title', 'cover_alt_text', 'cover_image_id', 'updated_at'])
             ->latest('updated_at')
             ->limit($max)
             ->get();
@@ -360,6 +365,9 @@ class SitemapController extends Controller
                     $entry .= '      <image:loc>' . $this->xmlEscape($coverUrl) . "</image:loc>\n";
                     if (!empty($gallery->title)) {
                         $entry .= '      <image:title>' . $this->xmlEscape($gallery->title) . "</image:title>\n";
+                    }
+                    if (!empty($gallery->cover_alt_text)) {
+                        $entry .= '      <image:caption>' . $this->xmlEscape($gallery->cover_alt_text) . "</image:caption>\n";
                     }
                     $entry .= "    </image:image>\n";
                 }

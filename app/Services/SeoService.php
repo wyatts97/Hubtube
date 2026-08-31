@@ -284,9 +284,11 @@ class SeoService
         $seo['twitter']['card'] = 'summary_large_image';
         $seo['twitter']['image'] = $ogThumbnailUrl;
 
-        // Thumbnail alt text
-        $altTemplate = $this->s('seo_video_thumbnail_alt_template', '{title} - Video Thumbnail');
-        $seo['thumbnailAlt'] = $this->template($altTemplate, $vars);
+        // Thumbnail alt text. Read through the model accessor so this page
+        // and every video card elsewhere on the site announce the same string:
+        // the accessor returns the persisted thumbnail_alt_text column and only
+        // falls back to generating when the backfill has not reached this row.
+        $seo['thumbnailAlt'] = $video->thumbnail_alt;
 
         // Robots
         if ($video->privacy !== 'public' && $this->s('seo_noindex_private_videos', true)) {

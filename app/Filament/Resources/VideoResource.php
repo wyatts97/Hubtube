@@ -168,6 +168,11 @@ class VideoResource extends Resource
                                 Textarea::make('description')
                                     ->rows(4)
                                     ->columnSpanFull(),
+                                TextInput::make('thumbnail_alt_text')
+                                    ->label('Thumbnail Alt Text')
+                                    ->maxLength(255)
+                                    ->helperText('Leave blank to generate from the SEO template. A value set here is never overwritten unless seo:backfill-alt-text is run with --force.')
+                                    ->columnSpanFull(),
                                 Select::make('user_id')
                                     ->label('Uploader')
                                     ->relationship('user', 'username')

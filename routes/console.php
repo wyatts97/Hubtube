@@ -24,6 +24,15 @@ Schedule::command('videos:publish-scheduled')->everyMinute();
 // Revoke expired points-granted Pro access
 Schedule::command('points:expire-pro')->hourly();
 
+// Safety net for image alt text. The observers in AppServiceProvider fill the
+// *_alt_text columns on save, so this normally finds nothing — it exists to
+// catch rows written around Eloquent (bulk inserts, direct DB updates, an
+// import) and rows that had no title yet when they were first saved.
+Schedule::command('seo:backfill-alt-text')
+    ->dailyAt('04:30')
+    ->withoutOverlapping()
+    ->onOneServer();
+
 // Spatie Backup: nightly backup + weekly cleanup (skipped when backup_enabled setting is off)
 Schedule::command('backup:run')->dailyAt('01:00')->withoutOverlapping()
     ->skip(fn () => !Setting::get('backup_enabled', true));

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\AltTextService;
 use App\Services\StorageManager;
 use App\Traits\Translatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -38,6 +39,7 @@ class Video extends Model
         'slug',
         'description',
         'thumbnail',
+        'thumbnail_alt_text',
         'preview_path',
         'video_path',
         'storage_disk',
@@ -84,6 +86,7 @@ class Video extends Model
     protected $appends = [
         'video_url',
         'thumbnail_url',
+        'thumbnail_alt',
         'preview_url',
         'preview_thumbnails_url',
         'formatted_duration',
@@ -410,6 +413,20 @@ class Video extends Model
         }
 
         return null;
+    }
+
+    /**
+     * Alt text for this video's thumbnail.
+     *
+     * Prefers the persisted column and only generates when it is null, so rows
+     * that predate seo:backfill-alt-text still render a real alt attribute.
+     * Generation is query-free (AltTextService reads loaded relations only),
+     * which keeps this safe to append on a paginated list.
+     */
+    public function getThumbnailAltAttribute(): string
+    {
+        return $this->attributes['thumbnail_alt_text'] ?? null
+            ?: app(AltTextService::class)->forVideo($this);
     }
 
     public function getPreviewUrlAttribute(): ?string

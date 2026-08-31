@@ -112,13 +112,16 @@ const onPreviewLoad = (event) => {
         <div class="thumbnail relative overflow-hidden" :style="{ borderRadius: thumbRadius }">
             <!-- Static Thumbnail -->
             <img
-                v-bind="thumbnailProps(video.thumbnail_url || video.thumbnail || placeholderImg, video.title)"
+                v-bind="thumbnailProps(video.thumbnail_url || video.thumbnail || placeholderImg, video.thumbnail_alt || video.title)"
                 class="w-full h-full object-cover transition-opacity duration-200"
                 :class="{ 'opacity-0': isHovering && video.preview_url && previewLoaded }"
                 @error="(e) => e.target.src = placeholderImg"
             />
             
-            <!-- Animated Preview (WebP) — portrait videos use object-contain to show full frame -->
+            <!-- Animated Preview (WebP) — portrait videos use object-contain to show full frame.
+                 Its alt is intentionally empty: this overlays the poster above, which already
+                 carries the description, and a second alt would make a screen reader announce
+                 the same video twice. -->
             <div
                 v-if="video.preview_url"
                 class="absolute inset-0 w-full h-full transition-opacity duration-200 pointer-events-none"
@@ -145,7 +148,7 @@ const onPreviewLoad = (event) => {
         <div class="flex gap-3 mt-3">
             <Link v-if="showAvatar && video.user" :href="localizedUrl(`/channel/${video.user.username}`)" class="shrink-0">
                 <div class="w-9 h-9 avatar">
-                    <img v-bind="avatarProps(video.user.avatar_url || video.user.avatar || '/assets/default_avatar.webp', 36)" :alt="video.user.username || video.user.name" class="w-full h-full object-cover" />
+                    <img v-bind="avatarProps(video.user.avatar_url || video.user.avatar || '/assets/default_avatar.webp', 36, video.user.avatar_alt || video.user.username || video.user.name)" class="w-full h-full object-cover" />
                 </div>
             </Link>
             <div v-else-if="showAvatar" class="shrink-0">

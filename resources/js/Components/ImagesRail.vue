@@ -31,7 +31,7 @@ const { t, localizedUrl } = useI18n();
                 <div class="w-[140px] h-[140px] sm:w-[160px] sm:h-[160px] rounded-xl overflow-hidden bg-black border border-border">
                     <img
                         :src="image.thumbnail_url || image.image_url"
-                        :alt="image.title || 'Image'"
+                        :alt="image.alt || image.title || 'Image'"
                         class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         loading="lazy"
                     />

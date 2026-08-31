@@ -608,7 +608,7 @@ const getRelatedTitle = (video) => {
                                 <div class="relative aspect-video bg-black">
                                     <img
                                         :src="playlistVideo.thumbnail_url || '/assets/default_avatar.webp'"
-                                        :alt="playlistVideo.title"
+                                        :alt="playlistVideo.thumbnail_alt || playlistVideo.title"
                                         class="w-full h-full object-cover"
                                         loading="lazy"
                                         decoding="async"
@@ -653,7 +653,7 @@ const getRelatedTitle = (video) => {
                         <div class="flex items-center gap-2 sm:gap-4 min-w-0">
                             <Link :href="`/channel/${video.user.username}`" class="flex items-center gap-2 sm:gap-3 min-w-0">
                                 <div class="w-8 h-8 sm:w-10 sm:h-10 avatar shrink-0">
-                                    <img :src="video.user.avatar_url || video.user.avatar || '/assets/default_avatar.webp'" :alt="video.user.username" class="w-full h-full object-cover" loading="lazy" decoding="async" />
+                                    <img :src="video.user.avatar_url || video.user.avatar || '/assets/default_avatar.webp'" :alt="video.user.avatar_alt || video.user.username" class="w-full h-full object-cover" loading="lazy" decoding="async" />
                                 </div>
                                 <div class="min-w-0">
                                     <p class="font-medium text-xs sm:text-base truncate text-text-primary">{{ video.user.username }}</p>

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\AltTextService;
 use App\Services\ChannelService;
 use App\Services\EmailService;
 use Illuminate\Support\Facades\URL;
@@ -43,6 +44,7 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         'first_name',
         'last_name',
         'avatar',
+        'avatar_alt_text',
         'cover_image',
         'bio',
         'gender',
@@ -70,6 +72,7 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
 
     protected $appends = [
         'avatar_url',
+        'avatar_alt',
     ];
 
     protected function casts(): array
@@ -406,6 +409,20 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
             return $raw;
         }
         return '/assets/default_avatar.webp';
+    }
+
+    /**
+     * Alt text for this user's avatar.
+     *
+     * Prefers the persisted column and only generates when it is null, so rows
+     * that predate seo:backfill-alt-text still render a real alt attribute.
+     * Generation is query-free (AltTextService reads loaded relations only),
+     * which keeps this safe to append on a paginated list.
+     */
+    public function getAvatarAltAttribute(): string
+    {
+        return $this->attributes['avatar_alt_text'] ?? null
+            ?: app(AltTextService::class)->forUserAvatar($this);
     }
 
     public function getNameAttribute(): string

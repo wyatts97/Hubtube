@@ -20,7 +20,7 @@ const formatViews = (count) => {
             <div class="aspect-square">
                 <img
                     :src="image.thumbnail_url || image.image_url"
-                    :alt="image.title || 'Image'"
+                    :alt="image.alt || image.title || 'Image'"
                     class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     loading="lazy"
                 />

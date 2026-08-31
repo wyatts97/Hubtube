@@ -163,7 +163,7 @@ useEventListener(document, 'keydown', onKeydown);
                 <img
                     v-if="currentImage"
                     :src="currentImage.image_url || currentImage.url"
-                    :alt="currentImage.title || 'Image'"
+                    :alt="currentImage.alt || currentImage.title || 'Image'"
                     class="max-w-full max-h-[85vh] object-contain transition-transform duration-200 select-none"
                     :style="{ transform: `scale(${zoom}) translate(${offset.x}px, ${offset.y}px)` }"
                     draggable="false"
@@ -183,7 +183,7 @@ useEventListener(document, 'keydown', onKeydown);
                 >
                     <img
                         :src="img.thumbnail_url || img.image_url || img.url"
-                        :alt="img.title || ''"
+                        :alt="img.alt || img.title || ''"
                         class="w-full h-full object-cover"
                     />
                 </button>

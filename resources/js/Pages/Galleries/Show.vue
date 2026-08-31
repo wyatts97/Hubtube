@@ -72,7 +72,7 @@ const deleteGallery = () => {
                         <div class="flex items-center gap-4 mt-3">
                             <Link v-if="gallery.user" :href="`/channel/${gallery.user.username}`" class="flex items-center gap-2 hover:opacity-80">
                                 <div class="w-6 h-6 avatar">
-                                    <img :src="gallery.user.avatar || '/assets/default_avatar.webp'" :alt="gallery.user.username" class="w-full h-full object-cover" />
+                                    <img :src="gallery.user.avatar || '/assets/default_avatar.webp'" :alt="gallery.user.avatar_alt || gallery.user.username" class="w-full h-full object-cover" />
                                 </div>
                                 <span class="text-sm text-text-secondary">{{ gallery.user.username }}</span>
                             </Link>
@@ -132,7 +132,7 @@ const deleteGallery = () => {
                         <div class="aspect-square">
                             <img
                                 :src="image.thumbnail_url || image.image_url"
-                                :alt="image.title || 'Image'"
+                                :alt="image.alt || image.title || 'Image'"
                                 class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                 loading="lazy"
                             />
@@ -155,7 +155,7 @@ const deleteGallery = () => {
                     <div class="rounded-xl overflow-hidden bg-bg-secondary">
                         <img
                             :src="image.thumbnail_url || image.image_url"
-                            :alt="image.title || 'Image'"
+                            :alt="image.alt || image.title || 'Image'"
                             class="w-full h-auto transition-transform duration-300 group-hover:scale-105"
                             loading="lazy"
                         />

@@ -126,7 +126,7 @@ const stats = computed(() => props.channel.stats || {});
             <img
                 v-if="channel.banner_url"
                 :src="channel.banner_url"
-                :alt="channel.display_name"
+                :alt="channel.banner_alt || channel.display_name"
                 class="absolute inset-0 w-full h-full object-cover"
                 loading="eager"
                 fetchpriority="high"
@@ -148,7 +148,7 @@ const stats = computed(() => props.channel.stats || {});
             <div class="w-20 h-20 sm:w-28 sm:h-28 avatar shrink-0 -mt-10 sm:-mt-14 ring-4 ring-bg-primary relative z-10">
                 <img
                     :src="channel.avatar_url || '/assets/default_avatar.webp'"
-                    :alt="channel.display_name"
+                    :alt="channel.avatar_alt || channel.display_name"
                     class="w-full h-full object-cover"
                     loading="eager"
                     decoding="async"

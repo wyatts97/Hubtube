@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\AltTextService;
 use App\Services\StorageManager;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,6 +30,7 @@ class Image extends Model
         'slug',
         'title',
         'description',
+        'alt_text',
         'file_path',
         'thumbnail_path',
         'storage_disk',
@@ -50,6 +52,7 @@ class Image extends Model
     protected $appends = [
         'image_url',
         'thumbnail_url',
+        'alt',
         'formatted_size',
     ];
 
@@ -215,6 +218,20 @@ class Image extends Model
         }
 
         return StorageManager::url($this->thumbnail_path, $this->storage_disk ?? 'public');
+    }
+
+    /**
+     * Alt text for this image.
+     *
+     * Prefers the persisted column and only generates when it is null, so rows
+     * that predate seo:backfill-alt-text still render a real alt attribute.
+     * Generation is query-free (AltTextService reads loaded relations only),
+     * which keeps this safe to append on a paginated list.
+     */
+    public function getAltAttribute(): string
+    {
+        return $this->attributes['alt_text'] ?? null
+            ?: app(AltTextService::class)->forImage($this);
     }
 
     public function getFormattedSizeAttribute(): string

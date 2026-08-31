@@ -4,9 +4,17 @@ namespace App\Providers;
 
 use App\Http\Middleware\SetAdminTimezone;
 use App\Models\Category;
+use App\Models\Channel;
+use App\Models\Gallery;
+use App\Models\Image;
 use App\Models\User;
+use App\Models\Video;
 use App\Observers\CategoryObserver;
+use App\Observers\ChannelObserver;
+use App\Observers\GalleryObserver;
+use App\Observers\ImageObserver;
 use App\Observers\UserObserver;
+use App\Observers\VideoObserver;
 use Filament\Auth\Http\Responses\Contracts\LogoutResponse;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\ServiceProvider;
@@ -55,6 +63,14 @@ class AppServiceProvider extends ServiceProvider
 
         Category::observe(CategoryObserver::class);
         User::observe(UserObserver::class);
+
+        // Alt text generation. These observers fill the *_alt_text columns on
+        // save whenever they are blank, so newly uploaded media never needs a
+        // manual backfill run. See App\Services\AltTextService.
+        Video::observe(VideoObserver::class);
+        Image::observe(ImageObserver::class);
+        Gallery::observe(GalleryObserver::class);
+        Channel::observe(ChannelObserver::class);
 
         if ($this->app->isProduction()) {
             URL::forceScheme('https');

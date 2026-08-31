@@ -173,7 +173,7 @@ onUnmounted(() => {
                 <div v-else class="card p-4">
                     <div class="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
                         <div class="w-full sm:w-48 aspect-square rounded-lg overflow-hidden shrink-0 relative bg-bg-secondary">
-                            <img :src="imagePreview" class="w-full h-full object-cover" />
+                            <img :src="imagePreview" alt="Preview of the image you selected" class="w-full h-full object-cover" />
                         </div>
                         <div class="flex-1 min-w-0 w-full">
                             <div class="flex items-center gap-2">

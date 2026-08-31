@@ -35,7 +35,9 @@ class ChannelProfileResource extends JsonResource
             'username' => $this->username,
             'display_name' => $channel?->name ?: $this->username,
             'avatar_url' => $this->avatar_url,
+            'avatar_alt' => $this->avatar_alt,
             'banner_url' => $channel?->banner_image,
+            'banner_alt' => $channel?->banner_alt,
             // users.bio is the legacy home for this text; Phase 3 migrates it
             // into channels.description and drops the fallback.
             'description' => $channel?->description ?: $this->bio,

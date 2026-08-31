@@ -246,7 +246,7 @@ const statusColors = {
                                     borderColor: selectedThumbIndex === index ? 'var(--color-accent)' : 'var(--color-border)',
                                 }"
                             >
-                                <img :src="thumb" class="w-full h-full object-cover" />
+                                <img :src="thumb" :alt="`Thumbnail option ${index + 1}`" class="w-full h-full object-cover" />
                                 <div
                                     v-if="selectedThumbIndex === index"
                                     class="absolute inset-0 flex items-center justify-center"
@@ -271,6 +271,7 @@ const statusColors = {
                                 <img 
                                     v-if="customThumbnailPreview" 
                                     :src="customThumbnailPreview" 
+                                    alt="Preview of the thumbnail you selected"
                                     class="w-full h-full object-cover"
                                 />
                                 <div v-else class="w-full h-full flex items-center justify-center">

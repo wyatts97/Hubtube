@@ -9,6 +9,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Actions\Action;
 use App\Models\Setting;
 use App\Services\AdminLogger;
+use App\Services\AltTextService;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -70,8 +71,13 @@ class SeoSettings extends Page implements HasForms
             'seo_video_description_template' => Setting::get('seo_video_description_template', '{description}'),
             'seo_video_auto_description' => Setting::get('seo_video_auto_description', true),
             'seo_video_description_fallback' => Setting::get('seo_video_description_fallback', 'Watch {title} on {site_name}. {category} video uploaded by {uploader}.'),
-            'seo_video_thumbnail_alt_template' => Setting::get('seo_video_thumbnail_alt_template', '{title} - Video Thumbnail'),
             'seo_video_embed_enabled' => Setting::get('seo_video_embed_enabled', true),
+
+            // Image alt text. The defaults live in AltTextService::TEMPLATES so
+            // this form and the generator can never drift apart.
+            ...collect(AltTextService::TEMPLATES)
+                ->mapWithKeys(fn (array $t) => [$t[0] => Setting::get($t[0], $t[1])])
+                ->all(),
 
             // Channel SEO
             'seo_channel_title_template' => Setting::get('seo_channel_title_template', '{channel_name} | {site_name}'),
@@ -278,14 +284,30 @@ class SeoSettings extends Page implements HasForms
                                             ->helperText('Used when a video has no description and auto-generate is enabled.'),
                                     ])->columns(2),
 
-                                Section::make('Thumbnail SEO')
-                                    ->description('Controls how thumbnails are presented to search engines.')
+                                Section::make('Image Alt Text')
+                                    ->description('Alt text is generated from these templates and stored on each record. Empty variables and the words left dangling around them are removed automatically, so a template can safely reference a variable that only some records have. Run "php artisan seo:backfill-alt-text" after changing a template to regenerate existing records.')
                                     ->schema([
                                         TextInput::make('seo_video_thumbnail_alt_template')
-                                            ->label('Thumbnail Alt Text Template')
-                                            ->placeholder('{title} - Video Thumbnail')
-                                            ->helperText('Alt text for video thumbnails. Critical for image SEO and accessibility.'),
-                                    ]),
+                                            ->label('Video Thumbnail')
+                                            ->placeholder(AltTextService::TEMPLATES['video'][1])
+                                            ->helperText('Variables: {title} {channel} {username} {category} {tags} {site_name}'),
+                                        TextInput::make('seo_image_alt_template')
+                                            ->label('Image')
+                                            ->placeholder(AltTextService::TEMPLATES['image'][1])
+                                            ->helperText('Variables: {title} {username} {category} {tags} {site_name}'),
+                                        TextInput::make('seo_gallery_alt_template')
+                                            ->label('Gallery Cover')
+                                            ->placeholder(AltTextService::TEMPLATES['gallery'][1])
+                                            ->helperText('Variables: {title} {gallery} {username} {site_name}'),
+                                        TextInput::make('seo_avatar_alt_template')
+                                            ->label('User Avatar')
+                                            ->placeholder(AltTextService::TEMPLATES['avatar'][1])
+                                            ->helperText('Variables: {username} {title} {site_name}'),
+                                        TextInput::make('seo_channel_banner_alt_template')
+                                            ->label('Channel Banner')
+                                            ->placeholder(AltTextService::TEMPLATES['banner'][1])
+                                            ->helperText('Variables: {channel} {username} {title} {site_name}'),
+                                    ])->columns(2),
                             ]),
 
                         Tab::make('Page Templates')

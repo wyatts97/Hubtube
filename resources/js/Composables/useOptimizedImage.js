@@ -58,6 +58,10 @@ function webpUrl(src) {
 export function useOptimizedImage() {
     /**
      * Generate optimized img attributes for video thumbnails.
+     *
+     * Pass the server-generated alt: video.thumbnail_alt. The empty default is
+     * kept only so an existing call site cannot break — it is not a reasonable
+     * value for a content image, and every caller here supplies one.
      */
     const thumbnailProps = (src, alt = '') => {
         const srcset = buildSrcset(src, THUMBNAIL_WIDTHS);
@@ -78,14 +82,21 @@ export function useOptimizedImage() {
 
     /**
      * Generate optimized img attributes for user avatars.
+     *
+     * Pass the server-generated alt: user.avatar_alt, which the User model
+     * appends. This used to emit no alt key at all, so every call site that
+     * did not add its own :alt afterwards shipped an unlabelled avatar.
+     *
      * @param {string} src - Avatar URL
      * @param {number} displaySize - Display size in pixels (e.g. 40, 64)
+     * @param {string} alt - Alt text, normally user.avatar_alt
      */
-    const avatarProps = (src, displaySize = 40) => {
+    const avatarProps = (src, displaySize = 40, alt = '') => {
         const sizes = AVATAR_SIZES.filter(s => s >= displaySize).slice(0, 3);
         const srcset = buildSrcset(src, sizes.length ? sizes : [displaySize]);
         const props = {
             src: src || '',
+            alt,
             loading: 'lazy',
             decoding: 'async',
             width: displaySize,

@@ -97,6 +97,11 @@ class ImageResource extends Resource
                         Textarea::make('description')
                             ->rows(3)
                             ->columnSpanFull(),
+                        TextInput::make('alt_text')
+                            ->label('Alt Text')
+                            ->maxLength(255)
+                            ->helperText('Leave blank to generate from the SEO template. A value set here is never overwritten unless seo:backfill-alt-text is run with --force.')
+                            ->columnSpanFull(),
                         Select::make('user_id')
                             ->label('Uploader')
                             ->relationship('user', 'username')
