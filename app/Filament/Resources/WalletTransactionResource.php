@@ -100,13 +100,16 @@ class WalletTransactionResource extends Resource
                         in_array($state, ['withdrawal', 'video_purchase']) => 'danger',
                         $state === 'refund' => 'warning',
                         default => 'gray',
-                    }),
+                    })
+                    ->toggleable(),
 
                 TextColumn::make('amount')
                     ->money('USD')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('balance_after')
-                    ->money('USD'),
+                    ->money('USD')
+                    ->toggleable(),
 
                 TextColumn::make('status')
                     ->badge()
@@ -116,11 +119,13 @@ class WalletTransactionResource extends Resource
                         'failed' => 'danger',
                         'cancelled' => 'gray',
                         default => 'gray',
-                    }),
+                    })
+                    ->toggleable(),
 
                 TextColumn::make('created_at')
                     ->dateTime()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('type')

@@ -240,7 +240,8 @@ class VideoAdResource extends Resource
                         'vpaid' => 'indigo',
                         'html' => 'warning',
                         default => 'gray',
-                    }),
+                    })
+                    ->toggleable(),
                 TextColumn::make('placement')
                     ->badge()
                     ->formatStateUsing(fn (string $state) => ucwords(str_replace('_', '-', $state)))
@@ -250,7 +251,8 @@ class VideoAdResource extends Resource
                         'post_roll' => 'danger',
                         'shorts' => 'info',
                         default => 'gray',
-                    }),
+                    })
+                    ->toggleable(),
 
                 TextColumn::make('content')
                     ->label('Source')
@@ -265,7 +267,8 @@ class VideoAdResource extends Resource
                         return Str::limit($state, 50);
                     })
                     ->color('gray')
-                    ->size('sm'),
+                    ->size('sm')
+                    ->toggleable(),
 
                 TextColumn::make('hls_status')
                     ->label('HLS')
@@ -278,11 +281,13 @@ class VideoAdResource extends Resource
                         'failed' => 'danger',
                         'skipped' => 'gray',
                         default => 'gray',
-                    }),
+                    })
+                    ->toggleable(),
 
                 TextColumn::make('weight')
                     ->alignCenter()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('category_ids')
                     ->label('Targeting')
                     ->formatStateUsing(function ($state, VideoAd $record): string {
@@ -296,21 +301,25 @@ class VideoAdResource extends Resource
                         return "{$cats} · {$roles}";
                     })
                     ->color('gray')
-                    ->size('sm'),
+                    ->size('sm')
+                    ->toggleable(),
 
                 TextColumn::make('impressions_count')
                     ->label('Impressions')
                     ->numeric()
                     ->sortable()
-                    ->alignCenter(),
+                    ->alignCenter()
+                    ->toggleable(),
                 TextColumn::make('clicks_count')
                     ->label('Clicks')
                     ->numeric()
                     ->sortable()
-                    ->alignCenter(),
+                    ->alignCenter()
+                    ->toggleable(),
 
                 ToggleColumn::make('is_active')
-                    ->label('Active'),
+                    ->label('Active')
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('type')

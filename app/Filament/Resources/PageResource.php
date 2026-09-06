@@ -86,16 +86,19 @@ class PageResource extends Resource
                 TextColumn::make('slug')
                     ->searchable()
                     ->copyable()
-                    ->prefix('/pages/'),
+                    ->prefix('/pages/')
+                    ->toggleable(),
 
                 IconColumn::make('is_published')
                     ->boolean()
-                    ->label('Published'),
+                    ->label('Published')
+                    ->toggleable(),
 
                 TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
-                    ->label('Last Updated'),
+                    ->label('Last Updated')
+                    ->toggleable(),
             ])
             ->recordActions([
                 EditAction::make(),

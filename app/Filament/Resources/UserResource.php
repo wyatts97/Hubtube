@@ -141,31 +141,35 @@ class UserResource extends Resource
                         // If it's a relative path like /storage/..., make it absolute
                         return url($avatar);
                     })
-                    ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name='.urlencode($record->username ?? '?').'&background=6366f1&color=fff&size=80'),
+                    ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name='.urlencode($record->username ?? '?').'&background=6366f1&color=fff&size=80')
+                    ->toggleable(),
                 TextColumn::make('username')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('email')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
 
                 IconColumn::make('is_verified')
                     ->boolean()
-                    ->label('Verified'),
+                    ->label('Verified')
+                    ->toggleable(),
                 IconColumn::make('is_pro')
                     ->boolean()
-                    ->label('Pro'),
+                    ->label('Pro')
+                    ->toggleable(),
                 IconColumn::make('is_admin')
                     ->boolean()
-                    ->label('Admin'),
+                    ->label('Admin')
+                    ->toggleable(),
 
                 TextColumn::make('videos_count')
                     ->counts('videos')
                     ->label('Videos')
                     ->numeric()
                     ->sortable()
-                    ->icon('phosphor-video-camera')
-                    ->iconColor('gray'),
+                    ->toggleable(),
 
                 TextColumn::make('wallet_balance')
                     ->money('USD')
@@ -176,8 +180,6 @@ class UserResource extends Resource
                     ->label('Points')
                     ->numeric()
                     ->sortable()
-                    ->icon('phosphor-star')
-                    ->iconColor('warning')
                     ->toggleable(),
 
                 TextColumn::make('created_at')
@@ -186,7 +188,8 @@ class UserResource extends Resource
                     ->sortable()
                     ->size('sm')
                     ->color('gray')
-                    ->tooltip(fn (User $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
+                    ->tooltip(fn (User $record): string => $record->created_at?->format('M j, Y g:i A') ?? '')
+                    ->toggleable(),
 
                 TextColumn::make('updated_at')
                     ->label('Last Active')

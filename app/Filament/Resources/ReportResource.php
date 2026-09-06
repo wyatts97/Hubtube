@@ -126,7 +126,8 @@ class ReportResource extends Resource
                     ->searchable()
                     ->icon('phosphor-user')
                     ->iconColor('gray')
-                    ->placeholder('(deleted)'),
+                    ->placeholder('(deleted)')
+                    ->toggleable(),
 
                 TextColumn::make('reportable_type')
                     ->label('Type')
@@ -137,7 +138,8 @@ class ReportResource extends Resource
                         Comment::class => 'warning',
                         User::class => 'danger',
                         default => 'gray',
-                    }),
+                    })
+                    ->toggleable(),
 
                 TextColumn::make('reported_content')
                     ->label('Reported Content')
@@ -154,7 +156,8 @@ class ReportResource extends Resource
                         Report::REASON_ILLEGAL, Report::REASON_UNDERAGE => 'danger',
                         Report::REASON_HARASSMENT, Report::REASON_COPYRIGHT => 'warning',
                         default => 'gray',
-                    }),
+                    })
+                    ->toggleable(),
 
                 TextColumn::make('description')
                     ->label('Details')
@@ -172,7 +175,8 @@ class ReportResource extends Resource
                         Report::STATUS_RESOLVED => 'success',
                         Report::STATUS_DISMISSED => 'gray',
                         default => 'gray',
-                    }),
+                    })
+                    ->toggleable(),
 
                 TextColumn::make('created_at')
                     ->label('Reported')
@@ -180,7 +184,8 @@ class ReportResource extends Resource
                     ->sortable()
                     ->size('sm')
                     ->color('gray')
-                    ->tooltip(fn (Report $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
+                    ->tooltip(fn (Report $record): string => $record->created_at?->format('M j, Y g:i A') ?? '')
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('status')

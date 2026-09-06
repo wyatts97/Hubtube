@@ -74,10 +74,13 @@ class CCBillSubscriptionResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('user.username')->label('User')->searchable(),
+                TextColumn::make('user.username')->label('User')->searchable()
+                    ->toggleable(),
                 TextColumn::make('ccbill_subscription_id')->label('CCBill Sub ID')->searchable()->copyable(),
-                TextColumn::make('plan.name')->label('Plan'),
-                TextColumn::make('subscription_type')->badge(),
+                TextColumn::make('plan.name')->label('Plan')
+                    ->toggleable(),
+                TextColumn::make('subscription_type')->badge()
+                    ->toggleable(),
                 TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
@@ -87,9 +90,12 @@ class CCBillSubscriptionResource extends Resource
                         'expired' => 'gray',
                         'refunded', 'chargeback' => 'danger',
                         default => 'gray',
-                    }),
-                TextColumn::make('current_period_end')->dateTime()->sortable(),
-                TextColumn::make('created_at')->dateTime()->sortable(),
+                    })
+                    ->toggleable(),
+                TextColumn::make('current_period_end')->dateTime()->sortable()
+                    ->toggleable(),
+                TextColumn::make('created_at')->dateTime()->sortable()
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('status')->options([

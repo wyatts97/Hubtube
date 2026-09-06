@@ -307,7 +307,8 @@ class VideoResource extends Resource
                         'class' => 'ht-thumb-hover',
                     ])
                     ->extraAttributes(['class' => 'ht-thumb-col'])
-                    ->defaultImageUrl(url('/icons/icon-192x192.png')),
+                    ->defaultImageUrl(url('/icons/icon-192x192.png'))
+                    ->toggleable(),
 
                 TextColumn::make('title')
                     ->searchable()
@@ -321,7 +322,8 @@ class VideoResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->icon('phosphor-user')
-                    ->size('sm'),
+                    ->size('sm')
+                    ->toggleable(),
 
                 TextColumn::make('category.name')
                     ->label('Category')
@@ -354,7 +356,8 @@ class VideoResource extends Resource
                         $state === 'processing' => 'info',
                         $state === 'failed' => 'danger',
                         default => 'gray',
-                    }),
+                    })
+                    ->toggleable(),
 
                 IconColumn::make('is_approved')
                     ->boolean()
@@ -381,15 +384,12 @@ class VideoResource extends Resource
                     ->numeric()
                     ->sortable()
                     ->alignRight()
-                    ->icon('phosphor-eye')
-                    ->iconColor('gray'),
+                    ->toggleable(),
 
                 TextColumn::make('likes_count')
                     ->label('Likes')
                     ->numeric()
                     ->sortable()
-                    ->icon('phosphor-thumbs-up')
-                    ->iconColor('gray')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('size')
@@ -404,7 +404,8 @@ class VideoResource extends Resource
                     ->sortable()
                     ->size('sm')
                     ->color('gray')
-                    ->tooltip(fn (Video $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
+                    ->tooltip(fn (Video $record): string => $record->created_at?->format('M j, Y g:i A') ?? '')
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('status')

@@ -29,7 +29,6 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
@@ -176,7 +175,8 @@ class ImageResource extends Resource
                     ->getStateUsing(fn (Image $record): ?string => $record->thumbnail_url)
                     ->height(50)
                     ->width(50)
-                    ->extraImgAttributes(['class' => 'rounded object-cover']),
+                    ->extraImgAttributes(['class' => 'rounded object-cover'])
+                    ->toggleable(),
                 TextColumn::make('title')
                     ->searchable()
                     ->sortable()
@@ -188,13 +188,15 @@ class ImageResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->icon('phosphor-user')
-                    ->size('sm'),
+                    ->size('sm')
+                    ->toggleable(),
 
                 TextColumn::make('mime_type')
                     ->label('Type')
                     ->size('sm')
                     ->badge()
-                    ->color('gray'),
+                    ->color('gray')
+                    ->toggleable(),
 
                 TextColumn::make('dimensions')
                     ->label('Size')
@@ -208,7 +210,8 @@ class ImageResource extends Resource
                     ->trueIcon('phosphor-check-circle')
                     ->falseIcon('phosphor-x-circle')
                     ->trueColor('success')
-                    ->falseColor('danger'),
+                    ->falseColor('danger')
+                    ->toggleable(),
 
                 IconColumn::make('is_animated')
                     ->boolean()
@@ -233,8 +236,7 @@ class ImageResource extends Resource
                     ->label('Views')
                     ->numeric()
                     ->sortable()
-                    ->icon('phosphor-eye')
-                    ->iconColor('gray'),
+                    ->toggleable(),
 
                 TextColumn::make('file_size')
                     ->label('File Size')
@@ -247,7 +249,8 @@ class ImageResource extends Resource
                     ->since()
                     ->sortable()
                     ->size('sm')
-                    ->color('gray'),
+                    ->color('gray')
+                    ->toggleable(),
             ])
             ->filters([
                 TernaryFilter::make('is_approved')
@@ -268,7 +271,7 @@ class ImageResource extends Resource
 
                 TernaryFilter::make('is_animated')
                     ->label('Animated'),
-            ], layout: FiltersLayout::AboveContentCollapsible)
+            ])
             ->recordActions([
                 ActionGroup::make([
                     EditAction::make(),

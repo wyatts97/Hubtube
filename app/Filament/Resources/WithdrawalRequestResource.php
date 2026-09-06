@@ -125,13 +125,16 @@ class WithdrawalRequestResource extends Resource
                     ->sortable(),
                 TextColumn::make('user.username')
                     ->label('User')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
 
                 TextColumn::make('amount')
                     ->money('USD')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('payment_method')
-                    ->badge(),
+                    ->badge()
+                    ->toggleable(),
 
                 TextColumn::make('status')
                     ->badge()
@@ -141,14 +144,17 @@ class WithdrawalRequestResource extends Resource
                         WithdrawalRequest::STATUS_COMPLETED => 'success',
                         WithdrawalRequest::STATUS_REJECTED => 'danger',
                         default => 'gray',
-                    }),
+                    })
+                    ->toggleable(),
                 TextColumn::make('processedBy.username')
                     ->label('Processed By')
-                    ->placeholder('-'),
+                    ->placeholder('-')
+                    ->toggleable(),
 
                 TextColumn::make('created_at')
                     ->dateTime()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('status')

@@ -127,7 +127,8 @@ class DmcaRequestResource extends Resource
                     ->url(fn (DmcaRequest $record): ?string => $record->video ? url('/'.$record->video->slug) : null)
                     ->openUrlInNewTab()
                     ->placeholder('(no match — see URLs)')
-                    ->color('gray'),
+                    ->color('gray')
+                    ->toggleable(),
 
                 TextColumn::make('status')
                     ->badge()
@@ -136,7 +137,8 @@ class DmcaRequestResource extends Resource
                         DmcaRequest::STATUS_ACTIONED => 'success',
                         DmcaRequest::STATUS_REJECTED => 'gray',
                         default => 'gray',
-                    }),
+                    })
+                    ->toggleable(),
 
                 TextColumn::make('created_at')
                     ->label('Submitted')
@@ -144,7 +146,8 @@ class DmcaRequestResource extends Resource
                     ->sortable()
                     ->size('sm')
                     ->color('gray')
-                    ->tooltip(fn (DmcaRequest $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
+                    ->tooltip(fn (DmcaRequest $record): string => $record->created_at?->format('M j, Y g:i A') ?? '')
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('status')

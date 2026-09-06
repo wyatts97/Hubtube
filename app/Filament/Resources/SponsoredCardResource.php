@@ -193,13 +193,13 @@ class SponsoredCardResource extends Resource
                     ->disk('public')
                     ->square()
                     ->size(60)
-                    ->defaultImageUrl(url('/assets/placeholder.svg')),
+                    ->defaultImageUrl(url('/assets/placeholder.svg'))
+                    ->toggleable(),
                 TextColumn::make('title')
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->limit(40)
-                    ->toggleable(),
+                    ->limit(40),
                 TextColumn::make('click_url')
                     ->label('URL')
                     ->limit(30)

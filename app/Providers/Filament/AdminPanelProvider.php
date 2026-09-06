@@ -9,7 +9,6 @@ use App\Http\Middleware\SetAdminTimezone;
 use App\Models\Setting;
 use App\Services\SystemStatusBar;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
-use BezhanSalleh\GoogleAnalytics\GoogleAnalyticsPlugin;
 use Boquizo\FilamentLogViewer\FilamentLogViewerPlugin;
 use Croustibat\FilamentJobsMonitor\FilamentJobsMonitorPlugin;
 use Filafly\Icons\Phosphor\PhosphorIcons;
@@ -119,11 +118,6 @@ class AdminPanelProvider extends PanelProvider
         if (class_exists(FinMailPlugin::class)) {
             $plugins[] = FinMailPlugin::make()
                 ->navigationGroup('Users & Email');
-        }
-
-        // Google Analytics widgets (credentials configured via admin panel)
-        if (class_exists(GoogleAnalyticsPlugin::class)) {
-            $plugins[] = GoogleAnalyticsPlugin::make();
         }
 
         // Drag-to-resize navigation sidebar (width persisted in browser localStorage)

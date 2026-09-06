@@ -104,7 +104,8 @@ class CommentResource extends Resource
                     ->icon('phosphor-user')
                     ->iconColor('gray')
                     ->weight('semibold')
-                    ->grow(false),
+                    ->grow(false)
+                    ->toggleable(),
                 TextColumn::make('video.title')
                     ->label('Video')
                     ->limit(30)
@@ -113,7 +114,8 @@ class CommentResource extends Resource
                     ->openUrlInNewTab()
                     ->searchable()
                     ->color('gray')
-                    ->size('sm'),
+                    ->size('sm')
+                    ->toggleable(),
                 TextColumn::make('content')
                     ->label('Comment')
                     ->wrap()
@@ -126,7 +128,8 @@ class CommentResource extends Resource
                     ->alignCenter()
                     ->getStateUsing(fn (Comment $record): string => $record->is_approved ? 'Approved' : 'Pending')
                     ->color(fn (string $state): string => $state === 'Approved' ? 'success' : 'warning')
-                    ->icon(fn (string $state): string => $state === 'Approved' ? 'phosphor-check-circle' : 'phosphor-clock'),
+                    ->icon(fn (string $state): string => $state === 'Approved' ? 'phosphor-check-circle' : 'phosphor-clock')
+                    ->toggleable(),
 
                 IconColumn::make('is_pinned')
                     ->label('Pinned')
@@ -151,7 +154,8 @@ class CommentResource extends Resource
                     ->sortable()
                     ->color('gray')
                     ->size('sm')
-                    ->tooltip(fn (Comment $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
+                    ->tooltip(fn (Comment $record): string => $record->created_at?->format('M j, Y g:i A') ?? '')
+                    ->toggleable(),
             ])
             ->filters([
                 TernaryFilter::make('is_approved'),

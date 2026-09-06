@@ -93,7 +93,8 @@ class ContactMessageResource extends Resource
                     ->falseIcon('phosphor-envelope')
                     ->trueColor('gray')
                     ->falseColor('danger')
-                    ->grow(false),
+                    ->grow(false)
+                    ->toggleable(),
                 TextColumn::make('type')
                     ->badge()
                     ->formatStateUsing(fn ($state) => ucfirst($state ?? 'contact'))
@@ -101,13 +102,15 @@ class ContactMessageResource extends Resource
                         'report' => 'danger',
                         default => 'info',
                     })
-                    ->grow(false),
+                    ->grow(false)
+                    ->toggleable(),
 
                 TextColumn::make('name')
                     ->label('From')
                     ->searchable()
                     ->sortable()
-                    ->weight(fn (ContactMessage $record) => $record->is_read ? 'normal' : 'bold'),
+                    ->weight(fn (ContactMessage $record) => $record->is_read ? 'normal' : 'bold')
+                    ->toggleable(),
                 TextColumn::make('subject')
                     ->searchable()
                     ->limit(50)
@@ -134,7 +137,8 @@ class ContactMessageResource extends Resource
                     ->sortable()
                     ->size('sm')
                     ->color('gray')
-                    ->tooltip(fn (ContactMessage $record): string => $record->created_at?->format('M j, Y g:i A') ?? ''),
+                    ->tooltip(fn (ContactMessage $record): string => $record->created_at?->format('M j, Y g:i A') ?? '')
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('type')

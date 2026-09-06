@@ -18,6 +18,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ScheduledVideos extends Page implements HasTable
 {
@@ -71,7 +72,71 @@ class ScheduledVideos extends Page implements HasTable
             app(VideoService::class)->recalculateScheduleQueue();
             Notification::make()->title('Queue times updated!')->success()->send();
         }),
+
+            Action::make('shuffle')
+            ->label('Shuffle Queue')
+            ->icon('phosphor-shuffle')
+            ->color('warning')
+            ->requiresConfirmation()
+            ->modalHeading('Shuffle the scheduled queue?')
+            ->modalDescription('Every pending video is put in a random order and its publish time is reassigned from the current schedule settings. The existing order cannot be recovered.')
+            ->modalSubmitActionLabel('Shuffle')
+            ->action(function () {
+            $count = $this->shuffleQueue();
+
+            if ($count === 0) {
+                Notification::make()->title('Nothing to shuffle')->warning()->send();
+
+                return;
+            }
+
+            AdminLogger::settingsSaved('Queue Shuffle', ['queue_order', 'scheduled_at']);
+            Notification::make()
+            ->title("Shuffled {$count} scheduled videos")
+            ->body('Publish times were reassigned to match the new order.')
+            ->success()
+            ->send();
+        }),
         ];
+    }
+
+    /**
+     * Randomise the pending queue, then rebuild the publish times from it.
+     *
+     * Order and publish time are two different columns: `queue_order` is what
+     * the admin table sorts on, but PublishScheduledVideos selects on
+     * `scheduled_at`. Renumbering alone would therefore reshuffle this page and
+     * change nothing about what actually goes out. recalculateScheduleQueue()
+     * is the bridge — it walks videos in `queue_order` and rewrites both the
+     * order (closing any gaps) and `scheduled_at` from the configured
+     * posts-per-day and start hour. It is the same method the "Recalculate
+     * Times" action calls.
+     *
+     * @return int  number of videos reordered
+     */
+    protected function shuffleQueue(): int
+    {
+        $ids = Video::query()
+            ->whereNotNull('queue_order')
+            ->whereNull('published_at')
+            ->pluck('id')
+            ->shuffle();
+
+        if ($ids->isEmpty()) {
+            return 0;
+        }
+
+        // queue_order carries no unique index, so the intermediate states
+        // during this loop cannot collide.
+        DB::transaction(function () use ($ids) {
+            foreach ($ids as $position => $id) {
+                Video::whereKey($id)->update(['queue_order' => $position + 1]);
+            }
+        });
+
+        app(VideoService::class)->recalculateScheduleQueue();
+
+        return $ids->count();
     }
 
     public function table(Table $table): Table

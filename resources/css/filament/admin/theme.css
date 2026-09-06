@@ -600,44 +600,10 @@ select.fi-select-input::placeholder {
 /* [x-cloak] hide until Alpine boots */
 [x-cloak] { display: none !important; }
 
-/* ── Analytics page tabs ── */
-.ht-analytics-tabs {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    padding: 0.375rem;
-    border-radius: 0.75rem;
-    background: rgb(24 24 27 / 0.6);
-    border: 1px solid rgb(255 255 255 / 0.08);
-    width: fit-content;
-}
-
-.ht-analytics-tabs__tab {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.875rem;
-    border-radius: 0.625rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: rgb(148 163 184);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
-}
-
-.ht-analytics-tabs__tab:hover {
-    color: rgb(var(--ht-accent-hover));
-    background: rgb(var(--ht-accent) / 0.12);
-}
-
-.ht-analytics-tabs__tab.is-active {
-    color: rgb(var(--ht-accent-hover));
-    background: rgb(var(--ht-accent) / 0.2);
-}
-
-/* ── Google Analytics stats filter dropdown ── */
+/* ── Chart widget filter dropdown ──
+   Filament renders the filter form for a chart widget in this container; the
+   ApexCharts plugin reuses the same classes. Pinned to the card's top-right
+   so it does not push the chart down. */
 .fi-wi-chart-filter-ctn {
     position: absolute;
     top: 0.75rem;

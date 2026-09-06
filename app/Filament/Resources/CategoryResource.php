@@ -80,18 +80,23 @@ class CategoryResource extends Resource
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('slug')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('parent.name')
-                    ->label('Parent'),
+                    ->label('Parent')
+                    ->toggleable(),
 
                 IconColumn::make('is_active')
-                    ->boolean(),
+                    ->boolean()
+                    ->toggleable(),
                 TextColumn::make('sort_order')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
 
                 TextColumn::make('videos_count')
                     ->counts('videos')
-                    ->label('Videos'),
+                    ->label('Videos')
+                    ->toggleable(),
             ])
             ->filters([
                 TernaryFilter::make('is_active'),

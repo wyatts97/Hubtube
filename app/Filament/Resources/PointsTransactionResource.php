@@ -56,15 +56,20 @@ class PointsTransactionResource extends Resource
                         PointsTransaction::TYPE_ADMIN_ADJUSTMENT => 'danger',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn (string $state) => str_replace('_', ' ', ucwords($state, '_'))),
+                    ->formatStateUsing(fn (string $state) => str_replace('_', ' ', ucwords($state, '_')))
+                    ->toggleable(),
                 TextColumn::make('points')
                     ->label('Points')
                     ->sortable()
                     ->formatStateUsing(fn (int $state) => ($state > 0 ? '+' : '').number_format($state))
-                    ->color(fn (int $state) => $state > 0 ? 'success' : 'danger'),
-                TextColumn::make('balance_after')->label('Balance After')->sortable(),
-                TextColumn::make('description')->limit(40)->tooltip(fn (PointsTransaction $record) => $record->description),
-                TextColumn::make('created_at')->dateTime()->sortable(),
+                    ->color(fn (int $state) => $state > 0 ? 'success' : 'danger')
+                    ->toggleable(),
+                TextColumn::make('balance_after')->label('Balance After')->sortable()
+                    ->toggleable(),
+                TextColumn::make('description')->limit(40)->tooltip(fn (PointsTransaction $record) => $record->description)
+                    ->toggleable(),
+                TextColumn::make('created_at')->dateTime()->sortable()
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('type')->options([

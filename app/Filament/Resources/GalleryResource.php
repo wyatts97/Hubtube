@@ -110,7 +110,8 @@ class GalleryResource extends Resource
                     ->getStateUsing(fn (Gallery $record): ?string => $record->cover_url)
                     ->height(50)
                     ->width(50)
-                    ->extraImgAttributes(['class' => 'rounded object-cover']),
+                    ->extraImgAttributes(['class' => 'rounded object-cover'])
+                    ->toggleable(),
                 TextColumn::make('title')
                     ->searchable()
                     ->sortable()
@@ -121,20 +122,19 @@ class GalleryResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->icon('phosphor-user')
-                    ->size('sm'),
+                    ->size('sm')
+                    ->toggleable(),
 
                 TextColumn::make('images_count')
                     ->label('Images')
                     ->numeric()
                     ->sortable()
-                    ->icon('phosphor-image')
-                    ->iconColor('gray'),
+                    ->toggleable(),
                 TextColumn::make('views_count')
                     ->label('Views')
                     ->numeric()
                     ->sortable()
-                    ->icon('phosphor-eye')
-                    ->iconColor('gray'),
+                    ->toggleable(),
 
                 TextColumn::make('privacy')
                     ->badge()
@@ -143,14 +143,16 @@ class GalleryResource extends Resource
                         'unlisted' => 'warning',
                         'private' => 'danger',
                         default => 'gray',
-                    }),
+                    })
+                    ->toggleable(),
 
                 TextColumn::make('created_at')
                     ->label('Created')
                     ->since()
                     ->sortable()
                     ->size('sm')
-                    ->color('gray'),
+                    ->color('gray')
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('privacy')

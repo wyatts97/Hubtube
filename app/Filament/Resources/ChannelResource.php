@@ -149,27 +149,32 @@ class ChannelResource extends Resource
                     ->sortable(),
                 TextColumn::make('user.username')
                     ->label('Owner')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
 
                 TextColumn::make('subscriber_count')
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 // channels.total_views has no writer anywhere in the app, so
                 // this column showed 0 for every channel. Derive it from the
                 // owner's videos instead (cached — see User::totalVideoViews()).
                 TextColumn::make('total_views')
                     ->label('Views')
                     ->state(fn (Channel $record) => $record->user?->totalVideoViews() ?? 0)
-                    ->numeric(),
+                    ->numeric()
+                    ->toggleable(),
 
                 // Verification lives on users.is_verified — see the
                 // consolidate_channel_profile_fields migration. Managed from
                 // UserResource, shown here read-only.
                 IconColumn::make('user.is_verified')
                     ->label('Verified')
-                    ->boolean(),
+                    ->boolean()
+                    ->toggleable(),
                 IconColumn::make('subscription_enabled')
-                    ->boolean(),
+                    ->boolean()
+                    ->toggleable(),
 
                 TextColumn::make('created_at')
                     ->dateTime()

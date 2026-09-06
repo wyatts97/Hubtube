@@ -212,17 +212,22 @@ class MenuItemResource extends Resource
                         'dropdown' => 'info',
                         'divider' => 'gray',
                         default => 'gray',
-                    }),
+                    })
+                    ->toggleable(),
                 TextColumn::make('url')
-                    ->limit(40),
+                    ->limit(40)
+                    ->toggleable(),
 
                 TextColumn::make('location')
-                    ->badge(),
+                    ->badge()
+                    ->toggleable(),
                 IconColumn::make('is_mega')
                     ->label('Mega')
-                    ->boolean(),
+                    ->boolean()
+                    ->toggleable(),
                 IconColumn::make('is_active')
-                    ->boolean(),
+                    ->boolean()
+                    ->toggleable(),
             ])
             ->defaultSort('sort_order')
             ->filters([
