@@ -2,36 +2,35 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
+use App\Filament\Resources\ChannelResource\Pages\CreateChannel;
+use App\Filament\Resources\ChannelResource\Pages\EditChannel;
+use App\Filament\Resources\ChannelResource\Pages\ListChannels;
+use App\Models\Channel;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\IconColumn;
-use Filament\Tables\Filters\TernaryFilter;
-use Filament\Actions\EditAction;
-use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use App\Filament\Resources\ChannelResource\Pages\ListChannels;
-use App\Filament\Resources\ChannelResource\Pages\CreateChannel;
-use App\Filament\Resources\ChannelResource\Pages\EditChannel;
-use App\Filament\Resources\ChannelResource\Pages;
-use App\Models\Channel;
-use Illuminate\Database\Eloquent\Model;
-use Filament\Forms;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class ChannelResource extends Resource
 {
     protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $recordTitleAttribute = 'name';
 
     public static function getGloballySearchableAttributes(): array
@@ -41,14 +40,25 @@ class ChannelResource extends Resource
 
     public static function getGlobalSearchResultDetails(Model $record): array
     {
+        // No aggregate here: User::totalVideoViews() is a cached SUM over the
+        // uploader's videos, which global search would run once per result.
         return [
+            'Owner' => $record->user?->username ?? '—',
             'Subscribers' => number_format($record->subscriber_count ?? 0),
-            'Views'       => number_format($record->user?->totalVideoViews() ?? 0),
         ];
     }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with('user');
+    }
+
     protected static ?string $model = Channel::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-television';
-    protected static string | \UnitEnum | null $navigationGroup = 'Content';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-television';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Content';
+
     protected static ?int $navigationSort = 3;
 
     public static function form(Schema $schema): Schema
@@ -185,7 +195,17 @@ class ChannelResource extends Resource
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->striped();
+            ->striped()
+            ->emptyStateIcon('phosphor-television')
+            ->emptyStateHeading('No channels yet')
+            ->emptyStateDescription('Channels are created automatically when a user uploads their first video.')
+            ->emptyStateActions([
+                Action::make('create')
+                    ->label('New Channel')
+                    ->icon('phosphor-plus')
+                    ->url(static::getUrl('create'))
+                    ->button(),
+            ]);
     }
 
     public static function getRelations(): array

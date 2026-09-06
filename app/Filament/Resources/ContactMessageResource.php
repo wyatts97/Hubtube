@@ -2,40 +2,42 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Forms\Components\TextInput;
+use App\Filament\Resources\ContactMessageResource\Pages\ListContactMessages;
+use App\Filament\Resources\ContactMessageResource\Pages\ViewContactMessage;
+use App\Models\ContactMessage;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
-use Filament\Actions\ViewAction;
-use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\BulkAction;
-use Filament\Actions\DeleteBulkAction;
-use App\Filament\Resources\ContactMessageResource\Pages\ListContactMessages;
-use App\Filament\Resources\ContactMessageResource\Pages\ViewContactMessage;
-use App\Filament\Resources\ContactMessageResource\Pages;
-use App\Models\ContactMessage;
-use Filament\Forms;
-use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 class ContactMessageResource extends Resource
 {
     protected static ?string $model = ContactMessage::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-envelope';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-envelope';
+
     protected static ?string $navigationLabel = 'Contact & Reports';
-    protected static string | \UnitEnum | null $navigationGroup = 'Moderation';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Moderation';
+
     protected static ?int $navigationSort = 2;
+
+    protected static ?string $recordTitleAttribute = 'subject';
 
     // Unread count is surfaced as a topbar pill (see SystemStatusBar::getActionItems).
 
@@ -153,7 +155,7 @@ class ContactMessageResource extends Resource
                 Action::make('toggle_read')
                     ->icon(fn (ContactMessage $record) => $record->is_read ? 'phosphor-envelope' : 'phosphor-envelope-open')
                     ->label(fn (ContactMessage $record) => $record->is_read ? 'Mark Unread' : 'Mark Read')
-                    ->action(fn (ContactMessage $record) => $record->update(['is_read' => !$record->is_read])),
+                    ->action(fn (ContactMessage $record) => $record->update(['is_read' => ! $record->is_read])),
 
                 DeleteAction::make(),
             ])
@@ -172,7 +174,10 @@ class ContactMessageResource extends Resource
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->striped();
+            ->striped()
+            ->emptyStateIcon('phosphor-envelope')
+            ->emptyStateHeading('No messages yet')
+            ->emptyStateDescription('Submissions from the contact form and on-site report forms land here.');
     }
 
     public static function getPages(): array

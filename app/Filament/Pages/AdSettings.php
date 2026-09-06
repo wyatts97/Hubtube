@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Clusters\Settings as SettingsCluster;
 use App\Models\Category;
 use App\Models\Setting;
 use App\Services\AdminLogger;
@@ -33,7 +34,9 @@ class AdSettings extends Page implements HasForms
 
     protected static string|\UnitEnum|null $navigationGroup = 'Monetization';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?string $cluster = SettingsCluster::class;
+
+    protected static ?int $navigationSort = 12;
 
     protected string $view = 'filament.pages.ad-settings';
 

@@ -2,17 +2,12 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Clusters\Settings as SettingsCluster;
 use App\Filament\Concerns\RequiresSuperAdmin;
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Actions;
-use Filament\Actions\Action;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use App\Services\StorageManager;
-use Filament\Forms\Components\Placeholder;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -20,21 +15,29 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-
+use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Schema;
 
 class StorageSettings extends Page implements HasForms
 {
+    use InteractsWithForms;
     use RequiresSuperAdmin;
 
-    use InteractsWithForms;
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-cloud';
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-cloud';
     protected static ?string $navigationLabel = 'Storage & CDN';
-    protected static string | \UnitEnum | null $navigationGroup = 'System';
-    protected static ?int $navigationSort = 2;
+
+    protected static ?string $cluster = SettingsCluster::class;
+
+    protected static ?int $navigationSort = 6;
+
     protected string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
+
     public ?string $connectionStatus = null;
 
     public function mount(): void
@@ -133,7 +136,7 @@ class StorageSettings extends Page implements HasForms
                                             ->minValue(5)
                                             ->maxValue(10080)
                                             ->helperText('How long pre-signed URLs remain valid. Only applies when bucket is private. Default: 120 minutes (2 hours).')
-                                            ->visible(fn ($get) => $get('cloud_offloading_enabled') && !$get('cloud_storage_public_bucket')),
+                                            ->visible(fn ($get) => $get('cloud_offloading_enabled') && ! $get('cloud_storage_public_bucket')),
                                     ]),
                                 Section::make('CDN Configuration')
                                     ->schema([
@@ -301,7 +304,7 @@ class StorageSettings extends Page implements HasForms
         $data = $this->form->getState();
 
         // Auto-resolve Wasabi endpoint from region if endpoint is empty or default
-        if (!empty($data['wasabi_region'])) {
+        if (! empty($data['wasabi_region'])) {
             $autoEndpoint = StorageManager::getWasabiEndpoint($data['wasabi_region']);
             if (empty($data['wasabi_endpoint']) || $data['wasabi_endpoint'] === 'https://s3.wasabisys.com') {
                 $data['wasabi_endpoint'] = $autoEndpoint;
@@ -314,12 +317,12 @@ class StorageSettings extends Page implements HasForms
         }
 
         // If cloud offloading is enabled but no driver selected, auto-detect
-        if (!empty($data['cloud_offloading_enabled']) && ($data['storage_driver'] ?? 'local') === 'local') {
-            if (!empty($data['wasabi_enabled'])) {
+        if (! empty($data['cloud_offloading_enabled']) && ($data['storage_driver'] ?? 'local') === 'local') {
+            if (! empty($data['wasabi_enabled'])) {
                 $data['storage_driver'] = 'wasabi';
-            } elseif (!empty($data['b2_enabled'])) {
+            } elseif (! empty($data['b2_enabled'])) {
                 $data['storage_driver'] = 'b2';
-            } elseif (!empty($data['s3_enabled'])) {
+            } elseif (! empty($data['s3_enabled'])) {
                 $data['storage_driver'] = 's3';
             }
         }
@@ -334,6 +337,7 @@ class StorageSettings extends Page implements HasForms
         foreach ($data as $key => $value) {
             if (in_array($key, $encryptedKeys, true)) {
                 Setting::setEncrypted($key, $value, 'storage');
+
                 continue;
             }
 

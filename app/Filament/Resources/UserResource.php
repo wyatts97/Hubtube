@@ -3,44 +3,44 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Concerns\RequiresSuperAdmin;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Database\Eloquent\Model;
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Toggle;
-use Filament\Tables\Columns\ImageColumn;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\IconColumn;
-use Filament\Tables\Filters\TernaryFilter;
-use Filament\Actions\Action;
-use Filament\Actions\EditAction;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use STS\FilamentImpersonate\Actions\Impersonate;
-use App\Filament\Resources\UserResource\Pages\ListUsers;
 use App\Filament\Resources\UserResource\Pages\CreateUser;
 use App\Filament\Resources\UserResource\Pages\EditUser;
-use App\Filament\Resources\UserResource\Pages;
+use App\Filament\Resources\UserResource\Pages\ListUsers;
 use App\Models\User;
-use Filament\Forms;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use STS\FilamentImpersonate\Actions\Impersonate;
 
 class UserResource extends Resource
 {
     use RequiresSuperAdmin;
 
     protected static ?string $model = User::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-users';
-    protected static string | \UnitEnum | null $navigationGroup = 'Users & Email';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-users';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Users & Email';
+
     protected static ?int $navigationSort = 1;
+
     protected static ?string $recordTitleAttribute = 'username';
 
     public static function getGloballySearchableAttributes(): array
@@ -52,7 +52,7 @@ class UserResource extends Resource
     {
         return [
             'Email' => $record->email,
-            'Role'  => $record->is_admin ? 'Admin' : ($record->is_pro ? 'Pro' : 'User'),
+            'Role' => $record->is_admin ? 'Admin' : ($record->is_pro ? 'Pro' : 'User'),
         ];
     }
 
@@ -105,8 +105,8 @@ class UserResource extends Resource
                                 Toggle::make('is_super_admin')
                                     ->label('Super Administrator')
                                     ->helperText('Grants access to site, storage, payment and '
-                                        . 'integration settings, user management and the importer. '
-                                        . 'Only super administrators can grant this.')
+                                        .'integration settings, user management and the importer. '
+                                        .'Only super administrators can grant this.')
                                     ->disabled(fn () => ! Auth::user()?->isSuperAdmin())
                                     ->dehydrated(fn () => (bool) Auth::user()?->isSuperAdmin()),
                             ])->columns(4)
@@ -130,17 +130,18 @@ class UserResource extends Resource
                     ->circular()
                     ->getStateUsing(function ($record) {
                         $avatar = $record->avatar;
-                        if (!$avatar) {
+                        if (! $avatar) {
                             return null;
                         }
                         // If it's already a full URL, return as-is
                         if (str_starts_with($avatar, 'http')) {
                             return $avatar;
                         }
+
                         // If it's a relative path like /storage/..., make it absolute
                         return url($avatar);
                     })
-                    ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->username ?? '?') . '&background=6366f1&color=fff&size=80'),
+                    ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name='.urlencode($record->username ?? '?').'&background=6366f1&color=fff&size=80'),
                 TextColumn::make('username')
                     ->searchable()
                     ->sortable(),
@@ -206,7 +207,7 @@ class UserResource extends Resource
                     ->color('success')
                     ->requiresConfirmation()
                     ->action(fn (User $record) => $record->forceFill(['is_verified' => true])->save())
-                    ->visible(fn (User $record) => !$record->is_verified),
+                    ->visible(fn (User $record) => ! $record->is_verified),
                 Action::make('unverify')
                     ->icon('phosphor-x-circle')
                     ->color('warning')
@@ -220,7 +221,7 @@ class UserResource extends Resource
                     ->label(fn (User $record) => $record->is_pro ? 'Revoke Pro' : 'Grant Pro')
                     ->requiresConfirmation()
                     ->action(function (User $record) {
-                        $granting = !$record->is_pro;
+                        $granting = ! $record->is_pro;
                         $record->forceFill([
                             'is_pro' => $granting,
                             'pro_source' => $granting ? 'admin' : null,
@@ -232,7 +233,7 @@ class UserResource extends Resource
                     ->icon('phosphor-video-camera')
                     ->color('info')
                     ->label('Videos')
-                    ->url(fn (User $record): string => route('filament.admin.resources.videos.index') . '?tableFilters[user_id][value]=' . $record->id)
+                    ->url(fn (User $record): string => route('filament.admin.resources.videos.index').'?tableFilters[user_id][value]='.$record->id)
                     ->visible(fn (User $record) => $record->videos_count > 0 || true),
 
                 // Log in as this user to see the site exactly as they do, without
@@ -257,7 +258,17 @@ class UserResource extends Resource
             ])
             ->striped()
             ->defaultSort('created_at', 'desc')
-            ->recordUrl(fn (User $record): string => route('filament.admin.resources.users.edit', $record));
+            ->recordUrl(fn (User $record): string => route('filament.admin.resources.users.edit', $record))
+            ->emptyStateIcon('phosphor-users')
+            ->emptyStateHeading('No users yet')
+            ->emptyStateDescription('Registered accounts appear here for role, verification, and Pro management.')
+            ->emptyStateActions([
+                Action::make('create')
+                    ->label('Add User')
+                    ->icon('phosphor-plus')
+                    ->url(static::getUrl('create'))
+                    ->button(),
+            ]);
     }
 
     public static function getRelations(): array

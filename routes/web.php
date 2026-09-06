@@ -1,5 +1,19 @@
 <?php
 
+use App\Filament\Pages\AdSettings;
+use App\Filament\Pages\IntegrationSettings;
+use App\Filament\Pages\LanguageSettings;
+use App\Filament\Pages\NotificationSettings;
+use App\Filament\Pages\PaymentSettings;
+use App\Filament\Pages\PointsSettings;
+use App\Filament\Pages\PwaSettings;
+use App\Filament\Pages\SearchIndexingSettings;
+use App\Filament\Pages\SeoSettings;
+use App\Filament\Pages\SiteSettings;
+use App\Filament\Pages\SocialNetworkSettings;
+use App\Filament\Pages\StorageSettings;
+// EmbeddedVideoController removed - imported videos now use the regular Video model and /<slug> route
+use App\Filament\Pages\ThemeSettings;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -7,547 +21,583 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\SocialLoginController;
 use App\Http\Controllers\Auth\TwoFactorAuthenticationController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
+use App\Http\Controllers\CCBillController;
 use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ContactController;
-use App\Http\Controllers\DmcaController;
 use App\Http\Controllers\DashboardController;
-// EmbeddedVideoController removed - imported videos now use the regular Video model and /<slug> route
+use App\Http\Controllers\DmcaController;
 use App\Http\Controllers\FeedController;
+use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ImageController;
+use App\Http\Controllers\InstallController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\PlaylistController;
+use App\Http\Controllers\PointsController;
+use App\Http\Controllers\ProController;
+use App\Http\Controllers\PushNotificationController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShortsController;
-use App\Http\Controllers\SubscriptionController;
-use App\Http\Controllers\ImageController;
-use App\Http\Controllers\GalleryController;
-use App\Http\Controllers\VideoController;
-use App\Http\Controllers\PageController;
-use App\Http\Controllers\ProController;
 use App\Http\Controllers\SitemapController;
-use App\Http\Controllers\PointsController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\ThumbnailProxyController;
 use App\Http\Controllers\TranslationController;
+use App\Http\Controllers\VideoAdController;
+use App\Http\Controllers\VideoController;
 use App\Http\Controllers\WalletController;
+use App\Models\Setting;
+use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Laravel\Cashier\Http\Controllers\WebhookController as StripeWebhookController;
+use Spatie\Activitylog\Models\Activity;
 
 // ── Installer Routes ──
 Route::middleware('installed:block')->prefix('install')->group(function () {
-    Route::get('/', [\App\Http\Controllers\InstallController::class, 'requirements'])->name('install.requirements');
-    Route::get('/database', [\App\Http\Controllers\InstallController::class, 'database'])->name('install.database');
-    Route::post('/database', [\App\Http\Controllers\InstallController::class, 'saveDatabase'])->name('install.database.save');
-    Route::get('/application', [\App\Http\Controllers\InstallController::class, 'application'])->name('install.application');
-    Route::post('/application', [\App\Http\Controllers\InstallController::class, 'saveApplication'])->name('install.application.save');
-    Route::get('/admin', [\App\Http\Controllers\InstallController::class, 'admin'])->name('install.admin');
-    Route::post('/admin', [\App\Http\Controllers\InstallController::class, 'saveAdmin'])->name('install.admin.save');
-    Route::get('/finalize', [\App\Http\Controllers\InstallController::class, 'finalize'])->name('install.finalize');
-    Route::post('/finalize', [\App\Http\Controllers\InstallController::class, 'executeFinalize'])->name('install.finalize.execute');
+    Route::get('/', [InstallController::class, 'requirements'])->name('install.requirements');
+    Route::get('/database', [InstallController::class, 'database'])->name('install.database');
+    Route::post('/database', [InstallController::class, 'saveDatabase'])->name('install.database.save');
+    Route::get('/application', [InstallController::class, 'application'])->name('install.application');
+    Route::post('/application', [InstallController::class, 'saveApplication'])->name('install.application.save');
+    Route::get('/admin', [InstallController::class, 'admin'])->name('install.admin');
+    Route::post('/admin', [InstallController::class, 'saveAdmin'])->name('install.admin.save');
+    Route::get('/finalize', [InstallController::class, 'finalize'])->name('install.finalize');
+    Route::post('/finalize', [InstallController::class, 'executeFinalize'])->name('install.finalize.execute');
 });
 
 // ── App Routes (require installation) ──
 Route::middleware('installed:require')->group(function () {
 
-// Admin auth is handled by main site login modal/page
-Route::get('/admin/login', fn () => redirect()->route('login'))->name('admin.login.redirect');
+    // Admin auth is handled by main site login modal/page
+    Route::get('/admin/login', fn () => redirect()->route('login'))->name('admin.login.redirect');
 
-// Admin: flush application caches (from Filament user menu)
-Route::get('/admin/flush-cache', function () {
-    if (!auth()->check() || !auth()->user()->is_admin) {
-        abort(403);
-    }
-    \Illuminate\Support\Facades\Artisan::call('cache:clear');
-    \Illuminate\Support\Facades\Artisan::call('view:clear');
-    \Illuminate\Support\Facades\Artisan::call('config:clear');
-    \Illuminate\Support\Facades\Artisan::call('route:clear');
-    \Filament\Notifications\Notification::make()
-        ->title('All caches flushed')
-        ->success()
-        ->send();
-    return redirect('/admin');
-})->middleware(['web', 'auth'])->name('admin.flush-cache');
-
-// ── Admin Logs: export, download, clear ─────────────────────────
-
-/** Guard: only authenticated admins. */
-$adminOnly = function () {
-    if (!auth()->check() || !auth()->user()->is_admin) {
-        abort(403);
-    }
-};
-
-// Export a single activity log entry (json | csv | txt)
-Route::get('/admin/logs/export/{id}', function ($id) use ($adminOnly) {
-    $adminOnly();
-
-    $record = \Spatie\Activitylog\Models\Activity::with(['causer', 'subject'])->findOrFail($id);
-    $format = strtolower((string) request()->query('format', 'json'));
-    if (!in_array($format, ['json', 'csv', 'txt'], true)) {
-        abort(400, 'Unsupported format');
+    // Legacy settings URLs.
+    //
+    // The thirteen settings pages now live behind the Settings cluster, so their
+    // URLs moved from /admin/<slug> to /admin/settings/<slug>. These keep existing
+    // bookmarks working. getUrl() resolves per request rather than being baked in,
+    // so the redirects follow the pages if the cluster slug ever changes.
+    foreach ([
+        'site-settings' => SiteSettings::class,
+        'theme-settings' => ThemeSettings::class,
+        'seo-settings' => SeoSettings::class,
+        'search-indexing-settings' => SearchIndexingSettings::class,
+        'language-settings' => LanguageSettings::class,
+        'storage-settings' => StorageSettings::class,
+        'pwa-settings' => PwaSettings::class,
+        'integration-settings' => IntegrationSettings::class,
+        'notification-settings' => NotificationSettings::class,
+        'social-networks' => SocialNetworkSettings::class,
+        'payment-settings' => PaymentSettings::class,
+        'ad-settings' => AdSettings::class,
+        'points-settings' => PointsSettings::class,
+    ] as $legacySlug => $page) {
+        Route::get("/admin/{$legacySlug}", fn () => redirect($page::getUrl()))
+            ->middleware(['web', 'auth'])
+            ->name("admin.legacy-settings.{$legacySlug}");
     }
 
-    $causerLabel = $record->causer?->username ?? ($record->causer_type ? class_basename($record->causer_type) . ' #' . $record->causer_id : 'System');
-    $subjectLabel = $record->subject_type ? class_basename($record->subject_type) . ' #' . $record->subject_id : '—';
+    // Admin: flush application caches (from Filament user menu)
+    Route::get('/admin/flush-cache', function () {
+        if (! auth()->check() || ! auth()->user()->is_admin) {
+            abort(403);
+        }
+        Artisan::call('cache:clear');
+        Artisan::call('view:clear');
+        Artisan::call('config:clear');
+        Artisan::call('route:clear');
+        Notification::make()
+            ->title('All caches flushed')
+            ->success()
+            ->send();
 
-    $props = $record->properties;
-    if (is_object($props) && method_exists($props, 'toArray')) {
-        $props = $props->toArray();
-    }
+        return redirect('/admin');
+    })->middleware(['web', 'auth'])->name('admin.flush-cache');
 
-    $row = [
-        'id' => $record->id,
-        'timestamp' => $record->created_at?->format('Y-m-d H:i:s'),
-        'level' => $record->log_name,
-        'causer' => $causerLabel,
-        'subject' => $subjectLabel,
-        'description' => (string) $record->description,
-        'context' => $props,
-    ];
+    // ── Admin Logs: export, download, clear ─────────────────────────
 
-    $filename = "activity-log-{$record->id}-" . now()->format('Y-m-d') . ".{$format}";
-
-    return match ($format) {
-        'json' => response()->streamDownload(fn () => print(json_encode($row, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
-            $filename, ['Content-Type' => 'application/json']),
-
-        'csv' => response()->streamDownload(function () use ($row) {
-            $out = fopen('php://output', 'w');
-            fputcsv($out, ['id', 'timestamp', 'level', 'causer', 'subject', 'description', 'context']);
-            fputcsv($out, [
-                $row['id'], $row['timestamp'], $row['level'], $row['causer'], $row['subject'],
-                $row['description'],
-                is_array($row['context']) ? json_encode($row['context'], JSON_UNESCAPED_SLASHES) : (string) $row['context'],
-            ]);
-            fclose($out);
-        }, $filename, ['Content-Type' => 'text/csv']),
-
-        'txt' => response()->streamDownload(function () use ($row) {
-            echo "Log Entry #{$row['id']}\n";
-            echo str_repeat('=', 40) . "\n";
-            echo "Timestamp:   {$row['timestamp']}\n";
-            echo "Level:       {$row['level']}\n";
-            echo "Causer:      {$row['causer']}\n";
-            echo "Subject:     {$row['subject']}\n\n";
-            echo "Description:\n{$row['description']}\n\n";
-            echo "Context:\n" . (is_array($row['context']) ? json_encode($row['context'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) : (string) $row['context']) . "\n";
-        }, $filename, ['Content-Type' => 'text/plain']),
+    /** Guard: only authenticated admins. */
+    $adminOnly = function () {
+        if (! auth()->check() || ! auth()->user()->is_admin) {
+            abort(403);
+        }
     };
-})->middleware(['web', 'auth'])->name('admin.logs.export-entry');
 
-// Download a raw Laravel log file
-Route::get('/admin/logs/file/{filename}/download', function (string $filename) use ($adminOnly) {
-    $adminOnly();
-    $filename = basename($filename); // prevent traversal
-    $path = storage_path('logs/' . $filename);
-    if (!is_file($path)) {
-        abort(404);
-    }
-    return response()->download($path, $filename, ['Content-Type' => 'text/plain']);
-})->where('filename', '[A-Za-z0-9._-]+')->middleware(['web', 'auth'])->name('admin.logs.download-file');
+    // Export a single activity log entry (json | csv | txt)
+    Route::get('/admin/logs/export/{id}', function ($id) use ($adminOnly) {
+        $adminOnly();
 
-// Sitemap & Robots (outside age verification)
-Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
-Route::get('/sitemap_index.xml', [SitemapController::class, 'index'])->name('sitemap.index');
+        $record = Activity::with(['causer', 'subject'])->findOrFail($id);
+        $format = strtolower((string) request()->query('format', 'json'));
+        if (! in_array($format, ['json', 'csv', 'txt'], true)) {
+            abort(400, 'Unsupported format');
+        }
 
-// Per-content-type child sitemaps (referenced by the sitemap index above)
-Route::get('/sitemap-pages.xml', [SitemapController::class, 'pages'])->name('sitemap.pages');
-Route::get('/sitemap-categories.xml', [SitemapController::class, 'categories'])->name('sitemap.categories');
-Route::get('/sitemap-tags.xml', [SitemapController::class, 'tags'])->name('sitemap.tags');
-Route::get('/sitemap-channels.xml', [SitemapController::class, 'channels'])->name('sitemap.channels');
-Route::get('/sitemap-videos.xml', [SitemapController::class, 'videos'])->name('sitemap.videos');
-Route::get('/sitemap-videos-{page}.xml', [SitemapController::class, 'videos'])
-    ->where('page', '[0-9]+')->name('sitemap.videos.page');
-Route::get('/sitemap-images.xml', [SitemapController::class, 'images'])->name('sitemap.images');
-Route::get('/sitemap-galleries.xml', [SitemapController::class, 'galleries'])->name('sitemap.galleries');
-Route::get('/sitemap-playlists.xml', [SitemapController::class, 'playlists'])->name('sitemap.playlists');
-Route::get('/robots.txt', function () {
-    $content = \App\Models\Setting::get('seo_robots_txt', "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nSitemap: " . url('/sitemap.xml'));
-    return response($content, 200, ['Content-Type' => 'text/plain']);
-})->name('robots.txt');
+        $causerLabel = $record->causer?->username ?? ($record->causer_type ? class_basename($record->causer_type).' #'.$record->causer_id : 'System');
+        $subjectLabel = $record->subject_type ? class_basename($record->subject_type).' #'.$record->subject_id : '—';
 
-// IndexNow key verification file. Engines fetch /{key}.txt and expect
-// the file body to be exactly the key value.
-Route::get('/{indexnow_key}.txt', function (string $indexnow_key) {
-    if (!\App\Models\Setting::get('indexnow_enabled', false)) {
-        abort(404);
-    }
-    $configured = (string) \App\Models\Setting::get('indexnow_key', '');
-    if ($configured === '' || !hash_equals($configured, $indexnow_key)) {
-        abort(404);
-    }
-    return response($configured, 200, ['Content-Type' => 'text/plain']);
-})->where('indexnow_key', '[A-Za-z0-9\-]{8,128}')->name('indexnow.key');
+        $props = $record->properties;
+        if (is_object($props) && method_exists($props, 'toArray')) {
+            $props = $props->toArray();
+        }
 
-// Offline page for PWA
-Route::get('/offline', fn () => view('offline'))->name('offline');
+        $row = [
+            'id' => $record->id,
+            'timestamp' => $record->created_at?->format('Y-m-d H:i:s'),
+            'level' => $record->log_name,
+            'causer' => $causerLabel,
+            'subject' => $subjectLabel,
+            'description' => (string) $record->description,
+            'context' => $props,
+        ];
 
-// Stream video files with Range request support (php artisan serve doesn't support Range)
-// Used by watermark preview and admin video edit player.
-//
-// IMPORTANT:
-// We prefer query-string paths (/admin/video-stream?path=videos/.../file.mp4)
-// instead of embedding the file path directly in the URL path. This avoids
-// production nginx configs that aggressively treat *.mp4 URLs as static files
-// and return 404 before Laravel gets the request.
-Route::get('/admin/video-stream/{legacyPath?}', function (?string $legacyPath = null) {
-    // Only allow admin users
-    if (!auth()->check() || !auth()->user()->is_admin) {
-        abort(403);
-    }
+        $filename = "activity-log-{$record->id}-".now()->format('Y-m-d').".{$format}";
 
-    // Preferred: query param (?path=videos/slug/file.mp4)
-    // Legacy fallback: /admin/video-stream/videos/slug/file.mp4
-    $path = request()->query('path', $legacyPath ?? '');
-    $path = rawurldecode((string) $path);
-    $path = str_replace('\\', '/', $path);
-    $path = ltrim($path, '/');
+        return match ($format) {
+            'json' => response()->streamDownload(fn () => print (json_encode($row, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
+                $filename, ['Content-Type' => 'application/json']),
 
-    if ($path === '' || strpos($path, "\0") !== false) {
-        abort(404);
-    }
+            'csv' => response()->streamDownload(function () use ($row) {
+                $out = fopen('php://output', 'w');
+                fputcsv($out, ['id', 'timestamp', 'level', 'causer', 'subject', 'description', 'context']);
+                fputcsv($out, [
+                    $row['id'], $row['timestamp'], $row['level'], $row['causer'], $row['subject'],
+                    $row['description'],
+                    is_array($row['context']) ? json_encode($row['context'], JSON_UNESCAPED_SLASHES) : (string) $row['context'],
+                ]);
+                fclose($out);
+            }, $filename, ['Content-Type' => 'text/csv']),
 
-    // Resolve the file from public storage
-    $fullPath = storage_path('app/public/' . $path);
-    if (!file_exists($fullPath)) {
-        abort(404);
-    }
+            'txt' => response()->streamDownload(function () use ($row) {
+                echo "Log Entry #{$row['id']}\n";
+                echo str_repeat('=', 40)."\n";
+                echo "Timestamp:   {$row['timestamp']}\n";
+                echo "Level:       {$row['level']}\n";
+                echo "Causer:      {$row['causer']}\n";
+                echo "Subject:     {$row['subject']}\n\n";
+                echo "Description:\n{$row['description']}\n\n";
+                echo "Context:\n".(is_array($row['context']) ? json_encode($row['context'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) : (string) $row['context'])."\n";
+            }, $filename, ['Content-Type' => 'text/plain']),
+        };
+    })->middleware(['web', 'auth'])->name('admin.logs.export-entry');
 
-    // Prevent directory traversal
-    $realBase = realpath(storage_path('app/public'));
-    $realPath = realpath($fullPath);
-    if (!$realPath || !str_starts_with($realPath, $realBase)) {
-        abort(403);
-    }
+    // Download a raw Laravel log file
+    Route::get('/admin/logs/file/{filename}/download', function (string $filename) use ($adminOnly) {
+        $adminOnly();
+        $filename = basename($filename); // prevent traversal
+        $path = storage_path('logs/'.$filename);
+        if (! is_file($path)) {
+            abort(404);
+        }
 
-    $size = filesize($fullPath);
-    $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
-    $mimeMap = ['mp4' => 'video/mp4', 'webm' => 'video/webm', 'mov' => 'video/quicktime', 'mkv' => 'video/x-matroska', 'avi' => 'video/x-msvideo'];
-    $mime = $mimeMap[$ext] ?? 'video/mp4';
+        return response()->download($path, $filename, ['Content-Type' => 'text/plain']);
+    })->where('filename', '[A-Za-z0-9._-]+')->middleware(['web', 'auth'])->name('admin.logs.download-file');
 
-    $headers = [
-        'Content-Type'              => $mime,
-        'Accept-Ranges'             => 'bytes',
-        'Cache-Control'             => 'no-cache, no-store',
-        'X-Content-Type-Options'    => 'nosniff',
-    ];
+    // Sitemap & Robots (outside age verification)
+    Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+    Route::get('/sitemap_index.xml', [SitemapController::class, 'index'])->name('sitemap.index');
 
-    $request = request();
-    $rangeHeader = $request->header('Range');
+    // Per-content-type child sitemaps (referenced by the sitemap index above)
+    Route::get('/sitemap-pages.xml', [SitemapController::class, 'pages'])->name('sitemap.pages');
+    Route::get('/sitemap-categories.xml', [SitemapController::class, 'categories'])->name('sitemap.categories');
+    Route::get('/sitemap-tags.xml', [SitemapController::class, 'tags'])->name('sitemap.tags');
+    Route::get('/sitemap-channels.xml', [SitemapController::class, 'channels'])->name('sitemap.channels');
+    Route::get('/sitemap-videos.xml', [SitemapController::class, 'videos'])->name('sitemap.videos');
+    Route::get('/sitemap-videos-{page}.xml', [SitemapController::class, 'videos'])
+        ->where('page', '[0-9]+')->name('sitemap.videos.page');
+    Route::get('/sitemap-images.xml', [SitemapController::class, 'images'])->name('sitemap.images');
+    Route::get('/sitemap-galleries.xml', [SitemapController::class, 'galleries'])->name('sitemap.galleries');
+    Route::get('/sitemap-playlists.xml', [SitemapController::class, 'playlists'])->name('sitemap.playlists');
+    Route::get('/robots.txt', function () {
+        $content = Setting::get('seo_robots_txt', "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nSitemap: ".url('/sitemap.xml'));
 
-    if ($rangeHeader && preg_match('/bytes=(\d+)-(\d*)/', $rangeHeader, $m)) {
-        $start  = (int) $m[1];
-        $end    = $m[2] !== '' ? (int) $m[2] : $size - 1;
-        $end    = min($end, $size - 1);
-        $length = $end - $start + 1;
+        return response($content, 200, ['Content-Type' => 'text/plain']);
+    })->name('robots.txt');
 
-        $headers['Content-Range']  = "bytes {$start}-{$end}/{$size}";
-        $headers['Content-Length'] = $length;
+    // IndexNow key verification file. Engines fetch /{key}.txt and expect
+    // the file body to be exactly the key value.
+    Route::get('/{indexnow_key}.txt', function (string $indexnow_key) {
+        if (! Setting::get('indexnow_enabled', false)) {
+            abort(404);
+        }
+        $configured = (string) Setting::get('indexnow_key', '');
+        if ($configured === '' || ! hash_equals($configured, $indexnow_key)) {
+            abort(404);
+        }
 
-        return response()->stream(function () use ($fullPath, $start, $length) {
+        return response($configured, 200, ['Content-Type' => 'text/plain']);
+    })->where('indexnow_key', '[A-Za-z0-9\-]{8,128}')->name('indexnow.key');
+
+    // Offline page for PWA
+    Route::get('/offline', fn () => view('offline'))->name('offline');
+
+    // Stream video files with Range request support (php artisan serve doesn't support Range)
+    // Used by watermark preview and admin video edit player.
+    //
+    // IMPORTANT:
+    // We prefer query-string paths (/admin/video-stream?path=videos/.../file.mp4)
+    // instead of embedding the file path directly in the URL path. This avoids
+    // production nginx configs that aggressively treat *.mp4 URLs as static files
+    // and return 404 before Laravel gets the request.
+    Route::get('/admin/video-stream/{legacyPath?}', function (?string $legacyPath = null) {
+        // Only allow admin users
+        if (! auth()->check() || ! auth()->user()->is_admin) {
+            abort(403);
+        }
+
+        // Preferred: query param (?path=videos/slug/file.mp4)
+        // Legacy fallback: /admin/video-stream/videos/slug/file.mp4
+        $path = request()->query('path', $legacyPath ?? '');
+        $path = rawurldecode((string) $path);
+        $path = str_replace('\\', '/', $path);
+        $path = ltrim($path, '/');
+
+        if ($path === '' || strpos($path, "\0") !== false) {
+            abort(404);
+        }
+
+        // Resolve the file from public storage
+        $fullPath = storage_path('app/public/'.$path);
+        if (! file_exists($fullPath)) {
+            abort(404);
+        }
+
+        // Prevent directory traversal
+        $realBase = realpath(storage_path('app/public'));
+        $realPath = realpath($fullPath);
+        if (! $realPath || ! str_starts_with($realPath, $realBase)) {
+            abort(403);
+        }
+
+        $size = filesize($fullPath);
+        $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+        $mimeMap = ['mp4' => 'video/mp4', 'webm' => 'video/webm', 'mov' => 'video/quicktime', 'mkv' => 'video/x-matroska', 'avi' => 'video/x-msvideo'];
+        $mime = $mimeMap[$ext] ?? 'video/mp4';
+
+        $headers = [
+            'Content-Type' => $mime,
+            'Accept-Ranges' => 'bytes',
+            'Cache-Control' => 'no-cache, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ];
+
+        $request = request();
+        $rangeHeader = $request->header('Range');
+
+        if ($rangeHeader && preg_match('/bytes=(\d+)-(\d*)/', $rangeHeader, $m)) {
+            $start = (int) $m[1];
+            $end = $m[2] !== '' ? (int) $m[2] : $size - 1;
+            $end = min($end, $size - 1);
+            $length = $end - $start + 1;
+
+            $headers['Content-Range'] = "bytes {$start}-{$end}/{$size}";
+            $headers['Content-Length'] = $length;
+
+            return response()->stream(function () use ($fullPath, $start, $length) {
+                $stream = fopen($fullPath, 'rb');
+                fseek($stream, $start);
+                $remaining = $length;
+                while ($remaining > 0 && ! feof($stream)) {
+                    $chunk = min(256 * 1024, $remaining);
+                    echo fread($stream, $chunk);
+                    $remaining -= $chunk;
+                    flush();
+                }
+                fclose($stream);
+            }, 206, $headers);
+        }
+
+        $headers['Content-Length'] = $size;
+
+        return response()->stream(function () use ($fullPath) {
             $stream = fopen($fullPath, 'rb');
-            fseek($stream, $start);
-            $remaining = $length;
-            while ($remaining > 0 && !feof($stream)) {
-                $chunk = min(256 * 1024, $remaining);
-                echo fread($stream, $chunk);
-                $remaining -= $chunk;
+            while (! feof($stream)) {
+                echo fread($stream, 256 * 1024);
                 flush();
             }
             fclose($stream);
-        }, 206, $headers);
-    }
+        }, 200, $headers);
+    })->where('legacyPath', '.*')->name('admin.video-stream');
 
-    $headers['Content-Length'] = $size;
+    // Thumbnail proxy for embedded video thumbnails
+    Route::get('/api/thumb-proxy', [ThumbnailProxyController::class, 'proxy'])
+        ->middleware('throttle:30,1')
+        ->name('thumb.proxy');
 
-    return response()->stream(function () use ($fullPath) {
-        $stream = fopen($fullPath, 'rb');
-        while (!feof($stream)) {
-            echo fread($stream, 256 * 1024);
-            flush();
-        }
-        fclose($stream);
-    }, 200, $headers);
-})->where('legacyPath', '.*')->name('admin.video-stream');
+    // Video Ads API (outside age.verified — the page itself already enforces age gate)
+    Route::get('/api/video-ads', [VideoAdController::class, 'getAds'])
+        ->middleware('throttle:30,1')
+        ->name('video-ads.get');
 
-// Thumbnail proxy for embedded video thumbnails
-Route::get('/api/thumb-proxy', [ThumbnailProxyController::class, 'proxy'])
-    ->middleware('throttle:30,1')
-    ->name('thumb.proxy');
+    // Stripe webhook (must be outside auth + age gates)
+    Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
+        ->name('stripe.webhook');
 
-// Video Ads API (outside age.verified — the page itself already enforces age gate)
-Route::get('/api/video-ads', [\App\Http\Controllers\VideoAdController::class, 'getAds'])
-    ->middleware('throttle:30,1')
-    ->name('video-ads.get');
+    // CCBill webhook (must be outside auth + age gates; CSRF-exempt in bootstrap/app.php)
+    Route::post('/ccbill/webhook', [CCBillController::class, 'webhook'])
+        ->middleware('throttle:120,1')
+        ->name('ccbill.webhook');
 
-// Stripe webhook (must be outside auth + age gates)
-Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
-    ->name('stripe.webhook');
+    // CCBill post-checkout landing pages (buyer returns from the hosted FlexForm)
+    Route::get('/ccbill/success', [CCBillController::class, 'success'])->name('ccbill.success');
+    Route::get('/ccbill/cancel', [CCBillController::class, 'cancel'])->name('ccbill.cancel');
 
-// CCBill webhook (must be outside auth + age gates; CSRF-exempt in bootstrap/app.php)
-Route::post('/ccbill/webhook', [\App\Http\Controllers\CCBillController::class, 'webhook'])
-    ->middleware('throttle:120,1')
-    ->name('ccbill.webhook');
+    // Ad impression & click tracking (fire-and-forget, heavily rate-limited)
+    Route::post('/api/ad-impression', [VideoAdController::class, 'recordImpression'])
+        ->middleware('throttle:120,1')
+        ->name('video-ads.impression');
+    Route::post('/api/ad-click', [VideoAdController::class, 'recordClick'])
+        ->middleware('throttle:60,1')
+        ->name('video-ads.click');
 
-// CCBill post-checkout landing pages (buyer returns from the hosted FlexForm)
-Route::get('/ccbill/success', [\App\Http\Controllers\CCBillController::class, 'success'])->name('ccbill.success');
-Route::get('/ccbill/cancel', [\App\Http\Controllers\CCBillController::class, 'cancel'])->name('ccbill.cancel');
+    // Sponsored card click tracking
+    Route::post('/api/sponsored/{cardId}/click', [VideoAdController::class, 'recordSponsoredClick'])
+        ->middleware('throttle:60,1')
+        ->name('sponsored.click');
 
-// Ad impression & click tracking (fire-and-forget, heavily rate-limited)
-Route::post('/api/ad-impression', [\App\Http\Controllers\VideoAdController::class, 'recordImpression'])
-    ->middleware('throttle:120,1')
-    ->name('video-ads.impression');
-Route::post('/api/ad-click', [\App\Http\Controllers\VideoAdController::class, 'recordClick'])
-    ->middleware('throttle:60,1')
-    ->name('video-ads.click');
+    // Sponsored card impression tracking
+    Route::post('/api/sponsored/{cardId}/impression', [VideoAdController::class, 'recordSponsoredImpression'])
+        ->middleware('throttle:60,1')
+        ->name('sponsored.impression');
 
-// Sponsored card click tracking
-Route::post('/api/sponsored/{cardId}/click', [\App\Http\Controllers\VideoAdController::class, 'recordSponsoredClick'])
-    ->middleware('throttle:60,1')
-    ->name('sponsored.click');
+    Route::middleware('age.verified')->group(function () {
+        Route::get('/', [HomeController::class, 'index'])->name('home');
+        Route::get('/api/videos/load-more', [HomeController::class, 'loadMoreVideos'])->name('videos.loadMore');
+        Route::get('/trending', [HomeController::class, 'trending'])->name('trending');
+        Route::get('/shorts', [ShortsController::class, 'index'])->name('shorts.index');
+        Route::get('/shorts/{video_uuid}', [ShortsController::class, 'index'])->name('shorts.show');
+        Route::get('/api/shorts/feed', [ShortsController::class, 'feed'])->middleware('throttle:60,1')->name('shorts.feed');
+        Route::get('/search', [SearchController::class, 'index'])->name('search');
+        Route::get('/pro', [ProController::class, 'index'])->name('pro.index');
 
-// Sponsored card impression tracking
-Route::post('/api/sponsored/{cardId}/impression', [\App\Http\Controllers\VideoAdController::class, 'recordSponsoredImpression'])
-    ->middleware('throttle:60,1')
-    ->name('sponsored.impression');
+        Route::get('/videos', [VideoController::class, 'index'])->name('videos.index');
+        Route::get('/contact', [ContactController::class, 'show'])->name('contact');
+        Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,1')->name('contact.store');
+        Route::get('/dmca-request', [DmcaController::class, 'show'])->name('dmca.request');
+        Route::post('/dmca-request', [DmcaController::class, 'store'])->middleware('throttle:5,1')->name('dmca.store');
+        Route::get('/categories', [HomeController::class, 'categories'])->name('categories.index');
+        Route::get('/category/{category:slug}', [HomeController::class, 'category'])->name('categories.show');
+        Route::get('/tags', [HomeController::class, 'tags'])->name('tags.index');
+        Route::get('/tag/{tag}', [HomeController::class, 'tag'])->name('tags.show');
 
-Route::middleware('age.verified')->group(function () {
-    Route::get('/', [HomeController::class, 'index'])->name('home');
-    Route::get('/api/videos/load-more', [HomeController::class, 'loadMoreVideos'])->name('videos.loadMore');
-    Route::get('/trending', [HomeController::class, 'trending'])->name('trending');
-    Route::get('/shorts', [ShortsController::class, 'index'])->name('shorts.index');
-    Route::get('/shorts/{video_uuid}', [ShortsController::class, 'index'])->name('shorts.show');
-    Route::get('/api/shorts/feed', [ShortsController::class, 'feed'])->middleware('throttle:60,1')->name('shorts.feed');
-    Route::get('/search', [SearchController::class, 'index'])->name('search');
-    Route::get('/pro', [ProController::class, 'index'])->name('pro.index');
+        Route::get('/channel/{user:username}', [ChannelController::class, 'show'])->name('channel.show');
+        Route::get('/channel/{user:username}/videos', [ChannelController::class, 'videos'])->name('channel.videos');
+        Route::get('/channel/{user:username}/playlists', [ChannelController::class, 'playlists'])->name('channel.playlists');
+        Route::get('/channel/{user:username}/liked', [ChannelController::class, 'likedVideos'])->name('channel.liked');
+        Route::get('/channel/{user:username}/history', [ChannelController::class, 'watchHistory'])->name('channel.history');
+        Route::get('/channel/{user:username}/about', [ChannelController::class, 'about'])->name('channel.about');
 
-    Route::get('/videos', [VideoController::class, 'index'])->name('videos.index');
-    Route::get('/contact', [ContactController::class, 'show'])->name('contact');
-    Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,1')->name('contact.store');
-    Route::get('/dmca-request', [DmcaController::class, 'show'])->name('dmca.request');
-    Route::post('/dmca-request', [DmcaController::class, 'store'])->middleware('throttle:5,1')->name('dmca.store');
-    Route::get('/categories', [HomeController::class, 'categories'])->name('categories.index');
-    Route::get('/category/{category:slug}', [HomeController::class, 'category'])->name('categories.show');
-    Route::get('/tags', [HomeController::class, 'tags'])->name('tags.index');
-    Route::get('/tag/{tag}', [HomeController::class, 'tag'])->name('tags.show');
+        Route::get('/public-playlists', [PlaylistController::class, 'publicIndex'])->name('playlists.public');
+        Route::get('/playlist/{playlist:slug}', [PlaylistController::class, 'show'])->name('playlists.show');
 
-    Route::get('/channel/{user:username}', [ChannelController::class, 'show'])->name('channel.show');
-    Route::get('/channel/{user:username}/videos', [ChannelController::class, 'videos'])->name('channel.videos');
-    Route::get('/channel/{user:username}/playlists', [ChannelController::class, 'playlists'])->name('channel.playlists');
-    Route::get('/channel/{user:username}/liked', [ChannelController::class, 'likedVideos'])->name('channel.liked');
-    Route::get('/channel/{user:username}/history', [ChannelController::class, 'watchHistory'])->name('channel.history');
-    Route::get('/channel/{user:username}/about', [ChannelController::class, 'about'])->name('channel.about');
+        // Image & Gallery routes (public browse)
+        Route::get('/images', [ImageController::class, 'index'])->name('images.index');
+        Route::get('/image/{image:slug}', [ImageController::class, 'show'])->name('images.show');
+        Route::get('/galleries', [GalleryController::class, 'index'])->name('galleries.index');
+        Route::get('/gallery/{gallery:slug}', [GalleryController::class, 'show'])->name('galleries.show');
 
-    Route::get('/public-playlists', [PlaylistController::class, 'publicIndex'])->name('playlists.public');
-    Route::get('/playlist/{playlist:slug}', [PlaylistController::class, 'show'])->name('playlists.show');
+        // Legal / Static Pages
+        Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('pages.show');
 
-    // Image & Gallery routes (public browse)
-    Route::get('/images', [ImageController::class, 'index'])->name('images.index');
-    Route::get('/image/{image:slug}', [ImageController::class, 'show'])->name('images.show');
-    Route::get('/galleries', [GalleryController::class, 'index'])->name('galleries.index');
-    Route::get('/gallery/{gallery:slug}', [GalleryController::class, 'show'])->name('galleries.show');
+        // Social Login Routes (accessible by both guests and authenticated users for account linking)
+        Route::get('/auth/{provider}/redirect', [SocialLoginController::class, 'redirect'])
+            ->where('provider', 'google|twitter|reddit')
+            ->name('social.redirect');
+        Route::get('/auth/{provider}/callback', [SocialLoginController::class, 'callback'])
+            ->where('provider', 'google|twitter|reddit')
+            ->name('social.callback');
 
-    // Legal / Static Pages
-    Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('pages.show');
+        Route::middleware('guest')->group(function () {
+            Route::get('/register', [RegisterController::class, 'create'])->name('register');
+            Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:5,1');
 
-    // Social Login Routes (accessible by both guests and authenticated users for account linking)
-    Route::get('/auth/{provider}/redirect', [SocialLoginController::class, 'redirect'])
-        ->where('provider', 'google|twitter|reddit')
-        ->name('social.redirect');
-    Route::get('/auth/{provider}/callback', [SocialLoginController::class, 'callback'])
-        ->where('provider', 'google|twitter|reddit')
-        ->name('social.callback');
+            Route::get('/login', [LoginController::class, 'create'])->name('login');
+            Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:10,1');
 
-    Route::middleware('guest')->group(function () {
-        Route::get('/register', [RegisterController::class, 'create'])->name('register');
-        Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:5,1');
+            Route::get('/forgot-password', [PasswordResetController::class, 'requestForm'])->name('password.request');
+            Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])
+                ->middleware('throttle:5,1')->name('password.email');
+            Route::get('/reset-password/{token}', [PasswordResetController::class, 'resetForm'])->name('password.reset');
+            Route::post('/reset-password', [PasswordResetController::class, 'reset'])
+                ->middleware('throttle:5,1')->name('password.update');
 
-        Route::get('/login', [LoginController::class, 'create'])->name('login');
-        Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:10,1');
-
-        Route::get('/forgot-password', [PasswordResetController::class, 'requestForm'])->name('password.request');
-        Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])
-            ->middleware('throttle:5,1')->name('password.email');
-        Route::get('/reset-password/{token}', [PasswordResetController::class, 'resetForm'])->name('password.reset');
-        Route::post('/reset-password', [PasswordResetController::class, 'reset'])
-            ->middleware('throttle:5,1')->name('password.update');
-
-        Route::get('/two-factor-challenge', [TwoFactorChallengeController::class, 'create'])->name('two-factor.login');
-        Route::post('/two-factor-challenge', [TwoFactorChallengeController::class, 'store'])->middleware('throttle:10,1');
-    });
-
-    Route::middleware('auth')->group(function () {
-        Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
-
-        Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
-        Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
-            ->middleware('signed')
-            ->name('verification.verify');
-        Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])
-            ->middleware('throttle:6,1')
-            ->name('verification.send');
-
-        Route::get('/upload', [VideoController::class, 'create'])->name('videos.create');
-
-        // Pro membership (authenticated actions)
-        Route::post('/pro/checkout', [ProController::class, 'checkout'])->name('pro.checkout');
-        Route::get('/pro/success', [ProController::class, 'success'])->name('pro.success');
-        Route::get('/pro/portal', [ProController::class, 'portal'])->name('pro.portal');
-
-        // Image upload & management
-        Route::get('/image-upload', [ImageController::class, 'create'])->name('images.create');
-        Route::post('/image-upload', [ImageController::class, 'store'])->middleware('throttle:10,1')->name('images.store');
-        Route::delete('/images/{image}', [ImageController::class, 'destroy'])->name('images.destroy');
-
-        // Gallery management
-        Route::get('/galleries/create', [GalleryController::class, 'create'])->name('galleries.create');
-        Route::post('/galleries', [GalleryController::class, 'store'])->name('galleries.store');
-        Route::put('/gallery/{gallery}', [GalleryController::class, 'update'])->name('galleries.update');
-        Route::delete('/gallery/{gallery}', [GalleryController::class, 'destroy'])->name('galleries.destroy');
-        Route::get('/upload/success', [VideoController::class, 'uploadSuccess'])->name('videos.upload-success');
-        Route::post('/upload', [VideoController::class, 'store'])->middleware('throttle:10,1')->name('videos.store');
-        Route::post('/upload/chunk', [VideoController::class, 'uploadChunk'])->middleware('throttle:300,1')->name('videos.upload-chunk');
-        Route::post('/upload/finalize', [VideoController::class, 'finalize'])->middleware('throttle:10,1')->name('videos.upload-finalize');
-        Route::get('/videos/{video}/edit', [VideoController::class, 'edit'])->name('videos.edit');
-        Route::get('/videos/{video}/status', [VideoController::class, 'status'])->name('videos.status');
-        Route::get('/videos/{video}/processing-status', [VideoController::class, 'processingStatus'])->name('videos.processing-status');
-        Route::get('/videos/{video}/download', [VideoController::class, 'download'])->middleware('throttle:10,1')->name('videos.download');
-        Route::post('/videos/{video}/select-thumbnail', [VideoController::class, 'selectThumbnail'])->name('videos.select-thumbnail');
-        Route::put('/videos/{video}', [VideoController::class, 'update'])->name('videos.update');
-        Route::delete('/videos/{video}', [VideoController::class, 'destroy'])->name('videos.destroy');
-
-        Route::post('/videos/{video}/like', [LikeController::class, 'like'])->middleware('throttle:30,1')->name('videos.like');
-        Route::post('/videos/{video}/dislike', [LikeController::class, 'dislike'])->middleware('throttle:30,1')->name('videos.dislike');
-
-        Route::get('/videos/{video}/comments', [CommentController::class, 'index'])->middleware('throttle:30,1')->name('comments.index');
-        Route::post('/videos/{video}/comments', [CommentController::class, 'store'])->middleware('throttle:10,1')->name('comments.store');
-        Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
-        Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
-        Route::post('/comments/{comment}/like', [CommentController::class, 'like'])->middleware('throttle:30,1')->name('comments.like');
-        Route::post('/comments/{comment}/dislike', [CommentController::class, 'dislike'])->middleware('throttle:30,1')->name('comments.dislike');
-
-        Route::post('/channel/{user}/subscribe', [SubscriptionController::class, 'store'])->name('subscription.store');
-        Route::delete('/channel/{user}/subscribe', [SubscriptionController::class, 'destroy'])->name('subscription.destroy');
-        Route::post('/channel/{user}/notifications', [SubscriptionController::class, 'toggleNotifications'])->name('subscription.notifications');
-
-        Route::get('/playlists', [PlaylistController::class, 'index'])->name('playlists.index');
-        Route::post('/playlists', [PlaylistController::class, 'store'])->name('playlists.store');
-        Route::put('/playlists/{playlist}', [PlaylistController::class, 'update'])->name('playlists.update');
-        Route::delete('/playlists/{playlist}', [PlaylistController::class, 'destroy'])->name('playlists.destroy');
-        Route::post('/playlists/{playlist}/videos', [PlaylistController::class, 'addVideo'])->name('playlists.addVideo');
-        Route::delete('/playlists/{playlist}/videos', [PlaylistController::class, 'removeVideo'])->name('playlists.removeVideo');
-        Route::post('/playlists/{playlist}/favorite', [PlaylistController::class, 'toggleFavorite'])->name('playlists.toggleFavorite');
-
-        Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
-        Route::delete('/history', [HistoryController::class, 'destroy'])->name('history.destroy');
-
-        Route::get('/rewards', [PointsController::class, 'index'])->name('rewards.index');
-        Route::post('/rewards/redeem', [PointsController::class, 'redeem'])->middleware('throttle:5,1')->name('rewards.redeem');
-
-        Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');
-        Route::get('/wallet/deposit', [WalletController::class, 'deposit'])->name('wallet.deposit');
-        Route::post('/wallet/deposit', [WalletController::class, 'processDeposit'])->middleware('throttle:10,1')->name('wallet.deposit.process');
-        Route::get('/wallet/withdraw', [WalletController::class, 'withdraw'])->name('wallet.withdraw');
-        Route::post('/wallet/withdraw', [WalletController::class, 'processWithdraw'])->middleware('throttle:5,1')->name('wallet.withdraw.process');
-
-        Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
-        Route::put('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile');
-        Route::post('/settings/avatar', [SettingsController::class, 'updateAvatar'])->name('settings.avatar');
-        Route::post('/settings/banner', [SettingsController::class, 'updateBanner'])->name('settings.banner');
-        Route::delete('/settings/banner', [SettingsController::class, 'destroyBanner'])->name('settings.banner.destroy');
-        Route::put('/settings/social-links', [SettingsController::class, 'updateSocialLinks'])->middleware('throttle:10,1')->name('settings.social-links');
-        Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password');
-        Route::put('/settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications');
-        Route::put('/settings/privacy', [SettingsController::class, 'updatePrivacy'])->name('settings.privacy');
-        Route::delete('/settings/account', [SettingsController::class, 'deleteAccount'])->name('settings.delete-account');
-        Route::get('/settings/export-data', [SettingsController::class, 'exportData'])->middleware('throttle:3,60')->name('settings.export-data');
-
-        Route::prefix('settings/two-factor')->name('settings.two-factor.')->group(function () {
-            Route::get('/status', [TwoFactorAuthenticationController::class, 'status'])->name('status');
-            Route::post('/enable', [TwoFactorAuthenticationController::class, 'enable'])->middleware('throttle:5,1')->name('enable');
-            Route::post('/confirm', [TwoFactorAuthenticationController::class, 'confirm'])->middleware('throttle:10,1')->name('confirm');
-            Route::post('/disable', [TwoFactorAuthenticationController::class, 'disable'])->middleware('throttle:5,1')->name('disable');
-            Route::post('/recovery-codes', [TwoFactorAuthenticationController::class, 'regenerateRecoveryCodes'])->middleware('throttle:5,1')->name('recovery-codes');
+            Route::get('/two-factor-challenge', [TwoFactorChallengeController::class, 'create'])->name('two-factor.login');
+            Route::post('/two-factor-challenge', [TwoFactorChallengeController::class, 'store'])->middleware('throttle:10,1');
         });
 
-        // Notifications
-        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
-        Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
-        Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.readAll');
-        Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
-        Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unreadCount');
+        Route::middleware('auth')->group(function () {
+            Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
-        // Reports
-        Route::post('/reports', [ReportController::class, 'store'])->middleware('throttle:5,1')->name('reports.store');
+            Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
+            Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+                ->middleware('signed')
+                ->name('verification.verify');
+            Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])
+                ->middleware('throttle:6,1')
+                ->name('verification.send');
 
-        // Push Notifications
-        Route::post('/api/push/vapid-key', [\App\Http\Controllers\PushNotificationController::class, 'vapidKey'])->name('push.vapid-key');
-        Route::post('/api/push/subscribe', [\App\Http\Controllers\PushNotificationController::class, 'subscribe'])->name('push.subscribe');
-        Route::delete('/api/push/unsubscribe', [\App\Http\Controllers\PushNotificationController::class, 'unsubscribe'])->name('push.unsubscribe');
+            Route::get('/upload', [VideoController::class, 'create'])->name('videos.create');
 
-        // Subscriptions Feed
-        Route::get('/feed', FeedController::class)->name('feed');
-        Route::get('/api/feed', [FeedController::class, 'more'])->middleware('throttle:60,1')->name('feed.more');
+            // Pro membership (authenticated actions)
+            Route::post('/pro/checkout', [ProController::class, 'checkout'])->name('pro.checkout');
+            Route::get('/pro/success', [ProController::class, 'success'])->name('pro.success');
+            Route::get('/pro/portal', [ProController::class, 'portal'])->name('pro.portal');
 
-        // Creator Dashboard
-        Route::get('/dashboard', DashboardController::class)->name('dashboard');
+            // Image upload & management
+            Route::get('/image-upload', [ImageController::class, 'create'])->name('images.create');
+            Route::post('/image-upload', [ImageController::class, 'store'])->middleware('throttle:10,1')->name('images.store');
+            Route::delete('/images/{image}', [ImageController::class, 'destroy'])->name('images.destroy');
+
+            // Gallery management
+            Route::get('/galleries/create', [GalleryController::class, 'create'])->name('galleries.create');
+            Route::post('/galleries', [GalleryController::class, 'store'])->name('galleries.store');
+            Route::put('/gallery/{gallery}', [GalleryController::class, 'update'])->name('galleries.update');
+            Route::delete('/gallery/{gallery}', [GalleryController::class, 'destroy'])->name('galleries.destroy');
+            Route::get('/upload/success', [VideoController::class, 'uploadSuccess'])->name('videos.upload-success');
+            Route::post('/upload', [VideoController::class, 'store'])->middleware('throttle:10,1')->name('videos.store');
+            Route::post('/upload/chunk', [VideoController::class, 'uploadChunk'])->middleware('throttle:300,1')->name('videos.upload-chunk');
+            Route::post('/upload/finalize', [VideoController::class, 'finalize'])->middleware('throttle:10,1')->name('videos.upload-finalize');
+            Route::get('/videos/{video}/edit', [VideoController::class, 'edit'])->name('videos.edit');
+            Route::get('/videos/{video}/status', [VideoController::class, 'status'])->name('videos.status');
+            Route::get('/videos/{video}/processing-status', [VideoController::class, 'processingStatus'])->name('videos.processing-status');
+            Route::get('/videos/{video}/download', [VideoController::class, 'download'])->middleware('throttle:10,1')->name('videos.download');
+            Route::post('/videos/{video}/select-thumbnail', [VideoController::class, 'selectThumbnail'])->name('videos.select-thumbnail');
+            Route::put('/videos/{video}', [VideoController::class, 'update'])->name('videos.update');
+            Route::delete('/videos/{video}', [VideoController::class, 'destroy'])->name('videos.destroy');
+
+            Route::post('/videos/{video}/like', [LikeController::class, 'like'])->middleware('throttle:30,1')->name('videos.like');
+            Route::post('/videos/{video}/dislike', [LikeController::class, 'dislike'])->middleware('throttle:30,1')->name('videos.dislike');
+
+            Route::get('/videos/{video}/comments', [CommentController::class, 'index'])->middleware('throttle:30,1')->name('comments.index');
+            Route::post('/videos/{video}/comments', [CommentController::class, 'store'])->middleware('throttle:10,1')->name('comments.store');
+            Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
+            Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
+            Route::post('/comments/{comment}/like', [CommentController::class, 'like'])->middleware('throttle:30,1')->name('comments.like');
+            Route::post('/comments/{comment}/dislike', [CommentController::class, 'dislike'])->middleware('throttle:30,1')->name('comments.dislike');
+
+            Route::post('/channel/{user}/subscribe', [SubscriptionController::class, 'store'])->name('subscription.store');
+            Route::delete('/channel/{user}/subscribe', [SubscriptionController::class, 'destroy'])->name('subscription.destroy');
+            Route::post('/channel/{user}/notifications', [SubscriptionController::class, 'toggleNotifications'])->name('subscription.notifications');
+
+            Route::get('/playlists', [PlaylistController::class, 'index'])->name('playlists.index');
+            Route::post('/playlists', [PlaylistController::class, 'store'])->name('playlists.store');
+            Route::put('/playlists/{playlist}', [PlaylistController::class, 'update'])->name('playlists.update');
+            Route::delete('/playlists/{playlist}', [PlaylistController::class, 'destroy'])->name('playlists.destroy');
+            Route::post('/playlists/{playlist}/videos', [PlaylistController::class, 'addVideo'])->name('playlists.addVideo');
+            Route::delete('/playlists/{playlist}/videos', [PlaylistController::class, 'removeVideo'])->name('playlists.removeVideo');
+            Route::post('/playlists/{playlist}/favorite', [PlaylistController::class, 'toggleFavorite'])->name('playlists.toggleFavorite');
+
+            Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
+            Route::delete('/history', [HistoryController::class, 'destroy'])->name('history.destroy');
+
+            Route::get('/rewards', [PointsController::class, 'index'])->name('rewards.index');
+            Route::post('/rewards/redeem', [PointsController::class, 'redeem'])->middleware('throttle:5,1')->name('rewards.redeem');
+
+            Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');
+            Route::get('/wallet/deposit', [WalletController::class, 'deposit'])->name('wallet.deposit');
+            Route::post('/wallet/deposit', [WalletController::class, 'processDeposit'])->middleware('throttle:10,1')->name('wallet.deposit.process');
+            Route::get('/wallet/withdraw', [WalletController::class, 'withdraw'])->name('wallet.withdraw');
+            Route::post('/wallet/withdraw', [WalletController::class, 'processWithdraw'])->middleware('throttle:5,1')->name('wallet.withdraw.process');
+
+            Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
+            Route::put('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile');
+            Route::post('/settings/avatar', [SettingsController::class, 'updateAvatar'])->name('settings.avatar');
+            Route::post('/settings/banner', [SettingsController::class, 'updateBanner'])->name('settings.banner');
+            Route::delete('/settings/banner', [SettingsController::class, 'destroyBanner'])->name('settings.banner.destroy');
+            Route::put('/settings/social-links', [SettingsController::class, 'updateSocialLinks'])->middleware('throttle:10,1')->name('settings.social-links');
+            Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password');
+            Route::put('/settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications');
+            Route::put('/settings/privacy', [SettingsController::class, 'updatePrivacy'])->name('settings.privacy');
+            Route::delete('/settings/account', [SettingsController::class, 'deleteAccount'])->name('settings.delete-account');
+            Route::get('/settings/export-data', [SettingsController::class, 'exportData'])->middleware('throttle:3,60')->name('settings.export-data');
+
+            Route::prefix('settings/two-factor')->name('settings.two-factor.')->group(function () {
+                Route::get('/status', [TwoFactorAuthenticationController::class, 'status'])->name('status');
+                Route::post('/enable', [TwoFactorAuthenticationController::class, 'enable'])->middleware('throttle:5,1')->name('enable');
+                Route::post('/confirm', [TwoFactorAuthenticationController::class, 'confirm'])->middleware('throttle:10,1')->name('confirm');
+                Route::post('/disable', [TwoFactorAuthenticationController::class, 'disable'])->middleware('throttle:5,1')->name('disable');
+                Route::post('/recovery-codes', [TwoFactorAuthenticationController::class, 'regenerateRecoveryCodes'])->middleware('throttle:5,1')->name('recovery-codes');
+            });
+
+            // Notifications
+            Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+            Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+            Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.readAll');
+            Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+            Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unreadCount');
+
+            // Reports
+            Route::post('/reports', [ReportController::class, 'store'])->middleware('throttle:5,1')->name('reports.store');
+
+            // Push Notifications
+            Route::post('/api/push/vapid-key', [PushNotificationController::class, 'vapidKey'])->name('push.vapid-key');
+            Route::post('/api/push/subscribe', [PushNotificationController::class, 'subscribe'])->name('push.subscribe');
+            Route::delete('/api/push/unsubscribe', [PushNotificationController::class, 'unsubscribe'])->name('push.unsubscribe');
+
+            // Subscriptions Feed
+            Route::get('/feed', FeedController::class)->name('feed');
+            Route::get('/api/feed', [FeedController::class, 'more'])->middleware('throttle:60,1')->name('feed.more');
+
+            // Creator Dashboard
+            Route::get('/dashboard', DashboardController::class)->name('dashboard');
+        });
+
+        // Search autocomplete
+        Route::get('/api/search-suggest', [SearchController::class, 'suggest'])->middleware('throttle:30,1')->name('search.suggest');
+
+        // Translation API routes
+        Route::post('/api/translate', [TranslationController::class, 'translate'])->middleware('throttle:60,1')->name('translate');
+        Route::post('/api/translate/batch', [TranslationController::class, 'translateBatch'])->middleware('throttle:30,1')->name('translate.batch');
+        Route::get('/api/languages', [TranslationController::class, 'languages'])->name('languages');
+        Route::post('/api/locale', [TranslationController::class, 'setLocale'])->name('locale.set');
+
+        // ── Locale-prefixed routes for SEO (e.g. /es/trending, /fr/video-slug) ──
+        // MUST be before the catch-all /{video:slug} route so /es etc. aren't matched as video slugs
+        Route::prefix('{locale}')->where(['locale' => '[a-z]{2,3}'])->middleware(['locale', 'age.verified'])->group(function () {
+            Route::get('/', [HomeController::class, 'index'])->name('locale.home');
+            Route::get('/trending', [HomeController::class, 'trending'])->name('locale.trending');
+            Route::get('/shorts', [ShortsController::class, 'index'])->name('locale.shorts.index');
+            Route::get('/shorts/{video_uuid}', [ShortsController::class, 'index'])->name('locale.shorts.show');
+            Route::get('/api/shorts/feed', [ShortsController::class, 'feed'])->middleware('throttle:60,1')->name('locale.shorts.feed');
+            Route::get('/search', [SearchController::class, 'index'])->name('locale.search');
+            Route::get('/videos', [VideoController::class, 'index'])->name('locale.videos.index');
+            Route::get('/contact', [ContactController::class, 'show'])->name('locale.contact');
+            Route::get('/dmca-request', [DmcaController::class, 'show'])->name('locale.dmca.request');
+            Route::get('/categories', [HomeController::class, 'categories'])->name('locale.categories.index');
+            Route::get('/category/{category:slug}', [HomeController::class, 'category'])->name('locale.categories.show');
+            Route::get('/tags', [HomeController::class, 'tags'])->name('locale.tags.index');
+            Route::get('/tag/{tag}', [HomeController::class, 'tag'])->name('locale.tags.show');
+            Route::get('/channel/{user:username}', [ChannelController::class, 'show'])->name('locale.channel.show');
+            Route::get('/channel/{user:username}/videos', [ChannelController::class, 'videos'])->name('locale.channel.videos');
+            Route::get('/channel/{user:username}/playlists', [ChannelController::class, 'playlists'])->name('locale.channel.playlists');
+            Route::get('/channel/{user:username}/liked', [ChannelController::class, 'likedVideos'])->name('locale.channel.liked');
+            Route::get('/channel/{user:username}/history', [ChannelController::class, 'watchHistory'])->name('locale.channel.history');
+            Route::get('/channel/{user:username}/about', [ChannelController::class, 'about'])->name('locale.channel.about');
+            Route::get('/public-playlists', [PlaylistController::class, 'publicIndex'])->name('locale.playlists.public');
+
+            // Image & Gallery routes (locale-prefixed)
+            Route::get('/images', [ImageController::class, 'index'])->name('locale.images.index');
+            Route::get('/image/{image:slug}', [ImageController::class, 'show'])->name('locale.images.show');
+            Route::get('/galleries', [GalleryController::class, 'index'])->name('locale.galleries.index');
+            Route::get('/gallery/{gallery:slug}', [GalleryController::class, 'show'])->name('locale.galleries.show');
+
+            Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('locale.pages.show');
+
+            // Locale-prefixed search autocomplete
+            Route::get('/api/search-suggest', [SearchController::class, 'suggest'])->middleware('throttle:30,1')->name('locale.search.suggest');
+
+            // Locale-prefixed video show — uses plain {slug} param to avoid model binding conflict with {locale}
+            Route::get('/{slug}', [VideoController::class, 'localeShow'])->name('locale.videos.show');
+        });
+
+        // Video show route - must be LAST to avoid conflicts with locale and other routes
+        Route::get('/{video:slug}', [VideoController::class, 'show'])->where('video', '^(?!api|admin|livewire).*')->name('videos.show');
     });
-
-    // Search autocomplete
-    Route::get('/api/search-suggest', [SearchController::class, 'suggest'])->middleware('throttle:30,1')->name('search.suggest');
-
-    // Translation API routes
-    Route::post('/api/translate', [TranslationController::class, 'translate'])->middleware('throttle:60,1')->name('translate');
-    Route::post('/api/translate/batch', [TranslationController::class, 'translateBatch'])->middleware('throttle:30,1')->name('translate.batch');
-    Route::get('/api/languages', [TranslationController::class, 'languages'])->name('languages');
-    Route::post('/api/locale', [TranslationController::class, 'setLocale'])->name('locale.set');
-
-    // ── Locale-prefixed routes for SEO (e.g. /es/trending, /fr/video-slug) ──
-    // MUST be before the catch-all /{video:slug} route so /es etc. aren't matched as video slugs
-    Route::prefix('{locale}')->where(['locale' => '[a-z]{2,3}'])->middleware(['locale', 'age.verified'])->group(function () {
-        Route::get('/', [HomeController::class, 'index'])->name('locale.home');
-        Route::get('/trending', [HomeController::class, 'trending'])->name('locale.trending');
-        Route::get('/shorts', [ShortsController::class, 'index'])->name('locale.shorts.index');
-        Route::get('/shorts/{video_uuid}', [ShortsController::class, 'index'])->name('locale.shorts.show');
-        Route::get('/api/shorts/feed', [ShortsController::class, 'feed'])->middleware('throttle:60,1')->name('locale.shorts.feed');
-        Route::get('/search', [SearchController::class, 'index'])->name('locale.search');
-        Route::get('/videos', [VideoController::class, 'index'])->name('locale.videos.index');
-        Route::get('/contact', [ContactController::class, 'show'])->name('locale.contact');
-        Route::get('/dmca-request', [DmcaController::class, 'show'])->name('locale.dmca.request');
-        Route::get('/categories', [HomeController::class, 'categories'])->name('locale.categories.index');
-        Route::get('/category/{category:slug}', [HomeController::class, 'category'])->name('locale.categories.show');
-        Route::get('/tags', [HomeController::class, 'tags'])->name('locale.tags.index');
-        Route::get('/tag/{tag}', [HomeController::class, 'tag'])->name('locale.tags.show');
-        Route::get('/channel/{user:username}', [ChannelController::class, 'show'])->name('locale.channel.show');
-        Route::get('/channel/{user:username}/videos', [ChannelController::class, 'videos'])->name('locale.channel.videos');
-        Route::get('/channel/{user:username}/playlists', [ChannelController::class, 'playlists'])->name('locale.channel.playlists');
-        Route::get('/channel/{user:username}/liked', [ChannelController::class, 'likedVideos'])->name('locale.channel.liked');
-        Route::get('/channel/{user:username}/history', [ChannelController::class, 'watchHistory'])->name('locale.channel.history');
-        Route::get('/channel/{user:username}/about', [ChannelController::class, 'about'])->name('locale.channel.about');
-        Route::get('/public-playlists', [PlaylistController::class, 'publicIndex'])->name('locale.playlists.public');
-
-        // Image & Gallery routes (locale-prefixed)
-        Route::get('/images', [ImageController::class, 'index'])->name('locale.images.index');
-        Route::get('/image/{image:slug}', [ImageController::class, 'show'])->name('locale.images.show');
-        Route::get('/galleries', [GalleryController::class, 'index'])->name('locale.galleries.index');
-        Route::get('/gallery/{gallery:slug}', [GalleryController::class, 'show'])->name('locale.galleries.show');
-
-        Route::get('/pages/{page:slug}', [PageController::class, 'show'])->name('locale.pages.show');
-
-        // Locale-prefixed search autocomplete
-        Route::get('/api/search-suggest', [SearchController::class, 'suggest'])->middleware('throttle:30,1')->name('locale.search.suggest');
-
-        // Locale-prefixed video show — uses plain {slug} param to avoid model binding conflict with {locale}
-        Route::get('/{slug}', [VideoController::class, 'localeShow'])->name('locale.videos.show');
-    });
-
-    // Video show route - must be LAST to avoid conflicts with locale and other routes
-    Route::get('/{video:slug}', [VideoController::class, 'show'])->where('video', '^(?!api|admin|livewire).*')->name('videos.show');
-});
 
 }); // end installed:require
-

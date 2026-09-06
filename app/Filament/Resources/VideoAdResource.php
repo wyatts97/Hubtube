@@ -30,6 +30,7 @@ use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
@@ -47,6 +48,15 @@ class VideoAdResource extends Resource
     protected static ?int $navigationSort = 5;
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Type' => strtoupper((string) $record->type),
+            'Placement' => str_replace('_', ' ', ucwords((string) $record->placement, '_')),
+            'Active' => $record->is_active ? 'Yes' : 'No',
+        ];
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -365,10 +375,17 @@ class VideoAdResource extends Resource
                         }),
                 ]),
             ])
+            ->striped()
+            ->emptyStateIcon('phosphor-film-strip')
             ->emptyStateHeading('No ad creatives yet')
             ->emptyStateDescription('Create your first video ad creative to start serving pre-roll, mid-roll, or post-roll ads.')
-            ->emptyStateIcon('phosphor-film-strip')
-            ->striped();
+            ->emptyStateActions([
+                Action::make('create')
+                    ->label('New Ad Creative')
+                    ->icon('phosphor-plus')
+                    ->url(static::getUrl('create'))
+                    ->button(),
+            ]);
     }
 
     protected static function deleteHlsDirectory(VideoAd $record): void

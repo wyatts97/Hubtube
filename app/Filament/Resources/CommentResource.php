@@ -2,37 +2,39 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
+use App\Filament\Resources\CommentResource\Pages\EditComment;
+use App\Filament\Resources\CommentResource\Pages\ListComments;
+use App\Models\Comment;
+use App\Services\PointsService;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\IconColumn;
-use Filament\Tables\Filters\TernaryFilter;
-use Filament\Actions\EditAction;
-use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\BulkAction;
-use App\Filament\Resources\CommentResource\Pages\ListComments;
-use App\Filament\Resources\CommentResource\Pages\EditComment;
-use App\Filament\Resources\CommentResource\Pages;
-use App\Models\Comment;
-use App\Services\PointsService;
-use Filament\Forms;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class CommentResource extends Resource
 {
     protected static ?string $model = Comment::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-chat-text';
-    protected static string | \UnitEnum | null $navigationGroup = 'Moderation';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-chat-text';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Moderation';
+
     protected static ?int $navigationSort = 4;
+
     protected static ?string $recordTitleAttribute = 'content';
 
     // Approval count is surfaced as a topbar pill (see SystemStatusBar::getActionItems).
@@ -48,6 +50,14 @@ class CommentResource extends Resource
             'By' => $record->user?->username,
             'Video' => $record->video?->title,
         ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        // Mirrors the table's modifyQueryUsing so a comment on a soft-deleted
+        // video still resolves its title in search results.
+        return parent::getGlobalSearchEloquentQuery()
+            ->with(['user', 'video' => fn ($q) => $q->withTrashed()]);
     }
 
     public static function form(Schema $schema): Schema
@@ -86,6 +96,7 @@ class CommentResource extends Resource
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with(['user', 'video' => fn ($q) => $q->withTrashed()]))
             ->defaultSort('created_at', 'desc')
+            ->deferLoading()
             ->columns([
                 TextColumn::make('user.username')
                     ->label('User')
@@ -98,7 +109,7 @@ class CommentResource extends Resource
                     ->label('Video')
                     ->limit(30)
                     ->placeholder('(deleted)')
-                    ->url(fn (Comment $record): ?string => $record->video?->slug ? url('/' . $record->video->slug) : null)
+                    ->url(fn (Comment $record): ?string => $record->video?->slug ? url('/'.$record->video->slug) : null)
                     ->openUrlInNewTab()
                     ->searchable()
                     ->color('gray')
@@ -157,7 +168,7 @@ class CommentResource extends Resource
                             app(PointsService::class)->awardCommentPoints($record->user, $record);
                         }
                     })
-                    ->visible(fn (Comment $record) => !$record->is_approved),
+                    ->visible(fn (Comment $record) => ! $record->is_approved),
                 DeleteAction::make(),
             ])
             ->toolbarActions([
@@ -170,7 +181,7 @@ class CommentResource extends Resource
                             $records->each(function (Comment $comment) {
                                 $wasApproved = $comment->is_approved;
                                 $comment->update(['is_approved' => true]);
-                                if (!$wasApproved && $comment->user) {
+                                if (! $wasApproved && $comment->user) {
                                     app(PointsService::class)->awardCommentPoints($comment->user, $comment);
                                 }
                             });
@@ -197,7 +208,10 @@ class CommentResource extends Resource
                         ->deselectRecordsAfterCompletion(),
                 ]),
             ])
-            ->striped();
+            ->striped()
+            ->emptyStateIcon('phosphor-chat-text')
+            ->emptyStateHeading('No comments yet')
+            ->emptyStateDescription('Comments left by viewers appear here for approval, pinning, and moderation.');
     }
 
     public static function getPages(): array

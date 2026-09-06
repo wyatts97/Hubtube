@@ -2,27 +2,31 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Actions\Action;
+use App\Filament\Clusters\Settings as SettingsCluster;
 use App\Models\Setting;
 use App\Services\AdminLogger;
+use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 
 class NotificationSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-bell';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-bell';
+
     protected static ?string $navigationLabel = 'Notifications';
-    protected static string | \UnitEnum | null $navigationGroup = 'Users & Email';
-    protected static ?int $navigationSort = 3;
+
+    protected static ?string $cluster = SettingsCluster::class;
+
+    protected static ?int $navigationSort = 9;
+
     protected string $view = 'filament.pages.notification-settings';
 
     public ?array $data = [];

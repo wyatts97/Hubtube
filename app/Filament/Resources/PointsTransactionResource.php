@@ -19,10 +19,21 @@ use Filament\Tables\Table;
 class PointsTransactionResource extends Resource
 {
     protected static ?string $model = PointsTransaction::class;
+
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-coins';
+
     protected static string|\UnitEnum|null $navigationGroup = 'Monetization';
+
     protected static ?string $navigationLabel = 'Points Ledger';
+
     protected static ?int $navigationSort = 6;
+
+    // Deliberately excluded from global search. There is no record title
+    // attribute, so every result would render as an identical model label, and
+    // the only useful search key is user.username -- which would flood the
+    // topbar dropdown with ledger rows and surface balances ambiently. These
+    // are browsed by filter from the resource's own table instead.
+    protected static bool $isGloballySearchable = false;
 
     public static function form(Schema $schema): Schema
     {
@@ -32,6 +43,7 @@ class PointsTransactionResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->deferLoading()
             ->columns([
                 TextColumn::make('user.username')->label('User')->searchable()->sortable(),
                 TextColumn::make('type')
@@ -48,7 +60,7 @@ class PointsTransactionResource extends Resource
                 TextColumn::make('points')
                     ->label('Points')
                     ->sortable()
-                    ->formatStateUsing(fn (int $state) => ($state > 0 ? '+' : '') . number_format($state))
+                    ->formatStateUsing(fn (int $state) => ($state > 0 ? '+' : '').number_format($state))
                     ->color(fn (int $state) => $state > 0 ? 'success' : 'danger'),
                 TextColumn::make('balance_after')->label('Balance After')->sortable(),
                 TextColumn::make('description')->limit(40)->tooltip(fn (PointsTransaction $record) => $record->description),
@@ -89,6 +101,7 @@ class PointsTransactionResource extends Resource
 
                         if ($points === 0) {
                             Notification::make()->title('Points cannot be zero.')->danger()->send();
+
                             return;
                         }
 
@@ -104,7 +117,10 @@ class PointsTransactionResource extends Resource
                     }),
             ])
             ->defaultSort('created_at', 'desc')
-            ->striped();
+            ->striped()
+            ->emptyStateIcon('phosphor-coins')
+            ->emptyStateHeading('No points activity yet')
+            ->emptyStateDescription('Points earned from uploads and comments, and points spent on redemptions, are logged here.');
     }
 
     public static function getPages(): array

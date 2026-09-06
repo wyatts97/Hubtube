@@ -2,39 +2,36 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\View;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TagsInput;
-use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\FileUpload;
-use Filament\Tables\Columns\ImageColumn;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\IconColumn;
-use Filament\Tables\Filters\TernaryFilter;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Enums\FiltersLayout;
-use Filament\Actions\ActionGroup;
-use Filament\Actions\EditAction;
-use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\BulkAction;
-use Filament\Actions\DeleteBulkAction;
-use App\Filament\Resources\ImageResource\Pages\ListImages;
-use App\Filament\Resources\ImageResource\Pages\EditImage;
 use App\Filament\Resources\ImageResource\Pages\CreateImage;
-use App\Filament\Resources\ImageResource\Pages;
+use App\Filament\Resources\ImageResource\Pages\EditImage;
+use App\Filament\Resources\ImageResource\Pages\ListImages;
 use App\Models\Image;
 use App\Models\PointsTransaction;
 use App\Models\Setting;
 use App\Services\PointsService;
-use Filament\Forms;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -43,9 +40,14 @@ use Illuminate\Database\Eloquent\Model;
 class ImageResource extends Resource
 {
     protected static ?string $model = Image::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-image';
-    protected static string | \UnitEnum | null $navigationGroup = 'Content';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-image';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Content';
+
     protected static ?int $navigationSort = 3;
+
+    protected static ?string $recordTitleAttribute = 'title';
 
     // Moderation count is surfaced as a topbar pill (see SystemStatusBar::getActionItems).
 
@@ -60,6 +62,11 @@ class ImageResource extends Resource
             'Uploader' => $record->user?->username,
             'Approved' => $record->is_approved ? 'Yes' : 'No',
         ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with('user');
     }
 
     public static function form(Schema $schema): Schema
@@ -151,7 +158,7 @@ class ImageResource extends Resource
                             ->suffix('px'),
                         TextInput::make('file_size')
                             ->disabled()
-                            ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 2) . ' MB' : '—'),
+                            ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 2).' MB' : '—'),
                         Toggle::make('is_animated')
                             ->disabled(),
                     ])->columns(3)
@@ -231,7 +238,7 @@ class ImageResource extends Resource
 
                 TextColumn::make('file_size')
                     ->label('File Size')
-                    ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—')
+                    ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1).' MB' : '—')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
@@ -274,7 +281,7 @@ class ImageResource extends Resource
                             $record->update(['is_approved' => true]);
                             static::awardUploadPoints($record);
                         })
-                        ->visible(fn (Image $record) => !$record->is_approved),
+                        ->visible(fn (Image $record) => ! $record->is_approved),
 
                     Action::make('unapprove')
                         ->icon('phosphor-x-circle')
@@ -318,7 +325,17 @@ class ImageResource extends Resource
                 ]),
             ])
             ->striped()
-            ->paginated([10, 25, 50, 100]);
+            ->paginated([10, 25, 50, 100])
+            ->emptyStateIcon('phosphor-image')
+            ->emptyStateHeading('No images yet')
+            ->emptyStateDescription('Upload images individually, or use the bulk uploader to add a batch.')
+            ->emptyStateActions([
+                Action::make('create')
+                    ->label('New Image')
+                    ->icon('phosphor-plus')
+                    ->url(static::getUrl('create'))
+                    ->button(),
+            ]);
     }
 
     public static function getRelations(): array
@@ -332,7 +349,7 @@ class ImageResource extends Resource
      */
     protected static function awardUploadPoints(Image $image): void
     {
-        if (!Setting::get('points_enabled', true) || !Setting::get('points_image_upload_enabled', true)) {
+        if (! Setting::get('points_enabled', true) || ! Setting::get('points_image_upload_enabled', true)) {
             return;
         }
 
@@ -342,7 +359,7 @@ class ImageResource extends Resource
         }
 
         $image->loadMissing('user');
-        if (!$image->user) {
+        if (! $image->user) {
             return;
         }
 

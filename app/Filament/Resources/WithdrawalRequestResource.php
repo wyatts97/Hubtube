@@ -2,40 +2,65 @@
 
 namespace App\Filament\Resources;
 
-use App\Models\Setting;
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\KeyValue;
-use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\Textarea;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Actions\Action;
-use Filament\Actions\EditAction;
-use App\Filament\Resources\WithdrawalRequestResource\Pages\ListWithdrawalRequests;
 use App\Filament\Resources\WithdrawalRequestResource\Pages\EditWithdrawalRequest;
-use App\Filament\Resources\WithdrawalRequestResource\Pages;
+use App\Filament\Resources\WithdrawalRequestResource\Pages\ListWithdrawalRequests;
+use App\Models\Setting;
 use App\Models\WalletTransaction;
 use App\Models\WithdrawalRequest;
 use App\Notifications\WithdrawalApprovedNotification;
 use App\Services\EmailService;
-use Filament\Forms;
+use Filament\Actions\Action;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 class WithdrawalRequestResource extends Resource
 {
     protected static ?string $model = WithdrawalRequest::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-tray-arrow-up';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-tray-arrow-up';
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Monetization';
+    protected static string|\UnitEnum|null $navigationGroup = 'Monetization';
 
     protected static ?int $navigationSort = 2;
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        // payment_details is deliberately excluded: it is a JSON cast holding
+        // PayPal addresses and bank details.
+        return ['transaction_id', 'user.username'];
+    }
+
+    public static function getGlobalSearchResultTitle(Model $record): string
+    {
+        return 'Withdrawal #'.$record->getKey();
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'User' => $record->user?->username ?: '-',
+            'Amount' => number_format((float) $record->amount, 2),
+            'Status' => ucfirst((string) $record->status),
+        ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with('user');
+    }
 
     public static function shouldRegisterNavigation(): bool
     {
@@ -205,7 +230,7 @@ class WithdrawalRequestResource extends Resource
                         if ($record->user) {
                             EmailService::sendToUser('withdrawal-rejected', $record->user->email, [
                                 'username' => $record->user->username,
-                                'amount' => '$' . number_format($record->amount, 2),
+                                'amount' => '$'.number_format($record->amount, 2),
                                 'rejection_reason' => $data['notes'] ?? 'No reason provided.',
                             ]);
                         }
@@ -214,7 +239,10 @@ class WithdrawalRequestResource extends Resource
                 EditAction::make(),
             ])
             ->toolbarActions([])
-            ->striped();
+            ->striped()
+            ->emptyStateIcon('phosphor-tray-arrow-up')
+            ->emptyStateHeading('No withdrawal requests')
+            ->emptyStateDescription('Payout requests submitted by creators appear here for processing.');
     }
 
     public static function getPages(): array

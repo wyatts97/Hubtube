@@ -2,23 +2,20 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Schemas\Schema;
-use Filament\Forms\Components\TextInput;
-use Filament\Schemas\Components\Utilities\Set;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\Filter;
-use Filament\Actions\EditAction;
-use Filament\Actions\DeleteAction;
+use App\Filament\Resources\TagResource\Pages\EditTag;
+use App\Filament\Resources\TagResource\Pages\ListTags;
+use App\Models\Hashtag;
 use App\Services\TagSyncService;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
-use App\Filament\Resources\TagResource\Pages\ListTags;
-use App\Filament\Resources\TagResource\Pages\EditTag;
-use App\Filament\Resources\TagResource\Pages;
-use App\Models\Hashtag;
-use Filament\Forms;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
@@ -27,11 +24,11 @@ class TagResource extends Resource
 {
     protected static ?string $model = Hashtag::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-hash';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-hash';
 
     protected static ?string $navigationLabel = 'Tags';
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Content';
+    protected static string|\UnitEnum|null $navigationGroup = 'Content';
 
     protected static ?int $navigationSort = 2;
 
@@ -115,7 +112,10 @@ class TagResource extends Resource
                         }),
                 ]),
             ])
-            ->striped();
+            ->striped()
+            ->emptyStateIcon('phosphor-hash')
+            ->emptyStateHeading('No tags in use')
+            ->emptyStateDescription('Tags appear here once they are attached to at least one video.');
     }
 
     public static function getPages(): array

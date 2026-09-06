@@ -2,13 +2,10 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
-use Filament\Schemas\Components\Section;
-use Filament\Actions\Action;
+use App\Filament\Clusters\Settings as SettingsCluster;
 use App\Models\Setting;
 use App\Services\AdminLogger;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -16,18 +13,27 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Schema;
 
 class SocialNetworkSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-share';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-share';
+
     protected static ?string $navigationLabel = 'Social Login';
-    protected static string | \UnitEnum | null $navigationGroup = 'Users & Email';
-    protected static ?int $navigationSort = 2;
+
+    protected static ?string $cluster = SettingsCluster::class;
+
+    protected static ?int $navigationSort = 10;
+
     protected static ?string $title = 'Social Login';
+
     protected static ?string $slug = 'social-networks';
+
     protected string $view = 'filament.pages.social-network-settings';
 
     public ?array $data = [];
@@ -66,7 +72,7 @@ class SocialNetworkSettings extends Page implements HasForms
                                     ->columnSpanFull(),
 
                                 Section::make('Google')
-                                    ->description('Create credentials at console.cloud.google.com → APIs & Services → Credentials. Set the redirect URI to: ' . url('/auth/google/callback'))
+                                    ->description('Create credentials at console.cloud.google.com → APIs & Services → Credentials. Set the redirect URI to: '.url('/auth/google/callback'))
                                     ->icon('phosphor-globe-hemisphere-west')
                                     ->collapsible()
                                     ->schema([
@@ -87,7 +93,7 @@ class SocialNetworkSettings extends Page implements HasForms
                                     ])->columns(2),
 
                                 Section::make('Twitter / X')
-                                    ->description('Create an app at developer.x.com. Enable OAuth 2.0 with PKCE. Set the redirect URI to: ' . url('/auth/twitter/callback'))
+                                    ->description('Create an app at developer.x.com. Enable OAuth 2.0 with PKCE. Set the redirect URI to: '.url('/auth/twitter/callback'))
                                     ->icon('phosphor-chat-text')
                                     ->collapsible()
                                     ->schema([
@@ -107,7 +113,7 @@ class SocialNetworkSettings extends Page implements HasForms
                                     ])->columns(2),
 
                                 Section::make('Reddit')
-                                    ->description('Create an app at reddit.com/prefs/apps (type: web app). Set the redirect URI to: ' . url('/auth/reddit/callback'))
+                                    ->description('Create an app at reddit.com/prefs/apps (type: web app). Set the redirect URI to: '.url('/auth/reddit/callback'))
                                     ->icon('phosphor-chat-circle-text')
                                     ->collapsible()
                                     ->schema([
@@ -167,16 +173,19 @@ class SocialNetworkSettings extends Page implements HasForms
         foreach ($data as $key => $value) {
             if (in_array($key, self::ENCRYPTED_KEYS, true)) {
                 Setting::setEncrypted($key, $value, 'social');
+
                 continue;
             }
 
             if (in_array($key, self::BOOLEAN_KEYS, true)) {
                 Setting::set($key, $value ? '1' : '0', 'social', 'boolean');
+
                 continue;
             }
 
             if (in_array($key, self::INTEGER_KEYS, true)) {
                 Setting::set($key, (string) (int) $value, 'social', 'integer');
+
                 continue;
             }
 
@@ -190,5 +199,4 @@ class SocialNetworkSettings extends Page implements HasForms
             ->success()
             ->send();
     }
-
 }

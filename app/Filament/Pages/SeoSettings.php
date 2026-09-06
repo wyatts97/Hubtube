@@ -2,34 +2,38 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
-use Filament\Schemas\Components\Section;
-use Filament\Actions\Action;
+use App\Filament\Clusters\Settings as SettingsCluster;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use App\Services\AltTextService;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
-
 
 class SeoSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-magnifying-glass';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-magnifying-glass';
+
     protected static ?string $navigationLabel = 'SEO Settings';
-    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
-    protected static ?int $navigationSort = 4;
+
+    protected static ?string $cluster = SettingsCluster::class;
+
+    protected static ?int $navigationSort = 3;
+
     protected string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
@@ -54,7 +58,7 @@ class SeoSettings extends Page implements HasForms
             'seo_pinterest_verification' => Setting::get('seo_pinterest_verification', ''),
 
             // Robots & Indexing
-            'seo_robots_txt' => Setting::get('seo_robots_txt', "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nDisallow: /install\nDisallow: /login\nDisallow: /register\nDisallow: /settings\nDisallow: /wallet\nDisallow: /upload\nDisallow: /email/\n\nSitemap: " . url('/sitemap.xml')),
+            'seo_robots_txt' => Setting::get('seo_robots_txt', "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nDisallow: /install\nDisallow: /login\nDisallow: /register\nDisallow: /settings\nDisallow: /wallet\nDisallow: /upload\nDisallow: /email/\n\nSitemap: ".url('/sitemap.xml')),
             'seo_noindex_private_videos' => Setting::get('seo_noindex_private_videos', true),
             'seo_noindex_user_pages' => Setting::get('seo_noindex_user_pages', true),
 
@@ -242,13 +246,13 @@ class SeoSettings extends Page implements HasForms
                             ->schema([
                                 Placeholder::make('video_seo_info')
                                     ->content(new HtmlString(
-                                        '<div class="text-sm p-3 rounded-lg" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3);">' .
-                                        '<strong>📺 Video SEO Best Practices</strong><br>' .
-                                        'HubTube automatically generates <strong>JSON-LD VideoObject</strong> schema markup for every video page. ' .
-                                        'This tells Google, Bing, and Yandex about your video\'s thumbnail, duration, upload date, and description — ' .
-                                        'enabling <strong>rich video snippets</strong> in search results (thumbnail + duration badge).<br><br>' .
-                                        '<strong>Available template variables:</strong> <code>{title}</code>, <code>{description}</code>, <code>{site_name}</code>, ' .
-                                        '<code>{uploader}</code>, <code>{category}</code>, <code>{duration}</code>, <code>{views}</code>, <code>{tags}</code>' .
+                                        '<div class="text-sm p-3 rounded-lg" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3);">'.
+                                        '<strong>📺 Video SEO Best Practices</strong><br>'.
+                                        'HubTube automatically generates <strong>JSON-LD VideoObject</strong> schema markup for every video page. '.
+                                        'This tells Google, Bing, and Yandex about your video\'s thumbnail, duration, upload date, and description — '.
+                                        'enabling <strong>rich video snippets</strong> in search results (thumbnail + duration badge).<br><br>'.
+                                        '<strong>Available template variables:</strong> <code>{title}</code>, <code>{description}</code>, <code>{site_name}</code>, '.
+                                        '<code>{uploader}</code>, <code>{category}</code>, <code>{duration}</code>, <code>{views}</code>, <code>{tags}</code>'.
                                         '</div>'
                                     )),
 
@@ -405,10 +409,10 @@ class SeoSettings extends Page implements HasForms
                             ->schema([
                                 Placeholder::make('schema_info')
                                     ->content(new HtmlString(
-                                        '<div class="text-sm p-3 rounded-lg" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3);">' .
-                                        '<strong>🏢 Organization Schema</strong><br>' .
-                                        'Defines your site as an organization in Google\'s Knowledge Graph. ' .
-                                        'Fill in your organization details and social profiles to enable a branded knowledge panel.' .
+                                        '<div class="text-sm p-3 rounded-lg" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3);">'.
+                                        '<strong>🏢 Organization Schema</strong><br>'.
+                                        'Defines your site as an organization in Google\'s Knowledge Graph. '.
+                                        'Fill in your organization details and social profiles to enable a branded knowledge panel.'.
                                         '</div>'
                                     )),
 
@@ -446,13 +450,13 @@ class SeoSettings extends Page implements HasForms
                                         Placeholder::make('sitemap_url')
                                             ->label('Main Sitemap URL')
                                             ->content(fn () => new HtmlString(
-                                                '<a href="' . url('/sitemap.xml') . '" target="_blank" class="text-primary-500 underline font-mono text-sm">' . url('/sitemap.xml') . '</a>'
+                                                '<a href="'.url('/sitemap.xml').'" target="_blank" class="text-primary-500 underline font-mono text-sm">'.url('/sitemap.xml').'</a>'
                                             )),
                                         Placeholder::make('sitemap_index_url')
                                             ->label('Sitemap Index URL')
                                             ->content(fn () => new HtmlString(
-                                                '<a href="' . url('/sitemap_index.xml') . '" target="_blank" class="text-primary-500 underline font-mono text-sm">' . url('/sitemap_index.xml') . '</a>'
-                                                . '<p class="text-xs text-gray-500 mt-1">Submit the main sitemap.xml to search engines. It auto-generates from your content.</p>'
+                                                '<a href="'.url('/sitemap_index.xml').'" target="_blank" class="text-primary-500 underline font-mono text-sm">'.url('/sitemap_index.xml').'</a>'
+                                                .'<p class="text-xs text-gray-500 mt-1">Submit the main sitemap.xml to search engines. It auto-generates from your content.</p>'
                                             )),
                                     ])->columns(2),
                                 Section::make('Video Sitemap')

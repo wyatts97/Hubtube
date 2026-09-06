@@ -2,28 +2,32 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Actions\Action;
+use App\Filament\Clusters\Settings as SettingsCluster;
 use App\Models\Setting;
 use App\Services\AdminLogger;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 
 class PwaSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-device-mobile';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-device-mobile';
+
     protected static ?string $navigationLabel = 'PWA & Push';
-    protected static string | \UnitEnum | null $navigationGroup = 'System';
-    protected static ?int $navigationSort = 5;
+
+    protected static ?string $cluster = SettingsCluster::class;
+
+    protected static ?int $navigationSort = 7;
+
     protected string $view = 'filament.pages.pwa-settings';
 
     public ?array $data = [];

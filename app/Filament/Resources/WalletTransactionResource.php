@@ -2,29 +2,36 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\WalletTransactionResource\Pages\ListWalletTransactions;
 use App\Models\Setting;
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
+use App\Models\WalletTransaction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
-use Filament\Actions\ViewAction;
-use App\Filament\Resources\WalletTransactionResource\Pages\ListWalletTransactions;
-use App\Filament\Resources\WalletTransactionResource\Pages;
-use App\Models\WalletTransaction;
-use Filament\Forms;
-use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Table;
 
 class WalletTransactionResource extends Resource
 {
     protected static ?string $model = WalletTransaction::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-currency-dollar';
-    protected static string | \UnitEnum | null $navigationGroup = 'Monetization';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-currency-dollar';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Monetization';
+
     protected static ?int $navigationSort = 1;
+
+    // Deliberately excluded from global search. There is no record title
+    // attribute, so every result would render as an identical model label, and
+    // the only useful search key is user.username -- which would flood the
+    // topbar dropdown with ledger rows and surface balances ambiently. These
+    // are browsed by filter from the resource's own table instead.
+    protected static bool $isGloballySearchable = false;
 
     public static function shouldRegisterNavigation(): bool
     {
@@ -80,6 +87,8 @@ class WalletTransactionResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
+            ->deferLoading()
             ->columns([
                 TextColumn::make('user.username')
                     ->label('User')
@@ -133,7 +142,10 @@ class WalletTransactionResource extends Resource
                 ViewAction::make(),
             ])
             ->toolbarActions([])
-            ->striped();
+            ->striped()
+            ->emptyStateIcon('phosphor-currency-dollar')
+            ->emptyStateHeading('No transactions yet')
+            ->emptyStateDescription('Deposits, purchases, sales, and refunds are recorded here automatically.');
     }
 
     public static function getPages(): array

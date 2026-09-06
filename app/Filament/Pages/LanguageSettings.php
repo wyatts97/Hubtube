@@ -2,63 +2,72 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\ToggleColumn;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Actions\EditAction;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\CreateAction;
-use Filament\Actions\Action;
-use Filament\Actions\DeleteBulkAction;
-use Exception;
+use App\Filament\Clusters\Settings as SettingsCluster;
 use App\Models\Setting;
+use App\Models\TranslationOverride;
 use App\Services\AdminLogger;
 use App\Services\Translation\TranslationProviderManager;
 use App\Services\Translation\TranslationSchedule;
 use App\Services\TranslationService;
-use App\Models\TranslationOverride;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
+use Exception;
+use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
-use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Toggle;
-use Filament\Schemas\Components\Actions;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Schemas\Components\Text;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Text;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
 use Filament\Tables;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\HtmlString;
 
 class LanguageSettings extends Page implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-translate';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-translate';
+
     protected static ?string $navigationLabel = 'Languages';
-    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
-    protected static ?int $navigationSort = 8;
+
+    protected static ?string $cluster = SettingsCluster::class;
+
+    protected static ?int $navigationSort = 5;
+
     protected string $view = 'filament.pages.language-settings';
 
     public ?array $data = [];
 
     public string $generationOutput = '';
+
     public bool $regenerating = false;
+
     public string $regenerationStatus = '';
+
     public string $regenerationStep = '';
+
     public bool $useForceMode = true;
 
     public function mount(): void
@@ -171,7 +180,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
                             ->label(fn (Get $get) => $get('translation_schedule_frequency') === 'hourly' ? 'Minute past the hour' : 'Time of day')
                             ->seconds(false)
                             ->visible(fn (Get $get) => $get('translation_schedule_frequency') !== 'disabled')
-                            ->helperText('Timezone: ' . TranslationSchedule::timezone()),
+                            ->helperText('Timezone: '.TranslationSchedule::timezone()),
 
                         Select::make('translation_schedule_day')
                             ->label('Day of week')
@@ -190,7 +199,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
                             ->maxValue(10000)
                             ->helperText('Caps a single run so it stays bounded; the next run continues where this one stopped.'),
 
-                        Text::make(fn () => new \Illuminate\Support\HtmlString($this->scheduleSummaryHtml()))
+                        Text::make(fn () => new HtmlString($this->scheduleSummaryHtml()))
                             ->columnSpanFull(),
 
                         Actions::make([
@@ -246,7 +255,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
         // Ensure default language is always in enabled list
         $enabled = $data['enabled_languages'] ?? ['en'];
         $default = $data['default_language'] ?? 'en';
-        if (!in_array($default, $enabled)) {
+        if (! in_array($default, $enabled)) {
             $enabled[] = $default;
         }
 
@@ -304,12 +313,13 @@ class LanguageSettings extends Page implements HasForms, HasTable
                 $options[$code] = "{$lang['flag']} {$lang['native']}";
             }
         }
+
         return $options;
     }
 
     protected function getEnabledLocalesList(): array
     {
-        if (!(bool) Setting::get('translation_enabled', false)) {
+        if (! (bool) Setting::get('translation_enabled', false)) {
             return [Setting::get('default_language', 'en')];
         }
 
@@ -332,8 +342,11 @@ class LanguageSettings extends Page implements HasForms, HasTable
                 TextColumn::make('locale')
                     ->label('Language')
                     ->formatStateUsing(function (string $state) {
-                        if ($state === '*') return 'All';
+                        if ($state === '*') {
+                            return 'All';
+                        }
                         $lang = TranslationService::LANGUAGES[$state] ?? null;
+
                         return $lang ? "{$lang['flag']} {$lang['native']}" : $state;
                     })
                     ->badge()
@@ -370,6 +383,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
                     ->schema(fn () => $this->overrideFormSchema())
                     ->mutateRecordDataUsing(function (array $data): array {
                         $data['case_sensitive'] = (bool) ($data['case_sensitive'] ?? false);
+
                         return $data;
                     }),
 
@@ -391,7 +405,8 @@ class LanguageSettings extends Page implements HasForms, HasTable
                                 ->title('An override for this word/phrase already exists for this language')
                                 ->warning()
                                 ->send();
-                            return new TranslationOverride();
+
+                            return new TranslationOverride;
                         }
 
                         return TranslationOverride::create($data);
@@ -497,7 +512,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
      */
     public function processRegeneration(): void
     {
-        if (!$this->regenerating) {
+        if (! $this->regenerating) {
             return;
         }
 
@@ -542,7 +557,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
                 $command = "cd {$projectRoot} && {$npmPath} run build 2>&1";
                 $output = shell_exec($command);
                 $buildOutput = trim($output ?? 'No output received.');
-                $this->generationOutput .= "\n\n--- Build Output ---\n" . $buildOutput;
+                $this->generationOutput .= "\n\n--- Build Output ---\n".$buildOutput;
 
                 $this->regenerating = false;
                 $this->regenerationStep = '';
@@ -653,16 +668,16 @@ class LanguageSettings extends Page implements HasForms, HasTable
         $next = TranslationSchedule::nextRunAt();
         $last = TranslationSchedule::lastRunAt();
 
-        $rows = ['<strong>' . $describe . '</strong>'];
+        $rows = ['<strong>'.$describe.'</strong>'];
 
         if ($cron) {
-            $rows[] = 'Cron equivalent: <code>' . e($cron) . '</code>';
+            $rows[] = 'Cron equivalent: <code>'.e($cron).'</code>';
         }
         if ($next) {
-            $rows[] = 'Next run: ' . e($next->toDayDateTimeString());
+            $rows[] = 'Next run: '.e($next->toDayDateTimeString());
         }
         $rows[] = $last
-            ? 'Last run: ' . e($last->diffForHumans())
+            ? 'Last run: '.e($last->diffForHumans())
             : '<em>Has not run yet.</em>';
 
         $summary = Setting::get('translation_last_run_summary');
@@ -670,13 +685,13 @@ class LanguageSettings extends Page implements HasForms, HasTable
             $summary = json_decode($summary, true);
         }
         if (is_array($summary) && ! empty($summary['reason'])) {
-            $rows[] = 'Last result: ' . e($summary['reason']) . ' (' . e($summary['provider'] ?? '?') . ')';
+            $rows[] = 'Last result: '.e($summary['reason']).' ('.e($summary['provider'] ?? '?').')';
         }
 
         if (Setting::get('translation_ui_rebuild_needed', false)) {
             $rows[] = '<span style="color:#f59e0b">Interface translations changed — run <code>npm run build</code> to publish them.</span>';
         }
 
-        return '<div class="text-sm space-y-1">' . implode('<br>', $rows) . '</div>';
+        return '<div class="text-sm space-y-1">'.implode('<br>', $rows).'</div>';
     }
 }

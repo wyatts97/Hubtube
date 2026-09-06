@@ -2,34 +2,37 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Clusters\Settings as SettingsCluster;
 use App\Filament\Concerns\RequiresSuperAdmin;
-use Filament\Actions\Action;
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Text;
 use App\Models\Plan;
 use App\Models\Setting;
 use App\Services\AdminLogger;
+use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Text;
+use Filament\Schemas\Schema;
 
 class PaymentSettings extends Page implements HasForms
 {
+    use InteractsWithForms;
     use RequiresSuperAdmin;
 
-    use InteractsWithForms;
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-credit-card';
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-credit-card';
     protected static ?string $navigationLabel = 'Payment Settings';
-    protected static string | \UnitEnum | null $navigationGroup = 'Monetization';
-    protected static ?int $navigationSort = 3;
+
+    protected static ?string $cluster = SettingsCluster::class;
+
+    protected static ?int $navigationSort = 11;
+
     protected string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
@@ -311,7 +314,7 @@ class PaymentSettings extends Page implements HasForms
                                 Section::make('Webhooks')
                                     ->description('Configure these in CCBill Admin → Webhooks (or Background Post). Entitlements are granted only via webhooks.')
                                     ->schema([
-                                        Text::make(fn () => 'Webhook URL: ' . url('/ccbill/webhook'))
+                                        Text::make(fn () => 'Webhook URL: '.url('/ccbill/webhook'))
                                             ->extraAttributes(['class' => 'text-sm font-mono text-gray-400']),
                                         TextInput::make('ccbill_webhook_secret')
                                             ->label('Webhook Secret')
@@ -350,33 +353,34 @@ class PaymentSettings extends Page implements HasForms
                                             ->live()
                                             ->required(),
                                         Text::make(function (callable $get) {
-                                                $monthly = (float) ($get('pro_monthly_price') ?? 9.99);
-                                                $discount = (int) ($get('pro_annual_discount_percent') ?? 20);
-                                                $annual = round($monthly * 12 * (1 - $discount / 100), 2);
-                                                $savings = round((($monthly * 12) - $annual), 2);
-                                                return "Annual price: \${$annual} / year (saves \${$savings} vs monthly)";
-                                            })
+                                            $monthly = (float) ($get('pro_monthly_price') ?? 9.99);
+                                            $discount = (int) ($get('pro_annual_discount_percent') ?? 20);
+                                            $annual = round($monthly * 12 * (1 - $discount / 100), 2);
+                                            $savings = round((($monthly * 12) - $annual), 2);
+
+                                            return "Annual price: \${$annual} / year (saves \${$savings} vs monthly)";
+                                        })
                                             ->extraAttributes(['class' => 'text-sm text-gray-500']),
                                     ])->columns(2),
                                 Section::make('Perks')
                                     ->schema([
                                         TextInput::make('pro_upload_limit_mb')
-                                            ->label('Pro upload limit (MB)')
-                                            ->numeric()
-                                            ->default(1024)
-                                            ->helperText('Default 1024 MB = 1 GB'),
+                                        ->label('Pro upload limit (MB)')
+                                        ->numeric()
+                                        ->default(1024)
+                                        ->helperText('Default 1024 MB = 1 GB'),
                                         TextInput::make('pro_daily_upload_cap')
-                                            ->label('Pro daily upload cap')
-                                            ->numeric()
-                                            ->default(50)
-                                            ->helperText('Number of videos a Pro user can upload per day.'),
+                                        ->label('Pro daily upload cap')
+                                        ->numeric()
+                                        ->default(50)
+                                        ->helperText('Number of videos a Pro user can upload per day.'),
                                         Toggle::make('pro_ad_free')
-                                            ->label('Ad-free viewing for Pro users')
-                                            ->default(true),
+                                        ->label('Ad-free viewing for Pro users')
+                                        ->default(true),
                                         TextInput::make('pro_badge_text')
-                                            ->label('Pro badge text')
-                                            ->default('PRO')
-                                            ->maxLength(10),
+                                        ->label('Pro badge text')
+                                        ->default('PRO')
+                                        ->maxLength(10),
                                     ])->columns(2),
                             ]),
                     ])->columnSpanFull(),
@@ -402,6 +406,7 @@ class PaymentSettings extends Page implements HasForms
 
             if (in_array($key, $encryptedKeys, true)) {
                 Setting::setEncrypted($key, $value, $group);
+
                 continue;
             }
 

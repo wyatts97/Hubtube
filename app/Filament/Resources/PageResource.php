@@ -2,22 +2,20 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Schemas\Schema;
-use Filament\Forms\Components\TextInput;
-use Filament\Schemas\Components\Utilities\Set;
-use Filament\Forms\Components\RichEditor;
-use Filament\Forms\Components\Toggle;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\IconColumn;
-use Filament\Actions\EditAction;
-use App\Filament\Resources\PageResource\Pages\ListPages;
 use App\Filament\Resources\PageResource\Pages\CreatePage;
 use App\Filament\Resources\PageResource\Pages\EditPage;
-use App\Filament\Resources\PageResource\Pages;
+use App\Filament\Resources\PageResource\Pages\ListPages;
 use App\Models\Page;
-use Filament\Forms;
+use Filament\Actions\Action;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -25,10 +23,16 @@ use Illuminate\Support\Str;
 class PageResource extends Resource
 {
     protected static ?string $model = Page::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-file-text';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-file-text';
+
     protected static ?string $navigationLabel = 'Legal Pages';
-    protected static string | \UnitEnum | null $navigationGroup = 'System';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'System';
+
     protected static ?int $navigationSort = 10;
+
+    protected static ?string $recordTitleAttribute = 'title';
 
     public static function getGloballySearchableAttributes(): array
     {
@@ -97,7 +101,17 @@ class PageResource extends Resource
                 EditAction::make(),
             ])
             ->toolbarActions([])
-            ->striped();
+            ->striped()
+            ->emptyStateIcon('phosphor-file-text')
+            ->emptyStateHeading('No pages yet')
+            ->emptyStateDescription('Static pages such as Terms, Privacy, and 2257 are served from /pages.')
+            ->emptyStateActions([
+                Action::make('create')
+                    ->label('New Page')
+                    ->icon('phosphor-plus')
+                    ->url(static::getUrl('create'))
+                    ->button(),
+            ]);
     }
 
     public static function getPages(): array

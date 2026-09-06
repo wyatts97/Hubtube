@@ -2,18 +2,12 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\View;
-use Filament\Actions\Action;
+use App\Filament\Clusters\Settings as SettingsCluster;
 use App\Models\Setting;
 use App\Services\AdminLogger;
+use Filament\Actions\Action;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -22,16 +16,25 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\View;
+use Filament\Schemas\Schema;
 
 class ThemeSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-paint-brush';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-paint-brush';
+
     protected static ?string $navigationLabel = 'Theme & Appearance';
-    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
-    protected static ?int $navigationSort = 1;
+
+    protected static ?string $cluster = SettingsCluster::class;
+
+    protected static ?int $navigationSort = 2;
+
     protected string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
@@ -115,7 +118,7 @@ class ThemeSettings extends Page implements HasForms
             'site_title_font' => Setting::get('site_title_font', ''),
             'site_title_size' => Setting::get('site_title_size', 20),
             'site_title_color' => Setting::get('site_title_color', ''),
-            
+
             // Dark Mode Colors
             'dark_bg_primary' => Setting::get('dark_bg_primary', '#0a0a0a'),
             'dark_bg_secondary' => Setting::get('dark_bg_secondary', '#171717'),
@@ -124,7 +127,7 @@ class ThemeSettings extends Page implements HasForms
             'dark_text_primary' => Setting::get('dark_text_primary', '#ffffff'),
             'dark_text_secondary' => Setting::get('dark_text_secondary', '#a3a3a3'),
             'dark_border_color' => Setting::get('dark_border_color', '#262626'),
-            
+
             // Navigation Icons
             'nav_home_icon' => Setting::get('nav_home_icon', 'home'),
             'nav_home_color' => Setting::get('nav_home_color', ''),
@@ -134,12 +137,12 @@ class ThemeSettings extends Page implements HasForms
             'nav_playlists_color' => Setting::get('nav_playlists_color', ''),
             'nav_history_icon' => Setting::get('nav_history_icon', 'history'),
             'nav_history_color' => Setting::get('nav_history_color', ''),
-            
+
             // Global Icon Settings
             'icon_color_mode' => Setting::get('icon_color_mode', 'inherit'),
             'icon_global_color' => Setting::get('icon_global_color', ''),
             'icon_global_color_dark' => Setting::get('icon_global_color_dark', ''),
-            
+
             // Age Verification Modal Settings
             'age_overlay_color' => Setting::get('age_overlay_color', 'rgba(0, 0, 0, 0.85)'),
             'age_overlay_blur' => Setting::get('age_overlay_blur', 8),
@@ -251,7 +254,7 @@ class ThemeSettings extends Page implements HasForms
                                             ->directory('logos')
                                             ->visibility('public')
                                             ->helperText('Upload a separate footer logo, or leave empty to show the site title')
-                                            ->visible(fn ($get) => !$get('footer_logo_match_site')),
+                                            ->visible(fn ($get) => ! $get('footer_logo_match_site')),
                                     ]),
 
                                 Section::make('Site Title Customization')
@@ -294,7 +297,7 @@ class ThemeSettings extends Page implements HasForms
                                             ->label('Progress Bar Color'),
                                     ]),
                             ]),
-                        
+
                         Tab::make('Dark Mode')
                             ->icon('phosphor-moon')
                             ->schema([
@@ -321,7 +324,7 @@ class ThemeSettings extends Page implements HasForms
                                             ->label('Border Color'),
                                     ]),
                             ]),
-                        
+
                         Tab::make('Navigation Icons')
                             ->icon('phosphor-squares-four')
                             ->schema([
@@ -339,7 +342,7 @@ class ThemeSettings extends Page implements HasForms
                                             ->label('Global Icon Color')
                                             ->visible(fn ($get) => $get('icon_color_mode') === 'global'),
                                     ])->columns(3),
-                                
+
                                 Section::make('Main Navigation Icons')
                                     ->description('Customize icons for the main navigation menu')
                                     ->schema([
@@ -360,7 +363,7 @@ class ThemeSettings extends Page implements HasForms
                                                 ->visible(fn ($get) => $get('icon_color_mode') === 'individual'),
                                         ]),
                                     ]),
-                                
+
                                 Section::make('Library Navigation Icons')
                                     ->schema([
                                         Grid::make(2)->schema([
@@ -381,7 +384,7 @@ class ThemeSettings extends Page implements HasForms
                                         ]),
                                     ]),
                             ]),
-                        
+
                         Tab::make('Category Pages')
                             ->icon('phosphor-squares-four')
                             ->schema([
@@ -533,14 +536,14 @@ class ThemeSettings extends Page implements HasForms
                                                 ->maxValue(20),
                                         ]),
                                     ]),
-                                
+
                                 Section::make('Logo & Branding')
                                     ->schema([
                                         Toggle::make('age_show_logo')
                                             ->label('Show Site Logo')
                                             ->helperText('When enabled, displays the site logo (set in Site Logo section above) instead of the shield icon.'),
                                     ]),
-                                
+
                                 Section::make('Typography')
                                     ->schema([
                                         Select::make('age_font_family')
@@ -563,7 +566,7 @@ class ThemeSettings extends Page implements HasForms
                                         ColorPicker::make('age_button_color')
                                             ->label('Button Color'),
                                     ]),
-                                
+
                                 Section::make('Content')
                                     ->description('Customize all text displayed in the modal')
                                     ->schema([
@@ -616,7 +619,7 @@ class ThemeSettings extends Page implements HasForms
         $data = $this->form->getState();
 
         // If footer_logo_match_site is on, copy site_logo path to footer_logo_url
-        if (!empty($data['footer_logo_match_site'])) {
+        if (! empty($data['footer_logo_match_site'])) {
             $data['footer_logo_url'] = $data['site_logo'] ?? '';
         }
 

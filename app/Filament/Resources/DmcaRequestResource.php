@@ -4,9 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\DmcaRequestResource\Pages\ListDmcaRequests;
 use App\Filament\Resources\DmcaRequestResource\Pages\ViewDmcaRequest;
-use App\Filament\Resources\DmcaRequestResource\Pages;
 use App\Models\DmcaRequest;
-use App\Models\Video;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
@@ -14,7 +12,6 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
-use Illuminate\Database\Eloquent\Collection;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -25,22 +22,49 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 
 class DmcaRequestResource extends Resource
 {
     protected static ?string $model = DmcaRequest::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-scales';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-scales';
 
     protected static ?string $navigationLabel = 'DMCA Requests';
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Moderation';
+    protected static string|\UnitEnum|null $navigationGroup = 'Moderation';
 
     protected static ?int $navigationSort = 6;
+
+    protected static ?string $recordTitleAttribute = 'complainant_name';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        // copyrighted_work_description is deliberately excluded: it is a long
+        // TEXT blob, and a LIKE scan over it buys nothing admins search for.
+        return ['complainant_name', 'complainant_email', 'infringing_urls'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Email' => $record->complainant_email,
+            'Video' => $record->video?->title ?: '(no match)',
+            'Status' => ucfirst((string) $record->status),
+        ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with('video');
+    }
 
     public static function getNavigationBadge(): ?string
     {
         $count = static::getModel()::pending()->count();
+
         return $count > 0 ? (string) $count : null;
     }
 
@@ -100,7 +124,7 @@ class DmcaRequestResource extends Resource
                 TextColumn::make('video.title')
                     ->label('Reported Video')
                     ->limit(50)
-                    ->url(fn (DmcaRequest $record): ?string => $record->video ? url('/' . $record->video->slug) : null)
+                    ->url(fn (DmcaRequest $record): ?string => $record->video ? url('/'.$record->video->slug) : null)
                     ->openUrlInNewTab()
                     ->placeholder('(no match — see URLs)')
                     ->color('gray'),
@@ -183,7 +207,10 @@ class DmcaRequestResource extends Resource
                         ->deselectRecordsAfterCompletion(),
                 ]),
             ])
-            ->striped();
+            ->striped()
+            ->emptyStateIcon('phosphor-scales')
+            ->emptyStateHeading('No DMCA requests')
+            ->emptyStateDescription('Takedown notices submitted through the DMCA form appear here for review.');
     }
 
     /**

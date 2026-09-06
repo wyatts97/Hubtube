@@ -2,39 +2,58 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\FileUpload;
-use Filament\Schemas\Components\Grid;
-use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Components\Toggle;
-use Filament\Tables\Columns\ImageColumn;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\IconColumn;
-use Filament\Actions\EditAction;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
-use App\Filament\Resources\SponsoredCardResource\Pages\ListSponsoredCards;
 use App\Filament\Resources\SponsoredCardResource\Pages\CreateSponsoredCard;
 use App\Filament\Resources\SponsoredCardResource\Pages\EditSponsoredCard;
-use App\Filament\Resources\SponsoredCardResource\Pages;
+use App\Filament\Resources\SponsoredCardResource\Pages\ListSponsoredCards;
 use App\Models\Category;
 use App\Models\SponsoredCard;
-use Filament\Forms;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class SponsoredCardResource extends Resource
 {
     protected static ?string $model = SponsoredCard::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-megaphone';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-megaphone';
+
     protected static ?string $navigationLabel = 'Sponsored Cards';
-    protected static string | \UnitEnum | null $navigationGroup = 'Monetization';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Monetization';
+
     protected static ?int $navigationSort = 5;
+
+    protected static ?string $recordTitleAttribute = 'title';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['title', 'external_id'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Studio' => $record->studio ?: '-',
+            'Weight' => (string) $record->weight,
+            'Active' => $record->is_active ? 'Yes' : 'No',
+        ];
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -191,7 +210,10 @@ class SponsoredCardResource extends Resource
                 TextColumn::make('target_pages')
                     ->label('Pages')
                     ->formatStateUsing(function ($state): string {
-                        if (empty($state) || !is_array($state)) return 'All';
+                        if (empty($state) || ! is_array($state)) {
+                            return 'All';
+                        }
+
                         return implode(', ', array_map('ucfirst', $state));
                     })
                     ->badge()
@@ -224,7 +246,7 @@ class SponsoredCardResource extends Resource
                 TextColumn::make('ctr')
                     ->label('CTR')
                     ->state(fn ($record) => $record->impressions_count > 0
-                        ? round(($record->clicks_count / $record->impressions_count) * 100, 1) . '%'
+                        ? round(($record->clicks_count / $record->impressions_count) * 100, 1).'%'
                         : '—')
                     ->alignCenter()
                     ->toggleable(),
@@ -251,11 +273,18 @@ class SponsoredCardResource extends Resource
             ->toolbarActions([
                 DeleteBulkAction::make(),
             ])
+            ->striped()
+            ->paginated([10, 25, 50, 100])
+            ->emptyStateIcon('phosphor-megaphone')
             ->emptyStateHeading('No sponsored cards')
             ->emptyStateDescription('Create native in-feed ads that look like video cards with a "Sponsored" badge.')
-            ->emptyStateIcon('phosphor-megaphone')
-            ->striped()
-            ->paginated([10, 25, 50, 100]);
+            ->emptyStateActions([
+                Action::make('create')
+                    ->label('New Sponsored Card')
+                    ->icon('phosphor-plus')
+                    ->url(static::getUrl('create'))
+                    ->button(),
+            ]);
     }
 
     public static function getPages(): array

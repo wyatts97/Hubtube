@@ -2,37 +2,39 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
+use App\Filament\Resources\GalleryResource\Pages\EditGallery;
+use App\Filament\Resources\GalleryResource\Pages\ListGalleries;
+use App\Models\Gallery;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
-use Filament\Actions\ActionGroup;
-use Filament\Actions\EditAction;
-use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use App\Filament\Resources\GalleryResource\Pages\ListGalleries;
-use App\Filament\Resources\GalleryResource\Pages\EditGallery;
-use App\Filament\Resources\GalleryResource\Pages;
-use App\Models\Gallery;
-use Filament\Forms;
-use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class GalleryResource extends Resource
 {
     protected static ?string $model = Gallery::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-squares-four';
-    protected static string | \UnitEnum | null $navigationGroup = 'Content';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-squares-four';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Content';
+
     protected static ?int $navigationSort = 3;
+
+    protected static ?string $recordTitleAttribute = 'title';
 
     public static function getGloballySearchableAttributes(): array
     {
@@ -45,6 +47,11 @@ class GalleryResource extends Resource
             'Owner' => $record->user?->username,
             'Privacy' => ucfirst($record->privacy),
         ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with('user');
     }
 
     public static function form(Schema $schema): Schema
@@ -178,7 +185,10 @@ class GalleryResource extends Resource
                 ]),
             ])
             ->striped()
-            ->paginated([10, 25, 50]);
+            ->paginated([10, 25, 50])
+            ->emptyStateIcon('phosphor-squares-four')
+            ->emptyStateHeading('No galleries yet')
+            ->emptyStateDescription('Galleries collect images into a single browsable set with its own page.');
     }
 
     public static function getRelations(): array

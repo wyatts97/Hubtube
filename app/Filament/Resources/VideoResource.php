@@ -2,72 +2,72 @@
 
 namespace App\Filament\Resources;
 
-use Illuminate\Database\Eloquent\Model;
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Infolists\Components\ViewEntry;
-use Filament\Infolists\Components\TextEntry;
-use Filament\Forms\Components\FileUpload;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\TagsInput;
-use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\Placeholder;
-use Filament\Schemas\Components\View;
-use Filament\Schemas\Components\Component;
-use Filament\Tables\Columns\ImageColumn;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\IconColumn;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TernaryFilter;
-use Filament\Tables\Filters\Filter;
-use Filament\Forms\Components\DatePicker;
-use Carbon\Carbon;
-use Filament\Actions\Action;
-use Filament\Actions\ActionGroup;
-use Filament\Actions\ViewAction;
-use Filament\Actions\EditAction;
-use App\Jobs\ProcessVideoJob;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\BulkAction;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\ExportBulkAction;
-use App\Filament\Exports\VideoExporter;
-use App\Filament\Resources\VideoResource\Widgets\VideoStatsOverview;
-use App\Filament\Resources\VideoResource\Pages\ListVideos;
-use App\Filament\Resources\VideoResource\Pages\CreateVideo;
-use App\Filament\Resources\VideoResource\Pages\ViewVideo;
-use App\Filament\Resources\VideoResource\Pages\EditVideo;
-use App\Filament\Resources\VideoResource\Pages;
-use App\Models\Category;
-use App\Models\Setting;
-use App\Models\User;
-use App\Models\Video;
 use App\Events\VideoProcessed;
+use App\Filament\Exports\VideoExporter;
+use App\Filament\Resources\VideoResource\Pages\CreateVideo;
+use App\Filament\Resources\VideoResource\Pages\EditVideo;
+use App\Filament\Resources\VideoResource\Pages\ListVideos;
+use App\Filament\Resources\VideoResource\Pages\ViewVideo;
+use App\Filament\Resources\VideoResource\Widgets\VideoStatsOverview;
+use App\Jobs\ProcessVideoJob;
+use App\Models\Hashtag;
 use App\Models\Notification as AppNotification;
+use App\Models\PointsTransaction;
+use App\Models\Setting;
+use App\Models\Video;
 use App\Notifications\VideoRejectedNotification;
 use App\Services\EmailService;
 use App\Services\PointsService;
 use App\Services\VideoService;
-use Filament\Forms;
-use Filament\Infolists;
+use Carbon\Carbon;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ExportBulkAction;
+use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\ViewEntry;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\View;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\HtmlString;
 
 class VideoResource extends Resource
 {
     protected static ?string $model = Video::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-video-camera';
-    protected static string | \UnitEnum | null $navigationGroup = 'Content';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-video-camera';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Content';
+
     protected static ?int $navigationSort = 1;
+
     protected static ?string $recordTitleAttribute = 'title';
 
     public static function getGloballySearchableAttributes(): array
@@ -79,8 +79,8 @@ class VideoResource extends Resource
     {
         return [
             'Uploader' => $record->user?->username ?? '—',
-            'Status'   => ucfirst($record->status),
-            'Views'    => number_format($record->views_count),
+            'Status' => ucfirst($record->status),
+            'Views' => number_format($record->views_count),
         ];
     }
 
@@ -208,11 +208,11 @@ class VideoResource extends Resource
                                     ->columnSpanFull(),
                                 Placeholder::make('popular_tags')
                                     ->hiddenLabel()
-                                    ->content(fn ($component): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(view(
+                                    ->content(fn ($component): HtmlString => new HtmlString(view(
                                         'filament.components.popular-tag-pills',
                                         [
-                                            'tagsPath' => $component->getContainer()->getStatePath() . '.tags',
-                                            'tags' => \App\Models\Hashtag::orderByDesc('usage_count')->limit(20)->pluck('name')->toArray(),
+                                            'tagsPath' => $component->getContainer()->getStatePath().'.tags',
+                                            'tags' => Hashtag::orderByDesc('usage_count')->limit(20)->pluck('name')->toArray(),
                                         ]
                                     )->render())),
                             ])->columns(2),
@@ -264,7 +264,7 @@ class VideoResource extends Resource
                                     ->suffix('seconds'),
                                 TextInput::make('size')
                                     ->disabled()
-                                    ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—'),
+                                    ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1).' MB' : '—'),
                                 TextInput::make('failure_reason')
                                     ->disabled()
                                     ->visible(fn ($record) => $record?->status === 'failed')
@@ -335,8 +335,8 @@ class VideoResource extends Resource
                     ->formatStateUsing(fn (string $state, Video $record): string => match (true) {
                         $state === 'processed' && filled($record->processing_fallback_reason) => 'Degraded',
                         $state === 'processed' && $record->is_approved && $record->published_at => 'Published',
-                        $state === 'processed' && !is_null($record->queue_order) => 'Scheduled',
-                        $state === 'processed' && !$record->is_approved => 'Needs Moderation',
+                        $state === 'processed' && ! is_null($record->queue_order) => 'Scheduled',
+                        $state === 'processed' && ! $record->is_approved => 'Needs Moderation',
                         $state === 'pending_download' => 'Pending Download',
                         $state === 'downloading' => 'Downloading',
                         $state === 'download_failed' => 'Download Failed',
@@ -345,8 +345,8 @@ class VideoResource extends Resource
                     ->color(fn (string $state, Video $record): string => match (true) {
                         $state === 'processed' && filled($record->processing_fallback_reason) => 'warning',
                         $state === 'processed' && $record->is_approved && $record->published_at => 'success',
-                        $state === 'processed' && !is_null($record->queue_order) => 'info',
-                        $state === 'processed' && !$record->is_approved => 'warning',
+                        $state === 'processed' && ! is_null($record->queue_order) => 'info',
+                        $state === 'processed' && ! $record->is_approved => 'warning',
                         $state === 'pending' => 'gray',
                         $state === 'pending_download' => 'gray',
                         $state === 'downloading' => 'info',
@@ -394,7 +394,7 @@ class VideoResource extends Resource
 
                 TextColumn::make('size')
                     ->label('Size')
-                    ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1) . ' MB' : '—')
+                    ->formatStateUsing(fn ($state) => $state ? number_format($state / 1048576, 1).' MB' : '—')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
@@ -456,11 +456,12 @@ class VideoResource extends Resource
                     ->indicateUsing(function (array $data): array {
                         $indicators = [];
                         if ($data['from'] ?? null) {
-                            $indicators['from'] = 'From ' . Carbon::parse($data['from'])->toFormattedDateString();
+                            $indicators['from'] = 'From '.Carbon::parse($data['from'])->toFormattedDateString();
                         }
                         if ($data['until'] ?? null) {
-                            $indicators['until'] = 'Until ' . Carbon::parse($data['until'])->toFormattedDateString();
+                            $indicators['until'] = 'Until '.Carbon::parse($data['until'])->toFormattedDateString();
                         }
+
                         return $indicators;
                     }),
             ])
@@ -489,12 +490,12 @@ class VideoResource extends Resource
                             ->where('type', 'video_processed')
                             ->where('data->video_id', $record->id)
                             ->exists();
-                        if (!$alreadyNotified) {
+                        if (! $alreadyNotified) {
                             event(new VideoProcessed($record));
                         }
                         static::awardUploadPoints($record);
                     })
-                    ->visible(fn (Video $record) => !$record->is_approved && $record->status === 'processed'),
+                    ->visible(fn (Video $record) => ! $record->is_approved && $record->status === 'processed'),
 
                 ActionGroup::make([
                     ViewAction::make(),
@@ -523,13 +524,13 @@ class VideoResource extends Resource
                                 ->where('type', 'video_processed')
                                 ->where('data->video_id', $record->id)
                                 ->exists();
-                            if (!$alreadyNotified) {
+                            if (! $alreadyNotified) {
                                 event(new VideoProcessed($record));
                             }
 
                             static::awardUploadPoints($record);
                         })
-                        ->visible(fn (Video $record) => !$record->is_approved && $record->status === 'processed'),
+                        ->visible(fn (Video $record) => ! $record->is_approved && $record->status === 'processed'),
 
                     Action::make('unpublish')
                         ->label('Unpublish')
@@ -572,10 +573,10 @@ class VideoResource extends Resource
                         ])
                         ->action(function (Video $record, array $data) {
                             $reason = $data['rejection_reason'];
-                            if ($reason === 'Other' && !empty($data['custom_reason'])) {
+                            if ($reason === 'Other' && ! empty($data['custom_reason'])) {
                                 $reason = $data['custom_reason'];
-                            } elseif (!empty($data['custom_reason'])) {
-                                $reason .= ' — ' . $data['custom_reason'];
+                            } elseif (! empty($data['custom_reason'])) {
+                                $reason .= ' — '.$data['custom_reason'];
                             }
 
                             $record->update([
@@ -588,12 +589,12 @@ class VideoResource extends Resource
                                 $record->user->notify(new VideoRejectedNotification($record, $reason));
                             }
                         })
-                        ->visible(fn (Video $record) => !$record->is_approved && $record->status === 'processed'),
+                        ->visible(fn (Video $record) => ! $record->is_approved && $record->status === 'processed'),
 
                     Action::make('feature')
                         ->icon('phosphor-star')
                         ->color('warning')
-                        ->action(fn (Video $record) => $record->update(['is_featured' => !$record->is_featured]))
+                        ->action(fn (Video $record) => $record->update(['is_featured' => ! $record->is_featured]))
                         ->label(fn (Video $record) => $record->is_featured ? 'Unfeature' : 'Feature'),
 
                     Action::make('addToSchedule')
@@ -627,7 +628,7 @@ class VideoResource extends Resource
                             ]);
                             app(VideoService::class)->recalculateScheduleQueue();
                         })
-                        ->visible(fn (Video $record) => !is_null($record->queue_order)),
+                        ->visible(fn (Video $record) => ! is_null($record->queue_order)),
 
                     Action::make('reprocess')
                         ->icon('phosphor-arrows-clockwise')
@@ -643,7 +644,7 @@ class VideoResource extends Resource
                     Action::make('view_frontend')
                         ->icon('phosphor-eye')
                         ->color('gray')
-                        ->url(fn (Video $record): string => url('/' . $record->slug))
+                        ->url(fn (Video $record): string => url('/'.$record->slug))
                         ->openUrlInNewTab()
                         ->visible(fn (Video $record) => $record->status === 'processed' && $record->is_approved),
 
@@ -668,7 +669,7 @@ class VideoResource extends Resource
                                     ->where('type', 'video_processed')
                                     ->where('data->video_id', $v->id)
                                     ->exists();
-                                if (!$alreadyNotified) {
+                                if (! $alreadyNotified) {
                                     event(new VideoProcessed($v));
                                 }
 
@@ -752,7 +753,7 @@ class VideoResource extends Resource
                 Action::make('create')
                     ->label('Upload Video')
                     ->icon('phosphor-tray-arrow-up')
-                    ->url(route('filament.admin.resources.videos.create'))
+                    ->url(static::getUrl('create'))
                     ->button(),
             ]);
     }
@@ -785,7 +786,7 @@ class VideoResource extends Resource
      */
     public static function awardUploadPoints(Video $video): void
     {
-        if (!Setting::get('points_enabled', true) || !Setting::get('points_video_upload_enabled', true)) {
+        if (! Setting::get('points_enabled', true) || ! Setting::get('points_video_upload_enabled', true)) {
             return;
         }
 
@@ -795,13 +796,13 @@ class VideoResource extends Resource
         }
 
         $video->loadMissing('user');
-        if (!$video->user) {
+        if (! $video->user) {
             return;
         }
 
         app(PointsService::class)->award(
             $video->user,
-            \App\Models\PointsTransaction::TYPE_VIDEO_UPLOAD,
+            PointsTransaction::TYPE_VIDEO_UPLOAD,
             $points,
             $video,
             "Video approved: {$video->title}"

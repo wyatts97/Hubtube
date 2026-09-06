@@ -2,10 +2,7 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
-use Filament\Schemas\Components\Section;
+use App\Filament\Clusters\Settings as SettingsCluster;
 use App\Models\SearchIndexSubmission;
 use App\Models\Setting;
 use App\Models\Video;
@@ -19,16 +16,24 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
 
 class SearchIndexingSettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-magnifying-glass-plus';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-magnifying-glass-plus';
+
     protected static ?string $navigationLabel = 'Search Indexing';
-    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
-    protected static ?int $navigationSort = 5;
+
+    protected static ?string $cluster = SettingsCluster::class;
+
+    protected static ?int $navigationSort = 4;
+
     protected string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
@@ -57,11 +62,11 @@ class SearchIndexingSettings extends Page implements HasForms
                                 Placeholder::make('indexnow_intro')
                                     ->content(new HtmlString(
                                         '<div class="text-sm p-3 rounded-lg" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3);">'
-                                        . '<strong>⚡ IndexNow</strong> notifies <strong>Bing, Yandex, Seznam, Naver</strong> and other compatible search engines '
-                                        . 'the moment a new public video is published — without waiting for a sitemap recrawl.'
-                                        . '<br><br><strong>Note:</strong> Google does <em>not</em> participate in IndexNow for general video pages. '
-                                        . 'Submit your sitemap to Google Search Console for Google indexing.'
-                                        . '</div>'
+                                        .'<strong>⚡ IndexNow</strong> notifies <strong>Bing, Yandex, Seznam, Naver</strong> and other compatible search engines '
+                                        .'the moment a new public video is published — without waiting for a sitemap recrawl.'
+                                        .'<br><br><strong>Note:</strong> Google does <em>not</em> participate in IndexNow for general video pages. '
+                                        .'Submit your sitemap to Google Search Console for Google indexing.'
+                                        .'</div>'
                                     )),
 
                                 Section::make('IndexNow Configuration')
@@ -108,9 +113,10 @@ class SearchIndexingSettings extends Page implements HasForms
                                                 if ($key === '') {
                                                     return new HtmlString('<span class="text-sm text-gray-400">Save a key first.</span>');
                                                 }
-                                                $url = url('/' . $key . '.txt');
+                                                $url = url('/'.$key.'.txt');
+
                                                 return new HtmlString(
-                                                    '<a href="' . e($url) . '" target="_blank" class="text-primary-500 underline font-mono text-sm">' . e($url) . '</a>'
+                                                    '<a href="'.e($url).'" target="_blank" class="text-primary-500 underline font-mono text-sm">'.e($url).'</a>'
                                                 );
                                             }),
                                         Placeholder::make('indexnow_recent')
@@ -124,13 +130,14 @@ class SearchIndexingSettings extends Page implements HasForms
                                                     ->orderByDesc('submitted_at')
                                                     ->first();
                                                 $lastTxt = $last?->submitted_at?->diffForHumans() ?? 'never';
+
                                                 return new HtmlString(
                                                     '<div class="text-sm space-y-1">'
-                                                    . '<div>Total submissions: <strong>' . $total . '</strong></div>'
-                                                    . '<div>Successful: <strong class="text-green-500">' . $success . '</strong></div>'
-                                                    . '<div>Failed: <strong class="text-red-500">' . $failed . '</strong></div>'
-                                                    . '<div>Last submission: <strong>' . e($lastTxt) . '</strong></div>'
-                                                    . '</div>'
+                                                    .'<div>Total submissions: <strong>'.$total.'</strong></div>'
+                                                    .'<div>Successful: <strong class="text-green-500">'.$success.'</strong></div>'
+                                                    .'<div>Failed: <strong class="text-red-500">'.$failed.'</strong></div>'
+                                                    .'<div>Last submission: <strong>'.e($lastTxt).'</strong></div>'
+                                                    .'</div>'
                                                 );
                                             }),
                                     ])->columns(2),
@@ -190,11 +197,12 @@ class SearchIndexingSettings extends Page implements HasForms
                 ->modalDescription('Submit the last 50 public videos published in the past 7 days to IndexNow.')
                 ->action(function () {
                     $service = app(IndexNowService::class);
-                    if (!$service->isEnabled()) {
+                    if (! $service->isEnabled()) {
                         Notification::make()
                             ->title('IndexNow is not enabled')
                             ->danger()
                             ->send();
+
                         return;
                     }
 
@@ -214,6 +222,7 @@ class SearchIndexingSettings extends Page implements HasForms
                             ->title('No eligible recent videos found')
                             ->warning()
                             ->send();
+
                         return;
                     }
 
@@ -222,7 +231,7 @@ class SearchIndexingSettings extends Page implements HasForms
 
                     Notification::make()
                         ->title($ok ? 'Submission accepted' : 'Submission failed')
-                        ->body(count($urls) . ' URL(s) submitted')
+                        ->body(count($urls).' URL(s) submitted')
                         ->{$ok ? 'success' : 'danger'}()
                         ->send();
                 }),

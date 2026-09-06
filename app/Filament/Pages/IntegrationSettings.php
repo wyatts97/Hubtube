@@ -2,21 +2,13 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Clusters\Settings as SettingsCluster;
 use App\Filament\Concerns\RequiresSuperAdmin;
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Actions;
-use Filament\Actions\Action;
-use Illuminate\Mail\MailManager;
-use Throwable;
 use App\Models\Setting;
-use FinityLabs\FinMail\Enums\EmailStatus;
-use FinityLabs\FinMail\Mail\TemplateMail as FinMailTemplateMail;
-use FinityLabs\FinMail\Models\SentEmail;
-use FinityLabs\FinMail\Settings\GeneralSettings;
 use App\Models\User;
 use App\Services\AdminLogger;
 use App\Services\EmailService;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -24,19 +16,30 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use FinityLabs\FinMail\Enums\EmailStatus;
+use FinityLabs\FinMail\Mail\TemplateMail as FinMailTemplateMail;
+use FinityLabs\FinMail\Models\SentEmail;
+use FinityLabs\FinMail\Settings\GeneralSettings;
+use Illuminate\Mail\MailManager;
 use Illuminate\Support\Facades\Mail;
-
+use Throwable;
 
 class IntegrationSettings extends Page implements HasForms
 {
+    use InteractsWithForms;
     use RequiresSuperAdmin;
 
-    use InteractsWithForms;
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-puzzle-piece';
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-puzzle-piece';
     protected static ?string $navigationLabel = 'Email';
-    protected static string | \UnitEnum | null $navigationGroup = 'Users & Email';
-    protected static ?int $navigationSort = 1;
+
+    protected static ?string $cluster = SettingsCluster::class;
+
+    protected static ?int $navigationSort = 8;
+
     protected string $view = 'filament.pages.integration-settings';
 
     public ?array $data = [];
@@ -62,69 +65,69 @@ class IntegrationSettings extends Page implements HasForms
         return $schema
             ->components([
                 Section::make('Mail Server Configuration')
-                                    ->description('Works with any SMTP server: Gmail, Mailgun, SendGrid, BillionMail (self-hosted), or any other provider. Set the host and port to match your mail server.')
-                                    ->schema([
-                                        Select::make('mail_mailer')
-                                            ->label('Mail Driver')
-                                            ->options([
-                                                'log' => 'Log (no emails sent — development only)',
-                                                'smtp' => 'SMTP (external or self-hosted)',
-                                                'sendmail' => 'Sendmail (local)',
-                                                'ses' => 'Amazon SES',
-                                                'postmark' => 'Postmark',
-                                                'resend' => 'Resend',
-                                            ])
-                                            ->reactive()
-                                            ->helperText('Select "SMTP" for most setups including BillionMail, Gmail, Mailgun, etc.'),
-                                        TextInput::make('mail_host')
-                                            ->label('SMTP Host')
-                                            ->placeholder('127.0.0.1 or smtp.gmail.com')
-                                            ->helperText('For self-hosted (BillionMail, Postal, etc.): use 127.0.0.1 or your server IP. For external: use the provider\'s SMTP host.')
-                                            ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
-                                        TextInput::make('mail_port')
-                                            ->label('SMTP Port')
-                                            ->placeholder('587')
-                                            ->helperText('Common ports: 25 (unencrypted), 465 (SSL), 587 (TLS/STARTTLS), or custom (e.g. 8025, 8090)')
-                                            ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
-                                        TextInput::make('mail_username')
-                                            ->label('SMTP Username')
-                                            ->helperText('Some self-hosted servers don\'t require authentication — leave blank if not needed.')
-                                            ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
-                                        TextInput::make('mail_password')
-                                            ->label('SMTP Password')
-                                            ->password()
-                                            ->revealable()
-                                            ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
-                                        Select::make('mail_encryption')
-                                            ->label('Encryption')
-                                            ->options([
-                                                '' => 'None (port 25 or custom)',
-                                                'tls' => 'TLS / STARTTLS (port 587)',
-                                                'ssl' => 'SSL (port 465)',
-                                            ])
-                                            ->helperText('Use "None" for local self-hosted servers on non-standard ports. Use TLS for most external providers.')
-                                            ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
-                                        Toggle::make('mail_verify_peer')
-                                            ->label('Verify SSL Certificate')
-                                            ->helperText('Disable for self-hosted mail servers with self-signed certificates. Keep enabled for external providers.')
-                                            ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
-                                        TextInput::make('mail_from_address')
-                                            ->label('From Address')
-                                            ->email()
-                                            ->placeholder('noreply@yourdomain.com'),
-                                        TextInput::make('mail_from_name')
-                                            ->label('From Name')
-                                            ->placeholder(config('app.name')),
-                                        Actions::make([
-                                            Action::make('sendTestEmail')
-                                                ->label('Send Test Email')
-                                                ->icon('phosphor-paper-plane-right')
-                                                ->color('gray')
-                                                ->action(function () {
-                                                    $this->sendTestEmail();
-                                                }),
-                                        ])->columnSpanFull(),
-                                    ])->columns(2),
+                    ->description('Works with any SMTP server: Gmail, Mailgun, SendGrid, BillionMail (self-hosted), or any other provider. Set the host and port to match your mail server.')
+                    ->schema([
+                        Select::make('mail_mailer')
+                            ->label('Mail Driver')
+                            ->options([
+                                'log' => 'Log (no emails sent — development only)',
+                                'smtp' => 'SMTP (external or self-hosted)',
+                                'sendmail' => 'Sendmail (local)',
+                                'ses' => 'Amazon SES',
+                                'postmark' => 'Postmark',
+                                'resend' => 'Resend',
+                            ])
+                            ->reactive()
+                            ->helperText('Select "SMTP" for most setups including BillionMail, Gmail, Mailgun, etc.'),
+                        TextInput::make('mail_host')
+                            ->label('SMTP Host')
+                            ->placeholder('127.0.0.1 or smtp.gmail.com')
+                            ->helperText('For self-hosted (BillionMail, Postal, etc.): use 127.0.0.1 or your server IP. For external: use the provider\'s SMTP host.')
+                            ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
+                        TextInput::make('mail_port')
+                            ->label('SMTP Port')
+                            ->placeholder('587')
+                            ->helperText('Common ports: 25 (unencrypted), 465 (SSL), 587 (TLS/STARTTLS), or custom (e.g. 8025, 8090)')
+                            ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
+                        TextInput::make('mail_username')
+                            ->label('SMTP Username')
+                            ->helperText('Some self-hosted servers don\'t require authentication — leave blank if not needed.')
+                            ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
+                        TextInput::make('mail_password')
+                            ->label('SMTP Password')
+                            ->password()
+                            ->revealable()
+                            ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
+                        Select::make('mail_encryption')
+                            ->label('Encryption')
+                            ->options([
+                                '' => 'None (port 25 or custom)',
+                                'tls' => 'TLS / STARTTLS (port 587)',
+                                'ssl' => 'SSL (port 465)',
+                            ])
+                            ->helperText('Use "None" for local self-hosted servers on non-standard ports. Use TLS for most external providers.')
+                            ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
+                        Toggle::make('mail_verify_peer')
+                            ->label('Verify SSL Certificate')
+                            ->helperText('Disable for self-hosted mail servers with self-signed certificates. Keep enabled for external providers.')
+                            ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
+                        TextInput::make('mail_from_address')
+                            ->label('From Address')
+                            ->email()
+                            ->placeholder('noreply@yourdomain.com'),
+                        TextInput::make('mail_from_name')
+                            ->label('From Name')
+                            ->placeholder(config('app.name')),
+                        Actions::make([
+                            Action::make('sendTestEmail')
+                                ->label('Send Test Email')
+                                ->icon('phosphor-paper-plane-right')
+                                ->color('gray')
+                                ->action(function () {
+                                    $this->sendTestEmail();
+                                }),
+                        ])->columnSpanFull(),
+                    ])->columns(2),
             ])
             ->statePath('data');
     }
@@ -150,6 +153,7 @@ class IntegrationSettings extends Page implements HasForms
         foreach ($data as $key => $value) {
             if (in_array($key, self::ENCRYPTED_KEYS, true)) {
                 Setting::setEncrypted($key, $value, 'integrations');
+
                 continue;
             }
 
@@ -170,7 +174,7 @@ class IntegrationSettings extends Page implements HasForms
         }
 
         // Apply mail config at runtime so it takes effect immediately
-        if (!empty($data['mail_mailer']) && $data['mail_mailer'] !== 'log') {
+        if (! empty($data['mail_mailer']) && $data['mail_mailer'] !== 'log') {
             $this->applyMailConfig($data);
         }
 
@@ -262,5 +266,4 @@ class IntegrationSettings extends Page implements HasForms
                 ->send();
         }
     }
-
 }

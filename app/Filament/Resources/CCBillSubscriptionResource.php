@@ -6,21 +6,50 @@ use App\Filament\Resources\CCBillSubscriptionResource\Pages\ListCCBillSubscripti
 use App\Models\CCBillSubscription;
 use App\Models\Setting;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class CCBillSubscriptionResource extends Resource
 {
     protected static ?string $model = CCBillSubscription::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-credit-card';
-    protected static string | \UnitEnum | null $navigationGroup = 'Monetization';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-credit-card';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Monetization';
+
     protected static ?string $navigationLabel = 'CCBill Subscriptions';
+
     protected static ?int $navigationSort = 4;
+
+    protected static ?string $recordTitleAttribute = 'ccbill_subscription_id';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        // The opaque support-lookup key only. Not user.username: that would
+        // flood the dropdown and surface billing rows on a plain name search.
+        return ['ccbill_subscription_id'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'User' => $record->user?->username ?: '-',
+            'Plan' => $record->plan?->name ?: '-',
+            'Status' => ucfirst((string) $record->status),
+        ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['user', 'plan']);
+    }
 
     public static function shouldRegisterNavigation(): bool
     {
@@ -77,7 +106,10 @@ class CCBillSubscriptionResource extends Resource
             ])
             ->toolbarActions([])
             ->defaultSort('created_at', 'desc')
-            ->striped();
+            ->striped()
+            ->emptyStateIcon('phosphor-credit-card')
+            ->emptyStateHeading('No CCBill subscriptions')
+            ->emptyStateDescription('Subscriptions created through CCBill checkout are synced here by webhook.');
     }
 
     public static function getPages(): array

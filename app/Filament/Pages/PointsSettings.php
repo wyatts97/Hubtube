@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Clusters\Settings as SettingsCluster;
 use App\Models\PointsRedemption;
 use App\Models\PointsTransaction;
 use App\Models\Setting;
@@ -35,7 +36,9 @@ class PointsSettings extends Page implements HasForms, HasTable
 
     protected static string|\UnitEnum|null $navigationGroup = 'Monetization';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?string $cluster = SettingsCluster::class;
+
+    protected static ?int $navigationSort = 13;
 
     protected string $view = 'filament.pages.points-settings';
 
@@ -167,16 +170,14 @@ class PointsSettings extends Page implements HasForms, HasTable
                     Select::make('user_id')
                         ->label('User')
                         ->searchable()
-                        ->getSearchResultsUsing(fn (string $search): array =>
-                            User::where('username', 'like', "%{$search}%")
-                                ->orWhere('email', 'like', "%{$search}%")
-                                ->limit(20)
-                                ->get()
-                                ->mapWithKeys(fn (User $u) => [$u->id => "{$u->username} ({$u->points_balance} pts)"])
-                                ->toArray()
+                        ->getSearchResultsUsing(fn (string $search): array => User::where('username', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->limit(20)
+                            ->get()
+                            ->mapWithKeys(fn (User $u) => [$u->id => "{$u->username} ({$u->points_balance} pts)"])
+                            ->toArray()
                         )
-                        ->getOptionLabelUsing(fn ($value): ?string =>
-                            User::find($value)?->username
+                        ->getOptionLabelUsing(fn ($value): ?string => User::find($value)?->username
                         )
                         ->required(),
                     TextInput::make('points')
@@ -194,6 +195,7 @@ class PointsSettings extends Page implements HasForms, HasTable
 
                     if ($points === 0) {
                         Notification::make()->title('Points cannot be zero.')->danger()->send();
+
                         return;
                     }
 
@@ -205,9 +207,9 @@ class PointsSettings extends Page implements HasForms, HasTable
                         $service->spend($user, abs($points), PointsTransaction::TYPE_ADMIN_ADJUSTMENT, "Admin adjustment: {$data['reason']}");
                     }
 
-                    AdminLogger::log('Adjusted ' . number_format($points) . ' points for user ' . $user->username . ': ' . $data['reason']);
+                    AdminLogger::log('Adjusted '.number_format($points).' points for user '.$user->username.': '.$data['reason']);
 
-                    Notification::make()->title('Points adjusted successfully for ' . $user->username)->success()->send();
+                    Notification::make()->title('Points adjusted successfully for '.$user->username)->success()->send();
                 }),
         ];
     }
@@ -238,7 +240,7 @@ class PointsSettings extends Page implements HasForms, HasTable
                     ->color('warning'),
                 TextColumn::make('pro_expires_at')
                     ->label('Pro Status')
-                    ->formatStateUsing(fn ($state) => $state && $state > now() ? 'Active until ' . $state->format('M j, Y') : '—')
+                    ->formatStateUsing(fn ($state) => $state && $state > now() ? 'Active until '.$state->format('M j, Y') : '—')
                     ->size('sm'),
             ]);
     }

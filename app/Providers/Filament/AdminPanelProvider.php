@@ -2,17 +2,18 @@
 
 namespace App\Providers\Filament;
 
-use Leandrocfe\FilamentApexCharts\FilamentApexChartsPlugin;
-use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
-use Croustibat\FilamentJobsMonitor\FilamentJobsMonitorPlugin;
-use Throwable;
 use App\Filament\Pages\Dashboard;
-use App\Services\SystemStatusBar;
-use Filament\Contracts\Plugin;
 use App\Http\Middleware\AuthenticateFilament;
 use App\Http\Middleware\EnsureAdminTwoFactor;
 use App\Http\Middleware\SetAdminTimezone;
 use App\Models\Setting;
+use App\Services\SystemStatusBar;
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+use BezhanSalleh\GoogleAnalytics\GoogleAnalyticsPlugin;
+use Boquizo\FilamentLogViewer\FilamentLogViewerPlugin;
+use Croustibat\FilamentJobsMonitor\FilamentJobsMonitorPlugin;
+use Filafly\Icons\Phosphor\PhosphorIcons;
+use Filament\Contracts\Plugin;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\MenuItem;
@@ -20,26 +21,66 @@ use Filament\Navigation\NavigationGroup;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
-use Filament\Support\Colors\Color;
-use Openplain\FilamentShadcnTheme\Color as ShadcnColor;
+use Filament\Resources\Pages\ListRecords;
+use Filament\Tables\Table;
 use Filament\View\PanelsRenderHook;
 use Filament\Widgets;
+use FinityLabs\FinMail\FinMailPlugin;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Foundation\Vite;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Filafly\Icons\Phosphor\PhosphorIcons;
-use FinityLabs\FinMail\FinMailPlugin;
-use Muazzam\SlickScrollbar\SlickScrollbarPlugin;
+use Leandrocfe\FilamentApexCharts\FilamentApexChartsPlugin;
 use Martin6363\SidebarResize\SidebarResizePlugin;
-use Boquizo\FilamentLogViewer\FilamentLogViewerPlugin;
+use Muazzam\SlickScrollbar\SlickScrollbarPlugin;
+use Openplain\FilamentShadcnTheme\Color as ShadcnColor;
+use Throwable;
 
 class AdminPanelProvider extends PanelProvider
 {
+    /**
+     * Table state defaults for this panel's own resource list pages.
+     *
+     * Registered via Table::configureUsing so all resources pick these up
+     * without per-file edits. configureUsing runs inside Table::make() before
+     * the resource's own table() chain, so any resource can still override.
+     *
+     * The guard is not optional: ComponentManager keys on Filament\Tables\Table
+     * and fires for EVERY table in the process. Without it the dashboard table
+     * widgets (RecentSignupsTable and friends, which are ->paginated(false) with
+     * a ->searchable() column) would each get a sticky session search, silently
+     * blanking those panels on every later load. Vendor plugin tables are
+     * likewise left alone.
+     *
+     * persistColumnSearchesInSession() is deliberately excluded: several
+     * resources use toggleable(isToggledHiddenByDefault: true), and a persisted
+     * search on a since-hidden column is unrecoverable from the UI.
+     */
+    public function boot(): void
+    {
+        Table::configureUsing(function (Table $table): void {
+            $livewire = $table->getLivewire();
+
+            if (! $livewire instanceof ListRecords) {
+                return;
+            }
+
+            if (! str_starts_with($livewire::class, 'App\Filament')) {
+                return;
+            }
+
+            $table
+                ->persistFiltersInSession()
+                ->persistSortInSession()
+                ->persistSearchInSession();
+        });
+    }
+
     /**
      * Build the plugin list, gracefully skipping any plugin whose
      * composer package hasn't been installed yet.
@@ -81,8 +122,8 @@ class AdminPanelProvider extends PanelProvider
         }
 
         // Google Analytics widgets (credentials configured via admin panel)
-        if (class_exists(\BezhanSalleh\GoogleAnalytics\GoogleAnalyticsPlugin::class)) {
-            $plugins[] = \BezhanSalleh\GoogleAnalytics\GoogleAnalyticsPlugin::make();
+        if (class_exists(GoogleAnalyticsPlugin::class)) {
+            $plugins[] = GoogleAnalyticsPlugin::make();
         }
 
         // Drag-to-resize navigation sidebar (width persisted in browser localStorage)
@@ -121,9 +162,10 @@ class AdminPanelProvider extends PanelProvider
             if ($g['collapsed']) {
                 $group->collapsed();
             }
-            if (!empty($g['icon'])) {
+            if (! empty($g['icon'])) {
                 $group->icon($g['icon']);
             }
+
             return $group;
         }, $groups);
     }
@@ -142,7 +184,7 @@ class AdminPanelProvider extends PanelProvider
     protected static function mutedRed(): array
     {
         return [
-            50  => 'oklch(0.62 0.14 25)',
+            50 => 'oklch(0.62 0.14 25)',
             100 => 'oklch(0.565 0.14 26)',
             200 => 'oklch(0.5 0.13 27)',
             300 => 'oklch(0.79 0.07 22)',
@@ -166,7 +208,7 @@ class AdminPanelProvider extends PanelProvider
     protected static function firetruckRed(): array
     {
         return [
-            50  => 'oklch(0.6 0.245 27)',
+            50 => 'oklch(0.6 0.245 27)',
             100 => 'oklch(0.55 0.245 28)',
             200 => 'oklch(0.49 0.215 28)',
             300 => 'oklch(0.8 0.12 22)',
@@ -192,7 +234,7 @@ class AdminPanelProvider extends PanelProvider
                 if (str_starts_with($siteLogo, 'http://') || str_starts_with($siteLogo, 'https://') || str_starts_with($siteLogo, '/')) {
                     $brandLogo = $siteLogo;
                 } else {
-                    $brandLogo = '/storage/' . $siteLogo;
+                    $brandLogo = '/storage/'.$siteLogo;
                 }
             }
             $brandName = Setting::get('site_title', 'HubTube') ?: 'HubTube';
@@ -208,7 +250,7 @@ class AdminPanelProvider extends PanelProvider
                 if (str_starts_with($siteFavicon, 'http://') || str_starts_with($siteFavicon, 'https://') || str_starts_with($siteFavicon, '/')) {
                     $faviconUrl = $siteFavicon;
                 } else {
-                    $faviconUrl = '/storage/' . $siteFavicon;
+                    $faviconUrl = '/storage/'.$siteFavicon;
                 }
             }
         } catch (Throwable $e) {
@@ -227,11 +269,11 @@ class AdminPanelProvider extends PanelProvider
             ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
             ->colors([
                 'primary' => static::mutedRed(),
-                'danger'  => static::firetruckRed(),
+                'danger' => static::firetruckRed(),
                 'warning' => ShadcnColor::Yellow,
                 'success' => ShadcnColor::Green,
-                'info'    => ShadcnColor::Blue,
-                'gray'    => ShadcnColor::Default,
+                'info' => ShadcnColor::Blue,
+                'gray' => ShadcnColor::Default,
             ]);
 
         if ($faviconUrl) {
@@ -262,6 +304,7 @@ class AdminPanelProvider extends PanelProvider
             ->resources(array_filter([
                 config('filament-logger.activity_resource'),
             ]))
+            ->discoverClusters(in: app_path('Filament/Clusters'), for: 'App\\Filament\\Clusters')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
                 Dashboard::class,
@@ -282,7 +325,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => (string) app(\Illuminate\Foundation\Vite::class)(['resources/css/filament/admin/theme.css']),
+                fn (): string => (string) app(Vite::class)(['resources/css/filament/admin/theme.css']),
             )
             ->renderHook(
                 PanelsRenderHook::BODY_END,

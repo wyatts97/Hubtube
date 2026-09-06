@@ -2,38 +2,62 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Toggle;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\IconColumn;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TernaryFilter;
-use Filament\Tables\Filters\Filter;
-use Filament\Actions\EditAction;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use App\Filament\Resources\MenuItemResource\Pages\ListMenuItems;
 use App\Filament\Resources\MenuItemResource\Pages\CreateMenuItem;
 use App\Filament\Resources\MenuItemResource\Pages\EditMenuItem;
-use App\Filament\Resources\MenuItemResource\Pages;
+use App\Filament\Resources\MenuItemResource\Pages\ListMenuItems;
 use App\Models\MenuItem;
-use App\Models\Category;
-use Filament\Forms;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
-use Filament\Tables;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class MenuItemResource extends Resource
 {
     protected static ?string $model = MenuItem::class;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-list';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-list';
+
     protected static ?string $navigationLabel = 'Menu Builder';
-    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Appearance';
+
     protected static ?int $navigationSort = 3;
+
+    protected static ?string $recordTitleAttribute = 'label';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['label', 'url'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Location' => ucfirst((string) $record->location),
+            'Type' => ucfirst((string) $record->type),
+            'Parent' => $record->parent?->label ?: 'Top level',
+        ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with('parent');
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -75,9 +99,12 @@ class MenuItemResource extends Resource
                                 'tag' => 'Enter the tag name. URL will become /tag/name',
                                 default => 'Relative or absolute URL',
                             })
-                            ->visible(fn ($get) => !in_array($get('type'), ['dropdown', 'divider']))
+                            ->visible(fn ($get) => ! in_array($get('type'), ['dropdown', 'divider']))
                             ->dehydrateStateUsing(function ($state, $get) {
-                                if (!$state) return null;
+                                if (! $state) {
+                                    return null;
+                                }
+
                                 return match ($get('type')) {
                                     'category' => "/category/{$state}",
                                     'tag' => "/tag/{$state}",
@@ -85,13 +112,16 @@ class MenuItemResource extends Resource
                                 };
                             })
                             ->formatStateUsing(function ($state, $record) {
-                                if (!$record || !$state) return $state;
+                                if (! $record || ! $state) {
+                                    return $state;
+                                }
                                 if ($record->type === 'category' && str_starts_with($state, '/category/')) {
                                     return str_replace('/category/', '', $state);
                                 }
                                 if ($record->type === 'tag' && str_starts_with($state, '/tag/')) {
                                     return str_replace('/tag/', '', $state);
                                 }
+
                                 return $state;
                             }),
                     ])->columns(2),
@@ -148,7 +178,7 @@ class MenuItemResource extends Resource
                         Toggle::make('is_mega')
                             ->label('Mega Menu')
                             ->helperText('Display children in a multi-column dropdown (top-level only)')
-                            ->visible(fn ($get) => !$get('parent_id')),
+                            ->visible(fn ($get) => ! $get('parent_id')),
 
                         TextInput::make('mega_columns')
                             ->label('Mega Menu Columns')
@@ -156,7 +186,7 @@ class MenuItemResource extends Resource
                             ->default(4)
                             ->minValue(2)
                             ->maxValue(6)
-                            ->visible(fn ($get) => $get('is_mega') && !$get('parent_id')),
+                            ->visible(fn ($get) => $get('is_mega') && ! $get('parent_id')),
 
                         Toggle::make('is_active')
                             ->default(true),
@@ -217,7 +247,17 @@ class MenuItemResource extends Resource
                 ]),
             ])
             ->reorderable('sort_order')
-            ->striped();
+            ->striped()
+            ->emptyStateIcon('phosphor-list')
+            ->emptyStateHeading('No menu items yet')
+            ->emptyStateDescription('Build the header and mobile navigation from links, category pages, and dropdowns.')
+            ->emptyStateActions([
+                Action::make('create')
+                    ->label('New Menu Item')
+                    ->icon('phosphor-plus')
+                    ->url(static::getUrl('create'))
+                    ->button(),
+            ]);
     }
 
     public static function getPages(): array

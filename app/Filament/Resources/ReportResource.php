@@ -4,12 +4,10 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ReportResource\Pages\ListReports;
 use App\Filament\Resources\ReportResource\Pages\ViewReport;
-use App\Filament\Resources\ReportResource\Pages;
 use App\Models\Comment;
 use App\Models\Report;
 use App\Models\User;
 use App\Models\Video;
-use App\Filament\Resources\UserResource;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
@@ -27,6 +25,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
@@ -34,13 +33,43 @@ class ReportResource extends Resource
 {
     protected static ?string $model = Report::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-flag';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-flag';
 
     protected static ?string $navigationLabel = 'Reports';
 
-    protected static string | \UnitEnum | null $navigationGroup = 'Moderation';
+    protected static string|\UnitEnum|null $navigationGroup = 'Moderation';
 
     protected static ?int $navigationSort = 5;
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['description', 'user.username'];
+    }
+
+    /**
+     * Report has no title column, and `reason` would render every result as
+     * "Harassment", so reuse the label the table's Reported Content column
+     * shows. Narrowing the parent string|Htmlable return to string is covariant.
+     */
+    public static function getGlobalSearchResultTitle(Model $record): string
+    {
+        return static::contentLabel($record);
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Reported by' => $record->user?->username ?: '-',
+            'Reason' => static::reasonLabels()[$record->reason] ?? $record->reason,
+            'Status' => ucfirst((string) $record->status),
+        ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        // reportable is a morph, so it must be eager loaded for contentLabel().
+        return parent::getGlobalSearchEloquentQuery()->with(['user', 'reportable']);
+    }
 
     // Pending count is surfaced as a topbar pill (see SystemStatusBar::getActionItems).
 
@@ -90,6 +119,7 @@ class ReportResource extends Resource
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with(['user', 'resolvedBy', 'reportable']))
             ->defaultSort('created_at', 'desc')
+            ->deferLoading()
             ->columns([
                 TextColumn::make('user.username')
                     ->label('Reported By')
@@ -238,7 +268,10 @@ class ReportResource extends Resource
                         ->deselectRecordsAfterCompletion(),
                 ]),
             ])
-            ->striped();
+            ->striped()
+            ->emptyStateIcon('phosphor-flag')
+            ->emptyStateHeading('No reports')
+            ->emptyStateDescription('Content reported by viewers appears here for moderation. Nothing to review right now.');
     }
 
     /**
@@ -311,17 +344,19 @@ class ReportResource extends Resource
     {
         $reportable = $record->reportable;
 
-        if (!$reportable) {
+        if (! $reportable) {
             return false;
         }
 
         if ($reportable instanceof Video) {
             $reportable->update(['is_approved' => false]);
+
             return true;
         }
 
         if ($reportable instanceof Comment) {
             $reportable->delete();
+
             return true;
         }
 
@@ -332,24 +367,24 @@ class ReportResource extends Resource
     {
         $reportable = $record->reportable;
 
-        if (!$reportable) {
-            return '(deleted content) #' . $record->reportable_id;
+        if (! $reportable) {
+            return '(deleted content) #'.$record->reportable_id;
         }
 
-        return $reportable->title ?? $reportable->content ?? $reportable->username ?? ('#' . $record->reportable_id);
+        return $reportable->title ?? $reportable->content ?? $reportable->username ?? ('#'.$record->reportable_id);
     }
 
     protected static function contentUrl(Report $record): ?string
     {
         $reportable = $record->reportable;
 
-        if (!$reportable) {
+        if (! $reportable) {
             return null;
         }
 
         return match (true) {
-            $reportable instanceof Video => url('/' . $reportable->slug),
-            $reportable instanceof Comment => $reportable->video?->slug ? url('/' . $reportable->video->slug) : null,
+            $reportable instanceof Video => url('/'.$reportable->slug),
+            $reportable instanceof Comment => $reportable->video?->slug ? url('/'.$reportable->video->slug) : null,
             $reportable instanceof User => UserResource::getUrl('edit', ['record' => $reportable]),
             default => null,
         };

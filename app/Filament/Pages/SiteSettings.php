@@ -2,22 +2,18 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Clusters\Settings as SettingsCluster;
 use App\Filament\Concerns\RequiresSuperAdmin;
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
-use Filament\Schemas\Components\Section;
-use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Components\FileUpload;
-use Filament\Schemas\Components\Actions;
-use Filament\Actions\Action;
-use Filament\Forms\Components\TagsInput;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use App\Services\FfmpegService;
 use App\Services\WatermarkService;
+use Filament\Actions\Action;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -25,27 +21,37 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 
-
 class SiteSettings extends Page implements HasForms
 {
+    use InteractsWithForms;
     use RequiresSuperAdmin;
 
-    use InteractsWithForms;
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-gear';
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-gear';
     protected static ?string $navigationLabel = 'Site Settings';
-    protected static string | \UnitEnum | null $navigationGroup = 'System';
+
+    protected static ?string $cluster = SettingsCluster::class;
+
     protected static ?int $navigationSort = 1;
+
     protected string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
+
     public ?string $watermarkPreviewUrl = null;
+
     public ?string $testVideoSourceUrl = null;
+
     public bool $isGeneratingPreview = false;
 
     public function mount(): void
@@ -121,29 +127,31 @@ class SiteSettings extends Page implements HasForms
     protected function resolveTestVideoSourceUrl(): ?string
     {
         $testPath = Setting::get('watermark_test_video', '');
-        if (!$testPath || !Storage::disk('public')->exists($testPath)) {
+        if (! $testPath || ! Storage::disk('public')->exists($testPath)) {
             return null;
         }
+
         return route('admin.video-stream', ['path' => $testPath]);
     }
 
     protected function resolveWatermarkPreviewUrl(): ?string
     {
         $previewPath = Setting::get('watermark_preview_path', '');
-        if (!$previewPath || !Storage::disk('public')->exists($previewPath)) {
+        if (! $previewPath || ! Storage::disk('public')->exists($previewPath)) {
             return null;
         }
 
-        return route('admin.video-stream', ['path' => $previewPath]) . '?t=' . filemtime(Storage::disk('public')->path($previewPath));
+        return route('admin.video-stream', ['path' => $previewPath]).'?t='.filemtime(Storage::disk('public')->path($previewPath));
     }
 
     public function generateWatermarkPreview(): void
     {
-        if (!FfmpegService::isAvailable()) {
+        if (! FfmpegService::isAvailable()) {
             Notification::make()
                 ->title('FFmpeg is not available')
                 ->danger()
                 ->send();
+
             return;
         }
 
@@ -158,12 +166,13 @@ class SiteSettings extends Page implements HasForms
             'exists' => $sourcePath ? Storage::disk('public')->exists($sourcePath) : false,
             'full_path' => $sourcePath ? Storage::disk('public')->path($sourcePath) : null,
         ]);
-        if (!$sourcePath || !Storage::disk('public')->exists($sourcePath)) {
+        if (! $sourcePath || ! Storage::disk('public')->exists($sourcePath)) {
             Notification::make()
                 ->title('Upload a test video first')
                 ->body('Use the file upload above to provide a short video clip for watermark testing.')
                 ->warning()
                 ->send();
+
             return;
         }
 
@@ -190,11 +199,12 @@ class SiteSettings extends Page implements HasForms
             }
         }
 
-        if (!WatermarkService::hasImageWatermark() && !WatermarkService::hasTextWatermark()) {
+        if (! WatermarkService::hasImageWatermark() && ! WatermarkService::hasTextWatermark()) {
             Notification::make()
                 ->title('Enable an image or text watermark first')
                 ->warning()
                 ->send();
+
             return;
         }
 
@@ -242,10 +252,10 @@ class SiteSettings extends Page implements HasForms
 
         $this->isGeneratingPreview = false;
 
-        if (!$result->successful() || !file_exists($outputPath) || filesize($outputPath) === 0) {
+        if (! $result->successful() || ! file_exists($outputPath) || filesize($outputPath) === 0) {
             Log::error('Watermark preview generation failed', [
                 'exit_code' => $result->exitCode(),
-                'output' => substr($result->output() . "\n" . $result->errorOutput(), -2000),
+                'output' => substr($result->output()."\n".$result->errorOutput(), -2000),
             ]);
 
             Notification::make()
@@ -253,11 +263,12 @@ class SiteSettings extends Page implements HasForms
                 ->body('Check storage/logs/laravel.log for details.')
                 ->danger()
                 ->send();
+
             return;
         }
 
         Setting::set('watermark_preview_path', $relativePath, 'general', 'string');
-        $this->watermarkPreviewUrl = route('admin.video-stream', ['path' => 'watermarks/watermark_preview.mp4']) . '?t=' . time();
+        $this->watermarkPreviewUrl = route('admin.video-stream', ['path' => 'watermarks/watermark_preview.mp4']).'?t='.time();
 
         Notification::make()
             ->title('Watermark preview generated')
@@ -292,11 +303,12 @@ class SiteSettings extends Page implements HasForms
                 ->title('No test files to delete')
                 ->warning()
                 ->send();
+
             return;
         }
 
         Notification::make()
-            ->title('Deleted: ' . implode(' & ', $deleted))
+            ->title('Deleted: '.implode(' & ', $deleted))
             ->success()
             ->send();
     }
@@ -357,8 +369,8 @@ class SiteSettings extends Page implements HasForms
                                         Toggle::make('admin_require_2fa')
                                             ->label('Require 2FA for Admins')
                                             ->helperText('Administrators without confirmed two-factor '
-                                                . 'authentication are redirected to set it up before '
-                                                . 'they can use the admin panel. Strongly recommended.'),
+                                                .'authentication are redirected to set it up before '
+                                                .'they can use the admin panel. Strongly recommended.'),
                                         Toggle::make('age_verification_required')
                                             ->label('Require Age Verification'),
                                         TextInput::make('minimum_age')
@@ -535,19 +547,20 @@ class SiteSettings extends Page implements HasForms
                                                     ->afterStateUpdated(function ($state) {
                                                         if ($state) {
                                                             Setting::set('watermark_test_video', $state, 'general', 'string');
-                                                            $this->testVideoSourceUrl = '/storage/' . $state;
+                                                            $this->testVideoSourceUrl = '/storage/'.$state;
                                                         }
                                                     })
                                                     ->reactive(),
                                                 Placeholder::make('test_video_info')
                                                     ->label('')
                                                     ->content(function () {
-                                                        if (!$this->testVideoSourceUrl) {
+                                                        if (! $this->testVideoSourceUrl) {
                                                             return new HtmlString('<span class="text-sm text-gray-500 dark:text-gray-400">No test video uploaded.</span>');
                                                         }
+
                                                         return new HtmlString(
-                                                            '<div class="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">' .
-                                                            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' .
+                                                            '<div class="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">'.
+                                                            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'.
                                                             'Test video ready</div>'
                                                         );
                                                     })
@@ -570,15 +583,15 @@ class SiteSettings extends Page implements HasForms
                                                 Placeholder::make('watermark_preview')
                                                     ->label('Watermarked Preview')
                                                     ->content(function () {
-                                                        if (!$this->watermarkPreviewUrl) {
+                                                        if (! $this->watermarkPreviewUrl) {
                                                             return new HtmlString('<span class="text-sm text-gray-500 dark:text-gray-400">Upload a test video and click "Apply Watermark & Preview" to see the result.</span>');
                                                         }
 
                                                         return new HtmlString(
-                                                            '<div wire:ignore>' .
-                                                            '<video controls playsinline preload="auto" class="w-full max-w-lg rounded-lg" style="background:#111">' .
-                                                            '<source src="' . e($this->watermarkPreviewUrl) . '" type="video/mp4">' .
-                                                            '</video>' .
+                                                            '<div wire:ignore>'.
+                                                            '<video controls playsinline preload="auto" class="w-full max-w-lg rounded-lg" style="background:#111">'.
+                                                            '<source src="'.e($this->watermarkPreviewUrl).'" type="video/mp4">'.
+                                                            '</video>'.
                                                             '</div>'
                                                         );
                                                     })
@@ -660,9 +673,10 @@ class SiteSettings extends Page implements HasForms
                                                         $colors = WatermarkService::getColorOptions();
                                                         $result = [];
                                                         foreach ($colors as $value => $label) {
-                                                            $swatch = '<span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:' . $value . ';border:1px solid #555;vertical-align:middle;margin-right:6px"></span>';
-                                                            $result[$value] = $swatch . $label;
+                                                            $swatch = '<span style="display:inline-block;width:12px;height:12px;border-radius:2px;background:'.$value.';border:1px solid #555;vertical-align:middle;margin-right:6px"></span>';
+                                                            $result[$value] = $swatch.$label;
                                                         }
+
                                                         return $result;
                                                     })
                                                     ->allowHtml()
@@ -700,6 +714,7 @@ class SiteSettings extends Page implements HasForms
                                                                 'bottom' => 'Bottom',
                                                             ];
                                                         }
+
                                                         return [
                                                             'top-left' => 'Top Left',
                                                             'top-center' => 'Top Center',
@@ -766,7 +781,7 @@ class SiteSettings extends Page implements HasForms
                                             ->label('Auto-Approve Users')
                                             ->helperText('Enter usernames of trusted users whose videos should be auto-approved. These users bypass moderation even when global auto-approve is off.')
                                             ->placeholder('Add a username...')
-                                            ->visible(fn ($get) => !$get('video_auto_approve')),
+                                            ->visible(fn ($get) => ! $get('video_auto_approve')),
                                         Toggle::make('comments_enabled')
                                             ->label('Enable Comments'),
                                         Toggle::make('comments_require_approval')
