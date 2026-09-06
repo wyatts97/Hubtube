@@ -1,10 +1,5 @@
 @php
     /** @var array<int, array{key:string,label:string,shortLabel:string,count:int,url:?string,icon:string,tone:string}> $items */
-
-    // Drives the "All clear" chip below. Computed here rather than in CSS
-    // because one boolean is easier to follow than :has() over a variable
-    // number of siblings, and the strip's contents are already known here.
-    $allClear = ! collect($items)->contains(fn (array $item): bool => $item['count'] > 0);
 @endphp
 
 {{--
@@ -17,12 +12,7 @@
     item carried its tone at all times, so five alarm-coloured zeros sat beside
     the two counts that actually meant something.
 --}}
-<div
-    class="ht-topbar-pills"
-    role="group"
-    aria-label="Action items"
-    @if ($allClear) data-all-clear="true" @endif
->
+<div class="ht-topbar-pills" role="group" aria-label="Action items">
     @foreach ($items as $item)
         @php
             $state = $item['count'] > 0 ? 'active' : 'idle';
@@ -59,12 +49,4 @@
             </span>
         @endif
     @endforeach
-
-    {{-- Only surfaced once idle pills start being hidden (see the 1400px
-         query). A strip that empties itself reads as broken; "All clear"
-         reads as a status. --}}
-    <span class="ht-topbar-pills__clear">
-        <x-filament::icon icon="phosphor-check-circle" class="ht-topbar-pill__icon" aria-hidden="true" />
-        <span>All clear</span>
-    </span>
 </div>

@@ -1633,10 +1633,6 @@ select.fi-select-input::placeholder {
     box-shadow: inset 0 0 0 1px rgb(var(--ht-success) / 0.3);
 }
 
-.ht-topbar-pills__clear {
-    display: none;
-}
-
 /* Condense to icon + count once the topbar runs short on room. The verbose
    description stays reachable via the title tooltip and the aria-label. */
 @media (max-width: 1600px) {
@@ -1659,15 +1655,6 @@ select.fi-select-input::placeholder {
         display: none;
     }
 
-    .ht-topbar-pills[data-all-clear="true"] .ht-topbar-pills__clear {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.375rem;
-        padding: 0.375rem 0.625rem;
-        font-size: 0.8125rem;
-        font-weight: 500;
-        color: rgb(var(--ht-success));
-    }
 }
 
 /* ── Phone variant, rendered at TOPBAR_END ──
@@ -1716,10 +1703,6 @@ select.fi-select-input::placeholder {
     font-size: 0.75rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
-}
-
-.ht-topbar-mobile__chip[data-state="idle"] {
-    color: rgb(var(--ht-success) / 0.8);
 }
 
 .ht-topbar-mobile__chip[data-tone="warning"] {
@@ -1779,11 +1762,6 @@ select.fi-select-input::placeholder {
 .ht-topbar-mobile__row[data-tone="danger"] .ht-topbar-mobile__row-count { color: rgb(var(--ht-danger)); }
 .ht-topbar-mobile__row[data-tone="info"] .ht-topbar-mobile__row-count { color: rgb(var(--ht-info)); }
 
-.ht-topbar-mobile__empty {
-    padding: 0.75rem 0.625rem;
-    font-size: 0.8125rem;
-    color: rgb(var(--ht-text-muted));
-}
 
 /* ============================================================
    Icon brightness — Filament's defaults use 400/500-level

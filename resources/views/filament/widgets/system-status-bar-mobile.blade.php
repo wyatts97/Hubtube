@@ -21,6 +21,8 @@
     }
 @endphp
 
+@if ($active)
+
 {{--
     Phone variant, rendered from TOPBAR_END.
 
@@ -40,29 +42,21 @@
     class="ht-topbar-mobile"
 >
     <x-slot name="trigger">
+        {{-- Not a bell: Filament's own database-notifications bell sits a few
+             pixels away, and two bells in one topbar read as a duplicate. --}}
         <button
             type="button"
             class="ht-topbar-mobile__chip"
             data-tone="{{ $tone }}"
-            data-state="{{ $active ? 'active' : 'idle' }}"
-            aria-label="{{ $active
-                ? number_format($total) . ' ' . ($total === 1 ? 'item needs' : 'items need') . ' attention'
-                : 'All clear, nothing needs attention' }}"
+            aria-label="{{ number_format($total) }} {{ $total === 1 ? 'item needs' : 'items need' }} attention"
         >
-            <x-filament::icon
-                :icon="$active ? 'phosphor-bell-simple' : 'phosphor-check-circle'"
-                class="ht-topbar-mobile__icon"
-                aria-hidden="true"
-            />
-
-            @if ($active)
-                <span class="ht-topbar-mobile__count" aria-hidden="true">{{ number_format($total) }}</span>
-            @endif
+            <x-filament::icon icon="phosphor-list-checks" class="ht-topbar-mobile__icon" aria-hidden="true" />
+            <span class="ht-topbar-mobile__count" aria-hidden="true">{{ number_format($total) }}</span>
         </button>
     </x-slot>
 
     <div class="ht-topbar-mobile__panel">
-        @forelse ($active as $item)
+        @foreach ($active as $item)
             @if ($item['url'])
                 <a
                     href="{{ $item['url'] }}"
@@ -81,8 +75,7 @@
                     <span class="ht-topbar-mobile__row-count">{{ number_format($item['count']) }}</span>
                 </span>
             @endif
-        @empty
-            <p class="ht-topbar-mobile__empty">Nothing needs attention.</p>
-        @endforelse
+        @endforeach
     </div>
 </x-filament::dropdown>
+@endif
