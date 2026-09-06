@@ -323,6 +323,26 @@ class AdminPanelProvider extends PanelProvider
                     }
                 },
             )
+            // The strip above renders into Filament's .fi-topbar-start, which is
+            // display:none below 1024px, so it is desktop-only. TOPBAR_END is a
+            // direct child of <nav class="fi-topbar"> and always visible.
+            //
+            // It also sits outside the x-persist wrapper on .fi-topbar-end,
+            // which rules out the global-search hooks: under ->spa() a persisted
+            // subtree is reused across every wire:navigate, so counts rendered
+            // there would freeze at their first-page-load values.
+            ->renderHook(
+                PanelsRenderHook::TOPBAR_END,
+                function (): string {
+                    try {
+                        return view('filament.widgets.system-status-bar-mobile', [
+                            'items' => app(SystemStatusBar::class)->getActionItems(),
+                        ])->render();
+                    } catch (Throwable $e) {
+                        return '';
+                    }
+                },
+            )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
                 fn (): string => (string) app(Vite::class)(['resources/css/filament/admin/theme.css']),

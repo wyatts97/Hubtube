@@ -12,6 +12,16 @@ Artisan::command('inspire', function () {
 
 Schedule::command('horizon:snapshot')->everyFiveMinutes();
 Schedule::command('queue:prune-batches --hours=48')->daily();
+
+// failed_jobs is never pruned by default, so one old failure sticks around
+// forever. 168h matches filament-jobs-monitor's configured 7-day retention so
+// the two failure tables age out together instead of drifting apart.
+Schedule::command('queue:prune-failed --hours=168')->daily();
+
+// pruning.retention_days is set in config/filament-jobs-monitor.php but nothing
+// ever ran the command, so queue_monitors grew without bound — it gets a row
+// per job run, and the scheduler below fires jobs every minute.
+Schedule::command('filament-jobs-monitor:prune')->daily();
 Schedule::command('sanctum:prune-expired --hours=24')->daily();
 Schedule::command('videos:prune-deleted --days=30')->daily();
 Schedule::command('storage:cleanup')->daily();

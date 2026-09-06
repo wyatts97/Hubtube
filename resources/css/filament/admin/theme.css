@@ -1518,15 +1518,27 @@ select.fi-select-input::placeholder {
 }
 
 /* ============================================================
-   Topbar action-item pills — replaces sidebar badges.
-   Mirrors the .fi-tabs-item look used by resource tab bars:
-   icon → label → tone-coloured badge.
+   Topbar action-item pills.
+
+   Two variants render from two hooks (see AdminPanelProvider): the full
+   strip at TOPBAR_LOGO_AFTER, which Filament hides below 1024px, and a
+   compact chip at TOPBAR_END for phones. Each hides itself at the other's
+   breakpoint so exactly one is ever on screen.
+
+   Tone is earned, not constant. `data-state` is "idle" at zero and
+   "active" above it, and only an active pill tints its count chip. The
+   previous version coloured every badge by its item's static tone, so a
+   quiet panel showed five alarm-coloured zeros and colour stopped meaning
+   anything. The tint lands on the count only — icon and label stay neutral
+   at every state — so the digit, not the hue, carries the signal.
    ============================================================ */
 .ht-topbar-pills {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-    margin-inline-start: 1rem;
+    gap: 0.125rem;
+    margin-inline-start: 0.75rem;
+    padding-inline-start: 0.75rem;
+    border-inline-start: 1px solid rgb(var(--ht-border-soft));
     min-width: 0;
 }
 
@@ -1534,15 +1546,15 @@ select.fi-select-input::placeholder {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
+    padding: 0.375rem 0.625rem;
     border-radius: 0.5rem;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 500;
     line-height: 1.25rem;
     white-space: nowrap;
     text-decoration: none;
     color: rgb(var(--ht-text-muted));
-    transition: background-color 0.075s ease, color 0.075s ease;
+    transition: background-color 0.075s ease, color 0.075s ease, opacity 0.075s ease;
 }
 
 .ht-topbar-pill:hover {
@@ -1550,24 +1562,83 @@ select.fi-select-input::placeholder {
     color: rgb(var(--ht-text));
 }
 
-.ht-topbar-pill__icon {
-    width: 1.25rem;
-    height: 1.25rem;
-    flex-shrink: 0;
-    color: rgb(var(--ht-text-muted));
-    transition: color 0.075s ease;
+/* These are not fi-* elements, so Filament's own focus ring never reaches
+   them and keyboard users got no visible target at all. */
+.ht-topbar-pill:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgb(var(--ht-accent-hover) / 0.7);
 }
 
-.ht-topbar-pill:hover .ht-topbar-pill__icon {
-    color: rgb(var(--ht-text));
+.ht-topbar-pill__icon {
+    width: 1.125rem;
+    height: 1.125rem;
+    flex-shrink: 0;
+    color: inherit;
 }
 
 .ht-topbar-pill__label {
     color: inherit;
 }
 
-/* Condense to icon + badge once the topbar runs short on room.
-   The verbose description stays available via the title tooltip. */
+/* tabular-nums keeps the strip from reflowing as a count ticks 9 to 10. */
+.ht-topbar-pill__count {
+    min-width: 1.25rem;
+    padding-inline: 0.3125rem;
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.125rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    background: rgb(255 255 255 / 0.06);
+    color: rgb(var(--ht-text-muted));
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+
+/* Idle: nothing pending. Deliberately colourless. */
+.ht-topbar-pill[data-state="idle"] {
+    opacity: 0.55;
+}
+
+.ht-topbar-pill[data-state="idle"]:hover {
+    opacity: 1;
+}
+
+/* Active: something is waiting. */
+.ht-topbar-pill[data-state="active"] {
+    color: rgb(var(--ht-text));
+}
+
+.ht-topbar-pill[data-state="active"][data-tone="warning"] .ht-topbar-pill__count {
+    background: rgb(var(--ht-warning) / 0.16);
+    color: rgb(var(--ht-warning));
+    box-shadow: inset 0 0 0 1px rgb(var(--ht-warning) / 0.3);
+}
+
+.ht-topbar-pill[data-state="active"][data-tone="danger"] .ht-topbar-pill__count {
+    background: rgb(var(--ht-danger) / 0.16);
+    color: rgb(var(--ht-danger));
+    box-shadow: inset 0 0 0 1px rgb(var(--ht-danger) / 0.3);
+}
+
+.ht-topbar-pill[data-state="active"][data-tone="info"] .ht-topbar-pill__count {
+    background: rgb(var(--ht-info) / 0.16);
+    color: rgb(var(--ht-info));
+    box-shadow: inset 0 0 0 1px rgb(var(--ht-info) / 0.3);
+}
+
+.ht-topbar-pill[data-state="active"][data-tone="success"] .ht-topbar-pill__count {
+    background: rgb(var(--ht-success) / 0.16);
+    color: rgb(var(--ht-success));
+    box-shadow: inset 0 0 0 1px rgb(var(--ht-success) / 0.3);
+}
+
+.ht-topbar-pills__clear {
+    display: none;
+}
+
+/* Condense to icon + count once the topbar runs short on room. The verbose
+   description stays reachable via the title tooltip and the aria-label. */
 @media (max-width: 1600px) {
     .ht-topbar-pill__label {
         display: none;
@@ -1577,6 +1648,141 @@ select.fi-select-input::placeholder {
         gap: 0.375rem;
         padding-inline: 0.5rem;
     }
+}
+
+/* Below this the strip is genuinely competing for space, and a muted zero
+   costs a slot while carrying no information — so drop idle pills entirely.
+   Above it there is room, and a stable seven-slot strip is more scannable
+   than one whose contents shift as counts come and go. */
+@media (max-width: 1400px) {
+    .ht-topbar-pill[data-state="idle"] {
+        display: none;
+    }
+
+    .ht-topbar-pills[data-all-clear="true"] .ht-topbar-pills__clear {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.375rem 0.625rem;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: rgb(var(--ht-success));
+    }
+}
+
+/* ── Phone variant, rendered at TOPBAR_END ──
+   TOPBAR_END is a direct child of <nav class="fi-topbar">, so unlike
+   .fi-topbar-start it is never hidden. It also sits outside the x-persist
+   wrapper on .fi-topbar-end, which matters: under ->spa() a persisted
+   subtree is reused across every wire:navigate, so counts rendered there
+   would freeze at their first-page-load values forever. */
+.ht-topbar-mobile {
+    margin-inline-start: 0.5rem;
+}
+
+/* Above the width where Filament reveals .fi-topbar-start, the full strip
+   takes over and this chip would be a duplicate. */
+@media (min-width: 1024px) {
+    .ht-topbar-mobile {
+        display: none;
+    }
+}
+
+.ht-topbar-mobile__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.625rem;
+    border: 0;
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.06);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+    color: rgb(var(--ht-text-muted));
+    cursor: pointer;
+}
+
+.ht-topbar-mobile__chip:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgb(var(--ht-accent-hover) / 0.7);
+}
+
+.ht-topbar-mobile__icon {
+    width: 1.125rem;
+    height: 1.125rem;
+    color: inherit;
+}
+
+.ht-topbar-mobile__count {
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.ht-topbar-mobile__chip[data-state="idle"] {
+    color: rgb(var(--ht-success) / 0.8);
+}
+
+.ht-topbar-mobile__chip[data-tone="warning"] {
+    background: rgb(var(--ht-warning) / 0.16);
+    color: rgb(var(--ht-warning));
+    box-shadow: inset 0 0 0 1px rgb(var(--ht-warning) / 0.3);
+}
+
+.ht-topbar-mobile__chip[data-tone="danger"] {
+    background: rgb(var(--ht-danger) / 0.16);
+    color: rgb(var(--ht-danger));
+    box-shadow: inset 0 0 0 1px rgb(var(--ht-danger) / 0.3);
+}
+
+.ht-topbar-mobile__chip[data-tone="info"] {
+    background: rgb(var(--ht-info) / 0.16);
+    color: rgb(var(--ht-info));
+    box-shadow: inset 0 0 0 1px rgb(var(--ht-info) / 0.3);
+}
+
+.ht-topbar-mobile__panel {
+    padding: 0.375rem;
+}
+
+.ht-topbar-mobile__row {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.625rem;
+    border-radius: 0.5rem;
+    font-size: 0.8125rem;
+    text-decoration: none;
+    color: rgb(var(--ht-text));
+}
+
+.ht-topbar-mobile__row:hover {
+    background: rgb(var(--ht-surface-3) / 0.6);
+}
+
+.ht-topbar-mobile__row-icon {
+    width: 1.125rem;
+    height: 1.125rem;
+    flex-shrink: 0;
+    color: rgb(var(--ht-text-muted));
+}
+
+.ht-topbar-mobile__row-label {
+    flex: 1 1 auto;
+}
+
+.ht-topbar-mobile__row-count {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.ht-topbar-mobile__row[data-tone="warning"] .ht-topbar-mobile__row-count { color: rgb(var(--ht-warning)); }
+.ht-topbar-mobile__row[data-tone="danger"] .ht-topbar-mobile__row-count { color: rgb(var(--ht-danger)); }
+.ht-topbar-mobile__row[data-tone="info"] .ht-topbar-mobile__row-count { color: rgb(var(--ht-info)); }
+
+.ht-topbar-mobile__empty {
+    padding: 0.75rem 0.625rem;
+    font-size: 0.8125rem;
+    color: rgb(var(--ht-text-muted));
 }
 
 /* ============================================================

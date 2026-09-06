@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Croustibat\FilamentJobsMonitor\Models\FailureGroup;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Exception;
 use Throwable;
@@ -24,6 +26,37 @@ use Illuminate\Support\Facades\Storage;
 
 class SystemStatusBar
 {
+    /**
+     * Per-request memo. Two render hooks (the desktop strip and the phone
+     * chip) both ask for the action items in a single response, and without
+     * this the whole count set would be resolved twice per page load.
+     */
+    protected ?array $actionItems = null;
+
+    protected const COUNTS_CACHE_KEY = 'ht:status-bar:counts';
+
+    /**
+     * Short by design. Paired with flush() below, staleness is bounded by
+     * whichever comes first: a moderator's own edit, or fifteen seconds.
+     */
+    protected const COUNTS_CACHE_TTL = 15;
+
+    /**
+     * Drop the cached counts.
+     *
+     * Wired to saved/deleted on the underlying models in AppServiceProvider so
+     * that approving the last pending video makes its pill read zero on the
+     * next navigation, rather than up to a TTL later.
+     */
+    public static function flush(): void
+    {
+        try {
+            Cache::forget(self::COUNTS_CACHE_KEY);
+        } catch (Throwable $e) {
+            // A dead cache store must never break a model save.
+        }
+    }
+
     public function getMetrics(): array
     {
         return [
@@ -36,146 +69,231 @@ class SystemStatusBar
     /**
      * Action-item counts surfaced as topbar pills (replaces the old
      * coloured sidebar navigation badges). Every item is always included,
-     * even at zero, so the strip reads as a stable status bar. Each lookup
-     * is individually guarded so a single failing query never takes down
-     * the whole topbar.
+     * even at zero, so the strip reads as a stable status bar — the view
+     * mutes a zero rather than hiding it, so colour only ever means
+     * "this needs you". Items whose count query fails are dropped.
      *
      * @return array<int, array{key:string,label:string,shortLabel:string,count:int,url:?string,icon:string,tone:string}>
      */
     public function getActionItems(): array
     {
-        $items = [];
-
-        $items[] = $this->buildItem(
-            key: 'moderation',
-            label: 'Videos need moderation',
-            shortLabel: 'Needs Moderation',
-            icon: 'phosphor-shield-check',
-            tone: 'warning',
-            count: fn () => Video::where('is_approved', false)
-                ->where('status', 'processed')
-                ->whereNull('queue_order')
-                ->count(),
-            url: fn () => VideoResource::getUrl('index'),
-        );
-
-        $items[] = $this->buildItem(
-            key: 'images',
-            label: 'Images need moderation',
-            shortLabel: 'Images',
-            icon: 'phosphor-image',
-            tone: 'warning',
-            count: fn () => Image::where('is_approved', false)->count(),
-            url: fn () => ImageResource::getUrl('index'),
-        );
-
-        $items[] = $this->buildItem(
-            key: 'comments',
-            label: 'Comments awaiting approval',
-            shortLabel: 'Comments',
-            icon: 'phosphor-chat-text',
-            tone: 'warning',
-            count: fn () => Comment::where('is_approved', false)->count(),
-            url: fn () => CommentResource::getUrl('index'),
-        );
-
-        $items[] = $this->buildItem(
-            key: 'reports',
-            label: 'Pending reports',
-            shortLabel: 'Reports',
-            icon: 'phosphor-flag',
-            tone: 'danger',
-            count: fn () => Report::whereIn('status', [Report::STATUS_PENDING, Report::STATUS_REVIEWING])->count(),
-            url: fn () => ReportResource::getUrl('index'),
-        );
-
-        $items[] = $this->buildItem(
-            key: 'contacts',
-            label: 'Unread contact messages',
-            shortLabel: 'Messages',
-            icon: 'phosphor-envelope',
-            tone: 'danger',
-            count: fn () => ContactMessage::where('is_read', false)->count(),
-            url: fn () => ContactMessageResource::getUrl('index'),
-        );
-
-        if ((bool) Setting::get('monetization_enabled', true)) {
-            $items[] = $this->buildItem(
-                key: 'withdrawals',
-                label: 'Pending withdrawals',
-                shortLabel: 'Withdrawals',
-                icon: 'phosphor-currency-dollar',
-                tone: 'warning',
-                count: fn () => WithdrawalRequest::where('status', WithdrawalRequest::STATUS_PENDING)->count(),
-                url: fn () => WithdrawalRequestResource::getUrl('index'),
-            );
+        if ($this->actionItems !== null) {
+            return $this->actionItems;
         }
 
-        $items[] = $this->buildItem(
-            key: 'scheduled',
-            label: 'Scheduled videos',
-            shortLabel: 'Scheduled',
-            icon: 'phosphor-clock',
-            tone: 'info',
-            count: fn () => Video::whereNotNull('queue_order')
-                ->whereNull('published_at')
-                ->count(),
-            url: fn () => ScheduledVideos::getUrl(),
-        );
+        $definitions = $this->actionItemDefinitions();
+        $counts = $this->resolveCounts($definitions);
 
-        $items[] = $this->buildItem(
-            key: 'logs',
-            label: 'Failed jobs',
-            shortLabel: 'Failed Jobs',
-            icon: 'phosphor-warning-octagon',
-            tone: 'danger',
-            count: fn () => $this->getQueueStatus()['failed'] ?? 0,
-            url: fn () => $this->logsUrl(),
-        );
+        $items = [];
 
-        // Only drop items whose count query actually failed.
-        return array_values(array_filter($items, fn ($item) => $item !== null));
+        foreach ($definitions as $definition) {
+            // A key absent from the map means its count query threw, so the
+            // item is dropped rather than rendered as a misleading zero.
+            if (! array_key_exists($definition['key'], $counts)) {
+                continue;
+            }
+
+            $items[] = $this->buildItem($definition, $counts[$definition['key']]);
+        }
+
+        return $this->actionItems = $items;
     }
 
     /**
-     * Resolve a single action item, swallowing any error (missing table,
-     * unregistered resource, etc.) so the topbar degrades gracefully.
-     * A zero count is a valid result and is still rendered.
+     * The pill definitions, with their count queries still unresolved.
+     *
+     * Kept separate from the counts so the list itself is rebuilt per request:
+     * the monetization gate below stays live, and resolved URLs (which bake in
+     * the current host and panel path) are never cached.
+     *
+     * @return array<int, array<string, mixed>>
      */
-    protected function buildItem(string $key, string $label, string $shortLabel, string $icon, string $tone, \Closure $count, \Closure $url): ?array
+    protected function actionItemDefinitions(): array
     {
-        try {
-            $value = (int) $count();
-        } catch (Throwable $e) {
-            return null;
+        $definitions = [];
+
+        $definitions[] = [
+            'key' => 'moderation',
+            'label' => 'Videos need moderation',
+            'shortLabel' => 'Needs Moderation',
+            'icon' => 'phosphor-shield-check',
+            'tone' => 'warning',
+            'count' => fn () => Video::where('is_approved', false)
+                ->where('status', 'processed')
+                ->whereNull('queue_order')
+                ->count(),
+            'url' => fn () => VideoResource::getUrl('index'),
+        ];
+
+        $definitions[] = [
+            'key' => 'images',
+            'label' => 'Images need moderation',
+            'shortLabel' => 'Images',
+            'icon' => 'phosphor-image',
+            'tone' => 'warning',
+            'count' => fn () => Image::where('is_approved', false)->count(),
+            'url' => fn () => ImageResource::getUrl('index'),
+        ];
+
+        $definitions[] = [
+            'key' => 'comments',
+            'label' => 'Comments awaiting approval',
+            'shortLabel' => 'Comments',
+            'icon' => 'phosphor-chat-text',
+            'tone' => 'warning',
+            'count' => fn () => Comment::where('is_approved', false)->count(),
+            'url' => fn () => CommentResource::getUrl('index'),
+        ];
+
+        $definitions[] = [
+            'key' => 'reports',
+            'label' => 'Pending reports',
+            'shortLabel' => 'Reports',
+            'icon' => 'phosphor-flag',
+            'tone' => 'danger',
+            'count' => fn () => Report::whereIn('status', [Report::STATUS_PENDING, Report::STATUS_REVIEWING])->count(),
+            'url' => fn () => ReportResource::getUrl('index'),
+        ];
+
+        $definitions[] = [
+            'key' => 'contacts',
+            'label' => 'Unread contact messages',
+            'shortLabel' => 'Messages',
+            'icon' => 'phosphor-envelope',
+            'tone' => 'danger',
+            'count' => fn () => ContactMessage::where('is_read', false)->count(),
+            'url' => fn () => ContactMessageResource::getUrl('index'),
+        ];
+
+        if ((bool) Setting::get('monetization_enabled', true)) {
+            $definitions[] = [
+                'key' => 'withdrawals',
+                'label' => 'Pending withdrawals',
+                'shortLabel' => 'Withdrawals',
+                'icon' => 'phosphor-currency-dollar',
+                'tone' => 'warning',
+                'count' => fn () => WithdrawalRequest::where('status', WithdrawalRequest::STATUS_PENDING)->count(),
+                'url' => fn () => WithdrawalRequestResource::getUrl('index'),
+            ];
         }
 
+        $definitions[] = [
+            'key' => 'scheduled',
+            'label' => 'Scheduled videos',
+            'shortLabel' => 'Scheduled',
+            'icon' => 'phosphor-clock',
+            'tone' => 'info',
+            'count' => fn () => Video::whereNotNull('queue_order')
+                ->whereNull('published_at')
+                ->count(),
+            'url' => fn () => ScheduledVideos::getUrl(),
+        ];
+
+        // Counts unresolved failure *groups*, which is exactly what the page
+        // this links to shows on its default tab. The previous version counted
+        // `failed_jobs` while linking at the jobs-monitor index (which lists
+        // `queue_monitors`) — two unrelated tables, so a single old failure
+        // left a permanent badge pointing at an empty page, with nothing in
+        // the UI able to clear it. FailureGroup is not prunable and the
+        // failures page can resolve or retry a group, so the number and the
+        // page can no longer disagree.
+        $definitions[] = [
+            'key' => 'failures',
+            'label' => 'Unresolved job failures',
+            'shortLabel' => 'Failures',
+            'icon' => 'phosphor-bug',
+            'tone' => 'danger',
+            'count' => fn () => FailureGroup::whereNull('resolved_at')->count(),
+            'url' => fn () => $this->jobFailuresUrl(),
+        ];
+
+        return $definitions;
+    }
+
+    /**
+     * Resolve every count in one cached pass.
+     *
+     * Only the counts are cached, never the assembled items: a resolved URL
+     * carries the current host and panel path, and caching that would serve
+     * the wrong domain on a multi-domain install.
+     *
+     * @param  array<int, array<string, mixed>>  $definitions
+     * @return array<string, int>  keyed by item key; a key is absent if its query threw
+     */
+    protected function resolveCounts(array $definitions): array
+    {
+        $resolve = function () use ($definitions): array {
+            $counts = [];
+
+            foreach ($definitions as $definition) {
+                try {
+                    $counts[$definition['key']] = (int) ($definition['count'])();
+                } catch (Throwable $e) {
+                    // Missing table, unmigrated plugin, etc. Leave the key out
+                    // so one broken lookup drops its own pill and no more.
+                }
+            }
+
+            return $counts;
+        };
+
         try {
-            $resolvedUrl = $url();
+            return Cache::remember(self::COUNTS_CACHE_KEY, self::COUNTS_CACHE_TTL, $resolve);
         } catch (Throwable $e) {
-            $resolvedUrl = null;
+            // Cache store down: still render, just uncached.
+            return $resolve();
+        }
+    }
+
+    /**
+     * Assemble one pill. The URL is resolved here rather than in the cached
+     * count pass, and a failure to resolve it degrades the pill to plain text
+     * instead of dropping it.
+     *
+     * @param  array<string, mixed>  $definition
+     * @return array{key:string,label:string,shortLabel:string,count:int,url:?string,icon:string,tone:string}
+     */
+    protected function buildItem(array $definition, int $count): array
+    {
+        try {
+            $url = ($definition['url'])();
+        } catch (Throwable $e) {
+            $url = null;
         }
 
         return [
-            'key' => $key,
-            'label' => $label,
-            'shortLabel' => $shortLabel,
-            'count' => $value,
-            'url' => $resolvedUrl,
-            'icon' => $icon,
-            'tone' => $tone,
+            'key' => $definition['key'],
+            'label' => $definition['label'],
+            'shortLabel' => $definition['shortLabel'],
+            'count' => $count,
+            'url' => $url,
+            'icon' => $definition['icon'],
+            'tone' => $definition['tone'],
         ];
     }
 
-    protected function logsUrl(): ?string
+    /**
+     * Deep-link to the jobs-monitor "Failures" sub-page, not its index.
+     *
+     * They are not the same data. The index lists `queue_monitors` — every job
+     * run, prunable — while the badge counts `queue_monitor_failure_groups`,
+     * which is not. Pointing at the index is how a stale count ends up with
+     * nothing on screen to explain it. The failures page is also the only
+     * place an admin can retry or resolve a group, i.e. the only place the
+     * badge can actually be cleared.
+     */
+    protected function jobFailuresUrl(): ?string
     {
         $resource = config('filament-jobs-monitor.resources.resource');
 
-        if (is_string($resource) && class_exists($resource) && method_exists($resource, 'getUrl')) {
-            return $resource::getUrl('index');
+        if (! is_string($resource) || ! class_exists($resource) || ! method_exists($resource, 'getUrl')) {
+            return null;
         }
 
-        return null;
+        // QueueMonitorResource only registers the `failures` page when this is on.
+        $page = config('filament-jobs-monitor.failures.enabled', true) ? 'failures' : 'index';
+
+        return $resource::getUrl($page);
     }
 
     protected function getStorageMetrics(): array

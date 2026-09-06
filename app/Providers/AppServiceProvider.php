@@ -4,11 +4,15 @@ namespace App\Providers;
 
 use App\Http\Middleware\SetAdminTimezone;
 use App\Models\Category;
+use App\Models\Comment;
+use App\Models\ContactMessage;
 use App\Models\Channel;
 use App\Models\Gallery;
 use App\Models\Image;
 use App\Models\User;
+use App\Models\Report;
 use App\Models\Video;
+use App\Models\WithdrawalRequest;
 use App\Observers\CategoryObserver;
 use App\Observers\ChannelObserver;
 use App\Observers\GalleryObserver;
@@ -18,6 +22,7 @@ use App\Observers\VideoObserver;
 use Filament\Auth\Http\Responses\Contracts\LogoutResponse;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\ServiceProvider;
+use App\Services\SystemStatusBar;
 use App\Services\Translation\Contracts\TranslationProvider;
 use App\Services\Translation\TranslationProviderManager;
 use Illuminate\Database\Eloquent\Model;
@@ -55,6 +60,11 @@ class AppServiceProvider extends ServiceProvider
             TranslationProvider::class,
             fn ($app) => $app->make(TranslationProviderManager::class)->default(),
         );
+
+        // scoped(), not singleton(): the topbar status bar memoises its counts
+        // for the two render hooks in one response, and that memo must not
+        // survive into the next request or the next queued job.
+        $this->app->scoped(SystemStatusBar::class);
     }
 
     public function boot(): void
@@ -77,6 +87,16 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Event::listen(JobProcessing::class, fn () => SetAdminTimezone::setTimezone());
+
+        // The topbar action-item counts are cached for a few seconds so the
+        // two render hooks do not re-run eight COUNT queries on every admin
+        // page load. Bust that cache as soon as a moderator touches one of the
+        // underlying rows, so approving the last pending video drops its pill
+        // to zero on the next navigation rather than at the end of the TTL.
+        foreach ([Video::class, Image::class, Comment::class, Report::class, ContactMessage::class, WithdrawalRequest::class] as $statusBarModel) {
+            $statusBarModel::saved(fn () => SystemStatusBar::flush());
+            $statusBarModel::deleted(fn () => SystemStatusBar::flush());
+        }
 
         // Log admin impersonation start/stop to the activity log for auditability.
         //
