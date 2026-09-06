@@ -141,8 +141,15 @@ test('saving a moderated model busts the cached counts', function () {
     expect(itemNamed('reports')['count'])->toBe(1);
 });
 
-test('both the desktop strip and the phone chip render into the topbar', function () {
-    asAdmin();
+test('both the desktop strip and the phone chip render when work is outstanding', function () {
+    $admin = asAdmin();
+
+    Report::create([
+        'user_id' => $admin->id,
+        'reportable_type' => (new Video)->getMorphClass(),
+        'reportable_id' => 1,
+        'reason' => Report::REASON_SPAM,
+    ]);
 
     $html = $this->get('/admin')->assertStatus(200)->getContent();
 
@@ -150,6 +157,44 @@ test('both the desktop strip and the phone chip render into the topbar', functio
     // left mobile with no status bar at all. Both variants ship; CSS picks one.
     expect($html)->toContain('ht-topbar-pills');
     expect($html)->toContain('ht-topbar-mobile__chip');
+});
+
+test('the phone chip renders nothing when nothing needs attention', function () {
+    asAdmin();
+
+    $html = $this->get('/admin')->assertStatus(200)->getContent();
+
+    // No "all clear" affordance: an empty chip would just take up room on a
+    // phone topbar and add a second bell beside Filament's notification bell.
+    expect($html)->toContain('ht-topbar-pills');
+    expect($html)->not->toContain('ht-topbar-mobile__chip');
+});
+
+test('the phone chip does not use a bell icon', function () {
+    $admin = asAdmin();
+
+    Report::create([
+        'user_id' => $admin->id,
+        'reportable_type' => (new Video)->getMorphClass(),
+        'reportable_id' => 1,
+        'reason' => Report::REASON_SPAM,
+    ]);
+
+    $html = $this->get('/admin')->assertStatus(200)->getContent();
+
+    // Filament's own database-notifications bell sits a few pixels away, so a
+    // bell here read as a duplicated notification icon.
+    expect($html)->toContain('ht-topbar-mobile__chip');
+    expect($html)->not->toContain('bell-simple');
+});
+
+test('the strip no longer carries an all-clear indicator', function () {
+    asAdmin();
+
+    $html = $this->get('/admin')->assertStatus(200)->getContent();
+
+    expect($html)->not->toContain('All clear');
+    expect($html)->not->toContain('ht-topbar-pills__clear');
 });
 
 test('failed job tables are pruned on a schedule', function () {
