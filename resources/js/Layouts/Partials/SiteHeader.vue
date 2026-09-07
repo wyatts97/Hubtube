@@ -182,7 +182,7 @@ nextTick(loadUnreadCount);
             </ComboboxRoot>
 
             <!-- Right: actions -->
-            <div class="flex items-center gap-0.5 sm:gap-1 shrink-0 md:justify-self-end">
+            <div class="flex items-center justify-end gap-0.5 sm:gap-1 shrink-0 md:w-full">
                 <button
                     class="md:hidden p-2 text-text-secondary hover:text-text-primary transition-colors"
                     :style="{ borderRadius: 'var(--radius-card)' }"

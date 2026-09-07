@@ -21,28 +21,41 @@ use App\Models\Setting;
 class ThemeTokens
 {
     /**
-     * Dark palette. Deliberately near-black rather than pure black: video
-     * thumbnails have their own black letterboxing, and a pure-black page
-     * ground makes them bleed into it with no visible card edge.
+     * Dark palette.
+     *
+     * Every neutral is a TRUE grey (R = G = B). The first pass carried a blue
+     * channel 2-10 points above red and green, which read as a slate/blue cast
+     * — most visibly on large flat fills like the search field, which looked
+     * blue against surroundings that were meant to match it. Keep these
+     * channels equal when adjusting; a couple of points of drift is enough to
+     * tint a whole surface.
+     *
+     * Deliberately near-black rather than pure black: thumbnails carry their own
+     * black letterboxing, and a pure-black ground makes them bleed into it with
+     * no visible card edge.
+     *
+     * bgInput is one step LIGHTER than bgSecondary on purpose — the search field
+     * sits on the header, and matching them made the field read as a hole rather
+     * than an input.
      */
     public const DARK = [
-        'bgPrimary'      => '#0c0c0e',
-        'bgSecondary'    => '#141417',
-        'bgCard'         => '#1a1a1e',
-        'bgElevated'     => '#232329',
-        'bgHover'        => '#2a2a31',
-        'bgInput'        => '#141417',
+        'bgPrimary'      => '#0d0d0d',
+        'bgSecondary'    => '#161616',
+        'bgCard'         => '#1c1c1c',
+        'bgElevated'     => '#242424',
+        'bgHover'        => '#2c2c2c',
+        'bgInput'        => '#202020',
         'accent'         => '#e11d34',
         'accentHover'    => '#f43553',
-        'accentText'     => '#ef3e55',
+        'accentText'     => '#f1556a',
         'accentSubtle'   => 'rgba(225, 29, 52, 0.14)',
         'accentContrast' => '#ffffff',
-        'textPrimary'    => '#f5f5f7',
-        'textSecondary'  => '#a1a1ab',
-        'textMuted'      => '#84808e',
-        'border'         => '#26262d',
-        'borderSubtle'   => '#1e1e24',
-        'borderStrong'   => '#35353f',
+        'textPrimary'    => '#f4f4f4',
+        'textSecondary'  => '#a6a6a6',
+        'textMuted'      => '#8a8a8a',
+        'border'         => '#2e2e2e',
+        'borderSubtle'   => '#212121',
+        'borderStrong'   => '#3d3d3d',
         'success'        => '#3ecf70',
         'overlay'        => 'rgba(0, 0, 0, 0.78)',
     ];
