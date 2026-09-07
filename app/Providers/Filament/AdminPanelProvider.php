@@ -37,13 +37,34 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Leandrocfe\FilamentApexCharts\FilamentApexChartsPlugin;
-use Martin6363\SidebarResize\SidebarResizePlugin;
 use Muazzam\SlickScrollbar\SlickScrollbarPlugin;
 use Openplain\FilamentShadcnTheme\Color as ShadcnColor;
 use Throwable;
 
 class AdminPanelProvider extends PanelProvider
 {
+    /**
+     * Sidebar resize bounds, in pixels.
+     *
+     * Shared by three consumers that have to agree or the sidebar visibly jumps:
+     * the pre-paint script in the head, the drag handler in the body partial,
+     * and the stored value each of them clamps. Kept here rather than in the
+     * blades so there is one place to change them.
+     */
+    public const SIDEBAR_MIN_WIDTH = 220;
+
+    public const SIDEBAR_MAX_WIDTH = 460;
+
+    /**
+     * Filament's own default, from HasSidebar::$sidebarWidth. The panel never
+     * calls ->sidebarWidth(), so this is what --sidebar-width resolves to
+     * before a visitor has dragged anything, and what a double-click resets to.
+     */
+    public const SIDEBAR_DEFAULT_WIDTH = 320;
+
+    /** localStorage key holding the visitor's chosen sidebar width. */
+    public const SIDEBAR_WIDTH_STORAGE_KEY = 'hubtube-admin:sidebar-width';
+
     /**
      * Table state defaults for this panel's own resource list pages.
      *
@@ -120,13 +141,6 @@ class AdminPanelProvider extends PanelProvider
         if (class_exists(FinMailPlugin::class)) {
             $plugins[] = FinMailPlugin::make()
                 ->navigationGroup('Users & Email');
-        }
-
-        // Drag-to-resize navigation sidebar (width persisted in browser localStorage)
-        if (class_exists(SidebarResizePlugin::class)) {
-            $plugins[] = SidebarResizePlugin::make()
-                ->minWidth(220)
-                ->maxWidth(460);
         }
 
         // Log viewer (browse, filter, and manage Laravel log files)
@@ -339,6 +353,21 @@ class AdminPanelProvider extends PanelProvider
                     }
                 },
             )
+            // Restore the visitor's dragged sidebar width before first paint.
+            //
+            // Filament sizes an open sidebar from --sidebar-width, so setting
+            // that one property here is enough: no inline widths, and no snap
+            // from the 20rem default to the saved value a frame later, which is
+            // what applying the width on DOMContentLoaded looked like. Kept to a
+            // handful of statements so a blocking script in the head stays cheap.
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => view('filament.partials.sidebar-width-restore', [
+                    'storageKey' => static::SIDEBAR_WIDTH_STORAGE_KEY,
+                    'minWidth' => static::SIDEBAR_MIN_WIDTH,
+                    'maxWidth' => static::SIDEBAR_MAX_WIDTH,
+                ])->render(),
+            )
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
                 fn (): string => (string) app(Vite::class)(['resources/css/filament/admin/theme.css']),
@@ -374,6 +403,19 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::BODY_END,
                 fn (): string => view('filament.partials.session-expired-overlay')->render(),
+            )
+            // Drag-to-resize sidebar. Replaces martin6363/filament-sidebar-resize,
+            // whose published view had already been rewritten here anyway; owning
+            // it outright lets the handle share the panel's colour tokens and use
+            // pointer events rather than mouse-only listeners.
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => view('filament.partials.sidebar-resize', [
+                    'storageKey' => static::SIDEBAR_WIDTH_STORAGE_KEY,
+                    'minWidth' => static::SIDEBAR_MIN_WIDTH,
+                    'maxWidth' => static::SIDEBAR_MAX_WIDTH,
+                    'defaultWidth' => static::SIDEBAR_DEFAULT_WIDTH,
+                ])->render(),
             )
             ->navigationGroups(static::buildNavigationGroups())
             ->plugins(static::buildPlugins())

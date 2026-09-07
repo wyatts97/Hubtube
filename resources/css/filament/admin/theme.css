@@ -45,6 +45,137 @@
     --ht-violet-soft: 88 28 135;
 }
 
+/* ============================================================
+   Panel chrome — sidebar surface
+   ============================================================
+   Stock Filament makes .fi-sidebar transparent above 1024px, so on desktop
+   the sidebar shows through to the .fi-body ground (--gray-950) while
+   .fi-topbar sits on --gray-900. The result is a light header on a black
+   rail. These rules put both on --gray-900 so the chrome reads as one
+   L-shaped surface, with the content area keeping --gray-950.
+
+   No !important: this file is linked from a HEAD_END render hook, after
+   Filament's own stylesheet, so equal specificity already wins. The
+   :where(.dark, .dark *) form mirrors Filament's own rule rather than
+   hardcoding a hex, so the panel's forced-dark mode still drives the value.
+   ============================================================ */
+.fi-sidebar,
+.fi-sidebar:where(.dark, .dark *) {
+    background-color: var(--gray-900);
+}
+
+/* Separate the chrome from the content area. Same value Filament already
+   uses for the sidebar's own dark-mode ring, so this divider matches every
+   other panel edge — and it doubles as the resize handle's rest state. */
+.fi-main-sidebar {
+    border-inline-end: 1px solid color-mix(in oklab, var(--color-white) 10%, transparent);
+}
+
+/* ============================================================
+   Sidebar resize handle
+   ============================================================
+   Behaviour lives in resources/views/filament/partials/sidebar-resize.blade.php.
+
+   At rest the handle is invisible: the sidebar's own border above is the
+   only thing on screen. Hovering it, or dragging, brings up a primary-tinted
+   line and a small grip pill. The panel is ->darkMode(true, true), so there
+   is deliberately no light-mode branch here.
+   ============================================================ */
+.fi-sidebar-resize-handle {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    width: 10px;
+    z-index: 50;
+    cursor: col-resize;
+    touch-action: none;
+}
+
+/* The line. Transparent at rest so the sidebar border shows through
+   unchanged; it sits under the pill via a negative z-index. */
+.fi-sidebar-resize-handle::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    width: 2px;
+    z-index: -1;
+    background-color: transparent;
+    transition: background-color 150ms ease;
+}
+
+/* The grip. Faded out at rest and nudged toward the sidebar so it eases
+   outward as it appears. */
+.fi-sidebar-resize-handle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    inset-inline-end: 0;
+    width: 12px;
+    height: 44px;
+    border-radius: 9999px;
+    opacity: 0;
+    transform: translate(50%, -50%) scale(0.9);
+    background-color: var(--gray-800);
+    border: 1px solid color-mix(in oklab, var(--primary-500) 40%, transparent);
+    box-shadow:
+        0 1px 3px rgb(0 0 0 / 0.35),
+        inset 0 1px 0 rgb(255 255 255 / 0.04);
+    background-image:
+        radial-gradient(circle, var(--primary-400) 1.25px, transparent 1.35px),
+        radial-gradient(circle, var(--primary-400) 1.25px, transparent 1.35px),
+        radial-gradient(circle, var(--primary-400) 1.25px, transparent 1.35px),
+        radial-gradient(circle, var(--primary-400) 1.25px, transparent 1.35px),
+        radial-gradient(circle, var(--primary-400) 1.25px, transparent 1.35px),
+        radial-gradient(circle, var(--primary-400) 1.25px, transparent 1.35px);
+    background-size: 4px 4px;
+    background-position:
+        calc(50% - 2px) 16px,
+        calc(50% + 2px) 16px,
+        calc(50% - 2px) 22px,
+        calc(50% + 2px) 22px,
+        calc(50% - 2px) 28px,
+        calc(50% + 2px) 28px;
+    background-repeat: no-repeat;
+    transition:
+        opacity 150ms ease,
+        transform 150ms ease,
+        border-color 150ms ease,
+        box-shadow 150ms ease;
+}
+
+.fi-sidebar-resize-handle:hover::before,
+.fi-sidebar-resize-handle:active::before,
+body.fi-sidebar-resizing .fi-sidebar-resize-handle::before {
+    opacity: 1;
+    transform: translate(50%, -50%) scale(1);
+    border-color: var(--primary-500);
+    box-shadow:
+        0 2px 8px rgb(0 0 0 / 0.4),
+        0 0 0 1px color-mix(in oklab, var(--primary-500) 30%, transparent);
+}
+
+.fi-sidebar-resize-handle:hover::after,
+.fi-sidebar-resize-handle:active::after,
+body.fi-sidebar-resizing .fi-sidebar-resize-handle::after {
+    background-color: var(--primary-500);
+}
+
+body.fi-sidebar-resizing {
+    cursor: col-resize;
+    user-select: none;
+}
+
+/* Stop the page reacting to a pointer that is mid-drag, and drop the
+   sidebar's width transition so it tracks the cursor exactly. */
+body.fi-sidebar-resizing .fi-main {
+    pointer-events: none;
+}
+
+body.fi-sidebar-resizing .fi-main-sidebar {
+    transition: none !important;
+}
+
 /* ── Custom: Distinguish placeholder text from typed input text ──
    The Filament default placeholder color (gray-500 from the shadcn
    palette) sits too close in perceived lightness to the white typed

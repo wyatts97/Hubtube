@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fcb20caf028354eb871957afcf836fe1",
+    "content-hash": "72e1be2645bda1e8361b23252f0a25a3",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -5757,64 +5757,6 @@
                 }
             ],
             "time": "2026-04-11T18:38:28+00:00"
-        },
-        {
-            "name": "martin6363/filament-sidebar-resize",
-            "version": "v1.0.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/Martin6363/filament-sidebar-resize.git",
-                "reference": "536aaf2d179719b444d78f3b140049806200af1b"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/Martin6363/filament-sidebar-resize/zipball/536aaf2d179719b444d78f3b140049806200af1b",
-                "reference": "536aaf2d179719b444d78f3b140049806200af1b",
-                "shasum": ""
-            },
-            "require": {
-                "filament/filament": "^5.0",
-                "illuminate/contracts": "^12.0|^13.0",
-                "php": "^8.2|^8.3|^8.4"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Martin6363\\SidebarResize\\SidebarResizeServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Martin6363\\SidebarResize\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Martin",
-                    "email": "martin.khachatryan.2024@gmail.com"
-                }
-            ],
-            "description": "Drag-to-resize Filament v5 admin sidebar with localStorage persistence",
-            "homepage": "https://github.com/martin6363/filament-sidebar-resize",
-            "keywords": [
-                "admin",
-                "filament",
-                "laravel",
-                "plugin",
-                "resize",
-                "sidebar"
-            ],
-            "support": {
-                "issues": "https://github.com/Martin6363/filament-sidebar-resize/issues",
-                "source": "https://github.com/Martin6363/filament-sidebar-resize/tree/v1.0.0"
-            },
-            "time": "2026-07-06T17:45:42+00:00"
         },
         {
             "name": "meilisearch/meilisearch-php",
