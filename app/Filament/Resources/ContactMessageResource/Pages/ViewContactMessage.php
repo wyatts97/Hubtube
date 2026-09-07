@@ -16,6 +16,7 @@ class ViewContactMessage extends ViewRecord
     {
         return [
             Action::make('toggle_read')
+                ->color('gray')
                 ->icon(fn () => $this->record->is_read ? 'phosphor-envelope' : 'phosphor-envelope-open')
                 ->label(fn () => $this->record->is_read ? 'Mark Unread' : 'Mark Read')
                 ->action(fn () => $this->record->update(['is_read' => !$this->record->is_read])),

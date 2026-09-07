@@ -122,7 +122,7 @@ class IntegrationSettings extends Page implements HasForms
                             Action::make('sendTestEmail')
                                 ->label('Send Test Email')
                                 ->icon('phosphor-paper-plane-right')
-                                ->color('gray')
+                                ->color('success')
                                 ->action(function () {
                                     $this->sendTestEmail();
                                 }),
@@ -140,6 +140,7 @@ class IntegrationSettings extends Page implements HasForms
     {
         return [
             Action::make('save')
+                ->color('success')
                 ->label('Save Settings')
                 ->icon('phosphor-check')
                 ->action('save'),

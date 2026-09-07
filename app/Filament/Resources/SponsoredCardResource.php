@@ -280,6 +280,7 @@ class SponsoredCardResource extends Resource
             ->emptyStateDescription('Create native in-feed ads that look like video cards with a "Sponsored" badge.')
             ->emptyStateActions([
                 Action::make('create')
+                    ->color('success')
                     ->label('New Sponsored Card')
                     ->icon('phosphor-plus')
                     ->url(static::getUrl('create'))

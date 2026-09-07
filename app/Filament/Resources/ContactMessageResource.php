@@ -157,6 +157,7 @@ class ContactMessageResource extends Resource
                 ViewAction::make(),
 
                 Action::make('toggle_read')
+                    ->color('gray')
                     ->icon(fn (ContactMessage $record) => $record->is_read ? 'phosphor-envelope' : 'phosphor-envelope-open')
                     ->label(fn (ContactMessage $record) => $record->is_read ? 'Mark Unread' : 'Mark Read')
                     ->action(fn (ContactMessage $record) => $record->update(['is_read' => ! $record->is_read])),
@@ -166,11 +167,13 @@ class ContactMessageResource extends Resource
             ->toolbarActions([
                 BulkActionGroup::make([
                     BulkAction::make('mark_read')
+                        ->color('gray')
                         ->icon('phosphor-envelope-open')
                         ->action(fn (Collection $records) => $records->each(fn ($r) => $r->update(['is_read' => true])))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('mark_unread')
+                        ->color('gray')
                         ->icon('phosphor-envelope')
                         ->action(fn (Collection $records) => $records->each(fn ($r) => $r->update(['is_read' => false])))
                         ->deselectRecordsAfterCompletion(),

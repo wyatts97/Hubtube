@@ -159,6 +159,7 @@ class PointsSettings extends Page implements HasForms, HasTable
     {
         return [
             Action::make('save')
+                ->color('success')
                 ->label('Save Settings')
                 ->action('save'),
 

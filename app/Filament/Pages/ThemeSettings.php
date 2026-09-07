@@ -113,7 +113,7 @@ class ThemeSettings extends Page implements HasForms
             'site_description' => Setting::get('site_description', ''),
             'site_keywords' => Setting::get('site_keywords', ''),
             'site_logo' => Setting::get('site_logo', ''),
-            'site_logo_dark' => Setting::get('site_logo_dark', ''),
+            'site_logo_light' => Setting::get('site_logo_light', ''),
             'site_favicon' => Setting::get('site_favicon', ''),
             'primary_color' => Setting::get('primary_color', '#ef4444'),
 
@@ -236,19 +236,14 @@ class ThemeSettings extends Page implements HasForms
                                 Section::make('Site Logo')
                                     ->description('Upload your site logo and favicon. These are displayed in the header, browser tab, and PWA icon.')
                                     ->schema([
+                                        // site_logo is the DARK-mode logo and the
+                                        // fallback for both themes. The site was
+                                        // dark-only before light mode existed, so
+                                        // every existing install already has
+                                        // dark-ground artwork stored here — making
+                                        // this the light one would have silently
+                                        // broken their header.
                                         FileUpload::make('site_logo')
-                                            ->label('Site Logo')
-                                            ->image()
-                                            ->disk('public')
-                                            ->directory('logos')
-                                            ->visibility('public')
-                                            ->imageResizeMode('contain')
-                                            ->imageCropAspectRatio(null)
-                                            ->helperText('Recommended: PNG with transparency, max height 40px display size'),
-                                        // A single logo cannot work on both grounds: dark-ground
-                                        // artwork (light lettering) disappears on the light theme
-                                        // and vice versa. Optional — falls back to the logo above.
-                                        FileUpload::make('site_logo_dark')
                                             ->label('Site Logo (dark mode)')
                                             ->image()
                                             ->disk('public')
@@ -256,7 +251,16 @@ class ThemeSettings extends Page implements HasForms
                                             ->visibility('public')
                                             ->imageResizeMode('contain')
                                             ->imageCropAspectRatio(null)
-                                            ->helperText('Optional. Shown when the site is in dark mode — use light-coloured artwork. Leave empty to use the logo above in both themes.'),
+                                            ->helperText('Your main logo, shown in dark mode and used as the fallback everywhere. Use light-coloured artwork. Recommended: PNG with transparency, ~40px display height.'),
+                                        FileUpload::make('site_logo_light')
+                                            ->label('Site Logo (light mode)')
+                                            ->image()
+                                            ->disk('public')
+                                            ->directory('logos')
+                                            ->visibility('public')
+                                            ->imageResizeMode('contain')
+                                            ->imageCropAspectRatio(null)
+                                            ->helperText('Optional. Shown in light mode — use dark-coloured artwork. Leave empty to reuse the dark logo in both themes.'),
                                         FileUpload::make('site_favicon')
                                             ->label('Favicon')
                                             ->acceptedFileTypes(['image/x-icon', 'image/png', 'image/svg+xml', 'image/vnd.microsoft.icon'])
@@ -698,6 +702,7 @@ class ThemeSettings extends Page implements HasForms
     {
         return [
             Action::make('save')
+                ->color('success')
                 ->label('Save Settings')
                 ->icon('phosphor-check')
                 ->action('save'),
@@ -810,7 +815,7 @@ class ThemeSettings extends Page implements HasForms
         }
 
         // These keys originated from SiteSettings and must stay in the 'general' group
-        $generalKeys = ['site_name', 'site_description', 'site_keywords', 'site_logo', 'site_logo_dark', 'site_favicon', 'primary_color'];
+        $generalKeys = ['site_name', 'site_description', 'site_keywords', 'site_logo', 'site_logo_light', 'site_favicon', 'primary_color'];
 
         foreach ($data as $key => $value) {
             $type = match (true) {

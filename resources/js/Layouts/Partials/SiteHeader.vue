@@ -37,12 +37,12 @@ const themeSettings = computed(() => page.props.theme || {});
 const { isDark } = useTheme();
 
 /**
- * Dark mode can use its own logo, because artwork drawn for a dark ground has
- * light lettering that vanishes on the light theme. Falls back to the single
- * site logo when no dark variant is uploaded, so existing installs are unchanged.
+ * site_logo is the dark-mode logo and the default. Light mode can override it,
+ * because artwork drawn for a dark ground has light lettering that vanishes on
+ * white. Falls back to site_logo when no light variant is uploaded.
  */
-const logoUrl = computed(() => (isDark.value && themeSettings.value.site_logo_dark)
-    ? themeSettings.value.site_logo_dark
+const logoUrl = computed(() => (!isDark.value && themeSettings.value.site_logo_light)
+    ? themeSettings.value.site_logo_light
     : themeSettings.value.site_logo);
 
 const monetizationEnabled = computed(() => page.props.app?.monetization_enabled !== false);

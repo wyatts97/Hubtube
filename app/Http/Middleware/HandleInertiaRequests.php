@@ -279,9 +279,10 @@ class HandleInertiaRequests extends Middleware
             'site_title_color' => $this->s('site_title_color', ''),
             'site_title_font' => $this->s('site_title_font', ''),
             'site_logo' => $this->storageUrl($this->s('site_logo', '')),
-            // Optional dark-theme variant. Empty means "use site_logo in both
-            // themes"; SiteHeader falls back rather than rendering nothing.
-            'site_logo_dark' => $this->storageUrl($this->s('site_logo_dark', '')),
+            // site_logo is the dark-mode logo and the fallback for both themes;
+            // this is the optional light-mode override. Empty means "reuse the
+            // dark logo", so a site that never uploads one is unaffected.
+            'site_logo_light' => $this->storageUrl($this->s('site_logo_light', '')),
             'site_favicon' => $this->storageUrl($this->s('site_favicon', '')),
             'footer_logo_url' => $this->storageUrl($this->s('footer_logo_url', '')),
             'progressBarColor' => $this->s('progress_bar_color', ''),

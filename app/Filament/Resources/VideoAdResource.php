@@ -390,6 +390,7 @@ class VideoAdResource extends Resource
             ->emptyStateDescription('Create your first video ad creative to start serving pre-roll, mid-roll, or post-roll ads.')
             ->emptyStateActions([
                 Action::make('create')
+                    ->color('success')
                     ->label('New Ad Creative')
                     ->icon('phosphor-plus')
                     ->url(static::getUrl('create'))

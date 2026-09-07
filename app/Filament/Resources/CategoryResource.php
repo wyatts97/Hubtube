@@ -117,6 +117,7 @@ class CategoryResource extends Resource
             ->emptyStateDescription('Categories group videos into browsable sections in the header menu and on the homepage.')
             ->emptyStateActions([
                 Action::make('create')
+                    ->color('success')
                     ->label('New Category')
                     ->icon('phosphor-plus')
                     ->url(static::getUrl('create'))

@@ -17,6 +17,7 @@ class ListTags extends ListRecords
     {
         return [
             Action::make('syncFromVideos')
+                ->color('success')
                 ->label('Sync From Videos')
                 ->icon('phosphor-arrows-clockwise')
                 ->requiresConfirmation()

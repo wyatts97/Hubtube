@@ -107,6 +107,7 @@ class PwaSettings extends Page implements HasForms
     {
         return [
             Action::make('save')
+                ->color('success')
                 ->label('Save Settings')
                 ->icon('phosphor-check')
                 ->action('save'),

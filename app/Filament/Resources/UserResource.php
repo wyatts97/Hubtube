@@ -267,6 +267,7 @@ class UserResource extends Resource
             ->emptyStateDescription('Registered accounts appear here for role, verification, and Pro management.')
             ->emptyStateActions([
                 Action::make('create')
+                    ->color('success')
                     ->label('Add User')
                     ->icon('phosphor-plus')
                     ->url(static::getUrl('create'))

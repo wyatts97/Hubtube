@@ -156,7 +156,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
                             Action::make('testTranslationProvider')
                                 ->label('Test Connection')
                                 ->icon('phosphor-wifi-high')
-                                ->color('gray')
+                                ->color('success')
                                 ->action('testTranslationProvider'),
                         ])->columnSpanFull(),
                     ])->columns(2),
@@ -242,6 +242,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
     {
         return [
             Action::make('save')
+                ->color('success')
                 ->label('Save Language Settings')
                 ->icon('phosphor-check')
                 ->action('save'),

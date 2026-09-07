@@ -199,7 +199,7 @@ class StorageSettings extends Page implements HasForms
                                             Action::make('testWasabiConnection')
                                                 ->label('Test Connection')
                                                 ->icon('phosphor-wifi-high')
-                                                ->color('gray')
+                                                ->color('success')
                                                 ->action(function () {
                                                     $this->testStorageConnection('wasabi');
                                                 }),
@@ -293,6 +293,7 @@ class StorageSettings extends Page implements HasForms
     {
         return [
             Action::make('save')
+                ->color('success')
                 ->label('Save Settings')
                 ->icon('phosphor-check')
                 ->action('save'),

@@ -21,11 +21,13 @@ class ListVideos extends ListRecords
     {
         return [
             Action::make('create')
+                ->color('success')
                 ->label('New Video')
                 ->icon('phosphor-plus')
                 ->url(VideoResource::getUrl('create')),
 
             Action::make('bulkUpload')
+                ->color('success')
                 ->label('Bulk Upload')
                 ->icon('phosphor-tray-arrow-up')
                 ->url('/admin/bulk-video-uploader'),

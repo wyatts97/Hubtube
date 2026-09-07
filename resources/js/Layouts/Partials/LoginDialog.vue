@@ -19,9 +19,9 @@ const themeSettings = computed(() => page.props.theme || {});
 
 const { isDark } = useTheme();
 
-/** Same dark-variant fallback as the header. */
-const logoUrl = computed(() => (isDark.value && themeSettings.value.site_logo_dark)
-    ? themeSettings.value.site_logo_dark
+/** Same light-variant override as the header. */
+const logoUrl = computed(() => (!isDark.value && themeSettings.value.site_logo_light)
+    ? themeSettings.value.site_logo_light
     : themeSettings.value.site_logo);
 const user = computed(() => page.props.auth?.user);
 

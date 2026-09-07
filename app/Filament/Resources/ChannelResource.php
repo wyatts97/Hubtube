@@ -206,6 +206,7 @@ class ChannelResource extends Resource
             ->emptyStateDescription('Channels are created automatically when a user uploads their first video.')
             ->emptyStateActions([
                 Action::make('create')
+                    ->color('success')
                     ->label('New Channel')
                     ->icon('phosphor-plus')
                     ->url(static::getUrl('create'))

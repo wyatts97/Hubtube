@@ -131,3 +131,17 @@ it('saves cleanly with no fonts chosen at all', function () {
         ->call('save')
         ->assertHasNoErrors();
 });
+
+it('uses the light logo only in light mode, falling back to the dark one', function () {
+    // site_logo is the dark-mode logo AND the fallback: the site was dark-only
+    // before light mode existed, so every existing install already stores
+    // dark-ground artwork under that key.
+    Setting::set('site_logo', 'logos/dark.png', 'general', 'string');
+
+    asAdmin();
+
+    $theme = Livewire::test(ThemeSettings::class)->instance();
+
+    expect(Setting::get('site_logo'))->toBe('logos/dark.png')
+        ->and(Setting::get('site_logo_light', ''))->toBe('');
+});

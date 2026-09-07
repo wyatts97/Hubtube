@@ -752,6 +752,7 @@ class VideoResource extends Resource
             ->emptyStateDescription('Upload your first video to get started.')
             ->emptyStateActions([
                 Action::make('create')
+                    ->color('success')
                     ->label('Upload Video')
                     ->icon('phosphor-tray-arrow-up')
                     ->url(static::getUrl('create'))

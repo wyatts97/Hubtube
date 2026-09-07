@@ -17,11 +17,13 @@ class ListImages extends ListRecords
     {
         return [
             Action::make('create')
+                ->color('success')
                 ->label('New Image')
                 ->icon('phosphor-plus')
                 ->url(ImageResource::getUrl('create')),
 
             Action::make('bulkUpload')
+                ->color('success')
                 ->label('Bulk Upload')
                 ->icon('phosphor-images')
                 ->url('/admin/bulk-image-uploader'),

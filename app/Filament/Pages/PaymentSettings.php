@@ -81,13 +81,14 @@ class PaymentSettings extends Page implements HasForms
     {
         return [
             Action::make('save')
+                ->color('success')
                 ->label('Save Settings')
                 ->icon('phosphor-check')
                 ->action('save'),
             Action::make('syncStripePrices')
                 ->label('Sync Prices to Stripe')
                 ->icon('phosphor-lightning')
-                ->color('warning')
+                ->color('success')
                 ->requiresConfirmation()
                 ->modalHeading('Sync Pro prices to Stripe')
                 ->modalDescription('This will create or update Stripe Products and Prices for the monthly and annual Pro plans.')
@@ -95,7 +96,7 @@ class PaymentSettings extends Page implements HasForms
             Action::make('syncCCBillPrices')
                 ->label('Sync Prices to CCBill')
                 ->icon('phosphor-credit-card')
-                ->color('gray')
+                ->color('success')
                 ->requiresConfirmation()
                 ->modalHeading('Sync Pro prices to CCBill')
                 ->modalDescription('This writes the FlexForms dynamic-pricing fields (initial/recurring price, period in days, rebills) onto the monthly and annual Pro plans.')

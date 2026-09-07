@@ -92,6 +92,7 @@ class DataExport extends Page implements HasForms
     {
         return [
             Action::make('export')
+                ->color('success')
                 ->label('Export Data')
                 ->icon('phosphor-tray-arrow-down')
                 ->action('export'),

@@ -36,6 +36,7 @@ class ScheduledVideos extends Page implements HasTable
     {
         return [
             Action::make('configureSchedule')
+            ->color('success')
             ->label('Schedule Settings')
             ->icon('phosphor-gear')
             ->schema([

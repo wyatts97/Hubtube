@@ -51,6 +51,7 @@ class Backups extends Page implements HasForms
 
                         Actions::make([
                             Action::make('saveBackupSettings')
+                                ->color('success')
                                 ->label('Save Settings')
                                 ->icon('phosphor-floppy-disk')
                                 ->action('saveBackupSettings'),
@@ -77,6 +78,7 @@ class Backups extends Page implements HasForms
     {
         return [
             Action::make('create')
+                ->color('success')
                 ->label('Create Backup')
                 ->icon('phosphor-plus')
                 ->action(function () {

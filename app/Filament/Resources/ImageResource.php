@@ -334,6 +334,7 @@ class ImageResource extends Resource
             ->emptyStateDescription('Upload images individually, or use the bulk uploader to add a batch.')
             ->emptyStateActions([
                 Action::make('create')
+                    ->color('success')
                     ->label('New Image')
                     ->icon('phosphor-plus')
                     ->url(static::getUrl('create'))

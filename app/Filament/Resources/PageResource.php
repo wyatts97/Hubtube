@@ -110,6 +110,7 @@ class PageResource extends Resource
             ->emptyStateDescription('Static pages such as Terms, Privacy, and 2257 are served from /pages.')
             ->emptyStateActions([
                 Action::make('create')
+                    ->color('success')
                     ->label('New Page')
                     ->icon('phosphor-plus')
                     ->url(static::getUrl('create'))

@@ -682,6 +682,7 @@ class AdSettings extends Page implements HasForms
     {
         return [
             Action::make('save')
+                ->color('success')
                 ->label('Save Ad Settings')
                 ->icon('phosphor-check')
                 ->action('save'),

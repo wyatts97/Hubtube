@@ -30,6 +30,7 @@ class HealthChecks extends Page
     {
         return [
             Action::make('run')
+                ->color('success')
                 ->label('Run Health Checks')
                 ->icon('phosphor-pulse')
                 ->action(function () {

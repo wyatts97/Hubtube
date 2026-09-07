@@ -258,6 +258,7 @@ class MenuItemResource extends Resource
             ->emptyStateDescription('Build the header and mobile navigation from links, category pages, and dropdowns.')
             ->emptyStateActions([
                 Action::make('create')
+                    ->color('success')
                     ->label('New Menu Item')
                     ->icon('phosphor-plus')
                     ->url(static::getUrl('create'))

@@ -233,6 +233,7 @@ class BulkVideoUploader extends Page implements HasForms
                                     ->columnSpanFull()
                                     ->suffixAction(
                                         Action::make('useFilename')
+                                            ->color('success')
                                             ->icon('phosphor-sparkle')
                                             ->tooltip('Regenerate title from filename')
                                             ->action(function (Set $set, Get $get) {
