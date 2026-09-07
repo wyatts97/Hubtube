@@ -281,7 +281,7 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
                         :key="hashtag.id"
                         class="card p-4"
                     >
-                        <h3 class="font-medium text-accent-text">#{{ hashtag.name }}</h3>
+                        <h3 class="tag-label font-semibold text-accent-text">#{{ hashtag.name }}</h3>
                         <p class="text-sm mt-1 text-text-muted">{{ hashtag.usage_count || 0 }} {{ t('common.videos') }}</p>
                     </div>
                 </div>

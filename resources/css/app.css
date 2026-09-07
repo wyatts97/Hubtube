@@ -267,9 +267,62 @@
         color: var(--color-accent-text);
     }
 
+    /*
+     * Whole-card click target without wrapping the card in an anchor.
+     *
+     * The title link projects a transparent ::after over the whole card, so a
+     * click anywhere that isn't another link opens the video. Nested anchors
+     * (tags, channel) would be invalid HTML inside a card-wide <a>, which is why
+     * this pattern is used instead.
+     */
+    .video-card-stretch::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+    }
+
+    /* Lifts the smaller links above the stretched overlay so they stay clickable. */
+    .video-card-overlink {
+        position: relative;
+        z-index: 1;
+    }
+
     .video-card-meta {
         @apply text-xs leading-normal;
         color: var(--color-text-muted);
+    }
+
+    /*
+     * Tags.
+     *
+     * Uppercased in CSS rather than in the data, so the stored value and the
+     * /tag/{name} URL keep their original casing — the lookup is an exact
+     * whereJsonContains match, so rewriting the case would break every existing
+     * tag link. Consistent presentation everywhere without touching a row.
+     *
+     * Text is --color-text-secondary, not --color-text-muted: the pill sits on
+     * bg-elevated rather than on the card, and muted only reaches 4.50:1 against
+     * it in dark mode and fails outright in light.
+     */
+    .tag-label {
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .tag-chip {
+        @apply inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold leading-none truncate max-w-full transition-colors;
+        border-radius: var(--radius-card);
+        background-color: var(--color-bg-elevated);
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    /* Matches the title's hover treatment, so the card reads as one object. */
+    a.tag-chip:hover {
+        background-color: var(--color-bg-hover);
+        color: var(--color-accent-text);
     }
 
     /* Rating bar. Rendered as a two-stop gradient on a single element rather than

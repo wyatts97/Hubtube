@@ -820,7 +820,7 @@ const getRelatedTitle = (video) => {
                                 v-for="(tag, idx) in video.tags"
                                 :key="tag"
                                 :href="localizedUrl(`/tag/${encodeURIComponent(tag)}`)"
-                                class="inline-flex items-center gap-0.5 text-sm hover:opacity-80 transition-opacity text-text-muted"
+                                class="tag-label inline-flex items-center gap-0.5 text-sm transition-colors text-text-secondary hover:text-accent-text"
                             >
                                 <Hash class="w-3 h-3" /><span>{{ translatedTags?.[idx] || tag }}</span>
                             </Link>

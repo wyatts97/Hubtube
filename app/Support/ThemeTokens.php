@@ -79,7 +79,12 @@ class ThemeTokens
         'bgPrimary'      => '#faf8f7',
         'bgSecondary'    => '#ffffff',
         'bgCard'         => '#ffffff',
-        'bgElevated'     => '#ffffff',
+        // NOT white. "Elevated" means lighter in dark mode but DARKER in light
+        // mode — it is the surface for chips, pills, avatars and secondary
+        // buttons that sit on top of a card. Setting it to #ffffff made every
+        // one of those invisible on a white card, and made the skeleton
+        // shimmer a white-to-white gradient with nothing to see.
+        'bgElevated'     => '#efe9e5',
         'bgHover'        => '#f1eeec',
         'bgInput'        => '#f4f1ef',
         'accent'         => '#c00d26',

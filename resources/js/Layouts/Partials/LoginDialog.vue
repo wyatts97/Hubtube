@@ -8,6 +8,7 @@ import { Link, useForm, usePage } from '@inertiajs/vue3';
 import { Eye, EyeOff, X } from 'lucide-vue-next';
 import BaseDialog from '@/Components/UI/BaseDialog.vue';
 import { useI18n } from '@/Composables/useI18n';
+import { useTheme } from '@/Composables/useTheme';
 
 const open = defineModel({ type: Boolean, default: false });
 
@@ -15,6 +16,13 @@ const page = usePage();
 const { t } = useI18n();
 
 const themeSettings = computed(() => page.props.theme || {});
+
+const { isDark } = useTheme();
+
+/** Same dark-variant fallback as the header. */
+const logoUrl = computed(() => (isDark.value && themeSettings.value.site_logo_dark)
+    ? themeSettings.value.site_logo_dark
+    : themeSettings.value.site_logo);
 const user = computed(() => page.props.auth?.user);
 
 // Guard kept from the original markup: a session that becomes authenticated
@@ -65,7 +73,7 @@ const submit = () => {
 
         <div class="text-center mb-6">
             <Link href="/" class="inline-block">
-                <img v-if="themeSettings.site_logo" :src="themeSettings.site_logo" alt="Logo" class="h-12 w-auto mx-auto object-contain" />
+                <img v-if="logoUrl" :src="logoUrl" alt="Logo" class="h-12 w-auto mx-auto object-contain" />
                 <div
                     v-else
                     class="w-12 h-12 flex items-center justify-center mx-auto bg-accent"

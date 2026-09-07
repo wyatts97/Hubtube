@@ -24,6 +24,7 @@ import BaseDropdown from '@/Components/UI/BaseDropdown.vue';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
 import SearchSuggestionList from '@/Components/SearchSuggestionList.vue';
 import ThemeToggle from '@/Components/ThemeToggle.vue';
+import { useTheme } from '@/Composables/useTheme';
 
 const emit = defineEmits(['open-mobile-search', 'open-login', 'toggle-sidebar']);
 
@@ -33,6 +34,17 @@ const { localizedUrl, t } = useI18n();
 
 const user = computed(() => page.props.auth?.user);
 const themeSettings = computed(() => page.props.theme || {});
+const { isDark } = useTheme();
+
+/**
+ * Dark mode can use its own logo, because artwork drawn for a dark ground has
+ * light lettering that vanishes on the light theme. Falls back to the single
+ * site logo when no dark variant is uploaded, so existing installs are unchanged.
+ */
+const logoUrl = computed(() => (isDark.value && themeSettings.value.site_logo_dark)
+    ? themeSettings.value.site_logo_dark
+    : themeSettings.value.site_logo);
+
 const monetizationEnabled = computed(() => page.props.app?.monetization_enabled !== false);
 const pointsEnabled = computed(() => page.props.app?.points_enabled !== false);
 
@@ -131,8 +143,8 @@ nextTick(loadUnreadCount);
 
                 <Link href="/" class="flex items-center min-w-0">
                     <img
-                        v-if="themeSettings.site_logo"
-                        :src="themeSettings.site_logo"
+                        v-if="logoUrl"
+                        :src="logoUrl"
                         :alt="themeSettings.siteTitle || 'HubTube'"
                         class="h-7 object-contain"
                     />

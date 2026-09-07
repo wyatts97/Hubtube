@@ -392,7 +392,25 @@ class HomeController extends Controller
     public function tag(string $tag): Response
     {
         $page = max(1, (int) request()->get('page', 1));
-        $cacheKey = 'tag:' . md5($tag) . ":page:{$page}";
+
+        // Cache key is case-folded along with the lookup, so /tag/Amateur and
+        // /tag/amateur share one entry instead of caching two copies.
+        $cacheKey = 'tag:' . md5(mb_strtolower($tag)) . ":page:{$page}";
+
+        // Matched case-insensitively on purpose.
+        //
+        // Tags live in a JSON column and were previously matched with an exact
+        // whereJsonContains, so "Amateur" and "amateur" were two different tag
+        // pages each holding a subset of the videos. Tags are now displayed
+        // uppercase everywhere, which makes those two chips look identical —
+        // sending them to different, incomplete result sets would be worse than
+        // the original inconsistency.
+        //
+        // LIKE over the lowercased JSON text rather than a JSON function: this
+        // has to work on both MySQL and SQLite, and the surrounding quotes make
+        // it an exact element match rather than a substring one, so "hd" cannot
+        // match "hd-remaster".
+        $needle = '%"' . addcslashes(mb_strtolower($tag), '%_\\') . '"%';
 
         $videos = Cache::remember($cacheKey, 300, fn () =>
             Video::query()
@@ -400,7 +418,7 @@ class HomeController extends Controller
                 ->public()
                 ->approved()
                 ->processed()
-                ->whereJsonContains('tags', $tag)
+                ->whereRaw('LOWER(tags) LIKE ?', [$needle])
                 ->latest('published_at')
                 ->paginate(24, ['*'], 'page', $page)
         );

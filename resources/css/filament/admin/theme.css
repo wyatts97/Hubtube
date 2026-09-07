@@ -1814,3 +1814,18 @@ svg.dark\:text-gray-500,
 .fi-resource .dark\:text-gray-400 {
     color: rgb(161 161 170) !important;
 }
+
+
+/*
+ * Tag chips read uppercase throughout the admin, matching the public site.
+ *
+ * Presentation only — the value the field submits is untouched, because the
+ * public /tag/{name} lookup is an exact match against the stored casing. The
+ * text cursor in the "add a tag" input is deliberately left alone so typing
+ * still shows what is actually being stored.
+ */
+.fi-fo-tags-input .fi-badge,
+.fi-fo-tags-input [class*="fi-badge"] {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}

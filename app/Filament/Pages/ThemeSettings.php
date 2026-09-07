@@ -113,6 +113,7 @@ class ThemeSettings extends Page implements HasForms
             'site_description' => Setting::get('site_description', ''),
             'site_keywords' => Setting::get('site_keywords', ''),
             'site_logo' => Setting::get('site_logo', ''),
+            'site_logo_dark' => Setting::get('site_logo_dark', ''),
             'site_favicon' => Setting::get('site_favicon', ''),
             'primary_color' => Setting::get('primary_color', '#ef4444'),
 
@@ -244,6 +245,18 @@ class ThemeSettings extends Page implements HasForms
                                             ->imageResizeMode('contain')
                                             ->imageCropAspectRatio(null)
                                             ->helperText('Recommended: PNG with transparency, max height 40px display size'),
+                                        // A single logo cannot work on both grounds: dark-ground
+                                        // artwork (light lettering) disappears on the light theme
+                                        // and vice versa. Optional — falls back to the logo above.
+                                        FileUpload::make('site_logo_dark')
+                                            ->label('Site Logo (dark mode)')
+                                            ->image()
+                                            ->disk('public')
+                                            ->directory('logos')
+                                            ->visibility('public')
+                                            ->imageResizeMode('contain')
+                                            ->imageCropAspectRatio(null)
+                                            ->helperText('Optional. Shown when the site is in dark mode — use light-coloured artwork. Leave empty to use the logo above in both themes.'),
                                         FileUpload::make('site_favicon')
                                             ->label('Favicon')
                                             ->acceptedFileTypes(['image/x-icon', 'image/png', 'image/svg+xml', 'image/vnd.microsoft.icon'])
@@ -797,7 +810,7 @@ class ThemeSettings extends Page implements HasForms
         }
 
         // These keys originated from SiteSettings and must stay in the 'general' group
-        $generalKeys = ['site_name', 'site_description', 'site_keywords', 'site_logo', 'site_favicon', 'primary_color'];
+        $generalKeys = ['site_name', 'site_description', 'site_keywords', 'site_logo', 'site_logo_dark', 'site_favicon', 'primary_color'];
 
         foreach ($data as $key => $value) {
             $type = match (true) {

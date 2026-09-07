@@ -64,7 +64,7 @@ const placeholderImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/
                 <!-- Tag title overlay -->
                 <div class="absolute inset-0 flex flex-col items-center justify-center p-3">
                     <span
-                        class="font-bold text-center drop-shadow-lg"
+                        class="tag-label font-bold text-center drop-shadow-lg"
                         :style="titleStyle"
                     >
                         #{{ tag.name }}

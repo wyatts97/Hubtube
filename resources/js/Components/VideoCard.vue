@@ -115,17 +115,24 @@ const onPreviewLoad = (event) => {
 </script>
 
 <template>
-    <Link
+    <!--
+        The root is a <div>, not a <Link>. Tag chips and the channel link are real
+        anchors now, and an <a> cannot legally nest inside another <a> — browsers
+        recover by closing the outer one, which silently breaks the card.
+
+        Whole-card clicking is kept with a stretched link: the title's ::after
+        covers the card (see .video-card-stretch), and the smaller links opt back
+        above it with .video-card-overlink.
+    -->
+    <div
         v-motion
         :initial="{ opacity: 0, y: 6 }"
         :enter="{ opacity: 1, y: 0, transition: { duration: 0.18 } }"
-        :href="cardHref"
-        class="video-card group"
-        :aria-label="`${video.title} — ${video.user?.username || 'Unknown'} — ${formattedViews} views`"
+        class="video-card group relative"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
     >
-        <div class="thumbnail" :style="{ borderRadius: thumbRadius }">
+        <Link :href="cardHref" class="thumbnail block" tabindex="-1" aria-hidden="true" :style="{ borderRadius: thumbRadius }">
             <!-- Static Thumbnail -->
             <img
                 v-bind="thumbnailProps(video.thumbnail_url || video.thumbnail || placeholderImg, video.thumbnail_alt || video.title)"
@@ -163,7 +170,7 @@ const onPreviewLoad = (event) => {
             <span v-if="showDuration" class="duration">
                 {{ video.duration_formatted || video.formatted_duration || formattedDuration }}
             </span>
-        </div>
+        </Link>
 
         <!-- Rating sits directly under the thumbnail, reading as part of it. -->
         <RatingBar
@@ -176,7 +183,7 @@ const onPreviewLoad = (event) => {
             <Link
                 v-if="showAvatar && video.user"
                 :href="localizedUrl(`/channel/${video.user.username}`)"
-                class="shrink-0"
+                class="shrink-0 video-card-overlink"
             >
                 <div class="w-7 h-7 avatar">
                     <img v-bind="avatarProps(video.user.avatar_url || video.user.avatar || '/assets/default_avatar.webp', 28, video.user.avatar_alt || video.user.username || video.user.name)" class="w-full h-full object-cover" />
@@ -184,11 +191,13 @@ const onPreviewLoad = (event) => {
             </Link>
 
             <div class="flex-1 min-w-0">
-                <h3
-                    class="video-card-title transition-colors"
-                    :class="`line-clamp-${vc.titleLines || 2}`"
-                    :style="titleStyle"
-                >{{ isTranslated ? getTranslated('video', video.id, 'title', video.title) : video.title }}</h3>
+                <h3 :class="`line-clamp-${vc.titleLines || 2}`" :style="titleStyle">
+                    <Link
+                        :href="cardHref"
+                        class="video-card-title video-card-stretch transition-colors"
+                        :aria-label="`${video.title} — ${video.user?.username || 'Unknown'} — ${formattedViews} views`"
+                    >{{ isTranslated ? getTranslated('video', video.id, 'title', video.title) : video.title }}</Link>
+                </h3>
 
                 <p class="video-card-meta mt-0.5" :style="metaStyle">
                     <template v-if="showViews">{{ t('video.views', { count: formattedViews, n: video.views_count }) }}</template>
@@ -199,7 +208,7 @@ const onPreviewLoad = (event) => {
                 <Link
                     v-if="showUploader && video.user"
                     :href="localizedUrl(`/channel/${video.user.username}`)"
-                    class="video-card-meta mt-0.5 flex items-center gap-1 hover:text-text-primary transition-colors"
+                    class="video-card-meta video-card-overlink mt-0.5 flex items-center gap-1 hover:text-text-primary transition-colors"
                     :style="metaStyle"
                 >
                     <span class="truncate">{{ video.user.username }}</span>
@@ -208,14 +217,17 @@ const onPreviewLoad = (event) => {
                 </Link>
 
                 <div v-if="showTags && visibleTags.length" class="flex flex-wrap gap-1 mt-1.5">
-                    <span
+                    <!-- The href carries the tag's ORIGINAL casing: the tag page
+                         looks it up with an exact whereJsonContains match, so the
+                         uppercasing is presentational only (see .tag-chip). -->
+                    <Link
                         v-for="tag in visibleTags"
                         :key="tag"
-                        class="px-1.5 py-0.5 text-[10px] font-medium leading-none truncate max-w-full bg-bg-elevated text-text-muted"
-                        :style="{ borderRadius: 'var(--radius-card)' }"
-                    >{{ tag }}</span>
+                        :href="localizedUrl(`/tag/${encodeURIComponent(tag)}`)"
+                        class="tag-chip video-card-overlink"
+                    >{{ tag }}</Link>
                 </div>
             </div>
         </div>
-    </Link>
+    </div>
 </template>

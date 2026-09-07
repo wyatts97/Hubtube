@@ -37,7 +37,7 @@ const goToPage = (pageNum) => {
     <AppLayout>
         <Breadcrumbs :items="breadcrumbs" />
         <div class="mb-6 flex items-center gap-3">
-            <h1 class="page-title">#{{ displayTag }}</h1>
+            <h1 class="page-title tag-label">#{{ displayTag }}</h1>
             <span class="text-sm text-text-muted">•</span>
             <span class="text-sm text-text-muted">{{ t('tags.video_count', { count: videos.total || 0 }) || `${videos.total || 0} videos` }}</span>
         </div>

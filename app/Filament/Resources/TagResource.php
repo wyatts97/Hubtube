@@ -70,7 +70,12 @@ class TagResource extends Resource
     {
         return $table
             ->columns([
+                // Display-only uppercasing. The stored name keeps its casing —
+                // video.tags is matched against it with an exact
+                // whereJsonContains, so rewriting the data would break every
+                // existing /tag/{name} link.
                 TextColumn::make('name')
+                    ->formatStateUsing(fn (?string $state): string => mb_strtoupper((string) $state))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('slug')
