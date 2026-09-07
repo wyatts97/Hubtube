@@ -52,7 +52,7 @@ const formatType = (type) => {
     <AppLayout>
         <div class="max-w-4xl mx-auto">
             <div class="mb-4 sm:mb-6">
-                <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('nav.wallet') }}</h1>
+                <h1 class="page-title">{{ t('nav.wallet') }}</h1>
             </div>
 
             <!-- Balance Card -->
@@ -63,7 +63,7 @@ const formatType = (type) => {
                         <p class="text-2xl sm:text-3xl font-bold mt-1 text-text-primary">{{ formatCurrency(balance) }}</p>
                     </div>
                     <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shrink-0 bg-accent" style="opacity: 0.15;">
-                        <Wallet class="w-6 h-6 sm:w-7 sm:h-7 text-accent" />
+                        <Wallet class="w-6 h-6 sm:w-7 sm:h-7 text-accent-text" />
                     </div>
                 </div>
                 <div class="flex gap-2 sm:gap-3 mt-4 sm:mt-6">

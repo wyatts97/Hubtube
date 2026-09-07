@@ -28,3 +28,9 @@ MARCH12THUPDATES.md
 /storage/installed
 /bootstrap/cache/filament
 /storage/install-unlock
+
+# Local frontend demo (DemoContentSeeder + .env.demo). Throwaway data and
+# generated placeholder art — never part of a deployment.
+.env.demo
+/database/demo.sqlite
+/public/demo-thumbs

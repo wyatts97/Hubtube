@@ -158,7 +158,7 @@ const stats = computed(() => props.channel.stats || {});
             <div class="flex-1 min-w-0 sm:pb-1">
                 <h1 class="flex items-center gap-2 text-xl sm:text-2xl md:text-3xl font-bold text-text-primary">
                     <span class="truncate">{{ channel.display_name }}</span>
-                    <span v-if="channel.is_verified" class="text-accent shrink-0" :title="t('common.verified')">&#10003;</span>
+                    <span v-if="channel.is_verified" class="text-accent-text shrink-0" :title="t('common.verified')">&#10003;</span>
                     <ProBadge v-if="channel.is_pro" size="md" />
                 </h1>
                 <p class="mt-0.5 text-sm sm:text-base text-text-secondary">@{{ channel.username }}</p>
@@ -231,7 +231,7 @@ const stats = computed(() => props.channel.stats || {});
 
         <!-- Tabs -->
         <div class="border-b border-border">
-            <nav class="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide -mx-1 px-1">
+            <nav class="tab-strip gap-4 sm:gap-6 -mx-1 px-1">
                 <Link
                     v-for="tab in tabs"
                     :key="tab.key"

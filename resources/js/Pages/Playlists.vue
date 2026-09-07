@@ -42,7 +42,7 @@ const createPlaylist = () => {
     <AppLayout>
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-text-primary">{{ t('playlist.your_playlists') }}</h1>
+                <h1 class="page-title">{{ t('playlist.your_playlists') }}</h1>
                 <p class="mt-1 text-text-secondary">{{ t('playlist.organize_desc') }}</p>
             </div>
             <button @click="showCreateModal = true" class="btn btn-primary gap-2">

@@ -171,7 +171,7 @@ const getSponsoredCard = (index) => {
         <!-- Featured Videos -->
         <section v-if="featuredVideos.length > 0" class="mb-8">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-text-primary">{{ t('home.featured') }}</h2>
+                <h2 class="section-title">{{ t('home.featured') }}</h2>
             </div>
             <div :class="gridClass">
                 <VideoCard v-for="video in featuredVideos" :key="video.id" :video="withTranslation(video)" />
@@ -188,8 +188,8 @@ const getSponsoredCard = (index) => {
         <!-- Latest Videos -->
         <section class="mb-8">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-text-primary">{{ t('home.latest') }}</h2>
-                <a :href="localizedUrl('/videos')" class="text-sm font-medium text-accent">{{ t('common.view_all') }}</a>
+                <h2 class="section-title">{{ t('home.latest') }}</h2>
+                <a :href="localizedUrl('/videos')" class="text-sm font-medium text-accent-text">{{ t('common.view_all') }}</a>
             </div>
             
             <!-- Infinite Scroll Mode -->
@@ -265,8 +265,8 @@ const getSponsoredCard = (index) => {
         <!-- Popular Videos -->
         <section v-if="popularVideos.length > 0" class="mb-8">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-text-primary">{{ t('home.popular') }}</h2>
-                <a :href="localizedUrl('/trending')" class="text-sm font-medium text-accent">{{ t('common.view_all') }}</a>
+                <h2 class="section-title">{{ t('home.popular') }}</h2>
+                <a :href="localizedUrl('/trending')" class="text-sm font-medium text-accent-text">{{ t('common.view_all') }}</a>
             </div>
             <div :class="gridClass">
                 <VideoCard v-for="video in popularVideos" :key="video.id" :video="withTranslation(video)" />

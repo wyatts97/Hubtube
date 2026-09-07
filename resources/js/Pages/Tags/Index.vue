@@ -30,7 +30,7 @@ const placeholderImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/
 
     <AppLayout>
         <div class="mb-6">
-            <h1 class="text-2xl font-bold text-text-primary">{{ t('tags.title') }}</h1>
+            <h1 class="page-title">{{ t('tags.title') }}</h1>
             <p class="text-sm mt-1 text-text-muted">{{ t('tags.browse') }}</p>
         </div>
 

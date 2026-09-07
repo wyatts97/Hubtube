@@ -8,12 +8,15 @@ use App\Models\Category;
 use App\Models\MenuItem;
 use App\Models\Setting;
 use App\Services\SeoService;
+use App\Support\ThemeTokens;
+use App\Support\Typography;
 use App\Services\TranslationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 use STS\FilamentImpersonate\Facades\Impersonation;
+
 
 class HandleInertiaRequests extends Middleware
 {
@@ -221,21 +224,25 @@ class HandleInertiaRequests extends Middleware
 
     protected function getThemeSettings(): array
     {
+        $cardFonts = Typography::videoCard();
+
         return [
             'siteTitle' => $this->s('site_title', 'HubTube'),
             'siteTitleFont' => $this->s('site_title_font', ''),
             'siteTitleSize' => $this->s('site_title_size', 20),
             'siteTitleColor' => $this->s('site_title_color', ''),
 
-            'dark' => [
-                'bgPrimary' => $this->s('dark_bg_primary', '#0a0a0a'),
-                'bgSecondary' => $this->s('dark_bg_secondary', '#171717'),
-                'bgCard' => $this->s('dark_bg_card', '#1f1f1f'),
-                'accent' => $this->s('dark_accent_color', '#ef4444'),
-                'textPrimary' => $this->s('dark_text_primary', '#ffffff'),
-                'textSecondary' => $this->s('dark_text_secondary', '#a3a3a3'),
-                'border' => $this->s('dark_border_color', '#262626'),
-            ],
+            // Palettes come from ThemeTokens so this, the first-paint <style> in
+            // app.blade.php and the Filament colour pickers cannot drift apart.
+            // useTheme.js only reads `mode` — the colours themselves are applied
+            // by a CSS class swap, not by writing custom properties from JS.
+            'mode' => ThemeTokens::mode(),
+            // The theme the server actually rendered, and whether it outranks
+            // whatever this browser has in localStorage (see ThemeTokens).
+            'resolved' => ThemeTokens::defaultMode(),
+            'authoritative' => ThemeTokens::authoritativeMode(),
+            'dark' => ThemeTokens::palette('dark'),
+            'light' => ThemeTokens::palette('light'),
             'icons' => [
                 'colorMode' => $this->s('icon_color_mode', 'inherit'),
                 'globalColor' => $this->s('icon_global_color', ''),
@@ -279,21 +286,34 @@ class HandleInertiaRequests extends Middleware
             'footer_ad_code' => $this->s('footer_ad_code', ''),
             'footer_ad_mobile_code' => $this->s('footer_ad_mobile_code', ''),
             'videoCard' => [
-                'showAvatar' => (bool)$this->s('video_card_show_avatar', true),
+                // Dense-grid default drops the channel avatar in favour of the
+                // rating bar and tag chips. Still switchable per install.
+                'showAvatar' => (bool)$this->s('video_card_show_avatar', false),
+                'showRating' => (bool)$this->s('video_card_show_rating', true),
+                'showQuality' => (bool)$this->s('video_card_show_quality', true),
+                'showTags' => (bool)$this->s('video_card_show_tags', true),
                 'showUploader' => (bool)$this->s('video_card_show_uploader', true),
                 'showViews' => (bool)$this->s('video_card_show_views', true),
                 'showDuration' => (bool)$this->s('video_card_show_duration', true),
                 'showTimestamp' => (bool)$this->s('video_card_show_timestamp', true),
-                'titleFont' => $this->s('video_card_title_font', ''),
+                // Resolved by Typography: a stored family becomes a full CSS
+                // stack with a sensible generic fallback, and a weight the
+                // family actually publishes. Empty means inherit the theme font.
+                'titleFont' => $cardFonts['titleFont'],
+                'titleWeight' => $cardFonts['titleWeight'],
                 'titleSize' => (int)$this->s('video_card_title_size', 14),
                 'titleColor' => $this->s('video_card_title_color', ''),
                 'titleLines' => (int)$this->s('video_card_title_lines', 2),
-                'metaFont' => $this->s('video_card_meta_font', ''),
+                'metaFont' => $cardFonts['metaFont'],
+                'metaWeight' => $cardFonts['metaWeight'],
                 'metaSize' => (int)$this->s('video_card_meta_size', 13),
                 'metaColor' => $this->s('video_card_meta_color', ''),
                 'borderRadius' => (int)$this->s('video_card_border_radius', 12),
             ],
             'mobileVideoGrid' => $this->s('mobile_video_grid', '2'),
+            // 'comfortable' keeps the roomier 4-column desktop grid; 'dense'
+            // is the redesign default (5 at xl, 6 at 2xl). See useVideoGrid.js.
+            'gridDensity' => $this->s('video_grid_density', 'dense'),
         ];
     }
 

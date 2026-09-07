@@ -4,6 +4,9 @@ namespace App\Filament\Pages;
 
 use App\Filament\Clusters\Settings as SettingsCluster;
 use App\Models\Setting;
+use App\Support\GoogleFonts;
+use App\Support\ThemeTokens;
+use App\Support\Typography;
 use App\Services\AdminLogger;
 use Filament\Actions\Action;
 use Filament\Forms\Components\ColorPicker;
@@ -119,14 +122,13 @@ class ThemeSettings extends Page implements HasForms
             'site_title_size' => Setting::get('site_title_size', 20),
             'site_title_color' => Setting::get('site_title_color', ''),
 
-            // Dark Mode Colors
-            'dark_bg_primary' => Setting::get('dark_bg_primary', '#0a0a0a'),
-            'dark_bg_secondary' => Setting::get('dark_bg_secondary', '#171717'),
-            'dark_bg_card' => Setting::get('dark_bg_card', '#1f1f1f'),
-            'dark_accent_color' => Setting::get('dark_accent_color', '#ef4444'),
-            'dark_text_primary' => Setting::get('dark_text_primary', '#ffffff'),
-            'dark_text_secondary' => Setting::get('dark_text_secondary', '#a3a3a3'),
-            'dark_border_color' => Setting::get('dark_border_color', '#262626'),
+            // Which theme visitors get. 'user' shows the header switcher.
+            'theme_mode' => ThemeTokens::mode(),
+
+            // Palette defaults come from ThemeTokens so this page, the frontend
+            // stylesheet and the first-paint <style> block cannot drift apart.
+            ...self::paletteFormDefaults('dark'),
+            ...self::paletteFormDefaults('light'),
 
             // Navigation Icons
             'nav_home_icon' => Setting::get('nav_home_icon', 'home'),
@@ -171,11 +173,22 @@ class ThemeSettings extends Page implements HasForms
             'footer_logo_url' => Setting::get('footer_logo_url', ''),
 
             // Video Card Customization
-            'video_card_show_avatar' => Setting::get('video_card_show_avatar', true),
+            'video_card_show_avatar' => Setting::get('video_card_show_avatar', false),
+            'video_card_show_rating' => Setting::get('video_card_show_rating', true),
+            'video_card_show_quality' => Setting::get('video_card_show_quality', true),
+            'video_card_show_tags' => Setting::get('video_card_show_tags', true),
             'video_card_show_uploader' => Setting::get('video_card_show_uploader', true),
             'video_card_show_views' => Setting::get('video_card_show_views', true),
             'video_card_show_duration' => Setting::get('video_card_show_duration', true),
             'video_card_show_timestamp' => Setting::get('video_card_show_timestamp', true),
+            // Typography. Empty family means "use the theme default" — see
+            // App\Support\Typography::SLOTS for what those defaults are.
+            'font_body_family' => Setting::get('font_body_family', ''),
+            'font_body_weight' => Setting::get('font_body_weight', 400),
+            'font_display_family' => Setting::get('font_display_family', ''),
+            'font_display_weight' => Setting::get('font_display_weight', 700),
+            'video_card_title_weight' => Setting::get('video_card_title_weight', 600),
+            'video_card_meta_weight' => Setting::get('video_card_meta_weight', 400),
             'video_card_title_font' => Setting::get('video_card_title_font', ''),
             'video_card_title_size' => Setting::get('video_card_title_size', 14),
             'video_card_title_color' => Setting::get('video_card_title_color', ''),
@@ -183,7 +196,8 @@ class ThemeSettings extends Page implements HasForms
             'video_card_meta_font' => Setting::get('video_card_meta_font', ''),
             'video_card_meta_size' => Setting::get('video_card_meta_size', 13),
             'video_card_meta_color' => Setting::get('video_card_meta_color', ''),
-            'video_card_border_radius' => Setting::get('video_card_border_radius', 12),
+            'video_card_border_radius' => Setting::get('video_card_border_radius', 6),
+            'video_grid_density' => Setting::get('video_grid_density', 'dense'),
             'mobile_video_grid' => Setting::get('mobile_video_grid', '1'),
 
             // Progress Bar
@@ -298,30 +312,73 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
                             ]),
 
-                        Tab::make('Dark Mode')
+                        Tab::make('Theme')
                             ->icon('phosphor-moon')
                             ->schema([
+                                Section::make('Theme Mode')
+                                    ->description('Which theme visitors see, and whether they can switch.')
+                                    ->schema([
+                                        Select::make('theme_mode')
+                                            ->label('Theme mode')
+                                            ->options([
+                                                'user' => 'Visitor chooses (dark by default)',
+                                                'dark' => 'Always dark',
+                                                'light' => 'Always light',
+                                            ])
+                                            ->default('user')
+                                            ->native(false)
+                                            ->helperText('"Visitor chooses" shows a light/dark switch in the header and remembers each visitor choice. The other options hide the switch and pin the whole site to one theme.'),
+                                    ]),
+
                                 Section::make('Dark Mode Colors')
-                                    ->description('Customize colors for dark mode')
+                                    ->description('Leave a field empty to use the built-in default.')
+                                    ->schema(self::paletteFields('dark')),
+
+                                Section::make('Light Mode Colors')
+                                    ->description('Light mode is designed around a warm off-white ground with white cards, so thumbnails keep a visible edge. If you change the accent, pick one dark enough to read as text on white — the bright red used for badges will fail contrast at small sizes.')
+                                    ->schema(self::paletteFields('light')),
+                            ]),
+
+                        Tab::make('Typography')
+                            ->icon('phosphor-text-aa')
+                            ->schema([
+                                Section::make('Body & interface')
+                                    ->description('Metadata, buttons, form labels, navigation — everything that is not a heading. Leave empty to use the theme default (Archivo).')
                                     ->schema([
                                         Grid::make(3)->schema([
-                                            ColorPicker::make('dark_bg_primary')
-                                                ->label('Primary Background'),
-                                            ColorPicker::make('dark_bg_secondary')
-                                                ->label('Secondary Background'),
-                                            ColorPicker::make('dark_bg_card')
-                                                ->label('Card Background'),
+                                            self::fontSelect('font_body_family', 'Font family', 'font_body_weight')
+                                                ->columnSpan(2),
+                                            self::fontWeightSelect('font_body_weight', 'font_body_family', 400),
+                                        ]),
+                                        View::make('filament.partials.font-preview')
+                                            ->viewData(['slot' => 'body']),
+                                    ]),
+
+                                Section::make('Headings & titles')
+                                    ->description('Page titles, section headers, video card titles and the wordmark. This is the choice that most defines how the site reads. Leave empty for the theme default (Archivo Narrow).')
+                                    ->schema([
+                                        Grid::make(3)->schema([
+                                            self::fontSelect('font_display_family', 'Font family', 'font_display_weight')
+                                                ->columnSpan(2),
+                                            self::fontWeightSelect('font_display_weight', 'font_display_family', 700),
+                                        ]),
+                                        View::make('filament.partials.font-preview')
+                                            ->viewData(['slot' => 'display']),
+                                    ]),
+
+                                Section::make('Video card overrides')
+                                    ->description('Optional. Overrides the fonts above for video card text only — useful when a dense grid needs a narrower face than the rest of the site. Leave empty to inherit.')
+                                    ->schema([
+                                        Grid::make(3)->schema([
+                                            self::fontSelect('video_card_title_font', 'Card title font', 'video_card_title_weight')
+                                                ->columnSpan(2),
+                                            self::fontWeightSelect('video_card_title_weight', 'video_card_title_font', 600),
                                         ]),
                                         Grid::make(3)->schema([
-                                            ColorPicker::make('dark_accent_color')
-                                                ->label('Accent Color'),
-                                            ColorPicker::make('dark_text_primary')
-                                                ->label('Primary Text'),
-                                            ColorPicker::make('dark_text_secondary')
-                                                ->label('Secondary Text'),
+                                            self::fontSelect('video_card_meta_font', 'Card metadata font', 'video_card_meta_weight')
+                                                ->columnSpan(2),
+                                            self::fontWeightSelect('video_card_meta_weight', 'video_card_meta_font', 400),
                                         ]),
-                                        ColorPicker::make('dark_border_color')
-                                            ->label('Border Color'),
                                     ]),
                             ]),
 
@@ -428,7 +485,20 @@ class ThemeSettings extends Page implements HasForms
                                         Grid::make(3)->schema([
                                             Toggle::make('video_card_show_avatar')
                                                 ->label('Show Avatar')
-                                                ->default(true),
+                                                ->default(false)
+                                                ->helperText('Off by default in the dense grid — the space goes to the rating bar and tags.'),
+                                            Toggle::make('video_card_show_rating')
+                                                ->label('Show Rating Bar')
+                                                ->default(true)
+                                                ->helperText('Like ratio. Hidden automatically until a video has at least 5 votes.'),
+                                            Toggle::make('video_card_show_quality')
+                                                ->label('Show Quality Badge')
+                                                ->default(true)
+                                                ->helperText('HD / 4K marker, from the transcoded renditions.'),
+                                            Toggle::make('video_card_show_tags')
+                                                ->label('Show Tag Chips')
+                                                ->default(true)
+                                                ->helperText('Up to three tags per card.'),
                                             Toggle::make('video_card_show_uploader')
                                                 ->label('Show Uploader Name')
                                                 ->default(true),
@@ -445,12 +515,9 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
 
                                 Section::make('Title Styling')
-                                    ->description('Customize the video title text on cards')
+                                    ->description('Size, colour and clamping for the video title. The font family moved to the Typography tab.')
                                     ->schema([
                                         Grid::make(2)->schema([
-                                            TextInput::make('video_card_title_font')
-                                                ->label('Font Family')
-                                                ->placeholder('e.g. Inter, Roboto, Arial'),
                                             TextInput::make('video_card_title_size')
                                                 ->label('Font Size (px)')
                                                 ->numeric()
@@ -472,12 +539,9 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
 
                                 Section::make('Meta Text Styling')
-                                    ->description('Customize the uploader name, views, and timestamp text')
+                                    ->description('Size and colour for the uploader name, views and timestamp. The font family moved to the Typography tab.')
                                     ->schema([
                                         Grid::make(2)->schema([
-                                            TextInput::make('video_card_meta_font')
-                                                ->label('Font Family')
-                                                ->placeholder('e.g. Inter, Roboto, Arial'),
                                             TextInput::make('video_card_meta_size')
                                                 ->label('Font Size (px)')
                                                 ->numeric()
@@ -496,11 +560,24 @@ class ThemeSettings extends Page implements HasForms
                                         TextInput::make('video_card_border_radius')
                                             ->label('Thumbnail Border Radius (px)')
                                             ->numeric()
-                                            ->default(12)
+                                            ->default(6)
                                             ->minValue(0)
                                             ->maxValue(24)
                                             ->suffix('px')
-                                            ->helperText('0 = square corners, 12 = default rounded'),
+                                            ->helperText('0 = square corners, 6 = theme default'),
+                                    ]),
+
+                                Section::make('Grid Density')
+                                    ->description('How many columns the video grid uses on larger screens')
+                                    ->schema([
+                                        Select::make('video_grid_density')
+                                            ->label('Desktop grid density')
+                                            ->options([
+                                                'dense' => 'Dense — 5 columns (6 on very wide screens)',
+                                                'comfortable' => 'Comfortable — 4 columns, larger thumbnails',
+                                            ])
+                                            ->default('dense')
+                                            ->native(false),
                                     ]),
 
                                 Section::make('Mobile Grid Layout')
@@ -612,6 +689,102 @@ class ThemeSettings extends Page implements HasForms
                 ->icon('phosphor-check')
                 ->action('save'),
         ];
+    }
+
+    /**
+     * Human labels for the seven colours an operator can override per theme.
+     * The rest of the palette (hover, subtle, elevated, borders) is derived in
+     * ThemeTokens so a custom accent still produces a coherent ramp.
+     */
+    protected const PALETTE_LABELS = [
+        'bgPrimary' => 'Page background',
+        'bgSecondary' => 'Header & sidebar',
+        'bgCard' => 'Card background',
+        'accent' => 'Accent',
+        'textPrimary' => 'Primary text',
+        'textSecondary' => 'Secondary text',
+        'border' => 'Borders',
+    ];
+
+    /** Colour pickers for one theme, laid out three to a row. */
+    protected static function paletteFields(string $mode): array
+    {
+        $defaults = ThemeTokens::defaults($mode);
+
+        $pickers = [];
+        foreach (self::PALETTE_LABELS as $key => $label) {
+            $pickers[] = ColorPicker::make(ThemeTokens::settingKey($mode, $key))
+                ->label($label)
+                ->placeholder($defaults[$key]);
+        }
+
+        return [
+            Grid::make(3)->schema(array_slice($pickers, 0, 3)),
+            Grid::make(3)->schema(array_slice($pickers, 3, 3)),
+            Grid::make(3)->schema(array_slice($pickers, 6)),
+        ];
+    }
+
+    /** Current stored values for one theme, keyed by settings-table key. */
+    protected static function paletteFormDefaults(string $mode): array
+    {
+        $defaults = [];
+
+        foreach (array_keys(self::PALETTE_LABELS) as $key) {
+            $settingKey = ThemeTokens::settingKey($mode, $key);
+            $defaults[$settingKey] = Setting::get($settingKey, '');
+        }
+
+        return $defaults;
+    }
+
+    /**
+     * Font family picker that renders each option in its own typeface.
+     *
+     * Options are grouped by category and carry inline `font-family`, which
+     * Filament will only render because of allowHtml(). The faces themselves are
+     * pulled into the admin page by the Bunny Fonts <link> in
+     * resources/views/filament/pages/site-settings.blade.php — without that the
+     * dropdown silently falls back to the panel font and every option looks
+     * identical.
+     *
+     * `$weightField` is the sibling weight Select to keep in step: families
+     * publish different weight sets, so choosing a new family has to re-scope
+     * the weights on offer and drop a stored value the new family lacks.
+     */
+    protected static function fontSelect(string $name, string $label, ?string $weightField = null): Select
+    {
+        $select = Select::make($name)
+            ->label($label)
+            ->options(GoogleFonts::groupedOptions())
+            ->allowHtml()
+            ->searchable()
+            ->native(false)
+            ->placeholder('Theme default')
+            ->live();
+
+        if ($weightField !== null) {
+            $select->afterStateUpdated(function ($state, callable $set, $get) use ($weightField) {
+                // Keep the chosen weight if the new family publishes it, else
+                // snap to the nearest one it does.
+                $set($weightField, GoogleFonts::resolveWeight($state, $get($weightField)));
+            });
+        }
+
+        return $select;
+    }
+
+    /** Weight picker scoped to whatever family the sibling field currently holds. */
+    protected static function fontWeightSelect(string $name, string $familyField, int $default): Select
+    {
+        return Select::make($name)
+            ->label('Weight')
+            ->options(fn ($get) => GoogleFonts::weightOptions($get($familyField)))
+            ->default($default)
+            ->native(false)
+            ->live()
+            // A family with a single weight has nothing to choose.
+            ->disabled(fn ($get) => count(GoogleFonts::weightOptions($get($familyField))) <= 1);
     }
 
     public function save(): void

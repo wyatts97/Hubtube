@@ -126,7 +126,7 @@ const menuAlign = computed(() => (props.align === 'right' ? 'end' : 'start'));
                 class="w-5 h-4 rounded-sm object-cover shrink-0"
             />
             <span class="flex-1 truncate">{{ loc.label }}</span>
-            <Check v-if="loc.code === locale" class="w-3.5 h-3.5 shrink-0 text-accent" />
+            <Check v-if="loc.code === locale" class="w-3.5 h-3.5 shrink-0 text-accent-text" />
         </DropdownMenuItem>
     </BaseDropdown>
     </div>

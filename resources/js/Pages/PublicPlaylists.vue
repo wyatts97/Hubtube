@@ -38,7 +38,7 @@ const changeSort = (sort) => {
     <AppLayout>
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-text-primary">{{ t('playlist.public_playlists') }}</h1>
+                <h1 class="page-title">{{ t('playlist.public_playlists') }}</h1>
                 <p class="mt-1 text-text-secondary">{{ t('playlist.browse_all') }}</p>
             </div>
 

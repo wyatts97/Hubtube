@@ -51,7 +51,7 @@ const onSubmit = () => {
                     <!-- Name -->
                     <div>
                         <label class="block text-sm font-medium mb-1.5 text-text-secondary">
-                            {{ t('contact.name') }} <span class="text-accent">*</span>
+                            {{ t('contact.name') }} <span class="text-accent-text">*</span>
                         </label>
                         <div class="relative">
                             <User class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
@@ -69,7 +69,7 @@ const onSubmit = () => {
                     <!-- Email -->
                     <div>
                         <label class="block text-sm font-medium mb-1.5 text-text-secondary">
-                            {{ t('contact.email') }} <span class="text-accent">*</span>
+                            {{ t('contact.email') }} <span class="text-accent-text">*</span>
                         </label>
                         <div class="relative">
                             <Mail class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
@@ -102,7 +102,7 @@ const onSubmit = () => {
                 <!-- Message -->
                 <div>
                     <label class="block text-sm font-medium mb-1.5 text-text-secondary">
-                        {{ t('contact.message') }} <span class="text-accent">*</span>
+                        {{ t('contact.message') }} <span class="text-accent-text">*</span>
                     </label>
                     <div class="relative">
                         <MessageSquare class="absolute start-3 top-3 w-4 h-4 text-text-muted" />

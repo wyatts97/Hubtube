@@ -18,11 +18,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>419 — Session Expired</title>
     <style>
+        /* Palette from App\Support\ThemeTokens — the same source the SPA uses, so
+           a standalone page can't drift from the site it belongs to. */
+        :root { {!! \App\Support\ThemeTokens::cssVariables('dark') !!} }
+        :root.theme-light { {!! \App\Support\ThemeTokens::cssVariables('light') !!} }
+    </style>
+    <script>
+        (function () {
+            try {
+                if ({!! json_encode(\App\Support\ThemeTokens::authoritativeMode()) !!}) return;
+                var saved = localStorage.getItem('ht-theme');
+                document.documentElement.classList.toggle('theme-light', saved === 'light');
+            } catch (e) {}
+        })();
+    </script>
+    <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0a;
-            color: #fff;
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -41,7 +56,7 @@
         .site-name {
             font-size: 1.25rem;
             font-weight: 700;
-            color: #fff;
+            color: var(--color-text-primary);
         }
         .container {
             flex: 1;
@@ -58,7 +73,7 @@
             width: 80px;
             height: 80px;
             margin: 0 auto 1.5rem;
-            background: linear-gradient(135deg, #ef4444, #f97316);
+            background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -67,13 +82,13 @@
         .icon svg {
             width: 40px;
             height: 40px;
-            color: #fff;
+            color: var(--color-text-primary);
         }
         .code {
             font-size: 4rem;
             font-weight: 800;
             line-height: 1;
-            background: linear-gradient(135deg, #ef4444, #f97316);
+            background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -86,7 +101,7 @@
             color: #e5e5e5;
         }
         .desc {
-            color: #a3a3a3;
+            color: var(--color-text-secondary);
             font-size: 0.95rem;
             line-height: 1.6;
             margin-bottom: 2rem;
@@ -109,10 +124,10 @@
             cursor: pointer;
         }
         .btn-primary {
-            background: #ef4444;
-            color: #fff;
+            background: var(--color-accent);
+            color: var(--color-text-primary);
         }
-        .btn-primary:hover { background: #dc2626; }
+        .btn-primary:hover { background: var(--color-accent-hover); }
         .btn-secondary {
             background: #262626;
             color: #e5e5e5;

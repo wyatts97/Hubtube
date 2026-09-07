@@ -76,14 +76,14 @@ const removeVideo = (videoId) => {
             <div class="card p-6 mb-6">
                 <div class="flex items-start justify-between">
                     <div>
-                        <h1 class="text-2xl font-bold text-text-primary">{{ playlist.title }}</h1>
+                        <h1 class="page-title">{{ playlist.title }}</h1>
                         <p v-if="playlist.description" class="mt-2 text-text-secondary">{{ playlist.description }}</p>
                         <div class="flex items-center gap-4 mt-3">
                             <span class="text-sm text-text-muted">
                                 {{ playlist.videos?.length || playlist.videos_count || 0 }} {{ t('common.videos') }}
                             </span>
                             <span v-if="playlist.user" class="text-sm text-text-muted">
-                                by <Link :href="`/channel/${playlist.user.username}`" class="text-accent">{{ playlist.user.username }}</Link>
+                                by <Link :href="`/channel/${playlist.user.username}`" class="text-accent-text">{{ playlist.user.username }}</Link>
                             </span>
                             <span v-if="favoritesCount > 0" class="text-sm text-text-muted">
                                 {{ favoritesCount }} {{ favoritesCount === 1 ? 'favorite' : 'favorites' }}

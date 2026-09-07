@@ -35,7 +35,7 @@ const { t } = useI18n();
                 </div>
                 <h1 class="mt-4 flex items-center gap-2 text-2xl font-bold text-text-primary">
                     {{ channel.display_name }}
-                    <span v-if="channel.is_verified" class="text-accent">&#10003;</span>
+                    <span v-if="channel.is_verified" class="text-accent-text">&#10003;</span>
                     <ProBadge v-if="channel.is_pro" size="md" />
                 </h1>
                 <p class="mt-1 text-text-secondary">@{{ channel.username }}</p>

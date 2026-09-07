@@ -807,7 +807,7 @@ const getRelatedTitle = (video) => {
                             :href="localizedUrl(`/category/${video.category.slug}`)"
                             class="inline-flex items-center gap-1.5 text-sm hover:opacity-80 transition-opacity text-text-secondary"
                         >
-                            <Folder class="w-3.5 h-3.5 text-accent" />
+                            <Folder class="w-3.5 h-3.5 text-accent-text" />
                             <span>{{ video.category.name }}</span>
                         </Link>
 

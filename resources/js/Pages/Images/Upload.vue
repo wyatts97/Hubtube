@@ -136,7 +136,7 @@ onUnmounted(() => {
         <div class="max-w-4xl mx-auto">
             <div class="flex items-center gap-3 mb-6">
                 <div>
-                    <h1 class="text-xl sm:text-2xl font-bold text-text-primary">Upload Image</h1>
+                    <h1 class="page-title">Upload Image</h1>
                 </div>
             </div>
 
@@ -177,7 +177,7 @@ onUnmounted(() => {
                         </div>
                         <div class="flex-1 min-w-0 w-full">
                             <div class="flex items-center gap-2">
-                                <FileImage class="w-5 h-5 shrink-0 text-accent" />
+                                <FileImage class="w-5 h-5 shrink-0 text-accent-text" />
                                 <p class="font-medium truncate text-text-primary">{{ form.image_file.name }}</p>
                             </div>
                             <p class="text-sm mt-1 text-text-muted">
@@ -188,7 +188,7 @@ onUnmounted(() => {
                             <div v-if="uploadStatus === 'uploading'" class="mt-3">
                                 <div class="flex items-center justify-between text-sm mb-1">
                                     <span class="text-text-secondary">Uploading...</span>
-                                    <span class="text-accent">{{ uploadProgress }}%</span>
+                                    <span class="text-accent-text">{{ uploadProgress }}%</span>
                                 </div>
                                 <div class="h-2 rounded-full overflow-hidden bg-bg-secondary">
                                     <div

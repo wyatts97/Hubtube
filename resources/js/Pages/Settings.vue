@@ -2,13 +2,14 @@
 import { useForm, usePage, router } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { User, Lock, Bell, Shield, Wallet, ExternalLink, Loader2, Camera, ImageIcon, Trash2, AlertTriangle, Download, ShieldCheck, KeyRound } from 'lucide-vue-next';
+import { User, Lock, Bell, Shield, Wallet, ExternalLink, Loader2, Camera, ImageIcon, Trash2, AlertTriangle, Download, ShieldCheck, KeyRound, Palette } from 'lucide-vue-next';
 import { usePushNotifications } from '@/Composables/usePushNotifications';
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
 import BaseDialog from '@/Components/UI/BaseDialog.vue';
 import BaseSwitch from '@/Components/UI/BaseSwitch.vue';
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui';
+import { useTheme } from '@/Composables/useTheme';
 
 const { t } = useI18n();
 
@@ -16,6 +17,8 @@ const page = usePage();
 const user = computed(() => page.props.auth.user);
 const adminNotifs = computed(() => page.props.adminNotificationSettings ?? {});
 const activeTab = ref('profile');
+
+const { isLight, canToggle: canToggleTheme, setTheme } = useTheme();
 
 const profileForm = useForm({
     username: user.value?.username || '',
@@ -326,6 +329,11 @@ const tabs = computed(() => {
         { id: 'notifications', name: t('settings.notifications'), icon: Bell },
         { id: 'privacy', name: t('settings.privacy'), icon: Shield },
     ];
+    // Only offer an appearance tab when the admin actually allows switching —
+    // otherwise it would be a panel with one inert control in it.
+    if (canToggleTheme.value) {
+        items.splice(3, 0, { id: 'appearance', name: t('theme.appearance'), icon: Palette });
+    }
     if (monetizationEnabled.value) {
         items.push({ id: 'billing', name: t('settings.billing'), icon: Wallet });
     }
@@ -612,7 +620,7 @@ const tabs = computed(() => {
                     <!-- Two-Factor Authentication -->
                     <div class="card p-6 mt-6">
                         <div class="flex items-center gap-3 mb-4">
-                            <ShieldCheck class="w-5 h-5 text-accent" />
+                            <ShieldCheck class="w-5 h-5 text-accent-text" />
                             <h2 class="text-lg font-semibold text-text-primary">Two-Factor Authentication</h2>
                         </div>
 
@@ -683,7 +691,7 @@ const tabs = computed(() => {
                         <!-- Recovery codes shown once after confirm / regenerate -->
                         <template v-else-if="twoFactorStep === 'recovery'">
                             <div class="flex items-center gap-2 mb-3">
-                                <KeyRound class="w-4 h-4 text-accent" />
+                                <KeyRound class="w-4 h-4 text-accent-text" />
                                 <p class="font-medium text-text-primary">Save your recovery codes</p>
                             </div>
                             <p class="text-sm mb-3 text-text-secondary">
@@ -698,6 +706,49 @@ const tabs = computed(() => {
                     </TabsContent>
 
                     <!-- Notifications Tab -->
+                    <TabsContent value="appearance" class="card p-6 focus:outline-none">
+                        <h2 class="section-title mb-1">{{ t('theme.appearance') }}</h2>
+                        <p class="text-sm text-text-secondary mb-5">{{ t('theme.description') }}</p>
+
+                        <div class="grid grid-cols-2 gap-3 max-w-md">
+                            <button
+                                v-for="option in [
+                                    { value: 'dark', label: t('theme.dark') },
+                                    { value: 'light', label: t('theme.light') },
+                                ]"
+                                :key="option.value"
+                                type="button"
+                                class="p-3 text-start transition-colors"
+                                :style="{ borderRadius: 'var(--radius-card)' }"
+                                :class="(option.value === 'light') === isLight
+                                    ? 'border-2 border-accent bg-accent-subtle'
+                                    : 'border-2 border-border hover:border-border-strong'"
+                                :aria-pressed="(option.value === 'light') === isLight"
+                                @click="setTheme(option.value)"
+                            >
+                                <!-- Static swatch, so each option previews its own
+                                     palette rather than the one currently applied. -->
+                                <span
+                                    class="block h-14 mb-2 border"
+                                    :style="{
+                                        borderRadius: 'var(--radius-thumb)',
+                                        backgroundColor: option.value === 'light' ? '#faf8f7' : '#0c0c0e',
+                                        borderColor: option.value === 'light' ? '#e3ded9' : '#26262d',
+                                    }"
+                                >
+                                    <span
+                                        class="block h-2 w-10 mt-3 ms-3"
+                                        :style="{
+                                            borderRadius: '9999px',
+                                            backgroundColor: option.value === 'light' ? '#c00d26' : '#e11d34',
+                                        }"
+                                    ></span>
+                                </span>
+                                <span class="text-sm font-semibold text-text-primary">{{ option.label }}</span>
+                            </button>
+                        </div>
+                    </TabsContent>
+
                     <TabsContent value="notifications" class="card p-6">
                         <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('settings.notification_prefs') }}</h2>
                         <form @submit.prevent="updateNotifications" class="space-y-4">
@@ -829,7 +880,7 @@ const tabs = computed(() => {
                                 <div class="flex items-center justify-between">
                                     <div>
                                         <p class="font-medium mb-2 text-text-primary">{{ t('settings.wallet_balance') }}</p>
-                                        <p class="text-2xl font-bold text-accent">${{ user?.wallet_balance || '0.00' }}</p>
+                                        <p class="text-2xl font-bold text-accent-text">${{ user?.wallet_balance || '0.00' }}</p>
                                     </div>
                                     <div class="flex gap-2">
                                         <a href="/wallet/deposit" class="btn btn-primary">{{ t('settings.deposit') }}</a>
@@ -841,23 +892,23 @@ const tabs = computed(() => {
                                 <p class="font-medium mb-3 text-text-primary">Pro Benefits</p>
                                 <ul class="space-y-2 text-sm text-text-secondary">
                                     <li class="flex items-center gap-2">
-                                        <span class="text-accent">✓</span>
+                                        <span class="text-accent-text">✓</span>
                                         Ad-free viewing
                                     </li>
                                     <li class="flex items-center gap-2">
-                                        <span class="text-accent">✓</span>
+                                        <span class="text-accent-text">✓</span>
                                         Upload videos up to 1 GB
                                     </li>
                                     <li class="flex items-center gap-2">
-                                        <span class="text-accent">✓</span>
+                                        <span class="text-accent-text">✓</span>
                                         Higher daily upload cap
                                     </li>
                                     <li class="flex items-center gap-2">
-                                        <span class="text-accent">✓</span>
+                                        <span class="text-accent-text">✓</span>
                                         Download videos
                                     </li>
                                     <li class="flex items-center gap-2">
-                                        <span class="text-accent">✓</span>
+                                        <span class="text-accent-text">✓</span>
                                         Pro badge on channel and comments
                                     </li>
                                 </ul>

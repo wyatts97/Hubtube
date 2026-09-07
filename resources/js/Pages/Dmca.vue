@@ -38,7 +38,7 @@ const onSubmit = () => {
             <h1 class="text-2xl font-bold mb-2 text-text-primary">{{ t('dmca.title') }}</h1>
             <p class="mb-8 text-text-secondary">
                 If you believe content on this site infringes your copyright, submit a takedown request below. See our
-                <a href="/pages/dmca" class="text-accent hover:opacity-80">DMCA policy</a> for details on the process.
+                <a href="/pages/dmca" class="text-accent-text hover:opacity-80">DMCA policy</a> for details on the process.
             </p>
 
             <!-- Success Message -->
@@ -56,7 +56,7 @@ const onSubmit = () => {
                     <!-- Name -->
                     <div>
                         <label class="block text-sm font-medium mb-1.5 text-text-secondary">
-                            {{ t('dmca.name') }} <span class="text-accent">*</span>
+                            {{ t('dmca.name') }} <span class="text-accent-text">*</span>
                         </label>
                         <div class="relative">
                             <User class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
@@ -68,7 +68,7 @@ const onSubmit = () => {
                     <!-- Email -->
                     <div>
                         <label class="block text-sm font-medium mb-1.5 text-text-secondary">
-                            {{ t('dmca.email') }} <span class="text-accent">*</span>
+                            {{ t('dmca.email') }} <span class="text-accent-text">*</span>
                         </label>
                         <div class="relative">
                             <Mail class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
@@ -92,7 +92,7 @@ const onSubmit = () => {
                 <!-- Copyrighted work description -->
                 <div>
                     <label class="block text-sm font-medium mb-1.5 text-text-secondary">
-                        {{ t('dmca.work_description') }} <span class="text-accent">*</span>
+                        {{ t('dmca.work_description') }} <span class="text-accent-text">*</span>
                     </label>
                     <div class="relative">
                         <FileText class="absolute start-3 top-3 w-4 h-4 text-text-muted" />
@@ -110,7 +110,7 @@ const onSubmit = () => {
                 <!-- Infringing URLs -->
                 <div>
                     <label class="block text-sm font-medium mb-1.5 text-text-secondary">
-                        {{ t('dmca.infringing_urls') }} <span class="text-accent">*</span>
+                        {{ t('dmca.infringing_urls') }} <span class="text-accent-text">*</span>
                     </label>
                     <div class="relative">
                         <LinkIcon class="absolute start-3 top-3 w-4 h-4 text-text-muted" />
@@ -143,7 +143,7 @@ const onSubmit = () => {
                 <!-- Signature -->
                 <div>
                     <label class="block text-sm font-medium mb-1.5 text-text-secondary">
-                        {{ t('dmca.signature') }} <span class="text-accent">*</span>
+                        {{ t('dmca.signature') }} <span class="text-accent-text">*</span>
                     </label>
                     <div class="relative">
                         <PenLine class="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />

@@ -65,7 +65,7 @@ const deleteGallery = () => {
             <div class="card p-5 mb-6">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h1 class="text-2xl font-bold text-text-primary">{{ gallery.title }}</h1>
+                        <h1 class="page-title">{{ gallery.title }}</h1>
                         <p v-if="gallery.description" class="text-sm mt-1 whitespace-pre-wrap text-text-secondary">
                             {{ gallery.description }}
                         </p>
@@ -92,18 +92,18 @@ const deleteGallery = () => {
                     </div>
                     <div class="flex items-center gap-2">
                         <!-- View Mode Toggle -->
-                        <div class="flex items-center rounded-lg overflow-hidden border border-border">
+                        <div class="flex items-center gap-1">
                             <button
                                 @click="viewMode = 'grid'"
-                                class="px-3 py-1.5 text-xs font-medium transition-colors"
-                                :style="viewMode === 'grid' ? 'background-color: var(--color-accent); color: #fff;' : 'color: var(--color-text-secondary);'"
+                                class="chip"
+                                :class="{ 'chip-active': viewMode === 'grid' }"
                             >
                                 Grid
                             </button>
                             <button
                                 @click="viewMode = 'masonry'"
-                                class="px-3 py-1.5 text-xs font-medium transition-colors"
-                                :style="viewMode === 'masonry' ? 'background-color: var(--color-accent); color: #fff;' : 'color: var(--color-text-secondary); border-left: 1px solid var(--color-border);'"
+                                class="chip"
+                                :class="{ 'chip-active': viewMode === 'masonry' }"
                             >
                                 Masonry
                             </button>

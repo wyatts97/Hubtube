@@ -40,22 +40,22 @@ const formatViews = (count) => {
     <AppLayout>
         <div class="mb-5">
             <div class="flex items-center justify-between gap-3 flex-wrap">
-                <h1 class="text-xl font-bold text-text-primary">Galleries</h1>
+                <h1 class="page-title">Galleries</h1>
 
                 <div class="flex items-center gap-2">
                     <!-- Sort Buttons -->
-                    <div class="flex items-center rounded-lg overflow-hidden border border-border">
+                    <div class="flex items-center gap-1">
                         <button
                             @click="setSort('')"
-                            :class="['px-3 py-1.5 text-xs font-medium transition-colors', !sort ? 'text-white' : '']"
-                            :style="!sort ? 'background-color: var(--color-accent); color: #fff;' : 'color: var(--color-text-secondary);'"
+                            class="chip"
+                            :class="{ 'chip-active': !sort }"
                         >
                             <Clock class="w-3.5 h-3.5 inline -mt-0.5 me-1" />Latest
                         </button>
                         <button
                             @click="setSort('popular')"
-                            :class="['px-3 py-1.5 text-xs font-medium transition-colors', sort === 'popular' ? 'text-white' : '']"
-                            :style="sort === 'popular' ? 'background-color: var(--color-accent); color: #fff;' : 'color: var(--color-text-secondary); border-left: 1px solid var(--color-border);'"
+                            class="chip"
+                            :class="{ 'chip-active': sort === 'popular' }"
                         >
                             <Flame class="w-3.5 h-3.5 inline -mt-0.5 me-1" />Popular
                         </button>
@@ -63,7 +63,7 @@ const formatViews = (count) => {
 
                     <Link href="/galleries/create" class="btn btn-primary flex items-center gap-1.5 text-sm">
                         <Plus class="w-4 h-4" />
-                        Create Gallery
+                        {{ t('gallery.create') }}
                     </Link>
                 </div>
             </div>
@@ -111,8 +111,8 @@ const formatViews = (count) => {
 
         <div v-else class="text-center py-16">
             <ImageIcon class="w-12 h-12 mx-auto mb-3 text-text-muted" />
-            <p class="text-lg text-text-secondary">No galleries yet</p>
-            <p class="mt-2 text-sm text-text-muted">Be the first to create a gallery!</p>
+            <p class="text-lg text-text-secondary">{{ t('gallery.none_yet') }}</p>
+            <p class="mt-2 text-sm text-text-muted">{{ t('gallery.be_first') }}</p>
             <Link href="/galleries/create" class="btn btn-primary mt-4 inline-flex items-center gap-1.5">
                 <Plus class="w-4 h-4" />
                 Create Gallery

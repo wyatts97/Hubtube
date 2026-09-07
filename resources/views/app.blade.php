@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ \App\Services\TranslationService::isRtl(app()->getLocale()) ? 'rtl' : 'ltr' }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ \App\Services\TranslationService::isRtl(app()->getLocale()) ? 'rtl' : 'ltr' }}" class="@if(\App\Support\ThemeTokens::defaultMode() === 'light')theme-light @else dark @endif">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -147,75 +147,76 @@
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#ef4444">
+    {{-- Matches the page ground, not the accent: this paints the browser chrome
+         on Android and standalone PWA, and an accent-coloured bar above a dark
+         page reads as a rendering bug. The inline theme script below keeps it in
+         sync when a visitor is in light mode. --}}
+    <meta name="theme-color" content="{{ \App\Support\ThemeTokens::palette(\App\Support\ThemeTokens::defaultMode())['bgPrimary'] }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="HubTube">
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
 
     <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
-    {{-- Preload critical font weights to eliminate render-blocking chain (PageSpeed: 900ms savings) --}}
-    <link rel="preload" href="https://fonts.bunny.net/inter/files/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="https://fonts.bunny.net/inter/files/inter-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="https://fonts.bunny.net/inter/files/inter-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="https://fonts.bunny.net/inter/files/inter-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
-    {{-- Load font CSS asynchronously — not render-blocking --}}
-    <link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap"></noscript>
-    
-    @php
-        $siteTitleFont = \App\Models\Setting::get('site_title_font', '');
-    @endphp
-    @if($siteTitleFont)
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family={{ str_replace(' ', '+', $siteTitleFont) }}&display=swap" rel="stylesheet">
+    {{-- Fonts are resolved by App\Support\Typography from the admin's choices —
+         one stylesheet covering every slot, requesting only the weights the site
+         actually renders. Served from Bunny Fonts rather than Google so visitor
+         IPs are never sent to Google (a live GDPR issue in the EU). --}}
+    @php $fontStylesheet = \App\Support\Typography::stylesheetUrl(); @endphp
+    @if($fontStylesheet)
+    <link rel="preload" as="style" href="{{ $fontStylesheet }}">
+    <link rel="stylesheet" href="{{ $fontStylesheet }}" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="{{ $fontStylesheet }}"></noscript>
     @endif
 
     <style>
-        /* Inline @font-face so text renders immediately with preloaded fonts (no FOIT) */
-        @font-face {
-            font-family: 'Inter';
-            font-style: normal;
-            font-weight: 400;
-            font-display: swap;
-            src: url('https://fonts.bunny.net/inter/files/inter-latin-400-normal.woff2') format('woff2');
-            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-        }
-        @font-face {
-            font-family: 'Inter';
-            font-style: normal;
-            font-weight: 500;
-            font-display: swap;
-            src: url('https://fonts.bunny.net/inter/files/inter-latin-500-normal.woff2') format('woff2');
-            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-        }
-        @font-face {
-            font-family: 'Inter';
-            font-style: normal;
-            font-weight: 600;
-            font-display: swap;
-            src: url('https://fonts.bunny.net/inter/files/inter-latin-600-normal.woff2') format('woff2');
-            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-        }
-        @font-face {
-            font-family: 'Inter';
-            font-style: normal;
-            font-weight: 700;
-            font-display: swap;
-            src: url('https://fonts.bunny.net/inter/files/inter-latin-700-normal.woff2') format('woff2');
-            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-        }
+        /* Theme palettes. BOTH are emitted from App\Support\ThemeTokens — the same
+           source that feeds the Inertia `theme` prop and the Filament colour
+           pickers — so switching themes is a class toggle on <html> with no
+           JavaScript writing custom properties one at a time, and the two can
+           never drift apart. Dark is the default; .theme-light overrides it. */
         :root {
-            --color-bg-primary: #0a0a0a;
-            --color-bg-secondary: #171717;
-            --color-bg-card: #1f1f1f;
-            --color-accent: #ef4444;
-            --color-text-primary: #ffffff;
-            --color-text-secondary: #a3a3a3;
-            --color-border: #262626;
+            {!! \App\Support\ThemeTokens::cssVariables('dark') !!}
+            {!! \App\Support\Typography::cssVariables() !!}
+        }
+        :root.theme-light {
+            {!! \App\Support\ThemeTokens::cssVariables('light') !!}
         }
     </style>
+
+    {{-- Resolve the theme before first paint. Without this a visitor who chose
+         light mode gets a dark flash on every navigation, which on this kind of
+         site is worse than the usual cosmetic annoyance. Deliberately does NOT
+         consult prefers-color-scheme: an unset visitor gets the admin default
+         (dark), because landing an unsuspecting person on a bright adult page
+         because their laptop is in light mode is not a good default. --}}
+    <script>
+        (function () {
+            try {
+                var root = document.documentElement;
+                /* Server-resolved theme. Authoritative when the admin pinned a
+                   theme, or when a signed-in user has a saved choice — in both
+                   cases the class on <html> is already correct and localStorage
+                   (which may be stale from another account) must not override it. */
+                var authoritative = {!! json_encode(\App\Support\ThemeTokens::authoritativeMode()) !!};
+                if (authoritative) return;
+
+                var saved = localStorage.getItem('ht-theme');
+                var resolved = (saved === 'light' || saved === 'dark') ? saved : 'dark';
+
+                root.classList.toggle('theme-light', resolved === 'light');
+                root.classList.toggle('dark', resolved !== 'light');
+
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) {
+                    var ground = getComputedStyle(root).getPropertyValue('--color-bg-primary').trim();
+                    if (ground) meta.setAttribute('content', ground);
+                }
+            } catch (e) {
+                /* Private mode or blocked storage — the server default stands. */
+            }
+        })();
+    </script>
 
     {{-- Paginated series links. Google retired rel=prev/next as an indexing
          signal, but Bing and others still consume it. Unkeyed, like hreflang. --}}

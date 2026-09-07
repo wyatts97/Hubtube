@@ -62,7 +62,7 @@ const refresh = () => {
         <div class="flex items-center justify-center py-20 px-4">
             <div class="w-full max-w-md text-center">
                 <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style="background-color: color-mix(in srgb, var(--color-accent) 20%, transparent);">
-                    <AlertTriangle class="w-10 h-10 text-accent" />
+                    <AlertTriangle class="w-10 h-10 text-accent-text" />
                 </div>
 
                 <h1 class="text-5xl font-bold mb-2 text-text-primary">{{ status }}</h1>
@@ -72,7 +72,7 @@ const refresh = () => {
                 <!-- 404 Countdown -->
                 <div v-if="is404" class="mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-bg-secondary text-text-muted border border-border">
                     <Clock class="w-4 h-4" />
-                    Redirecting to homepage in <span class="font-bold text-accent">{{ countdown }}</span>s
+                    Redirecting to homepage in <span class="font-bold text-accent-text">{{ countdown }}</span>s
                 </div>
 
                 <div class="flex flex-col sm:flex-row gap-3 justify-center">

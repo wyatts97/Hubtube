@@ -40,7 +40,7 @@ const clearHistory = async () => {
     <AppLayout>
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-text-primary">{{ t('history.title') }}</h1>
+                <h1 class="page-title">{{ t('history.title') }}</h1>
                 <p class="mt-1 text-text-secondary">{{ t('history.description') }}</p>
             </div>
             <button v-if="videos?.data?.length" @click="clearHistory" class="btn btn-ghost text-red-400 gap-2">

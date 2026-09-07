@@ -75,7 +75,7 @@ const isEmpty = computed(() => entries.value.length === 0);
 
     <AppLayout>
         <div class="mb-6">
-            <h1 class="text-2xl font-bold text-text-primary">{{ t('feed.title') }}</h1>
+            <h1 class="page-title">{{ t('feed.title') }}</h1>
             <p class="mt-1 text-text-secondary">{{ t('feed.description') }}</p>
         </div>
 
@@ -97,7 +97,7 @@ const isEmpty = computed(() => entries.value.length === 0);
                                 :href="localizedUrl(`/channel/${entry.actor.username}`)"
                                 class="font-medium text-text-primary hover:underline"
                             >{{ entry.actor.username }}</Link>
-                            <span v-if="entry.actor.is_verified" class="text-accent ms-1">&#10003;</span>
+                            <span v-if="entry.actor.is_verified" class="text-accent-text ms-1">&#10003;</span>
                             <span class="ms-1">
                                 {{
                                     entry.type === 'video'

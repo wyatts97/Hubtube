@@ -28,7 +28,7 @@ const titleStyle = computed(() => ({
 
     <AppLayout>
         <div class="mb-6">
-            <h1 class="text-2xl font-bold text-text-primary">{{ t('categories.title') }}</h1>
+            <h1 class="page-title">{{ t('categories.title') }}</h1>
             <p class="text-sm mt-1 text-text-muted">{{ t('categories.browse') }}</p>
         </div>
 

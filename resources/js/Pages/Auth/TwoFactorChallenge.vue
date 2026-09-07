@@ -65,7 +65,7 @@ const toggleMode = () => {
                 </form>
 
                 <div class="mt-6 text-center">
-                    <button type="button" @click="toggleMode" class="text-sm text-accent">
+                    <button type="button" @click="toggleMode" class="text-sm text-accent-text">
                         {{ useRecoveryCode ? 'Use an authentication code instead' : 'Use a recovery code instead' }}
                     </button>
                 </div>

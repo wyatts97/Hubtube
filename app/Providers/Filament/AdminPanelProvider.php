@@ -12,6 +12,8 @@ use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Boquizo\FilamentLogViewer\FilamentLogViewerPlugin;
 use Croustibat\FilamentJobsMonitor\FilamentJobsMonitorPlugin;
 use Filafly\Icons\Phosphor\PhosphorIcons;
+use App\Filament\Pages\ThemeSettings;
+use App\Support\GoogleFonts;
 use Filament\Contracts\Plugin;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -340,6 +342,34 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
                 fn (): string => (string) app(Vite::class)(['resources/css/filament/admin/theme.css']),
+            )
+            // Preview faces for the font pickers on the Theme & Appearance page.
+            // Scoped to that page so the rest of the panel never pays for it:
+            // the whole catalogue at one weight is a ~450KB stylesheet, and
+            // @font-face costs nothing until a rule renders in it, so the
+            // browser fetches font files only for the dropdown rows on screen.
+            //
+            // Bunny Fonts, not Google — an admin's IP should not have to reach
+            // Google to draw a dropdown, and it matches the public site.
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                function (): string {
+                    $url = GoogleFonts::stylesheetUrl(array_fill_keys(GoogleFonts::names(), [400]));
+
+                    if ($url === null) {
+                        return '';
+                    }
+
+                    // Loaded async (media=print, swapped on load) so a 450KB
+                    // stylesheet never blocks the settings page rendering.
+                    return '<link rel="preconnect" href="https://fonts.bunny.net" crossorigin>'
+                        . sprintf(
+                            '<link rel="stylesheet" media="print" onload="this.media=%s" href="%s">',
+                            "&quot;all&quot;",
+                            e($url)
+                        );
+                },
+                scopes: ThemeSettings::class,
             )
             ->renderHook(
                 PanelsRenderHook::BODY_END,

@@ -77,7 +77,7 @@ const embedUrl = computed(() => {
         
         <!-- Video info (can be hidden when parent renders its own info) -->
         <div v-if="showInfo" class="mt-4">
-            <h1 class="text-xl font-bold text-text-primary">
+            <h1 class="page-title">
                 {{ video.title }}
             </h1>
             

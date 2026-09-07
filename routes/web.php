@@ -47,6 +47,7 @@ use App\Http\Controllers\ShortsController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\ThumbnailProxyController;
+use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\VideoAdController;
 use App\Http\Controllers\VideoController;
@@ -556,6 +557,10 @@ Route::middleware('installed:require')->group(function () {
         Route::post('/api/translate/batch', [TranslationController::class, 'translateBatch'])->middleware('throttle:30,1')->name('translate.batch');
         Route::get('/api/languages', [TranslationController::class, 'languages'])->name('languages');
         Route::post('/api/locale', [TranslationController::class, 'setLocale'])->name('locale.set');
+
+        // Theme preference. Mirrors the localStorage choice made in useTheme.js
+        // onto the account so it follows the user across devices.
+        Route::post('/api/theme', [ThemeController::class, 'store'])->middleware('throttle:30,1')->name('theme.set');
 
         // ── Locale-prefixed routes for SEO (e.g. /es/trending, /fr/video-slug) ──
         // MUST be before the catch-all /{video:slug} route so /es etc. aren't matched as video slugs

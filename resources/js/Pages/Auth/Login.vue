@@ -110,7 +110,7 @@ const providerMeta = {
                             />
                             <span class="text-sm text-text-secondary">{{ t('auth.remember_me') }}</span>
                         </label>
-                        <Link href="/forgot-password" class="text-sm text-accent">
+                        <Link href="/forgot-password" class="text-sm text-accent-text">
                             {{ t('auth.forgot_password') }}
                         </Link>
                     </div>
@@ -151,7 +151,7 @@ const providerMeta = {
                 <div class="mt-6 text-center">
                     <p class="text-text-secondary">
                         {{ t('auth.no_account') }}
-                        <Link href="/register" class="font-medium text-accent">
+                        <Link href="/register" class="font-medium text-accent-text">
                             {{ t('auth.sign_up') }}
                         </Link>
                     </p>

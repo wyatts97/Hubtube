@@ -1,11 +1,11 @@
 <script setup>
 import { Link, router } from '@inertiajs/vue3';
 import { ref, watch, computed, onMounted } from 'vue';
-import { onClickOutside } from '@vueuse/core';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
-import { Filter, X, ArrowUpDown, Clock, Flame, CalendarDays } from 'lucide-vue-next';
+import FilterRail from '@/Components/UI/FilterRail.vue';
+import EmptyState from '@/Components/UI/EmptyState.vue';
 import GridAdSlot from '@/Components/GridAdSlot.vue';
 import OutstreamAd from '@/Components/OutstreamAd.vue';
 import BannerAd from '@/Components/UI/BannerAd.vue';
@@ -29,46 +29,48 @@ const props = defineProps({
     outstreamAds: { type: Array, default: () => [] },
 });
 
-const category = ref(props.filters?.category || '');
-const sort = ref(props.filters?.sort || '');
-const showFilters = ref(false);
-
-const activeCategory = computed(() => {
-    if (!category.value) return null;
-    return props.categories?.find(c => c.id == category.value);
+/**
+ * Filter state mirrors the query string exactly, so a filtered view is
+ * shareable and the back button restores it. FilterRail is presentational —
+ * it emits a new value and this decides how to navigate.
+ */
+const activeFilters = ref({
+    sort: props.filters?.sort || '',
+    duration: props.filters?.duration || '',
+    quality: props.filters?.quality || '',
+    date: props.filters?.date || '',
+    category: props.filters?.category ? String(props.filters.category) : '',
 });
 
-const applyFilters = () => {
-    router.get('/videos', {
-        category: category.value || undefined,
-        sort: sort.value || undefined,
-    }, {
-        preserveState: true,
-        preserveScroll: true,
-    });
+// Server-side state wins after a navigation (including back/forward), so the
+// rail can never show a filter the results don't reflect.
+watch(() => props.filters, (next) => {
+    activeFilters.value = {
+        sort: next?.sort || '',
+        duration: next?.duration || '',
+        quality: next?.quality || '',
+        date: next?.date || '',
+        category: next?.category ? String(next.category) : '',
+    };
+}, { deep: true });
+
+/** Sort is always set, so it doesn't count as a filter for the empty state. */
+const hasActiveFilters = computed(() =>
+    ['duration', 'quality', 'date', 'category'].some((key) => activeFilters.value[key] !== '')
+);
+
+const applyFilters = (next) => {
+    activeFilters.value = next;
+
+    // Empty values are dropped rather than sent as blanks, keeping shared URLs
+    // clean and the server's `only()` payload minimal.
+    const params = Object.fromEntries(
+        Object.entries(next).filter(([, value]) => value !== '' && value != null)
+    );
+
+    router.get('/videos', params, { preserveState: true, preserveScroll: true });
 };
 
-const setSort = (val) => {
-    sort.value = val;
-    applyFilters();
-};
-
-const setCategory = (id) => {
-    category.value = id;
-    showFilters.value = false;
-    applyFilters();
-};
-
-const clearCategory = () => {
-    category.value = '';
-    applyFilters();
-};
-
-// Close filter dropdown on outside click
-const filterRef = ref(null);
-onClickOutside(filterRef, () => {
-    showFilters.value = false;
-});
 onMounted(() => {
     const allVideos = props.videos?.data || [];
     if (allVideos.length) translateVideos(allVideos);
@@ -128,83 +130,19 @@ const getOutstreamAd = (index) => {
         <!-- Top Ad Banner -->
         <BannerAd :config="bannerAd" />
 
-        <div class="mb-5">
-            <div class="flex items-center justify-between gap-3 flex-wrap">
-                <h1 class="text-xl font-bold text-text-primary">{{ t('common.browse_videos') }}</h1>
-
-                <div class="flex items-center gap-2">
-                    <!-- Sort Buttons -->
-                    <div class="flex items-center rounded-lg overflow-hidden border border-border">
-                        <button
-                            @click="setSort('')"
-                            :class="['px-3 py-1.5 text-xs font-medium transition-colors', !sort ? 'text-white' : '']"
-                            :style="!sort ? 'background-color: var(--color-accent); color: #fff;' : 'color: var(--color-text-secondary);'"
-                        >
-                            <Clock class="w-3.5 h-3.5 inline -mt-0.5 me-1" />Latest
-                        </button>
-                        <button
-                            @click="setSort('popular')"
-                            :class="['px-3 py-1.5 text-xs font-medium transition-colors', sort === 'popular' ? 'text-white' : '']"
-                            :style="sort === 'popular' ? 'background-color: var(--color-accent); color: #fff;' : 'color: var(--color-text-secondary); border-left: 1px solid var(--color-border);'"
-                        >
-                            <Flame class="w-3.5 h-3.5 inline -mt-0.5 me-1" />Popular
-                        </button>
-                        <button
-                            @click="setSort('oldest')"
-                            :class="['px-3 py-1.5 text-xs font-medium transition-colors', sort === 'oldest' ? 'text-white' : '']"
-                            :style="sort === 'oldest' ? 'background-color: var(--color-accent); color: #fff;' : 'color: var(--color-text-secondary); border-left: 1px solid var(--color-border);'"
-                        >
-                            <CalendarDays class="w-3.5 h-3.5 inline -mt-0.5 me-1" />Oldest
-                        </button>
-                    </div>
-
-                    <!-- Filter Button -->
-                    <div ref="filterRef" class="relative">
-                        <button
-                            @click.stop="showFilters = !showFilters"
-                            class="p-2 rounded-lg transition-colors flex items-center gap-1.5"
-                            :style="category ? 'background-color: var(--color-accent); color: #fff;' : 'background-color: var(--color-bg-secondary); color: var(--color-text-secondary); border: 1px solid var(--color-border);'"
-                        >
-                            <Filter class="w-4 h-4" />
-                            <span v-if="activeCategory" class="text-xs font-medium hidden sm:inline">{{ activeCategory.name }}</span>
-                        </button>
-
-                        <!-- Category Dropdown -->
-                        <div
-                            v-if="showFilters"
-                            class="absolute end-0 top-full mt-2 w-56 rounded-lg shadow-xl z-50 py-1 max-h-80 overflow-y-auto bg-bg-card border border-border"
-                        >
-                            <button
-                                @click="setCategory('')"
-                                class="w-full text-start px-4 py-2 text-sm transition-colors hover:opacity-80"
-                                :style="!category ? 'color: var(--color-accent); font-weight: 600;' : 'color: var(--color-text-primary);'"
-                            >
-                                {{ t('categories.all') }}
-                            </button>
-                            <div class="border-t border-border" style="margin: 2px 0;"></div>
-                            <button
-                                v-for="cat in categories"
-                                :key="cat.id"
-                                @click="setCategory(cat.id)"
-                                class="w-full text-start px-4 py-2 text-sm transition-colors hover:opacity-80"
-                                :style="category == cat.id ? 'color: var(--color-accent); font-weight: 600;' : 'color: var(--color-text-primary);'"
-                            >
-                                {{ cat.name }}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Active Category Chip -->
-            <div v-if="activeCategory" class="mt-3 flex items-center gap-2">
-                <span class="text-xs px-3 py-1 rounded-full inline-flex items-center gap-1.5 bg-bg-secondary text-text-primary border border-border">
-                    {{ activeCategory.name }}
-                    <button @click="clearCategory" class="hover:opacity-70">
-                        <X class="w-3 h-3" />
-                    </button>
+        <div class="mb-4">
+            <div class="flex items-baseline justify-between gap-3 mb-3">
+                <h1 class="page-title">{{ t('common.browse_videos') }}</h1>
+                <span class="text-xs tabular-nums text-text-muted">
+                    {{ videos.total?.toLocaleString?.() ?? videos.data.length }}
                 </span>
             </div>
+
+            <FilterRail
+                :model-value="activeFilters"
+                :categories="categories || []"
+                @update:model-value="applyFilters"
+            />
         </div>
 
         <div v-if="videos.data.length" :class="gridClass">
@@ -212,7 +150,7 @@ const getOutstreamAd = (index) => {
                 <VideoCard :video="withTranslation(video)" />
                 <div
                     v-if="shouldShowAd(index, videos.data.length)"
-                    class="rounded-xl p-2"
+                    class="p-1"
                     :class="mobileGrid === 2 ? 'col-span-2 sm:col-span-1' : 'col-span-1'"
                 >
                     <GridAdSlot :ads="gridAds" />
@@ -228,10 +166,11 @@ const getOutstreamAd = (index) => {
             </template>
         </div>
 
-        <div v-else class="text-center py-16">
-            <p class="text-lg text-text-secondary">{{ t('common.no_videos_found') }}</p>
-            <p class="mt-2 text-sm text-text-muted">{{ t('common.try_different') }}</p>
-        </div>
+        <EmptyState
+            v-else
+            :title="hasActiveFilters ? t('filters.no_results_title') : t('common.no_videos_found')"
+            :description="hasActiveFilters ? t('filters.no_results_body') : t('common.try_different')"
+        />
 
         <!-- Pagination -->
         <div v-if="videos.links && videos.links.length > 3" class="mt-8 flex justify-center gap-1.5">
@@ -239,18 +178,12 @@ const getOutstreamAd = (index) => {
                 <Link
                     v-if="link.url"
                     :href="link.url"
-                    :class="['px-3 py-1.5 rounded-lg text-sm transition-colors']"
-                    :style="link.active
-                        ? 'background-color: var(--color-accent); color: #fff;'
-                        : 'background-color: var(--color-bg-secondary); color: var(--color-text-secondary); border: 1px solid var(--color-border);'"
+                    class="chip"
+                    :class="{ 'chip-active': link.active }"
                     v-html="link.label"
                     preserve-scroll
                 />
-                <span
-                    v-else
-                    class="px-3 py-1.5 rounded-lg text-sm text-text-muted"
-                    v-html="link.label"
-                />
+                <span v-else class="chip opacity-50" v-html="link.label" />
             </template>
         </div>
     </AppLayout>

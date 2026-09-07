@@ -68,7 +68,7 @@ const goToPage = (pageNum) => {
 
         <div class="mb-6">
             <div class="flex items-center gap-3 flex-wrap">
-                <h1 class="text-2xl font-bold text-text-primary">{{ displayName }}</h1>
+                <h1 class="page-title">{{ displayName }}</h1>
                 <span class="text-sm text-text-muted">•</span>
                 <span class="text-sm text-text-muted">{{ t('categories.video_count', { count: videos.total || 0 }) || `${videos.total || 0} videos` }}</span>
             </div>

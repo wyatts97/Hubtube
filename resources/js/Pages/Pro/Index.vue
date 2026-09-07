@@ -63,7 +63,7 @@ const goToPortal = () => {
             <!-- Active subscription banner -->
             <div v-if="subscription" class="card p-6 mb-8 border text-center" style="border-color: var(--color-accent);">
                 <p class="text-lg font-semibold text-text-primary mb-1">
-                    You are currently subscribed to <span class="text-accent">Pro {{ subscription.plan === 'year' ? 'Annual' : 'Monthly' }}</span>
+                    You are currently subscribed to <span class="text-accent-text">Pro {{ subscription.plan === 'year' ? 'Annual' : 'Monthly' }}</span>
                 </p>
                 <p class="text-sm text-text-secondary mb-4">
                     Status: {{ subscription.status }}
@@ -78,7 +78,7 @@ const goToPortal = () => {
                 </button>
                 <p v-else class="text-sm text-text-secondary">
                     To manage or cancel your subscription, visit the
-                    <a href="https://support.ccbill.com/" target="_blank" rel="noopener" class="text-accent underline">CCBill consumer portal</a>
+                    <a href="https://support.ccbill.com/" target="_blank" rel="noopener" class="text-accent-text underline">CCBill consumer portal</a>
                     or contact support.
                 </p>
             </div>
@@ -160,7 +160,7 @@ const goToPortal = () => {
             <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div v-for="feature in features" :key="feature.title" class="card p-5">
                     <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-bg-secondary mb-3">
-                        <component :is="feature.icon" class="w-5 h-5 text-accent" />
+                        <component :is="feature.icon" class="w-5 h-5 text-accent-text" />
                     </div>
                     <h3 class="font-semibold text-text-primary mb-1">{{ feature.title }}</h3>
                     <p class="text-sm text-text-secondary">{{ feature.description }}</p>

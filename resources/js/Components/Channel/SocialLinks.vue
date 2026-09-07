@@ -84,7 +84,7 @@ const items = computed(() =>
                 rel="nofollow noopener noreferrer ugc"
                 class="group flex items-center gap-2.5 text-sm text-text-secondary hover:text-text-primary transition-colors"
             >
-                <component :is="item.icon" class="w-4 h-4 shrink-0 text-text-muted group-hover:text-accent" />
+                <component :is="item.icon" class="w-4 h-4 shrink-0 text-text-muted group-hover:text-accent-text" />
                 <span class="font-medium">{{ item.label }}</span>
                 <span class="truncate text-xs text-text-muted">{{ item.hostname }}</span>
             </a>

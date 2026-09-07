@@ -55,7 +55,7 @@ const statsGridCols = computed(() => monetizationEnabled.value ? 'grid-cols-2 sm
         <div class="max-w-6xl mx-auto">
             <div class="flex items-center justify-between gap-3 mb-6">
                 <div class="min-w-0">
-                    <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('dashboard.title') }}</h1>
+                    <h1 class="page-title">{{ t('dashboard.title') }}</h1>
                     <p class="mt-1 text-sm sm:text-base text-text-secondary">{{ t('dashboard.overview') }}</p>
                 </div>
                 <Link href="/upload" class="btn btn-primary gap-2 flex-shrink-0 text-sm sm:text-base">
@@ -92,7 +92,7 @@ const statsGridCols = computed(() => monetizationEnabled.value ? 'grid-cols-2 sm
                 <div class="card">
                     <div class="p-4 border-b flex items-center justify-between border-border">
                         <h2 class="font-semibold text-text-primary">{{ t('dashboard.recent_videos') }}</h2>
-                        <Link href="/settings" class="text-sm text-accent">{{ t('common.manage') }}</Link>
+                        <Link href="/settings" class="text-sm text-accent-text">{{ t('common.manage') }}</Link>
                     </div>
                     <div v-if="recentVideos?.length">
                         <div
@@ -135,7 +135,7 @@ const statsGridCols = computed(() => monetizationEnabled.value ? 'grid-cols-2 sm
                 <div class="card">
                     <div class="p-4 border-b border-border">
                         <h2 class="font-semibold flex items-center gap-2 text-text-primary">
-                            <TrendingUp class="w-4 h-4 text-accent" />
+                            <TrendingUp class="w-4 h-4 text-accent-text" />
                             {{ t('dashboard.top_performing') }}
                         </h2>
                     </div>

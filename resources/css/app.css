@@ -8,48 +8,65 @@
 @source "../../vendor/bezhansalleh/filament-google-analytics/src/{Widgets,Support}/*.php";
 
 /*
- * HubTube is dark-only. Palette is defined as Tailwind v4 @theme tokens so
- * utilities like `bg-bg-primary`, `text-text-primary`, `border-border`,
- * `bg-accent`, `rounded-card`, etc. work natively. The same variables are
- * re-declared in :root so existing `var(--color-*)` inline styles continue
- * to work until the scripted migration (1E) completes.
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Design tokens
+ * ─────────────────────────────────────────────────────────────────────────────
+ * The values below are DARK-MODE DEFAULTS and exist so Tailwind can generate the
+ * `bg-bg-primary` / `text-text-secondary` / `border-border` utilities at build
+ * time. They are not the runtime source of truth.
+ *
+ * At runtime app.blade.php emits a `:root { … }` and a `:root.theme-light { … }`
+ * block generated from app/Support/ThemeTokens.php, so switching themes is a
+ * single class toggle on <html> and an operator's admin colours override these
+ * without a rebuild. If you are changing a colour, change it in ThemeTokens.php
+ * — editing only this file will look right in dev and be ignored in the browser.
  */
 @theme {
-    --font-sans: 'Inter', system-ui, sans-serif;
+    /* Archivo Narrow for titles, Archivo for UI. A condensed face for card
+       titles is not only distinctive — it fits meaningfully more of a long
+       video title into a dense grid cell before clamping. */
+    --font-sans: 'Archivo', system-ui, -apple-system, sans-serif;
+    --font-display: 'Archivo Narrow', 'Archivo', system-ui, sans-serif;
 
-    --color-bg-primary: #0a0a0a;
-    --color-bg-secondary: #171717;
-    --color-bg-card: #1f1f1f;
-    --color-bg-hover: #2a2a2a;
-    --color-bg-input: #262626;
+    --color-bg-primary: #0c0c0e;
+    --color-bg-secondary: #141417;
+    --color-bg-card: #1a1a1e;
+    --color-bg-elevated: #232329;
+    --color-bg-hover: #2a2a31;
+    --color-bg-input: #141417;
 
-    --color-accent: #ef4444;
+    --color-accent: #e11d34;
+    --color-accent-hover: #f43553;
+    /* Red as TEXT. Lighter than --color-accent because the fill red fails WCAG
+       AA against the card surface at body size. Never use it as a background. */
+    --color-accent-text: #ef3e55;
+    --color-accent-subtle: rgba(225, 29, 52, 0.14);
+    --color-accent-contrast: #ffffff;
 
-    --color-text-primary: #ffffff;
-    --color-text-secondary: #a3a3a3;
-    --color-text-muted: #8a8a8a;
+    --color-text-primary: #f5f5f7;
+    --color-text-secondary: #a1a1ab;
+    --color-text-muted: #84808e;
 
-    --color-border: #262626;
+    --color-border: #26262d;
+    --color-border-subtle: #1e1e24;
+    --color-border-strong: #35353f;
 
-    --radius-card: 0.5rem;
-    --radius-thumb: 0.75rem;
+    --color-success: #3ecf70;
+    --color-overlay: rgba(0, 0, 0, 0.78);
+
+    /* Tight radii. `rounded-xl` on every surface was one of the strongest
+       generic-template tells; a dense catalogue reads better with hard edges. */
+    --radius-card: 0.25rem;
+    --radius-thumb: 0.375rem;
     --radius-pill: 9999px;
-}
 
-:root {
-    /* Legacy aliases consumed by inline styles and useTheme.js runtime
-     * overrides. Do not remove until the inline-style migration is complete. */
-    --color-bg-primary: #0a0a0a;
-    --color-bg-secondary: #171717;
-    --color-bg-card: #1f1f1f;
-    --color-accent: #ef4444;
-    --color-text-primary: #ffffff;
-    --color-text-secondary: #a3a3a3;
-    --color-text-muted: #8a8a8a;
-    --color-border: #262626;
-    --color-input-bg: #262626;
-    --color-hover: #2a2a2a;
-    --nprogress-color: var(--color-accent);
+    /* Shell metrics. The header and the category bar below it were previously
+       hardcoded in three places as 56px / 96px and had drifted 40px apart,
+       leaving dead space under the header. Both now derive from these. */
+    --spacing-header: 3.25rem;
+    --spacing-catbar: 2.75rem;
+    --spacing-sidebar: 12.5rem;
+    --spacing-sidebar-collapsed: 3.75rem;
 }
 
 /* ===== NProgress — thin top loading bar ===== */
@@ -58,7 +75,7 @@
 }
 
 #nprogress .bar {
-    background: var(--nprogress-color);
+    background: var(--nprogress-color, var(--color-accent));
     position: fixed;
     z-index: 99999;
     top: 0;
@@ -73,7 +90,8 @@
     right: 0;
     width: 100px;
     height: 100%;
-    box-shadow: 0 0 10px var(--nprogress-color), 0 0 5px var(--nprogress-color);
+    box-shadow: 0 0 10px var(--nprogress-color, var(--color-accent)),
+                0 0 5px var(--nprogress-color, var(--color-accent));
     opacity: 1;
     transform: rotate(3deg) translate(0px, -4px);
 }
@@ -86,122 +104,355 @@
     body {
         background-color: var(--color-bg-primary);
         color: var(--color-text-primary);
+        font-family: var(--font-sans);
         min-height: 100vh;
+    }
+
+    /* Headings take the condensed display face by default so page titles,
+       section headers and card titles are consistent without every call site
+       remembering to add `font-display`. */
+    h1, h2, h3, h4 {
+        font-family: var(--font-display);
+        /* Falls back to 700 when no display weight is configured; the token is
+           emitted by App\Support\Typography from the admin's choice. */
+        font-weight: var(--font-display-weight, 700);
+        letter-spacing: -0.01em;
     }
 }
 
-.btn {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed;
+/*
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Components
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+@layer components {
+
+/* Everything below sits in the `components` layer ON PURPOSE.
+   Unlayered CSS beats every layered rule in the cascade regardless of source
+   order, so when these lived outside a layer, `.input`'s own `px-3` overrode a
+   `ps-9` utility on the same element — the search icon rendered on top of the
+   placeholder, and `.input pe-10` failed to clear the password reveal button.
+   Inside `components`, utilities win, which is what every call site expects. */
+
+    .btn {
+        @apply inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+        border-radius: var(--radius-card);
+        font-family: var(--font-sans);
+        outline-color: var(--color-accent);
+    }
+
+    .btn-primary {
+        background-color: var(--color-accent);
+        color: var(--color-accent-contrast);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        background-color: var(--color-accent-hover);
+    }
+
+    .btn-secondary {
+        background-color: var(--color-bg-elevated);
+        color: var(--color-text-primary);
+        border: 1px solid var(--color-border);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+        background-color: var(--color-bg-hover);
+        border-color: var(--color-border-strong);
+    }
+
+    .btn-ghost {
+        @apply bg-transparent;
+        color: var(--color-text-secondary);
+    }
+
+    .btn-ghost:hover:not(:disabled) {
+        background-color: var(--color-bg-hover);
+        color: var(--color-text-primary);
+    }
+
+    .input {
+        @apply w-full px-3 py-2 text-sm transition-colors focus:outline-none;
+        border-radius: var(--radius-card);
+        background-color: var(--color-bg-input);
+        border: 1px solid var(--color-border);
+        color: var(--color-text-primary);
+    }
+
+    .input:focus {
+        border-color: var(--color-accent);
+        box-shadow: 0 0 0 3px var(--color-accent-subtle);
+    }
+
+    .input::placeholder {
+        color: var(--color-text-muted);
+    }
+
+    .card {
+        background-color: var(--color-bg-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+    }
+
+    .avatar {
+        @apply rounded-full overflow-hidden shrink-0;
+        background-color: var(--color-bg-elevated);
+    }
+
+    .badge {
+        @apply inline-flex items-center px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide;
+        border-radius: var(--radius-card);
+    }
+
+    .badge-pro {
+        @apply bg-gradient-to-r from-amber-500 to-orange-500 text-white;
+    }
+
+    .badge-verified {
+        background-color: var(--color-accent);
+        color: var(--color-accent-contrast);
+    }
+
+    .badge-live {
+        @apply bg-red-600 text-white animate-pulse;
+    }
+
+    /* Quality / duration markers that sit directly on a thumbnail. They read on top
+       of arbitrary video frames, so they carry their own scrim rather than relying
+       on the theme background. */
+    .badge-thumb {
+        @apply absolute inline-flex items-center px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white;
+        background-color: var(--color-overlay);
+        border-radius: var(--radius-thumb);
+        backdrop-filter: blur(2px);
+    }
+
+    /*
+     * ─────────────────────────────────────────────────────────────────────────────
+     * Video card — dense variant
+     * ─────────────────────────────────────────────────────────────────────────────
+     */
+
+    .video-card {
+        @apply cursor-pointer block;
+    }
+
+    .video-card .thumbnail {
+        @apply relative aspect-video overflow-hidden;
+        border-radius: var(--radius-thumb);
+        background-color: var(--color-bg-elevated);
+        /* In light mode a thumbnail on white has no edge of its own, so it floats.
+           An inset hairline gives it one without adding a layout border. */
+        box-shadow: inset 0 0 0 1px var(--color-border-subtle);
+    }
+
+    .video-card .thumbnail img {
+        @apply w-full h-full object-cover;
+    }
+
+    .video-card .duration {
+        @apply absolute bottom-1.5 end-1.5 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white;
+        background-color: var(--color-overlay);
+        border-radius: var(--radius-thumb);
+    }
+
+    .video-card-title {
+        font-family: var(--font-display);
+        @apply text-sm font-semibold leading-snug;
+        color: var(--color-text-primary);
+    }
+
+    .video-card:hover .video-card-title {
+        color: var(--color-accent-text);
+    }
+
+    .video-card-meta {
+        @apply text-xs leading-normal;
+        color: var(--color-text-muted);
+    }
+
+    /* Rating bar. Rendered as a two-stop gradient on a single element rather than
+       two nested divs — one node per card matters at 5-6 columns of infinite feed. */
+    .rating-bar {
+        @apply w-full overflow-hidden;
+        height: 3px;
+        border-radius: var(--radius-pill);
+        background-color: var(--color-border-strong);
+    }
+
+    .rating-bar-fill {
+        @apply h-full block;
+        background-color: var(--color-success);
+        border-radius: var(--radius-pill);
+    }
+
+    /*
+     * ─────────────────────────────────────────────────────────────────────────────
+     * Shell
+     * ─────────────────────────────────────────────────────────────────────────────
+     */
+
+    /* Page content padding. Replaces the old `.p-4.lg\:p-6 { padding: .75rem }`
+       override, which reached into any element that happened to use those two
+       utilities together anywhere on the site. */
+    .page-shell {
+        @apply px-3 py-3 pb-20 sm:px-4 sm:py-4 lg:px-5 lg:py-5 lg:pb-6;
+    }
+
+    /* Clears the fixed sidebar, which only exists from `lg` up. Class rather than an
+       inline style so the media query is expressible; see AppLayout.vue. */
+    @media (min-width: 1024px) {
+        .inset-sidebar {
+            padding-inline-start: var(--spacing-sidebar);
+        }
+
+        .inset-sidebar-collapsed {
+            padding-inline-start: var(--spacing-sidebar-collapsed);
+        }
+    }
+
+    .page-title {
+        font-family: var(--font-display);
+        @apply text-lg sm:text-xl font-bold uppercase tracking-tight;
+        color: var(--color-text-primary);
+    }
+
+    .section-title {
+        font-family: var(--font-display);
+        @apply text-base sm:text-lg font-bold uppercase tracking-tight;
+        color: var(--color-text-primary);
+    }
+
+    /* A horizontally scrollable strip of chips or tabs. Replaces the old
+       `nav.flex.gap-6 { … }` override, which matched any nav with those utilities. */
+    .tab-strip {
+        @apply flex items-center gap-1 overflow-x-auto whitespace-nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .tab-strip::-webkit-scrollbar {
+        display: none;
+    }
+
+    .tab-strip > * {
+        @apply shrink-0;
+    }
+
+    /* Category / filter chip in the bar under the header. */
+    .chip {
+        @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors;
+        border-radius: var(--radius-card);
+        color: var(--color-text-secondary);
+        border: 1px solid transparent;
+        font-family: var(--font-sans);
+    }
+
+    .chip:hover {
+        background-color: var(--color-bg-hover);
+        color: var(--color-text-primary);
+    }
+
+    .chip-active {
+        background-color: var(--color-accent);
+        color: var(--color-accent-contrast);
+        border-color: var(--color-accent);
+    }
+
+    .chip-active:hover {
+        background-color: var(--color-accent-hover);
+        color: var(--color-accent-contrast);
+    }
+
+    /* Sidebar navigation row. */
+    .nav-item {
+        @apply flex items-center gap-3 px-2.5 py-2 text-sm font-medium transition-colors;
+        border-radius: var(--radius-card);
+        color: var(--color-text-secondary);
+    }
+
+    .nav-item:hover {
+        background-color: var(--color-bg-hover);
+        color: var(--color-text-primary);
+    }
+
+    .nav-item-active {
+        background-color: var(--color-accent-subtle);
+        color: var(--color-accent-text);
+    }
+
+    .nav-heading {
+        @apply px-2.5 text-[11px] font-bold uppercase tracking-widest mb-1.5;
+        color: var(--color-text-muted);
+    }
+
+    /*
+     * ─────────────────────────────────────────────────────────────────────────────
+     * Structured regions that used to be styled by overriding bare utility names
+     * ─────────────────────────────────────────────────────────────────────────────
+     */
+
+    /* Comment thread. Replaces `.space-y-6 > * + *` and `.pl-4.border-l-2` overrides. */
+    .comment-list > * + * {
+        @apply mt-4 sm:mt-5;
+    }
+
+    .comment-reply {
+        @apply ps-3 sm:ps-4;
+        border-inline-start: 2px solid var(--color-border);
+    }
+
+    /* Dashboard stat grid. Replaces `.grid-cols-2 .card.p-4`, `.w-24.h-14`, `.w-20.h-12`. */
+    .stat-grid {
+        @apply grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3;
+    }
+
+    /* Cannot `@apply card` — Tailwind v4 only applies utilities it generated, not
+       our own component classes — so the card surface is restated here. */
+    .stat-card {
+        @apply p-3 sm:p-4;
+        background-color: var(--color-bg-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+    }
+
+    .stat-icon {
+        @apply w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center shrink-0;
+        border-radius: var(--radius-card);
+    }
+
+    .stat-value {
+        @apply text-base sm:text-lg font-bold;
+        font-family: var(--font-display);
+        color: var(--color-text-primary);
+    }
+
+    .list-thumb {
+        @apply w-20 h-11 sm:w-24 sm:h-14 object-cover shrink-0;
+        border-radius: var(--radius-thumb);
+    }
+
+    /* Wide tables scroll inside their own container instead of the old global
+       `table { display: block }` rule, which broke table semantics site-wide. */
+    .data-table-wrap {
+        @apply w-full overflow-x-auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .data-table {
+        @apply w-full text-sm;
+        min-width: 32rem;
+    }
+
 }
 
-.btn-primary {
-    background-color: var(--color-accent);
-    @apply text-white hover:opacity-90;
-}
-
-.btn-secondary {
-    background-color: var(--color-bg-card);
-    color: var(--color-text-primary);
-}
-
-.btn-secondary:hover {
-    background-color: var(--color-hover);
-}
-
-.btn-ghost {
-    @apply bg-transparent;
-    color: var(--color-text-secondary);
-}
-
-.btn-ghost:hover {
-    background-color: var(--color-bg-card);
-    color: var(--color-text-primary);
-}
-
-.input {
-    @apply w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent;
-    background-color: var(--color-input-bg);
-    border: 1px solid var(--color-border);
-    color: var(--color-text-primary);
-    --tw-ring-color: var(--color-accent);
-}
-
-.input::placeholder {
-    color: var(--color-text-muted);
-}
-
-.card {
-    background-color: var(--color-bg-card);
-    border: 1px solid var(--color-border);
-    @apply rounded-xl;
-}
-
-.video-card {
-    @apply cursor-pointer;
-}
-
-.video-card .thumbnail {
-    @apply relative aspect-video rounded-xl overflow-hidden;
-    background-color: var(--color-bg-card);
-}
-
-.video-card .thumbnail img {
-    @apply w-full h-full object-cover transition-transform group-hover:scale-105;
-}
-
-.video-card .duration {
-    @apply absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 text-white text-xs font-medium rounded;
-}
-
-.avatar {
-    @apply rounded-full overflow-hidden;
-    background-color: var(--color-bg-card);
-}
-
-.badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
-}
-
-.badge-pro {
-    @apply bg-gradient-to-r from-amber-500 to-orange-500 text-white;
-}
-
-.badge-verified {
-    background-color: var(--color-accent);
-    @apply text-white;
-}
-
-.badge-live {
-    @apply bg-red-600 text-white animate-pulse;
-}
-
-.text-themed {
-    color: var(--color-text-primary);
-}
-
-.text-themed-secondary {
-    color: var(--color-text-secondary);
-}
-
-.text-themed-muted {
-    color: var(--color-text-muted);
-}
-
-.bg-themed {
-    background-color: var(--color-bg-primary);
-}
-
-.bg-themed-secondary {
-    background-color: var(--color-bg-secondary);
-}
-
-.bg-themed-card {
-    background-color: var(--color-bg-card);
-}
-
-.border-themed {
-    border-color: var(--color-border);
-}
+/*
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Utilities & animation
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
 
 @utility scrollbar-hide {
     -ms-overflow-style: none;
@@ -211,24 +462,25 @@
     }
 }
 
-/* Theme Transition Animation */
+/* Applied to <html> by useTheme.js only for the duration of a theme switch, so
+   the swap animates but ordinary navigation isn't paying for transitions on
+   every element. */
 .theme-transitioning,
 .theme-transitioning *,
 .theme-transitioning *::before,
 .theme-transitioning *::after {
-    transition: background-color 0.3s ease, 
-                color 0.3s ease, 
-                border-color 0.3s ease,
-                box-shadow 0.3s ease !important;
+    transition: background-color 0.2s ease,
+                color 0.2s ease,
+                border-color 0.2s ease,
+                box-shadow 0.2s ease !important;
 }
 
-/* Skeleton Loading Animation */
-@keyframes skeleton-pulse {
-    0%, 100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.5;
+@media (prefers-reduced-motion: reduce) {
+    .theme-transitioning,
+    .theme-transitioning *,
+    .theme-transitioning *::before,
+    .theme-transitioning *::after {
+        transition: none !important;
     }
 }
 
@@ -236,30 +488,26 @@
     background: linear-gradient(
         90deg,
         var(--color-bg-secondary) 0%,
-        var(--color-bg-card) 50%,
+        var(--color-bg-elevated) 50%,
         var(--color-bg-secondary) 100%
     );
     background-size: 200% 100%;
     animation: skeleton-shimmer 1.5s ease-in-out infinite;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-card);
 }
 
 @keyframes skeleton-shimmer {
-    0% {
-        background-position: 200% 0;
-    }
-    100% {
-        background-position: -200% 0;
-    }
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
 
 .skeleton-text {
-    height: 1rem;
-    margin-bottom: 0.5rem;
+    height: 0.875rem;
+    margin-bottom: 0.375rem;
 }
 
 .skeleton-text-sm {
-    height: 0.75rem;
+    height: 0.6875rem;
     margin-bottom: 0.25rem;
 }
 
@@ -269,68 +517,46 @@
 
 .skeleton-thumbnail {
     aspect-ratio: 16 / 9;
-    border-radius: 0.75rem;
+    border-radius: var(--radius-thumb);
 }
 
-/* ===== Sidebar Layout ===== */
-.sidebar-expanded {
-    width: 160px;
+@media (prefers-reduced-motion: reduce) {
+    .skeleton {
+        animation: none;
+    }
 }
 
-/* ===== Mobile / Responsive Fixes ===== */
+/*
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Global page rules
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
 
-/* Prevent horizontal overflow on all pages */
 html, body {
     overflow-x: hidden;
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
 }
 
-/* Touch-friendly tap targets */
+/* Touch-friendly tap targets. Scoped to our own component classes rather than
+   to bare utilities. */
 @media (max-width: 640px) {
     .btn {
-        min-height: 40px;
-        @apply text-sm px-3;
+        min-height: 2.5rem;
     }
 
     .input {
-        min-height: 44px;
-        @apply text-base; /* prevents iOS zoom on focus */
+        min-height: 2.75rem;
+        font-size: 1rem; /* prevents iOS zoom on focus */
     }
 
     select.input,
     textarea.input {
-        @apply text-base;
-    }
-
-    /* Tighter page padding on mobile */
-    .p-4.lg\:p-6 {
-        padding: 0.75rem;
-    }
-
-    /* Full-width cards on mobile */
-    .card {
-        @apply rounded-lg;
+        font-size: 1rem;
     }
 }
 
-/* Video watch page: sidebar below player on mobile */
-@media (max-width: 1023px) {
-    .lg\:w-96 {
-        width: 100%;
-    }
-}
-
-/* ===== Video Player Mobile Optimizations ===== */
-
-/* Full-bleed video player on small screens */
-@media (max-width: 640px) {
-    .aspect-video {
-        border-radius: 0.5rem;
-    }
-}
-
-/* Vidstack Default Layout: hide PiP/AirPlay on mobile */
+/* Vidstack: hide PiP/AirPlay/Cast on mobile, where they are non-functional. */
 @media (max-width: 640px) {
     media-pip-button,
     media-airplay-button {
@@ -351,176 +577,27 @@ html, body {
     overflow: hidden;
 }
 
-/* The header dropdowns are Reka DropdownMenus now (see Components/UI/BaseDropdown.vue).
-   The .notification-dropdown / .user-menu-dropdown / .upload-menu-dropdown rules that
-   used to live here forced `position: fixed !important` on small screens, which would
-   fight Reka's popper positioning. Reka keeps the panels on-screen itself via collision
-   detection, and the notification panel caps its own width with a `w-[min(...)]` class. */
+/* The header dropdowns are Reka DropdownMenus (see Components/UI/BaseDropdown.vue).
+   The .notification-dropdown / .user-menu-dropdown rules that used to live here
+   forced `position: fixed !important` on small screens, which fought Reka's
+   popper positioning. Reka handles collision detection itself. */
 
-/* ===== Modal / Dialog Mobile Fixes ===== */
-@media (max-width: 640px) {
-    /* Modals should be nearly full-width on mobile */
-    .fixed.inset-0 .max-w-md,
-    .fixed.inset-0 .max-w-lg {
-        max-width: calc(100vw - 2rem);
-    }
-
-    /* Share modal social grid: smaller on mobile */
-    .grid-cols-5 {
-        gap: 0.5rem;
-    }
-
-    .grid-cols-5 .p-3 {
-        padding: 0.5rem;
-    }
-
-    .grid-cols-5 .w-10 {
-        width: 2.25rem;
-        height: 2.25rem;
-    }
-}
-
-/* ===== Comment Section Mobile ===== */
-@media (max-width: 640px) {
-    /* Tighter comment spacing on mobile */
-    .space-y-6 > * + * {
-        margin-top: 1rem;
-    }
-
-    /* Comment reply indent reduced on mobile */
-    .pl-4.border-l-2 {
-        padding-left: 0.75rem;
-    }
-}
-
-/* ===== Channel Page Mobile ===== */
-@media (max-width: 640px) {
-    /* Channel tabs: horizontally scrollable on mobile */
-    nav.flex.gap-6 {
-        gap: 1rem;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-        padding-bottom: 1px;
-    }
-
-    nav.flex.gap-6::-webkit-scrollbar {
-        display: none;
-    }
-
-    nav.flex.gap-6 > * {
-        white-space: nowrap;
-        flex-shrink: 0;
-    }
-}
-
-/* ===== Dashboard Mobile ===== */
-@media (max-width: 640px) {
-    /* Stats cards: 2-col on mobile, tighter padding */
-    .grid-cols-2 .card.p-4 {
-        padding: 0.75rem;
-    }
-
-    .grid-cols-2 .card .w-10 {
-        width: 2rem;
-        height: 2rem;
-    }
-
-    .grid-cols-2 .card .w-10 .w-5 {
-        width: 1rem;
-        height: 1rem;
-    }
-
-    .grid-cols-2 .card .text-lg {
-        font-size: 1rem;
-    }
-
-    /* Recent/Top video list items: tighter on mobile */
-    .flex.items-center.gap-3.p-3 {
-        padding: 0.5rem 0.75rem;
-    }
-
-    /* Smaller thumbnails in dashboard lists on mobile */
-    .w-24.h-14 {
-        width: 5rem;
-        height: 2.8rem;
-    }
-
-    .w-20.h-12 {
-        width: 4rem;
-        height: 2.4rem;
-    }
-}
-
-/* ===== Settings Page Mobile ===== */
-@media (max-width: 640px) {
-    /* Settings tabs: horizontal scroll */
-    .settings-tabs {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-    }
-
-    .settings-tabs::-webkit-scrollbar {
-        display: none;
-    }
-}
-
-/* ===== Wallet / Forms Mobile ===== */
-@media (max-width: 640px) {
-    /* Table overflow on mobile */
-    table {
-        display: block;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    thead, tbody, tr {
-        display: table;
-        width: 100%;
-        table-layout: fixed;
-    }
-}
-
-/* ===== General Mobile Typography ===== */
-@media (max-width: 640px) {
-    .text-2xl {
-        font-size: 1.25rem;
-    }
-
-    .text-3xl {
-        font-size: 1.5rem;
-    }
-
-    h1.text-2xl,
-    h1.text-xl {
-        line-height: 1.3;
-    }
-}
-
-/* ===== Smooth scrolling for horizontal scroll areas ===== */
 .overflow-x-auto {
     -webkit-overflow-scrolling: touch;
 }
 
 /* ===== Safe area insets for notched phones ===== */
 @supports (padding: env(safe-area-inset-bottom)) {
-    .min-h-screen {
-        min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-    }
-
-    header.fixed {
-        padding-top: env(safe-area-inset-top);
-    }
-
-    /* Bottom safe area for fixed elements */
-    .fixed.bottom-0 {
+    .safe-bottom {
         padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .safe-top {
+        padding-top: env(safe-area-inset-top);
     }
 }
 
-/* ===== Clickable elements should always show pointer cursor ===== */
+/* ===== Cursors ===== */
 button,
 [role="button"],
 a,

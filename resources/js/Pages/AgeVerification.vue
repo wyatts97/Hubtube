@@ -41,7 +41,7 @@ const decline = () => {
         <div class="w-full max-w-lg text-center">
             <div class="mb-8">
                 <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style="background-color: color-mix(in srgb, var(--color-accent) 20%, transparent);">
-                    <ShieldAlert class="w-10 h-10 text-accent" />
+                    <ShieldAlert class="w-10 h-10 text-accent-text" />
                 </div>
                 <h1 class="text-3xl font-bold mb-4 text-text-primary">{{ t('age.title') }}</h1>
                 <p class="text-lg text-text-muted">
@@ -70,9 +70,9 @@ const decline = () => {
 
                 <p class="text-sm mt-6 text-text-muted">
                     By entering this site, you agree to our
-                    <a href="/terms" class="hover:opacity-80 text-accent">Terms of Service</a>
+                    <a href="/terms" class="hover:opacity-80 text-accent-text">Terms of Service</a>
                     and
-                    <a href="/privacy" class="hover:opacity-80 text-accent">Privacy Policy</a>.
+                    <a href="/privacy" class="hover:opacity-80 text-accent-text">Privacy Policy</a>.
                 </p>
             </div>
         </div>

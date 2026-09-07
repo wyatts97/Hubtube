@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Under Maintenance</title>
     <style>
+        /* Palette from App\Support\ThemeTokens — the same source the SPA uses, so
+           a standalone page can't drift from the site it belongs to. */
+        :root { {!! \App\Support\ThemeTokens::cssVariables('dark') !!} }
+        :root.theme-light { {!! \App\Support\ThemeTokens::cssVariables('light') !!} }
+    </style>
+    <script>
+        (function () {
+            try {
+                if ({!! json_encode(\App\Support\ThemeTokens::authoritativeMode()) !!}) return;
+                var saved = localStorage.getItem('ht-theme');
+                document.documentElement.classList.toggle('theme-light', saved === 'light');
+            } catch (e) {}
+        })();
+    </script>
+    <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
@@ -45,13 +60,13 @@
             font-size: 2.5rem;
             font-weight: 800;
             margin-bottom: 0.5rem;
-            color: #fff;
+            color: var(--color-text-primary);
         }
 
         .message {
             font-size: 1.125rem;
             line-height: 1.7;
-            color: #a3a3a3;
+            color: var(--color-text-secondary);
             margin-bottom: 2rem;
         }
 

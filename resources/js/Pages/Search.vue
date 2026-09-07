@@ -1,6 +1,7 @@
 <script setup>
 import { router, usePage } from '@inertiajs/vue3';
 import SeoHead from '@/Components/SeoHead.vue';
+import FilterRail from '@/Components/UI/FilterRail.vue';
 import { ref, watch, onMounted, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
@@ -21,6 +22,8 @@ const props = defineProps({
     query: String,
     type: String,
     results: Object,
+    filters: { type: Object, default: () => ({}) },
+    categories: { type: Array, default: () => [] },
     seo: { type: Object, default: () => ({}) },
     bannerAd: { type: Object, default: () => ({}) },
     sponsoredCards: { type: Array, default: () => [] },
@@ -55,6 +58,39 @@ onMounted(() => { setTimeout(() => { isInitialLoad.value = false; }, 100); });
 
 const searchQuery = ref(props.query || '');
 const activeType = ref(props.type || 'videos');
+
+/**
+ * Search had no filtering at all before this. State mirrors the query string so
+ * a filtered search is shareable and survives back/forward.
+ */
+const activeFilters = ref({
+    sort: props.filters?.sort || '',
+    duration: props.filters?.duration || '',
+    quality: props.filters?.quality || '',
+    date: props.filters?.date || '',
+    category: props.filters?.category ? String(props.filters.category) : '',
+});
+
+watch(() => props.filters, (next) => {
+    activeFilters.value = {
+        sort: next?.sort || '',
+        duration: next?.duration || '',
+        quality: next?.quality || '',
+        date: next?.date || '',
+        category: next?.category ? String(next.category) : '',
+    };
+}, { deep: true });
+
+const applyFilters = (next) => {
+    activeFilters.value = next;
+
+    const params = { q: searchQuery.value, type: activeType.value };
+    for (const [key, value] of Object.entries(next)) {
+        if (value !== '' && value != null) params[key] = value;
+    }
+
+    router.get('/search', params, { preserveState: true, preserveScroll: true });
+};
 
 const tabs = computed(() => [
     { key: 'videos', label: t('search.videos'), icon: SearchIcon },
@@ -124,7 +160,7 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
         </div>
 
         <div class="mb-4 sm:mb-6">
-            <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('search.title') }}</h1>
+            <h1 class="page-title">{{ t('search.title') }}</h1>
         </div>
 
         <!-- Search Bar -->
@@ -143,20 +179,31 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
         </form>
 
         <!-- Tabs -->
-        <div class="flex gap-1 mb-4 sm:mb-6 border-b overflow-x-auto scrollbar-hide border-border">
+        <div class="tab-strip mb-3 border-b border-border">
             <button
                 v-for="tab in tabs"
                 :key="tab.key"
+                class="flex items-center gap-2 px-3 sm:px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors"
+                :class="activeType === tab.key
+                    ? 'border-accent text-accent-text'
+                    : 'border-transparent text-text-secondary hover:text-text-primary'"
+                :aria-current="activeType === tab.key ? 'page' : undefined"
                 @click="switchTab(tab.key)"
-                class="flex items-center gap-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap shrink-0"
-                :style="activeType === tab.key
-                    ? { borderColor: 'var(--color-accent)', color: 'var(--color-accent)' }
-                    : { borderColor: 'transparent', color: 'var(--color-text-secondary)' }"
             >
                 <component :is="tab.icon" class="w-4 h-4" />
                 {{ tab.label }}
             </button>
         </div>
+
+        <!-- Filters apply to video results only; channels and hashtags have no
+             duration or quality to filter on. -->
+        <FilterRail
+            v-if="activeType === 'videos'"
+            :model-value="activeFilters"
+            :categories="categories"
+            class="mb-4"
+            @update:model-value="applyFilters"
+        />
 
         <!-- Results -->
         <div v-if="query">
@@ -234,7 +281,7 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
                         :key="hashtag.id"
                         class="card p-4"
                     >
-                        <h3 class="font-medium text-accent">#{{ hashtag.name }}</h3>
+                        <h3 class="font-medium text-accent-text">#{{ hashtag.name }}</h3>
                         <p class="text-sm mt-1 text-text-muted">{{ hashtag.usage_count || 0 }} {{ t('common.videos') }}</p>
                     </div>
                 </div>

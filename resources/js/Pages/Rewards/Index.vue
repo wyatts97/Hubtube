@@ -94,7 +94,7 @@ const flash = computed(() => ({
     <AppLayout>
         <div class="max-w-4xl mx-auto">
             <div class="mb-4 sm:mb-6">
-                <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('rewards.title') }}</h1>
+                <h1 class="page-title">{{ t('rewards.title') }}</h1>
             </div>
 
             <!-- Flash messages -->
@@ -132,7 +132,7 @@ const flash = computed(() => ({
             <!-- Active Pro status banner -->
             <div v-if="proExpiryFormatted" class="card p-4 mb-4 sm:mb-6 border border-accent/30 bg-accent/5">
                 <div class="flex items-center gap-3">
-                    <ShieldCheck class="w-6 h-6 shrink-0 text-accent" />
+                    <ShieldCheck class="w-6 h-6 shrink-0 text-accent-text" />
                     <div>
                         <p class="font-semibold text-sm text-text-primary">Ad-Free Experience active</p>
                         <p class="text-xs text-text-secondary">

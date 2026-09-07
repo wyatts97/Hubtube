@@ -6,6 +6,7 @@ import { useFetch } from '@/Composables/useFetch';
 import { timeAgo } from '@/Composables/useFormatters';
 import { useI18n } from '@/Composables/useI18n';
 import ProBadge from '@/Components/ProBadge.vue';
+import BaseDialog from '@/Components/UI/BaseDialog.vue';
 
 const { t, locale } = useI18n();
 
@@ -91,8 +92,20 @@ const dislikeComment = async (comment) => {
     }
 };
 
-const deleteComment = async (comment) => {
-    if (!confirm('Are you sure you want to delete this comment?')) return;
+// Native confirm() was the only blocking browser dialog left in the app, and it
+// is neither themeable nor translatable. Deletion now goes through BaseDialog
+// like every other destructive action.
+const pendingDelete = ref(null);
+
+const deleteComment = (comment) => {
+    pendingDelete.value = comment;
+};
+
+const confirmDelete = async () => {
+    const comment = pendingDelete.value;
+    pendingDelete.value = null;
+    if (!comment) return;
+
     const { ok } = await del(`/comments/${comment.id}`, null);
     if (ok) {
         comments.value = comments.value.filter(c => c.id !== comment.id);
@@ -135,7 +148,7 @@ fetchComments();
                         class="btn btn-primary"
                         :disabled="!newComment.trim() || submitting"
                     >
-                        {{ submitting ? (t('common.loading')) : (t('video.comments')) }}
+                        {{ submitting ? t('common.loading') : t('video.post_comment') }}
                     </button>
                 </div>
             </div>
@@ -143,7 +156,7 @@ fetchComments();
 
         <div v-else class="card p-4 mb-6 text-center">
             <p class="text-text-secondary">
-                <Link href="/login" class="hover:underline text-accent">{{ t('auth.login') }}</Link>
+                <Link href="/login" class="hover:underline text-accent-text">{{ t('auth.login') }}</Link>
             </p>
         </div>
 
@@ -153,7 +166,7 @@ fetchComments();
         </div>
 
         <!-- Comments List -->
-        <div v-else class="space-y-6">
+        <div v-else class="comment-list">
             <div v-for="comment in comments" :key="comment.id" class="flex gap-3">
                 <Link :href="`/channel/${comment.user?.username}`" class="flex-shrink-0">
                     <div class="w-10 h-10 avatar">
@@ -231,7 +244,7 @@ fetchComments();
                     </div>
 
                     <!-- Replies -->
-                    <div v-if="comment.replies?.length" class="mt-4 space-y-4 ps-4 border-s-2 border-border">
+                    <div v-if="comment.replies?.length" class="mt-4 space-y-4 comment-reply">
                         <div v-for="reply in comment.replies" :key="reply.id" class="flex gap-3">
                             <div class="w-8 h-8 avatar flex-shrink-0">
                                 <img :src="reply.user?.avatar_url || reply.user?.avatar || '/assets/default_avatar.webp'" :alt="reply.user?.avatar_alt || reply.user?.username || 'User'" class="w-full h-full object-cover" />
@@ -254,4 +267,14 @@ fetchComments();
             </div>
         </div>
     </div>
+
+    <BaseDialog :model-value="pendingDelete !== null" @update:model-value="pendingDelete = null" aria-label="Delete comment">
+        <h3 class="text-lg font-bold text-text-primary">{{ t('video.delete_comment_title') }}</h3>
+        <p class="mt-1 text-sm text-text-secondary">{{ t('video.delete_comment_body') }}</p>
+        <div class="mt-5 flex justify-end gap-2">
+            <button class="btn btn-secondary" @click="pendingDelete = null">{{ t('common.cancel') }}</button>
+            <button class="btn btn-primary" @click="confirmDelete">{{ t('common.delete') }}</button>
+        </div>
+    </BaseDialog>
+
 </template>

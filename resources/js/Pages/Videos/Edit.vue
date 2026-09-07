@@ -149,7 +149,7 @@ const statusColors = {
     <AppLayout>
         <div class="max-w-4xl mx-auto">
             <div class="flex items-center justify-between mb-6">
-                <h1 class="text-2xl font-bold text-text-primary">{{ t('video.edit_video') }}</h1>
+                <h1 class="page-title">{{ t('video.edit_video') }}</h1>
                 <span :class="['px-3 py-1 rounded-full text-sm font-medium', statusColors[video.status]]">
                     {{ video.status.charAt(0).toUpperCase() + video.status.slice(1) }}
                 </span>
@@ -159,7 +159,7 @@ const statusColors = {
                 <!-- Processing Status Banner -->
                 <div v-if="videoStatus === 'pending' || videoStatus === 'processing'" class="card p-4">
                     <div class="flex items-center gap-3">
-                        <Loader2 class="w-5 h-5 animate-spin text-accent" />
+                        <Loader2 class="w-5 h-5 animate-spin text-accent-text" />
                         <div class="flex-1">
                             <p class="font-medium text-text-primary">
                                 {{ videoStatus === 'pending' ? 'Waiting to process...' : 'Processing video...' }}

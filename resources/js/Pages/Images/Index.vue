@@ -64,29 +64,29 @@ onClickOutside(filterRef, () => {
     <AppLayout>
         <div class="mb-5">
             <div class="flex items-center justify-between gap-3 flex-wrap">
-                <h1 class="text-xl font-bold text-text-primary">Browse Images</h1>
+                <h1 class="page-title">Browse Images</h1>
 
                 <div class="flex items-center gap-2">
                     <!-- Sort Buttons -->
-                    <div class="flex items-center rounded-lg overflow-hidden border border-border">
+                    <div class="flex items-center gap-1">
                         <button
                             @click="setSort('')"
-                            :class="['px-3 py-1.5 text-xs font-medium transition-colors', !sort ? 'text-white' : '']"
-                            :style="!sort ? 'background-color: var(--color-accent); color: #fff;' : 'color: var(--color-text-secondary);'"
+                            class="chip"
+                            :class="{ 'chip-active': !sort }"
                         >
                             <Clock class="w-3.5 h-3.5 inline -mt-0.5 me-1" />Latest
                         </button>
                         <button
                             @click="setSort('popular')"
-                            :class="['px-3 py-1.5 text-xs font-medium transition-colors', sort === 'popular' ? 'text-white' : '']"
-                            :style="sort === 'popular' ? 'background-color: var(--color-accent); color: #fff;' : 'color: var(--color-text-secondary); border-left: 1px solid var(--color-border);'"
+                            class="chip"
+                            :class="{ 'chip-active': sort === 'popular' }"
                         >
                             <Flame class="w-3.5 h-3.5 inline -mt-0.5 me-1" />Popular
                         </button>
                         <button
                             @click="setSort('oldest')"
-                            :class="['px-3 py-1.5 text-xs font-medium transition-colors', sort === 'oldest' ? 'text-white' : '']"
-                            :style="sort === 'oldest' ? 'background-color: var(--color-accent); color: #fff;' : 'color: var(--color-text-secondary); border-left: 1px solid var(--color-border);'"
+                            class="chip"
+                            :class="{ 'chip-active': sort === 'oldest' }"
                         >
                             <CalendarDays class="w-3.5 h-3.5 inline -mt-0.5 me-1" />Oldest
                         </button>
@@ -96,8 +96,8 @@ onClickOutside(filterRef, () => {
                     <div ref="filterRef" class="relative">
                         <button
                             @click.stop="showFilters = !showFilters"
-                            class="p-2 rounded-lg transition-colors flex items-center gap-1.5"
-                            :style="category ? 'background-color: var(--color-accent); color: #fff;' : 'background-color: var(--color-bg-secondary); color: var(--color-text-secondary); border: 1px solid var(--color-border);'"
+                            class="chip"
+                            :class="{ 'chip-active': category }"
                         >
                             <Filter class="w-4 h-4" />
                             <span v-if="activeCategory" class="text-xs font-medium hidden sm:inline">{{ activeCategory.name }}</span>
@@ -146,8 +146,8 @@ onClickOutside(filterRef, () => {
         </div>
 
         <div v-else class="text-center py-16">
-            <p class="text-lg text-text-secondary">No images found</p>
-            <p class="mt-2 text-sm text-text-muted">Try adjusting your filters</p>
+            <p class="text-lg text-text-secondary">{{ t('images.none_found') }}</p>
+            <p class="mt-2 text-sm text-text-muted">{{ t('images.adjust_filters') }}</p>
         </div>
 
         <!-- Pagination -->

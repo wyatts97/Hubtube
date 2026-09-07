@@ -198,7 +198,7 @@ const isPublished = computed(() => {
                         <p class="text-sm font-medium text-green-500">Your video is live!</p>
                         <a
                             :href="`/${video.slug}`"
-                            class="text-sm mt-0.5 inline-flex items-center gap-1 hover:opacity-80 text-accent"
+                            class="text-sm mt-0.5 inline-flex items-center gap-1 hover:opacity-80 text-accent-text"
                         >
                             <Eye class="w-3.5 h-3.5" />
                             View your video

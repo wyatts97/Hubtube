@@ -90,6 +90,8 @@ class Video extends Model
         'preview_url',
         'preview_thumbnails_url',
         'formatted_duration',
+        'rating_percent',
+        'quality_label',
     ];
 
     protected function casts(): array
@@ -352,6 +354,157 @@ class Video extends Model
     public function scopeShorts($query)
     {
         return $query->where('is_portrait', true)->where('duration', '<', 60);
+    }
+
+    /**
+     * Minimum combined votes before a rating is shown. Without a floor a single
+     * like reads as "100% liked", which is both meaningless and easy to game.
+     */
+    public const RATING_MIN_VOTES = 5;
+
+    /** Duration buckets used by the browse and search filter rail, in seconds. */
+    public const DURATION_BUCKETS = [
+        'short'  => [0, 300],
+        'medium' => [300, 1200],
+        'long'   => [1200, null],
+    ];
+
+    /** Minimum vertical resolution for each quality filter band. */
+    public const QUALITY_BANDS = [
+        'hd'  => 720,
+        'fhd' => 1080,
+        'uhd' => 2160,
+    ];
+
+    /**
+     * Percentage of votes that were positive, or null when there aren't enough
+     * votes to be meaningful. Derived from the existing likes_count and
+     * dislikes_count columns — there is no separate ratings table.
+     */
+    public function getRatingPercentAttribute(): ?int
+    {
+        $likes = (int) $this->likes_count;
+        $dislikes = (int) $this->dislikes_count;
+        $total = $likes + $dislikes;
+
+        if ($total < self::RATING_MIN_VOTES) {
+            return null;
+        }
+
+        return (int) round(($likes / $total) * 100);
+    }
+
+    /**
+     * Highest resolution band available, as a short badge label ('4K', 'HD') or
+     * null. Reads the qualities_available JSON the transcoder writes, whose
+     * entries look like '1080p' / '720p' / 'original'.
+     */
+    public function getQualityLabelAttribute(): ?string
+    {
+        $heights = $this->qualityHeights();
+
+        if (empty($heights)) {
+            return null;
+        }
+
+        $max = max($heights);
+
+        if ($max >= self::QUALITY_BANDS['uhd']) {
+            return '4K';
+        }
+
+        return $max >= self::QUALITY_BANDS['hd'] ? 'HD' : null;
+    }
+
+    /** Numeric heights parsed out of qualities_available, e.g. ['1080p'] => [1080]. */
+    protected function qualityHeights(): array
+    {
+        $qualities = $this->qualities_available;
+
+        if (! is_array($qualities)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(
+            fn ($quality) => (int) filter_var((string) $quality, FILTER_SANITIZE_NUMBER_INT),
+            $qualities
+        )));
+    }
+
+    /** Filter by one of the DURATION_BUCKETS keys. Unknown keys are ignored. */
+    public function scopeOfDuration($query, ?string $bucket)
+    {
+        if (! isset(self::DURATION_BUCKETS[$bucket])) {
+            return $query;
+        }
+
+        [$min, $max] = self::DURATION_BUCKETS[$bucket];
+
+        $query->where('duration', '>=', $min);
+
+        return $max === null ? $query : $query->where('duration', '<', $max);
+    }
+
+    /**
+     * Filter by minimum resolution.
+     *
+     * qualities_available is JSON, and portable JSON querying across MySQL and
+     * SQLite is not worth the complexity here: matching the rendered strings
+     * ('1080p', '2160p') covers every value the transcoder actually writes.
+     */
+    public function scopeOfQuality($query, ?string $band)
+    {
+        if (! isset(self::QUALITY_BANDS[$band])) {
+            return $query;
+        }
+
+        $minHeight = self::QUALITY_BANDS[$band];
+        $labels = array_filter(
+            ['2160p', '1440p', '1080p', '720p'],
+            fn ($label) => (int) $label >= $minHeight
+        );
+
+        return $query->where(function ($q) use ($labels) {
+            foreach ($labels as $label) {
+                $q->orWhere('qualities_available', 'like', '%"' . $label . '"%');
+            }
+        });
+    }
+
+    /** Filter by upload recency: today | week | month | year. */
+    public function scopeUploadedWithin($query, ?string $period)
+    {
+        $since = match ($period) {
+            'today' => now()->subDay(),
+            'week' => now()->subWeek(),
+            'month' => now()->subMonth(),
+            'year' => now()->subYear(),
+            default => null,
+        };
+
+        return $since ? $query->where('published_at', '>=', $since) : $query;
+    }
+
+    /**
+     * Apply one of the browse/search sort orders.
+     *
+     * 'rating' orders by the same like ratio as getRatingPercentAttribute, with
+     * the vote floor applied in SQL so barely-voted videos can't top the list.
+     * Computed rather than stored: a generated column is only worth adding if
+     * this shows up as a slow query.
+     */
+    public function scopeSortedBy($query, ?string $sort)
+    {
+        return match ($sort) {
+            'popular' => $query->orderByDesc('views_count'),
+            'oldest' => $query->orderBy('published_at'),
+            'longest' => $query->orderByDesc('duration'),
+            'rating' => $query
+                ->whereRaw('(likes_count + dislikes_count) >= ?', [self::RATING_MIN_VOTES])
+                ->orderByRaw('(likes_count * 1.0 / NULLIF(likes_count + dislikes_count, 0)) DESC')
+                ->orderByDesc('likes_count'),
+            default => $query->orderByDesc('published_at'),
+        };
     }
 
     public function isAccessibleBy(?User $user): bool

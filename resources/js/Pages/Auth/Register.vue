@@ -129,9 +129,9 @@ const onSubmit = () => {
 
                     <div class="text-sm text-text-secondary">
                         By signing up, you confirm that you are at least 18 years old and agree to our
-                        <a href="/terms" class="text-accent">Terms of Service</a>
+                        <a href="/terms" class="text-accent-text">Terms of Service</a>
                         and
-                        <a href="/privacy" class="text-accent">Privacy Policy</a>.
+                        <a href="/privacy" class="text-accent-text">Privacy Policy</a>.
                     </div>
 
                     <button
@@ -170,7 +170,7 @@ const onSubmit = () => {
                 <div class="mt-6 text-center">
                     <p class="text-text-secondary">
                         {{ t('auth.has_account') }}
-                        <Link href="/login" class="font-medium text-accent">
+                        <Link href="/login" class="font-medium text-accent-text">
                             {{ t('auth.login') }}
                         </Link>
                     </p>

@@ -5,11 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>404 — Page Not Found</title>
     <style>
+        /* Palette from App\Support\ThemeTokens — the same source the SPA uses, so
+           a standalone page can't drift from the site it belongs to. */
+        :root { {!! \App\Support\ThemeTokens::cssVariables('dark') !!} }
+        :root.theme-light { {!! \App\Support\ThemeTokens::cssVariables('light') !!} }
+    </style>
+    <script>
+        (function () {
+            try {
+                if ({!! json_encode(\App\Support\ThemeTokens::authoritativeMode()) !!}) return;
+                var saved = localStorage.getItem('ht-theme');
+                document.documentElement.classList.toggle('theme-light', saved === 'light');
+            } catch (e) {}
+        })();
+    </script>
+    <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0a;
-            color: #fff;
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -24,7 +39,7 @@
             font-size: 7rem;
             font-weight: 800;
             line-height: 1;
-            background: linear-gradient(135deg, #ef4444, #f97316);
+            background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -36,7 +51,7 @@
             color: #e5e5e5;
         }
         .desc {
-            color: #a3a3a3;
+            color: var(--color-text-secondary);
             font-size: 0.95rem;
             line-height: 1.6;
             margin-bottom: 2rem;
@@ -44,15 +59,15 @@
         .btn {
             display: inline-block;
             padding: 0.75rem 1.5rem;
-            background: #ef4444;
-            color: #fff;
+            background: var(--color-accent);
+            color: var(--color-text-primary);
             text-decoration: none;
             border-radius: 0.5rem;
             font-weight: 500;
             font-size: 0.9rem;
             transition: background 0.2s;
         }
-        .btn:hover { background: #dc2626; }
+        .btn:hover { background: var(--color-accent-hover); }
     </style>
 </head>
 <body>

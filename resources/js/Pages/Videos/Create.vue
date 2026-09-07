@@ -380,14 +380,14 @@ watch(fieldErrors, (errs) => {
         <div class="max-w-4xl mx-auto">
             <div class="flex items-center gap-3 mb-6">
                 <div>
-                    <h1 class="text-xl sm:text-2xl font-bold text-text-primary">{{ t('upload.title') }}</h1>
+                    <h1 class="page-title">{{ t('upload.title') }}</h1>
                 </div>
             </div>
 
             <!-- Upload limit reached banner -->
             <div v-if="uploadLimitReached" class="card p-6 mb-6 border bg-bg-card" style="border-color: var(--color-accent);">
                 <div class="flex items-start gap-4">
-                    <AlertCircle class="w-8 h-8 shrink-0 mt-0.5 text-accent" />
+                    <AlertCircle class="w-8 h-8 shrink-0 mt-0.5 text-accent-text" />
                     <div>
                         <h2 class="text-lg font-semibold mb-1 text-text-primary">Daily Upload Limit Reached</h2>
                         <p class="text-sm text-text-secondary">
@@ -396,7 +396,7 @@ watch(fieldErrors, (errs) => {
                         <a
                             v-if="proEnabled && !currentUser?.is_pro"
                             href="/pro"
-                            class="inline-block mt-2 text-sm font-medium text-accent hover:underline"
+                            class="inline-block mt-2 text-sm font-medium text-accent-text hover:underline"
                         >
                             Upgrade to Pro for up to {{ maxDailyPro }} uploads/day →
                         </a>
@@ -412,7 +412,7 @@ watch(fieldErrors, (errs) => {
                     style="background-color: rgba(0,0,0,0.7); backdrop-filter: blur(4px);"
                 >
                     <div class="text-center">
-                        <Upload class="w-20 h-20 mx-auto mb-4 text-accent" />
+                        <Upload class="w-20 h-20 mx-auto mb-4 text-accent-text" />
                         <p class="text-2xl font-bold text-white">Drop your video anywhere</p>
                     </div>
                 </div>
@@ -452,7 +452,7 @@ watch(fieldErrors, (errs) => {
                     <a
                         v-if="proEnabled && !currentUser?.is_pro && fileError && videoFile && videoFile.size > maxUploadBytes"
                         href="/pro"
-                        class="inline-block mt-2 text-sm font-medium text-accent hover:underline"
+                        class="inline-block mt-2 text-sm font-medium text-accent-text hover:underline"
                     >
                         Upgrade to Pro to upload up to {{ maxSizeProMb }} MB →
                     </a>
@@ -470,7 +470,7 @@ watch(fieldErrors, (errs) => {
                         </div>
                         <div class="flex-1 min-w-0 w-full">
                             <div class="flex items-center gap-2">
-                                <FileVideo class="w-5 h-5 shrink-0 text-accent" />
+                                <FileVideo class="w-5 h-5 shrink-0 text-accent-text" />
                                 <p class="font-medium truncate text-text-primary">{{ videoFile.name }}</p>
                             </div>
                             <p class="text-sm mt-1 text-text-muted">
@@ -487,7 +487,7 @@ watch(fieldErrors, (errs) => {
                                         <span v-if="speedFormatted && upload.status.value === 'uploading'" class="text-text-muted"> · {{ speedFormatted }}</span>
                                         <span v-if="etaFormatted && upload.status.value === 'uploading'" class="text-text-muted"> · {{ etaFormatted }}</span>
                                     </span>
-                                    <span class="text-accent">{{ upload.percent.value }}%</span>
+                                    <span class="text-accent-text">{{ upload.percent.value }}%</span>
                                 </div>
                                 <div class="h-2 rounded-full overflow-hidden bg-bg-secondary">
                                     <div
@@ -706,7 +706,7 @@ watch(fieldErrors, (errs) => {
                 <div v-if="canSchedule" class="card p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <Calendar class="w-5 h-5 text-accent" />
+                            <Calendar class="w-5 h-5 text-accent-text" />
                             <div>
                                 <p class="font-medium text-text-primary">{{ t('upload.schedule') }}</p>
                                 <p class="text-sm text-text-muted">{{ t('upload.schedule_desc') }}</p>
@@ -734,7 +734,7 @@ watch(fieldErrors, (errs) => {
                 </div>
 
                 <div class="flex justify-end gap-4 items-center">
-                    <Loader2 v-if="submitting" class="w-4 h-4 animate-spin text-accent" />
+                    <Loader2 v-if="submitting" class="w-4 h-4 animate-spin text-accent-text" />
                     <button
                         type="submit"
                         :disabled="submitDisabled"

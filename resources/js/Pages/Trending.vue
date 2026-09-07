@@ -177,7 +177,7 @@ const getSponsoredCard = (index) => {
         <div class="mb-6">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <h1 class="text-2xl font-bold text-text-primary">{{ t('nav.trending') }}</h1>
+                    <h1 class="page-title">{{ t('nav.trending') }}</h1>
                     <p class="mt-1 text-text-secondary">{{ t('home.popular') }}</p>
                 </div>
                 <div class="flex gap-1 flex-wrap">

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Hashtag;
+use App\Models\Category;
 use App\Models\Setting;
 use App\Models\SponsoredCard;
 use App\Models\User;
@@ -29,17 +30,20 @@ class SearchController extends Controller
         $query = $request->get('q', '');
         $type = $request->get('type', 'videos');
 
+        $filters = $request->only(['duration', 'quality', 'date', 'category', 'sort']);
+
         $results = match ($type) {
-            'videos' => $this->searchVideos($query),
             'channels' => $this->searchChannels($query),
             'hashtags' => $this->searchHashtags($query),
-            default => $this->searchVideos($query),
+            default => $this->searchVideos($query, $filters),
         };
 
         return Inertia::render('Search', [
             'query' => $query,
             'type' => $type,
             'results' => $results,
+            'filters' => $filters,
+            'categories' => Category::active()->get(['id', 'name']),
             'seo' => $this->seoService->forSearch($query),
             'bannerAd' => $this->shouldSuppressAds() ? ['enabled' => false] : [
                 'enabled' => (bool) Setting::get('search_banner_ad_enabled', false),
@@ -54,7 +58,10 @@ class SearchController extends Controller
         ]);
     }
 
-    private function searchVideos(?string $query)
+    /**
+     * @param array{duration?:string,quality?:string,date?:string,category?:string,sort?:string} $filters
+     */
+    private function searchVideos(?string $query, array $filters = [])
     {
         if (empty($query)) {
             return collect();
@@ -62,15 +69,31 @@ class SearchController extends Controller
 
         $escapedQuery = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $query);
 
+        // Filters and sort are applied identically whether results come from
+        // Scout or the LIKE fallback, so changing search driver cannot silently
+        // change what the filter rail does.
+        $applyFilters = fn ($q) => $q
+            ->when($filters['category'] ?? null, fn ($qq, $cat) => $qq->where('category_id', $cat))
+            ->ofDuration($filters['duration'] ?? null)
+            ->ofQuality($filters['quality'] ?? null)
+            ->uploadedWithin($filters['date'] ?? null);
+
         // Use Scout search if a real driver is configured, otherwise fallback to LIKE
         $driver = config('scout.driver');
         if ($driver && !in_array($driver, ['database', 'null', 'collection'])) {
             return Video::search($query)
-                ->query(fn($q) => $q->with(['user.channel'])->public()->approved()->processed())
-                ->paginate(24);
+                ->query(function ($q) use ($applyFilters, $filters) {
+                    $q = $applyFilters($q->with(['user.channel'])->public()->approved()->processed());
+
+                    // Relevance is Scout's own ordering, so only override it when
+                    // the visitor explicitly picked a sort.
+                    return ($filters['sort'] ?? '') !== '' ? $q->sortedBy($filters['sort']) : $q;
+                })
+                ->paginate(24)
+                ->withQueryString();
         }
 
-        return Video::query()
+        $builder = Video::query()
             ->with(['user.channel'])
             ->public()
             ->approved()
@@ -79,9 +102,12 @@ class SearchController extends Controller
                 $q->where('title', 'like', "%{$escapedQuery}%")
                   ->orWhere('description', 'like', "%{$escapedQuery}%")
                   ->orWhereJsonContains('tags', $query);
-            })
-            ->latest('published_at')
-            ->paginate(24);
+            });
+
+        return $applyFilters($builder)
+            ->sortedBy($filters['sort'] ?? null)
+            ->paginate(24)
+            ->withQueryString();
     }
 
     private function searchChannels(?string $query)

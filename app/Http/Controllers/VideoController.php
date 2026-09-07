@@ -22,6 +22,7 @@ use App\Services\VideoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
@@ -67,6 +68,67 @@ class VideoController extends Controller
         return $variants;
     }
 
+    /**
+     * Candidates for the "related videos" rail.
+     *
+     * The previous implementation was the same category ordered by newest,
+     * which on a large catalogue meant every video in a category showed the
+     * same twelve suggestions. This scores tag overlap first — two videos
+     * sharing three tags are far more alike than two that merely sit in the
+     * same category — then category, then popularity as a tie-break.
+     *
+     * Scoring happens in PHP over a bounded candidate set rather than in SQL:
+     * tags are a JSON column, and a portable cross-database JSON join is not
+     * worth it for a list of twelve. The result is cached by the caller.
+     */
+    protected function relatedVideosFor(Video $video, int $limit = 12): Collection
+    {
+        $tags = collect($video->tags ?? [])
+            ->map(fn ($tag) => mb_strtolower(trim((string) $tag)))
+            ->filter()
+            ->unique();
+
+        $candidates = Video::query()
+            ->with(['user.channel'])
+            ->where('id', '!=', $video->id)
+            ->public()
+            ->approved()
+            ->processed()
+            ->where(function ($q) use ($video, $tags) {
+                $q->where('category_id', $video->category_id);
+
+                // Cheap pre-filter so scoring runs over a relevant slice rather
+                // than the whole table. Exact matching happens below.
+                foreach ($tags->take(6) as $tag) {
+                    $q->orWhere('tags', 'like', '%' . $tag . '%');
+                }
+            })
+            ->latest('published_at')
+            ->limit(120)
+            ->get();
+
+        return $candidates
+            ->sortByDesc(function (Video $candidate) use ($video, $tags) {
+                $candidateTags = collect($candidate->tags ?? [])
+                    ->map(fn ($tag) => mb_strtolower(trim((string) $tag)))
+                    ->filter();
+
+                $score = $tags->intersect($candidateTags)->count() * 10;
+
+                if ($candidate->category_id && $candidate->category_id === $video->category_id) {
+                    $score += 5;
+                }
+
+                // Popularity as a tie-break only — log-scaled so one viral video
+                // cannot outrank genuine topical matches.
+                $score += min(4, log10(max(1, (int) $candidate->views_count)));
+
+                return $score;
+            })
+            ->take($limit)
+            ->values();
+    }
+
     public function index(Request $request): Response
     {
         $escapedSearch = $request->search
@@ -80,21 +142,19 @@ class VideoController extends Controller
             ->processed()
             ->when($request->category, fn($q, $cat) => $q->where('category_id', $cat))
             ->when($escapedSearch, fn($q, $search) => $q->where('title', 'like', "%{$search}%"))
-            ->when(
-                $request->sort === 'popular',
-                fn($q) => $q->orderByDesc('views_count'),
-                fn($q) => $q->when(
-                    $request->sort === 'oldest',
-                    fn($q) => $q->oldest('published_at'),
-                    fn($q) => $q->latest('published_at')
-                )
-            )
-            ->paginate(24);
+            // Duration / quality / recency filters and the sort order all live
+            // as scopes on the model so /videos and /search stay in step.
+            ->ofDuration($request->string('duration')->toString())
+            ->ofQuality($request->string('quality')->toString())
+            ->uploadedWithin($request->string('date')->toString())
+            ->sortedBy($request->string('sort')->toString())
+            ->paginate(24)
+            ->withQueryString();
 
         return Inertia::render('Videos/Index', [
             'videos' => $videos,
             'categories' => Category::active()->get(),
-            'filters' => $request->only(['category', 'sort']),
+            'filters' => $request->only(['category', 'sort', 'duration', 'quality', 'date']),
             'seo' => $this->seoService->forVideosIndex(
                 $request->category ? (string) $request->category : null,
                 $request->sort ? (string) $request->sort : null,
@@ -195,16 +255,7 @@ class VideoController extends Controller
         $relatedVideos = Cache::remember(
             "video:{$video->id}:related",
             600,
-            fn () => Video::query()
-                ->with(['user.channel'])
-                ->where('id', '!=', $video->id)
-                ->where('category_id', $video->category_id)
-                ->public()
-                ->approved()
-                ->processed()
-                ->latest('published_at')
-                ->limit(12)
-                ->get()
+            fn () => $this->relatedVideosFor($video)
         );
 
         $playlistContext = null;

@@ -51,7 +51,7 @@ const joinedAt = computed(() => {
             <button
                 v-if="isMobile"
                 @click="expanded = !expanded"
-                class="mt-2 text-sm font-medium text-accent"
+                class="mt-2 text-sm font-medium text-accent-text"
             >
                 {{ expanded ? t('common.show_less') : t('common.show_more') }}
             </button>
