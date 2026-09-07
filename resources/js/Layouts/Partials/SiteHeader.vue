@@ -103,39 +103,50 @@ nextTick(loadUnreadCount);
 
 <template>
     <header class="fixed top-0 start-0 end-0 z-50 w-full bg-bg-secondary border-b border-border">
-        <div class="flex items-center gap-2 sm:gap-3 h-header px-3 sm:px-4">
-            <!-- Sidebar toggle lives here on desktop only as a compact affordance;
-                 the old full-size hamburger beside the logo was the single most
-                 recognisable borrowed element in the header. -->
-            <button
-                class="hidden lg:flex p-2 shrink-0 text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
-                :style="{ borderRadius: 'var(--radius-card)' }"
-                :aria-label="t('nav.toggle_sidebar')"
-                @click="emit('toggle-sidebar')"
-            >
-                <PanelLeft class="w-5 h-5" />
-            </button>
+        <!--
+            Three-column grid from `md` up: equal 1fr side columns with the search
+            between them, so the field is centred against the header itself rather
+            than against whatever space the side clusters happen to leave. A plain
+            flex-1 spacer would drift as the right cluster changes width — it has
+            five controls when signed in and two when signed out.
 
-            <!-- Wordmark -->
-            <Link href="/" class="flex items-center shrink-0 me-1">
-                <img
-                    v-if="themeSettings.site_logo"
-                    :src="themeSettings.site_logo"
-                    :alt="themeSettings.siteTitle || 'HubTube'"
-                    class="h-7 object-contain"
-                />
-                <span
-                    v-else
-                    class="font-display font-bold uppercase tracking-tight leading-none truncate max-w-[7.5rem] sm:max-w-none"
-                    :style="{
-                        color: themeSettings.siteTitleColor || 'var(--color-text-primary)',
-                        fontSize: (themeSettings.siteTitleSize || 22) + 'px',
-                        fontFamily: themeSettings.siteTitleFont || undefined,
-                    }"
-                >{{ themeSettings.siteTitle || 'HubTube' }}</span>
-            </Link>
+            Below `md` the search collapses to an icon button, so the row falls
+            back to flex with the left cluster expanding to push the actions right.
+        -->
+        <div
+            class="flex md:grid md:grid-cols-[1fr_minmax(0,34rem)_1fr] items-center gap-2 sm:gap-3 h-header px-3 sm:px-4"
+        >
+            <!-- Left: sidebar toggle + wordmark -->
+            <div class="flex items-center gap-2 min-w-0 flex-1 md:flex-none">
+                <button
+                    class="hidden lg:flex p-2 shrink-0 text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
+                    :style="{ borderRadius: 'var(--radius-card)' }"
+                    :aria-label="t('nav.toggle_sidebar')"
+                    @click="emit('toggle-sidebar')"
+                >
+                    <PanelLeft class="w-5 h-5" />
+                </button>
 
-            <!-- Search, left-aligned next to the wordmark rather than centred. -->
+                <Link href="/" class="flex items-center min-w-0">
+                    <img
+                        v-if="themeSettings.site_logo"
+                        :src="themeSettings.site_logo"
+                        :alt="themeSettings.siteTitle || 'HubTube'"
+                        class="h-7 object-contain"
+                    />
+                    <span
+                        v-else
+                        class="font-display font-bold uppercase tracking-tight leading-none truncate"
+                        :style="{
+                            color: themeSettings.siteTitleColor || 'var(--color-text-primary)',
+                            fontSize: (themeSettings.siteTitleSize || 22) + 'px',
+                            fontFamily: themeSettings.siteTitleFont || undefined,
+                        }"
+                    >{{ themeSettings.siteTitle || 'HubTube' }}</span>
+                </Link>
+            </div>
+
+            <!-- Centre: search -->
             <ComboboxRoot
                 v-model:open="showSuggestions"
                 ignore-filter
