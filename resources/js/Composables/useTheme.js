@@ -1,5 +1,6 @@
 import { ref, computed, onMounted } from 'vue';
-import { router, usePage } from '@inertiajs/vue3';
+import { usePage } from '@inertiajs/vue3';
+import { useFetch } from '@/Composables/useFetch';
 
 /**
  * Light/dark theme controller.
@@ -63,6 +64,7 @@ function applyThemeClass(theme) {
 
 export function useTheme() {
     const page = usePage();
+    const { post } = useFetch();
 
     const themeSettings = computed(() => page.props.theme || {});
 
@@ -108,15 +110,18 @@ export function useTheme() {
             writeStored(next);
 
             // Mirror onto the account when signed in, so the choice follows the
-            // user to other devices. Fire-and-forget: the local change already
-            // took effect and a failed sync must not surface as an error toast.
+            // user to other devices.
+            //
+            // Deliberately a plain JSON fetch, not Inertia's router: /api/theme
+            // returns JSON, and router.post expects an Inertia response — it
+            // throws "All Inertia requests must receive a valid Inertia
+            // response" at the visitor for a background sync they never asked
+            // about. useFetch carries the CSRF token and credentials already.
+            //
+            // Fire-and-forget: the class swap has already taken effect locally,
+            // so a failed sync must stay silent rather than surfacing an error.
             if (page.props.auth?.user) {
-                router.post('/api/theme', { theme: next }, {
-                    preserveScroll: true,
-                    preserveState: true,
-                    only: [],
-                    onError: () => {},
-                });
+                post('/api/theme', { theme: next });
             }
         }
     };

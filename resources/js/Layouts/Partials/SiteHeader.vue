@@ -2,11 +2,13 @@
 /**
  * Top bar: wordmark, search, account actions.
  *
- * Layout is deliberately NOT the logo / centred-search / actions arrangement the
- * site used to have — that silhouette reads as YouTube regardless of colour. The
- * search sits immediately beside the wordmark and left-aligned, which is the
- * layout catalogue and directory sites use, and the hamburger is gone: the
- * sidebar collapses from its own edge instead.
+ * Wordmark and sidebar toggle on the left, search centred, account actions on
+ * the right.
+ *
+ * The search was briefly left-aligned beside the wordmark to move away from the
+ * familiar centred-search silhouette, but centred tested better in situ and is
+ * what this site ships. The sidebar toggle is still a compact control rather
+ * than a full-size hamburger next to the logo.
  */
 import { computed, nextTick, ref } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
@@ -151,7 +153,7 @@ nextTick(loadUnreadCount);
                 v-model:open="showSuggestions"
                 ignore-filter
                 :reset-search-term-on-blur="false"
-                class="hidden md:block relative flex-1 max-w-xl"
+                class="hidden md:block relative w-full"
                 @update:model-value="onSuggestionSelect"
             >
                 <ComboboxAnchor as-child>
@@ -179,10 +181,8 @@ nextTick(loadUnreadCount);
                 </ComboboxContent>
             </ComboboxRoot>
 
-            <div class="flex-1 md:hidden"></div>
-
-            <!-- Actions -->
-            <div class="flex items-center gap-0.5 sm:gap-1 shrink-0">
+            <!-- Right: actions -->
+            <div class="flex items-center gap-0.5 sm:gap-1 shrink-0 md:justify-self-end">
                 <button
                     class="md:hidden p-2 text-text-secondary hover:text-text-primary transition-colors"
                     :style="{ borderRadius: 'var(--radius-card)' }"
