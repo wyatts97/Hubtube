@@ -284,7 +284,12 @@ class HandleInertiaRequests extends Middleware
             // dark logo", so a site that never uploads one is unaffected.
             'site_logo_light' => $this->storageUrl($this->s('site_logo_light', '')),
             'site_favicon' => $this->storageUrl($this->s('site_favicon', '')),
+            // Footer logo pair, plus the flag that makes the footer mirror the
+            // site logo. Resolved at render by useSiteLogo.js so it tracks the
+            // active theme instead of freezing one path at save time.
+            'footer_logo_match_site' => (bool)$this->s('footer_logo_match_site', false),
             'footer_logo_url' => $this->storageUrl($this->s('footer_logo_url', '')),
+            'footer_logo_url_light' => $this->storageUrl($this->s('footer_logo_url_light', '')),
             'progressBarColor' => $this->s('progress_bar_color', ''),
             'footer_ad_enabled' => (bool)$this->s('footer_ad_enabled', false),
             'footer_ad_code' => $this->s('footer_ad_code', ''),

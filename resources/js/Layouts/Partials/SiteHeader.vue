@@ -24,7 +24,7 @@ import BaseDropdown from '@/Components/UI/BaseDropdown.vue';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
 import SearchSuggestionList from '@/Components/SearchSuggestionList.vue';
 import ThemeToggle from '@/Components/ThemeToggle.vue';
-import { useTheme } from '@/Composables/useTheme';
+import { useSiteLogo } from '@/Composables/useSiteLogo';
 
 const emit = defineEmits(['open-mobile-search', 'open-login', 'toggle-sidebar']);
 
@@ -34,16 +34,7 @@ const { localizedUrl, t } = useI18n();
 
 const user = computed(() => page.props.auth?.user);
 const themeSettings = computed(() => page.props.theme || {});
-const { isDark } = useTheme();
-
-/**
- * site_logo is the dark-mode logo and the default. Light mode can override it,
- * because artwork drawn for a dark ground has light lettering that vanishes on
- * white. Falls back to site_logo when no light variant is uploaded.
- */
-const logoUrl = computed(() => (!isDark.value && themeSettings.value.site_logo_light)
-    ? themeSettings.value.site_logo_light
-    : themeSettings.value.site_logo);
+const { siteLogo: logoUrl } = useSiteLogo();
 
 const monetizationEnabled = computed(() => page.props.app?.monetization_enabled !== false);
 const pointsEnabled = computed(() => page.props.app?.points_enabled !== false);

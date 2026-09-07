@@ -172,6 +172,7 @@ class ThemeSettings extends Page implements HasForms
             // Footer Settings
             'footer_logo_match_site' => Setting::get('footer_logo_match_site', false),
             'footer_logo_url' => Setting::get('footer_logo_url', ''),
+            'footer_logo_url_light' => Setting::get('footer_logo_url_light', ''),
 
             // Video Card Customization
             'video_card_show_avatar' => Setting::get('video_card_show_avatar', false),
@@ -275,16 +276,27 @@ class ThemeSettings extends Page implements HasForms
                                     ->schema([
                                         Toggle::make('footer_logo_match_site')
                                             ->label('Use Site Logo for Footer')
-                                            ->helperText('When enabled, the footer will use the same logo as the site header')
+                                            ->helperText('When enabled, the footer uses the site logo above — including its light-mode variant, so it follows the theme.')
                                             ->reactive()
                                             ->columnSpanFull(),
+                                        // Mirrors the site logo pair: this is the
+                                        // dark-mode file and the fallback, with an
+                                        // optional light-mode override beside it.
                                         FileUpload::make('footer_logo_url')
-                                            ->label('Footer Logo')
+                                            ->label('Footer Logo (dark mode)')
                                             ->image()
                                             ->disk('public')
                                             ->directory('logos')
                                             ->visibility('public')
-                                            ->helperText('Upload a separate footer logo, or leave empty to show the site title')
+                                            ->helperText('Shown in dark mode and used as the fallback. Use light-coloured artwork. Leave empty to show the site title text.')
+                                            ->visible(fn ($get) => ! $get('footer_logo_match_site')),
+                                        FileUpload::make('footer_logo_url_light')
+                                            ->label('Footer Logo (light mode)')
+                                            ->image()
+                                            ->disk('public')
+                                            ->directory('logos')
+                                            ->visibility('public')
+                                            ->helperText('Optional. Shown in light mode — use dark-coloured artwork. Leave empty to reuse the dark footer logo.')
                                             ->visible(fn ($get) => ! $get('footer_logo_match_site')),
                                     ]),
 
@@ -809,10 +821,12 @@ class ThemeSettings extends Page implements HasForms
     {
         $data = $this->form->getState();
 
-        // If footer_logo_match_site is on, copy site_logo path to footer_logo_url
-        if (! empty($data['footer_logo_match_site'])) {
-            $data['footer_logo_url'] = $data['site_logo'] ?? '';
-        }
+        // Deliberately NOT copying site_logo into footer_logo_url when
+        // footer_logo_match_site is on. That used to happen here, and it froze a
+        // single file path at save time — so the footer could not follow the
+        // light/dark theme, and it went stale as soon as the site logo was
+        // replaced. The mirror is resolved at render instead; see
+        // resources/js/Composables/useSiteLogo.js.
 
         // These keys originated from SiteSettings and must stay in the 'general' group
         $generalKeys = ['site_name', 'site_description', 'site_keywords', 'site_logo', 'site_logo_light', 'site_favicon', 'primary_color'];

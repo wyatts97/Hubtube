@@ -8,7 +8,7 @@ import { Link, useForm, usePage } from '@inertiajs/vue3';
 import { Eye, EyeOff, X } from 'lucide-vue-next';
 import BaseDialog from '@/Components/UI/BaseDialog.vue';
 import { useI18n } from '@/Composables/useI18n';
-import { useTheme } from '@/Composables/useTheme';
+import { useSiteLogo } from '@/Composables/useSiteLogo';
 
 const open = defineModel({ type: Boolean, default: false });
 
@@ -17,12 +17,7 @@ const { t } = useI18n();
 
 const themeSettings = computed(() => page.props.theme || {});
 
-const { isDark } = useTheme();
-
-/** Same light-variant override as the header. */
-const logoUrl = computed(() => (!isDark.value && themeSettings.value.site_logo_light)
-    ? themeSettings.value.site_logo_light
-    : themeSettings.value.site_logo);
+const { siteLogo: logoUrl } = useSiteLogo();
 const user = computed(() => page.props.auth?.user);
 
 // Guard kept from the original markup: a session that becomes authenticated

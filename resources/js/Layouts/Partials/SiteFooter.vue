@@ -9,12 +9,17 @@
 import { computed, ref } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import { useI18n } from '@/Composables/useI18n';
+import { useSiteLogo } from '@/Composables/useSiteLogo';
 import AdSlot from '@/Components/AdSlot.vue';
 
 const page = usePage();
 const { t } = useI18n();
 
 const themeSettings = computed(() => page.props.theme || {});
+
+// Follows the active theme exactly like the header does, and mirrors the site
+// logo when the admin has that toggle on.
+const { footerLogo } = useSiteLogo();
 
 const root = ref(null);
 defineExpose({ root });
@@ -44,8 +49,8 @@ const legalLinks = computed(() => [
             <div class="flex justify-center mb-4">
                 <a href="/" class="inline-flex items-center gap-2 transition-opacity hover:opacity-80">
                     <img
-                        v-if="themeSettings.footer_logo_url"
-                        :src="themeSettings.footer_logo_url"
+                        v-if="footerLogo"
+                        :src="footerLogo"
                         alt="Site logo"
                         class="h-7 object-contain"
                         loading="lazy"
