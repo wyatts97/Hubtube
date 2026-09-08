@@ -15,7 +15,8 @@
  * load external src scripts sequentially (waiting for each to load),
  * then run inline scripts in order after all external scripts are done.
  */
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { useIntersectionObserver } from '@vueuse/core';
 import { useFetch } from '@/Composables/useFetch';
 
 const props = defineProps({
@@ -28,6 +29,45 @@ const props = defineProps({
      * slots that already have their own tracking, such as the interstitial.
      */
     placement: { type: String, default: '' },
+    /**
+     * Hold injection until the slot is near the viewport.
+     *
+     * On by default. Every slot used to inject in onMounted regardless of
+     * position, so a long grid ran several third-party ad scripts far below the
+     * fold on page load — bandwidth and main-thread time spent on impressions
+     * that may never be seen. Pass :lazy="false" for a slot that is reliably
+     * above the fold, such as the banner above the player.
+     */
+    lazy: { type: Boolean, default: true },
+    /**
+     * Reserves space so the creative does not shove the page down when it
+     * paints. `.ad-slot` had no dimensions at all, which made cumulative layout
+     * shift unavoidable on every page carrying an ad.
+     */
+    format: {
+        type: String,
+        default: '',
+        validator: (v) => ['', 'leaderboard', 'rectangle', 'mobile-banner', 'native'].includes(v),
+    },
+});
+
+// Width is left to the container; only height needs reserving, since that is
+// what pushes content around. Values match the sizes the admin UI advertises.
+const RESERVED_HEIGHTS = {
+    leaderboard: 90,
+    rectangle: 250,
+    'mobile-banner': 100,
+    native: 0,
+};
+
+// Released once the creative is in, so a slot the network declines to fill
+// collapses instead of leaving a permanent gap.
+const injected = ref(false);
+
+const reservedStyle = computed(() => {
+    if (injected.value || !props.format) return {};
+    const height = RESERVED_HEIGHTS[props.format] ?? 0;
+    return height ? { minHeight: `${height}px` } : {};
 });
 
 const { post } = useFetch();
@@ -235,12 +275,47 @@ function startIframeObserver() {
 // generation on entry, so a stale queued injection is discarded by the same
 // guard that protects an interrupted script chain.
 const injectWhenAllowed = async (html) => {
+    if (!html || !html.trim()) {
+        injectHtml(html);
+        return;
+    }
+    // Visibility first, then consent: a slot the visitor never scrolls to
+    // should not be the reason a consent prompt is waited on.
+    await awaitVisible();
     await awaitConsent();
     await nextTick();
     injectHtml(html);
-    if (html && html.trim()) {
-        reportSlotImpression(props.placement);
-    }
+    injected.value = true;
+    reportSlotImpression(props.placement);
+};
+
+/**
+ * Resolves when the slot is allowed to load: immediately when eager, otherwise
+ * once it comes within 200px of the viewport.
+ *
+ * 200px is roughly one flick of scroll, which is enough for the ad network's
+ * round trip to finish before the slot is actually on screen.
+ */
+const visible = ref(!props.lazy);
+let stopVisibilityObserver = null;
+
+const awaitVisible = () => {
+    if (visible.value) return Promise.resolve();
+
+    return new Promise((resolve) => {
+        const { stop } = useIntersectionObserver(
+            container,
+            ([entry]) => {
+                if (!entry?.isIntersecting) return;
+                visible.value = true;
+                stop();
+                stopVisibilityObserver = null;
+                resolve();
+            },
+            { rootMargin: '200px' }
+        );
+        stopVisibilityObserver = stop;
+    });
 };
 
 onMounted(() => {
@@ -255,6 +330,10 @@ watch(() => props.html, (newHtml) => {
 });
 
 onBeforeUnmount(() => {
+    if (stopVisibilityObserver) {
+        stopVisibilityObserver();
+        stopVisibilityObserver = null;
+    }
     if (iframeObserver) {
         iframeObserver.disconnect();
         iframeObserver = null;
@@ -266,5 +345,5 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div ref="container" class="ad-slot"></div>
+    <div ref="container" class="ad-slot" :style="reservedStyle"></div>
 </template>

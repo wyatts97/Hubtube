@@ -7,6 +7,9 @@ import VideoCard from '@/Components/VideoCard.vue';
 import { useFetch } from '@/Composables/useFetch';
 import { ArrowLeft, Play, Heart } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import GridAdSlot from '@/Components/GridAdSlot.vue';
+import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
+import { useGridAds } from '@/Composables/useGridAds';
 
 const { t, localizedUrl } = useI18n();
 
@@ -14,7 +17,11 @@ const props = defineProps({
     playlist: Object,
     isFavorited: { type: Boolean, default: false },
     seo: { type: Object, default: () => ({}) },
+    adSettings: { type: Object, default: () => ({}) },
+    sponsoredCards: { type: Array, default: () => [] },
 });
+
+const { gridAds, shouldShowAd, getSponsoredCard, adCellClass } = useGridAds(props);
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
@@ -112,12 +119,13 @@ const removeVideo = (videoId) => {
 
             <!-- Videos -->
             <div v-if="playlist.videos?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                <VideoCard
-                    v-for="(video, idx) in playlist.videos"
-                    :key="video.id"
-                    :video="video"
-                    :href="getPlaylistVideoHref(video, idx)"
-                />
+                <template v-for="(video, idx) in playlist.videos" :key="video.id">
+                    <VideoCard :video="video" :href="getPlaylistVideoHref(video, idx)" />
+                    <div v-if="shouldShowAd(idx, playlist.videos.length)" class="rounded-xl p-2" :class="adCellClass">
+                        <GridAdSlot :ads="gridAds" />
+                    </div>
+                    <SponsoredVideoCard v-if="getSponsoredCard(idx)" :card="getSponsoredCard(idx)" />
+                </template>
             </div>
 
             <div v-else class="text-center py-16">

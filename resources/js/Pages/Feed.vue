@@ -20,9 +20,14 @@ import { useFetch } from '@/Composables/useFetch';
 import { timeAgo } from '@/Composables/useFormatters';
 import { useI18n } from '@/Composables/useI18n';
 import { useVideoGrid } from '@/Composables/useVideoGrid';
+import GridAdSlot from '@/Components/GridAdSlot.vue';
+import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
+import { useGridAds } from '@/Composables/useGridAds';
 
 const props = defineProps({
     activity: { type: Array, default: () => [] },
+    adSettings: { type: Object, default: () => ({}) },
+    sponsoredCards: { type: Array, default: () => [] },
     nextCursor: { type: String, default: null },
     hasSubscriptions: { type: Boolean, default: false },
 });
@@ -68,6 +73,12 @@ onMounted(() => {
 onBeforeUnmount(() => observer?.disconnect());
 
 const isEmpty = computed(() => entries.value.length === 0);
+
+// Ads land between *sections*, not between cards: a section is one creator's
+// recent uploads and is usually only a handful of videos, so counting cards
+// with the normal grid frequency would place an ad almost never. Every third
+// section is roughly one ad per screen of feed.
+const { gridAds, shouldShowAd, getSponsoredCard, adCellClass } = useGridAds(props, { frequency: 3 });
 </script>
 
 <template>
@@ -80,7 +91,8 @@ const isEmpty = computed(() => entries.value.length === 0);
         </div>
 
         <div v-if="!isEmpty" class="space-y-8">
-            <section v-for="(entry, index) in entries" :key="`${entry.type}-${index}`">
+            <template v-for="(entry, index) in entries" :key="`${entry.type}-${index}`">
+            <section>
                 <!-- Actor line -->
                 <div class="flex items-center gap-3 mb-3">
                     <Link :href="localizedUrl(`/channel/${entry.actor.username}`)" class="w-9 h-9 avatar shrink-0">
@@ -131,6 +143,14 @@ const isEmpty = computed(() => entries.value.length === 0);
                     </div>
                 </Link>
             </section>
+
+            <div v-if="shouldShowAd(index, entries.length)" class="rounded-xl p-2" :class="adCellClass">
+                <GridAdSlot :ads="gridAds" />
+            </div>
+            <div v-if="getSponsoredCard(index)" :class="gridClass">
+                <SponsoredVideoCard :card="getSponsoredCard(index)" />
+            </div>
+            </template>
 
             <div ref="sentinel" class="h-px" aria-hidden="true"></div>
 

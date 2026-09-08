@@ -140,8 +140,13 @@ class SponsoredCardResource extends Resource
                                 'search' => 'Search Results',
                                 'category' => 'Category Pages',
                                 'browse' => 'Browse Videos',
+                                'tag' => 'Tag Pages',
+                                'playlist' => 'Playlist Pages',
+                                'gallery' => 'Galleries',
+                                'history' => 'Watch History',
+                                'feed' => 'Subscription Feed',
                             ])
-                            ->helperText('Leave empty to show on all pages')
+                            ->helperText('Leave empty to show on all pages — including any page added later')
                             ->columns(3),
 
                         Grid::make(3)->schema([

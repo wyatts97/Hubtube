@@ -38,6 +38,27 @@ class AdGatingTest extends TestCase
         Setting::set('footer_ad_mobile_code', '<script>FOOTER_MOBILE_AD</script>', 'ads', 'string');
         Setting::set('custom_interstitial_enabled', true, 'ads', 'boolean');
         Setting::set('custom_interstitial_code', '<script>INTERSTITIAL_AD_CODE</script>', 'ads', 'string');
+        Setting::set('custom_sticky_banner_enabled', true, 'ads', 'boolean');
+        Setting::set('custom_sticky_banner_code', '<script>STICKY_AD_CODE</script>', 'ads', 'string');
+    }
+
+    public function test_pro_users_do_not_receive_sticky_banner_code(): void
+    {
+        $this->enableFooterAndInterstitial();
+
+        $this->actingAs($this->proUser())->get('/')
+            ->assertOk()
+            ->assertDontSee('STICKY_AD_CODE', false);
+    }
+
+    public function test_non_pro_users_receive_sticky_banner_code_as_an_inertia_prop(): void
+    {
+        $this->enableFooterAndInterstitial();
+
+        // Shipped as a prop rather than server-rendered markup: that is what
+        // lets the component re-inject on each SPA navigation instead of once
+        // per full page load.
+        $this->get('/')->assertOk()->assertSee('STICKY_AD_CODE', false);
     }
 
     public function test_pro_users_do_not_receive_footer_or_interstitial_ad_code(): void

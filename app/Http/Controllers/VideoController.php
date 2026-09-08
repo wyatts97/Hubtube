@@ -38,30 +38,6 @@ class VideoController extends Controller
         protected SeoService $seoService,
     ) {}
 
-    protected function buildGridAdVariants(?int $categoryId = null): array
-    {
-        $all = Setting::getAll();
-        $s = fn (string $key, mixed $default = null) => $all[$key] ?? $default;
-
-        $count = (int) $s('video_grid_ad_count', 1);
-        $variants = [];
-
-        for ($n = 1; $n <= max(1, $count); $n++) {
-            $code = (string) $s("video_grid_ad_{$n}_code", '');
-            if (!$code) continue;
-
-            $cats = json_decode($s("video_grid_ad_{$n}_categories", '[]'), true) ?? [];
-            if ($categoryId !== null && !empty($cats) && !in_array($categoryId, $cats)) continue;
-
-            $variants[] = [
-                'code' => $code,
-                'mobileCode' => (string) $s("video_grid_ad_{$n}_mobile_code", '') ?: $code,
-            ];
-        }
-
-        return $variants;
-    }
-
     /**
      * Candidates for the "related videos" rail.
      *
@@ -163,10 +139,7 @@ class VideoController extends Controller
                 'mobileImage' => (string) Setting::get('browse_banner_ad_mobile_image', ''),
                 'mobileLink' => (string) Setting::get('browse_banner_ad_mobile_link', ''),
             ],
-            'adSettings' => $this->shouldSuppressAds() ? ['videoGridEnabled' => false] : [
-                'videoGridEnabled' => (bool) Setting::get('video_grid_ad_enabled', false),
-                'videoGridAds' => $this->buildGridAdVariants($request->category ? (int) $request->category : null),
-                'videoGridFrequency' => (int) Setting::get('video_grid_ad_frequency', 8),
+            'adSettings' => $this->gridAdSettings($request->category ? (int) $request->category : null) + [
                 'outstreamFrequency' => (int) Setting::get('video_outstream_ad_frequency', 6),
             ],
             'outstreamAds' => $this->shouldSuppressAds() ? [] : ((bool) Setting::get('video_outstream_ad_enabled', false)

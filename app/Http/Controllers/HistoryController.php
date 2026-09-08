@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\SponsoredCard;
 
 class HistoryController extends Controller
 {
@@ -25,6 +26,8 @@ class HistoryController extends Controller
 
         return Inertia::render('History', [
             'videos' => $transformedVideos,
+            'adSettings' => $this->gridAdSettings(),
+            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('history', $this->adTargetRole()),
         ]);
     }
 

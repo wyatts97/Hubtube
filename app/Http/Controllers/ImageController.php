@@ -46,6 +46,10 @@ class ImageController extends Controller
                 $request->category ? (string) $request->category : null,
                 $request->sort ? (string) $request->sort : null,
             ),
+            // Images use a square grid, so only the self-scaling GridAdSlot is
+            // sent — SponsoredVideoCard and OutstreamAd are 16:9 and would sit
+            // wrong among square thumbnails.
+            'adSettings' => $this->gridAdSettings(),
         ]);
     }
 

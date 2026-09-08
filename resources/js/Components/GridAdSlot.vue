@@ -127,7 +127,12 @@ onBeforeUnmount(() => {
         class="grid-ad-slot"
         :style="wrapperStyle"
     >
-        <AdSlot :key="isDesktop ? 'desktop' : 'mobile'" :html="activeCode" placement="grid" />
+        <AdSlot
+            :key="isDesktop ? 'desktop' : 'mobile'"
+            :html="activeCode"
+            placement="grid"
+            format="rectangle"
+        />
     </div>
 </template>
 

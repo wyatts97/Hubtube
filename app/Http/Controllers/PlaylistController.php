@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\SponsoredCard;
 
 class PlaylistController extends Controller
 {
@@ -73,6 +74,8 @@ class PlaylistController extends Controller
             'playlist' => $playlist,
             'isFavorited' => auth()->check() ? $playlist->isFavoritedBy(auth()->user()) : false,
             'seo' => $this->seoService->forPlaylist($playlist),
+            'adSettings' => $this->gridAdSettings(),
+            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('playlist', $this->adTargetRole()),
         ]);
     }
 

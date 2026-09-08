@@ -52,7 +52,7 @@ const adBuffering = ref(false);
 // IMA state (VAST / VPAID only)
 const imaContainerRef = ref(null);
 const imaVideoRef = ref(null);
-const { play: playIma, destroy: destroyIma } = useImaAd(imaContainerRef, imaVideoRef, {
+const { play: playIma, destroy: destroyIma, preload: preloadIma } = useImaAd(imaContainerRef, imaVideoRef, {
     onStart: (placement) => { emit('ad-started', placement); emit('request-pause'); fireImpression(currentAd.value); },
     onComplete: () => endAd(),
     onError: () => endAd(),
@@ -94,7 +94,30 @@ const waitForAds = async () => {
 };
 
 const hasAds = (placement) => adData.value?.[placement]?.length > 0;
-const pickAd  = (placement) => adData.value?.[placement]?.[0] ?? null;
+
+/**
+ * How many ads each placement has already served this page view.
+ *
+ * pickAd used to return index 0 every time, so a video with three mid-roll
+ * breaks played the *same* creative three times — wasted inventory and the
+ * kind of repetition that makes viewers leave. The server still decides which
+ * ads are eligible and in what order (weighted selection lives in
+ * VideoAd::pickWeightedRandom); this just walks that list instead of pinning
+ * to its first entry.
+ */
+const servedCount = ref({});
+
+const pickAd = (placement) => {
+    const pool = adData.value?.[placement];
+    if (!pool?.length) return null;
+
+    const seen = servedCount.value[placement] ?? 0;
+    servedCount.value[placement] = seen + 1;
+
+    // Wraps once the pool is exhausted, so a single-ad placement behaves
+    // exactly as it did before.
+    return pool[seen % pool.length] ?? null;
+};
 
 // ── Skip delay (local ads only) ──
 const getSkipDelay = (placement) => {
@@ -372,7 +395,16 @@ const checkMidRoll = (currentTime) => {
 
 defineExpose({ loadAds, triggerPreRoll, triggerPostRoll, checkMidRoll, isPlaying, hasAds: (p) => hasAds(p) });
 
-onMounted(() => loadAds());
+onMounted(async () => {
+    await loadAds();
+
+    // Warm the IMA SDK if the pre-roll is a VAST/VPAID tag, so pressing play
+    // does not also have to wait on a library download.
+    const preRoll = adData.value?.pre_roll?.[0];
+    if (preRoll && (preRoll.type === 'vast' || preRoll.type === 'vpaid')) {
+        preloadIma();
+    }
+});
 onUnmounted(() => { clearTimers(); destroyIma(); destroyAdHls(); settleAdEnd(); });
 </script>
 

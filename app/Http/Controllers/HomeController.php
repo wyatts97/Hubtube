@@ -23,30 +23,6 @@ class HomeController extends Controller
         protected SeoService $seoService,
     ) {}
 
-    protected function buildGridAdVariants(?int $categoryId = null): array
-    {
-        $all = Setting::getAll();
-        $s = fn (string $key, mixed $default = null) => $all[$key] ?? $default;
-
-        $count = (int) $s('video_grid_ad_count', 1);
-        $variants = [];
-
-        for ($n = 1; $n <= max(1, $count); $n++) {
-            $code = (string) $s("video_grid_ad_{$n}_code", '');
-            if (!$code) continue;
-
-            $cats = json_decode($s("video_grid_ad_{$n}_categories", '[]'), true) ?? [];
-            if ($categoryId !== null && !empty($cats) && !in_array($categoryId, $cats)) continue;
-
-            $variants[] = [
-                'code' => $code,
-                'mobileCode' => (string) $s("video_grid_ad_{$n}_mobile_code", '') ?: $code,
-            ];
-        }
-
-        return $variants;
-    }
-
     public function index(Request $request): Response
     {
         $all = Setting::getAll();
@@ -96,10 +72,9 @@ class HomeController extends Controller
                 ->get()
         );
 
-        $adSettings = [
-            'videoGridEnabled' => (bool) $s('video_grid_ad_enabled', false),
-            'videoGridAds' => $this->buildGridAdVariants(),
-            'videoGridFrequency' => (int) $s('video_grid_ad_frequency', 8),
+        // Grid keys come from the shared helper; the homepage rails are unique
+        // to this page and stay here.
+        $adSettings = $this->gridAdSettings() + [
             'rail1' => [
                 'enabled' => (bool) $s('home_rail_1_enabled', false),
                 'code' => (string) $s('home_rail_1_code', ''),
@@ -235,11 +210,7 @@ class HomeController extends Controller
             'videos'       => $videos,
             'period'       => $period,
             'seo'          => $this->seoService->forTrending(),
-            'adSettings'   => $this->shouldSuppressAds() ? ['videoGridEnabled' => false] : [
-                'videoGridEnabled'    => (bool) Setting::get('video_grid_ad_enabled', false),
-                'videoGridAds'        => $this->buildGridAdVariants(),
-                'videoGridFrequency'  => (int) Setting::get('video_grid_ad_frequency', 8),
-            ],
+            'adSettings'   => $this->gridAdSettings(),
             'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('trending', $this->adTargetRole()),
         ]);
     }
@@ -326,11 +297,7 @@ class HomeController extends Controller
                 'mobileImage' => (string) Setting::get('category_banner_ad_mobile_image', ''),
                 'mobileLink' => (string) Setting::get('category_banner_ad_mobile_link', ''),
             ],
-            'adSettings' => $this->shouldSuppressAds() ? ['videoGridEnabled' => false] : [
-                'videoGridEnabled' => (bool) Setting::get('video_grid_ad_enabled', false),
-                'videoGridAds' => $this->buildGridAdVariants($category->id),
-                'videoGridFrequency' => (int) Setting::get('video_grid_ad_frequency', 8),
-            ],
+            'adSettings' => $this->gridAdSettings($category->id),
             'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage(
                 'category',
                 $this->adTargetRole(),
@@ -431,6 +398,8 @@ class HomeController extends Controller
             'translatedTag' => $translatedTag,
             'videos' => $videos,
             'seo' => $this->seoService->forTag($tag, $videos),
+            'adSettings' => $this->gridAdSettings(),
+            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('tag', $this->adTargetRole()),
         ]);
     }
 

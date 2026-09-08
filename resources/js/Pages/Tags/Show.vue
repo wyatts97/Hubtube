@@ -8,6 +8,9 @@ import { computed } from 'vue';
 import { useI18n } from '@/Composables/useI18n';
 import { useVideoGrid } from '@/Composables/useVideoGrid';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
+import GridAdSlot from '@/Components/GridAdSlot.vue';
+import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
+import { useGridAds } from '@/Composables/useGridAds';
 
 const { t, localizedUrl } = useI18n();
 const { gridClass } = useVideoGrid();
@@ -17,7 +20,11 @@ const props = defineProps({
     translatedTag: { type: String, default: null },
     videos: Object,
     seo: { type: Object, default: () => ({}) },
+    adSettings: { type: Object, default: () => ({}) },
+    sponsoredCards: { type: Array, default: () => [] },
 });
+
+const { gridAds, shouldShowAd, getSponsoredCard, adCellClass } = useGridAds(props);
 
 const breadcrumbs = computed(() => [
     { label: t('nav.tags'), href: localizedUrl('/tags') },
@@ -43,7 +50,13 @@ const goToPage = (pageNum) => {
         </div>
 
         <div v-if="videos.data?.length" :class="gridClass">
-            <VideoCard v-for="video in videos.data" :key="video.id" :video="video" />
+            <template v-for="(video, index) in videos.data" :key="video.id">
+                <VideoCard :video="video" />
+                <div v-if="shouldShowAd(index, videos.data.length)" class="rounded-xl p-2" :class="adCellClass">
+                    <GridAdSlot :ads="gridAds" />
+                </div>
+                <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" />
+            </template>
         </div>
 
         <div v-else class="text-center py-12">

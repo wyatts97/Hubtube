@@ -13,11 +13,12 @@ import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 import { useI18n } from '@/Composables/useI18n';
 import { useVideoGrid } from '@/Composables/useVideoGrid';
 import SeoHead from '@/Components/SeoHead.vue';
+import { useGridAds } from '@/Composables/useGridAds';
 
 const { t } = useI18n();
 
 const { translateVideos, tr } = useAutoTranslate(['title']);
-const { gridClass, mobileGrid } = useVideoGrid();
+const { gridClass } = useVideoGrid();
 
 const props = defineProps({
     videos: Object,
@@ -89,38 +90,9 @@ const withTranslation = (video) => {
     return video;
 };
 
-const adsEnabled = computed(() => {
-    const enabled = props.adSettings?.videoGridEnabled;
-    return enabled === true || enabled === 'true' || enabled === 1 || enabled === '1';
-});
-const gridAds = computed(() => props.adSettings?.videoGridAds || []);
-const adFrequency = computed(() => parseInt(props.adSettings?.videoGridFrequency) || 8);
-
-const shouldShowAd = (index, totalLength) => {
-    if (!adsEnabled.value || !gridAds.value.length) return false;
-    return (index + 1) % adFrequency.value === 0 && index < totalLength - 1;
-};
-
-// Sponsored cards: insert at frequency intervals, cycling through available cards
-// Offset by half the grid ad frequency so they interleave instead of stacking
-const sponsoredFrequency = computed(() => props.sponsoredCards?.[0]?.frequency || 8);
-const sponsoredOffset = computed(() => Math.floor(adFrequency.value / 2));
-const getSponsoredCard = (index) => {
-    if (!props.sponsoredCards?.length) return null;
-    if ((index + 1 + sponsoredOffset.value) % sponsoredFrequency.value !== 0) return null;
-    const cardIndex = Math.floor((index + 1 + sponsoredOffset.value) / sponsoredFrequency.value) - 1;
-    return props.sponsoredCards[cardIndex % props.sponsoredCards.length] || null;
-};
-
-// Outstream ads: interleaved at configured frequency
-const outstreamFrequency = computed(() => parseInt(props.adSettings?.outstreamFrequency) || 6);
-const getOutstreamAd = (index) => {
-    if (!props.outstreamAds?.length) return null;
-    // Offset by 3 so outstream and sponsored cards don't land on the same index
-    if ((index + 4) % outstreamFrequency.value !== 0) return null;
-    const adIndex = Math.floor((index + 4) / outstreamFrequency.value) - 1;
-    return props.outstreamAds[adIndex % props.outstreamAds.length] || null;
-};
+// Grid ad interleaving — shared with every other listing page. This is the one
+// page that also carries outstream units.
+const { gridAds, shouldShowAd, getSponsoredCard, getOutstreamAd, adCellClass } = useGridAds(props);
 </script>
 
 <template>
@@ -151,7 +123,7 @@ const getOutstreamAd = (index) => {
                 <div
                     v-if="shouldShowAd(index, videos.data.length)"
                     class="p-1"
-                    :class="mobileGrid === 2 ? 'col-span-2 sm:col-span-1' : 'col-span-1'"
+                    :class="adCellClass"
                 >
                     <GridAdSlot :ads="gridAds" />
                 </div>

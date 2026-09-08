@@ -7,6 +7,8 @@ import SeoHead from '@/Components/SeoHead.vue';
 import ImageCard from '@/Components/ImageCard.vue';
 import { Filter, X, Clock, Flame, CalendarDays } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
+import GridAdSlot from '@/Components/GridAdSlot.vue';
+import { useGridAds } from '@/Composables/useGridAds';
 
 const { t } = useI18n();
 
@@ -15,7 +17,13 @@ const props = defineProps({
     categories: Array,
     filters: Object,
     seo: Object,
+    adSettings: { type: Object, default: () => ({}) },
 });
+
+// Only GridAdSlot here. This grid is square thumbnails up to five across;
+// SponsoredVideoCard and OutstreamAd are both 16:9 and would read as broken
+// among them, whereas GridAdSlot scales its creative to the cell.
+const { gridAds, shouldShowAd, adCellClass } = useGridAds(props);
 
 const category = ref(props.filters?.category || '');
 const sort = ref(props.filters?.sort || '');
@@ -142,7 +150,12 @@ onClickOutside(filterRef, () => {
         </div>
 
         <div v-if="images.data.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            <ImageCard v-for="image in images.data" :key="image.id" :image="image" />
+            <template v-for="(image, index) in images.data" :key="image.id">
+                <ImageCard :image="image" />
+                <div v-if="shouldShowAd(index, images.data.length)" class="rounded-xl p-2" :class="adCellClass">
+                    <GridAdSlot :ads="gridAds" />
+                </div>
+            </template>
         </div>
 
         <div v-else class="text-center py-16">

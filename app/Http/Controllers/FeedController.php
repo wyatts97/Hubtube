@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\SponsoredCard;
 
 class FeedController extends Controller
 {
@@ -30,6 +31,10 @@ class FeedController extends Controller
             'activity' => $page['items'],
             'nextCursor' => $page['next_cursor'],
             'hasSubscriptions' => $request->user()->channelSubscriptions()->exists(),
+            // The feed groups videos into per-creator sections, so ads are
+            // interleaved between sections rather than between cards.
+            'adSettings' => $this->gridAdSettings(),
+            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('feed', $this->adTargetRole()),
         ]);
     }
 

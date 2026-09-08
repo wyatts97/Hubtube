@@ -32,6 +32,16 @@ const props = defineProps({
     wrapperClass: { type: String, default: 'mb-4 flex justify-center' },
     /** Reporting label for this slot, forwarded to AdSlot. */
     placement: { type: String, default: '' },
+    /**
+     * Pass false for a slot that is reliably above the fold — deferring one of
+     * those costs an impression rather than saving work.
+     */
+    lazy: { type: Boolean, default: true },
+    /**
+     * Reserved-space hint. Left empty it follows the breakpoint, which is right
+     * for a normal banner; pass 'rectangle' for tall slots such as the sidebar.
+     */
+    format: { type: String, default: '' },
 });
 
 /**
@@ -83,6 +93,11 @@ const mobileHtml = computed(() => {
 
 const activeHtml = computed(() => (isDesktop.value ? desktopHtml.value : mobileHtml.value));
 
+const activeFormat = computed(() => {
+    if (props.format) return props.format;
+    return isDesktop.value ? 'leaderboard' : 'mobile-banner';
+});
+
 const hasContent = computed(() => enabled.value && (desktopHtml.value || mobileHtml.value));
 </script>
 
@@ -90,6 +105,12 @@ const hasContent = computed(() => enabled.value && (desktopHtml.value || mobileH
     <div v-if="hasContent" :class="wrapperClass">
         <!-- Keyed so crossing the breakpoint remounts the slot and injects the
              other variant, instead of leaving the previous creative in place. -->
-        <AdSlot :key="isDesktop ? 'desktop' : 'mobile'" :html="activeHtml" :placement="placement" />
+        <AdSlot
+            :key="isDesktop ? 'desktop' : 'mobile'"
+            :html="activeHtml"
+            :placement="placement"
+            :lazy="lazy"
+            :format="activeFormat"
+        />
     </div>
 </template>

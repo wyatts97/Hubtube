@@ -12,10 +12,11 @@ import GridAdSlot from '@/Components/GridAdSlot.vue';
 import { useI18n } from '@/Composables/useI18n';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 import { useVideoGrid } from '@/Composables/useVideoGrid';
+import { useGridAds } from '@/Composables/useGridAds';
 
 const { t, localizedUrl } = useI18n();
 const { translateVideos, tr } = useAutoTranslate(['title']);
-const { gridClass, mobileGrid } = useVideoGrid();
+const { gridClass } = useVideoGrid();
 
 // Server already hydrated via Inertia; skip initial skeleton delay.
 const isInitialLoad = ref(false);
@@ -147,27 +148,8 @@ const goToPage = (pageNum) => {
     router.get('/trending', { page: pageNum }, { preserveState: true, preserveScroll: false });
 };
 
-// Grid ads
-const adsEnabled = computed(() => {
-    const enabled = props.adSettings?.videoGridEnabled;
-    return enabled === true || enabled === 'true' || enabled === 1 || enabled === '1';
-});
-const gridAds = computed(() => props.adSettings?.videoGridAds || []);
-const adFrequency = computed(() => parseInt(props.adSettings?.videoGridFrequency) || 8);
-
-const shouldShowAd = (index, totalLength) => {
-    if (!adsEnabled.value || !gridAds.value.length) return false;
-    return (index + 1) % adFrequency.value === 0 && index < totalLength - 1;
-};
-
-const sponsoredFrequency = computed(() => props.sponsoredCards?.[0]?.frequency || 8);
-const sponsoredOffset = computed(() => Math.floor(adFrequency.value / 2));
-const getSponsoredCard = (index) => {
-    if (!props.sponsoredCards?.length) return null;
-    if ((index + 1 + sponsoredOffset.value) % sponsoredFrequency.value !== 0) return null;
-    const cardIndex = Math.floor((index + 1 + sponsoredOffset.value) / sponsoredFrequency.value) - 1;
-    return props.sponsoredCards[cardIndex % props.sponsoredCards.length] || null;
-};
+// Grid ad interleaving — shared with every other listing page.
+const { gridAds, shouldShowAd, getSponsoredCard, adCellClass } = useGridAds(props);
 </script>
 
 <template>
@@ -211,7 +193,7 @@ const getSponsoredCard = (index) => {
                     <div
                         v-if="shouldShowAd(index, videoList.length)"
                         class="rounded-xl p-2"
-                        :class="mobileGrid === 2 ? 'col-span-2 sm:col-span-1' : 'col-span-1'"
+                        :class="adCellClass"
                     >
                         <GridAdSlot :ads="gridAds" />
                     </div>
@@ -238,7 +220,7 @@ const getSponsoredCard = (index) => {
                     <div
                         v-if="shouldShowAd(index, videos.data.length)"
                         class="rounded-xl p-2"
-                        :class="mobileGrid === 2 ? 'col-span-2 sm:col-span-1' : 'col-span-1'"
+                        :class="adCellClass"
                     >
                         <GridAdSlot :ads="gridAds" />
                     </div>

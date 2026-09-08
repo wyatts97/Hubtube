@@ -39,6 +39,32 @@ const { t, localizedUrl } = useI18n();
 
 // Ad system refs
 const adPlayerRef = ref(null);
+
+// Embedded-video pre-roll gate. The iframe is only mounted once the gate is
+// open, so the ad is never competing with a third-party player for the frame.
+const embedAdPlayerRef = ref(null);
+const embedGateOpen = ref(false);
+
+const onEmbedAdFinished = () => {
+    embedGateOpen.value = true;
+};
+
+const startEmbeddedPlayback = async () => {
+    // No ad player mounted (ads disabled, or the viewer is ad-free) — go
+    // straight to the video rather than making them click twice.
+    if (!props.videoAdsEnabled || !embedAdPlayerRef.value) {
+        embedGateOpen.value = true;
+        return;
+    }
+
+    const played = await embedAdPlayerRef.value.triggerPreRoll();
+
+    // triggerPreRoll resolves false when there is no pre-roll to show; when it
+    // resolves true the ad is on screen and onEmbedAdFinished opens the gate.
+    if (!played) {
+        embedGateOpen.value = true;
+    }
+};
 const videoPlayerRef = ref(null);
 const preRollDone = ref(false);
 const postRollDone = ref(false);
@@ -450,14 +476,52 @@ const getRelatedTitle = (video) => {
                     :breakpoint="768"
                     wrapper-class="flex justify-center mb-2"
                     placement="banner_above_player"
+                    :lazy="false"
                 />
 
                 <!-- Video Player -->
+                <!--
+                    Embedded videos are third-party iframes: we cannot pause or
+                    resume them, so a pre-roll cannot be overlaid the way it is
+                    on our own player. Instead the embed is gated behind a
+                    click-to-play poster — the ad runs on that click, and the
+                    iframe is mounted with autoplay once the ad finishes. This
+                    is the only way embedded videos can carry a pre-roll at all;
+                    until now they were completely unmonetized.
+                -->
                 <div v-if="video.is_embedded" class="aspect-video bg-black rounded-xl overflow-hidden relative">
                     <EmbeddedVideoPlayer
+                        v-if="embedGateOpen"
                         :video="video"
-                        :autoplay="false"
+                        :autoplay="true"
                         :show-info="false"
+                    />
+                    <button
+                        v-else
+                        type="button"
+                        class="absolute inset-0 w-full h-full group"
+                        :aria-label="t('video.play')"
+                        @click="startEmbeddedPlayback"
+                    >
+                        <img
+                            v-if="video.thumbnail_url"
+                            :src="video.thumbnail_url"
+                            :alt="seo.thumbnailAlt || video.title"
+                            class="w-full h-full object-cover"
+                        />
+                        <span class="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors group-hover:bg-black/40">
+                            <span class="flex h-16 w-16 items-center justify-center rounded-full bg-black/60">
+                                <Play class="w-8 h-8 text-white" />
+                            </span>
+                        </span>
+                    </button>
+                    <VideoAdPlayer
+                        v-if="videoAdsEnabled"
+                        ref="embedAdPlayerRef"
+                        :category-id="video.category_id"
+                        :video-duration="video.duration || 0"
+                        @ad-ended="onEmbedAdFinished"
+                        @ad-skipped="onEmbedAdFinished"
                     />
                 </div>
                 <div v-else class="aspect-video bg-black rounded-xl overflow-hidden relative">
@@ -817,6 +881,7 @@ const getRelatedTitle = (video) => {
                     :config="sidebarAd"
                     wrapper-class="ad-container flex items-center justify-center mb-6"
                     placement="video_sidebar"
+                    format="rectangle"
                 />
 
                 <h3 class="font-medium mb-4 text-text-primary">{{ t('video.related') }}</h3>

@@ -280,9 +280,8 @@
         $interstitialMode = \App\Models\Setting::get('custom_interstitial_mode', 'manual') ?: 'manual';
         $interstitialCode = \App\Models\Setting::get('custom_interstitial_code', '') ?: '';
         $interstitialMobileCode = \App\Models\Setting::get('custom_interstitial_mobile_code', '') ?: '';
-        $stickyEnabled = filter_var(\App\Models\Setting::get('custom_sticky_banner_enabled', false), FILTER_VALIDATE_BOOLEAN);
-        $stickyCode = \App\Models\Setting::get('custom_sticky_banner_code', '') ?: '';
-        $stickyMobileCode = \App\Models\Setting::get('custom_sticky_banner_mobile_code', '') ?: '';
+        // The sticky banner is rendered by resources/js/Components/StickyBannerAd.vue
+        // so that it refreshes on SPA navigation; its config ships as an Inertia prop.
 
         // Zone popunder config (our click-triggered zone URL handler)
         $zonePopunderEnabled = filter_var(\App\Models\Setting::get('zone_popunder_enabled', false), FILTER_VALIDATE_BOOLEAN);
@@ -338,11 +337,6 @@
     @endif
     @if($interstitialEnabled && !$shouldSuppressAds && $interstitialMode === 'automatic' && ($interstitialCode || $interstitialMobileCode))
         {!! $isMobileUA ? ($interstitialMobileCode ?: $interstitialCode) : $interstitialCode !!}
-    @endif
-    @if($stickyEnabled && !$shouldSuppressAds && ($stickyCode || $stickyMobileCode))
-        <div class="ht-sticky-banner fixed bottom-0 left-0 right-0 z-50 flex justify-center w-full" style="max-height: 120px; overflow: hidden;">
-            {!! $isMobileUA ? ($stickyMobileCode ?: $stickyCode) : $stickyCode !!}
-        </div>
     @endif
 
     {{-- Custom Footer Scripts (from Admin > Site Settings > Analytics) --}}

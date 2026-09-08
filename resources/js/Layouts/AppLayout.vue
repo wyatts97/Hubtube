@@ -24,6 +24,7 @@ import ToastContainer from '@/Components/ToastContainer.vue';
 import ImpersonationBar from '@/Components/ImpersonationBar.vue';
 import AgeVerificationModal from '@/Components/AgeVerificationModal.vue';
 import AdInterstitial from '@/Components/AdInterstitial.vue';
+import StickyBannerAd from '@/Components/StickyBannerAd.vue';
 
 const page = usePage();
 const toast = useToast();
@@ -97,5 +98,6 @@ watch(() => page.url, () => headerRef.value?.clearSuggestions?.());
         <ToastContainer />
         <AgeVerificationModal />
         <AdInterstitial />
+        <StickyBannerAd :config="page.props.app?.sticky_banner" />
     </div>
 </template>

@@ -231,6 +231,19 @@ class HandleInertiaRequests extends Middleware
             // page and made the perk a client-side promise rather than a real
             // one.
             'suppress_ads' => $suppressAds,
+            // Sticky bottom banner. Moved out of the Blade shell so it re-injects
+            // on every Inertia navigation instead of once per full page load —
+            // as server-rendered markup it earned one impression per visit no
+            // matter how many pages the visitor viewed.
+            'sticky_banner' => $suppressAds ? [
+                'enabled' => false,
+                'code' => '',
+                'mobileCode' => '',
+            ] : [
+                'enabled'    => (bool) $this->s('custom_sticky_banner_enabled', false),
+                'code'       => (string) $this->s('custom_sticky_banner_code', ''),
+                'mobileCode' => (string) $this->s('custom_sticky_banner_mobile_code', ''),
+            ],
             'interstitial' => $suppressAds ? [
                 'enabled'    => false,
                 'mode'       => 'manual',

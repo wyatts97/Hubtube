@@ -11,9 +11,10 @@ import { useI18n } from '@/Composables/useI18n';
 import { useVideoGrid } from '@/Composables/useVideoGrid';
 import BannerAd from '@/Components/UI/BannerAd.vue';
 import Breadcrumbs from '@/Components/UI/Breadcrumbs.vue';
+import { useGridAds } from '@/Composables/useGridAds';
 
 const { t, localizedUrl } = useI18n();
-const { gridClass, mobileGrid } = useVideoGrid();
+const { gridClass } = useVideoGrid();
 
 const props = defineProps({
     category: Object,
@@ -26,26 +27,8 @@ const props = defineProps({
     sponsoredCards: { type: Array, default: () => [] },
 });
 
-const adsEnabled = computed(() => {
-    const enabled = props.adSettings?.videoGridEnabled;
-    return enabled === true || enabled === 'true' || enabled === 1 || enabled === '1';
-});
-const gridAds = computed(() => props.adSettings?.videoGridAds || []);
-const adFrequency = computed(() => parseInt(props.adSettings?.videoGridFrequency) || 8);
-
-const shouldShowAd = (index, totalLength) => {
-    if (!adsEnabled.value || !gridAds.value.length) return false;
-    return (index + 1) % adFrequency.value === 0 && index < totalLength - 1;
-};
-
-const sponsoredFrequency = computed(() => props.sponsoredCards?.[0]?.frequency || 8);
-const sponsoredOffset = computed(() => Math.floor(adFrequency.value / 2));
-const getSponsoredCard = (index) => {
-    if (!props.sponsoredCards?.length) return null;
-    if ((index + 1 + sponsoredOffset.value) % sponsoredFrequency.value !== 0) return null;
-    const cardIndex = Math.floor((index + 1 + sponsoredOffset.value) / sponsoredFrequency.value) - 1;
-    return props.sponsoredCards[cardIndex % props.sponsoredCards.length] || null;
-};
+// Grid ad interleaving — shared with every other listing page.
+const { gridAds, shouldShowAd, getSponsoredCard, adCellClass } = useGridAds(props);
 
 const displayName = props.translatedName || props.category.name;
 const breadcrumbs = computed(() => [
@@ -81,7 +64,7 @@ const goToPage = (pageNum) => {
                 <div
                     v-if="shouldShowAd(index, videos.data.length)"
                     class="rounded-xl p-2"
-                    :class="mobileGrid === 2 ? 'col-span-2 sm:col-span-1' : 'col-span-1'"
+                    :class="adCellClass"
                 >
                     <GridAdSlot :ads="gridAds" />
                 </div>

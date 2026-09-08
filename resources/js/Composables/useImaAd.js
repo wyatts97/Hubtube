@@ -20,13 +20,26 @@ export function useImaAd(containerRef, videoRef, callbacks = {}) {
         return loadImaScript();
     };
 
-    const destroy = () => {
+    /**
+     * Tear down the IMA objects.
+     *
+     * `clearGuard` exists because destroy() is called from two very different
+     * places. When the caller is finishing with an ad, the in-flight guard must
+     * be released so the next ad can start. When play() calls it to clear stale
+     * IMA state *before* building new objects, releasing the guard would undo
+     * the reentrancy protection play() had just taken out — a second concurrent
+     * play() would sail past the `if (loadPromise.value)` check and issue a
+     * duplicate VAST request against the same video element.
+     */
+    const destroy = ({ clearGuard = true } = {}) => {
         try { imaAdsManager?.destroy(); } catch (_) {}
         try { imaAdsLoader?.contentComplete(); } catch (_) {}
         imaAdsManager = null;
         imaAdsLoader = null;
         imaDisplayContainer = null;
-        loadPromise.value = null;
+        if (clearGuard) {
+            loadPromise.value = null;
+        }
     };
 
     const play = async (ad) => {
@@ -50,7 +63,8 @@ export function useImaAd(containerRef, videoRef, callbacks = {}) {
 
             try {
                 const ima = window.google.ima;
-                destroy();
+                // Keep the guard: we are still inside the play() that owns it.
+                destroy({ clearGuard: false });
 
                 ima.settings.setDisableCustomPlaybackForIOS10Plus(true);
 
@@ -120,5 +134,22 @@ export function useImaAd(containerRef, videoRef, callbacks = {}) {
         return loadPromise.value;
     };
 
-    return { play, destroy };
+    /**
+     * Fetch the IMA SDK ahead of time, without requesting any ad.
+     *
+     * The SDK script is a few hundred KB and its download previously sat in the
+     * critical path of the pre-roll: the viewer pressed play, and only then did
+     * the browser start fetching the library that has to run before the ad can
+     * resolve. Warming it while the video metadata loads moves that cost off
+     * the moment the viewer is actually waiting.
+     *
+     * Deliberately does not call requestAds — pre-resolving the VAST document
+     * would mean holding an AdsLoader open against a video element that may
+     * never play, and IMA is not forgiving about that lifecycle.
+     */
+    const preload = () => loadImaSdk().catch(() => {
+        // A failed warm-up is not an error: play() will retry and report.
+    });
+
+    return { play, destroy, preload };
 }

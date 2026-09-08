@@ -9,13 +9,20 @@ import { useFetch } from '@/Composables/useFetch';
 import { useI18n } from '@/Composables/useI18n';
 import { useToast } from '@/Composables/useToast';
 import SeoHead from '@/Components/SeoHead.vue';
+import GridAdSlot from '@/Components/GridAdSlot.vue';
+import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
+import { useGridAds } from '@/Composables/useGridAds';
 
 const { t } = useI18n();
 const toast = useToast();
 
-defineProps({
+const props = defineProps({
     videos: Object,
+    adSettings: { type: Object, default: () => ({}) },
+    sponsoredCards: { type: Array, default: () => [] },
 });
+
+const { gridAds, shouldShowAd, getSponsoredCard, adCellClass } = useGridAds(props);
 
 const isInitialLoad = ref(true);
 onMounted(() => { setTimeout(() => { isInitialLoad.value = false; }, 100); });
@@ -55,7 +62,13 @@ const clearHistory = async () => {
         </div>
 
         <div v-else-if="videos?.data?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <VideoCard v-for="video in videos.data" :key="video.id" :video="video" />
+            <template v-for="(video, index) in videos.data" :key="video.id">
+                <VideoCard :video="video" />
+                <div v-if="shouldShowAd(index, videos.data.length)" class="rounded-xl p-2" :class="adCellClass">
+                    <GridAdSlot :ads="gridAds" />
+                </div>
+                <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" />
+            </template>
         </div>
 
         <div v-else class="text-center py-12">
