@@ -63,7 +63,7 @@ const goToPage = (pageNum) => {
     <SeoHead :seo="seo" />
 
     <AppLayout>
-        <BannerAd :config="bannerAd" />
+        <BannerAd :config="bannerAd" placement="category_banner" />
         <Breadcrumbs :items="breadcrumbs" />
 
         <div class="mb-6">

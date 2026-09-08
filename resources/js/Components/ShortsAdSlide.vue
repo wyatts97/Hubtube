@@ -63,12 +63,12 @@ const impressionFired = ref(false);
 const fireImpression = () => {
     if (impressionFired.value || !ad.value?.id) return;
     impressionFired.value = true;
-    post('/api/ad-impression', { ad_id: ad.value.id }).catch(() => {});
+    post('/api/ad-impression', { ad_id: ad.value.id, placement: 'shorts' }).catch(() => {});
 };
 
 const fireClick = () => {
     if (!ad.value?.id) return;
-    post('/api/ad-click', { ad_id: ad.value.id }).catch(() => {});
+    post('/api/ad-click', { ad_id: ad.value.id, placement: 'shorts' }).catch(() => {});
 };
 
 const onAdClick = () => {

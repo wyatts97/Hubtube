@@ -45,6 +45,7 @@ const legalLinks = computed(() => [
                     mobileCode: themeSettings.footer_ad_mobile_code,
                 }"
                 wrapper-class="flex justify-center mb-6"
+                placement="footer"
             />
 
             <div class="flex justify-center mb-4">

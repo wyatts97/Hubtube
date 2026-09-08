@@ -449,6 +449,7 @@ const getRelatedTitle = (video) => {
                     :config="bannerAbovePlayer"
                     :breakpoint="768"
                     wrapper-class="flex justify-center mb-2"
+                    placement="banner_above_player"
                 />
 
                 <!-- Video Player -->
@@ -488,6 +489,7 @@ const getRelatedTitle = (video) => {
                     :config="bannerBelowPlayer"
                     :breakpoint="768"
                     wrapper-class="flex justify-center mt-2"
+                    placement="banner_below_player"
                 />
 
                 <div v-if="hasPlaylistContext" class="card p-3 sm:p-4 mt-4">
@@ -814,6 +816,7 @@ const getRelatedTitle = (video) => {
                 <BannerAd
                     :config="sidebarAd"
                     wrapper-class="ad-container flex items-center justify-center mb-6"
+                    placement="video_sidebar"
                 />
 
                 <h3 class="font-medium mb-4 text-text-primary">{{ t('video.related') }}</h3>

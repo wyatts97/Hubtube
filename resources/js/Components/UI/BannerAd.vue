@@ -30,6 +30,8 @@ const props = defineProps({
     mobileHeight: { type: Number, default: 100 },
     /** Wrapper classes, so callers keep their existing spacing. */
     wrapperClass: { type: String, default: 'mb-4 flex justify-center' },
+    /** Reporting label for this slot, forwarded to AdSlot. */
+    placement: { type: String, default: '' },
 });
 
 /**
@@ -88,6 +90,6 @@ const hasContent = computed(() => enabled.value && (desktopHtml.value || mobileH
     <div v-if="hasContent" :class="wrapperClass">
         <!-- Keyed so crossing the breakpoint remounts the slot and injects the
              other variant, instead of leaving the previous creative in place. -->
-        <AdSlot :key="isDesktop ? 'desktop' : 'mobile'" :html="activeHtml" />
+        <AdSlot :key="isDesktop ? 'desktop' : 'mobile'" :html="activeHtml" :placement="placement" />
     </div>
 </template>

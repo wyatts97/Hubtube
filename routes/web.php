@@ -391,6 +391,14 @@ Route::middleware('installed:require')->group(function () {
         ->middleware('throttle:60,1')
         ->name('sponsored.impression');
 
+    // Network ad slot impressions (the pasted ad codes: banners, grid, rails,
+    // footer). A page can legitimately render several of these, so the limit is
+    // higher than the per-creative endpoints above; per-slot de-duplication is
+    // handled in AdStatsRecorder rather than by the throttle.
+    Route::post('/api/ad-slot-impression', [VideoAdController::class, 'recordSlotImpression'])
+        ->middleware('throttle:240,1')
+        ->name('ad-slot.impression');
+
     Route::middleware('age.verified')->group(function () {
         Route::get('/', [HomeController::class, 'index'])->name('home');
         Route::get('/api/videos/load-more', [HomeController::class, 'loadMoreVideos'])->name('videos.loadMore');

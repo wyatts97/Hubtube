@@ -28,12 +28,12 @@ const impressionFired = ref(false);
 const fireImpression = () => {
     if (impressionFired.value || !props.ad?.id) return;
     impressionFired.value = true;
-    post('/api/ad-impression', { ad_id: props.ad.id }).catch(() => {});
+    post('/api/ad-impression', { ad_id: props.ad.id, placement: 'outstream' }).catch(() => {});
 };
 
 const fireClick = () => {
     if (!props.ad?.id) return;
-    post('/api/ad-click', { ad_id: props.ad.id }).catch(() => {});
+    post('/api/ad-click', { ad_id: props.ad.id, placement: 'outstream' }).catch(() => {});
 };
 
 const handleClick = () => {

@@ -178,12 +178,12 @@ const getSponsoredCard = (index) => {
             </div>
         </section>
 
-        <BannerAd :config="adSettings?.rail1" />
+        <BannerAd :config="adSettings?.rail1" placement="home_rail_1" />
 
         <!-- Shorts Preview Rail -->
         <ShortsRail v-if="shortsPreview?.length" :shorts="shortsPreview" />
 
-        <BannerAd :config="adSettings?.rail2" />
+        <BannerAd :config="adSettings?.rail2" placement="home_rail_2" />
 
         <!-- Latest Videos -->
         <section class="mb-8">
@@ -252,7 +252,7 @@ const getSponsoredCard = (index) => {
             </template>
         </section>
 
-        <BannerAd :config="adSettings?.rail3" />
+        <BannerAd :config="adSettings?.rail3" placement="home_rail_3" />
 
         <!-- Latest Playlists Rail -->
         <PlaylistsRail v-if="latestPlaylists?.length" :playlists="latestPlaylists" />
@@ -260,7 +260,7 @@ const getSponsoredCard = (index) => {
         <!-- Latest Images Rail -->
         <ImagesRail v-if="latestImages?.length" :images="latestImages" />
 
-        <BannerAd :config="adSettings?.rail4" />
+        <BannerAd :config="adSettings?.rail4" placement="home_rail_4" />
 
         <!-- Popular Videos -->
         <section v-if="popularVideos.length > 0" class="mb-8">

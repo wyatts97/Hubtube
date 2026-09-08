@@ -249,7 +249,7 @@ const stats = computed(() => props.channel.stats || {});
             </nav>
         </div>
 
-        <BannerAd :config="bannerAd" />
+        <BannerAd :config="bannerAd" placement="channel_banner" />
 
         <!-- Sidebar collapses above the content below lg -->
         <ChannelSidebar :channel="channel" variant="mobile" class="lg:hidden mt-4" />

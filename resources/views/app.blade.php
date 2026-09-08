@@ -289,9 +289,10 @@
         $zonePopunderUrl = \App\Models\Setting::get('zone_popunder_url', '') ?: '';
         $zonePopunderMobileUrl = \App\Models\Setting::get('zone_popunder_mobile_url', '') ?: '';
 
-        // Server-side mobile detection via User-Agent for ad variant selection
-        $ua = request()->header('User-Agent', '');
-        $isMobileUA = (bool) preg_match('/Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile|webOS/i', $ua);
+        // Server-side mobile detection for ad variant selection. The regex used
+        // to live here; it now sits in App\Support\DeviceType so ad statistics
+        // classify a visitor exactly the same way this does.
+        $isMobileUA = \App\Support\DeviceType::prefersMobileCreative(request()->header('User-Agent', ''));
 
         // Pro / ad-free users skip all Blade-injected ads. Shares App\Services\AdService
         // with the controllers and the Inertia middleware so one rule governs

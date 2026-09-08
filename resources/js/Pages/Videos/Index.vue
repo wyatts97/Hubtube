@@ -128,7 +128,7 @@ const getOutstreamAd = (index) => {
 
     <AppLayout>
         <!-- Top Ad Banner -->
-        <BannerAd :config="bannerAd" />
+        <BannerAd :config="bannerAd" placement="browse_banner" />
 
         <div class="mb-4">
             <div class="flex items-baseline justify-between gap-3 mb-3">

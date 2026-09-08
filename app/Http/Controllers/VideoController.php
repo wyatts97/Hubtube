@@ -170,7 +170,7 @@ class VideoController extends Controller
                 'outstreamFrequency' => (int) Setting::get('video_outstream_ad_frequency', 6),
             ],
             'outstreamAds' => $this->shouldSuppressAds() ? [] : ((bool) Setting::get('video_outstream_ad_enabled', false)
-                ? VideoAd::getAdsForPlacement('outstream', null, auth()->user()?->is_pro ? 'pro' : (auth()->check() ? 'default' : 'guest'), false)
+                ? VideoAd::getAdsForPlacement('outstream', null, $this->adTargetRole(), false)
                 : []),
             'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage(
                 'browse',

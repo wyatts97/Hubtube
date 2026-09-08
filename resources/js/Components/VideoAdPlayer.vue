@@ -114,14 +114,17 @@ const playVastAd = async (ad, placement) => {
 };
 
 // ── Impression / click pixel helpers ──
+// adType holds the break currently on screen ('pre_roll' | 'mid_roll' |
+// 'post_roll'), which is what makes per-break reporting possible — without it
+// every roll ad collapses into one undifferentiated bucket.
 const fireImpression = (ad) => {
     if (!ad?.id) return;
-    post('/api/ad-impression', { ad_id: ad.id }).catch(() => {});
+    post('/api/ad-impression', { ad_id: ad.id, placement: adType.value || 'video_ad' }).catch(() => {});
 };
 
 const fireClick = (ad) => {
     if (!ad?.id) return;
-    post('/api/ad-click', { ad_id: ad.id }).catch(() => {});
+    post('/api/ad-click', { ad_id: ad.id, placement: adType.value || 'video_ad' }).catch(() => {});
 };
 
 // ── Local ad video source (HLS-preferred, MP4 fallback) ──

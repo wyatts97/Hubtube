@@ -2,10 +2,15 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Widgets\Analytics\AdCountryChartWidget;
+use App\Filament\Widgets\Analytics\AdDeliveryChartWidget;
+use App\Filament\Widgets\Analytics\AdDeviceChartWidget;
+use App\Filament\Widgets\Analytics\AdPlacementChartWidget;
 use App\Filament\Widgets\Analytics\CategoryViewsChartWidget;
 use App\Filament\Widgets\Analytics\RevenueChartWidget;
 use App\Filament\Widgets\Analytics\SignupsChartWidget;
 use App\Filament\Widgets\Analytics\UploadsChartWidget;
+use App\Models\SponsoredCard;
 use App\Models\User;
 use App\Models\Video;
 use App\Models\VideoAd;
@@ -44,6 +49,14 @@ class Analytics extends Page
             $widgets[] = RevenueChartWidget::class;
         }
 
+        // Ad delivery. Each widget gates itself on the ad_stats_daily table
+        // existing, so an install that has not migrated yet shows fewer cards
+        // rather than erroring.
+        $widgets[] = AdDeliveryChartWidget::class;
+        $widgets[] = AdPlacementChartWidget::class;
+        $widgets[] = AdDeviceChartWidget::class;
+        $widgets[] = AdCountryChartWidget::class;
+
         return $widgets;
     }
 
@@ -55,8 +68,11 @@ class Analytics extends Page
             'total_views'       => Video::sum('views_count'),
             'videos_this_week'  => Video::where('created_at', '>=', now()->subWeek())->count(),
             'users_this_week'   => User::where('created_at', '>=', now()->subWeek())->count(),
-            'total_impressions' => VideoAd::sum('impressions_count'),
-            'total_clicks'      => VideoAd::sum('clicks_count'),
+            // Sponsored cards were previously excluded, so the headline
+            // impression and click figures under-reported every install that
+            // runs them — they are ad inventory just as much as video ads.
+            'total_impressions' => VideoAd::sum('impressions_count') + SponsoredCard::sum('impressions_count'),
+            'total_clicks'      => VideoAd::sum('clicks_count') + SponsoredCard::sum('clicks_count'),
         ];
     }
 

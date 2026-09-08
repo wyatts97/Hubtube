@@ -138,7 +138,7 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
 
     <AppLayout>
         <!-- Top Ad Banner -->
-        <BannerAd :config="bannerAd" />
+        <BannerAd :config="bannerAd" placement="search_banner" />
 
         <div class="mb-4 sm:mb-6">
             <h1 class="page-title">{{ t('search.title') }}</h1>

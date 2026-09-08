@@ -16,10 +16,21 @@
  * then run inline scripts in order after all external scripts are done.
  */
 import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { useFetch } from '@/Composables/useFetch';
 
 const props = defineProps({
     html: { type: String, default: '' },
+    /**
+     * Where this slot sits, e.g. 'footer', 'grid', 'banner_above_player'.
+     *
+     * Network ad codes have no creative row, so this label is the only thing
+     * identifying them in reporting. Empty means "do not report" — used by
+     * slots that already have their own tracking, such as the interstitial.
+     */
+    placement: { type: String, default: '' },
 });
+
+const { post } = useFetch();
 
 const container = ref(null);
 
@@ -136,6 +147,17 @@ function awaitConsent() {
     return consentGate;
 }
 
+/**
+ * Report that a network slot rendered.
+ *
+ * Fire-and-forget: a failed beacon must never affect the page, and the server
+ * de-duplicates repeats within the minute, so a re-render costs nothing.
+ */
+function reportSlotImpression(placement) {
+    if (!placement) return;
+    post('/api/ad-slot-impression', { placement }).catch(() => {});
+}
+
 // Incremented on every injection so a superseded script chain can bail out.
 let injectGeneration = 0;
 
@@ -216,6 +238,9 @@ const injectWhenAllowed = async (html) => {
     await awaitConsent();
     await nextTick();
     injectHtml(html);
+    if (html && html.trim()) {
+        reportSlotImpression(props.placement);
+    }
 };
 
 onMounted(() => {

@@ -82,14 +82,14 @@ onUnmounted(() => {
 
 const handleClick = (e) => {
     if (props.card?.id) {
-        post(`/api/sponsored/${props.card.id}/click`, {}).catch(() => {});
+        post(`/api/sponsored/${props.card.id}/click`, { placement: 'sponsored_card' }).catch(() => {});
     }
 };
 
 const fireImpression = () => {
     if (impressionFired || !props.card?.id) return;
     impressionFired = true;
-    post(`/api/sponsored/${props.card.id}/impression`, {}).catch(() => {});
+    post(`/api/sponsored/${props.card.id}/impression`, { placement: 'sponsored_card' }).catch(() => {});
 };
 
 const { stop: stopImpressionObserver } = useIntersectionObserver(
