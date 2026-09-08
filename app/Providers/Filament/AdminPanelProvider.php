@@ -252,17 +252,11 @@ class AdminPanelProvider extends PanelProvider
             // Database may not be available during boot
         }
 
-        // Resolve favicon for admin panel
+        // Resolve favicon for admin panel. Shares App\Support\SiteIcons with the
+        // front-end layout and the manifest so all three cannot drift apart.
         $faviconUrl = null;
         try {
-            $siteFavicon = Setting::get('site_favicon', '');
-            if ($siteFavicon) {
-                if (str_starts_with($siteFavicon, 'http://') || str_starts_with($siteFavicon, 'https://') || str_starts_with($siteFavicon, '/')) {
-                    $faviconUrl = $siteFavicon;
-                } else {
-                    $faviconUrl = '/storage/'.$siteFavicon;
-                }
-            }
+            $faviconUrl = \App\Support\SiteIcons::faviconUrl();
         } catch (Throwable $e) {
             // Database may not be available during boot
         }

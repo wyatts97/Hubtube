@@ -136,9 +136,12 @@
          An admin-uploaded icon wins. Otherwise fall back to the shipped PWA icons
          rather than emitting nothing: with no <link rel="icon"> the browser
          requests /favicon.ico implicitly, which used to 404 on every page view. --}}
-    @php $siteFavicon = \App\Models\Setting::get('site_favicon', ''); @endphp
+    @php
+        $siteFavicon = \App\Support\SiteIcons::faviconUrl();
+        $siteFaviconType = \App\Support\SiteIcons::faviconMimeType();
+    @endphp
     @if($siteFavicon)
-    <link rel="icon" href="{{ str_starts_with($siteFavicon, 'http') || str_starts_with($siteFavicon, '/') ? $siteFavicon : '/storage/' . $siteFavicon }}">
+    <link rel="icon" href="{{ $siteFavicon }}"@if($siteFaviconType) type="{{ $siteFaviconType }}"@endif>
     @else
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" sizes="96x96" href="/icons/icon-96x96.png">
@@ -155,7 +158,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="HubTube">
-    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    {{-- iOS ignores rel="icon" entirely, so the admin icon has to be repeated
+         here or a home-screen bookmark keeps the shipped default. --}}
+    <link rel="apple-touch-icon" href="{{ $siteFavicon ?: '/icons/icon-192x192.png' }}">
 
     <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
     {{-- Fonts are resolved by App\Support\Typography from the admin's choices —

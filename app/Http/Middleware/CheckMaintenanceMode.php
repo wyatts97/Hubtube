@@ -30,6 +30,7 @@ class CheckMaintenanceMode
                 'css',          // Stylesheets
                 'js',           // Scripts
                 'favicon',      // Favicon
+                'manifest.json', // PWA manifest (a Laravel route, not a static file)
             ];
 
             foreach ($allowedPrefixes as $prefix) {

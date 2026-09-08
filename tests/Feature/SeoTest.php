@@ -2,6 +2,7 @@
 
 use App\Models\Category;
 use App\Models\Setting;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Translation;
 use App\Models\User;
 use App\Models\Video;
@@ -353,12 +354,52 @@ test('a favicon is always advertised even with no admin-uploaded icon', function
 });
 
 test('an admin-uploaded favicon takes precedence', function () {
+    Storage::fake('public');
+    Storage::disk('public')->put('branding/custom.png', 'png');
     Setting::set('site_favicon', 'branding/custom.png', 'general', 'string');
 
     $html = $this->get('/')->assertStatus(200)->getContent();
 
-    expect($html)->toContain('/storage/branding/custom.png');
+    expect($html)->toContain('/storage/branding/custom.png?v=');
+    expect($html)->toContain('type="image/png"');
     expect($html)->not->toContain('href="/favicon.ico"');
+    // iOS only honours apple-touch-icon, so the upload has to reach it too.
+    expect($html)->toContain('rel="apple-touch-icon" href="/storage/branding/custom.png');
+});
+
+test('a favicon setting pointing at a missing file falls back to the shipped icons', function () {
+    Storage::fake('public');
+    Setting::set('site_favicon', 'branding/deleted.png', 'general', 'string');
+
+    $html = $this->get('/')->assertStatus(200)->getContent();
+
+    // Emitting a 404ing icon link is worse than falling back: the browser then
+    // silently uses /favicon.ico and the admin sees the default with no clue why.
+    expect($html)->not->toContain('branding/deleted.png');
+    expect($html)->toContain('href="/favicon.ico"');
+});
+
+test('the manifest advertises the admin-uploaded icon ahead of the shipped set', function () {
+    Storage::fake('public');
+    Storage::disk('public')->put('branding/custom.png', 'png');
+    Setting::set('site_favicon', 'branding/custom.png', 'general', 'string');
+    Setting::set('site_name', 'Example Tube', 'general', 'string');
+
+    $manifest = $this->get('/manifest.json')->assertStatus(200)->json();
+
+    expect($manifest['name'])->toBe('Example Tube');
+    expect($manifest['icons'][0]['src'])->toStartWith('/storage/branding/custom.png');
+    // The shipped 192/512 entries must survive or Chrome stops offering install.
+    $sizes = array_column($manifest['icons'], 'sizes');
+    expect($sizes)->toContain('192x192')->toContain('512x512');
+});
+
+test('the manifest falls back to the shipped icons with no upload', function () {
+    Setting::set('site_favicon', '', 'general', 'string');
+
+    $manifest = $this->get('/manifest.json')->assertStatus(200)->json();
+
+    expect($manifest['icons'][0]['src'])->toBe('/icons/icon-72x72.png');
 });
 
 test('the shipped favicon.ico is a valid multi-size icon', function () {

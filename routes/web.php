@@ -235,6 +235,30 @@ Route::middleware('installed:require')->group(function () {
         return response($configured, 200, ['Content-Type' => 'text/plain']);
     })->where('indexnow_key', '[A-Za-z0-9\-]{8,128}')->name('indexnow.key');
 
+    // Web app manifest. Served by Laravel rather than as a static file so the
+    // installed-PWA name, colours and icons follow the admin's theme settings —
+    // a static manifest.json always advertised the shipped default icon, which
+    // overrode the uploaded favicon on Android home screens and PWA installs.
+    Route::get('/manifest.json', function () {
+        $name = (string) Setting::get('site_name', config('app.name', 'HubTube'));
+        $palette = \App\Support\ThemeTokens::palette(\App\Support\ThemeTokens::defaultMode());
+
+        return response()->json([
+            'name'             => $name,
+            'short_name'       => (string) Setting::get('site_title', $name),
+            'description'      => (string) Setting::get('site_description', 'Video sharing platform'),
+            'start_url'        => '/',
+            'display'          => 'standalone',
+            'background_color' => $palette['bgPrimary'],
+            'theme_color'      => $palette['bgPrimary'],
+            'orientation'      => 'any',
+            'icons'            => \App\Support\SiteIcons::manifestIcons(),
+        ], 200, [
+            'Content-Type'  => 'application/manifest+json',
+            'Cache-Control' => 'public, max-age=3600',
+        ], JSON_UNESCAPED_SLASHES);
+    })->name('manifest');
+
     // Offline page for PWA
     Route::get('/offline', fn () => view('offline'))->name('offline');
 
