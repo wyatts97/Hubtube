@@ -167,6 +167,10 @@ class AdSettings extends Page implements HasForms
             'home_rail_4_enabled' => Setting::get('home_rail_4_enabled', false),
             'home_rail_4_code' => Setting::get('home_rail_4_code', ''),
             'home_rail_4_mobile_code' => Setting::get('home_rail_4_mobile_code', ''),
+            'cmp_enabled' => Setting::get('cmp_enabled', false),
+            'cmp_script' => Setting::get('cmp_script', ''),
+            'cmp_wait_for_consent' => Setting::get('cmp_wait_for_consent', true),
+            'cmp_timeout_ms' => Setting::get('cmp_timeout_ms', 3000),
         ]);
     }
 
@@ -582,6 +586,35 @@ class AdSettings extends Page implements HasForms
                                             ->visible(fn ($get) => $get('custom_sticky_banner_enabled')),
                                     ]),
                             ]),
+                        ]),
+
+                    Tab::make('Consent (CMP)')
+                        ->icon('phosphor-shield-check')
+                        ->schema([
+                            Section::make('Consent Management Platform')
+                                ->description('Required for EU/UK traffic. Without a TCF consent string most demand partners bid lower, and some will not bid at all.')
+                                ->schema([
+                                    Toggle::make('cmp_enabled')
+                                        ->label('Enable CMP')
+                                        ->helperText('Loads your CMP before any ad code runs.')
+                                        ->live(),
+                                    Textarea::make('cmp_script')
+                                        ->label('CMP Loader Script')
+                                        ->rows(6)->columnSpanFull()
+                                        ->placeholder('<script src="https://cmp.example.com/loader.js"></script>')
+                                        ->helperText('Paste the loader snippet from your CMP vendor (Quantcast Choice, CookieYes, Sourcepoint, ...). Injected verbatim into <body>, before every ad tag.')
+                                        ->visible(fn ($get) => $get('cmp_enabled')),
+                                    Toggle::make('cmp_wait_for_consent')
+                                        ->label('Hold ads until consent resolves')
+                                        ->default(true)
+                                        ->helperText('Ad slots wait for the CMP to report a TCF state before injecting. Turn this off only if your CMP handles gating itself.')
+                                        ->visible(fn ($get) => $get('cmp_enabled')),
+                                    TextInput::make('cmp_timeout_ms')
+                                        ->label('Consent Timeout (ms)')
+                                        ->numeric()->default(3000)->minValue(500)->maxValue(15000)
+                                        ->helperText('If the CMP never answers, ads load anyway after this long so a broken CMP cannot blank every slot on the site.')
+                                        ->visible(fn ($get) => $get('cmp_enabled') && $get('cmp_wait_for_consent')),
+                                ]),
                         ]),
 
                 ])->columnSpanFull(),

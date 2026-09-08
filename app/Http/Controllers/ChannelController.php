@@ -67,16 +67,6 @@ class ChannelController extends Controller
     }
 
     /**
-     * Pro users with the ad-free perk see no channel banner ad.
-     */
-    protected function shouldSuppressAds(): bool
-    {
-        $user = auth()->user();
-
-        return $user && $user->is_pro && (bool) Setting::get('pro_ad_free', true);
-    }
-
-    /**
      * The channel banner ad slot. This used to be inlined in show() only, so
      * the other five tabs rendered no ad at all; it now applies to every tab.
      */

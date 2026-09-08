@@ -19,12 +19,6 @@ class SearchController extends Controller
         protected SeoService $seoService,
     ) {}
 
-    protected function shouldSuppressAds(): bool
-    {
-        $user = auth()->user();
-        return $user && $user->is_pro && (bool) Setting::get('pro_ad_free', true);
-    }
-
     public function index(Request $request): Response
     {
         $query = $request->get('q', '');
@@ -54,7 +48,7 @@ class SearchController extends Controller
                 'mobileImage' => (string) Setting::get('search_banner_ad_mobile_image', ''),
                 'mobileLink' => (string) Setting::get('search_banner_ad_mobile_link', ''),
             ],
-            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('search', auth()->user()?->role ?? 'guest'),
+            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('search', $this->adTargetRole()),
         ]);
     }
 

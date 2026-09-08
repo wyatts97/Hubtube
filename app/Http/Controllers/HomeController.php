@@ -23,12 +23,6 @@ class HomeController extends Controller
         protected SeoService $seoService,
     ) {}
 
-    protected function shouldSuppressAds(): bool
-    {
-        $user = auth()->user();
-        return $user && $user->is_pro && (bool) Setting::get('pro_ad_free', true);
-    }
-
     protected function buildGridAdVariants(?int $categoryId = null): array
     {
         $all = Setting::getAll();
@@ -174,7 +168,7 @@ class HomeController extends Controller
             'latestPlaylists' => $latestPlaylists,
             'adSettings' => $adSettings,
             'seo' => $this->seoService->forHome(),
-            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('home', auth()->user()?->role ?? 'guest'),
+            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('home', $this->adTargetRole()),
         ]);
     }
 
@@ -246,7 +240,7 @@ class HomeController extends Controller
                 'videoGridAds'        => $this->buildGridAdVariants(),
                 'videoGridFrequency'  => (int) Setting::get('video_grid_ad_frequency', 8),
             ],
-            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('trending', auth()->user()?->role ?? 'guest'),
+            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('trending', $this->adTargetRole()),
         ]);
     }
 
@@ -339,7 +333,7 @@ class HomeController extends Controller
             ],
             'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage(
                 'category',
-                auth()->user()?->role ?? 'guest',
+                $this->adTargetRole(),
                 $category->id,
             ),
         ]);

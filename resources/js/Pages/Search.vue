@@ -12,7 +12,7 @@ import Pagination from '@/Components/Pagination.vue';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 import { useI18n } from '@/Composables/useI18n';
 import { useVirtualGrid } from '@/Composables/useVirtualGrid';
-import AdSlot from '@/Components/AdSlot.vue';
+import BannerAd from '@/Components/UI/BannerAd.vue';
 
 const { t } = useI18n();
 
@@ -36,22 +36,6 @@ const getSponsoredCard = (index) => {
     const cardIndex = Math.floor((index + 1) / sponsoredFrequency.value) - 1;
     return props.sponsoredCards[cardIndex % props.sponsoredCards.length] || null;
 };
-
-const bannerEnabled = computed(() => !!props.bannerAd?.enabled);
-const desktopBannerHtml = computed(() => {
-    if (props.bannerAd?.image && !props.bannerAd?.code) {
-        const img = `<img src="${props.bannerAd.image}" alt="Ad" style="max-width:728px;height:auto;">`;
-        return props.bannerAd.link ? `<a href="${props.bannerAd.link}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
-    }
-    return props.bannerAd?.code || '';
-});
-const mobileBannerHtml = computed(() => {
-    if (props.bannerAd?.mobileImage && !props.bannerAd?.mobileCode) {
-        const img = `<img src="${props.bannerAd.mobileImage}" alt="Ad" style="max-width:300px;height:auto;">`;
-        return props.bannerAd.mobileLink ? `<a href="${props.bannerAd.mobileLink}" target="_blank" rel="sponsored noopener">${img}</a>` : img;
-    }
-    return props.bannerAd?.mobileCode || props.bannerAd?.code || '';
-});
 
 const isInitialLoad = ref(true);
 onMounted(() => { setTimeout(() => { isInitialLoad.value = false; }, 100); });
@@ -154,10 +138,7 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
 
     <AppLayout>
         <!-- Top Ad Banner -->
-        <div v-if="bannerEnabled && (desktopBannerHtml || mobileBannerHtml)" class="mb-4 flex justify-center">
-            <AdSlot :html="desktopBannerHtml" class="hidden sm:block" />
-            <AdSlot :html="mobileBannerHtml" class="sm:hidden" />
-        </div>
+        <BannerAd :config="bannerAd" />
 
         <div class="mb-4 sm:mb-6">
             <h1 class="page-title">{{ t('search.title') }}</h1>

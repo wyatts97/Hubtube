@@ -198,6 +198,19 @@ const playLocalAd = (ad, placement) => {
     }
 };
 
+// Resolves when the ad that is currently playing finishes — ended, skipped,
+// errored or timed out. `playAd` only reports that an ad *started*, which is
+// the wrong signal for a post-roll: the caller has to know when the ad is over
+// before it can advance a playlist.
+let adEndResolve = null;
+const settleAdEnd = () => {
+    if (!adEndResolve) return;
+    const resolve = adEndResolve;
+    adEndResolve = null;
+    resolve();
+};
+const whenAdEnds = () => new Promise((resolve) => { adEndResolve = resolve; });
+
 // ── Main play dispatcher ──
 const playAd = (placement) => {
     const ad = pickAd(placement);
@@ -235,7 +248,10 @@ const endAd = () => {
     autoplayBlocked.value = false;
     if (adHtmlRef.value) adHtmlRef.value.innerHTML = '';
     emit('ad-ended', placement);
-    emit('request-play');
+    // A post-roll runs *after* the video has finished, so asking the player to
+    // resume replays the video the viewer just watched to the end.
+    if (placement !== 'post_roll') emit('request-play');
+    settleAdEnd();
 };
 
 // ── Local video helpers ──
@@ -321,9 +337,21 @@ const triggerPreRoll = async () => {
     await waitForAds();
     return hasAds('pre_roll') ? playAd('pre_roll') : false;
 };
+// Resolves once the post-roll has finished playing (or immediately, false, if
+// there is none). Callers use it to sequence whatever comes after the video —
+// playlist auto-advance in particular, which used to be skipped permanently
+// because this returned true the instant the ad started.
 const triggerPostRoll = async () => {
     await waitForAds();
-    return hasAds('post_roll') ? playAd('post_roll') : false;
+    if (!hasAds('post_roll')) return false;
+
+    const finished = whenAdEnds();
+    if (!playAd('post_roll')) {
+        settleAdEnd();
+        return false;
+    }
+    await finished;
+    return true;
 };
 
 const checkMidRoll = (currentTime) => {
@@ -342,7 +370,7 @@ const checkMidRoll = (currentTime) => {
 defineExpose({ loadAds, triggerPreRoll, triggerPostRoll, checkMidRoll, isPlaying, hasAds: (p) => hasAds(p) });
 
 onMounted(() => loadAds());
-onUnmounted(() => { clearTimers(); destroyIma(); destroyAdHls(); });
+onUnmounted(() => { clearTimers(); destroyIma(); destroyAdHls(); settleAdEnd(); });
 </script>
 
 <template>

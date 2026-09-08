@@ -293,11 +293,32 @@
         $ua = request()->header('User-Agent', '');
         $isMobileUA = (bool) preg_match('/Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile|webOS/i', $ua);
 
-        // Pro / ad-free users skip all Blade-injected ads
-        $proAdFree = (bool) \App\Models\Setting::get('pro_ad_free', true);
-        $currentUser = auth()->user();
-        $shouldSuppressAds = $currentUser && $currentUser->is_pro && $proAdFree;
+        // Pro / ad-free users skip all Blade-injected ads. Shares App\Services\AdService
+        // with the controllers and the Inertia middleware so one rule governs
+        // every ad surface.
+        $shouldSuppressAds = app(\App\Services\AdService::class)->shouldSuppress(auth()->user());
     @endphp
+    {{-- Consent (CMP). Emitted before every ad tag below and before the Vue
+         bundle's ad slots, because a TCF string that arrives after the ad code
+         has already called home is worth nothing. --}}
+    @php
+        $cmpEnabled = filter_var(\App\Models\Setting::get('cmp_enabled', false), FILTER_VALIDATE_BOOLEAN);
+        $cmpScript = \App\Models\Setting::get('cmp_script', '') ?: '';
+        $cmpWait = filter_var(\App\Models\Setting::get('cmp_wait_for_consent', true), FILTER_VALIDATE_BOOLEAN);
+        $cmpTimeout = (int) \App\Models\Setting::get('cmp_timeout_ms', 3000);
+    @endphp
+    <script>
+        // Read by AdSlot.vue before it injects any creative. Always defined so
+        // the client never has to feature-detect the setting.
+        window.__adConsent = {
+            enabled: @json($cmpEnabled && !$shouldSuppressAds),
+            wait: @json($cmpEnabled && $cmpWait && !$shouldSuppressAds),
+            timeoutMs: @json($cmpTimeout),
+        };
+    </script>
+    @if($cmpEnabled && !$shouldSuppressAds && $cmpScript)
+        {!! $cmpScript !!}
+    @endif
     @if($popunderEnabled && !$shouldSuppressAds && ($popunderCode || $popunderMobileCode))
         {!! $isMobileUA ? ($popunderMobileCode ?: $popunderCode) : $popunderCode !!}
     @endif

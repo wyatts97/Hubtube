@@ -23,49 +23,130 @@ const props = defineProps({
 
 const container = ref(null);
 
-function isScriptAlreadyLoaded(src) {
-    return !!document.querySelector(`script[src="${src}"]`);
+/**
+ * External scripts already requested by *any* slot on this page, keyed by URL.
+ *
+ * Module scope on purpose. The whole point of sequencing is that an inline
+ * `AdProvider.push(...)` must not run before the provider script it depends on
+ * has finished loading — and with a network like ExoClick the provider script
+ * is shared by every slot on the page (footer, sidebar, grid). The previous
+ * check asked "is there a tag with this src in the DOM", which is true the
+ * moment the *first* slot appends it, so every later slot skipped straight to
+ * its inline script and hit exactly the race this file exists to prevent.
+ * Tracking the load promise instead means later slots await the same load.
+ */
+const externalScriptLoads = new Map();
+
+function loadExternalScript(scriptDef, target) {
+    const existing = externalScriptLoads.get(scriptDef.src);
+    if (existing) return existing;
+
+    const promise = new Promise((resolve) => {
+        const el = document.createElement('script');
+        // Copy attributes except async/defer — we sequence manually
+        for (const [name, value] of Object.entries(scriptDef.attrs)) {
+            if (name === 'async' || name === 'defer') continue;
+            // Normalize type to text/javascript so browser always executes it
+            if (name === 'type') {
+                el.setAttribute('type', 'text/javascript');
+                continue;
+            }
+            el.setAttribute(name, value);
+        }
+        // Resolve on error too: one dead creative must not stall the chain.
+        el.onload = () => resolve();
+        el.onerror = () => resolve();
+        target.appendChild(el);
+    });
+
+    externalScriptLoads.set(scriptDef.src, promise);
+    return promise;
 }
 
-function loadScriptSequentially(scripts, index) {
-    if (!container.value || index >= scripts.length) return;
+/**
+ * Run a script list in order, aborting if this slot has moved on.
+ *
+ * `isCurrent` is the generation guard. Without it a chain started for the
+ * previous `html` value kept appending its remaining scripts after a newer
+ * injectHtml() had already wiped the container, interleaving two ad codes in
+ * one slot.
+ */
+async function runScripts(scripts, isCurrent) {
+    for (const scriptDef of scripts) {
+        if (!isCurrent() || !container.value) return;
 
-    const scriptDef = scripts[index];
-    const next = () => loadScriptSequentially(scripts, index + 1);
-
-    if (scriptDef.src) {
-        if (isScriptAlreadyLoaded(scriptDef.src)) {
-            // Script already in DOM/loaded — run next immediately
-            next();
+        if (scriptDef.src) {
+            await loadExternalScript(scriptDef, container.value);
         } else {
+            // Inline script — execute then continue
             const el = document.createElement('script');
-            // Copy attributes except async/defer — we sequence manually
-            for (const [name, value] of Object.entries(scriptDef.attrs)) {
-                if (name === 'async' || name === 'defer') continue;
-                // Normalize type to text/javascript so browser always executes it
-                if (name === 'type') {
-                    el.setAttribute('type', 'text/javascript');
-                    continue;
-                }
-                el.setAttribute(name, value);
+            if (scriptDef.content) {
+                el.textContent = scriptDef.content;
             }
-            el.onload = next;
-            el.onerror = next;
             container.value.appendChild(el);
         }
-    } else {
-        // Inline script — execute then continue
-        const el = document.createElement('script');
-        if (scriptDef.content) {
-            el.textContent = scriptDef.content;
-        }
-        container.value.appendChild(el);
-        next();
     }
 }
 
+/**
+ * Resolves once the CMP has reported a TCF state, or immediately when consent
+ * gating is off.
+ *
+ * Shared across every slot (module scope) so one page with six ad slots waits
+ * on one __tcfapi listener rather than six. Deliberately resolves rather than
+ * rejects on timeout: a CMP that never answers must not blank every ad slot on
+ * the site, so ads proceed and the vendor's own gating remains the backstop.
+ */
+let consentGate = null;
+function awaitConsent() {
+    if (consentGate) return consentGate;
+
+    const cfg = (typeof window !== 'undefined' && window.__adConsent) || {};
+    if (!cfg.wait) {
+        consentGate = Promise.resolve();
+        return consentGate;
+    }
+
+    consentGate = new Promise((resolve) => {
+        let settled = false;
+        const done = () => { if (!settled) { settled = true; resolve(); } };
+
+        const timer = setTimeout(done, cfg.timeoutMs || 3000);
+        const finish = () => { clearTimeout(timer); done(); };
+
+        if (typeof window.__tcfapi !== 'function') {
+            // No CMP present despite the setting — don't strand the slots.
+            finish();
+            return;
+        }
+
+        try {
+            window.__tcfapi('addEventListener', 2, (tcData, success) => {
+                if (!success) { finish(); return; }
+                // Both mean the user is no longer being asked.
+                if (tcData.eventStatus === 'tcloaded' || tcData.eventStatus === 'useractioncomplete') {
+                    finish();
+                }
+            });
+        } catch {
+            finish();
+        }
+    });
+
+    return consentGate;
+}
+
+// Incremented on every injection so a superseded script chain can bail out.
+let injectGeneration = 0;
+
 function injectHtml(html) {
     if (!container.value) return;
+
+    // Bump first: any chain still running for a previous html value sees a
+    // stale generation on its next step and stops instead of appending into
+    // the content we are about to replace.
+    const generation = ++injectGeneration;
+    const isCurrent = () => generation === injectGeneration;
 
     container.value.innerHTML = '';
 
@@ -94,7 +175,7 @@ function injectHtml(html) {
 
     // Load scripts sequentially so external scripts finish before inline ones run
     if (scripts.length > 0) {
-        loadScriptSequentially(scripts, 0);
+        runScripts(scripts, isCurrent);
     }
 
     // Accessibility: ensure all injected iframes have a title attribute (PageSpeed audit)
@@ -128,15 +209,24 @@ function startIframeObserver() {
     iframeObserver.observe(container.value, { childList: true, subtree: true });
 }
 
+// Injection always goes through the consent gate. injectHtml bumps its own
+// generation on entry, so a stale queued injection is discarded by the same
+// guard that protects an interrupted script chain.
+const injectWhenAllowed = async (html) => {
+    await awaitConsent();
+    await nextTick();
+    injectHtml(html);
+};
+
 onMounted(() => {
     if (props.html) {
-        nextTick(() => injectHtml(props.html));
+        injectWhenAllowed(props.html);
     }
     startIframeObserver();
 });
 
 watch(() => props.html, (newHtml) => {
-    nextTick(() => injectHtml(newHtml));
+    injectWhenAllowed(newHtml);
 });
 
 onBeforeUnmount(() => {

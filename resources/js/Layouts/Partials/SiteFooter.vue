@@ -10,7 +10,7 @@ import { computed, ref } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import { useI18n } from '@/Composables/useI18n';
 import { useSiteLogo } from '@/Composables/useSiteLogo';
-import AdSlot from '@/Components/AdSlot.vue';
+import BannerAd from '@/Components/UI/BannerAd.vue';
 
 const page = usePage();
 const { t } = useI18n();
@@ -38,13 +38,14 @@ const legalLinks = computed(() => [
 <template>
     <footer ref="root" class="mt-10 py-7 px-4 border-t border-border">
         <div class="max-w-5xl mx-auto">
-            <div
-                v-if="themeSettings.footer_ad_enabled && (themeSettings.footer_ad_code || themeSettings.footer_ad_mobile_code)"
-                class="flex justify-center mb-6"
-            >
-                <AdSlot :html="themeSettings.footer_ad_code" class="hidden sm:block" />
-                <AdSlot :html="themeSettings.footer_ad_mobile_code || themeSettings.footer_ad_code" class="sm:hidden" />
-            </div>
+            <BannerAd
+                :config="{
+                    enabled: themeSettings.footer_ad_enabled,
+                    code: themeSettings.footer_ad_code,
+                    mobileCode: themeSettings.footer_ad_mobile_code,
+                }"
+                wrapper-class="flex justify-center mb-6"
+            />
 
             <div class="flex justify-center mb-4">
                 <a href="/" class="inline-flex items-center gap-2 transition-opacity hover:opacity-80">

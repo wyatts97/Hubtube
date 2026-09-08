@@ -56,10 +56,9 @@ class VideoAdController extends Controller
     public function getAds(Request $request): JsonResponse
     {
         $categoryId = $request->integer('category_id');
-        $user = $request->user();
 
         // Pro users with ad-free enabled get no ads at all.
-        if ($user && $user->is_pro && Setting::get('pro_ad_free', true)) {
+        if ($this->shouldSuppressAds()) {
             return response()->json([
                 'ads' => [
                     'pre_roll' => [],
@@ -82,16 +81,7 @@ class VideoAdController extends Controller
         }
 
         // Determine user role for targeting
-        $userRole = 'guest';
-        if ($user) {
-            if ($user->is_admin) {
-                $userRole = 'admin';
-            } elseif ($user->is_pro) {
-                $userRole = 'pro';
-            } else {
-                $userRole = 'default';
-            }
-        }
+        $userRole = $this->adTargetRole();
 
         // Check global enable flags
         $preRollEnabled = (bool) Setting::get('video_ad_pre_roll_enabled', false);

@@ -5,7 +5,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { DropdownMenuItem } from 'reka-ui';
 import { useFetch } from '@/Composables/useFetch';
 import BaseDropdown from '@/Components/UI/BaseDropdown.vue';
-import AdSlot from '@/Components/AdSlot.vue';
+import BannerAd from '@/Components/UI/BannerAd.vue';
 import { useToast } from '@/Composables/useToast';
 import { useI18n } from '@/Composables/useI18n';
 import { useTranslation } from '@/Composables/useTranslation';
@@ -122,15 +122,15 @@ const setupAdTriggers = async () => {
         }
     };
     adEndedHandler = async () => {
-        let postRollPlayed = false;
+        // triggerPostRoll resolves when the ad has *finished*, so the playlist
+        // advances after the post-roll rather than being cancelled by it.
+        // Mark it done before awaiting: 'ended' can fire again while the ad is
+        // on screen, and a second post-roll would re-enter here.
         if (!postRollDone.value && adPlayerRef.value) {
-            const played = await adPlayerRef.value.triggerPostRoll();
-            postRollPlayed = !!played;
             postRollDone.value = true;
+            await adPlayerRef.value.triggerPostRoll();
         }
-        if (!postRollPlayed) {
-            goToNextPlaylistVideo();
-        }
+        goToNextPlaylistVideo();
     };
 
     video.addEventListener('timeupdate', adTimeupdateHandler);
@@ -445,23 +445,11 @@ const getRelatedTitle = (video) => {
             <!-- Main Content -->
             <div class="flex-1 min-w-0">
                 <!-- Banner Ad Above Player -->
-                <div v-if="bannerAbovePlayer?.enabled" class="flex justify-center mb-2">
-                    <!-- Desktop banner (728x90) -->
-                    <div class="hidden md:block">
-                        <AdSlot v-if="bannerAbovePlayer.html" :html="bannerAbovePlayer.html" />
-                        <a v-else-if="bannerAbovePlayer.image" :href="bannerAbovePlayer.link || '#'" target="_blank" rel="noopener noreferrer">
-                            <img :src="bannerAbovePlayer.image" alt="Advertisement" style="max-width: 728px; max-height: 90px;" class="rounded" loading="lazy" decoding="async" />
-                        </a>
-                    </div>
-                    <!-- Mobile banner (300x100 / 300x50) -->
-                    <div class="md:hidden">
-                        <AdSlot v-if="bannerAbovePlayer.mobile_html" :html="bannerAbovePlayer.mobile_html" />
-                        <AdSlot v-else-if="bannerAbovePlayer.html" :html="bannerAbovePlayer.html" />
-                        <a v-else-if="bannerAbovePlayer.mobile_image" :href="bannerAbovePlayer.mobile_link || '#'" target="_blank" rel="noopener noreferrer">
-                            <img :src="bannerAbovePlayer.mobile_image" alt="Advertisement" style="max-width: 300px; max-height: 100px;" class="rounded" loading="lazy" decoding="async" />
-                        </a>
-                    </div>
-                </div>
+                <BannerAd
+                    :config="bannerAbovePlayer"
+                    :breakpoint="768"
+                    wrapper-class="flex justify-center mb-2"
+                />
 
                 <!-- Video Player -->
                 <div v-if="video.is_embedded" class="aspect-video bg-black rounded-xl overflow-hidden relative">
@@ -496,23 +484,11 @@ const getRelatedTitle = (video) => {
                 </div>
 
                 <!-- Banner Ad Below Player -->
-                <div v-if="bannerBelowPlayer?.enabled" class="flex justify-center mt-2">
-                    <!-- Desktop banner (728x90) -->
-                    <div class="hidden md:block">
-                        <AdSlot v-if="bannerBelowPlayer.html" :html="bannerBelowPlayer.html" />
-                        <a v-else-if="bannerBelowPlayer.image" :href="bannerBelowPlayer.link || '#'" target="_blank" rel="noopener noreferrer">
-                            <img :src="bannerBelowPlayer.image" alt="Advertisement" style="max-width: 728px; max-height: 90px;" class="rounded" loading="lazy" decoding="async" />
-                        </a>
-                    </div>
-                    <!-- Mobile banner (300x100 / 300x50) -->
-                    <div class="md:hidden">
-                        <AdSlot v-if="bannerBelowPlayer.mobile_html" :html="bannerBelowPlayer.mobile_html" />
-                        <AdSlot v-else-if="bannerBelowPlayer.html" :html="bannerBelowPlayer.html" />
-                        <a v-else-if="bannerBelowPlayer.mobile_image" :href="bannerBelowPlayer.mobile_link || '#'" target="_blank" rel="noopener noreferrer">
-                            <img :src="bannerBelowPlayer.mobile_image" alt="Advertisement" style="max-width: 300px; max-height: 100px;" class="rounded" loading="lazy" decoding="async" />
-                        </a>
-                    </div>
-                </div>
+                <BannerAd
+                    :config="bannerBelowPlayer"
+                    :breakpoint="768"
+                    wrapper-class="flex justify-center mt-2"
+                />
 
                 <div v-if="hasPlaylistContext" class="card p-3 sm:p-4 mt-4">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
@@ -835,12 +811,10 @@ const getRelatedTitle = (video) => {
             <!-- Sidebar -->
             <div class="w-full xl:w-80 xl:shrink-0">
                 <!-- Ad Space - Only show if enabled and has code -->
-                <div v-if="sidebarAd?.enabled && (sidebarAd?.code || sidebarAd?.mobileCode)" class="mb-6">
-                    <div class="ad-container flex items-center justify-center">
-                        <AdSlot :html="sidebarAd.code" class="hidden sm:flex items-center justify-center" />
-                        <AdSlot :html="sidebarAd.mobileCode || sidebarAd.code" class="sm:hidden flex items-center justify-center" />
-                    </div>
-                </div>
+                <BannerAd
+                    :config="sidebarAd"
+                    wrapper-class="ad-container flex items-center justify-center mb-6"
+                />
 
                 <h3 class="font-medium mb-4 text-text-primary">{{ t('video.related') }}</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">

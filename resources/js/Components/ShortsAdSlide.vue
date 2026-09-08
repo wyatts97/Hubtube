@@ -19,11 +19,13 @@ const htmlRef = ref(null);
 
 const adError = ref(false);
 
+// useImaAd fires onStart and then fireImpression on the same IMA STARTED
+// event, so wiring the impression into both counted every VAST ad twice and
+// halved the reported Shorts CTR. onStart is the one that owns it here.
 const { play: playIma, destroy: destroyIma } = useImaAd(containerRef, videoRef, {
     onStart: () => { loading.value = false; adError.value = false; fireImpression(); },
     onComplete: () => { /* slide remains visible until user swipes past */ },
     onError: () => { loading.value = false; adError.value = true; },
-    fireImpression: () => fireImpression(),
 });
 
 const isVast = computed(() => ad.value?.type === 'vast' || ad.value?.type === 'vpaid');
@@ -54,8 +56,13 @@ const fetchAd = async () => {
     }
 };
 
+// One slide shows one creative, so one impression. Guarded the same way as
+// OutstreamAd because the three call sites below (VAST start, mp4 play, HTML
+// inject) are reached by different ad types and IMA can re-emit STARTED.
+const impressionFired = ref(false);
 const fireImpression = () => {
-    if (!ad.value?.id) return;
+    if (impressionFired.value || !ad.value?.id) return;
+    impressionFired.value = true;
     post('/api/ad-impression', { ad_id: ad.value.id }).catch(() => {});
 };
 

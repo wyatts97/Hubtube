@@ -53,14 +53,28 @@
         return state.clicks >= clickFrequency && minutesSinceLast >= cooldownMinutes;
     }
 
-    function fire(target) {
-        // Use a plain window.open so we keep a reference to the new window.
-        // This is required for a popunder (blur new window, focus parent).
+    function fire() {
+        // A popunder needs the window reference (blur the new window, refocus
+        // the parent), so `noopener` — which forces window.open to return null
+        // — is not an option. Open about:blank instead: we keep the handle,
+        // sever `opener` while the popup is still same-origin (a cross-origin
+        // `win.opener = null` throws and used to be swallowed, leaving the ad
+        // page a live handle on this one), then navigate it to the ad.
+        //
         // Note: true background-tab behavior is browser-dependent; some browsers
         // always focus a user-initiated popup regardless of script focus calls.
-        const win = window.open(targetUrl, '_blank');
+        const win = window.open('about:blank', '_blank');
         if (!win) {
             // Popup blocked or no window reference — do not reset counters so we try again.
+            return false;
+        }
+
+        try { win.opener = null; } catch { /* already detached */ }
+        try {
+            win.location.replace(targetUrl);
+        } catch {
+            // Navigation refused — close the blank window rather than stranding it.
+            try { win.close(); } catch { /* nothing to do */ }
             return false;
         }
 
@@ -70,9 +84,8 @@
         state.lastFiredAt = Date.now();
         setState(state);
 
-        try { win.blur(); } catch {}
-        try { window.focus(); } catch {}
-        try { win.opener = null; } catch {}
+        try { win.blur(); } catch { /* browser kept focus on the popup */ }
+        try { window.focus(); } catch { /* nothing to refocus */ }
 
         return true;
     }

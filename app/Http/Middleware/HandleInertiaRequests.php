@@ -7,6 +7,7 @@ use Exception;
 use App\Models\Category;
 use App\Models\MenuItem;
 use App\Models\Setting;
+use App\Services\AdService;
 use App\Services\SeoService;
 use App\Support\ThemeTokens;
 use App\Support\Typography;
@@ -189,8 +190,21 @@ class HandleInertiaRequests extends Middleware
         return $this->allSettings()[$key] ?? $default;
     }
 
+    /**
+     * Whether the current viewer has paid for an ad-free experience.
+     *
+     * Resolved once per request: both getAppSettings() and getThemeSettings()
+     * need it, and each is a separate closure in share().
+     */
+    protected function suppressAds(): bool
+    {
+        return app(AdService::class)->shouldSuppress(auth()->user());
+    }
+
     protected function getAppSettings(): array
     {
+        $suppressAds = $this->suppressAds();
+
         return [
             'name' => config('app.name'),
             'age_verification_required' => (bool)$this->s('age_verification_required', true),
@@ -211,7 +225,20 @@ class HandleInertiaRequests extends Middleware
                 'max_daily_uploads_free' => (int) $this->s('max_daily_uploads_free', 5),
                 'max_daily_uploads_pro' => (int) $this->s('max_daily_uploads_pro', 50),
             ],
-            'interstitial' => [
+            // Ad-free viewers get `enabled: false` and no creative at all. The
+            // client used to receive the full ad HTML and merely decline to
+            // render it, which shipped the ad code to every Pro user on every
+            // page and made the perk a client-side promise rather than a real
+            // one.
+            'suppress_ads' => $suppressAds,
+            'interstitial' => $suppressAds ? [
+                'enabled'    => false,
+                'mode'       => 'manual',
+                'code'       => '',
+                'mobileCode' => '',
+                'frequency'  => 0,
+                'skipDelay'  => 0,
+            ] : [
                 'enabled'    => (bool) $this->s('custom_interstitial_enabled', false),
                 'mode'       => (string) $this->s('custom_interstitial_mode', 'manual'),
                 'code'       => (string) $this->s('custom_interstitial_code', ''),
@@ -225,6 +252,7 @@ class HandleInertiaRequests extends Middleware
     protected function getThemeSettings(): array
     {
         $cardFonts = Typography::videoCard();
+        $suppressAds = $this->suppressAds();
 
         return [
             'siteTitle' => $this->s('site_title', 'HubTube'),
@@ -291,9 +319,11 @@ class HandleInertiaRequests extends Middleware
             'footer_logo_url' => $this->storageUrl($this->s('footer_logo_url', '')),
             'footer_logo_url_light' => $this->storageUrl($this->s('footer_logo_url_light', '')),
             'progressBarColor' => $this->s('progress_bar_color', ''),
-            'footer_ad_enabled' => (bool)$this->s('footer_ad_enabled', false),
-            'footer_ad_code' => $this->s('footer_ad_code', ''),
-            'footer_ad_mobile_code' => $this->s('footer_ad_mobile_code', ''),
+            // Gated server-side: this slot was shared unconditionally, so every
+            // Pro/ad-free user saw the footer ad on every page.
+            'footer_ad_enabled' => !$suppressAds && (bool)$this->s('footer_ad_enabled', false),
+            'footer_ad_code' => $suppressAds ? '' : $this->s('footer_ad_code', ''),
+            'footer_ad_mobile_code' => $suppressAds ? '' : $this->s('footer_ad_mobile_code', ''),
             'videoCard' => [
                 // Dense-grid default drops the channel avatar in favour of the
                 // rating bar and tag chips. Still switchable per install.

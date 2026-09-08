@@ -38,12 +38,6 @@ class VideoController extends Controller
         protected SeoService $seoService,
     ) {}
 
-    protected function shouldSuppressAds(): bool
-    {
-        $user = auth()->user();
-        return $user && $user->is_pro && (bool) Setting::get('pro_ad_free', true);
-    }
-
     protected function buildGridAdVariants(?int $categoryId = null): array
     {
         $all = Setting::getAll();
@@ -180,7 +174,7 @@ class VideoController extends Controller
                 : []),
             'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage(
                 'browse',
-                auth()->user()?->role ?? 'guest',
+                $this->adTargetRole(),
                 $request->category ? (int) $request->category : null,
             ),
         ]);
