@@ -17,6 +17,7 @@ import { usePage, router } from '@inertiajs/vue3';
 import { useMediaQuery, useStorage } from '@vueuse/core';
 import { X } from 'lucide-vue-next';
 import AdSlot from '@/Components/AdSlot.vue';
+import BaseDialog from '@/Components/UI/BaseDialog.vue';
 
 const page = usePage();
 const config = computed(() => page.props.app?.interstitial || {});
