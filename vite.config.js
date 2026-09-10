@@ -12,22 +12,21 @@ export default defineConfig({
             output: {
                 // Split heavy, rarely-co-loaded vendor deps into their own chunks so a
                 // page that never touches video/ads/error-tracking doesn't pay for
-                // Vidstack/hls.js/Sentry in its initial JS payload. hls.js is also
-                // dynamically imported in VideoPlayer.vue, which puts it in its own
-                // chunk automatically — this manualChunks entry is a safety net in
-                // case it's ever pulled in by a static import elsewhere too.
+                // Fluid Player/hls.js/Sentry in its initial JS payload.
+                //
+                // hls.js and dash.js are reached only through Fluid's own dynamic
+                // imports (src/modules/streaming.js), so they are already split by
+                // Rollup; naming the hls.js chunk here just keeps it stable and
+                // recognisable in the build output.
                 manualChunks(id) {
                     if (!id.includes('node_modules')) return;
                     // Only carve out the few large, rarely-co-loaded deps we actually care
                     // about splitting. Leaving everything else undefined lets Rollup's
                     // default heuristics group the rest — forcing every remaining
                     // node_modules package into one generic catch-all bucket previously
-                    // produced a circular chunk (vidstack's own small dependencies like
-                    // @floating-ui/dom and lit-html landed in that bucket while vidstack's
-                    // chunk imported them back).
-                    if (id.includes('vidstack') || id.includes('@floating-ui') || id.includes('lit-html') || id.includes('media-captions')) {
-                        return 'vendor-vidstack';
-                    }
+                    // produced a circular chunk when Vidstack's small dependencies landed
+                    // in that bucket while Vidstack's own chunk imported them back.
+                    if (id.includes('fluid-player')) return 'vendor-fluidplayer';
                     if (id.includes('hls.js')) return 'vendor-hlsjs';
                     if (id.includes('@sentry')) return 'vendor-sentry';
                     if (id.includes('lucide-vue-next')) return 'vendor-icons';
@@ -45,9 +44,6 @@ export default defineConfig({
                 transformAssetUrls: {
                     base: null,
                     includeAbsolute: false,
-                },
-                compilerOptions: {
-                    isCustomElement: (tag) => tag.startsWith('media-'),
                 },
             },
         }),

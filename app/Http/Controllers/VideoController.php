@@ -14,6 +14,7 @@ use App\Models\WatchHistory;
 use App\Models\Category;
 use App\Models\Setting;
 use App\Models\SponsoredCard;
+use App\Services\PlayerAdListBuilder;
 use App\Services\EmailService;
 use App\Services\SeoService;
 use App\Services\StorageManager;
@@ -353,6 +354,9 @@ class VideoController extends Controller
             'userPlaylists' => $userPlaylists,
             'seo' => $this->seoService->forVideo($video),
             'videoAdsEnabled' => !$this->shouldSuppressAds(),
+            // The player's whole VAST break schedule, decided here because Fluid
+            // takes its adList at construction and cannot be given more later.
+            'playerAdList' => app(PlayerAdListBuilder::class)->build($video, $video->category_id),
         ]);
     }
 

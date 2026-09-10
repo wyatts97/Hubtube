@@ -16,7 +16,7 @@ import ShareModal from '@/Components/ShareModal.vue';
 import ReportModal from '@/Components/ReportModal.vue';
 import VideoPlayer from '@/Components/VideoPlayer.vue';
 import EmbeddedVideoPlayer from '@/Components/EmbeddedVideoPlayer.vue';
-import VideoAdPlayer from '@/Components/VideoAdPlayer.vue';
+import EmbedPreRollGate from '@/Components/EmbedPreRollGate.vue';
 import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff, Eye, ListVideo, Plus, Check, Loader2, Folder, Hash, Play, Shuffle, Repeat, SkipBack, SkipForward, ChevronLeft, ChevronRight, Download } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -32,17 +32,15 @@ const props = defineProps({
     userPlaylists: { type: Array, default: () => [] },
     seo: { type: Object, default: () => ({}) },
     videoAdsEnabled: { type: Boolean, default: true },
+    playerAdList: { type: Array, default: () => [] },
 });
 
 const toast = useToast();
 const { t, localizedUrl } = useI18n();
 
-// Ad system refs
-const adPlayerRef = ref(null);
-
 // Embedded-video pre-roll gate. The iframe is only mounted once the gate is
 // open, so the ad is never competing with a third-party player for the frame.
-const embedAdPlayerRef = ref(null);
+const embedGateRef = ref(null);
 const embedGateOpen = ref(false);
 
 const onEmbedAdFinished = () => {
@@ -50,123 +48,45 @@ const onEmbedAdFinished = () => {
 };
 
 const startEmbeddedPlayback = async () => {
-    // No ad player mounted (ads disabled, or the viewer is ad-free) — go
-    // straight to the video rather than making them click twice.
-    if (!props.videoAdsEnabled || !embedAdPlayerRef.value) {
+    // Nothing to show (ads disabled, or the viewer is ad-free) — go straight to
+    // the video rather than making them click twice.
+    if (!props.videoAdsEnabled || !preRollAdList.value.length || !embedGateRef.value) {
         embedGateOpen.value = true;
         return;
     }
 
-    const played = await embedAdPlayerRef.value.triggerPreRoll();
-
-    // triggerPreRoll resolves false when there is no pre-roll to show; when it
-    // resolves true the ad is on screen and onEmbedAdFinished opens the gate.
-    if (!played) {
-        embedGateOpen.value = true;
-    }
+    await embedGateRef.value.play();
 };
+
 const videoPlayerRef = ref(null);
-const preRollDone = ref(false);
-const postRollDone = ref(false);
 
-// Get the Vidstack player instance exposed by VideoPlayer
-const getPlayerElement = () => videoPlayerRef.value?.getPlayer() ?? null;
+// Break schedule for the main player, built server-side by PlayerAdListBuilder
+// so ad suppression and mid-roll timing live next to the rest of the ad rules.
+const playerAdList = computed(() => props.playerAdList || []);
 
-// Get the underlying <video> element (used for ad event listeners)
-const getVideoElement = () => getPlayerElement()?.querySelector('video') ?? null;
+// The embed gate runs over a one-second placeholder, so it takes the pre-roll
+// alone — attaching mid- or post-rolls to that clip would fire them instantly.
+const preRollAdList = computed(() => playerAdList.value.filter((ad) => ad.roll === 'preRoll'));
 
-// Ad event handlers — use media-player API for pause/play
-const onAdStarted = (placement) => {
-    const player = getPlayerElement();
-    if (player && !player.paused) player.pause();
-};
+/**
+ * Advance the playlist when the video is genuinely over.
+ *
+ * Fluid reports the source that ended, which is the distinction that matters:
+ * a post-roll also raises `ended`, and advancing on that would either skip the
+ * next video's start or cut the ad short. Wait for the post-roll when one is
+ * scheduled, otherwise advance as soon as the content finishes.
+ */
+const hasPostRoll = computed(() => playerAdList.value.some((ad) => ad.roll === 'postRoll'));
 
-const resumePlayer = (player) => {
-    player.play().catch((err) => {
-        console.warn('[Show.vue] Failed to resume video after ad:', err);
-        toast.error(t('video.tap_play_to_resume'));
-    });
-};
+const onPlayerEnded = (mediaSourceType) => {
+    if (mediaSourceType === 'postRoll') {
+        goToNextPlaylistVideo();
+        return;
+    }
 
-const onAdEnded = (placement) => {
-    if (placement === 'pre_roll') {
-        preRollDone.value = true;
-        const player = getPlayerElement();
-        if (player) resumePlayer(player);
-    } else if (placement === 'mid_roll') {
-        const player = getPlayerElement();
-        if (player) resumePlayer(player);
-    } else if (placement === 'post_roll') {
+    if (mediaSourceType === 'source' && !hasPostRoll.value) {
         goToNextPlaylistVideo();
     }
-    // post_roll: video already ended, nothing to resume
-};
-
-const onAdRequestPause = () => {
-    const player = getPlayerElement();
-    if (player && !player.paused) player.pause();
-};
-
-const onAdRequestPlay = () => {
-    const player = getPlayerElement();
-    if (player) resumePlayer(player);
-};
-
-// Ad setup cleanup — remove listeners on unmount
-let adVideoEl = null;
-let adTimeupdateHandler = null;
-let adEndedHandler = null;
-
-const cleanupAdSetup = () => {
-    if (adVideoEl && (adTimeupdateHandler || adEndedHandler)) {
-        if (adTimeupdateHandler) adVideoEl.removeEventListener('timeupdate', adTimeupdateHandler);
-        if (adEndedHandler) adVideoEl.removeEventListener('ended', adEndedHandler);
-        adVideoEl = null;
-        adTimeupdateHandler = null;
-        adEndedHandler = null;
-    }
-};
-
-// Setup video event listeners for ad triggers
-const setupAdTriggers = async () => {
-    const video = getVideoElement();
-    if (!video || !adPlayerRef.value) return;
-
-    // Pre-roll: wait for ads to load, then try to play before video starts
-    if (!preRollDone.value) {
-        const played = await adPlayerRef.value.triggerPreRoll();
-        if (!played) preRollDone.value = true;
-    }
-
-    // Store refs for cleanup; remove any previous listeners
-    cleanupAdSetup();
-    adVideoEl = video;
-
-    adTimeupdateHandler = () => {
-        if (adPlayerRef.value && !adPlayerRef.value.isPlaying) {
-            adPlayerRef.value.checkMidRoll(video.currentTime);
-        }
-    };
-    adEndedHandler = async () => {
-        // triggerPostRoll resolves when the ad has *finished*, so the playlist
-        // advances after the post-roll rather than being cancelled by it.
-        // Mark it done before awaiting: 'ended' can fire again while the ad is
-        // on screen, and a second post-roll would re-enter here.
-        if (!postRollDone.value && adPlayerRef.value) {
-            postRollDone.value = true;
-            await adPlayerRef.value.triggerPostRoll();
-        }
-        goToNextPlaylistVideo();
-    };
-
-    video.addEventListener('timeupdate', adTimeupdateHandler);
-    video.addEventListener('ended', adEndedHandler);
-};
-
-// Fired by VideoPlayer's `ready` event (Vidstack's own `can-play` event) once the
-// player is genuinely ready to play — no DOM polling needed.
-const onPlayerReady = () => {
-    setupAdTriggers();
 };
 
 const hlsPlaylistUrl = computed(() => props.video.hls_playlist_url || '');
@@ -403,14 +323,12 @@ const createAndAddPlaylist = async () => {
 };
 
 onMounted(() => {
-    // Ad triggers are set up via the VideoPlayer `ready` event (see onPlayerReady)
-    // rather than here, since the player element doesn't exist until it mounts.
+    // Ad breaks are Fluid Player's own adList now — there is nothing to arm here.
     window.addEventListener('resize', updatePlaylistRailButtons);
     setTimeout(updatePlaylistRailButtons, 0);
 });
 onUnmounted(() => {
     window.removeEventListener('resize', updatePlaylistRailButtons);
-    cleanupAdSetup();
 });
 
 watch([hasPlaylistContext, currentPlaylistIndex], () => {
@@ -515,13 +433,11 @@ const getRelatedTitle = (video) => {
                             </span>
                         </span>
                     </button>
-                    <VideoAdPlayer
+                    <EmbedPreRollGate
                         v-if="videoAdsEnabled"
-                        ref="embedAdPlayerRef"
-                        :category-id="video.category_id"
-                        :video-duration="video.duration || 0"
-                        @ad-ended="onEmbedAdFinished"
-                        @ad-skipped="onEmbedAdFinished"
+                        ref="embedGateRef"
+                        :ad-list="preRollAdList"
+                        @finished="onEmbedAdFinished"
                     />
                 </div>
                 <div v-else class="aspect-video bg-black rounded-xl overflow-hidden relative">
@@ -531,20 +447,11 @@ const getRelatedTitle = (video) => {
                         :poster="video.thumbnail_url"
                         :title="seo.thumbnailAlt || video.title"
                         :hls-playlist="hlsPlaylistUrl"
+                        :quality-sources="video.quality_urls || []"
                         :autoplay="false"
                         :preview-thumbnails="video.preview_thumbnails_url || ''"
-                        @ready="onPlayerReady"
-                    />
-                    <VideoAdPlayer
-                        v-if="videoAdsEnabled"
-                        ref="adPlayerRef"
-                        :category-id="video.category_id"
-                        :video-duration="video.duration || 0"
-                        @ad-started="onAdStarted"
-                        @ad-ended="onAdEnded"
-                        @ad-skipped="onAdEnded"
-                        @request-pause="onAdRequestPause"
-                        @request-play="onAdRequestPlay"
+                        :ad-list="playerAdList"
+                        @ended="onPlayerEnded"
                     />
                 </div>
 

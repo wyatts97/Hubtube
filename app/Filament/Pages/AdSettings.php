@@ -48,6 +48,7 @@ class AdSettings extends Page implements HasForms
             'video_ad_pre_roll_enabled' => Setting::get('video_ad_pre_roll_enabled', false),
             'video_ad_mid_roll_enabled' => Setting::get('video_ad_mid_roll_enabled', false),
             'video_ad_post_roll_enabled' => Setting::get('video_ad_post_roll_enabled', false),
+            'video_ad_on_pause_roll_enabled' => Setting::get('video_ad_on_pause_roll_enabled', false),
             'video_ad_pre_roll_skip_after' => Setting::get('video_ad_pre_roll_skip_after', 5),
             'video_ad_mid_roll_skip_after' => Setting::get('video_ad_mid_roll_skip_after', 5),
             'video_ad_post_roll_skip_after' => Setting::get('video_ad_post_roll_skip_after', 0),
@@ -184,7 +185,7 @@ class AdSettings extends Page implements HasForms
                         ->icon('phosphor-play')
                         ->schema([
                             Section::make('Pre-Roll, Mid-Roll & Post-Roll Settings')
-                                ->description('Configure video ads that play before, during, and after video content. VAST/VPAID ads use Google IMA SDK  the ad network controls skip. Manage individual ad creatives under Appearance  Ad Creatives.')
+                                ->description('Configure video ads that play before, during, after and alongside video content. Every creative is served to the player as VAST. Manage individual ad creatives under Appearance > Ad Creatives.')
                                 ->schema([
                                     Grid::make(3)->schema([
                                         Toggle::make('video_ad_pre_roll_enabled')
@@ -196,6 +197,11 @@ class AdSettings extends Page implements HasForms
                                         Toggle::make('video_ad_post_roll_enabled')
                                             ->label('Post-Roll Ads')
                                             ->helperText('Play an ad after the video ends'),
+                                    ]),
+                                    Grid::make(3)->schema([
+                                        Toggle::make('video_ad_on_pause_roll_enabled')
+                                            ->label('On-Pause Ads')
+                                            ->helperText('Show a banner over the player while the viewer has it paused. Use HTML creatives on the On-Pause placement.'),
                                     ]),
                                     Grid::make(3)->schema([
                                         TextInput::make('video_ad_pre_roll_skip_after')

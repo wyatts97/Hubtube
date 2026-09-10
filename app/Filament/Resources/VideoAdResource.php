@@ -74,6 +74,7 @@ class VideoAdResource extends Resource
                             'pre_roll' => 'Pre-Roll (before video)',
                             'mid_roll' => 'Mid-Roll (during video)',
                             'post_roll' => 'Post-Roll (after video)',
+                            'on_pause_roll' => 'On-Pause (banner while paused)',
                             'outstream' => 'Outstream (in video grid)',
                             'shorts' => 'Shorts (full-screen vertical)',
                         ])
@@ -95,7 +96,7 @@ class VideoAdResource extends Resource
                         ->default('mp4')
                         ->live()
                         ->helperText(fn ($get) => match ($get('type')) {
-                            'vast', 'vpaid' => 'Served via Google IMA SDK. The ad network controls skip behavior.',
+                            'vast', 'vpaid' => 'Wrapped and passed to the player, which resolves the tag itself. The ad network controls skip behavior.',
                             'mp4' => 'Upload a file OR paste an external URL below.',
                             default => null,
                         }),
@@ -154,7 +155,8 @@ class VideoAdResource extends Resource
                             .'<strong style="color:#60a5fa;">ℹ VAST/VPAID Notes</strong><br>'
                             .'• Skip delay settings in "Ad Settings → Video Roll Ads" do <strong>not</strong> apply — the ad network controls skip.<br>'
                             .'• Click-through URL is handled by the VAST tag itself.<br>'
-                            .'• Weight and category/role targeting still apply for ad selection.'
+                            .'• Weight and category/role targeting still apply for ad selection.<br>'
+                            .'• Your tag is wrapped, not replaced, so impressions and clicks still appear in Analytics alongside whatever the ad network reports.'
                             .'</div>'
                         ))
                         ->columnSpanFull(),
