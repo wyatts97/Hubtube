@@ -347,3 +347,33 @@ onBeforeUnmount(() => {
 <template>
     <div ref="container" class="ad-slot" :style="reservedStyle"></div>
 </template>
+
+<style scoped>
+/**
+ * Trap the creative's stacking inside the slot.
+ *
+ * Ad markup is third-party and routinely carries `position:absolute` with
+ * `z-index:2147483647` — the 32-bit maximum, so no element on the page can be
+ * raised above it. Nothing here previously created a stacking context: this div
+ * was unstyled, and `<main>` in AppLayout has no position/transform/z-index
+ * either. That left injected creatives competing directly in the *root*
+ * stacking context against the fixed `z-50` site header, which they won — the
+ * banners above and below the video player painted over the top bar on scroll.
+ *
+ * `isolation: isolate` makes this element a stacking context, so a descendant's
+ * z-index — however large — can only order things *within* the slot. The slot
+ * itself then sits at z-index 0 in the root context, below the header. This
+ * also covers `position: fixed` creatives, which `position: relative` alone
+ * would not contain, because the isolation governs painting rather than layout.
+ *
+ * The trade-off is deliberate: a format designed to expand beyond its slot
+ * (pushdown, expandable) is clamped too. Every slot this renders is a
+ * fixed-size unit, so containment is the wanted behaviour; an expandable buy
+ * would need an explicit opt-out here.
+ */
+.ad-slot {
+    position: relative;
+    z-index: 0;
+    isolation: isolate;
+}
+</style>
