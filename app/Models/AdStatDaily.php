@@ -18,7 +18,7 @@ class AdStatDaily extends Model
     protected $table = 'ad_stats_daily';
 
     protected $fillable = [
-        'date', 'source', 'ad_id', 'placement', 'country', 'device', 'impressions', 'clicks',
+        'date', 'source', 'ad_id', 'placement', 'country', 'device', 'impressions', 'clicks', 'completions',
     ];
 
     protected $casts = [
@@ -26,6 +26,7 @@ class AdStatDaily extends Model
         'ad_id' => 'integer',
         'impressions' => 'integer',
         'clicks' => 'integer',
+        'completions' => 'integer',
     ];
 
     public const SOURCE_VIDEO_AD = 'video_ad';

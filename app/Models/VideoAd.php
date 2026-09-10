@@ -24,6 +24,9 @@ class VideoAd extends Model
         'is_active',
         'category_ids',
         'target_roles',
+        'duration',
+        'width',
+        'height',
     ];
 
     protected static function booted(): void
@@ -56,6 +59,9 @@ class VideoAd extends Model
             'category_ids' => 'array',
             'target_roles' => 'array',
             'weight' => 'integer',
+            'duration' => 'integer',
+            'width' => 'integer',
+            'height' => 'integer',
         ];
     }
 
@@ -149,13 +155,56 @@ class VideoAd extends Model
         return $ads->map(fn ($ad) => self::formatAd($ad))->values()->toArray();
     }
 
+    /**
+     * Playable URL for the creative.
+     *
+     * For a local mp4 upload this is the stored file; for every other type the
+     * `content` column already holds a URL (a VAST tag) or raw markup.
+     */
+    public function mediaUrl(): string
+    {
+        if ($this->type === 'mp4' && $this->file_path) {
+            return asset('storage/' . $this->file_path);
+        }
+
+        return (string) $this->content;
+    }
+
+    /**
+     * HLS variant of a local mp4 creative, once ProcessAdCreativeJob has built
+     * it. Null until then, and for every non-mp4 type.
+     */
+    public function hlsUrl(): ?string
+    {
+        return ($this->type === 'mp4' && $this->hls_status === 'ready' && $this->hls_path)
+            ? asset('storage/' . $this->hls_path)
+            : null;
+    }
+
+    /**
+     * Weighted-random pick for a placement, returned as a model.
+     *
+     * getAdsForPlacement() returns formatted arrays shaped for the JSON ad API,
+     * which is the wrong shape for VastBuilder — it needs the record itself to
+     * read duration, dimensions and tracking ids. Same scopes, same weighting.
+     */
+    public static function pickForPlacement(
+        string $placement,
+        ?int $categoryId = null,
+        ?string $userRole = 'default'
+    ): ?self {
+        $ads = static::active()
+            ->placement($placement)
+            ->forCategory($categoryId)
+            ->forRole($userRole)
+            ->get();
+
+        return static::pickWeightedRandom($ads);
+    }
+
     protected static function formatAd(self $ad): array
     {
-        // For mp4 ads with a local file, serve from storage
-        $content = $ad->content;
-        if ($ad->type === 'mp4' && $ad->file_path) {
-            $content = asset('storage/' . $ad->file_path);
-        }
+        $content = $ad->mediaUrl();
 
         return [
             'id'                  => $ad->id,
@@ -164,9 +213,7 @@ class VideoAd extends Model
             'content'             => $content,
             // HLS variant of a local mp4 ad, when ready — the player prefers this
             // for a faster start and falls back to `content` (the raw mp4) otherwise.
-            'hls_url'             => ($ad->type === 'mp4' && $ad->hls_status === 'ready' && $ad->hls_path)
-                ? asset('storage/' . $ad->hls_path)
-                : null,
+            'hls_url'             => $ad->hlsUrl(),
             'click_url'           => $ad->click_url,
             'name'                => $ad->name,
             'outstream_thumbnail' => $ad->outstream_thumbnail

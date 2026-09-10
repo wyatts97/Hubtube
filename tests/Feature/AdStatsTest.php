@@ -161,6 +161,78 @@ class AdStatsTest extends TestCase
         $this->assertSame(0, AdStatDaily::count());
     }
 
+    public function test_the_vast_impression_beacon_records_the_same_row_as_the_post_endpoint(): void
+    {
+        // The player fires a VAST document's tracking URLs as plain GETs with no
+        // CSRF token, so these are separate routes — but they must land in the
+        // same place as the hand-fired POSTs the Vue ad surfaces still use.
+        $ad = $this->ad();
+
+        $this->withHeaders(['CF-IPCountry' => 'FR'])
+            ->get("/api/vast/track/impression?ad_id={$ad->id}&placement=mid_roll")
+            ->assertNoContent();
+
+        $row = AdStatDaily::sole();
+
+        $this->assertSame(AdStatDaily::SOURCE_VIDEO_AD, $row->source);
+        $this->assertSame($ad->id, $row->ad_id);
+        $this->assertSame('mid_roll', $row->placement);
+        $this->assertSame('FR', $row->country);
+        $this->assertSame(1, $row->impressions);
+        $this->assertSame(1, $ad->fresh()->impressions_count);
+    }
+
+    public function test_the_vast_click_beacon_records_a_click(): void
+    {
+        $ad = $this->ad();
+
+        $this->get("/api/vast/track/click?ad_id={$ad->id}&placement=pre_roll")
+            ->assertNoContent();
+
+        $this->assertSame(1, AdStatDaily::sole()->clicks);
+        $this->assertSame(1, $ad->fresh()->clicks_count);
+    }
+
+    public function test_a_completed_creative_is_recorded(): void
+    {
+        // Completion is only measurable now that creatives are served as VAST:
+        // the old overlay knew when an ad started and nothing after.
+        $ad = $this->ad();
+
+        $this->get("/api/vast/track/event?ad_id={$ad->id}&placement=pre_roll&event=complete")
+            ->assertNoContent();
+
+        $row = AdStatDaily::sole();
+
+        $this->assertSame(1, $row->completions);
+        $this->assertSame(0, $row->impressions);
+    }
+
+    public function test_an_unrecognised_playback_event_is_dropped(): void
+    {
+        // VastBuilder only emits `complete`; anything else would be recorded
+        // under a dimension no report knows how to read.
+        $ad = $this->ad();
+
+        $this->get("/api/vast/track/event?ad_id={$ad->id}&placement=pre_roll&event=firstQuartile")
+            ->assertNoContent();
+
+        $this->assertSame(0, AdStatDaily::count());
+    }
+
+    public function test_an_impression_and_a_completion_accumulate_on_one_row(): void
+    {
+        $ad = $this->ad();
+
+        $this->get("/api/vast/track/impression?ad_id={$ad->id}&placement=pre_roll")->assertNoContent();
+        $this->get("/api/vast/track/event?ad_id={$ad->id}&placement=pre_roll&event=complete")->assertNoContent();
+
+        $row = AdStatDaily::sole();
+
+        $this->assertSame(1, $row->impressions);
+        $this->assertSame(1, $row->completions);
+    }
+
     public function test_the_reporting_date_follows_the_site_timezone_setting(): void
     {
         // A timezone far enough ahead of UTC that its calendar date differs for

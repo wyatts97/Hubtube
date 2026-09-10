@@ -49,6 +49,7 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\ThumbnailProxyController;
 use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TranslationController;
+use App\Http\Controllers\VastController;
 use App\Http\Controllers\VideoAdController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\WalletController;
@@ -359,6 +360,28 @@ Route::middleware('installed:require')->group(function () {
     Route::get('/api/video-ads', [VideoAdController::class, 'getAds'])
         ->middleware('throttle:30,1')
         ->name('video-ads.get');
+
+    // VAST ad serving. One request per ad break, so selection stays server-side
+    // and the page payload never carries creatives the viewer will not see.
+    // Same reasoning as /api/video-ads for sitting outside the age gate.
+    Route::get('/api/vast/{placement}', [VastController::class, 'serve'])
+        ->middleware('throttle:60,1')
+        ->name('vast.serve');
+
+    // VAST tracking beacons. GET (and CSRF-exempt by virtue of the method)
+    // because a VAST document's tracking URLs are fired by the player as plain
+    // image requests — it has no token to send and ignores the response.
+    // Limits are higher than the POST equivalents: a single view can legitimately
+    // fire an impression and a completion for each of several breaks.
+    Route::get('/api/vast/track/impression', [VideoAdController::class, 'trackImpression'])
+        ->middleware('throttle:240,1')
+        ->name('vast.track.impression');
+    Route::get('/api/vast/track/click', [VideoAdController::class, 'trackClick'])
+        ->middleware('throttle:120,1')
+        ->name('vast.track.click');
+    Route::get('/api/vast/track/event', [VideoAdController::class, 'trackEvent'])
+        ->middleware('throttle:480,1')
+        ->name('vast.track.event');
 
     // Stripe webhook (must be outside auth + age gates)
     Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])

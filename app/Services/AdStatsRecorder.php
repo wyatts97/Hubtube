@@ -21,6 +21,7 @@ class AdStatsRecorder
 {
     public const EVENT_IMPRESSION = 'impressions';
     public const EVENT_CLICK = 'clicks';
+    public const EVENT_COMPLETION = 'completions';
 
     /**
      * Seconds within which a repeat of the same ad, in the same slot, from the
@@ -45,7 +46,7 @@ class AdStatsRecorder
         string $event = self::EVENT_IMPRESSION,
     ): bool {
         try {
-            if (! in_array($event, [self::EVENT_IMPRESSION, self::EVENT_CLICK], true)) {
+            if (! in_array($event, [self::EVENT_IMPRESSION, self::EVENT_CLICK, self::EVENT_COMPLETION], true)) {
                 return false;
             }
 
@@ -73,6 +74,7 @@ class AdStatsRecorder
                     'device' => $device,
                     'impressions' => $event === self::EVENT_IMPRESSION ? 1 : 0,
                     'clicks' => $event === self::EVENT_CLICK ? 1 : 0,
+                    'completions' => $event === self::EVENT_COMPLETION ? 1 : 0,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ]],
@@ -167,6 +169,15 @@ class AdStatsRecorder
     public function click(Request $request, string $source, ?int $adId, string $placement): bool
     {
         return $this->record($request, $source, $adId, $placement, self::EVENT_CLICK);
+    }
+
+    /**
+     * A creative that played to the end, reported by the player's VAST
+     * `complete` tracker. Only meaningful for video creatives.
+     */
+    public function completion(Request $request, string $source, ?int $adId, string $placement): bool
+    {
+        return $this->record($request, $source, $adId, $placement, self::EVENT_COMPLETION);
     }
 
     /** @return list<string> */

@@ -9,6 +9,7 @@ use App\Models\VideoAd;
 use App\Services\AdStatsRecorder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class VideoAdController extends Controller
 {
@@ -56,6 +57,55 @@ class VideoAdController extends Controller
         }
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * VAST beacon endpoints.
+     *
+     * A VAST document carries its own tracking URLs, which the player fires as
+     * plain image/fetch GETs with no CSRF token and no interest in the response.
+     * The POST endpoints above stay for the Vue ad surfaces (outstream, shorts,
+     * network slots) that still report by hand.
+     *
+     * All three answer 204: a beacon has nothing to say, and returning a body
+     * only invites the player to parse it.
+     */
+    public function trackImpression(Request $request): Response
+    {
+        $this->recordImpression($request);
+
+        return response()->noContent();
+    }
+
+    public function trackClick(Request $request): Response
+    {
+        $this->recordClick($request);
+
+        return response()->noContent();
+    }
+
+    /**
+     * Playback events from a VAST creative.
+     *
+     * VastBuilder only emits `complete` today, but the route accepts the event
+     * name so adding quartiles later is a builder change rather than a routing
+     * one. Anything unrecognised is dropped rather than recorded under a bogus
+     * dimension.
+     */
+    public function trackEvent(Request $request): Response
+    {
+        $adId = $request->integer('ad_id');
+
+        if ($adId && $request->input('event') === 'complete') {
+            $this->stats->completion(
+                $request,
+                AdStatDaily::SOURCE_VIDEO_AD,
+                $adId,
+                $this->placement($request, 'video_ad'),
+            );
+        }
+
+        return response()->noContent();
     }
 
     /**

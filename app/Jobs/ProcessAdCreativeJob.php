@@ -37,6 +37,11 @@ class ProcessAdCreativeJob implements ShouldQueue
 
     public function handle(): void
     {
+        // Probe first, and outside the HLS guards below: duration and dimensions
+        // are required by VAST regardless of whether an HLS variant is built, and
+        // an ad with no <Duration> is rejected by strict VAST parsers.
+        $this->probeMediaMetadata();
+
         if (!Setting::get('ad_hls_enabled', true)) {
             $this->videoAd->update(['hls_status' => 'skipped']);
             return;
@@ -126,6 +131,86 @@ class ProcessAdCreativeJob implements ShouldQueue
                 ['video_ad_id' => $this->videoAd->id]
             );
         }
+    }
+
+    /**
+     * Read duration and display dimensions off the source file.
+     *
+     * VAST mandates `<Duration>` on every `<Linear>` creative and width/height on
+     * every `<MediaFile>`, none of which this job previously had a reason to look
+     * at. Failure is deliberately non-fatal — VastBuilder falls back to nominal
+     * values, and an unprobed ad is still far better than no ad.
+     */
+    protected function probeMediaMetadata(): void
+    {
+        if ($this->videoAd->type !== 'mp4' || !$this->videoAd->file_path) {
+            return;
+        }
+
+        if (!FfmpegService::isAvailable()) {
+            return;
+        }
+
+        $path = Storage::disk('public')->path($this->videoAd->file_path);
+
+        if (!file_exists($path)) {
+            return;
+        }
+
+        $cmd = sprintf(
+            '%s -v quiet -print_format json -show_format -show_streams %s',
+            escapeshellarg(FfmpegService::ffprobePath()),
+            escapeshellarg($path)
+        );
+
+        [$exitCode, $output] = $this->runCommand($cmd);
+
+        if ($exitCode !== 0 || $output === '') {
+            Log::warning('ProcessAdCreativeJob: ffprobe failed, ad will use nominal VAST metadata', [
+                'video_ad_id' => $this->videoAd->id,
+                'exit_code' => $exitCode,
+            ]);
+            return;
+        }
+
+        $info = json_decode($output, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return;
+        }
+
+        $duration = (int) round((float) ($info['format']['duration'] ?? 0));
+        $width = 0;
+        $height = 0;
+
+        foreach ($info['streams'] ?? [] as $stream) {
+            if (($stream['codec_type'] ?? '') === 'video') {
+                $width = (int) ($stream['width'] ?? 0);
+                $height = (int) ($stream['height'] ?? 0);
+
+                // Rotated phone footage is stored landscape with a rotate tag;
+                // VAST consumers size the slot from the *displayed* dimensions.
+                $rotate = (int) ($stream['tags']['rotate'] ?? 0);
+                if (in_array(abs($rotate), [90, 270], true)) {
+                    [$width, $height] = [$height, $width];
+                }
+
+                break;
+            }
+        }
+
+        $this->videoAd->update([
+            'duration' => $duration > 0 ? $duration : null,
+            'width' => $width > 0 ? $width : null,
+            'height' => $height > 0 ? $height : null,
+        ]);
+
+        Log::info('ProcessAdCreativeJob: probed creative metadata', [
+            'video_ad_id' => $this->videoAd->id,
+            'duration' => $duration,
+            'width' => $width,
+            'height' => $height,
+        ]);
     }
 
     /**
