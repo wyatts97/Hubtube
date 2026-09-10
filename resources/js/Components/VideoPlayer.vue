@@ -92,6 +92,15 @@ const sources = computed(() => {
     return [{ src: props.src, type: 'video/mp4', label: null, hd: false }];
 });
 
+/**
+ * Verbose ad logging, enabled with ?fpdebug=1 on any watch page.
+ *
+ * Read once at module load rather than per player: it is a debugging switch,
+ * not reactive state.
+ */
+const adDebug = typeof window !== 'undefined'
+    && new URLSearchParams(window.location.search).has('fpdebug');
+
 const initPlayer = () => {
     if (!videoRef.value) return;
 
@@ -141,7 +150,32 @@ const initPlayer = () => {
             allowVPAID: true,
             showProgressbarMarkers: true,
             adCTAText: false,
+            // A break that resolves to nothing is the failure mode with no
+            // symptom: Fluid falls through to content silently, which looks
+            // identical to ads being switched off. Log it so an unsold break and
+            // a broken one can be told apart from the console.
+            vastAdvanced: {
+                noVastVideoCallback: () => {
+                    console.warn('[VideoPlayer] VAST break resolved to no playable ad.');
+                },
+                vastLoadedCallback: () => {
+                    if (adDebug) console.info('[VideoPlayer] VAST loaded.');
+                },
+                vastVideoSkippedCallback: () => {
+                    if (adDebug) console.info('[VideoPlayer] Ad skipped.');
+                },
+                vastVideoEndedCallback: () => {
+                    if (adDebug) console.info('[VideoPlayer] Ad finished.');
+                },
+            },
         };
+    }
+
+    // Fluid's own tracing, opt-in per page load so an ad problem can be
+    // diagnosed in production without a rebuild.
+    if (adDebug) {
+        options.debug = true;
+        console.info('[VideoPlayer] adList:', JSON.parse(JSON.stringify(props.adList)));
     }
 
     try {
