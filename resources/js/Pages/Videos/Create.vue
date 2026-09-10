@@ -70,9 +70,34 @@ const minScheduleDate = computed(() => {
 const tagInput = ref('');
 const showTagSuggestions = ref(false);
 
-const recentTags = computed(() =>
-    (props.existingTags || []).slice(0, 20).filter(tg => !form.tags.includes(tg))
+/**
+ * The suggestion palette, sorted alphabetically.
+ *
+ * Deliberately does NOT drop tags once they are chosen. Selection is now a
+ * toggle rendered in place, so removing an entry the moment it is picked would
+ * make the pill vanish from under the cursor and leave no way to unpick it.
+ * Sorted with localeCompare so accented names land next to their base letter
+ * rather than after Z.
+ */
+const popularTags = computed(() =>
+    [...(props.existingTags || [])]
+        .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
 );
+
+const isTagSelected = (tag) => form.tags.includes(tag);
+
+/** addTag caps the list at 20; past that an unselected pill would no-op silently. */
+const tagLimitReached = computed(() => form.tags.length >= 20);
+
+const toggleTag = (tag) => {
+    const index = form.tags.indexOf(tag);
+
+    if (index === -1) {
+        addTag(tag);
+    } else {
+        removeTag(index);
+    }
+};
 
 const filteredTags = computed(() => {
     const q = tagInput.value.trim().replace(/^#/, '').toLowerCase();
@@ -635,7 +660,7 @@ watch(fieldErrors, (errs) => {
                                 @dragstart="onTagDragStart(index)"
                                 @dragover="onTagDragOver"
                                 @drop="onTagDrop(index)"
-                                class="flex items-center gap-1 px-2 py-1 rounded text-sm bg-bg-card text-text-primary cursor-move select-none"
+                                class="tag-label flex items-center gap-1 px-2 py-1 rounded text-sm bg-bg-card text-text-primary cursor-move select-none"
                             >
                                 #{{ tag }}
                                 <button type="button" @click="removeTag(index)" class="hover:text-red-400" :aria-label="`Remove tag ${tag}`">
@@ -668,19 +693,37 @@ watch(fieldErrors, (errs) => {
                                 </button>
                             </div>
                         </div>
-                        <!-- Popular tags — horizontal scrollable pills -->
-                        <div v-if="recentTags.length" class="mt-2">
-                            <p class="text-xs text-text-muted mb-1">Popular tags:</p>
-                            <div class="flex items-center gap-1.5 overflow-x-auto pb-1" style="scrollbar-width: thin;">
-                                <button
-                                    v-for="rt in recentTags"
-                                    :key="rt"
-                                    type="button"
-                                    @click="addTag(rt)"
-                                    class="text-xs px-2 py-0.5 rounded-full bg-bg-secondary text-text-secondary hover:bg-bg-card transition-colors shrink-0 whitespace-nowrap"
-                                >
-                                    + {{ rt }}
-                                </button>
+                        <!--
+                            Popular tags — a boxed, alphabetical palette that wraps
+                            instead of scrolling sideways. A single horizontal row hid
+                            most of the 200 available tags behind a scrollbar nobody
+                            found, and each pill was add-only, so an accidental pick had
+                            to be undone up in the chip list.
+                        -->
+                        <div v-if="popularTags.length" class="mt-3">
+                            <div class="flex items-baseline justify-between mb-1.5">
+                                <p class="text-xs text-text-muted">Popular tags</p>
+                                <p class="text-xs" :class="tagLimitReached ? 'text-accent-text' : 'text-text-muted'">
+                                    {{ form.tags.length }}/20
+                                </p>
+                            </div>
+                            <div class="rounded-lg border border-border bg-bg-secondary p-2 max-h-44 overflow-y-auto">
+                                <div class="flex flex-wrap gap-1.5">
+                                    <button
+                                        v-for="pt in popularTags"
+                                        :key="pt"
+                                        type="button"
+                                        :aria-pressed="isTagSelected(pt)"
+                                        :disabled="!isTagSelected(pt) && tagLimitReached"
+                                        class="tag-label px-2 py-1 rounded-full border text-[11px] font-semibold leading-none transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                        :class="isTagSelected(pt)
+                                            ? 'bg-accent border-accent text-accent-contrast'
+                                            : 'bg-bg-card border-border text-text-secondary hover:text-text-primary hover:border-text-muted'"
+                                        @click="toggleTag(pt)"
+                                    >
+                                        {{ pt }}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <p v-if="submitAttempted && !tagsValid" class="text-red-500 text-xs mt-2 field-error">

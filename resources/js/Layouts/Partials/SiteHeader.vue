@@ -212,14 +212,20 @@ nextTick(loadUnreadCount);
                             </button>
                         </template>
 
+                        <!--
+                            justify-center only here: .nav-item is start-aligned because
+                            the sidebar needs its labels to line up down a column, but
+                            this menu is two short items in a narrow box, where that
+                            leaves the content hugging one edge.
+                        -->
                         <DropdownMenuItem as-child>
-                            <Link href="/upload" class="nav-item cursor-pointer">
+                            <Link href="/upload" class="nav-item justify-center cursor-pointer">
                                 <Film class="w-4 h-4" />
                                 <span>{{ t('nav.upload_video') }}</span>
                             </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem as-child>
-                            <Link href="/image-upload" class="nav-item cursor-pointer">
+                            <Link href="/image-upload" class="nav-item justify-center cursor-pointer">
                                 <ImageIcon class="w-4 h-4" />
                                 <span>{{ t('nav.upload_image') }}</span>
                             </Link>
