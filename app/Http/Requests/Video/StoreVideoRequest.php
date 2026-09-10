@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Video;
 
+use App\Rules\KnownTags;
 use App\Models\Video;
 use App\Rules\ValidVideoFile;
 use Illuminate\Foundation\Http\FormRequest;
@@ -35,7 +36,7 @@ class StoreVideoRequest extends FormRequest
             'description' => 'required|string|min:10|max:5000',
             'category_id' => 'required|exists:categories,id',
             'age_restricted' => 'boolean',
-            'tags' => 'required|array|min:3|max:20',
+            'tags' => ['required', 'array', 'min:3', 'max:20', new KnownTags()],
             'tags.*' => 'string|min:2|max:50',
             'video_file' => [
                 'required',

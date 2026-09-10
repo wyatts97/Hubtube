@@ -350,8 +350,8 @@ const statusColors = {
                                 v-model="tagInput"
                                 type="text"
                                 class="input"
-                                :placeholder="t('upload.add_tag')"
-                                @keydown.enter.prevent="addTag(tagInput)"
+                                placeholder="Search existing tags"
+                                @keydown.enter.prevent="addTag(filteredTags[0] ?? tagInput)"
                                 @focus="showTagSuggestions = true"
                                 @blur="setTimeout(() => showTagSuggestions = false, 200)"
                                 autocomplete="off"
@@ -368,6 +368,7 @@ const statusColors = {
                                 </button>
                             </div>
                         </div>
+                        <p v-if="tagNotice" class="text-xs text-accent-text mt-1">{{ tagNotice }}</p>
                     </div>
                 </div>
 

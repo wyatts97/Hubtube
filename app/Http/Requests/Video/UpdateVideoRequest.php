@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Video;
 
+use App\Rules\KnownTags;
 use App\Models\Video;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -31,7 +32,7 @@ class UpdateVideoRequest extends FormRequest
             'description' => 'nullable|string|max:5000',
             'category_id' => 'nullable|exists:categories,id',
             'age_restricted' => 'boolean',
-            'tags' => 'nullable|array|max:20',
+            'tags' => ['nullable', 'array', 'max:20', new KnownTags()],
             'tags.*' => 'string|max:50',
             'geo_blocked_countries' => 'nullable|array',
             'geo_blocked_countries.*' => 'string|size:2',

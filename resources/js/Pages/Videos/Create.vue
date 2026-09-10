@@ -84,6 +84,28 @@ const popularTags = computed(() =>
         .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
 );
 
+/**
+ * Canonical name for every pickable tag, keyed by its lower-cased form.
+ *
+ * Tags can no longer be invented here, so typed input has to resolve to a row
+ * that already exists. Going through this map also stores the tag with the
+ * vocabulary's own casing, which keeps "ebony" from being submitted alongside
+ * the existing "Ebony" and rejected server-side as a near miss.
+ */
+const tagLookup = computed(() => {
+    const map = new Map();
+    for (const tag of props.existingTags || []) {
+        map.set(String(tag).trim().toLowerCase(), tag);
+    }
+    return map;
+});
+
+const resolveTag = (raw) =>
+    tagLookup.value.get(String(raw ?? '').trim().replace(/^#/, '').toLowerCase()) ?? null;
+
+/** Set when typed text matches no existing tag, so the rejection is visible. */
+const tagNotice = ref('');
+
 const isTagSelected = (tag) => form.tags.includes(tag);
 
 /** addTag caps the list at 20; past that an unselected pill would no-op silently. */
@@ -112,11 +134,27 @@ const addTag = (tagValue) => {
     if (!raw) return;
     // Support paste-multiple: split on comma / newline / tab
     const pieces = raw.split(/[,\n\t]+/).map(s => s.trim().replace(/^#/, '')).filter(Boolean);
+    const unmatched = [];
+
     for (const piece of pieces) {
-        if (piece && !form.tags.includes(piece) && form.tags.length < 20 && piece.length >= 2 && piece.length <= 50) {
-            form.tags.push(piece);
+        // Unknown tags are dropped rather than created. The server enforces the
+        // same rule (App\Rules\KnownTags); this only spares the round trip.
+        const canonical = resolveTag(piece);
+
+        if (!canonical) {
+            unmatched.push(piece);
+            continue;
+        }
+
+        if (!form.tags.includes(canonical) && form.tags.length < 20) {
+            form.tags.push(canonical);
         }
     }
+
+    tagNotice.value = unmatched.length
+        ? `No tag matches ${unmatched.map(u => `"${u}"`).join(', ')} — pick one from the list below.`
+        : '';
+
     tagInput.value = '';
     showTagSuggestions.value = false;
 };
@@ -128,9 +166,13 @@ const removeTag = (index) => {
 const handleTagKeydown = (e) => {
     if (e.key === 'Enter' || e.key === ',') {
         e.preventDefault();
-        addTag(tagInput.value);
+        // The field filters existing tags now rather than creating one, so
+        // Enter commits the top match instead of whatever was typed.
+        const [best] = filteredTags.value;
+        addTag(best ?? tagInput.value);
     } else if (e.key === 'Backspace' && !tagInput.value && form.tags.length) {
         form.tags.pop();
+        tagNotice.value = '';
     }
 };
 
@@ -674,7 +716,7 @@ watch(fieldErrors, (errs) => {
                                 v-model="tagInput"
                                 type="text"
                                 class="input"
-                                :placeholder="t('upload.add_tag')"
+                                placeholder="Search existing tags"
                                 @keydown="handleTagKeydown"
                                 @focus="showTagSuggestions = true"
                                 @blur="setTimeout(() => showTagSuggestions = false, 200)"
@@ -693,6 +735,7 @@ watch(fieldErrors, (errs) => {
                                 </button>
                             </div>
                         </div>
+                        <p v-if="tagNotice" class="text-xs text-accent-text mt-1">{{ tagNotice }}</p>
                         <!--
                             Popular tags — a boxed, alphabetical palette that wraps
                             instead of scrolling sideways. A single horizontal row hid
