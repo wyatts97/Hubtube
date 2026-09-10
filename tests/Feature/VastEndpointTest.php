@@ -69,8 +69,13 @@ class VastEndpointTest extends TestCase
         );
     }
 
-    public function test_the_hls_variant_is_offered_first_when_ready(): void
+    public function test_only_the_progressive_mp4_is_advertised_even_when_hls_is_ready(): void
     {
+        // Fluid Player validates an ad by fetching only the FIRST MediaFile and
+        // discards the whole ad unless that response looks like playable video.
+        // An HLS playlist fails that test outside Safari, so advertising one --
+        // in any position -- costs the ad entirely. Regression test for
+        // pre-rolls silently never playing.
         $this->enable();
 
         $ad = VideoAd::factory()->create([
@@ -90,14 +95,13 @@ class VastEndpointTest extends TestCase
         $xml = $this->xml($this->get('/api/vast/pre_roll')->getContent());
         $files = $xml->Ad->InLine->Creatives->Creative->Linear->MediaFiles->MediaFile;
 
-        $this->assertCount(2, $files);
-        // Players take the first playable entry, and the segmented variant
-        // starts faster than the head of a progressive MP4.
-        $this->assertSame('application/x-mpegURL', (string) $files[0]['type']);
-        $this->assertSame('video/mp4', (string) $files[1]['type']);
+        $this->assertCount(1, $files);
+        $this->assertSame('video/mp4', (string) $files[0]['type']);
+        $this->assertSame('progressive', (string) $files[0]['delivery']);
+        $this->assertStringNotContainsString('.m3u8', (string) $files[0]);
     }
 
-    public function test_an_unconverted_mp4_offers_only_the_progressive_file(): void
+    public function test_an_unconverted_mp4_offers_the_progressive_file(): void
     {
         $this->enable();
 

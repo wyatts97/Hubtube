@@ -146,12 +146,22 @@ class VastBuilder
         $width = $ad->width > 0 ? (int) $ad->width : self::FALLBACK_WIDTH;
         $height = $ad->height > 0 ? (int) $ad->height : self::FALLBACK_HEIGHT;
 
-        if ($hls = $ad->hlsUrl()) {
-            $mediaFiles->appendChild(
-                $this->mediaFile($doc, $hls, 'application/x-mpegURL', 'streaming', $width, $height)
-            );
-        }
-
+        // Progressive MP4 only, deliberately — no HLS variant is advertised.
+        //
+        // Fluid Player pre-validates an ad by fetching *only the first*
+        // MediaFile and rejecting the whole ad unless that response's
+        // Content-Type contains "video" and canPlayType() accepts it
+        // (resolveAdTreeRequests -> validateMediaFile). An HLS playlist fails
+        // both tests outside Safari, which silently discards the entire ad.
+        //
+        // Listing HLS second does not help either: the later selection pass
+        // (getSupportedMediaFileObject) only stops early on a "probably" match,
+        // and bare "video/mp4" scores "maybe", so a trailing HLS entry
+        // overwrites the MP4 and routes playback through hls.js anyway.
+        //
+        // Ad creatives are short and already downscaled by ProcessAdCreativeJob,
+        // so segmented delivery buys little here, and staying on MP4 keeps the
+        // hls.js chunk off pages whose main video does not need it.
         $mediaFiles->appendChild(
             $this->mediaFile($doc, $ad->mediaUrl(), 'video/mp4', 'progressive', $width, $height)
         );
