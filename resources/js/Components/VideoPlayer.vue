@@ -96,7 +96,10 @@ const initPlayer = () => {
     if (!videoRef.value) return;
 
     const layoutControls = {
-        primaryColor: '#f59e0b',
+        // Drives the progress bar fill, the play/pause animation circle and the
+        // HD marker in the quality menu — Fluid derives all three from this one
+        // value, so it is the only place the accent colour is set.
+        primaryColor: '#dc2626',
         posterImage: props.poster || undefined,
         playButtonShowing: true,
         playPauseAnimation: true,
@@ -104,16 +107,10 @@ const initPlayer = () => {
         autoPlay: props.autoplay,
         keyboardControl: true,
         allowDownload: false,
-        allowTheatre: true,
+        allowTheatre: false,
         playbackRateEnabled: true,
         miniPlayer: {
-            enabled: true,
-            width: 400,
-            height: 225,
-            widthMobile: 40,
-            placeholderText: '',
-            position: 'bottom right',
-            autoToggle: false,
+            enabled: false,
         },
         // No caption pipeline exists yet (nothing generates .vtt subtitle
         // tracks), so the menu would always be empty. The hook stays here so
@@ -186,7 +183,7 @@ onMounted(() => {
 });
 
 // Not optional in an Inertia SPA: a missed destroy() leaves Fluid's listeners
-// and its miniplayer scroll handler bound to a detached subtree.
+// bound to a detached subtree.
 onUnmounted(() => {
     destroyPlayer();
 });
