@@ -134,6 +134,11 @@ export function useChunkedUpload(options = {}) {
                     const data = await res.json().catch(() => ({}));
                     throw Object.assign(new Error(data.error || 'Upload limit reached'), { fatal: true, limitReached: true });
                 }
+                if (res.status === 403) {
+                    // e.g. email verification required — retrying cannot help.
+                    const data = await res.json().catch(() => ({}));
+                    throw Object.assign(new Error(data.error || 'Upload not allowed'), { fatal: true });
+                }
                 if (!res.ok) {
                     const data = await res.json().catch(() => ({}));
                     throw new Error(data.error || `Chunk ${index} failed (${res.status})`);

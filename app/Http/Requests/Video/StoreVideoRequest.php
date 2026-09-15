@@ -5,7 +5,9 @@ namespace App\Http\Requests\Video;
 use App\Rules\KnownTags;
 use App\Models\Video;
 use App\Rules\ValidVideoFile;
+use App\Support\VideoPrivacy;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Number;
 
 class StoreVideoRequest extends FormRequest
@@ -22,9 +24,11 @@ class StoreVideoRequest extends FormRequest
             $this->merge(['tags' => Video::normalizeTagsInput($rawTags)]);
         }
 
-        // Privacy is hard-forced server-side. Regular users only publish public videos;
-        // admin-only privacy management lives in the Filament panel.
-        $this->merge(['privacy' => 'public']);
+        // Which values are accepted is decided in rules(): unlisted and private
+        // each need their own admin toggle.
+        if (! $this->filled('privacy')) {
+            $this->merge(['privacy' => VideoPrivacy::PUBLIC]);
+        }
     }
 
     public function rules(): array
@@ -36,6 +40,7 @@ class StoreVideoRequest extends FormRequest
             'description' => 'required|string|min:10|max:5000',
             'category_id' => 'required|exists:categories,id',
             'age_restricted' => 'boolean',
+            'privacy' => ['required', 'string', Rule::in(VideoPrivacy::allowedFor($this->user()))],
             'tags' => ['required', 'array', 'min:3', 'max:20', new KnownTags()],
             'tags.*' => 'string|min:2|max:50',
             'video_file' => [
@@ -70,6 +75,7 @@ class StoreVideoRequest extends FormRequest
             'tags.required' => 'Please add at least 3 tags.',
             'tags.min' => 'Please add at least 3 tags.',
             'tags.max' => 'You can add up to 20 tags.',
+            'privacy.in' => 'That privacy option is not available.',
         ];
     }
 }

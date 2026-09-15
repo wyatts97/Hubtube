@@ -39,6 +39,15 @@ class VideoPolicy
         return $user->id === $video->user_id || $user->is_admin;
     }
 
+    /**
+     * Any owner can change their own video's privacy, even without full edit
+     * rights. Which values they may pick is limited separately by VideoPrivacy.
+     */
+    public function updatePrivacy(User $user, Video $video): bool
+    {
+        return $user->id === $video->user_id || $user->is_admin;
+    }
+
     public function delete(User $user, Video $video): bool
     {
         return $user->id === $video->user_id || $user->is_admin;

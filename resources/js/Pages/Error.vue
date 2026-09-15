@@ -17,6 +17,7 @@ const title = {
     419: 'Session Expired',
     403: 'Forbidden',
     404: 'Page Not Found',
+    451: 'Unavailable In Your Region',
     500: 'Server Error',
     503: 'Service Unavailable',
 }[props.status] || 'Error';
@@ -25,6 +26,7 @@ const description = props.message || {
     419: 'Your session has expired. Please refresh the page to continue.',
     403: 'You do not have permission to access this resource.',
     404: 'The page you are looking for could not be found.',
+    451: 'This content is not available in your country.',
     500: 'Something went wrong on our end. Please try again later.',
     503: 'We are currently undergoing maintenance. Please check back soon.',
 }[props.status] || 'An unexpected error occurred.';

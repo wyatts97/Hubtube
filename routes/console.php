@@ -68,3 +68,5 @@ Schedule::command('health:queue-check-heartbeat')->everyMinute();
 // it only reports whether this command has run recently.
 Schedule::command('health:schedule-check-heartbeat')->everyMinute();
 Schedule::command('model:prune', ['--model' => [\Spatie\Health\Models\HealthCheckResultHistoryItem::class]])->daily();
+// Raw per-view rows; the running total on videos.views_count is unaffected.
+Schedule::command('model:prune', ['--model' => [\App\Models\VideoView::class]])->dailyAt('04:10');

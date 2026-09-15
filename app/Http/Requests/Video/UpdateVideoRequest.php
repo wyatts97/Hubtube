@@ -4,7 +4,9 @@ namespace App\Http\Requests\Video;
 
 use App\Rules\KnownTags;
 use App\Models\Video;
+use App\Support\VideoPrivacy;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateVideoRequest extends FormRequest
 {
@@ -19,10 +21,6 @@ class UpdateVideoRequest extends FormRequest
         if ($rawTags !== null) {
             $this->merge(['tags' => Video::normalizeTagsInput($rawTags)]);
         }
-
-        // Privacy is managed exclusively in the Filament admin panel.
-        // Strip any client-supplied value so users cannot change it.
-        $this->offsetUnset('privacy');
     }
 
     public function rules(): array
@@ -32,6 +30,7 @@ class UpdateVideoRequest extends FormRequest
             'description' => 'nullable|string|max:5000',
             'category_id' => 'nullable|exists:categories,id',
             'age_restricted' => 'boolean',
+            'privacy' => ['sometimes', 'required', 'string', Rule::in(VideoPrivacy::allowedFor($this->user(), $this->route('video')))],
             'tags' => ['nullable', 'array', 'max:20', new KnownTags()],
             'tags.*' => 'string|max:50',
             'geo_blocked_countries' => 'nullable|array',

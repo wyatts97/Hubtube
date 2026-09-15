@@ -1,18 +1,30 @@
 <script setup>
-import { router, usePage } from '@inertiajs/vue3';
+import { router, usePage, useForm } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useFetch } from '@/Composables/useFetch';
 import { Loader2, CheckCircle, ShieldCheck, Trash2, Clock, XCircle, Edit, Eye } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
+import VideoPrivacySelect from '@/Components/VideoPrivacySelect.vue';
 
 const { t } = useI18n();
 
 const props = defineProps({
     video: Object,
     canEdit: Boolean,
+    privacyOptions: { type: Array, default: () => ['public'] },
 });
+
+// Any owner may change privacy here, within the options the admin allows.
+const privacyForm = useForm({ privacy: props.video.privacy || 'public' });
+const savePrivacy = () => {
+    privacyForm.put(`/videos/${props.video.id}/privacy`, {
+        preserveScroll: true,
+        // Make the saved value the new baseline so the button disables again.
+        onSuccess: () => privacyForm.defaults(),
+    });
+};
 
 const { get } = useFetch();
 
@@ -206,6 +218,25 @@ const isPublished = computed(() => {
                     </div>
                 </div>
             </div>
+
+            <!-- Privacy -->
+            <form v-if="privacyOptions.length > 1" class="card p-4 mb-6" @submit.prevent="savePrivacy">
+                <VideoPrivacySelect
+                    v-model="privacyForm.privacy"
+                    :options="privacyOptions"
+                    :error="privacyForm.errors.privacy || ''"
+                    :disabled="privacyForm.processing"
+                />
+                <div class="flex justify-end mt-3">
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                        :disabled="privacyForm.processing || !privacyForm.isDirty"
+                    >
+                        {{ t('video.privacy_save') }}
+                    </button>
+                </div>
+            </form>
 
             <!-- Actions -->
             <div class="flex items-center justify-between">

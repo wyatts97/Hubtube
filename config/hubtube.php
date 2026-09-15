@@ -21,6 +21,30 @@ return [
         'allowed_extensions' => ['mp4', 'mov', 'avi', 'mkv', 'webm', 'wmv', 'flv'],
         'qualities' => ['240p', '360p', '480p', '720p', '1080p', '1440p', '4k'],
         'default_privacy' => 'public',
+
+        // A repeat visit from the same viewer inside this window is not
+        // counted as another view.
+        'view_dedup_minutes' => 360,
+
+        // Raw rows in video_views older than this are pruned; the running
+        // total lives on videos.views_count and is unaffected.
+        'view_log_retention_days' => 90,
+
+        // A viewer who reaches this fraction of the duration has finished it.
+        'watch_completed_ratio' => 0.9,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Protected Media (private videos)
+    |--------------------------------------------------------------------------
+    |
+    | Must match the `internal` location in deployment/nginx/hubtube.conf.
+    | Only used when "X-Accel-Redirect" is enabled in Storage settings.
+    |
+    */
+    'media' => [
+        'x_accel_prefix' => '/_protected-media',
     ],
 
     /*

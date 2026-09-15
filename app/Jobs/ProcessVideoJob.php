@@ -53,6 +53,14 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
     protected array $settings = [];
 
     /**
+     * Renditions that could not be produced, keyed by quality, with the reason.
+     * The video still publishes with whatever did succeed.
+     *
+     * @var array<string, string>
+     */
+    protected array $failedQualities = [];
+
+    /**
      * Read a value from the pre-loaded settings array.
      */
     protected function s(string $key, mixed $default = null): mixed
@@ -105,7 +113,20 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
                 }
             }
 
-            $videoService->markAsProcessed($this->video, $qualities);
+            $partialReason = $this->partialRenditionReason();
+
+            $videoService->markAsProcessed($this->video, $qualities, $partialReason);
+
+            if ($partialReason !== null) {
+                AdminLogger::error(
+                    "Video #{$this->video->id} ({$this->video->title}) published with some renditions missing: {$partialReason}",
+                    [
+                        'video_id' => $this->video->id,
+                        'failed_qualities' => $this->failedQualities,
+                        'qualities' => $qualities,
+                    ]
+                );
+            }
 
             $this->notifyOnce();
 
@@ -121,6 +142,24 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
             // underlying ffmpeg/environment problem gets noticed and fixed.
             $this->markAsProcessedWithOriginal(degraded: true, reason: $e->getMessage());
         }
+    }
+
+    /**
+     * Summary of failed renditions for processing_fallback_reason, which the
+     * admin video list flags as "Degraded". Null when everything succeeded.
+     */
+    protected function partialRenditionReason(): ?string
+    {
+        if (empty($this->failedQualities)) {
+            return null;
+        }
+
+        $parts = [];
+        foreach ($this->failedQualities as $quality => $reason) {
+            $parts[] = "{$quality} ({$reason})";
+        }
+
+        return Str::limit('Some renditions failed: '.implode('; ', $parts), 1000);
     }
 
     protected function markAsProcessedWithOriginal(bool $degraded = false, ?string $reason = null): void
@@ -889,10 +928,20 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
                         'quality' => $quality,
                         'exit_code' => $exitCode,
                     ]);
-                    // Fallback: try this quality individually
-                    $this->transcodeToQuality($inputPath, $outputDir, $quality, $settings, $threads, $preset);
+                    // Fallback: try this quality individually. A failure here
+                    // used to throw out of the whole job, discarding every
+                    // rendition that had succeeded and shipping only the
+                    // original. Record it and carry on with the rest instead.
+                    try {
+                        $this->transcodeToQuality($inputPath, $outputDir, $quality, $settings, $threads, $preset);
+                    } catch (RuntimeException $e) {
+                        $this->failedQualities[$quality] = $e->getMessage();
+                    }
+
                     if (file_exists($output) && filesize($output) > 10240) {
                         $qualities[] = $quality;
+                    } elseif (! isset($this->failedQualities[$quality])) {
+                        $this->failedQualities[$quality] = 'Output missing or too small after transcoding';
                     }
                 }
             }

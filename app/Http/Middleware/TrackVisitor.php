@@ -27,6 +27,8 @@ class TrackVisitor
                 str_starts_with($path, 'api/') ||
                 str_starts_with($path, 'livewire/') ||
                 str_starts_with($path, 'admin/') ||
+                // Protected media files (private videos) are routed through PHP.
+                str_starts_with($path, 'storage/') ||
                 $request->hasHeader('X-Livewire')
             ) {
                 return $response;

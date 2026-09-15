@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Requests\Auth\RegisterRequest;
-use App\Models\Setting;
 use App\Models\User;
 use App\Services\ChannelService;
 use App\Services\EmailService;
@@ -42,8 +42,7 @@ class RegisterController extends Controller
 
         Auth::login($user);
 
-        $requireVerification = Setting::get('email_verification_required', false);
-        if ($requireVerification === true || $requireVerification === 'true' || $requireVerification === '1') {
+        if (EnsureEmailIsVerified::required()) {
             return redirect()->route('verification.notice');
         }
 

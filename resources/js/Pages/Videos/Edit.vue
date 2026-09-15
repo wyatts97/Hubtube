@@ -6,6 +6,7 @@ import { useFetch } from '@/Composables/useFetch';
 import { X, Save, Trash2, Image, Loader2, CheckCircle, ShieldCheck } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
+import VideoPrivacySelect from '@/Components/VideoPrivacySelect.vue';
 
 const { t } = useI18n();
 
@@ -13,6 +14,7 @@ const props = defineProps({
     video: Object,
     categories: Array,
     existingTags: { type: Array, default: () => [] },
+    privacyOptions: { type: Array, default: () => ['public'] },
 });
 
 const page = usePage();
@@ -26,6 +28,7 @@ const form = useForm({
     description: props.video.description || '',
     category_id: props.video.category_id || '',
     age_restricted: props.video.age_restricted,
+    privacy: props.video.privacy || 'public',
     tags: props.video.tags || [],
     monetization_enabled: props.video.monetization_enabled,
     price: props.video.price || '',
@@ -320,6 +323,13 @@ const statusColors = {
                             maxlength="5000"
                         ></textarea>
                     </div>
+
+                    <VideoPrivacySelect
+                        v-if="privacyOptions.length > 1"
+                        v-model="form.privacy"
+                        :options="privacyOptions"
+                        :error="form.errors.privacy || ''"
+                    />
 
                     <div>
                         <label for="category" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('video.category') }}</label>

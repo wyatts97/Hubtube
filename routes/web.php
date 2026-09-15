@@ -39,6 +39,7 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\PointsController;
 use App\Http\Controllers\ProController;
+use App\Http\Controllers\ProtectedMediaController;
 use App\Http\Controllers\PushNotificationController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
@@ -351,6 +352,17 @@ Route::middleware('installed:require')->group(function () {
         }, 200, $headers);
     })->where('legacyPath', '.*')->name('admin.video-stream');
 
+    // Private video files. Nginx forwards /storage/videos/{slug}/… here only
+    // when the video's directory holds the privacy marker (see
+    // ProtectedMediaService); other media never reaches PHP. Outside the age
+    // gate for the same reason as the admin stream above: the watch page has
+    // already enforced it, and media requests cannot follow a redirect to it.
+    Route::get('/storage/videos/{slug}/{path}', ProtectedMediaController::class)
+        ->where('path', '.*')
+        ->name('media.protected');
+    // Same, for server layouts that proxy the rewritten URI to a PHP backend.
+    Route::get('/protected-media', ProtectedMediaController::class)->name('media.protected.proxied');
+
     // Thumbnail proxy for embedded video thumbnails
     Route::get('/api/thumb-proxy', [ThumbnailProxyController::class, 'proxy'])
         ->middleware('throttle:30,1')
@@ -498,7 +510,7 @@ Route::middleware('installed:require')->group(function () {
                 ->middleware('throttle:6,1')
                 ->name('verification.send');
 
-            Route::get('/upload', [VideoController::class, 'create'])->name('videos.create');
+            Route::get('/upload', [VideoController::class, 'create'])->middleware('verified.if-required')->name('videos.create');
 
             // Pro membership (authenticated actions)
             Route::post('/pro/checkout', [ProController::class, 'checkout'])->name('pro.checkout');
@@ -506,32 +518,35 @@ Route::middleware('installed:require')->group(function () {
             Route::get('/pro/portal', [ProController::class, 'portal'])->name('pro.portal');
 
             // Image upload & management
-            Route::get('/image-upload', [ImageController::class, 'create'])->name('images.create');
-            Route::post('/image-upload', [ImageController::class, 'store'])->middleware('throttle:10,1')->name('images.store');
+            Route::get('/image-upload', [ImageController::class, 'create'])->middleware('verified.if-required')->name('images.create');
+            Route::post('/image-upload', [ImageController::class, 'store'])->middleware(['verified.if-required', 'throttle:10,1'])->name('images.store');
             Route::delete('/images/{image}', [ImageController::class, 'destroy'])->name('images.destroy');
 
             // Gallery management
-            Route::get('/galleries/create', [GalleryController::class, 'create'])->name('galleries.create');
-            Route::post('/galleries', [GalleryController::class, 'store'])->name('galleries.store');
+            Route::get('/galleries/create', [GalleryController::class, 'create'])->middleware('verified.if-required')->name('galleries.create');
+            Route::post('/galleries', [GalleryController::class, 'store'])->middleware('verified.if-required')->name('galleries.store');
             Route::put('/gallery/{gallery}', [GalleryController::class, 'update'])->name('galleries.update');
             Route::delete('/gallery/{gallery}', [GalleryController::class, 'destroy'])->name('galleries.destroy');
             Route::get('/upload/success', [VideoController::class, 'uploadSuccess'])->name('videos.upload-success');
-            Route::post('/upload', [VideoController::class, 'store'])->middleware('throttle:10,1')->name('videos.store');
-            Route::post('/upload/chunk', [VideoController::class, 'uploadChunk'])->middleware('throttle:300,1')->name('videos.upload-chunk');
-            Route::post('/upload/finalize', [VideoController::class, 'finalize'])->middleware('throttle:10,1')->name('videos.upload-finalize');
+            Route::post('/upload', [VideoController::class, 'store'])->middleware(['verified.if-required', 'throttle:10,1'])->name('videos.store');
+            Route::post('/upload/chunk', [VideoController::class, 'uploadChunk'])->middleware(['verified.if-required', 'throttle:300,1'])->name('videos.upload-chunk');
+            Route::post('/upload/finalize', [VideoController::class, 'finalize'])->middleware(['verified.if-required', 'throttle:10,1'])->name('videos.upload-finalize');
             Route::get('/videos/{video}/edit', [VideoController::class, 'edit'])->name('videos.edit');
             Route::get('/videos/{video}/status', [VideoController::class, 'status'])->name('videos.status');
             Route::get('/videos/{video}/processing-status', [VideoController::class, 'processingStatus'])->name('videos.processing-status');
             Route::get('/videos/{video}/download', [VideoController::class, 'download'])->middleware('throttle:10,1')->name('videos.download');
             Route::post('/videos/{video}/select-thumbnail', [VideoController::class, 'selectThumbnail'])->name('videos.select-thumbnail');
             Route::put('/videos/{video}', [VideoController::class, 'update'])->name('videos.update');
+            Route::put('/videos/{video}/privacy', [VideoController::class, 'updatePrivacy'])->middleware('throttle:20,1')->name('videos.privacy');
+            // Player reports every ~15s plus on pause/leave, so allow a little headroom.
+            Route::post('/videos/{video}/progress', [VideoController::class, 'recordProgress'])->middleware('throttle:30,1')->name('videos.progress');
             Route::delete('/videos/{video}', [VideoController::class, 'destroy'])->name('videos.destroy');
 
             Route::post('/videos/{video}/like', [LikeController::class, 'like'])->middleware('throttle:30,1')->name('videos.like');
             Route::post('/videos/{video}/dislike', [LikeController::class, 'dislike'])->middleware('throttle:30,1')->name('videos.dislike');
 
             Route::get('/videos/{video}/comments', [CommentController::class, 'index'])->middleware('throttle:30,1')->name('comments.index');
-            Route::post('/videos/{video}/comments', [CommentController::class, 'store'])->middleware('throttle:10,1')->name('comments.store');
+            Route::post('/videos/{video}/comments', [CommentController::class, 'store'])->middleware(['verified.if-required', 'throttle:10,1'])->name('comments.store');
             Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
             Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
             Route::post('/comments/{comment}/like', [CommentController::class, 'like'])->middleware('throttle:30,1')->name('comments.like');

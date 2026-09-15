@@ -8,6 +8,7 @@ use App\Services\Translation\TranslationProviderManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -31,6 +32,12 @@ abstract class TestCase extends BaseTestCase
         // every other job still executes as before. Tests that assert on
         // dispatch can still call Queue::fake() freely.
         Queue::fake([TranslateModelJob::class]);
+
+        // Model events write to the public disk (e.g. a private video's privacy
+        // marker), so without this every factory-made video could leave files
+        // behind in the real storage/app/public. Tests that need their own
+        // fake can still call Storage::fake('public') again.
+        Storage::fake('public');
 
         // The settings cache is process-wide and survives RefreshDatabase, so a
         // test that switches translation provider (or any other setting) leaks

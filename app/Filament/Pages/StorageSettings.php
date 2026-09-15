@@ -71,6 +71,7 @@ class StorageSettings extends Page implements HasForms
             's3_bucket' => Setting::get('s3_bucket', ''),
             // CDN
             'cdn_enabled' => Setting::get('cdn_enabled', false),
+            'media_x_accel_redirect' => Setting::get('media_x_accel_redirect', false),
             'cdn_url' => Setting::get('cdn_url', ''),
             'bunnycdn_enabled' => Setting::get('bunnycdn_enabled', false),
             'bunnycdn_zone' => Setting::get('bunnycdn_zone', ''),
@@ -147,6 +148,12 @@ class StorageSettings extends Page implements HasForms
                                             ->url()
                                             ->placeholder('https://cdn.yourdomain.com'),
                                     ])->columns(2),
+                                Section::make('Private Videos')
+                                    ->schema([
+                                        Toggle::make('media_x_accel_redirect')
+                                            ->label('Serve private videos via X-Accel-Redirect')
+                                            ->helperText('Only enable once the "Private videos" block from deployment/nginx/hubtube.conf is in your nginx vhost. PHP still checks who is watching; nginx then sends the file. While off, PHP streams private video files itself, which works on any server but ties up a PHP worker per request. Private videos always bypass the CDN.'),
+                                    ]),
                             ]),
                         Tab::make('Wasabi')
                             ->schema([

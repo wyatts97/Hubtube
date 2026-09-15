@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\AltTextService;
+use App\Services\ProtectedMediaService;
 use App\Services\StorageManager;
 use App\Traits\Translatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -200,6 +201,14 @@ class Video extends Model
         static::created($flushCaches);
         static::updated($flushCaches);
         static::deleted($flushCaches);
+
+        // Keep the nginx privacy marker in step with the column. See
+        // ProtectedMediaService for why private files are gated this way.
+        static::saved(function (Video $video) {
+            if ($video->wasRecentlyCreated || $video->wasChanged(['privacy', 'slug'])) {
+                app(ProtectedMediaService::class)->sync($video);
+            }
+        });
 
         static::saving(function (Video $video) {
             $normalizedTags = static::normalizeTagsInput($video->getAttribute('tags'));
@@ -507,9 +516,15 @@ class Video extends Model
         };
     }
 
+    /**
+     * Whether $user may watch this video, judged on privacy alone.
+     *
+     * Unlisted means "anyone with the link", guests included — it is only kept
+     * out of listings. Private is the owner's and admins' alone.
+     */
     public function isAccessibleBy(?User $user): bool
     {
-        if ($this->privacy === 'public') {
+        if ($this->privacy === 'public' || $this->privacy === 'unlisted') {
             return true;
         }
 
@@ -517,15 +532,34 @@ class Video extends Model
             return false;
         }
 
-        if ($this->user_id === $user->id) {
-            return true;
+        return $this->user_id === $user->id || (bool) $user->is_admin;
+    }
+
+    /** ISO country codes this video is blocked in, upper-cased. */
+    public function blockedCountries(): array
+    {
+        return array_values(array_filter(array_map(
+            fn ($code) => strtoupper(trim((string) $code)),
+            (array) ($this->geo_blocked_countries ?? [])
+        )));
+    }
+
+    public function isGeoBlockedFor(?string $country): bool
+    {
+        return $country !== null && in_array(strtoupper($country), $this->blockedCountries(), true);
+    }
+
+    /** Exclude videos blocked in $country. A null country filters nothing. */
+    public function scopeAvailableIn($query, ?string $country)
+    {
+        if ($country === null) {
+            return $query;
         }
 
-        if ($this->privacy === 'private') {
-            return false;
-        }
-
-        return true;
+        return $query->where(function ($q) use ($country) {
+            $q->whereNull('geo_blocked_countries')
+                ->orWhereJsonDoesntContain('geo_blocked_countries', strtoupper($country));
+        });
     }
 
     public function isPaid(): bool
@@ -533,9 +567,49 @@ class Video extends Model
         return $this->price > 0 || $this->rent_price > 0;
     }
 
+    /**
+     * Add one view without firing model events.
+     *
+     * A plain increment() fires `updated`, which flushed every home, trending
+     * and category cache on every single page view.
+     */
     public function incrementViews(): void
     {
-        $this->increment('views_count');
+        $this->incrementQuietly('views_count');
+    }
+
+    /**
+     * Whether this video's files are gated as private.
+     *
+     * Read from the raw attributes because listing queries often select only a
+     * few columns, and strict mode throws on a missing one. Those partial
+     * selects only ever feed public listings, so absent means not private.
+     */
+    protected function hasPrivateMedia(): bool
+    {
+        return ($this->attributes['privacy'] ?? null) === 'private';
+    }
+
+    /**
+     * URL for one of this video's stored files.
+     *
+     * Private videos skip the CDN, whose hostname never carries the viewer's
+     * session so could not be authorised, and always get pre-signed URLs on
+     * cloud disks even when the bucket is public.
+     */
+    protected function mediaUrl(string $path): string
+    {
+        $disk = $this->storage_disk ?? 'public';
+
+        if (! $this->hasPrivateMedia()) {
+            return StorageManager::url($path, $disk);
+        }
+
+        if ($disk === 'public') {
+            return asset('storage/'.ltrim($path, '/'));
+        }
+
+        return StorageManager::temporaryUrl($path, (int) Setting::get('cloud_url_expiry_minutes', 120), $disk);
     }
 
     public function getFormattedDurationAttribute(): string
@@ -558,7 +632,7 @@ class Video extends Model
         // stale Bunny CDN URLs in external_thumbnail_url even though the
         // thumbnail was downloaded locally during migration.
         if ($this->thumbnail) {
-            return StorageManager::url($this->thumbnail, $this->storage_disk ?? 'public');
+            return $this->mediaUrl($this->thumbnail);
         }
 
         if ($this->external_thumbnail_url) {
@@ -585,7 +659,7 @@ class Video extends Model
     public function getPreviewUrlAttribute(): ?string
     {
         if ($this->preview_path) {
-            return StorageManager::url($this->preview_path, $this->storage_disk ?? 'public');
+            return $this->mediaUrl($this->preview_path);
         }
 
         if ($this->external_preview_url) {
@@ -601,7 +675,7 @@ class Video extends Model
             return null;
         }
 
-        return StorageManager::url($this->scrubber_vtt_path, $this->storage_disk ?? 'public');
+        return $this->mediaUrl($this->scrubber_vtt_path);
     }
 
     public function getHlsPlaylistUrlAttribute(): ?string
@@ -611,7 +685,10 @@ class Video extends Model
         }
 
         $disk = $this->storage_disk ?? 'public';
-        if ($disk !== 'public' && ! Setting::get('cloud_storage_public_bucket', false)) {
+        // Segment URLs inside the playlist are relative and unsigned, so HLS
+        // only works where the files can be fetched without a signature. A
+        // private video on a cloud disk falls back to its signed MP4s.
+        if ($disk !== 'public' && ($this->hasPrivateMedia() || ! Setting::get('cloud_storage_public_bucket', false))) {
             return null;
         }
         $baseDir = dirname($this->video_path);
@@ -621,7 +698,7 @@ class Video extends Model
             return null;
         }
 
-        return StorageManager::url($masterPath, $disk);
+        return $this->mediaUrl($masterPath);
     }
 
     public function getQualityUrlsAttribute(): array
@@ -636,11 +713,11 @@ class Video extends Model
 
         foreach ($this->qualities_available as $quality) {
             if ($quality === 'original') {
-                $urls['original'] = StorageManager::url($this->video_path, $disk);
+                $urls['original'] = $this->mediaUrl($this->video_path);
             } else {
                 $path = $baseDir.'/processed/'.$quality.'.mp4';
                 if (StorageManager::exists($path, $disk)) {
-                    $urls[$quality] = StorageManager::url($path, $disk);
+                    $urls[$quality] = $this->mediaUrl($path);
                 }
             }
         }
@@ -658,7 +735,7 @@ class Video extends Model
             return null;
         }
 
-        return StorageManager::url($this->video_path, $this->storage_disk ?? 'public');
+        return $this->mediaUrl($this->video_path);
     }
 
     /**
@@ -731,7 +808,7 @@ class Video extends Model
             if (StorageManager::exists($path, $disk)) {
                 $thumbnails[] = [
                     'path' => $path,
-                    'url' => StorageManager::url($path, $disk),
+                    'url' => $this->mediaUrl($path),
                     'is_active' => $this->thumbnail === $path,
                 ];
             } else {
@@ -744,7 +821,7 @@ class Video extends Model
             if (StorageManager::exists($this->thumbnail, $disk)) {
                 array_unshift($thumbnails, [
                     'path' => $this->thumbnail,
-                    'url' => StorageManager::url($this->thumbnail, $disk),
+                    'url' => $this->mediaUrl($this->thumbnail),
                     'is_active' => true,
                 ]);
             }

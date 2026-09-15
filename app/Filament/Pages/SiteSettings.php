@@ -60,12 +60,16 @@ class SiteSettings extends Page implements HasForms
             'maintenance_mode' => Setting::get('maintenance_mode', false),
             'maintenance_message' => Setting::get('maintenance_message', ''),
             'registration_enabled' => Setting::get('registration_enabled', true),
-            'email_verification_required' => Setting::get('email_verification_required', true),
+            // Must match EnsureEmailIsVerified's default, or an unsaved install
+            // shows the toggle on while verification is not actually enforced.
+            'email_verification_required' => Setting::get('email_verification_required', false),
             'admin_require_2fa' => Setting::get('admin_require_2fa', false),
             'age_verification_required' => Setting::get('age_verification_required', true),
             'private_profiles_enabled' => Setting::get('private_profiles_enabled', false),
             'channel_social_links_enabled' => Setting::get('channel_social_links_enabled', true),
             'minimum_age' => Setting::get('minimum_age', 18),
+            'allow_unlisted_uploads' => Setting::get('allow_unlisted_uploads', false),
+            'allow_private_uploads' => Setting::get('allow_private_uploads', false),
             'max_upload_size_free' => Setting::get('max_upload_size_free', 500),
             'max_upload_size_pro' => Setting::get('max_upload_size_pro', 5000),
             'max_daily_uploads_free' => Setting::get('max_daily_uploads_free', 5),
@@ -407,6 +411,16 @@ class SiteSettings extends Page implements HasForms
                                         TextInput::make('max_daily_uploads_pro')
                                             ->label('Max Daily Uploads (Pro)')
                                             ->numeric(),
+                                    ])->columns(2),
+                                Section::make('Video Privacy')
+                                    ->description('Everything users upload is public unless these are on. Admins can always choose any privacy.')
+                                    ->schema([
+                                        Toggle::make('allow_unlisted_uploads')
+                                            ->label('Allow Unlisted Videos')
+                                            ->helperText('Users can make a video unlisted: anyone with the link can watch it, but it is kept out of listings, search and sitemaps.'),
+                                        Toggle::make('allow_private_uploads')
+                                            ->label('Allow Private Videos')
+                                            ->helperText('Users can make a video private: only they and admins can watch it. The "Private videos" nginx block in deployment/nginx/hubtube.conf must be in place, or the video files stay reachable by direct URL.'),
                                     ])->columns(2),
                                 Section::make('FFmpeg & Transcoding')
                                     ->schema([

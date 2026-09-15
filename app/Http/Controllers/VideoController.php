@@ -20,15 +20,20 @@ use App\Services\SeoService;
 use App\Services\StorageManager;
 use App\Services\TranslationService;
 use App\Services\VideoService;
+use App\Services\VideoViewRecorder;
+use App\Support\VideoPrivacy;
+use App\Support\VisitorCountry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -201,8 +206,13 @@ class VideoController extends Controller
             abort(404);
         }
 
+        // 451 Unavailable For Legal Reasons is the status meant for exactly this.
+        if (!$isOwner && $video->isGeoBlockedFor(VisitorCountry::fromRequest($request))) {
+            abort(451, 'This video is not available in your country.');
+        }
+
         $video->load(['user.channel', 'category']);
-        $video->incrementViews();
+        app(VideoViewRecorder::class)->record($video, $request);
 
         // Record watch history for authenticated users.
         // `updated_at` is what orders the "recently watched" list, but it isn't
@@ -370,6 +380,7 @@ class VideoController extends Controller
             return Inertia::render('Videos/Create', [
                 'categories' => Category::active()->get(),
                 'existingTags' => [],
+                'privacyOptions' => VideoPrivacy::allowedFor(auth()->user()),
                 'uploadLimitReached' => true,
             ]);
         }
@@ -382,6 +393,7 @@ class VideoController extends Controller
         return Inertia::render('Videos/Create', [
             'categories' => Category::active()->get(),
             'existingTags' => $existingTags,
+            'privacyOptions' => VideoPrivacy::allowedFor(auth()->user()),
         ]);
     }
 
@@ -580,7 +592,7 @@ class VideoController extends Controller
             'title' => $data['title'],
             'description' => $data['description'],
             'category_id' => $data['category_id'],
-            'privacy' => 'public',
+            'privacy' => $data['privacy'],
             'age_restricted' => $data['age_restricted'] ?? true,
             'tags' => $data['tags'] ?? [],
             'video_file' => $uploadedFile,
@@ -627,6 +639,7 @@ class VideoController extends Controller
             'video' => $video,
             'categories' => Category::active()->get(),
             'existingTags' => $existingTags,
+            'privacyOptions' => VideoPrivacy::allowedFor(auth()->user(), $video),
         ]);
     }
 
@@ -637,7 +650,70 @@ class VideoController extends Controller
         return Inertia::render('Videos/Status', [
             'video' => $video,
             'canEdit' => auth()->user()->canEditVideo(),
+            'privacyOptions' => VideoPrivacy::allowedFor(auth()->user(), $video),
         ]);
+    }
+
+    /**
+     * Change only a video's privacy.
+     *
+     * Separate from update() because any owner may do this, while the full
+     * edit form is limited to Pro and admin users. Which values are allowed
+     * still follows the admin's privacy toggles.
+     */
+    public function updatePrivacy(Request $request, Video $video): RedirectResponse
+    {
+        $this->authorize('updatePrivacy', $video);
+
+        $data = $request->validate([
+            'privacy' => ['required', 'string', Rule::in(VideoPrivacy::allowedFor($request->user(), $video))],
+        ], [
+            'privacy.in' => 'That privacy option is not available.',
+        ]);
+
+        $video->update(['privacy' => $data['privacy']]);
+
+        return back()->with('success', 'Video privacy updated.');
+    }
+
+    /**
+     * Store how far the signed-in viewer has got through a video.
+     *
+     * Sent periodically by the player, and again (as a keepalive fetch) when
+     * the page is hidden, so it must tolerate being called often and late.
+     */
+    public function recordProgress(Request $request, Video $video): HttpResponse
+    {
+        if (!$video->isAccessibleBy($request->user())) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'seconds' => 'required|numeric|min:0|max:86400',
+        ]);
+
+        $duration = (int) $video->duration;
+        $seconds = (int) floor((float) $data['seconds']);
+
+        if ($duration > 0) {
+            $seconds = min($seconds, $duration);
+        }
+
+        $history = WatchHistory::firstOrNew([
+            'user_id' => $request->user()->id,
+            'video_id' => $video->id,
+        ]);
+
+        $history->watched_seconds = $seconds;
+
+        // Once finished, stays finished: rewatching the opening minute of a
+        // completed video should not mark it unwatched again.
+        $ratio = (float) config('hubtube.video.watch_completed_ratio', 0.9);
+        $history->completed = $history->completed || ($duration > 0 && $seconds >= $duration * $ratio);
+
+        $history->save();
+
+        return response()->noContent();
     }
 
     public function update(UpdateVideoRequest $request, Video $video): RedirectResponse
@@ -742,6 +818,11 @@ class VideoController extends Controller
 
         if (!$video->isAccessibleBy($user)) {
             abort(403);
+        }
+
+        if ($user->id !== $video->user_id && !$user->is_admin
+            && $video->isGeoBlockedFor(VisitorCountry::fromRequest($request))) {
+            abort(451, 'This video is not available in your country.');
         }
 
         // Pick the highest processed MP4 quality available.

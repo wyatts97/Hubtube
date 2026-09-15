@@ -56,6 +56,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'installed' => \App\Http\Middleware\CheckInstalled::class,
             'locale' => \App\Http\Middleware\SetLocale::class,
+            'verified.if-required' => \App\Http\Middleware\EnsureEmailIsVerified::class,
         ]);
 
         $middleware->statefulApi();
@@ -165,8 +166,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 ]);
             }
 
-            // Render 404, 403, 500, 503 via Inertia Error page (skip for admin)
-            if (in_array($status, [404, 403, 500, 503])) {
+            // Render 404, 403, 451, 500, 503 via Inertia Error page (skip for admin)
+            if (in_array($status, [404, 403, 451, 500, 503])) {
                 if ($isAdmin) {
                     return null;
                 }

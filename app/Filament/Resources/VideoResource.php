@@ -184,6 +184,15 @@ class VideoResource extends Resource
                                     ->required()
                                     ->searchable()
                                     ->preload(),
+                                Select::make('privacy')
+                                    ->options([
+                                        'public' => 'Public',
+                                        'unlisted' => 'Unlisted — anyone with the link',
+                                        'private' => 'Private — uploader and admins only',
+                                    ])
+                                    ->default('public')
+                                    ->required()
+                                    ->native(false),
                                 Select::make('status')
                                     ->options([
                                         'pending_download' => 'Pending Download',
@@ -232,6 +241,15 @@ class VideoResource extends Resource
                                 Toggle::make('monetization_enabled')
                                     ->label('Monetization')
                                     ->visible(fn () => (bool) Setting::get('monetization_enabled', true)),
+                                TagsInput::make('geo_blocked_countries')
+                                    ->label('Blocked Countries')
+                                    ->placeholder('Add a country code, e.g. DE')
+                                    ->helperText('Two-letter ISO country codes. Viewers in these countries get "not available in your country" instead of the video. Uses the visitor country Cloudflare reports, so it has no effect on traffic that bypasses Cloudflare.')
+                                    ->nestedRecursiveRules(['regex:/^[A-Za-z]{2}$/'])
+                                    ->dehydrateStateUsing(fn (?array $state): ?array => $state
+                                        ? array_values(array_unique(array_map('strtoupper', $state)))
+                                        : null)
+                                    ->columnSpanFull(),
                             ])->columns(2),
 
                         Tab::make('Pricing')
@@ -270,7 +288,7 @@ class VideoResource extends Resource
                                     ->visible(fn ($record) => $record?->status === 'failed')
                                     ->columnSpanFull(),
                                 TextInput::make('processing_fallback_reason')
-                                    ->label('Degraded — shipped as unprocessed original')
+                                    ->label('Processing issues — some or all renditions missing')
                                     ->disabled()
                                     ->visible(fn ($record) => filled($record?->processing_fallback_reason))
                                     ->columnSpanFull(),
@@ -359,6 +377,16 @@ class VideoResource extends Resource
                     })
                     ->toggleable(),
 
+                TextColumn::make('privacy')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => ucfirst((string) $state))
+                    ->color(fn (?string $state): string => match ($state) {
+                        'private' => 'danger',
+                        'unlisted' => 'warning',
+                        default => 'gray',
+                    })
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 IconColumn::make('is_approved')
                     ->boolean()
                     ->label('Approved')
@@ -417,6 +445,13 @@ class VideoResource extends Resource
                         'processing' => 'Processing',
                         'processed' => 'Published',
                         'failed' => 'Failed',
+                    ]),
+
+                SelectFilter::make('privacy')
+                    ->options([
+                        'public' => 'Public',
+                        'unlisted' => 'Unlisted',
+                        'private' => 'Private',
                     ]),
 
                 TernaryFilter::make('is_approved')

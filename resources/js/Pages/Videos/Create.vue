@@ -6,6 +6,7 @@ import { Upload, X, FileVideo, CheckCircle, AlertCircle, Calendar, Pause, Play, 
 import { useI18n } from '@/Composables/useI18n';
 import { useChunkedUpload } from '@/Composables/useChunkedUpload';
 import SeoHead from '@/Components/SeoHead.vue';
+import VideoPrivacySelect from '@/Components/VideoPrivacySelect.vue';
 
 const { t } = useI18n();
 
@@ -13,6 +14,7 @@ const props = defineProps({
     categories: Array,
     existingTags: { type: Array, default: () => [] },
     uploadLimitReached: { type: Boolean, default: false },
+    privacyOptions: { type: Array, default: () => ['public'] },
 });
 
 const page = usePage();
@@ -39,6 +41,7 @@ const form = reactive({
     category_id: '',
     age_restricted: true,
     tags: [],
+    privacy: 'public',
     scheduled_at: '',
 });
 const fieldErrors = ref({});
@@ -324,6 +327,7 @@ const submit = async () => {
         category_id: form.category_id,
         age_restricted: form.age_restricted ? '1' : '0',
         tags: form.tags,
+        privacy: form.privacy,
     };
     if (canSchedule.value && enableScheduling.value && form.scheduled_at) {
         metadata.scheduled_at = form.scheduled_at;
@@ -665,7 +669,15 @@ watch(fieldErrors, (errs) => {
                         </div>
                     </div>
 
-                    <!-- Category (privacy removed) -->
+                    <!-- Privacy: only shown when the admin has enabled more than public -->
+                    <VideoPrivacySelect
+                        v-if="privacyOptions.length > 1"
+                        v-model="form.privacy"
+                        :options="privacyOptions"
+                        :error="fieldErrors.privacy || ''"
+                    />
+
+                    <!-- Category -->
                     <div>
                         <label for="category" class="block text-sm font-medium mb-1 text-text-secondary">
                             {{ t('video.category') }} <span class="text-red-500">*</span>

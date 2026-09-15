@@ -284,6 +284,25 @@ sudo systemctl reload nginx
 - `ssl_certificate` / `ssl_certificate_key` — paths to your Cloudflare origin cert
 - `client_max_body_size` — `5G` (or match your max upload size)
 - PHP-FPM socket path matches your PHP version
+- The **private video** block's storage paths (`/var/www/hubtube/storage/app/public/...`) match your install
+
+### Private video protection
+
+Video files are served straight from `/storage/` by nginx. So that a private video can't be fetched by anyone who knows its URL, the app drops an empty `.private` marker into that video's directory. The server-level block at the top of `hubtube.conf` sends any request into a marked directory to Laravel, which checks the viewer first. Public and unlisted videos are unaffected.
+
+1. Add the "Private videos" block from `hubtube.conf` to your vhost:
+   - **Single server block with PHP-FPM** (as in `hubtube.conf`): paste both parts inside `server { … }`, above the first `location`, and set the `alias` path to your install.
+   - **CloudPanel**: open the site's *Vhost* editor. Paste the `set`/`if` lines into the HTTPS `server` block (the one with `listen 443`), above its first `location`. Paste the `location ^~ /_protected-media/` block into the `listen 8080` server block, with `alias /home/<site-user>/htdocs/<domain>/storage/app/public/;`. The marker check uses `$document_root`, so it needs no path edits.
+2. Create markers for videos that are already private (safe to re-run):
+   ```bash
+   php artisan videos:sync-media-protection
+   ```
+3. Optional, recommended once step 1 is live: turn on **Admin → Settings → Storage & CDN → Serve private videos via X-Accel-Redirect**. Nginx then sends the file after PHP has authorised the request, instead of PHP streaming it.
+4. Check it: open a private video's file URL (e.g. `/storage/videos/<slug>/processed/720p.mp4`) in a logged-out browser. You should get a 404.
+
+If Cloudflare cached a video's files while it was still public, purge those URLs after making it private.
+
+Private videos that were offloaded to Wasabi/B2/S3 always get short-lived pre-signed URLs, but the objects themselves are only protected if the bucket is private.
 
 ---
 

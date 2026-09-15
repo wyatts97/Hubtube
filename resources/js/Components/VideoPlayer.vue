@@ -48,7 +48,9 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(['ready', 'ended', 'ad-ended']);
+// `progress` and `paused` carry the content position in seconds and never fire
+// for ad breaks, which Fluid plays through the same <video> element.
+const emit = defineEmits(['ready', 'ended', 'ad-ended', 'progress', 'paused']);
 
 const videoRef = ref(null);
 let player = null;
@@ -185,6 +187,18 @@ const initPlayer = () => {
         // playlist auto-advance, which must not fire on a post-roll ending.
         player.on('ended', (_e, info) => {
             emit('ended', info?.mediaSourceType ?? 'source');
+        });
+
+        player.on('timeupdate', (_e, info) => {
+            if ((info?.mediaSourceType ?? 'source') === 'source') {
+                emit('progress', info?.currentTime ?? videoRef.value?.currentTime ?? 0);
+            }
+        });
+
+        player.on('pause', (_e, info) => {
+            if ((info?.mediaSourceType ?? 'source') === 'source') {
+                emit('paused', videoRef.value?.currentTime ?? 0);
+            }
         });
 
         emit('ready', player);

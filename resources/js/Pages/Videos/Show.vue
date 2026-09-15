@@ -9,6 +9,7 @@ import BannerAd from '@/Components/UI/BannerAd.vue';
 import { useToast } from '@/Composables/useToast';
 import { useI18n } from '@/Composables/useI18n';
 import { useTranslation } from '@/Composables/useTranslation';
+import { useWatchProgress } from '@/Composables/useWatchProgress';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import CommentSection from '@/Components/CommentSection.vue';
@@ -93,6 +94,10 @@ const hlsPlaylistUrl = computed(() => props.video.hls_playlist_url || '');
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
+
+// Saves the signed-in viewer's position to their watch history. Guests have no
+// history, so the getter yields null and nothing is sent.
+const watchProgress = useWatchProgress(() => (user.value ? props.video?.id : null));
 const canDownload = computed(() => {
     return user.value && (user.value.is_pro || user.value.id === props.video?.user_id || user.value.is_admin);
 });
@@ -452,6 +457,8 @@ const getRelatedTitle = (video) => {
                         :preview-thumbnails="video.preview_thumbnails_url || ''"
                         :ad-list="playerAdList"
                         @ended="onPlayerEnded"
+                        @progress="watchProgress.onProgress"
+                        @paused="watchProgress.onPaused"
                     />
                 </div>
 
