@@ -73,6 +73,11 @@
                                 <div class="ht-bulkproc__meta">
                                     <p class="ht-bulkproc__title">{{ $video->title }}</p>
                                     <p class="ht-bulkproc__user">{{ $video->user?->username ?? '—' }}</p>
+                                    @if ($video->isEncoding())
+                                        <div class="mt-2">
+                                            @include('filament.components.encoding-progress', ['video' => $video, 'compact' => true])
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                             <div class="ht-bulkproc__status">
@@ -128,7 +133,7 @@
                     @endforeach
                 </div>
 
-                @if ($this->createdVideos->every(fn ($v) => $v->status === 'processed' || $v->status === 'failed'))
+                @if ($this->createdVideos->every(fn ($v) => ($v->status === 'processed' || $v->status === 'failed') && ! $v->isEncoding()))
                     <div class="pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
                         <x-filament::button
                             wire:click="clearCreatedVideos"

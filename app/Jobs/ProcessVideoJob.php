@@ -2,17 +2,17 @@
 
 namespace App\Jobs;
 
-use Exception;
-use RuntimeException;
-use Throwable;
-use App\Events\VideoProcessed;
 use App\Models\Setting;
 use App\Models\Video;
-use App\Services\FfmpegService;
+use App\Models\VideoEncoding;
+use App\Services\AdminLogger;
+use App\Services\Encoding\FfmpegCommands;
+use App\Services\Encoding\FfmpegRunner;
+use App\Services\Encoding\RenditionCoordinator;
+use App\Services\Encoding\VideoCloudOffloader;
 use App\Services\StorageManager;
 use App\Services\VideoService;
-use App\Services\WatermarkService;
-use App\Services\AdminLogger;
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -22,392 +22,248 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use App\Models\Notification;
-use Symfony\Component\Process\Exception\ProcessTimedOutException;
-use Symfony\Component\Process\Process;
+use RuntimeException;
+use Throwable;
 
-class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
+/**
+ * Prepares an uploaded video and starts encoding its renditions.
+ *
+ * This job probes the file and makes the thumbnails, hover preview and seek
+ * bar sprite sheet. It then plans the renditions and hands them to
+ * RenditionCoordinator. Encoding itself happens in separate chunk jobs, so
+ * this job finishes in minutes even for very long uploads.
+ *
+ * Also dispatched to encode renditions a processed video is missing, for
+ * example after a new profile is enabled. Such a video stays live throughout.
+ */
+class ProcessVideoJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $timeout = 3600;
 
-    /**
-     * Unique ID for this job — prevents duplicate processing of the same video.
-     */
-    public function uniqueId(): string
-    {
-        return 'process-video-' . $this->video->id;
-    }
-
-    /**
-     * Keep the unique lock for the full timeout duration.
-     */
+    /** Keep the unique lock for the full timeout duration. */
     public int $uniqueFor = 3600;
 
-    /**
-     * All settings loaded once at job start — replaces ~44 individual Setting::get() calls
-     * with a single Setting::getAll() cache read.
-     */
+    /** @var array<string, mixed> Setting::getAll(), loaded once per run */
     protected array $settings = [];
 
-    /**
-     * Renditions that could not be produced, keyed by quality, with the reason.
-     * The video still publishes with whatever did succeed.
-     *
-     * @var array<string, string>
-     */
-    protected array $failedQualities = [];
+    protected FfmpegCommands $commands;
 
-    /**
-     * Read a value from the pre-loaded settings array.
-     */
-    protected function s(string $key, mixed $default = null): mixed
-    {
-        return $this->settings[$key] ?? $default;
-    }
+    protected FfmpegRunner $runner;
 
     public function __construct(
         public Video $video
     ) {}
 
-    public function handle(VideoService $videoService): void
+    /** Prevents duplicate processing of the same video. */
+    public function uniqueId(): string
     {
-        // Load all settings once — avoids ~44 individual Redis lookups during the job.
+        return 'process-video-'.$this->video->id;
+    }
+
+    protected function s(string $key, mixed $default = null): mixed
+    {
+        return $this->settings[$key] ?? $default;
+    }
+
+    public function handle(VideoService $videoService, RenditionCoordinator $coordinator, FfmpegRunner $runner): void
+    {
         $this->settings = Setting::getAll();
+        $this->commands = new FfmpegCommands($this->settings);
+        $this->runner = $runner;
 
-        // Check if FFmpeg processing is enabled
-        if (!$this->s('ffmpeg_enabled', true)) {
-            Log::info('FFmpeg processing disabled, serving original file', [
-                'video_id' => $this->video->id,
-            ]);
-            
-            $this->markAsProcessedWithOriginal();
+        $video = $this->video;
+        $wasProcessed = $video->status === 'processed';
+
+        if (! $this->s('ffmpeg_enabled', true) || ! $runner->isAvailable()) {
+            Log::info('FFmpeg unavailable or disabled, serving original file', ['video_id' => $video->id]);
+
+            if (! $wasProcessed) {
+                $this->markAsProcessedWithOriginal($videoService);
+            }
+
             return;
         }
 
-        // Check if FFmpeg is available
-        if (!$this->isFFmpegAvailable()) {
-            Log::warning('FFmpeg not available, skipping video processing', [
-                'video_id' => $this->video->id,
-            ]);
-            
-            $this->markAsProcessedWithOriginal();
-            return;
+        if (! $wasProcessed) {
+            $video->update(['status' => 'processing', 'processing_started_at' => now()]);
         }
-
-        $this->video->update([
-            'status' => 'processing',
-            'processing_started_at' => now(),
-        ]);
 
         try {
-            $qualities = $this->processVideo();
+            $source = $this->prepare($coordinator);
 
-            // Check if cloud offloading is enabled in admin settings
-            if ($this->s('cloud_offloading_enabled', false)) {
-                $targetDisk = StorageManager::getActiveDiskName();
-                if (StorageManager::isCloudDisk($targetDisk)) {
-                    $this->uploadToCloudStorage($targetDisk);
+            $coordinator->setStage($video, 'planning');
+            $needsWork = $coordinator->plan($video, $source, $this->commands);
+
+            if ($needsWork->contains(fn ($encoding) => $encoding->chunks_total > 1) && $source['has_audio']) {
+                $coordinator->setStage($video, 'audio');
+
+                if (! $this->ensureSharedAudioTrack($coordinator)) {
+                    // Without the shared track, chunks can't be joined in sync;
+                    // encode each rendition whole instead, audio included.
+                    VideoEncoding::whereIn('id', $needsWork->pluck('id'))
+                        ->update(['chunks_total' => 1, 'chunk_seconds' => null]);
                 }
             }
 
-            $partialReason = $this->partialRenditionReason();
+            $coordinator->setStage($video, $needsWork->isEmpty() ? 'finishing' : 'encoding');
+            $coordinator->start($video);
+        } catch (Exception $e) {
+            Log::error('Video processing failed', ['video_id' => $video->id, 'error' => $e->getMessage()]);
 
-            $videoService->markAsProcessed($this->video, $qualities, $partialReason);
+            // Nothing will pick up rows planned before the failure.
+            $video->encodings()
+                ->whereNotIn('status', VideoEncoding::TERMINAL)
+                ->update(['status' => VideoEncoding::FAILED, 'error' => Str::limit($e->getMessage(), 2000), 'completed_at' => now()]);
 
-            if ($partialReason !== null) {
-                AdminLogger::error(
-                    "Video #{$this->video->id} ({$this->video->title}) published with some renditions missing: {$partialReason}",
-                    [
-                        'video_id' => $this->video->id,
-                        'failed_qualities' => $this->failedQualities,
-                        'qualities' => $qualities,
-                    ]
-                );
+            if ($wasProcessed) {
+                // Already live with its existing renditions; leave it that way.
+                $coordinator->setStage($video, null);
+
+                return;
             }
 
-            $this->notifyOnce();
-
-        } catch (Exception $e) {
-            Log::error('Video processing failed', [
-                'video_id' => $this->video->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            // This is a genuine transcode failure, not an intentional skip (ffmpeg
-            // disabled/unavailable) — mark it distinctly so it doesn't silently
-            // report as a clean 'processed' success, and alert admins so the
-            // underlying ffmpeg/environment problem gets noticed and fixed.
-            $this->markAsProcessedWithOriginal(degraded: true, reason: $e->getMessage());
+            $this->markAsProcessedWithOriginal($videoService, degraded: true, reason: $e->getMessage());
         }
     }
 
     /**
-     * Summary of failed renditions for processing_fallback_reason, which the
-     * admin video list flags as "Degraded". Null when everything succeeded.
+     * Probe the file and make everything that doesn't depend on renditions.
+     *
+     * Each step is skipped when its output already exists, so a retry or a
+     * re-encode doesn't redo work.
+     *
+     * @return array{duration: float, width: int, height: int, has_audio: bool}
      */
-    protected function partialRenditionReason(): ?string
+    protected function prepare(RenditionCoordinator $coordinator): array
     {
-        if (empty($this->failedQualities)) {
-            return null;
+        $video = $this->video;
+        $inputPath = $coordinator->sourcePath($video);
+        $videoDir = Storage::disk('public')->path("videos/{$video->slug}");
+        $processedDir = $coordinator->processedDir($video);
+
+        if (! is_dir($processedDir)) {
+            mkdir($processedDir, 0755, true);
         }
 
-        $parts = [];
-        foreach ($this->failedQualities as $quality => $reason) {
-            $parts[] = "{$quality} ({$reason})";
+        $coordinator->setStage($video, 'probing');
+        $info = $this->getVideoInfo($inputPath);
+
+        $video->update([
+            'duration' => (int) $info['duration'],
+            'is_portrait' => $info['height'] > $info['width'],
+        ]);
+
+        // Make the upload seekable in browsers (moov atom first). Idempotent,
+        // but a full remux, so only once.
+        $faststartMarker = "{$videoDir}/.faststart_done";
+        if (! file_exists($faststartMarker)) {
+            $this->applyFaststartToOriginal($inputPath);
+            file_put_contents($faststartMarker, now()->toIso8601String());
         }
 
-        return Str::limit('Some renditions failed: '.implode('; ', $parts), 1000);
-    }
+        $slugTitle = $this->getSluggedTitle();
 
-    protected function markAsProcessedWithOriginal(bool $degraded = false, ?string $reason = null): void
-    {
-        // Check if cloud offloading is enabled in admin settings
-        if ($this->s('cloud_offloading_enabled', false)) {
-            $targetDisk = StorageManager::getActiveDiskName();
-            if (StorageManager::isCloudDisk($targetDisk)) {
-                $this->uploadToCloudStorage($targetDisk);
+        if (! file_exists("{$videoDir}/{$slugTitle}_thumb_0.jpg") && ! file_exists("{$videoDir}/{$slugTitle}_thumb_0.webp")) {
+            $coordinator->setStage($video, 'thumbnails');
+            $this->generateThumbnails($inputPath, $videoDir);
+        }
+
+        if ($this->s('animated_previews_enabled', true)) {
+            $previewFile = "{$videoDir}/{$slugTitle}_preview.webp";
+            if (! file_exists($previewFile) || filesize($previewFile) === 0) {
+                $coordinator->setStage($video, 'preview');
+                $this->generateAnimatedPreview($inputPath, $videoDir, (int) $info['duration']);
             }
         }
 
-        $videoService = app(VideoService::class);
+        if (! file_exists("{$videoDir}/sprites/sprite.jpg") || ! file_exists("{$videoDir}/scrubber.vtt")) {
+            $coordinator->setStage($video, 'sprites');
+            $this->generateScrubberSprite($inputPath, $videoDir, (int) $info['duration']);
+        }
+
+        return $info;
+    }
+
+    /**
+     * Encode the audio once for every chunked rendition to share.
+     *
+     * Encoding audio separately per chunk would add a few milliseconds of
+     * encoder padding at every boundary, which adds up to audible drift over a
+     * long video. Chunked renditions are therefore encoded video-only and
+     * joined to this one continuous track.
+     */
+    protected function ensureSharedAudioTrack(RenditionCoordinator $coordinator): bool
+    {
+        $output = $coordinator->audioTrackPath($this->video);
+
+        if (file_exists($output) && filesize($output) > 0) {
+            return true;
+        }
+
+        if (! is_dir(dirname($output))) {
+            mkdir(dirname($output), 0755, true);
+        }
+
+        $tmp = substr($output, 0, -4).'.part.m4a';
+
+        $cmd = sprintf(
+            '%s -hide_banner -nostdin -y -i %s -vn -map 0:a:0 %s %s 2>&1',
+            $this->commands->ffmpeg(),
+            escapeshellarg($coordinator->sourcePath($this->video)),
+            $this->commands->audioArgs(),
+            escapeshellarg($tmp)
+        );
+
+        [$exitCode, $log] = $this->runner->run($cmd, $this->commands->timeout());
+
+        if ($exitCode !== 0 || ! file_exists($tmp) || filesize($tmp) === 0) {
+            @unlink($tmp);
+
+            Log::warning('Encoding the shared audio track failed; renditions will not be chunked', [
+                'video_id' => $this->video->id,
+                'output' => substr($log, -500),
+            ]);
+
+            return false;
+        }
+
+        rename($tmp, $output);
+
+        return true;
+    }
+
+    /**
+     * Fallback when nothing can be transcoded: publish the upload as-is.
+     */
+    protected function markAsProcessedWithOriginal(VideoService $videoService, bool $degraded = false, ?string $reason = null): void
+    {
+        if ($this->s('cloud_offloading_enabled', false)) {
+            $target = StorageManager::getActiveDiskName();
+            if (StorageManager::isCloudDisk($target)) {
+                app(VideoCloudOffloader::class)->offload($this->video, $target, $this->settings);
+            }
+        }
+
         $videoService->markAsProcessed(
             $this->video,
             ['original'],
             $degraded ? ($reason ?? 'Transcoding failed; shipped as unprocessed original.') : null
         );
 
+        app(RenditionCoordinator::class)->setStage($this->video, null);
+
         if ($degraded) {
             AdminLogger::error(
-                "Video #{$this->video->id} ({$this->video->title}) shipped as unprocessed original after a transcoding failure — no multi-quality renditions, HLS, or watermark were produced.",
-                [
-                    'video_id' => $this->video->id,
-                    'reason' => $reason,
-                ]
+                "Video #{$this->video->id} ({$this->video->title}) shipped as unprocessed original after a processing failure — no multi-quality renditions, HLS, or watermark were produced.",
+                ['video_id' => $this->video->id, 'reason' => $reason]
             );
         }
 
-        $this->notifyOnce();
-    }
-
-    protected function notifyOnce(): void
-    {
-        // Refresh the model to get the latest state after markAsProcessed
-        $this->video->refresh();
-
-        // Don't notify if the video isn't actually published yet.
-        // Bulk uploads set published_at to null — this is the strongest guard.
-        if (!$this->video->published_at) {
-            return;
-        }
-
-        // Don't send "published" notifications for scheduled/queued videos.
-        // These are just processed — they'll be published later by videos:publish-scheduled.
-        // The PublishScheduledVideos command will fire the event when they actually go live.
-        if ($this->video->requires_schedule || $this->video->queue_order !== null) {
-            return;
-        }
-
-        // Also skip if the video wasn't auto-approved (needs moderation)
-        if (!$this->video->is_approved) {
-            return;
-        }
-
-        // Bulk-uploaded videos flag themselves to suppress all email/in-app notifications.
-        // Broadcast still fires (for the uploader polling UI) — NotifyVideoProcessed bails.
-        if ($this->video->suppress_notifications) {
-            event(new VideoProcessed($this->video, suppressNotifications: true));
-            return;
-        }
-
-        // Prevent duplicate notifications on job retries
-        $exists = Notification::where('user_id', $this->video->user_id)
-            ->where('type', 'video_processed')
-            ->where('data->video_id', $this->video->id)
-            ->exists();
-
-        if (!$exists) {
-            event(new VideoProcessed($this->video));
-        }
-    }
-
-    protected function isFFmpegAvailable(): bool
-    {
-        return FfmpegService::isAvailable();
-    }
-
-    /**
-     * Shell-quoted path to the ffmpeg binary.
-     *
-     * Every caller interpolates this into a command string, so it is returned
-     * already escaped. FfmpegService additionally rejects configured paths that
-     * contain shell metacharacters before they get this far.
-     */
-    protected function getFFmpegPath(): string
-    {
-        return escapeshellarg(FfmpegService::ffmpegPath());
-    }
-
-    /**
-     * Shell-quoted path to the ffprobe binary. See getFFmpegPath().
-     */
-    protected function getFFprobePath(): string
-    {
-        return escapeshellarg(FfmpegService::ffprobePath());
-    }
-
-    protected function getQualityPreset(): string
-    {
-        return $this->s('video_quality_preset', 'veryfast');
-    }
-
-    protected function getRateControl(): string
-    {
-        return $this->s('ffmpeg_rate_control', 'crf');
-    }
-
-    protected function getCrf(): int
-    {
-        return (int) $this->s('ffmpeg_crf', 22);
-    }
-
-    protected function getPixFmt(): string
-    {
-        return $this->s('ffmpeg_pix_fmt', 'yuv420p');
-    }
-
-    protected function getMp4ExtraArgs(): string
-    {
-        return trim((string) $this->s('ffmpeg_mp4_extra_args', ''));
-    }
-
-    protected function getHlsExtraArgs(): string
-    {
-        return trim((string) $this->s('ffmpeg_hls_extra_args', ''));
-    }
-
-    protected function getHlsPlaylistType(): string
-    {
-        return trim((string) $this->s('ffmpeg_hls_playlist_type', 'vod')) ?: 'vod';
-    }
-
-    protected function getHlsFlags(): string
-    {
-        return trim((string) $this->s('ffmpeg_hls_flags', 'independent_segments')) ?: 'independent_segments';
-    }
-
-    protected function getMp4EncodeArgs(?string $bitrate = null): string
-    {
-        $preset = $this->getQualityPreset();
-        $rateControl = $this->getRateControl();
-        $crf = $this->getCrf();
-        $pixFmt = $this->getPixFmt();
-        $audioBitrate = $this->s('audio_bitrate', '128k');
-        $threads = (int) $this->s('ffmpeg_threads', 4);
-        $extraArgs = $this->getMp4ExtraArgs();
-
-        $videoRate = ($rateControl === 'bitrate' && $bitrate)
-            ? "-b:v {$bitrate}"
-            : "-crf {$crf}";
-
-        return trim(sprintf(
-            '-c:v libx264 -preset %s %s -pix_fmt %s -c:a aac -b:a %s -threads %d -movflags +faststart %s',
-            $preset,
-            $videoRate,
-            $pixFmt,
-            $audioBitrate,
-            $threads,
-            $extraArgs
-        ));
-    }
-
-    protected function getHlsEncodeArgs(): string
-    {
-        $preset = $this->getQualityPreset();
-        $crf = $this->getCrf();
-        $audioBitrate = $this->s('audio_bitrate', '128k');
-        $threads = (int) $this->s('ffmpeg_threads', 4);
-        $hlsTime = (int) $this->s('hls_segment_duration', 6);
-        $playlistType = $this->getHlsPlaylistType();
-        $flags = $this->getHlsFlags();
-        $extraArgs = $this->getHlsExtraArgs();
-
-        return trim(sprintf(
-            '-c:v libx264 -preset %s -crf %d -c:a aac -b:a %s -threads %d -f hls -hls_time %d -hls_playlist_type %s -hls_flags %s %s',
-            $preset,
-            $crf,
-            $audioBitrate,
-            $threads,
-            $hlsTime,
-            $playlistType,
-            $flags,
-            $extraArgs
-        ));
-    }
-
-    protected function hasImageWatermark(): bool
-    {
-        if (!$this->s('watermark_enabled', false)) {
-            return false;
-        }
-
-        $watermarkImage = $this->s('watermark_image', '');
-        if (empty($watermarkImage)) {
-            return false;
-        }
-
-        $watermarkPath = Storage::disk('public')->path($watermarkImage);
-        return file_exists($watermarkPath);
-    }
-
-    protected function hasTextWatermark(): bool
-    {
-        if (!$this->s('watermark_text_enabled', false)) {
-            return false;
-        }
-
-        return trim((string) $this->s('watermark_text', '')) !== '';
-    }
-
-    /**
-     * Apply -movflags +faststart to the original uploaded file so it is
-     * seekable in browsers even when served without transcoding.
-     */
-    protected function applyFaststartToOriginal(string $inputPath): void
-    {
-        $ffmpeg = $this->getFFmpegPath();
-        $tempOutput = $inputPath . '.faststart.mp4';
-
-        $cmd = sprintf(
-            '%s -y -i %s -c copy -movflags +faststart %s 2>&1',
-            $ffmpeg,
-            escapeshellarg($inputPath),
-            escapeshellarg($tempOutput)
-        );
-
-        [$exitCode, $output] = $this->runCommand($cmd);
-
-        if ($exitCode === 0 && file_exists($tempOutput) && filesize($tempOutput) > 0) {
-            unlink($inputPath);
-            rename($tempOutput, $inputPath);
-            Log::info('Applied faststart to original video', ['video_id' => $this->video->id]);
-        } else {
-            if (file_exists($tempOutput)) {
-                unlink($tempOutput);
-            }
-            Log::warning('Failed to apply faststart to original video', [
-                'video_id' => $this->video->id,
-                'exit_code' => $exitCode,
-                'output' => substr($output, 0, 300),
-            ]);
-        }
-    }
-
-    protected function getVideoDirectory(): string
-    {
-        return "videos/{$this->video->slug}";
+        $videoService->notifyProcessedOnce($this->video);
     }
 
     protected function getSluggedTitle(): string
@@ -415,205 +271,116 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
         return Str::slug($this->video->title, '_') ?: 'video';
     }
 
-    protected function processVideo(): array
-    {
-        $inputPath = Storage::disk('public')->path($this->video->video_path);
-        $videoDir = Storage::disk('public')->path($this->getVideoDirectory());
-        $outputDir = $videoDir . '/processed';
-
-        if (!file_exists($outputDir)) {
-            mkdir($outputDir, 0755, true);
-        }
-
-        $qualities = [];
-        $allQualities = [
-            '240p' => ['width' => 426, 'height' => 240, 'bitrate' => '400k'],
-            '360p' => ['width' => 640, 'height' => 360, 'bitrate' => '800k'],
-            '480p' => ['width' => 854, 'height' => 480, 'bitrate' => '1400k'],
-            '720p' => ['width' => 1280, 'height' => 720, 'bitrate' => '2800k'],
-            '1080p' => ['width' => 1920, 'height' => 1080, 'bitrate' => '5000k'],
-        ];
-
-        $videoInfo = $this->getVideoInfo($inputPath);
-        $this->video->update([
-            'duration' => $videoInfo['duration'],
-            'is_portrait' => $videoInfo['height'] > $videoInfo['width'],
-        ]);
-
-        // Ensure original file is browser-seekable (moov atom at start).
-        // Skip on retry — faststart is idempotent but wastes time re-muxing.
-        $faststartMarker = "{$videoDir}/.faststart_done";
-        if (!file_exists($faststartMarker)) {
-            $this->applyFaststartToOriginal($inputPath);
-            file_put_contents($faststartMarker, now()->toIso8601String());
-        }
-
-        // Skip thumbnail generation on retry if thumbnails already exist
-        $slugTitle = $this->getSluggedTitle();
-        if (!file_exists("{$videoDir}/{$slugTitle}_thumb_0.jpg")) {
-            $this->generateThumbnails($inputPath, $videoDir);
-        }
-        
-        // Generate animated preview if enabled (skip if already exists)
-        if ($this->s('animated_previews_enabled', true)) {
-            $previewFile = "{$videoDir}/{$slugTitle}_preview.webp";
-            if (!file_exists($previewFile) || filesize($previewFile) === 0) {
-                $this->generateAnimatedPreview($inputPath, $videoDir, $videoInfo['duration']);
-            }
-        }
-
-        // Generate scrubber preview sprite sheet + VTT for seekbar thumbnails (skip if VTT exists)
-        $vttFile = "{$videoDir}/scrubber.vtt";
-        if (!file_exists($vttFile)) {
-            $this->generateScrubberPreviews($inputPath, $videoDir, $videoInfo['duration']);
-        }
-
-        // If watermarking is enabled, apply watermark to the original file ONCE.
-        // All lower-quality encodes will use this watermarked file as input,
-        // so the watermark scales naturally with the video and FFmpeg only runs
-        // the watermark filter once instead of per-quality.
-        $hasWatermark = $this->hasImageWatermark() || $this->hasTextWatermark();
-        $transcodeInput = $inputPath;
-        $watermarkedPath = null;
-
-        if ($hasWatermark) {
-            $watermarkedPath = $this->watermarkOriginal($inputPath, $outputDir, $videoInfo);
-            if ($watermarkedPath) {
-                $transcodeInput = $watermarkedPath;
-            }
-        }
-
-        // Check if multi-resolution transcoding is enabled
-        $multiResolutionEnabled = $this->s('multi_resolution_enabled', true);
-        
-        if ($multiResolutionEnabled) {
-            // Get enabled resolutions from settings
-            $enabledResolutions = $this->s('enabled_resolutions', ['360p', '480p', '720p']);
-            
-            // Ensure it's an array
-            if (is_string($enabledResolutions)) {
-                $enabledResolutions = json_decode($enabledResolutions, true) ?? ['360p', '480p', '720p'];
-            }
-            
-            // Build list of qualities to transcode — only encode to resolutions
-            // strictly LOWER than the source. The original quality is always
-            // served via the watermarked/optimized original file itself.
-            $targetQualities = [];
-            $skippedQualities = [];
-            foreach ($allQualities as $quality => $settings) {
-                if (!in_array($quality, $enabledResolutions)) continue;
-                if ($videoInfo['height'] > $settings['height']) {
-                    $targetQualities[$quality] = $settings;
-                } else {
-                    $skippedQualities[] = "{$quality} (source {$videoInfo['height']}p not above {$settings['height']}p)";
-                }
-            }
-
-            Log::info('Quality selection', [
-                'video_id' => $this->video->id,
-                'source_resolution' => "{$videoInfo['width']}x{$videoInfo['height']}",
-                'will_transcode' => array_keys($targetQualities),
-                'skipped' => $skippedQualities,
-            ]);
-
-            if (!empty($targetQualities)) {
-                $generateHls = (bool) $this->s('generate_hls', true);
-                $qualities = $this->transcodeAllQualities($transcodeInput, $outputDir, $targetQualities, $generateHls);
-            }
-        }
-        
-        // Replace the raw uploaded file with the watermarked/optimized version.
-        // This way video_path always serves the best quality with watermark.
-        // The raw upload is no longer needed — only the watermarked version is served.
-        if ($hasWatermark && $watermarkedPath && file_exists($watermarkedPath)) {
-            if (file_exists($inputPath)) {
-                unlink($inputPath);
-                Log::info('Deleted raw uploaded file', ['path' => $inputPath]);
-            }
-            rename($watermarkedPath, $inputPath);
-            Log::info('Replaced original with watermarked version', ['path' => $inputPath]);
-        }
-
-        // Always add 'original' to indicate the original (now watermarked) file is available
-        $qualities[] = 'original';
-
-        return $qualities;
-    }
-
+    /**
+     * @return array{duration: float, width: int, height: int, has_audio: bool}
+     */
     protected function getVideoInfo(string $path): array
     {
-        $ffprobe = $this->getFFprobePath();
-        
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             throw new RuntimeException("Video file not found: {$path}");
         }
 
-        $cmd = "{$ffprobe} -v quiet -print_format json -show_format -show_streams " . escapeshellarg($path);
-        
-        [$exitCode, $output] = $this->runCommand($cmd);
-        
+        $cmd = $this->commands->ffprobe().' -v quiet -print_format json -show_format -show_streams '.escapeshellarg($path);
+
+        [$exitCode, $output] = $this->runner->run($cmd, $this->commands->timeout());
+
         if ($exitCode !== 0 || empty($output)) {
-            throw new RuntimeException("FFprobe failed (exit code {$exitCode}): " . substr($output, 0, 500));
+            throw new RuntimeException("FFprobe failed (exit code {$exitCode}): ".substr($output, 0, 500));
         }
 
         $info = json_decode($output, true);
-        
+
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new RuntimeException('Failed to parse FFprobe output: ' . json_last_error_msg());
+            throw new RuntimeException('Failed to parse FFprobe output: '.json_last_error_msg());
         }
 
-        $duration = 0;
         $width = 0;
         $height = 0;
-        $rotation = 0;
-
-        if (isset($info['format']['duration'])) {
-            $duration = (int) $info['format']['duration'];
-        }
+        $hasVideo = false;
+        $hasAudio = false;
 
         foreach ($info['streams'] ?? [] as $stream) {
-            if (($stream['codec_type'] ?? '') === 'video') {
-                $width = $stream['width'] ?? 0;
-                $height = $stream['height'] ?? 0;
+            $type = $stream['codec_type'] ?? '';
 
-                // Some mobile videos are stored as landscape with rotation metadata.
-                // Normalize dimensions so portrait detection and downstream UI logic
-                // use the *displayed* orientation.
-                if (isset($stream['tags']['rotate']) && is_numeric($stream['tags']['rotate'])) {
-                    $rotation = (int) $stream['tags']['rotate'];
+            if ($type === 'audio') {
+                $hasAudio = true;
+            }
+
+            if ($type !== 'video' || $hasVideo) {
+                continue;
+            }
+
+            $hasVideo = true;
+            $width = (int) ($stream['width'] ?? 0);
+            $height = (int) ($stream['height'] ?? 0);
+            $rotation = 0;
+
+            // Phones often store portrait video as landscape plus rotation
+            // metadata; use the displayed orientation.
+            if (isset($stream['tags']['rotate']) && is_numeric($stream['tags']['rotate'])) {
+                $rotation = (int) $stream['tags']['rotate'];
+            }
+
+            foreach ($stream['side_data_list'] ?? [] as $sideData) {
+                if (isset($sideData['rotation']) && is_numeric($sideData['rotation'])) {
+                    $rotation = (int) $sideData['rotation'];
+                    break;
                 }
+            }
 
-                foreach (($stream['side_data_list'] ?? []) as $sideData) {
-                    if (isset($sideData['rotation']) && is_numeric($sideData['rotation'])) {
-                        $rotation = (int) $sideData['rotation'];
-                        break;
-                    }
-                }
-
-                $normalizedRotation = (($rotation % 360) + 360) % 360;
-                if (in_array($normalizedRotation, [90, 270], true)) {
-                    [$width, $height] = [$height, $width];
-                }
-
-                break;
+            if (in_array((($rotation % 360) + 360) % 360, [90, 270], true)) {
+                [$width, $height] = [$height, $width];
             }
         }
 
         return [
-            'duration' => $duration,
+            'duration' => (float) ($info['format']['duration'] ?? 0),
             'width' => $width,
             'height' => $height,
+            'has_audio' => $hasAudio,
         ];
+    }
+
+    /**
+     * Move the moov atom to the front of the upload so browsers can seek it
+     * even when it is served untranscoded.
+     */
+    protected function applyFaststartToOriginal(string $inputPath): void
+    {
+        $tempOutput = $inputPath.'.faststart.mp4';
+
+        $cmd = sprintf(
+            '%s -hide_banner -nostdin -y -i %s -c copy -movflags +faststart %s 2>&1',
+            $this->commands->ffmpeg(),
+            escapeshellarg($inputPath),
+            escapeshellarg($tempOutput)
+        );
+
+        [$exitCode, $output] = $this->runner->run($cmd, $this->commands->timeout());
+
+        if ($exitCode === 0 && file_exists($tempOutput) && filesize($tempOutput) > 0) {
+            unlink($inputPath);
+            rename($tempOutput, $inputPath);
+
+            return;
+        }
+
+        @unlink($tempOutput);
+
+        Log::warning('Failed to apply faststart to original video', [
+            'video_id' => $this->video->id,
+            'exit_code' => $exitCode,
+            'output' => substr($output, 0, 300),
+        ]);
     }
 
     protected function generateThumbnails(string $inputPath, string $videoDir): void
     {
-        $ffmpeg = $this->getFFmpegPath();
-        $duration = $this->video->duration;
+        $ffmpeg = $this->commands->ffmpeg();
+        $duration = (int) $this->video->duration;
         $count = (int) $this->s('thumbnail_count', 4);
         $slugTitle = $this->getSluggedTitle();
 
-        // Probe whether libwebp is available in this FFmpeg build
         $useWebP = $this->ffmpegSupportsWebP($ffmpeg);
         $ext = $useWebP ? 'webp' : 'jpg';
 
@@ -621,800 +388,159 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
             $time = (int) ($duration / ($count + 1) * ($i + 1));
             $output = "{$videoDir}/{$slugTitle}_thumb_{$i}.{$ext}";
 
-            if ($useWebP) {
-                // WebP: single frame, quality 85, lossless=0
-                $cmd = sprintf(
-                    '%s -y -ss %d -i %s -vframes 1 -vf "scale=640:-2:flags=lanczos" -c:v libwebp -lossless 0 -q:v 85 %s 2>&1',
-                    $ffmpeg,
-                    $time,
-                    escapeshellarg($inputPath),
-                    escapeshellarg($output)
-                );
-            } else {
-                $cmd = sprintf(
-                    '%s -y -ss %d -i %s -vframes 1 -q:v 2 %s 2>&1',
-                    $ffmpeg,
-                    $time,
-                    escapeshellarg($inputPath),
-                    escapeshellarg($output)
-                );
-            }
+            $codec = $useWebP
+                ? '-vf "scale=640:-2:flags=lanczos" -c:v libwebp -lossless 0 -q:v 85'
+                : '-q:v 2';
 
-            [$exitCode, $cmdOutput] = $this->runCommand($cmd);
+            $cmd = sprintf(
+                '%s -hide_banner -nostdin -y -ss %d -i %s -vframes 1 %s %s 2>&1',
+                $ffmpeg,
+                $time,
+                escapeshellarg($inputPath),
+                $codec,
+                escapeshellarg($output)
+            );
+
+            [$exitCode, $cmdOutput] = $this->runner->run($cmd, $this->commands->timeout());
+
             if ($exitCode !== 0) {
                 Log::warning('Thumbnail generation failed', ['index' => $i, 'ext' => $ext, 'exit_code' => $exitCode, 'output' => substr($cmdOutput, 0, 300)]);
             }
         }
 
-        $storagePath = Storage::disk('public')->path('');
         $this->video->update([
-            'thumbnail' => str_replace($storagePath, '', "{$videoDir}/{$slugTitle}_thumb_0.{$ext}"),
+            'thumbnail' => "videos/{$this->video->slug}/{$slugTitle}_thumb_0.{$ext}",
         ]);
     }
 
-    /**
-     * Check whether this FFmpeg binary was compiled with libwebp support.
-     * Runs once per job and caches the result for the duration of the process.
-     */
+    /** Whether this FFmpeg build has libwebp. Cached for the process. */
     protected function ffmpegSupportsWebP(string $ffmpeg): bool
     {
         static $cache = [];
-        if (isset($cache[$ffmpeg])) {
-            return $cache[$ffmpeg];
+
+        if (! isset($cache[$ffmpeg])) {
+            [, $output] = $this->runner->run("{$ffmpeg} -hide_banner -encoders 2>&1", 30);
+            $cache[$ffmpeg] = str_contains($output, 'libwebp');
         }
-        [, $output] = $this->runCommand("{$ffmpeg} -encoders 2>&1");
-        $cache[$ffmpeg] = str_contains($output, 'libwebp');
+
         return $cache[$ffmpeg];
     }
 
     protected function generateAnimatedPreview(string $inputPath, string $videoDir, int $duration): void
     {
-        $ffmpeg = $this->getFFmpegPath();
         $slugTitle = $this->getSluggedTitle();
         $output = "{$videoDir}/{$slugTitle}_preview.webp";
-        
-        // Calculate preview parameters
-        $previewDuration = min(6, max(3, (int)($duration * 0.1))); // 3-6 seconds based on video length
-        $startTime = max(0, (int)($duration * 0.1)); // Start at 10% of video
-        
-        // If video is very short, start from beginning
+
+        // 3–6 seconds starting 10% in; very short videos from the start.
+        $previewDuration = min(6, max(3, (int) ($duration * 0.1)));
+        $startTime = max(0, (int) ($duration * 0.1));
+
         if ($duration < 10) {
             $startTime = 0;
             $previewDuration = min(3, $duration);
         }
-        
-        // Generate animated WebP with reduced size for performance.
-        // Fit preview into a 16:9 card canvas with pillarboxing when needed,
-        // so portrait frames remain fully visible on hover cards.
+
+        // Fit into a 16:9 card with pillarboxing so portrait frames stay whole.
         $cmd = sprintf(
-            '%s -y -ss %d -t %d -i %s -vf "fps=10,scale=320:180:force_original_aspect_ratio=decrease:flags=lanczos,pad=320:180:(ow-iw)/2:(oh-ih)/2:black" -c:v libwebp -lossless 0 -compression_level 4 -q:v 70 -loop 0 -preset default -an -vsync 0 %s 2>&1',
-            $ffmpeg,
+            '%s -hide_banner -nostdin -y -ss %d -t %d -i %s -vf "fps=10,scale=320:180:force_original_aspect_ratio=decrease:flags=lanczos,pad=320:180:(ow-iw)/2:(oh-ih)/2:black" -c:v libwebp -lossless 0 -compression_level 4 -q:v 70 -loop 0 -preset default -an -vsync 0 %s 2>&1',
+            $this->commands->ffmpeg(),
             $startTime,
             $previewDuration,
             escapeshellarg($inputPath),
             escapeshellarg($output)
         );
-        
-        Log::info('Generating animated preview', [
-            'video_id' => $this->video->id,
-            'duration' => $duration,
-            'preview_start' => $startTime,
-            'preview_duration' => $previewDuration,
-        ]);
-        
-        [$exitCode, $result] = $this->runCommand($cmd);
-        
-        // Check if file was created successfully
+
+        [$exitCode, $result] = $this->runner->run($cmd, $this->commands->timeout());
+
         if ($exitCode === 0 && file_exists($output) && filesize($output) > 0) {
-            $previewPath = str_replace(Storage::disk('public')->path(''), '', $output);
-            $this->video->update(['preview_path' => $previewPath]);
-            
-            Log::info('Animated preview generated successfully', [
-                'video_id' => $this->video->id,
-                'preview_path' => $previewPath,
-                'file_size' => filesize($output),
-            ]);
-        } else {
-            Log::warning('Failed to generate animated preview', [
-                'video_id' => $this->video->id,
-                'output' => $result,
-            ]);
+            $this->video->update(['preview_path' => "videos/{$this->video->slug}/{$slugTitle}_preview.webp"]);
+
+            return;
         }
+
+        Log::warning('Failed to generate animated preview', [
+            'video_id' => $this->video->id,
+            'output' => substr($result, 0, 500),
+        ]);
     }
 
-    protected function generateScrubberPreviews(string $inputPath, string $videoDir, int $duration): void
+    /**
+     * Seek-bar previews as one sprite sheet plus a WebVTT index into it.
+     *
+     * One image instead of up to a hundred separate files: the player loads
+     * it with a single request, and the VTT cues point at regions of it using
+     * the #xywh= media fragment Fluid Player understands.
+     */
+    protected function generateScrubberSprite(string $inputPath, string $videoDir, int $duration): void
     {
-        if ($duration < 5) return;
+        if ($duration < 5) {
+            return;
+        }
 
-        $ffmpeg = $this->getFFmpegPath();
         $spriteDir = "{$videoDir}/sprites";
 
-        if (!is_dir($spriteDir)) {
+        if (! is_dir($spriteDir)) {
             mkdir($spriteDir, 0755, true);
         }
 
-        // Generate one thumbnail every N seconds and fit each sprite frame into a
-        // 16:9 canvas so portrait sources are fully visible in preview UIs.
-        $interval = max(5, (int) ($duration / 100)); // At most ~100 frames
+        $interval = max(5, (int) ($duration / 100));
+        $frames = (int) ceil($duration / $interval);
+        $columns = min(10, $frames);
+        $rows = (int) ceil($frames / $columns);
         $thumbWidth = 200;
         $thumbHeight = 112;
+        $sprite = "{$spriteDir}/sprite.jpg";
 
+        // Each frame is fitted into a 16:9 cell so portrait sources show whole.
         $cmd = sprintf(
-            '%s -y -i %s -vf "fps=1/%d,scale=%d:%d:force_original_aspect_ratio=decrease:flags=lanczos,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black" -q:v 3 %s/sprite_%%04d.jpg 2>&1',
-            $ffmpeg,
+            '%s -hide_banner -nostdin -y -i %s -vf %s -frames:v 1 -q:v 4 %s 2>&1',
+            $this->commands->ffmpeg(),
             escapeshellarg($inputPath),
-            $interval,
-            $thumbWidth,
-            $thumbHeight,
-            $thumbWidth,
-            $thumbHeight,
-            escapeshellarg($spriteDir)
+            escapeshellarg(sprintf(
+                'fps=1/%d,scale=%d:%d:force_original_aspect_ratio=decrease:flags=lanczos,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black,tile=%dx%d',
+                $interval, $thumbWidth, $thumbHeight, $thumbWidth, $thumbHeight, $columns, $rows
+            )),
+            escapeshellarg($sprite)
         );
 
-        [$exitCode, $cmdOutput] = $this->runCommand($cmd);
-        if ($exitCode !== 0) {
-            Log::warning('Scrubber sprite generation failed', ['exit_code' => $exitCode, 'output' => substr($cmdOutput, 0, 300)]);
-        }
+        [$exitCode, $output] = $this->runner->run($cmd, $this->commands->timeout());
 
-        // Count generated frames
-        $frames = glob("{$spriteDir}/sprite_*.jpg");
-        if (empty($frames)) {
-            Log::warning('Failed to generate scrubber preview sprites', ['video_id' => $this->video->id]);
+        if ($exitCode !== 0 || ! file_exists($sprite) || filesize($sprite) === 0) {
+            Log::warning('Scrubber sprite sheet generation failed', [
+                'video_id' => $this->video->id,
+                'exit_code' => $exitCode,
+                'output' => substr($output, 0, 300),
+            ]);
+
             return;
         }
 
-        sort($frames);
+        // Per-frame images from the previous format are no longer referenced.
+        array_map('unlink', glob("{$spriteDir}/sprite_*.jpg") ?: []);
 
-        // Generate VTT file referencing individual thumbnails
-        $storagePath = Storage::disk('public')->path('');
-        $vttContent = "WEBVTT\n\n";
+        $vtt = "WEBVTT\n\n";
 
-        foreach ($frames as $i => $frame) {
-            $startSec = $i * $interval;
-            $endSec = min(($i + 1) * $interval, $duration);
+        for ($i = 0; $i < $frames; $i++) {
+            $start = $i * $interval;
+            $end = min(($i + 1) * $interval, $duration);
+            $x = ($i % $columns) * $thumbWidth;
+            $y = intdiv($i, $columns) * $thumbHeight;
 
-            $startTime = sprintf('%02d:%02d:%02d.000', intdiv($startSec, 3600), intdiv($startSec % 3600, 60), $startSec % 60);
-            $endTime = sprintf('%02d:%02d:%02d.000', intdiv($endSec, 3600), intdiv($endSec % 3600, 60), $endSec % 60);
-
-            // Use paths relative to the VTT file so cloud storage/CDN URLs resolve correctly.
-            $relativePath = 'sprites/' . basename($frame);
-            $relativePath = str_replace('\\', '/', $relativePath);
-
-            $vttContent .= "{$startTime} --> {$endTime}\n{$relativePath}\n\n";
-        }
-
-        $vttPath = "{$videoDir}/scrubber.vtt";
-        file_put_contents($vttPath, $vttContent);
-
-        $vttRelative = str_replace($storagePath, '', $vttPath);
-        $this->video->update(['scrubber_vtt_path' => $vttRelative]);
-
-        Log::info('Scrubber preview sprites generated', [
-            'video_id' => $this->video->id,
-            'frames' => count($frames),
-            'interval' => $interval,
-        ]);
-    }
-
-    /**
-     * Apply watermark (image + text) to the original video at its native resolution.
-     * Returns the path to the watermarked intermediate file, or null on failure.
-     * This file is then used as input for all lower-quality encodes, so the
-     * watermark scales naturally with the video — no per-quality font sizing needed.
-     */
-    protected function watermarkOriginal(string $inputPath, string $outputDir, array $videoInfo): ?string
-    {
-        $ffmpeg = $this->getFFmpegPath();
-        $output = "{$outputDir}/watermarked_source.mp4";
-
-        // Skip if already done (job retry)
-        if (file_exists($output) && filesize($output) > 10240) {
-            Log::info('Watermarked source already exists, skipping', ['size' => filesize($output)]);
-            return $output;
-        }
-
-        $videoWidth = $videoInfo['width'] ?: 1920;
-        $videoHeight = $videoInfo['height'] ?: 1080;
-
-        $watermarkInput = $this->getWatermarkInputs();
-        $filterComplex = $this->buildWatermarkFilterComplex($videoWidth, $videoHeight);
-
-        // Encode at high quality (CRF 18) to preserve detail for downstream encodes.
-        // Using faststart so the intermediate is seekable if needed.
-        $cmd = sprintf(
-            '%s -y -i %s %s -filter_complex %s -map "[outv]" -map 0:a? -c:v libx264 -crf 18 -preset fast -c:a copy -movflags +faststart %s 2>&1',
-            $ffmpeg,
-            escapeshellarg($inputPath),
-            $watermarkInput,
-            escapeshellarg($filterComplex),
-            escapeshellarg($output)
-        );
-
-        Log::info('Applying watermark to original', [
-            'video_id' => $this->video->id,
-            'resolution' => "{$videoWidth}x{$videoHeight}",
-        ]);
-
-        [$exitCode, $result] = $this->runCommand($cmd);
-
-        if ($exitCode !== 0 || !file_exists($output) || filesize($output) < 10240) {
-            Log::error('Watermarking original failed, will transcode without watermark', [
-                'exit_code' => $exitCode,
-                'output' => substr($result, 0, 500),
-            ]);
-            // Clean up partial file
-            if (file_exists($output)) {
-                unlink($output);
-            }
-            return null;
-        }
-
-        Log::info('Watermarked original created', ['size' => filesize($output)]);
-        return $output;
-    }
-
-    /**
-     * Single-pass multi-output transcoding.
-     * Reads the input once and outputs all quality levels simultaneously.
-     * Uses -force_key_frames for HLS-compatible keyframe alignment.
-     * Input is either the original file or the watermarked intermediate.
-     */
-    protected function transcodeAllQualities(string $inputPath, string $outputDir, array $targetQualities, bool $generateHls): array
-    {
-        $ffmpeg = $this->getFFmpegPath();
-        $threads = (int) $this->s('ffmpeg_threads', 4);
-        $preset = $this->getQualityPreset();
-        $qualities = [];
-
-        // Check if all outputs already exist (job retry)
-        $allExist = true;
-        foreach ($targetQualities as $quality => $settings) {
-            $output = "{$outputDir}/{$quality}.mp4";
-            if (!file_exists($output) || filesize($output) < 10240) {
-                $allExist = false;
-                break;
-            }
-        }
-        if ($allExist) {
-            Log::info('All qualities already transcoded, skipping', ['qualities' => array_keys($targetQualities)]);
-            $qualities = array_keys($targetQualities);
-            if ($generateHls) {
-                $this->generateHlsPlaylist($outputDir, $qualities);
-            }
-            return $qualities;
-        }
-
-        // Build single FFmpeg command with multiple outputs.
-        // Input is either the original or the watermarked intermediate —
-        // either way, just scale down. No per-quality watermark logic needed.
-        $cmd = sprintf('%s -y -i %s', $ffmpeg, escapeshellarg($inputPath));
-
-        $outputArgs = [];
-        foreach ($targetQualities as $quality => $settings) {
-            $output = "{$outputDir}/{$quality}.mp4";
-
-            // Force keyframes every 2 seconds for clean HLS segmentation
-            $forceKeyframes = $generateHls ? sprintf(' -force_key_frames %s', escapeshellarg('expr:gte(t,n_forced*2)')) : '';
-            $encodeArgs = $this->getMp4EncodeArgs($settings['bitrate']);
-
-            $outputArgs[] = sprintf(
-                '-vf %s %s%s %s',
-                escapeshellarg("scale=-2:{$settings['height']}"),
-                $encodeArgs,
-                $forceKeyframes,
-                escapeshellarg($output)
+            // Relative to the VTT, so cloud storage and CDN URLs still resolve.
+            $vtt .= sprintf(
+                "%s --> %s\nsprites/sprite.jpg#xywh=%d,%d,%d,%d\n\n",
+                $this->vttTime($start), $this->vttTime($end), $x, $y, $thumbWidth, $thumbHeight
             );
         }
 
-        if (!empty($outputArgs)) {
-            $cmd .= ' ' . implode(' ', $outputArgs) . ' 2>&1';
+        file_put_contents("{$videoDir}/scrubber.vtt", $vtt);
 
-            Log::info('Multi-output transcoding', [
-                'video_id' => $this->video->id,
-                'qualities' => array_keys($targetQualities),
-                'threads' => $threads,
-                'preset' => $preset,
-            ]);
-
-            [$exitCode, $result] = $this->runCommand($cmd);
-
-            // Verify each output
-            foreach ($targetQualities as $quality => $settings) {
-                $output = "{$outputDir}/{$quality}.mp4";
-                if (file_exists($output) && filesize($output) > 10240) {
-                    $qualities[] = $quality;
-                } else {
-                    Log::warning('Multi-output: quality file missing or too small, retrying individually', [
-                        'quality' => $quality,
-                        'exit_code' => $exitCode,
-                    ]);
-                    // Fallback: try this quality individually. A failure here
-                    // used to throw out of the whole job, discarding every
-                    // rendition that had succeeded and shipping only the
-                    // original. Record it and carry on with the rest instead.
-                    try {
-                        $this->transcodeToQuality($inputPath, $outputDir, $quality, $settings, $threads, $preset);
-                    } catch (RuntimeException $e) {
-                        $this->failedQualities[$quality] = $e->getMessage();
-                    }
-
-                    if (file_exists($output) && filesize($output) > 10240) {
-                        $qualities[] = $quality;
-                    } elseif (! isset($this->failedQualities[$quality])) {
-                        $this->failedQualities[$quality] = 'Output missing or too small after transcoding';
-                    }
-                }
-            }
-        }
-
-        // Generate HLS from the properly-keyframed MP4s
-        if ($generateHls && !empty($qualities)) {
-            $this->generateHlsPlaylist($outputDir, $qualities);
-        }
-
-        return $qualities;
+        $this->video->update(['scrubber_vtt_path' => "videos/{$this->video->slug}/scrubber.vtt"]);
     }
 
-    /**
-     * Single-quality transcode fallback (used when multi-output fails for a quality).
-     * Input is either the original or the watermarked intermediate — just scale down.
-     */
-    protected function transcodeToQuality(string $inputPath, string $outputDir, string $quality, array $settings, ?int $threads = null, ?string $preset = null): void
+    protected function vttTime(int $seconds): string
     {
-        $ffmpeg = $this->getFFmpegPath();
-        $threads = $threads ?? (int) $this->s('ffmpeg_threads', 4);
-        $preset = $preset ?? $this->getQualityPreset();
-        
-        $output = "{$outputDir}/{$quality}.mp4";
-
-        // Skip if already transcoded (e.g. on job retry)
-        if (file_exists($output) && filesize($output) > 10240) {
-            Log::info('Skipping already-transcoded quality', ['quality' => $quality, 'size' => filesize($output)]);
-            return;
-        }
-        
-        $encodeArgs = $this->getMp4EncodeArgs($settings['bitrate']);
-
-        $cmd = sprintf(
-            '%s -y -i %s -vf %s %s -force_key_frames %s %s 2>&1',
-            $ffmpeg,
-            escapeshellarg($inputPath),
-            escapeshellarg("scale=-2:{$settings['height']}"),
-            $encodeArgs,
-            escapeshellarg('expr:gte(t,n_forced*2)'),
-            escapeshellarg($output)
-        );
-
-        Log::info('Transcoding video', ['quality' => $quality]);
-        [$exitCode, $result] = $this->runCommand($cmd);
-        
-        if ($exitCode !== 0 || !file_exists($output) || filesize($output) === 0) {
-            Log::error('Transcoding failed', [
-                'quality' => $quality,
-                'exit_code' => $exitCode,
-                'output' => substr($result, 0, 500),
-            ]);
-            throw new RuntimeException("FFmpeg transcoding failed for {$quality} (exit code {$exitCode})");
-        }
-    }
-
-    protected function getWatermarkInputs(): string
-    {
-        if (!$this->hasImageWatermark()) {
-            return '';
-        }
-
-        $watermarkImage = $this->s('watermark_image', '');
-        $watermarkPath = Storage::disk('public')->path($watermarkImage);
-        if (!file_exists($watermarkPath)) {
-            return '';
-        }
-
-        return '-i ' . escapeshellarg($watermarkPath);
-    }
-
-    protected function buildWatermarkFilterComplex(int $videoWidth, int $videoHeight): string
-    {
-        $filters = [];
-        $currentLabel = '0:v';
-
-        if ($this->hasImageWatermark()) {
-            $position = $this->s('watermark_position', 'bottom-right');
-            $opacity = $this->s('watermark_opacity', 70) / 100;
-            $scale = $this->s('watermark_scale', 15) / 100;
-            $padding = $this->s('watermark_padding', 10);
-
-            // Calculate watermark width based on video width
-            $wmWidth = (int) ($videoWidth * $scale);
-
-            // Position mapping for FFmpeg overlay filter
-            $positions = [
-                'top-left' => "x={$padding}:y={$padding}",
-                'top-center' => "x=(W-w)/2:y={$padding}",
-                'top-right' => "x=W-w-{$padding}:y={$padding}",
-                'center-left' => "x={$padding}:y=(H-h)/2",
-                'center' => "x=(W-w)/2:y=(H-h)/2",
-                'center-right' => "x=W-w-{$padding}:y=(H-h)/2",
-                'bottom-left' => "x={$padding}:y=H-h-{$padding}",
-                'bottom-center' => "x=(W-w)/2:y=H-h-{$padding}",
-                'bottom-right' => "x=W-w-{$padding}:y=H-h-{$padding}",
-            ];
-
-            $pos = $positions[$position] ?? $positions['bottom-right'];
-
-            $filters[] = "[1:v]scale={$wmWidth}:-1,format=rgba,colorchannelmixer=aa={$opacity}[wm]";
-            $filters[] = "[{$currentLabel}][wm]overlay={$pos}[wm_out]";
-            $currentLabel = 'wm_out';
-        }
-
-        $textFilter = $this->buildTextWatermarkFilter($videoWidth, $videoHeight);
-        if ($textFilter) {
-            $filters[] = "[{$currentLabel}]{$textFilter}[outv]";
-        } else {
-            $filters[] = "[{$currentLabel}]null[outv]";
-        }
-
-        return implode(';', $filters);
-    }
-
-    protected function buildTextWatermarkFilter(int $videoWidth, int $videoHeight): ?string
-    {
-        if (!$this->hasTextWatermark()) {
-            return null;
-        }
-
-        $text = $this->escapeDrawtextValue((string) $this->s('watermark_text', ''));
-        $font = $this->escapeDrawtextValue((string) $this->s('watermark_text_font', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'));
-        $size = (int) $this->s('watermark_text_size', 24);
-        $color = (string) $this->s('watermark_text_color', 'white');
-        $opacity = (int) $this->s('watermark_text_opacity', 70) / 100;
-        $padding = (int) $this->s('watermark_text_padding', 10);
-        $position = (string) $this->s('watermark_text_position', 'top');
-
-        $scrollEnabled = (bool) $this->s('watermark_text_scroll_enabled', false);
-        $scrollSpeed = (string) $this->s('watermark_text_scroll_speed', 'medium');
-        $scrollInterval = (int) $this->s('watermark_text_scroll_interval', 0);
-        $scrollStartDelay = (int) $this->s('watermark_text_scroll_start_delay', 0);
-
-        // Responsive font size: scale relative to the shorter dimension of the
-        // actual output frame. For landscape video the shorter dim is height;
-        // for portrait video it's width. Base reference is 720p (shorter dim = 720).
-        // This prevents text from being disproportionately large on narrow portrait frames
-        // and keeps it visually consistent across quality levels during HLS ABR switches.
-        $shorterDim = min($videoWidth, $videoHeight);
-        $scaledSize = max(12, (int) round($size * $shorterDim / 720));
-
-        if ($scrollEnabled) {
-            $yPositions = [
-                'top' => $padding,
-                'middle' => '(h-text_h)/2',
-                'bottom' => "h-text_h-{$padding}",
-            ];
-            $y = $yPositions[$position] ?? $yPositions['top'];
-
-            // Convert speed name to pixels per second, scaled to actual frame width.
-            // Base pps is calibrated for 1280px-wide frames (720p landscape).
-            $basePps = WatermarkService::getSpeedPps($scrollSpeed);
-            $pps = max(10, (int) round($basePps * $videoWidth / 1280));
-
-            if ($scrollInterval > 0) {
-                // INTERVAL MODE: text enters from right edge every $interval seconds.
-                // t_local = mod(t - delay, interval) resets to 0 at each cycle start.
-                // x = w - pps * t_local → starts at x=w (off-screen right), moves left.
-                // When x < -tw, text is off-screen left (naturally invisible).
-                // At next cycle, mod resets → x jumps back to w (re-enters from right).
-                $tLocal = $scrollStartDelay > 0
-                    ? "mod(t-{$scrollStartDelay}\\,{$scrollInterval})"
-                    : "mod(t\\,{$scrollInterval})";
-                $x = "w-{$pps}*{$tLocal}";
-            } else {
-                // CONTINUOUS MODE: text scrolls endlessly, wrapping around.
-                // x = w - mod(pps * (t-delay), w+tw) → wraps when text fully exits left.
-                $tExpr = $scrollStartDelay > 0 ? "t-{$scrollStartDelay}" : "t";
-                $x = "w-mod({$pps}*({$tExpr})\\,w+tw)";
-            }
-
-            // Enable expression: only needed for start delay (to hide text before delay).
-            // Interval timing is handled by the x expression itself.
-            $enable = '';
-            if ($scrollStartDelay > 0) {
-                $enable = ":enable=gte(t\\,{$scrollStartDelay})";
-            }
-        } else {
-            $positions = [
-                'top-left' => ['x' => $padding, 'y' => $padding],
-                'top-center' => ['x' => '(w-text_w)/2', 'y' => $padding],
-                'top-right' => ['x' => "w-text_w-{$padding}", 'y' => $padding],
-                'center-left' => ['x' => $padding, 'y' => '(h-text_h)/2'],
-                'center' => ['x' => '(w-text_w)/2', 'y' => '(h-text_h)/2'],
-                'center-right' => ['x' => "w-text_w-{$padding}", 'y' => '(h-text_h)/2'],
-                'bottom-left' => ['x' => $padding, 'y' => "h-text_h-{$padding}"],
-                'bottom-center' => ['x' => '(w-text_w)/2', 'y' => "h-text_h-{$padding}"],
-                'bottom-right' => ['x' => "w-text_w-{$padding}", 'y' => "h-text_h-{$padding}"],
-            ];
-            $pos = $positions[$position] ?? $positions['bottom-right'];
-            $x = $pos['x'];
-            $y = $pos['y'];
-            $enable = '';
-        }
-
-        // Color with opacity (e.g. white@0.8)
-        $fontColor = !str_contains($color, '@') ? $color . '@' . $opacity : $color;
-
-        $parts = [
-            "drawtext=fontfile={$font}",
-            "text={$text}",
-            "expansion=normal",
-            "fontsize={$scaledSize}",
-            "fontcolor={$fontColor}",
-            "shadowx=2",
-            "shadowy=2",
-            "x={$x}",
-            "y={$y}",
-        ];
-
-        return implode(':', $parts) . $enable;
-    }
-
-    protected function escapeDrawtextValue(string $value): string
-    {
-        $value = str_replace('\\', '\\\\', $value);
-        $value = str_replace(';', '\\;', $value);
-        $value = str_replace(',', '\\,', $value);
-        $value = str_replace(':', '\\:', $value);
-        $value = str_replace("'", "\\'", $value);
-        $value = str_replace('%', '\\%', $value);
-        return $value;
-    }
-
-    protected function generateHlsPlaylist(string $outputDir, array $qualities): void
-    {
-        $ffmpeg = $this->getFFmpegPath();
-        $hlsTime = (int) $this->s('hls_segment_duration', 6);
-        $playlistType = $this->getHlsPlaylistType();
-        $flags = $this->getHlsFlags();
-        $extraArgs = $this->getHlsExtraArgs();
-        $hlsQualities = [];
-
-        foreach ($qualities as $quality) {
-            $input = "{$outputDir}/{$quality}.mp4";
-            $hlsDir = "{$outputDir}/hls/{$quality}";
-            
-            if (!file_exists($input) || filesize($input) < 10240) {
-                Log::warning('HLS: skipping quality, MP4 file missing or too small', ['quality' => $quality]);
-                continue;
-            }
-
-            if (!file_exists($hlsDir)) {
-                mkdir($hlsDir, 0755, true);
-            }
-
-            $segmentPattern = "{$hlsDir}/segment_%03d.ts";
-            $playlistPath = "{$hlsDir}/playlist.m3u8";
-
-            // Remux only (-c copy) — the MP4s already have aligned keyframes
-            // from -force_key_frames during transcoding, so no re-encode needed.
-            $cmd = sprintf(
-                '%s -y -i %s -c copy -f hls -hls_time %d -hls_playlist_type %s -hls_flags %s -hls_list_size 0 %s -hls_segment_filename %s %s 2>&1',
-                $ffmpeg,
-                escapeshellarg($input),
-                $hlsTime,
-                $playlistType,
-                $flags,
-                $extraArgs,
-                escapeshellarg($segmentPattern),
-                escapeshellarg($playlistPath)
-            );
-
-            [$exitCode, $cmdOutput] = $this->runCommand($cmd);
-            
-            // Verify HLS segments were actually created and are valid
-            $segments = glob("{$hlsDir}/segment_*.ts");
-            $validSegments = array_filter($segments, fn($s) => filesize($s) > 2048);
-            
-            if ($exitCode !== 0 || empty($validSegments)) {
-                Log::warning('HLS playlist generation failed or produced invalid segments', [
-                    'quality' => $quality,
-                    'exit_code' => $exitCode,
-                    'segment_count' => count($segments),
-                    'valid_segments' => count($validSegments),
-                    'output' => substr($cmdOutput, 0, 500),
-                ]);
-                // Clean up broken HLS files
-                array_map('unlink', $segments);
-                if (file_exists($playlistPath)) unlink($playlistPath);
-            } else {
-                $hlsQualities[] = $quality;
-            }
-        }
-
-        // Only generate master playlist if we have valid HLS qualities
-        if (!empty($hlsQualities)) {
-            $this->generateMasterPlaylist($outputDir, $hlsQualities);
-        } else {
-            Log::warning('HLS: no valid qualities produced, skipping master playlist', [
-                'video_id' => $this->video->id,
-            ]);
-            // Remove the master playlist if it exists from a previous attempt
-            $masterPath = "{$outputDir}/master.m3u8";
-            if (file_exists($masterPath)) unlink($masterPath);
-        }
-    }
-
-    protected function generateMasterPlaylist(string $outputDir, array $qualities): void
-    {
-        $bandwidths = [
-            '240p' => 400000,
-            '360p' => 800000,
-            '480p' => 1400000,
-            '720p' => 2800000,
-            '1080p' => 5000000,
-        ];
-
-        $resolutions = [
-            '240p' => '426x240',
-            '360p' => '640x360',
-            '480p' => '854x480',
-            '720p' => '1280x720',
-            '1080p' => '1920x1080',
-        ];
-
-        $content = "#EXTM3U\n#EXT-X-VERSION:3\n";
-
-        foreach ($qualities as $quality) {
-            $bandwidth = $bandwidths[$quality] ?? 1000000;
-            $resolution = $resolutions[$quality] ?? '1280x720';
-            
-            $content .= "#EXT-X-STREAM-INF:BANDWIDTH={$bandwidth},RESOLUTION={$resolution}\n";
-            $content .= "hls/{$quality}/playlist.m3u8\n";
-        }
-
-        file_put_contents("{$outputDir}/master.m3u8", $content);
-    }
-
-    /**
-     * Upload all locally-processed files to cloud storage (Wasabi/S3/B2).
-     * FFmpeg requires local filesystem access, so we process locally first,
-     * then push everything to cloud and optionally clean up local copies.
-     */
-    protected function uploadToCloudStorage(string $targetDisk): void
-    {
-        $localDisk = Storage::disk('public');
-        $storagePath = $localDisk->path('');
-        $videoDir = $this->getVideoDirectory();
-        $uploadedCount = 0;
-        $failedCount = 0;
-
-        Log::info('ProcessVideoJob: uploading processed files to cloud storage', [
-            'video_id' => $this->video->id,
-            'target_disk' => $targetDisk,
-            'video_dir' => $videoDir,
-        ]);
-
-        // Upload all files in the video directory (original + processed/)
-        $allFiles = $localDisk->allFiles($videoDir);
-        foreach ($allFiles as $file) {
-            $localPath = $localDisk->path($file);
-            if (StorageManager::uploadLocalFile($localPath, $file, $targetDisk)) {
-                $uploadedCount++;
-            } else {
-                $failedCount++;
-                Log::warning('ProcessVideoJob: failed to upload file to cloud', [
-                    'file' => $file,
-                    'disk' => $targetDisk,
-                ]);
-            }
-        }
-
-        // Upload thumbnail if it exists
-        if ($this->video->thumbnail) {
-            $thumbLocal = $localDisk->path($this->video->thumbnail);
-            if (file_exists($thumbLocal)) {
-                if (StorageManager::uploadLocalFile($thumbLocal, $this->video->thumbnail, $targetDisk)) {
-                    $uploadedCount++;
-                } else {
-                    $failedCount++;
-                }
-            }
-        }
-
-        // Upload preview if it exists
-        if ($this->video->preview_path) {
-            $previewLocal = $localDisk->path($this->video->preview_path);
-            if (file_exists($previewLocal)) {
-                // preview_path is usually inside the video dir, so it may already be uploaded
-                if (!in_array($this->video->preview_path, $allFiles)) {
-                    if (StorageManager::uploadLocalFile($previewLocal, $this->video->preview_path, $targetDisk)) {
-                        $uploadedCount++;
-                    } else {
-                        $failedCount++;
-                    }
-                }
-            }
-        }
-
-        // Upload scrubber VTT if it exists
-        if ($this->video->scrubber_vtt_path) {
-            $vttLocal = $localDisk->path($this->video->scrubber_vtt_path);
-            if (file_exists($vttLocal)) {
-                if (!in_array($this->video->scrubber_vtt_path, $allFiles)) {
-                    if (StorageManager::uploadLocalFile($vttLocal, $this->video->scrubber_vtt_path, $targetDisk)) {
-                        $uploadedCount++;
-                    } else {
-                        $failedCount++;
-                    }
-                }
-            }
-        }
-
-        Log::info('ProcessVideoJob: cloud upload complete', [
-            'video_id' => $this->video->id,
-            'uploaded' => $uploadedCount,
-            'failed' => $failedCount,
-        ]);
-
-        StorageManager::cleanupTemp();
-
-        // Update the video's storage_disk to reflect where files now live
-        if ($failedCount === 0) {
-            $this->video->update(['storage_disk' => $targetDisk]);
-
-            // Optionally delete local copies after successful cloud upload
-            if ($this->s('cloud_offloading_delete_local', false)) {
-                Log::info('ProcessVideoJob: deleting local copies after cloud offload', [
-                    'video_id' => $this->video->id,
-                ]);
-
-                foreach ($allFiles as $file) {
-                    $localDisk->delete($file);
-                }
-
-                if ($this->video->thumbnail && $localDisk->exists($this->video->thumbnail)) {
-                    $localDisk->delete($this->video->thumbnail);
-                }
-
-                // Clean up empty directories
-                if ($localDisk->exists($videoDir) && empty($localDisk->allFiles($videoDir))) {
-                    $localDisk->deleteDirectory($videoDir);
-                }
-            }
-        } else {
-            // Some files failed — keep on local, log warning
-            Log::warning('ProcessVideoJob: some files failed to upload, keeping local copies', [
-                'video_id' => $this->video->id,
-                'failed' => $failedCount,
-            ]);
-        }
-    }
-
-    /**
-     * Run a shell command and return [exitCode, output].
-     *
-     * Uses Symfony Process instead of raw proc_open so each individual ffmpeg/ffprobe
-     * invocation gets its own timeout, rather than relying solely on the job's overall
-     * 3600s timeout. Without this, a single hung command (bad input, stuck codec) could
-     * only be killed by the outer job timeout firing — which kills the PHP process but
-     * can leave orphaned ffmpeg children and partial temp files behind. Symfony Process
-     * terminates the whole process tree cleanly on timeout.
-     */
-    protected function runCommand(string $cmd): array
-    {
-        $process = Process::fromShellCommandline($cmd);
-        $process->setTimeout((int) $this->s('ffmpeg_command_timeout', 1800));
-
-        try {
-            $process->run();
-        } catch (ProcessTimedOutException $e) {
-            Log::error('FFmpeg command timed out', [
-                'video_id' => $this->video->id,
-                'timeout' => $process->getTimeout(),
-            ]);
-            return [1, 'Command timed out after ' . $process->getTimeout() . 's'];
-        }
-
-        $output = trim($process->getOutput() . "\n" . $process->getErrorOutput());
-
-        return [$process->getExitCode() ?? 1, $output];
+        return sprintf('%02d:%02d:%02d.000', intdiv($seconds, 3600), intdiv($seconds % 3600, 60), $seconds % 60);
     }
 
     public function failed(Throwable $exception): void
@@ -1424,9 +550,11 @@ class ProcessVideoJob implements ShouldQueue, ShouldBeUnique
             'error' => $exception->getMessage(),
         ]);
 
-        $this->video->update([
-            'status' => 'failed',
-            'failure_reason' => $exception->getMessage(),
-        ]);
+        if ($this->video->status !== 'processed') {
+            $this->video->update([
+                'status' => 'failed',
+                'failure_reason' => $exception->getMessage(),
+            ]);
+        }
     }
 }

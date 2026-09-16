@@ -40,6 +40,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
@@ -49,6 +50,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -56,6 +58,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 
 class VideoResource extends Resource
@@ -305,9 +308,28 @@ class VideoResource extends Resource
             ]);
     }
 
+    /**
+     * Whether "encode missing renditions" can run: a processed, uploaded (not
+     * embedded) video whose source is still on local disk and isn't already
+     * being encoded.
+     */
+    public static function canEncodeMissing(Video $record): bool
+    {
+        return $record->status === 'processed'
+            && ! $record->is_embedded
+            && $record->video_path
+            && Storage::disk('public')->exists($record->video_path)
+            && ! $record->isEncoding();
+    }
+
+    public static function dispatchMissingRenditions(Video $record): void
+    {
+        ProcessVideoJob::dispatch($record)->onQueue('video-processing');
+    }
+
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with(['user', 'category']);
+        return parent::getEloquentQuery()->with(['user', 'category', 'encodings']);
     }
 
     public static function table(Table $table): Table
@@ -375,6 +397,11 @@ class VideoResource extends Resource
                         $state === 'failed' => 'danger',
                         default => 'gray',
                     })
+                    ->toggleable(),
+
+                ViewColumn::make('encoding_progress')
+                    ->label('Encoding')
+                    ->view('filament.tables.columns.encoding-progress')
                     ->toggleable(),
 
                 TextColumn::make('privacy')
@@ -677,6 +704,15 @@ class VideoResource extends Resource
                         })
                         ->visible(fn (Video $record) => in_array($record->status, ['failed', 'processing'])),
 
+                    Action::make('encode_missing')
+                        ->label('Encode missing renditions')
+                        ->icon('phosphor-film-strip')
+                        ->color('info')
+                        ->requiresConfirmation()
+                        ->modalDescription('Encodes any active encoding profile this video does not have yet, for example one enabled after it was uploaded. The video stays live while this runs.')
+                        ->action(fn (Video $record) => static::dispatchMissingRenditions($record))
+                        ->visible(fn (Video $record) => static::canEncodeMissing($record)),
+
                     Action::make('view_frontend')
                         ->icon('phosphor-eye')
                         ->color('gray')
@@ -689,6 +725,24 @@ class VideoResource extends Resource
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('encode_missing')
+                        ->label('Encode missing renditions')
+                        ->icon('phosphor-film-strip')
+                        ->color('info')
+                        ->requiresConfirmation()
+                        ->modalDescription('Encodes any active encoding profile the selected videos do not have yet. Videos that are still processing, embedded, or no longer on local storage are skipped.')
+                        ->action(function (Collection $records) {
+                            $queued = $records->filter(fn (Video $v) => static::canEncodeMissing($v))
+                                ->each(fn (Video $v) => static::dispatchMissingRenditions($v))
+                                ->count();
+
+                            Notification::make()
+                                ->title("Queued {$queued} video(s) for encoding")
+                                ->success()
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
                     BulkAction::make('approve')
                         ->icon('phosphor-check-circle')
                         ->color('success')

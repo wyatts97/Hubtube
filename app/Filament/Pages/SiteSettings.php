@@ -4,12 +4,12 @@ namespace App\Filament\Pages;
 
 use App\Filament\Clusters\Settings as SettingsCluster;
 use App\Filament\Concerns\RequiresSuperAdmin;
+use App\Filament\Resources\EncodeProfileResource;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use App\Services\FfmpegService;
 use App\Services\WatermarkService;
 use Filament\Actions\Action;
-use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
@@ -90,7 +90,9 @@ class SiteSettings extends Page implements HasForms
             'ffmpeg_hls_playlist_type' => Setting::get('ffmpeg_hls_playlist_type', 'vod'),
             'ffmpeg_hls_flags' => Setting::get('ffmpeg_hls_flags', 'independent_segments'),
             'multi_resolution_enabled' => Setting::get('multi_resolution_enabled', true),
-            'enabled_resolutions' => Setting::get('enabled_resolutions', ['360p', '480p', '720p']),
+            'chunked_encoding_enabled' => Setting::get('chunked_encoding_enabled', true),
+            'chunked_encoding_min_duration' => Setting::get('chunked_encoding_min_duration', 300),
+            'chunked_encoding_chunk_seconds' => Setting::get('chunked_encoding_chunk_seconds', 240),
             'generate_hls' => Setting::get('generate_hls', true),
             'hls_segment_duration' => Setting::get('hls_segment_duration', 6),
             'watermark_enabled' => Setting::get('watermark_enabled', false),
@@ -511,19 +513,36 @@ class SiteSettings extends Page implements HasForms
                                             ->helperText('Create multiple resolution versions of uploaded videos')
                                             ->default(true)
                                             ->reactive(),
-                                        CheckboxList::make('enabled_resolutions')
-                                            ->label('Enabled Resolutions')
-                                            ->options([
-                                                '240p' => '240p (426x240) - Low bandwidth',
-                                                '360p' => '360p (640x360) - Mobile',
-                                                '480p' => '480p (854x480) - SD',
-                                                '720p' => '720p (1280x720) - HD',
-                                                '1080p' => '1080p (1920x1080) - Full HD',
-                                            ])
-                                            ->default(['360p', '480p', '720p'])
-                                            ->helperText('Select which resolutions to make available. Videos are only transcoded to qualities significantly lower than the source — never upscaled. E.g. a 720p upload produces 480p + 360p; a 1080p upload produces 720p + 480p + 360p. The original quality is always preserved.')
+                                        Placeholder::make('encode_profiles_link')
+                                            ->label('Resolutions')
+                                            ->content(fn (): HtmlString => new HtmlString(
+                                                'Which resolutions are produced is set per profile in '
+                                                .'<a href="'.e(EncodeProfileResource::getUrl()).'" class="text-primary-600 underline">Encoding Profiles</a>. '
+                                                .'Videos are only transcoded to profiles below their own height, never upscaled; the original is always kept.'
+                                            ))
                                             ->visible(fn ($get) => $get('multi_resolution_enabled'))
-                                            ->columns(2),
+                                            ->columnSpanFull(),
+                                        Toggle::make('chunked_encoding_enabled')
+                                            ->label('Chunked Parallel Encoding')
+                                            ->helperText('Split long videos into chunks that separate queue workers encode at the same time, then join them. Speed-up is limited by how many video-processing workers Horizon runs.')
+                                            ->default(true)
+                                            ->reactive()
+                                            ->visible(fn ($get) => $get('multi_resolution_enabled')),
+                                        TextInput::make('chunked_encoding_min_duration')
+                                            ->label('Chunk Videos Longer Than (seconds)')
+                                            ->numeric()
+                                            ->minValue(60)
+                                            ->default(300)
+                                            ->helperText('Shorter videos are encoded in one piece.')
+                                            ->visible(fn ($get) => $get('multi_resolution_enabled') && $get('chunked_encoding_enabled')),
+                                        TextInput::make('chunked_encoding_chunk_seconds')
+                                            ->label('Chunk Length (seconds)')
+                                            ->numeric()
+                                            ->minValue(30)
+                                            ->maxValue(1800)
+                                            ->default(240)
+                                            ->helperText('Rounded up to an even number so chunk boundaries fall on keyframes.')
+                                            ->visible(fn ($get) => $get('multi_resolution_enabled') && $get('chunked_encoding_enabled')),
                                         Toggle::make('generate_hls')
                                             ->label('Generate HLS Streaming')
                                             ->helperText('Create HLS playlists for adaptive bitrate streaming')

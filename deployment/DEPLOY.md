@@ -524,6 +524,20 @@ User uploads video → Cloudflare → Nginx → Laravel (local disk)
 - No upload size limits for serving
 - Wasabi has no egress fees
 
+### How videos are encoded
+
+1. `ProcessVideoJob` probes the upload, then makes thumbnails, the hover preview and the seek-bar sprite sheet.
+2. It plans one rendition per active profile in **Admin → System → Encoding Profiles** that is below the upload's height. Renditions are tracked in `video_encodings`.
+3. Videos longer than the chunking threshold (**Site Settings → Videos**, default 5 minutes) are cut into chunks. Each chunk is encoded by its own queue job, and the chunks are joined afterwards.
+4. The **lowest** rendition goes first, on the `video-priority` queue. The video goes live as soon as it's ready, and the remaining renditions then encode in parallel.
+5. When everything has finished, the watermarked original (if a watermark is set) replaces the upload, and the files are offloaded to cloud storage if that's enabled.
+
+Progress bars are shown on the admin video page, in the videos table and in the bulk upload status list.
+
+**Queue workers.** `config/horizon.php` runs the `video-priority` and `video-processing` queues on the same supervisor, with `video-priority` taking precedence. Its `maxProcesses` is how many chunks can encode at once. Each worker runs ffmpeg with the **FFmpeg Threads** setting, so keep `maxProcesses × threads` at or below your CPU core count. If you run plain `queue:work` instead of Horizon, use `--queue=video-priority,video-processing`.
+
+**Existing videos** keep working as they are. To give them a newly enabled profile, use **Encode missing renditions** (row or bulk action in Admin → Videos). Renditions already on disk are kept, the video stays live while this runs, and its seek previews are rebuilt as a single sprite sheet.
+
 ---
 
 ## 15. Maintenance & Updates

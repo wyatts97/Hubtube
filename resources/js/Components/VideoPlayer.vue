@@ -130,8 +130,9 @@ const initPlayer = () => {
     };
 
     if (props.previewThumbnails) {
-        // ProcessVideoJob already emits exactly this shape: a WEBVTT file whose
-        // cues name individual sprite JPEGs by a path relative to the VTT.
+        // ProcessVideoJob emits a WEBVTT file whose cues point into one sprite
+        // sheet (sprites/sprite.jpg#xywh=…) by a path relative to the VTT.
+        // Older videos name individual JPEGs instead; Fluid reads both.
         layoutControls.timelinePreview = {
             file: props.previewThumbnails,
             type: 'VTT',

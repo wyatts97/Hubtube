@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Events\VideoProcessed;
 use App\Events\VideoUploaded;
+use App\Models\Notification;
 use App\Models\PointsTransaction;
 use App\Models\Setting;
 use App\Models\User;
@@ -213,6 +215,64 @@ class VideoService
         // Award points if the video was auto-approved
         if (!empty($updateData['is_approved']) && $video->user) {
             $this->awardAutoApprovePoints($video);
+        }
+    }
+
+    /**
+     * Update the renditions of a video that is already processed.
+     *
+     * Low-res-first publishing marks a video processed once its first
+     * rendition is ready. Later renditions come through here instead of
+     * markAsProcessed() so they never re-run auto-approval: an admin who
+     * unpublished the video in the meantime must not see it re-approved.
+     */
+    public function updateRenditions(Video $video, array $qualities, ?string $degradedReason = null): void
+    {
+        $video->update([
+            'qualities_available' => $qualities,
+            'processing_fallback_reason' => $degradedReason,
+            'processing_completed_at' => now(),
+        ]);
+    }
+
+    /**
+     * Fire VideoProcessed once, and only for a video that is actually live.
+     *
+     * Safe to call after every processing milestone: scheduled, unapproved and
+     * already-notified videos are skipped.
+     */
+    public function notifyProcessedOnce(Video $video): void
+    {
+        $video->refresh();
+
+        // Bulk uploads leave published_at null until an admin schedules them.
+        if (! $video->published_at) {
+            return;
+        }
+
+        // Scheduled videos notify when videos:publish-scheduled releases them.
+        if ($video->requires_schedule || $video->queue_order !== null) {
+            return;
+        }
+
+        if (! $video->is_approved) {
+            return;
+        }
+
+        // Bulk-uploaded videos broadcast (for the uploader UI) but notify nobody.
+        if ($video->suppress_notifications) {
+            event(new VideoProcessed($video, suppressNotifications: true));
+
+            return;
+        }
+
+        $alreadyNotified = Notification::where('user_id', $video->user_id)
+            ->where('type', 'video_processed')
+            ->where('data->video_id', $video->id)
+            ->exists();
+
+        if (! $alreadyNotified) {
+            event(new VideoProcessed($video));
         }
     }
 

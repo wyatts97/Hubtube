@@ -531,7 +531,7 @@ class BulkVideoUploader extends Page implements HasForms
             return new Collection();
         }
 
-        return Video::with('user', 'category')
+        return Video::with('user', 'category', 'encodings')
             ->whereIn('id', $this->createdVideoIds)
             ->orderBy('id')
             ->get();

@@ -51,6 +51,7 @@ class Video extends Model
         'status',
         'failure_reason',
         'processing_fallback_reason',
+        'processing_stage',
         'is_featured',
         'is_approved',
         'age_restricted',
@@ -320,6 +321,43 @@ class Video extends Model
     public function views(): HasMany
     {
         return $this->hasMany(VideoView::class);
+    }
+
+    public function encodings(): HasMany
+    {
+        return $this->hasMany(VideoEncoding::class);
+    }
+
+    /**
+     * Whether processing work is still under way: preparing, or renditions
+     * not yet finished. A video published on its first rendition can be
+     * processed and still encoding the rest.
+     */
+    public function isEncoding(): bool
+    {
+        if (in_array($this->status, ['pending', 'processing'], true)) {
+            return true;
+        }
+
+        $encodings = $this->relationLoaded('encodings') ? $this->encodings : $this->encodings()->get();
+
+        return $this->processing_stage !== null
+            || $encodings->contains(fn (VideoEncoding $encoding) => ! $encoding->isTerminal());
+    }
+
+    /**
+     * Overall encoding progress, 0–100, averaged over renditions.
+     * Null while the video is still being prepared and nothing is planned.
+     */
+    public function encodingProgress(): ?int
+    {
+        $encodings = $this->relationLoaded('encodings') ? $this->encodings : $this->encodings()->get();
+
+        if ($encodings->isEmpty()) {
+            return null;
+        }
+
+        return (int) floor($encodings->avg(fn (VideoEncoding $encoding) => $encoding->isTerminal() ? 100 : $encoding->progress));
     }
 
     public function playlists(): BelongsToMany

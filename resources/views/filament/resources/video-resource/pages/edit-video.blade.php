@@ -8,6 +8,8 @@
         .ht-edit-left, .ht-edit-right { min-width: 0; }
     </style>
 
+    <livewire:video-encoding-progress :video-id="$this->record->id" wire:key="video-encoding-progress-{{ $this->record->id }}" />
+
     <div class="ht-edit-grid">
         <div class="ht-edit-left">
             @if($this->record->status === 'processed' || $this->record->video_path)
