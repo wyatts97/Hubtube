@@ -1,37 +1,61 @@
+{{--
+    One folder in the sidebar tree.
+
+    Recursive, but the whole tree already came from a single media_folders
+    query, so recursion here costs nothing — it used to sit on top of an
+    allFiles() walk per node.
+--}}
 @php
-    $isExpanded = in_array($node['path'], $expandedNodes);
-    $isActive = $currentDirectory === $node['path'] || str_starts_with($currentDirectory, $node['path'] . '/');
-    $paddingLeft = 12 + ($level * 12);
+    $isExpanded = in_array($node['path'], $expandedNodes, true);
+    $isCurrent = $currentDirectory === $node['path'];
+    $hasChildren = ! empty($node['children']);
 @endphp
 
-<li>
-    <div class="ht-folder-row {{ $isActive ? 'ht-folder-row-active' : '' }}"
-         style="padding:4px 8px;padding-left:{{ $paddingLeft }}px;"
-         wire:click="openDirectory(@js($node['path']))">
-        @if (!empty($node['children']))
-            <button type="button" wire:click.stop="toggleNode(@js($node['path']))" style="padding:2px;border-radius:6px;color:#a1a1aa;background:none;border:none;cursor:pointer;">
+<li role="treeitem" @if ($hasChildren) aria-expanded="{{ $isExpanded ? 'true' : 'false' }}" @endif>
+    <div
+        @class(['ht-ml-tree__row', 'ht-ml-tree__row--current' => $isCurrent])
+        style="padding-inline-start: {{ 8 + $level * 12 }}px;"
+    >
+        @if ($hasChildren)
+            <button
+                type="button"
+                class="ht-ml-tree__caret"
+                wire:click.stop="toggleNode(@js($node['path']))"
+                aria-label="{{ $isExpanded ? 'Collapse' : 'Expand' }} {{ $node['name'] }}"
+            >
                 @if ($isExpanded)
-                    <x-phosphor-caret-down style="width:12px;height:12px;" />
+                    <x-phosphor-caret-down class="ht-ml-icon-sm" />
                 @else
-                    <x-phosphor-caret-right style="width:12px;height:12px;" />
+                    <x-phosphor-caret-right class="ht-ml-icon-sm" />
                 @endif
             </button>
         @else
-            <span style="width:16px;"></span>
+            <span class="ht-ml-tree__caret ht-ml-tree__caret--empty" aria-hidden="true"></span>
         @endif
 
-        @if ($level === 0)
-            <x-phosphor-hard-drives style="width:16px;height:16px;color:#a1a1aa;" />
-        @else
-            <x-phosphor-folder style="width:16px;height:16px;color:{{ $isActive ? 'var(--color-primary-400)' : '#a1a1aa' }};" />
-        @endif
+        <button
+            type="button"
+            class="ht-ml-tree__label"
+            wire:click="openDirectory(@js($node['path']))"
+            @if ($isCurrent) aria-current="true" @endif
+        >
+            @if ($isCurrent)
+                <x-phosphor-folder-open class="ht-ml-icon-sm" />
+            @else
+                <x-phosphor-folder class="ht-ml-icon-sm" />
+            @endif
+            <span class="ht-ml-tree__name">{{ $node['name'] }}</span>
+        </button>
 
-        <span class="ht-text-sm ht-truncate" style="color:{{ $isActive ? '#fff' : '#d4d4d8' }};" title="{{ $node['name'] }}">{{ $node['name'] }}</span>
-        <span class="ht-text-10 ht-ml-auto" style="color:#71717a;">{{ $node['count'] }}</span>
+        {{-- Both counts are rendered now. `size` was computed and cached by the
+             old tree walk and then never shown at all. --}}
+        <span class="ht-ml-tree__meta" title="{{ $node['count'] }} files, {{ $node['size'] }}">
+            {{ $node['count'] }}
+        </span>
     </div>
 
-    @if (!empty($node['children']) && $isExpanded)
-        <ul style="display:flex;flex-direction:column;gap:4px;list-style:none;margin:4px 0 0 0;padding:0;">
+    @if ($isExpanded && $hasChildren)
+        <ul role="group">
             @foreach ($node['children'] as $child)
                 @include('filament.pages.media-library-tree-node', ['node' => $child, 'level' => $level + 1])
             @endforeach

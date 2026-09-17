@@ -1,293 +1,149 @@
+{{--
+    Admin Media Library.
+
+    Styling lives in resources/css/filament/admin/theme.css under .ht-ml-*,
+    alongthe rest of this panel's component CSS. It used to be ~100 lines of
+    hand-rolled utility classes and ~40 hardcoded hex values inlined in a
+    <style> block shipped with every response, which also meant an admin
+    changing the panel's primary colour saw every page update except this one.
+
+    Multi-selection is client-side (the mediaSelection Alpine component at the
+    bottom): every card used to carry wire:click="selectFile(...)", so moving a
+    2px border cost a full server round-trip that rebuilt the entire listing.
+    The server is told only when a bulk action actually runs, and it
+    re-validates every path it is handed.
+--}}
 <x-filament-panels::page>
-<style>
-    .ht-layout { display: flex; gap: 16px; min-height: calc(100vh - 12rem); }
-    .ht-sidebar { width: 260px; flex-shrink: 0; }
-    .ht-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
-    .ht-details { width: 300px; flex-shrink: 0; }
-    .ht-flex { display: flex; }
-    .ht-flex-col { display: flex; flex-direction: column; }
-    .ht-flex-wrap { display: flex; flex-wrap: wrap; }
-    .ht-items-center { align-items: center; }
-    .ht-justify-center { justify-content: center; }
-    .ht-justify-between { justify-content: space-between; }
-    .ht-gap-1 { gap: 4px; }
-    .ht-gap-2 { gap: 8px; }
-    .ht-gap-3 { gap: 12px; }
-    .ht-gap-4 { gap: 16px; }
-    .ht-flex-1 { flex: 1; }
-    .ht-min-w-0 { min-width: 0; }
-    .ht-w-full { width: 100%; }
-    .ht-h-full { height: 100%; }
-    .ht-text-left { text-align: left; }
-    .ht-text-center { text-align: center; }
-    .ht-text-xs { font-size: 12px; }
-    .ht-text-sm { font-size: 14px; }
-    .ht-text-10 { font-size: 10px; }
-    .ht-font-medium { font-weight: 500; }
-    .ht-font-semibold { font-weight: 600; }
-    .ht-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .ht-rounded { border-radius: 6px; }
-    .ht-rounded-lg { border-radius: 8px; }
-    .ht-rounded-xl { border-radius: 12px; }
-    .ht-rounded-full { border-radius: 9999px; }
-    .ht-p-2 { padding: 8px; }
-    .ht-px-3 { padding-left: 12px; padding-right: 12px; }
-    .ht-px-4 { padding-left: 16px; padding-right: 16px; }
-    .ht-py-2 { padding-top: 8px; padding-bottom: 8px; }
-    .ht-py-4 { padding-top: 16px; padding-bottom: 16px; }
-    .ht-py-12 { padding-top: 48px; padding-bottom: 48px; }
-    .ht-py-16 { padding-top: 64px; padding-bottom: 64px; }
-    .ht-mb-2 { margin-bottom: 8px; }
-    .ht-mb-3 { margin-bottom: 12px; }
-    .ht-mb-4 { margin-bottom: 16px; }
-    .ht-mt-1 { margin-top: 4px; }
-    .ht-mt-2 { margin-top: 8px; }
-    .ht-mt-3 { margin-top: 12px; }
-    .ht-ml-auto { margin-left: auto; }
-    .ht-object-cover { object-fit: cover; }
-    .ht-cursor-pointer { cursor: pointer; }
-    .ht-relative { position: relative; }
-    .ht-absolute { position: absolute; }
-    .ht-inset-0 { inset: 0; }
-    .ht-top-4 { top: 16px; }
-    .ht-right-4 { right: 16px; }
-    .ht-pointer-events-none { pointer-events: none; }
-    .ht-overflow-hidden { overflow: hidden; }
-    .ht-opacity-60 { opacity: 0.6; }
-    .ht-opacity-80 { opacity: 0.8; }
-    .ht-break-all { word-break: break-all; }
-    .ht-grid { display: grid; }
-    .ht-file-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
-    .ht-file-card { background: #18181b; border-radius: 12px; overflow: hidden; cursor: pointer; transition: border-color 0.15s; }
-    .ht-file-card-thumb { height: 130px; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
-    .ht-empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 64px 0; text-align: center; gap: 8px; grid-column: 1 / -1; }
-    .ht-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-    .ht-table th, .ht-table td { padding: 8px 16px; }
-    .ht-table thead { background: #27272a; }
-    .ht-table tbody tr { border-top: 1px solid #3f3f46; }
-    .ht-table .ht-selected { background: rgba(244, 63, 94, 0.08); }
-    .ht-badge { font-size: 10px; padding: 2px 6px; border-radius: 9999px; background: #7f1d1d; color: #fca5a5; }
-    .ht-btn-icon { width: 16px; height: 16px; }
-    .ht-btn-icon-sm { width: 20px; height: 20px; }
-    .ht-btn-icon-md { width: 24px; height: 24px; }
-    .ht-btn-icon-lg { width: 32px; height: 32px; }
-    .ht-btn-icon-xl { width: 40px; height: 40px; }
-    .ht-btn-icon-2xl { width: 64px; height: 64px; }
-    .ht-modal-overlay { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.7); }
-    .ht-modal-box { background: #27272a; border: 1px solid #3f3f46; border-radius: 12px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); padding: 24px; max-width: 420px; width: 100%; margin: 0 16px; }
-    .ht-lightbox { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.9); }
-    .ht-lightbox-img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 8px; }
-    .ht-link-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 8px 12px; border-radius: 8px; font-size: 14px; font-weight: 500; }
-    .ht-panel { background: #18181b; border: 1px solid #3f3f46; border-radius: 12px; }
-    .ht-panel-dark { background: #27272a; border: 1px solid #3f3f46; border-radius: 8px; }
-    .ht-input { background: #27272a; color: #d4d4d8; border: none; border-radius: 8px; padding: 8px 12px; font-size: 14px; }
-    .ht-input:focus { outline: 2px solid var(--color-primary-500); }
-    .ht-select { background: #27272a; color: #d4d4d8; border: none; border-radius: 8px; padding: 8px 12px; font-size: 14px; }
-    .ht-toggle-btn { padding: 8px; border-radius: 6px; }
-    .ht-view-toggle { display: flex; border-radius: 6px; overflow: hidden; background: #27272a; }
-    .ht-view-toggle button { padding: 8px; }
-    .ht-upload-zone { margin-top: 12px; position: relative; border: 2px dashed #3f3f46; border-radius: 8px; transition: border-color 0.15s, background 0.15s; cursor: pointer; }
-    .ht-upload-zone:hover { border-color: #52525b; }
-    .ht-upload-zone-active { border-color: var(--color-primary-500) !important; background: rgba(244, 63, 94, 0.1) !important; }
-    .ht-folder-row { display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 6px; cursor: pointer; }
-    .ht-folder-row:hover { background: rgba(255, 255, 255, 0.04); }
-    .ht-folder-row-active { background: rgba(244, 63, 94, 0.12); }
-    .ht-details-preview { height: 160px; background: #000; border-radius: 8px; overflow: hidden; position: relative; }
-    .ht-thumb-pending { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #27272a; animation: ht-thumb-pulse 1.6s ease-in-out infinite; }
-    @keyframes ht-thumb-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
-    @media (max-width: 1024px) {
-        .ht-layout { flex-direction: column; }
-        .ht-sidebar, .ht-details { width: 100%; max-height: none; }
-    }
-    @media (max-width: 640px) {
-        .ht-file-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-    }
-</style>
 
-<div x-data="{
-    lightboxOpen: false,
-    lightboxSrc: null,
-    videoOpen: false,
-    videoSrc: null,
-    videoName: ''
-}" style="display:flex;flex-direction:column;gap:16px;" @keydown.escape.window="lightboxOpen = false; videoOpen = false">
+@php
+    $files = $this->getFilesProperty();
+    $tree = $this->getFolderTree();
+    $subfolders = $this->getSubfoldersProperty();
+    $typeCounts = $this->getTypeCountsProperty();
+    // Resolved by path rather than by scanning the current page, so the panel
+    // no longer goes blank as soon as you turn the page.
+    $selectedFileData = $this->getSelectedFileDataProperty();
+    $pagePaths = collect($files->items())->pluck('path')->all();
+    $scope = $searchScope;
+@endphp
 
-    @php
-        $files = $this->getFilesProperty();
-        $tree = $this->getFolderTree();
-        // Resolved by path rather than by scanning the current page, so the
-        // panel no longer goes blank as soon as you turn the page.
-        $selectedFileData = $this->getSelectedFileDataProperty();
-    @endphp
-
-    {{-- The index is refreshed by every action this page takes, but files also
-         arrive from the encoder, imports and the shell. One filemtime() on the
-         current folder is enough to notice and offer a rescan. --}}
+<div
+    class="ht-ml"
+    x-data="mediaSelection(@js($pagePaths))"
+    x-on:keydown.escape="clear()"
+>
+    {{-- Staleness banner. The index is refreshed by every action this page
+         takes, but files also arrive from the encoder, imports and the shell.
+         One filemtime() on the current folder is enough to notice. --}}
     @if ($this->getDirectoryStaleProperty())
-        <div class="ht-panel ht-flex ht-items-center ht-gap-3" style="padding:10px 14px;">
-            <x-phosphor-warning-circle class="ht-btn-icon" style="color:#fbbf24;" />
-            <span class="ht-text-sm ht-flex-1" style="color:#d4d4d8;">
-                This folder has changed on disk since it was last indexed.
-            </span>
+        <div class="ht-ml-banner" role="status">
+            <x-phosphor-warning-circle class="ht-ml-icon" />
+            <span class="ht-ml-banner__text">This folder has changed on disk since it was last indexed.</span>
             <x-filament::button wire:click="rescanCurrentDirectory" size="sm" color="gray" icon="phosphor-arrows-clockwise">
                 Rescan folder
             </x-filament::button>
         </div>
     @endif
 
-    {{-- Delete confirmation modal --}}
-    @if ($deleteTarget)
-    <div class="ht-modal-overlay">
-        <div class="ht-modal-box">
-            <div class="ht-flex-col ht-items-center ht-gap-3 ht-text-center">
-                <div class="ht-flex ht-items-center ht-justify-center" style="width:40px;height:40px;border-radius:9999px;background:rgba(244,63,94,0.2);">
-                    <x-phosphor-trash class="ht-btn-icon-sm" style="color:#f87171;" />
-                </div>
-                <div>
-                    <p class="ht-text-sm ht-font-semibold" style="color:#fff;">Delete File?</p>
-                    <p class="ht-text-xs ht-mt-1 ht-break-all" style="color:#a1a1aa;">{{ basename($deleteTarget) }}</p>
-                </div>
-                <div class="ht-flex ht-gap-3 ht-w-full">
-                    <x-filament::button wire:click="cancelDelete" color="gray" size="sm" style="flex:1;">Cancel</x-filament::button>
-                    <x-filament::button wire:click="deleteFile" color="danger" size="sm" style="flex:1;">Delete</x-filament::button>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endif
+    <div class="ht-ml-layout">
 
-    {{-- Rename modal --}}
-    @if ($renameTarget)
-    <div class="ht-modal-overlay">
-        <div class="ht-modal-box">
-            <p class="ht-text-sm ht-font-semibold ht-mb-3" style="color:#fff;">Rename File</p>
-            <x-filament::input.wrapper style="margin-bottom:16px;">
-                <x-filament::input type="text" wire:model="renameNewName" />
-            </x-filament::input.wrapper>
-            <div class="ht-flex ht-gap-3 ht-w-full">
-                <x-filament::button wire:click="cancelRename" color="gray" size="sm" style="flex:1;">Cancel</x-filament::button>
-                <x-filament::button wire:click="confirmRename" color="primary" size="sm" style="flex:1;">Rename</x-filament::button>
-            </div>
-        </div>
-    </div>
-    @endif
-
-    {{-- New folder modal. Its visibility is its own flag: it used to render
-         under @if ($newFolderName), so clearing the pre-filled name to type
-         your own closed the modal. --}}
-    @if ($showNewFolderModal)
-    <div class="ht-modal-overlay">
-        <div class="ht-modal-box">
-            <p class="ht-text-sm ht-font-semibold ht-mb-3" style="color:#fff;">New Folder</p>
-            <x-filament::input.wrapper style="margin-bottom:16px;">
-                <x-filament::input
-                    type="text"
-                    wire:model="newFolderName"
-                    wire:keydown.enter="createFolder"
-                    placeholder="Folder name"
-                    autofocus
-                />
-            </x-filament::input.wrapper>
-            <div class="ht-flex ht-gap-3 ht-w-full">
-                <x-filament::button wire:click="closeNewFolderModal" color="gray" size="sm" style="flex:1;">Cancel</x-filament::button>
-                <x-filament::button wire:click="createFolder" color="primary" size="sm" style="flex:1;">Create</x-filament::button>
-            </div>
-        </div>
-    </div>
-    @endif
-
-    {{-- Lightbox --}}
-    <div x-show="lightboxOpen" class="ht-lightbox" style="display:none;" x-on:click.self="lightboxOpen = false">
-        <button x-on:click="lightboxOpen = false" class="ht-absolute" style="top:16px;right:16px;color:#fff;padding:8px;">
-            <x-phosphor-x class="ht-btn-icon-md" />
-        </button>
-        <img :src="lightboxSrc" class="ht-lightbox-img" />
-    </div>
-
-    {{-- Video preview modal --}}
-    <div x-show="videoOpen" class="ht-lightbox" style="display:none;" x-on:click.self="videoOpen = false">
-        <button x-on:click="videoOpen = false" class="ht-absolute" style="top:16px;right:16px;color:#fff;padding:8px;">
-            <x-phosphor-x class="ht-btn-icon-md" />
-        </button>
-        <div style="width:100%;max-width:56rem;padding:16px;">
-            <p x-text="videoName" class="ht-text-sm ht-mb-2 ht-truncate" style="color:#fff;"></p>
-            <video :src="videoSrc" controls style="width:100%;max-height:80vh;border-radius:8px;background:#000;"></video>
-        </div>
-    </div>
-
-    {{-- Main layout: sidebar | content | details --}}
-    <div class="ht-layout">
-
-        {{-- Sidebar: folder tree --}}
-        <div class="ht-sidebar ht-panel" style="overflow-y:auto;max-height:calc(100vh - 10rem);padding:12px;">
-            <p class="ht-text-xs ht-font-semibold ht-mb-2" style="color:#a1a1aa;text-transform:uppercase;letter-spacing:0.05em;">Folders</p>
-            <ul style="display:flex;flex-direction:column;gap:4px;list-style:none;margin:0;padding:0;">
+        {{-- ── Sidebar: folder tree ─────────────────────────────────────── --}}
+        <aside class="ht-ml-sidebar ht-ml-panel" aria-label="Folders">
+            <p class="ht-ml-sidebar__heading">Folders</p>
+            <ul class="ht-ml-tree" role="tree">
                 @foreach ($tree as $node)
                     @include('filament.pages.media-library-tree-node', ['node' => $node, 'level' => 0])
                 @endforeach
             </ul>
-        </div>
+        </aside>
 
-        {{-- Main content --}}
-        <div class="ht-main">
+        {{-- ── Main ─────────────────────────────────────────────────────── --}}
+        <div class="ht-ml-main">
 
             {{-- Toolbar --}}
-            <div class="ht-panel" style="padding:12px 16px;">
-                <div class="ht-flex-wrap ht-items-center ht-gap-3">
-                    {{-- Breadcrumbs --}}
-                    <div class="ht-flex ht-items-center ht-gap-1 ht-text-sm" style="color:#a1a1aa;">
-                        <button wire:click="openDirectory('media')" style="color:#d4d4d8;background:none;border:none;cursor:pointer;">Media</button>
+            <div class="ht-ml-panel ht-ml-toolbar">
+                <div class="ht-ml-toolbar__row">
+                    <nav class="ht-ml-crumbs" aria-label="Breadcrumb">
                         @php
-                            $crumbs = explode('/', trim($currentDirectory, '/'));
+                            $crumbs = array_values(array_filter(explode('/', trim($currentDirectory, '/'))));
                             $crumbPath = '';
                         @endphp
-                        @foreach ($crumbs as $crumb)
-                            @php $crumbPath .= ($crumbPath ? '/' : '') . $crumb; @endphp
-                            <span class="ht-text-xs">/</span>
-                            <button wire:click="openDirectory(@js($crumbPath))" style="color:#d4d4d8;background:none;border:none;cursor:pointer;">{{ ucfirst($crumb) }}</button>
+                        @foreach ($crumbs as $index => $crumb)
+                            @php $crumbPath .= ($crumbPath ? '/' : '').$crumb; @endphp
+                            @if ($index > 0)
+                                <span class="ht-ml-crumbs__sep" aria-hidden="true">/</span>
+                            @endif
+                            <button
+                                type="button"
+                                class="ht-ml-crumbs__link"
+                                wire:click="openDirectory(@js($crumbPath))"
+                                @if ($index === count($crumbs) - 1) aria-current="page" @endif
+                            >{{ ucfirst($crumb) }}</button>
                         @endforeach
-                    </div>
+                    </nav>
 
-                    <div class="ht-flex-1"></div>
+                    <div class="ht-ml-spacer"></div>
 
-                    {{-- Search --}}
-                    <x-filament::input.wrapper style="width:200px;">
-                        <x-filament::input type="text" wire:model.live.debounce.300ms="search" placeholder="Search files..." />
+                    <x-filament::input.wrapper class="ht-ml-search">
+                        <x-filament::input
+                            type="search"
+                            wire:model.live.debounce.400ms="search"
+                            placeholder="Search files..."
+                            x-ref="search"
+                        />
                     </x-filament::input.wrapper>
 
-                    {{-- Sort --}}
-                    <select wire:model.live="sortBy" class="ht-select" style="width:140px;">
+                    <select wire:model.live="searchScope" class="ht-ml-select" aria-label="Search scope">
+                        <option value="folder">This folder</option>
+                        <option value="subtree">This folder and below</option>
+                        <option value="library">Whole library</option>
+                    </select>
+
+                    <select wire:model.live="sortBy" class="ht-ml-select" aria-label="Sort by">
                         <option value="modified">Modified</option>
                         <option value="name">Name</option>
                         <option value="size">Size</option>
                         <option value="type">Type</option>
                     </select>
 
-                    <button wire:click="toggleSortDirection" class="ht-toggle-btn" style="background:#27272a;color:#d4d4d8;">
+                    <button
+                        type="button"
+                        wire:click="toggleSortDirection"
+                        class="ht-ml-iconbtn"
+                        aria-label="{{ $sortDirection === 'asc' ? 'Sort descending' : 'Sort ascending' }}"
+                    >
                         @if ($sortDirection === 'asc')
-                            <x-phosphor-sort-ascending class="ht-btn-icon" />
+                            <x-phosphor-sort-ascending class="ht-ml-icon" />
                         @else
-                            <x-phosphor-sort-descending class="ht-btn-icon" />
+                            <x-phosphor-sort-descending class="ht-ml-icon" />
                         @endif
                     </button>
 
-                    {{-- View toggle --}}
-                    <div class="ht-view-toggle">
-                        <button wire:click="$set('viewMode', 'grid')" style="background:{{ $viewMode === 'grid' ? 'var(--color-primary-500)' : 'transparent' }};color:{{ $viewMode === 'grid' ? '#fff' : '#a1a1aa' }};border:none;cursor:pointer;">
-                            <x-phosphor-squares-four class="ht-btn-icon" />
+                    <div class="ht-ml-viewtoggle" role="group" aria-label="View mode">
+                        <button
+                            type="button"
+                            wire:click="$set('viewMode', 'grid')"
+                            @class(['ht-ml-viewtoggle__btn', 'ht-ml-viewtoggle__btn--on' => $viewMode === 'grid'])
+                            aria-pressed="{{ $viewMode === 'grid' ? 'true' : 'false' }}"
+                            aria-label="Grid view"
+                        >
+                            <x-phosphor-squares-four class="ht-ml-icon" />
                         </button>
-                        <button wire:click="$set('viewMode', 'list')" style="background:{{ $viewMode === 'list' ? 'var(--color-primary-500)' : 'transparent' }};color:{{ $viewMode === 'list' ? '#fff' : '#a1a1aa' }};border:none;cursor:pointer;">
-                            <x-phosphor-list class="ht-btn-icon" />
+                        <button
+                            type="button"
+                            wire:click="$set('viewMode', 'list')"
+                            @class(['ht-ml-viewtoggle__btn', 'ht-ml-viewtoggle__btn--on' => $viewMode === 'list'])
+                            aria-pressed="{{ $viewMode === 'list' ? 'true' : 'false' }}"
+                            aria-label="List view"
+                        >
+                            <x-phosphor-list class="ht-ml-icon" />
                         </button>
                     </div>
 
-                    {{-- New folder + upload --}}
                     <x-filament::button wire:click="openNewFolderModal" size="sm" icon="phosphor-folder-plus">
                         New Folder
                     </x-filament::button>
 
-                    {{-- Whole-library rescan. Queued, because a full pass over
-                         a large library is far too slow for a request. --}}
                     <x-filament::button
                         wire:click="rescanLibrary"
                         wire:confirm="Rescan the whole media library? This runs in the background."
@@ -299,274 +155,490 @@
                     </x-filament::button>
                 </div>
 
-                {{-- Upload dropzone --}}
-                <div
-                    x-data="{ dragging: false }"
-                    x-on:dragover.prevent="dragging = true"
-                    x-on:dragleave.prevent="dragging = false"
-                    x-on:drop.prevent="dragging = false; $wire.$upload('uploadedFiles', $event.dataTransfer.files)"
-                    :class="dragging ? 'ht-upload-zone-active' : ''"
-                    class="ht-upload-zone"
-                >
-                    <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:16px;cursor:pointer;">
-                        <input type="file" wire:model="uploadedFiles" multiple style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;">
-                        <x-phosphor-tray-arrow-up class="ht-btn-icon" style="color:#a1a1aa;" />
-                        <span class="ht-text-sm ht-font-medium" style="color:#d4d4d8;">Drop files here or click to upload</span>
-                    </label>
+                {{-- Type chips. Counts come from one grouped query. --}}
+                <div class="ht-ml-chips" role="group" aria-label="Filter by type">
+                    <button
+                        type="button"
+                        wire:click="$set('typeFilter', '')"
+                        @class(['ht-ml-chip', 'ht-ml-chip--on' => $typeFilter === ''])
+                        aria-pressed="{{ $typeFilter === '' ? 'true' : 'false' }}"
+                    >All {{ $files->total() > 0 || $typeFilter !== '' ? '' : '' }}</button>
+
+                    @foreach (['image' => 'Images', 'video' => 'Videos', 'audio' => 'Audio', 'document' => 'Documents', 'other' => 'Other'] as $type => $label)
+                        @if (($typeCounts[$type] ?? 0) > 0 || $typeFilter === $type)
+                            <button
+                                type="button"
+                                wire:click="$set('typeFilter', @js($type))"
+                                @class(['ht-ml-chip', 'ht-ml-chip--on' => $typeFilter === $type])
+                                aria-pressed="{{ $typeFilter === $type ? 'true' : 'false' }}"
+                            >{{ $label }} ({{ $typeCounts[$type] ?? 0 }})</button>
+                        @endif
+                    @endforeach
+
+                    <span class="ht-ml-chips__sep" aria-hidden="true"></span>
+
+                    <button
+                        type="button"
+                        wire:click="$set('usageFilter', @js($usageFilter === 'used' ? '' : 'used'))"
+                        @class(['ht-ml-chip', 'ht-ml-chip--on' => $usageFilter === 'used'])
+                        aria-pressed="{{ $usageFilter === 'used' ? 'true' : 'false' }}"
+                    >In use</button>
+                    <button
+                        type="button"
+                        wire:click="$set('usageFilter', @js($usageFilter === 'unused' ? '' : 'unused'))"
+                        @class(['ht-ml-chip', 'ht-ml-chip--on' => $usageFilter === 'unused'])
+                        aria-pressed="{{ $usageFilter === 'unused' ? 'true' : 'false' }}"
+                    >Unused</button>
+
+                    @if ($this->getHasFiltersProperty())
+                        {{-- Changing folder no longer wipes the search, so say
+                             what is being searched and where. --}}
+                        <span class="ht-ml-chips__note">
+                            @if ($search !== '')
+                                Searching “{{ $search }}”
+                                {{ $scope === 'library' ? 'across the library' : ($scope === 'subtree' ? 'in this folder and below' : 'in '.$currentDirectory) }}
+                            @endif
+                        </span>
+                        <button type="button" wire:click="clearFilters" class="ht-ml-chip ht-ml-chip--clear">
+                            Clear filters
+                        </button>
+                    @endif
                 </div>
 
-                @if ($uploadedFiles)
-                    <div class="ht-flex ht-items-center ht-gap-3 ht-mt-2">
-                        <span class="ht-text-sm" style="color:#a1a1aa;">{{ count($uploadedFiles) }} file(s) ready</span>
-                        <x-filament::button wire:click="uploadFiles" size="sm" icon="phosphor-tray-arrow-up">Upload Now</x-filament::button>
+                {{-- Upload dropzone, with real progress. Livewire emits these
+                     events natively; the page used to freeze with no feedback
+                     at all while an upload ran. --}}
+                <div
+                    class="ht-ml-dropzone"
+                    x-data="{ dragging: false, progress: 0, uploading: false }"
+                    x-on:dragover.prevent="dragging = true"
+                    x-on:dragleave.prevent="dragging = false"
+                    x-on:drop.prevent="dragging = false; $wire.upload('uploadedFiles', $event.dataTransfer.files)"
+                    x-on:livewire-upload-start="uploading = true; progress = 0"
+                    x-on:livewire-upload-finish="uploading = false; progress = 0"
+                    x-on:livewire-upload-cancel="uploading = false"
+                    x-on:livewire-upload-error="uploading = false"
+                    x-on:livewire-upload-progress="progress = $event.detail.progress"
+                    :class="dragging && 'ht-ml-dropzone--active'"
+                >
+                    <label class="ht-ml-dropzone__label">
+                        <input
+                            type="file"
+                            wire:model="uploadedFiles"
+                            multiple
+                            accept="{{ collect($this->allowedUploadExtensions())->map(fn ($e) => '.'.$e)->implode(',') }}"
+                            class="ht-ml-dropzone__input"
+                        />
+                        <x-phosphor-tray-arrow-up class="ht-ml-icon" />
+                        <span class="ht-ml-dropzone__text" x-show="!uploading">Drop files here or click to upload</span>
+                        <span class="ht-ml-dropzone__text" x-show="uploading" x-cloak>
+                            Uploading… <span x-text="progress + '%'"></span>
+                        </span>
+                    </label>
+                    <div class="ht-ml-progress" x-show="uploading" x-cloak>
+                        <div class="ht-ml-progress__bar" :style="`width: ${progress}%`"></div>
+                    </div>
+                    @error('uploadedFiles.*')
+                        <p class="ht-ml-dropzone__error">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
+            {{-- Bulk action bar, driven entirely by client-side selection. --}}
+            <div class="ht-ml-panel ht-ml-bulkbar" x-show="count > 0" x-cloak>
+                <span class="ht-ml-bulkbar__count" aria-live="polite" x-text="`${count} selected`"></span>
+                <x-filament::button size="xs" color="gray" icon="phosphor-selection-all" x-on:click="selectPage()">
+                    Select page
+                </x-filament::button>
+                <x-filament::button size="xs" color="gray" icon="phosphor-folder-open" x-on:click="$wire.startMove(paths())">
+                    Move to…
+                </x-filament::button>
+                <x-filament::button size="xs" color="danger" icon="phosphor-trash" x-on:click="$wire.deleteSelectedFiles(paths())">
+                    Delete
+                </x-filament::button>
+                <x-filament::button size="xs" color="gray" x-on:click="clear()">
+                    Clear
+                </x-filament::button>
+            </div>
+
+            {{-- Subfolders. The grid was files-only, so the sidebar was the
+                 only way into a folder. --}}
+            @if ($subfolders !== [])
+                <div class="ht-ml-folders">
+                    @foreach ($subfolders as $folder)
+                        <div class="ht-ml-folder" wire:key="folder-{{ $folder['path'] }}">
+                            <button
+                                type="button"
+                                class="ht-ml-folder__open"
+                                wire:click="openDirectory(@js($folder['path']))"
+                            >
+                                <x-phosphor-folder class="ht-ml-icon-lg" />
+                                <span class="ht-ml-folder__name" title="{{ $folder['name'] }}">{{ $folder['name'] }}</span>
+                                <span class="ht-ml-folder__meta">{{ $folder['count'] }} files · {{ $folder['size'] }}</span>
+                            </button>
+
+                            <x-filament::dropdown placement="bottom-end">
+                                <x-slot name="trigger">
+                                    <button type="button" class="ht-ml-folder__menu" aria-label="Actions for {{ $folder['name'] }}">
+                                        <x-phosphor-dots-three-vertical class="ht-ml-icon" />
+                                    </button>
+                                </x-slot>
+                                <x-filament::dropdown.list>
+                                    <x-filament::dropdown.list.item icon="phosphor-pencil-simple" wire:click="startFolderRename(@js($folder['path']))">
+                                        Rename
+                                    </x-filament::dropdown.list.item>
+                                    <x-filament::dropdown.list.item icon="phosphor-trash" color="danger" wire:click="confirmFolderDelete(@js($folder['path']))">
+                                        Delete
+                                    </x-filament::dropdown.list.item>
+                                </x-filament::dropdown.list>
+                            </x-filament::dropdown>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            {{-- Thumbnails are generated by a queue worker, so the listing
+                 polls while — and only while — this folder has one
+                 outstanding. The condition is the off switch. --}}
+            <div @if ($this->getHasPendingThumbnailsProperty()) wire:poll.5s @endif>
+
+                {{-- Loading overlay. Delayed so a fast response does not flash. --}}
+                <div class="ht-ml-loading" wire:loading.delay.flex wire:target="gotoPage, nextPage, previousPage, search, sortBy, sortDirection, searchScope, typeFilter, usageFilter, openDirectory, rescanCurrentDirectory">
+                    <x-filament::loading-indicator class="ht-ml-icon-lg" />
+                </div>
+
+                @if ($viewMode === 'grid')
+                    <div
+                        class="ht-ml-grid"
+                        role="listbox"
+                        aria-multiselectable="true"
+                        aria-label="Files"
+                        wire:key="grid-{{ $currentDirectory }}-{{ $files->currentPage() }}-{{ $sortBy }}-{{ $sortDirection }}"
+                    >
+                        @forelse ($files as $index => $file)
+                            <div
+                                wire:key="grid-{{ $file['path'] }}"
+                                class="ht-ml-card"
+                                role="option"
+                                tabindex="{{ $index === 0 ? '0' : '-1' }}"
+                                :class="isSelected(@js($file['path'])) && 'ht-ml-card--selected'"
+                                :aria-selected="isSelected(@js($file['path']))"
+                                x-on:click="toggle(@js($file['path']), $event); $wire.selectFile(@js($file['path']))"
+                                x-on:keydown.enter.prevent="$wire.selectFile(@js($file['path']))"
+                                x-on:keydown.space.prevent="toggle(@js($file['path']), { ctrlKey: true })"
+                                x-on:keydown.arrow-right.prevent="focusNext($el)"
+                                x-on:keydown.arrow-left.prevent="focusPrevious($el)"
+                                x-on:keydown.arrow-down.prevent="focusNext($el)"
+                                x-on:keydown.arrow-up.prevent="focusPrevious($el)"
+                            >
+                                <div class="ht-ml-card__thumb">
+                                    @if ($file['thumbnail_pending'])
+                                        {{-- Not an <img> pointing at a file that does not exist yet. --}}
+                                        <div class="ht-ml-card__pending" title="Generating thumbnail…">
+                                            <img src="{{ $file['thumbnail'] }}" alt="" class="ht-ml-card__icon" />
+                                        </div>
+                                    @elseif ($file['type'] === 'image' || $file['type'] === 'video')
+                                        <img
+                                            src="{{ $file['thumbnail'] }}"
+                                            alt="{{ $file['name'] }}"
+                                            loading="lazy"
+                                            decoding="async"
+                                            class="ht-ml-card__img"
+                                        />
+                                    @else
+                                        <img src="{{ $file['thumbnail'] }}" alt="" class="ht-ml-card__icon" />
+                                    @endif
+
+                                    @if ($file['type'] === 'video' && $file['duration'])
+                                        <span class="ht-ml-card__duration">{{ $file['duration'] }}</span>
+                                    @endif
+
+                                    @if ($file['is_referenced'])
+                                        <span class="ht-ml-card__badge" title="Used by a video or image record">In use</span>
+                                    @endif
+                                </div>
+                                <div class="ht-ml-card__body">
+                                    <p class="ht-ml-card__name" title="{{ $file['name'] }}">{{ $file['name'] }}</p>
+                                    <p class="ht-ml-card__meta">
+                                        {{ $file['size_formatted'] }}
+                                        @if ($scope !== 'folder')
+                                            · {{ $file['directory'] }}
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+                        @empty
+                            @include('filament.pages.partials.media-library-empty')
+                        @endforelse
+                    </div>
+                @else
+                    <div class="ht-ml-panel ht-ml-tablewrap">
+                        <table class="ht-ml-table">
+                            <thead>
+                                <tr>
+                                    <th class="ht-ml-table__check">
+                                        <input
+                                            type="checkbox"
+                                            aria-label="Select all files on this page"
+                                            :checked="allPageSelected"
+                                            x-on:change="$event.target.checked ? selectPage() : clear()"
+                                        />
+                                    </th>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th class="ht-ml-table__num">Size</th>
+                                    <th>Modified</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody wire:key="list-{{ $currentDirectory }}-{{ $files->currentPage() }}-{{ $sortBy }}-{{ $sortDirection }}">
+                                @forelse ($files as $file)
+                                    <tr
+                                        wire:key="row-{{ $file['path'] }}"
+                                        :class="isSelected(@js($file['path'])) && 'ht-ml-table__row--selected'"
+                                        :aria-selected="isSelected(@js($file['path']))"
+                                    >
+                                        <td>
+                                            <input
+                                                type="checkbox"
+                                                aria-label="Select {{ $file['name'] }}"
+                                                :checked="isSelected(@js($file['path']))"
+                                                x-on:change="toggle(@js($file['path']), { ctrlKey: true })"
+                                            />
+                                        </td>
+                                        <td>
+                                            <button type="button" class="ht-ml-table__name" wire:click="selectFile(@js($file['path']))">
+                                                {{ $file['name'] }}
+                                            </button>
+                                            @if ($scope !== 'folder')
+                                                <span class="ht-ml-table__dir">{{ $file['directory'] }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="ht-ml-table__muted">{{ $file['type'] }}</td>
+                                        <td class="ht-ml-table__num ht-ml-table__muted">{{ $file['size_formatted'] }}</td>
+                                        <td class="ht-ml-table__muted">{{ $file['modified_formatted'] }}</td>
+                                        <td>
+                                            @if ($file['is_referenced'])
+                                                <span class="ht-ml-card__badge">In use</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6">
+                                            @include('filament.pages.partials.media-library-empty')
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
                 @endif
             </div>
 
-            {{-- Bulk actions bar --}}
-            @if (!empty($selectedFiles))
-                <div class="ht-flex ht-items-center ht-justify-between ht-px-3 ht-py-2 ht-rounded-lg" style="background:#27272a;border:1px solid #3f3f46;">
-                    <span class="ht-text-sm" style="color:#d4d4d8;">{{ count($selectedFiles) }} selected</span>
-                    <div class="ht-flex ht-gap-2">
-                        <x-filament::button wire:click="clearSelection" size="xs" color="gray">Clear</x-filament::button>
-                        <x-filament::button wire:click="deleteSelectedFiles" size="xs" color="danger" icon="phosphor-trash">Delete</x-filament::button>
-                    </div>
-                </div>
-            @endif
-
-            {{-- Thumbnails are generated by a queue worker, so the grid polls
-                 while — and only while — this folder has one outstanding. The
-                 condition is the off switch: once everything is settled the
-                 attribute is gone and the polling stops on its own. --}}
-            <div @if ($this->getHasPendingThumbnailsProperty()) wire:poll.5s @endif>
-
-            {{-- File grid --}}
-            @if ($viewMode === 'grid')
-                <div class="ht-file-grid">
-                    @forelse ($files as $file)
-                        <div wire:key="grid-{{ $file['path'] }}"
-                             wire:click="selectFile(@js($file['path']))"
-                             class="ht-file-card"
-                             style="border:2px solid {{ in_array($file['path'], $selectedFiles) ? 'var(--color-primary-500)' : '#3f3f46' }};"
-                             onmouseenter="this.style.borderColor='var(--color-primary-500)'" onmouseleave="this.style.borderColor='{{ in_array($file['path'], $selectedFiles) ? 'var(--color-primary-500)' : '#3f3f46' }}'">
-                            <div class="ht-file-card-thumb">
-                                {{-- A thumbnail that has not been generated yet
-                                     shows the type icon on a pulsing surface,
-                                     rather than an <img> pointing at a file
-                                     that does not exist. --}}
-                                @if ($file['thumbnail_pending'])
-                                    <div class="ht-thumb-pending" title="Generating thumbnail...">
-                                        <img src="{{ $file['thumbnail'] }}" alt="" style="width:40px;height:40px;opacity:0.45;">
-                                    </div>
-                                @elseif ($file['type'] === 'image' || $file['type'] === 'video')
-                                    <img src="{{ $file['thumbnail'] }}" alt="{{ $file['name'] }}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;">
-                                @else
-                                    <img src="{{ $file['thumbnail'] }}" alt="" style="width:48px;height:48px;opacity:0.6;">
-                                @endif
-
-                                @if ($file['type'] === 'video' && $file['duration'])
-                                    <span style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.85);color:#fff;font-size:10px;font-weight:600;padding:2px 5px;border-radius:4px;">{{ $file['duration'] }}</span>
-                                @endif
-                            </div>
-                            <div class="ht-p-2">
-                                <p class="ht-text-xs ht-font-medium ht-truncate" style="color:#d4d4d8;" title="{{ $file['name'] }}">{{ $file['name'] }}</p>
-                                <div class="ht-flex ht-justify-between ht-items-center ht-mt-1">
-                                    <span class="ht-text-xs" style="color:#71717a;">{{ $file['size_formatted'] }}</span>
-                                    @if (!empty($file['references']))
-                                        <span class="ht-badge">In use</span>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    @empty
-                        {{-- Three distinct states. "Not indexed" in particular
-                             must not read as "empty", which is how a missing
-                             index would otherwise masquerade as an empty
-                             folder. --}}
-                        <div class="ht-empty-state">
-                            @if (! $this->getDirectoryIndexedProperty())
-                                <x-phosphor-database class="ht-btn-icon-xl" style="color:#52525b;" />
-                                <p class="ht-text-sm" style="color:#a1a1aa;">This folder hasn't been indexed yet</p>
-                                <p class="ht-text-xs" style="color:#71717a;">Run <code>php artisan media:index</code>, or rescan it now.</p>
-                                <x-filament::button wire:click="rescanCurrentDirectory" size="sm" color="gray" icon="phosphor-arrows-clockwise" class="ht-mt-2">
-                                    Rescan folder
-                                </x-filament::button>
-                            @elseif ($search !== '')
-                                <x-phosphor-magnifying-glass class="ht-btn-icon-xl" style="color:#52525b;" />
-                                <p class="ht-text-sm" style="color:#a1a1aa;">Nothing matches "{{ $search }}" in this folder</p>
-                                <x-filament::button wire:click="$set('search', '')" size="sm" color="gray" class="ht-mt-2">
-                                    Clear search
-                                </x-filament::button>
-                            @else
-                                <x-phosphor-folder-open class="ht-btn-icon-xl" style="color:#52525b;" />
-                                <p class="ht-text-sm" style="color:#a1a1aa;">No files in this directory</p>
-                            @endif
-                        </div>
-                    @endforelse
-                </div>
-            @else
-                {{-- List view --}}
-                <div class="ht-panel ht-overflow-hidden">
-                    <table class="ht-table">
-                        <thead>
-                            <tr>
-                                <th style="width:32px;"><input type="checkbox" wire:click="selectAllFiles" style="border-radius:4px;accent-color:var(--color-primary-500);" onclick="event.stopPropagation()"></th>
-                                <th style="color:#a1a1aa;font-weight:500;">Name</th>
-                                <th style="width:96px;color:#a1a1aa;font-weight:500;">Type</th>
-                                <th style="width:96px;color:#a1a1aa;font-weight:500;">Size</th>
-                                <th style="width:160px;color:#a1a1aa;font-weight:500;">Modified</th>
-                                <th style="width:80px;color:#a1a1aa;font-weight:500;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($files as $file)
-                                <tr wire:key="list-{{ $file['path'] }}" wire:click="selectFile(@js($file['path']))" style="cursor:pointer;{{ in_array($file['path'], $selectedFiles) ? 'background:rgba(244,63,94,0.08);' : '' }}">
-                                    <td>
-                                        <input type="checkbox" @if (in_array($file['path'], $selectedFiles)) checked @endif style="border-radius:4px;accent-color:var(--color-primary-500);" onclick="event.stopPropagation()">
-                                    </td>
-                                    <td>
-                                        <div class="ht-flex ht-items-center ht-gap-2">
-                                            @if ($file['type'] === 'image' || $file['type'] === 'video')
-                                                <img src="{{ $file['thumbnail'] }}" style="width:32px;height:32px;border-radius:6px;object-fit:cover;background:#000;">
-                                            @else
-                                                <img src="{{ $file['thumbnail'] }}" style="width:32px;height:32px;opacity:0.6;">
-                                            @endif
-                                            <span class="ht-truncate" style="color:#d4d4d8;" title="{{ $file['name'] }}">{{ $file['name'] }}</span>
-                                        </div>
-                                    </td>
-                                    <td style="color:#a1a1aa;text-transform:uppercase;">{{ $file['extension'] }}</td>
-                                    <td style="color:#a1a1aa;">{{ $file['size_formatted'] }}</td>
-                                    <td style="color:#a1a1aa;">{{ $file['modified_formatted'] }}</td>
-                                    <td>
-                                        @if (!empty($file['references']))
-                                            <span class="ht-badge">In use</span>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="ht-px-4 ht-py-12 ht-text-center" style="color:#a1a1aa;">No files in this directory</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-
-            </div>{{-- /thumbnail poll wrapper --}}
-
-            {{-- Pagination. Filament's component drives Livewire's gotoPage /
-                 nextPage / previousPage, so paging no longer reloads the page
-                 (which used to remount the component back on page 1). --}}
+            {{-- Filament's component drives Livewire's gotoPage / nextPage /
+                 previousPage, so paging no longer reloads the page (which used
+                 to remount the component back on page 1). --}}
             @if ($files->hasPages())
-                <div class="ht-panel" style="padding:8px 12px;">
+                <div class="ht-ml-panel ht-ml-pagination">
                     <x-filament::pagination :paginator="$files" />
                 </div>
             @endif
         </div>
 
-        {{-- Details panel --}}
-        <div class="ht-details ht-panel" style="overflow-y:auto;max-height:calc(100vh - 10rem);padding:16px;">
-            @if ($selectedFileData)
-                <div style="display:flex;flex-direction:column;gap:16px;">
-                    <div class="ht-details-preview">
-                        @if ($selectedFileData['type'] === 'image')
-                            <img src="{{ $selectedFileData['thumbnail'] }}" style="width:100%;height:100%;object-fit:cover;cursor:pointer;" x-on:click="lightboxSrc = @js($selectedFileData['url']); lightboxOpen = true">
-                        @elseif ($selectedFileData['type'] === 'video')
-                            <img src="{{ $selectedFileData['thumbnail'] }}" style="width:100%;height:100%;object-fit:cover;cursor:pointer;" x-on:click="videoSrc = @js($selectedFileData['url']); videoName = @js($selectedFileData['name']); videoOpen = true">
-                            <div class="ht-absolute ht-inset-0 ht-flex ht-items-center ht-justify-center ht-pointer-events-none">
-                                <x-phosphor-play-circle class="ht-btn-icon-xl" style="color:#fff;opacity:0.8;" />
-                            </div>
-                        @else
-                            <div class="ht-w-full ht-h-full ht-flex ht-items-center ht-justify-center">
-                                <img src="{{ $selectedFileData['thumbnail'] }}" style="width:64px;height:64px;opacity:0.6;">
-                            </div>
-                        @endif
-                    </div>
+        {{-- ── Details ──────────────────────────────────────────────────── --}}
+        <aside class="ht-ml-details ht-ml-panel" aria-label="File details">
+            @include('filament.pages.partials.media-library-details', ['selectedFileData' => $selectedFileData])
+        </aside>
+    </div>
 
-                    <div>
-                        <p class="ht-text-sm ht-font-medium ht-truncate" style="color:#fff;" title="{{ $selectedFileData['name'] }}">{{ $selectedFileData['name'] }}</p>
-                        <p class="ht-text-xs ht-mt-1" style="color:#a1a1aa;">{{ $selectedFileData['size_formatted'] }} · {{ $selectedFileData['modified_formatted'] }}</p>
-                        <p class="ht-text-xs ht-mt-1" style="color:#71717a;">
-                            {{ strtoupper($selectedFileData['extension'] ?: 'file') }}
-                            @if (!empty($selectedFileData['width']) && !empty($selectedFileData['height']))
-                                · {{ $selectedFileData['width'] }}&times;{{ $selectedFileData['height'] }}
-                            @endif
-                            @if ($selectedFileData['duration'])
-                                · {{ $selectedFileData['duration'] }}
-                            @endif
-                        </p>
-                    </div>
+    {{-- ── Dialogs ──────────────────────────────────────────────────────── --}}
 
-                    @if (!empty($selectedFileData['reference_details']))
-                        <div class="ht-panel-dark" style="padding:12px;">
-                            <p class="ht-text-xs ht-font-semibold ht-mb-2" style="color:#fca5a5;">Referenced by</p>
-                            <ul style="display:flex;flex-direction:column;gap:4px;list-style:none;margin:0;padding:0;">
-                                @foreach ($selectedFileData['reference_details'] as $ref)
-                                    <li class="ht-text-xs" style="color:#d4d4d8;">
-                                        {{ $ref['title'] ?: $ref['model'].' #'.$ref['id'] }}
-                                        <span style="color:#71717a;">({{ $ref['field'] }})</span>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
+    <x-filament::modal id="ml-delete-file" :visible="(bool) $deleteTarget" width="md" alignment="center" icon="phosphor-trash" icon-color="danger">
+        <x-slot name="heading">Delete file?</x-slot>
+        <x-slot name="description">{{ $deleteTarget ? basename($deleteTarget) : '' }}</x-slot>
+        <x-slot name="footerActions">
+            <x-filament::button wire:click="cancelDelete" color="gray">Cancel</x-filament::button>
+            <x-filament::button wire:click="deleteFile" color="danger">Delete</x-filament::button>
+        </x-slot>
+    </x-filament::modal>
 
-                    {{-- Thumbnail state, so a missing preview is explained
-                         rather than just absent. --}}
-                    @if ($selectedFileData['thumbnail_state'] !== 'ready')
-                        <div class="ht-panel-dark" style="padding:12px;">
-                            <p class="ht-text-xs" style="color:#a1a1aa;">
-                                @switch ($selectedFileData['thumbnail_state'])
-                                    @case('pending')
-                                    @case('queued')
-                                        Thumbnail is being generated.
-                                        @break
-                                    @case('unsupported')
-                                        No preview can be generated for this format.
-                                        @break
-                                    @case('unavailable')
-                                        A video preview needs ffmpeg, which was not found.
-                                        @break
-                                    @default
-                                        The thumbnail could not be generated.
-                                @endswitch
-                            </p>
-                        </div>
-                    @endif
+    <x-filament::modal id="ml-rename-file" :visible="(bool) $renameTarget" width="md" alignment="center">
+        <x-slot name="heading">Rename file</x-slot>
+        <x-filament::input.wrapper>
+            <x-filament::input type="text" wire:model="renameNewName" wire:keydown.enter="confirmRename" autofocus />
+        </x-filament::input.wrapper>
+        <x-slot name="footerActions">
+            <x-filament::button wire:click="cancelRename" color="gray">Cancel</x-filament::button>
+            <x-filament::button wire:click="confirmRename">Rename</x-filament::button>
+        </x-slot>
+    </x-filament::modal>
 
-                    <div style="display:flex;flex-direction:column;gap:8px;">
-                        <x-filament::button wire:click="startRename(@js($selectedFileData['path']))" size="sm" icon="phosphor-pencil-simple" style="width:100%;" :disabled="$selectedFileData['type'] === 'video' && str_starts_with($selectedFileData['path'], 'videos/')">
-                            Rename
-                        </x-filament::button>
+    {{-- Its visibility is its own flag: it used to render under
+         @if ($newFolderName), so clearing the pre-filled name closed it. --}}
+    <x-filament::modal id="ml-new-folder" :visible="$showNewFolderModal" width="md" alignment="center">
+        <x-slot name="heading">New folder</x-slot>
+        <x-filament::input.wrapper>
+            <x-filament::input type="text" wire:model="newFolderName" wire:keydown.enter="createFolder" placeholder="Folder name" autofocus />
+        </x-filament::input.wrapper>
+        <x-slot name="footerActions">
+            <x-filament::button wire:click="closeNewFolderModal" color="gray">Cancel</x-filament::button>
+            <x-filament::button wire:click="createFolder">Create</x-filament::button>
+        </x-slot>
+    </x-filament::modal>
 
-                        <x-filament::button wire:click="confirmDelete(@js($selectedFileData['path']))" size="sm" color="danger" icon="phosphor-trash" style="width:100%;" :disabled="!empty($selectedFileData['references'])">
-                            Delete
-                        </x-filament::button>
+    <x-filament::modal id="ml-rename-folder" :visible="(bool) $folderRenameTarget" width="md" alignment="center">
+        <x-slot name="heading">Rename folder</x-slot>
+        <x-slot name="description">
+            Every video and image record pointing inside this folder is updated to follow it.
+        </x-slot>
+        <x-filament::input.wrapper>
+            <x-filament::input type="text" wire:model="folderRenameNewName" wire:keydown.enter="confirmFolderRename" autofocus />
+        </x-filament::input.wrapper>
+        <x-slot name="footerActions">
+            <x-filament::button wire:click="cancelFolderRename" color="gray">Cancel</x-filament::button>
+            <x-filament::button wire:click="confirmFolderRename">Rename</x-filament::button>
+        </x-slot>
+    </x-filament::modal>
 
-                        <x-filament::button size="sm" color="gray" icon="phosphor-copy" style="width:100%;"
-                            x-on:click="navigator.clipboard.writeText(@js($selectedFileData['url']))">
-                            Copy URL
-                        </x-filament::button>
+    <x-filament::modal id="ml-delete-folder" :visible="(bool) $folderDeleteTarget" width="md" alignment="center" icon="phosphor-trash" icon-color="danger">
+        <x-slot name="heading">Delete folder?</x-slot>
+        <x-slot name="description">
+            {{ $folderDeleteTarget }} and everything in it. A folder containing files still used by a video or image record cannot be deleted.
+        </x-slot>
+        <x-slot name="footerActions">
+            <x-filament::button wire:click="cancelFolderDelete" color="gray">Cancel</x-filament::button>
+            <x-filament::button wire:click="confirmFolderDeletion" color="danger">Delete</x-filament::button>
+        </x-slot>
+    </x-filament::modal>
 
-                        <a href="{{ $selectedFileData['url'] }}" download target="_blank" class="ht-link-btn" style="background:#27272a;color:#d4d4d8;">
-                            <x-phosphor-download class="ht-btn-icon" /> Download
-                        </a>
+    {{-- A folder picker rather than drag-and-drop: it works from the keyboard,
+         it works for a bulk selection, and it needs no drag library fighting
+         Livewire's DOM morphing. --}}
+    <x-filament::modal id="ml-move" :visible="$showMoveModal" width="md" alignment="center">
+        <x-slot name="heading">Move {{ count($moveTargets) }} file{{ count($moveTargets) === 1 ? '' : 's' }}</x-slot>
+        <select wire:model="moveDestination" class="ht-ml-select ht-ml-select--block" aria-label="Destination folder" size="10">
+            <option value="">Choose a destination…</option>
+            @foreach ($this->getMoveDestinationsProperty() as $destination)
+                <option value="{{ $destination }}">{{ $destination }}</option>
+            @endforeach
+        </select>
+        <x-slot name="footerActions">
+            <x-filament::button wire:click="cancelMove" color="gray">Cancel</x-filament::button>
+            <x-filament::button wire:click="confirmMove">Move</x-filament::button>
+        </x-slot>
+    </x-filament::modal>
 
-                        @if (in_array($selectedFileData['thumbnail_state'], ['failed', 'unavailable', 'ready'], true))
-                            <x-filament::button wire:click="regenerateThumbnail(@js($selectedFileData['path']))" size="sm" color="gray" icon="phosphor-arrows-clockwise" style="width:100%;">
-                                Regenerate thumbnail
-                            </x-filament::button>
-                        @endif
-                    </div>
+    {{-- Lightbox and video preview. Alpine-local: no server round-trip to open
+         a picture. --}}
+    <div x-data="{ open: false, src: null, name: '', video: false }"
+         x-on:ml-preview.window="open = true; src = $event.detail.src; name = $event.detail.name; video = $event.detail.video">
+        <div class="ht-ml-lightbox" x-show="open" x-cloak x-on:click.self="open = false" x-on:keydown.escape.window="open = false">
+            <button type="button" class="ht-ml-lightbox__close" x-on:click="open = false" aria-label="Close preview">
+                <x-phosphor-x class="ht-ml-icon-lg" />
+            </button>
+            <template x-if="!video">
+                <img :src="src" :alt="name" class="ht-ml-lightbox__img" />
+            </template>
+            <template x-if="video">
+                <div class="ht-ml-lightbox__video">
+                    <p class="ht-ml-lightbox__name" x-text="name"></p>
+                    <video :src="src" controls></video>
                 </div>
-            @else
-                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:8px;">
-                    <x-phosphor-file class="ht-btn-icon-lg" style="color:#52525b;" />
-                    <p class="ht-text-sm" style="color:#a1a1aa;">Select a file to view details</p>
-                </div>
-            @endif
+            </template>
         </div>
     </div>
 </div>
+
+@script
+<script>
+    /**
+     * Client-side multi-selection for the file grid and list.
+     *
+     * Every card used to carry wire:click="selectFile(...)", which meant a full
+     * server round-trip — rebuilding the entire listing — just to move a 2px
+     * border. Selection is a rendering concern, so it lives here; the server is
+     * told only when a bulk action runs, and it re-validates every path it is
+     * handed (see MediaLibrary::resolveBulkPaths).
+     *
+     * The click semantics are the conventional ones. The old server-side
+     * version *toggled* on a plain click, so clicking a second file added it to
+     * the selection instead of replacing it.
+     */
+    Alpine.data('mediaSelection', (pagePaths = []) => ({
+        selected: new Set(),
+        pagePaths,
+        anchor: null,
+
+        get count() {
+            return this.selected.size;
+        },
+
+        get allPageSelected() {
+            return this.pagePaths.length > 0
+                && this.pagePaths.every((path) => this.selected.has(path));
+        },
+
+        isSelected(path) {
+            return this.selected.has(path);
+        },
+
+        paths() {
+            return Array.from(this.selected);
+        },
+
+        /**
+         * Plain click replaces, Ctrl/Cmd toggles, Shift extends from the
+         * anchor — the same rules as every file manager.
+         */
+        toggle(path, event = {}) {
+            const index = this.pagePaths.indexOf(path);
+
+            if (event.shiftKey && this.anchor !== null && index !== -1) {
+                const [from, to] = [this.anchor, index].sort((a, b) => a - b);
+                this.pagePaths.slice(from, to + 1).forEach((p) => this.selected.add(p));
+                return;
+            }
+
+            if (event.ctrlKey || event.metaKey) {
+                this.selected.has(path) ? this.selected.delete(path) : this.selected.add(path);
+            } else {
+                this.selected = new Set([path]);
+            }
+
+            this.anchor = index === -1 ? null : index;
+        },
+
+        selectPage() {
+            this.pagePaths.forEach((path) => this.selected.add(path));
+        },
+
+        clear() {
+            this.selected = new Set();
+            this.anchor = null;
+        },
+
+        /** Roving tabindex, so arrow keys walk the grid. */
+        focusNext(el) {
+            this.moveFocus(el, 1);
+        },
+
+        focusPrevious(el) {
+            this.moveFocus(el, -1);
+        },
+
+        moveFocus(el, delta) {
+            const cards = Array.from(el.parentElement.querySelectorAll('[role="option"]'));
+            const next = cards[cards.indexOf(el) + delta];
+
+            if (!next) return;
+
+            cards.forEach((card) => card.setAttribute('tabindex', '-1'));
+            next.setAttribute('tabindex', '0');
+            next.focus();
+        },
+    }));
+</script>
+@endscript
+
 </x-filament-panels::page>

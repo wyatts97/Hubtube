@@ -90,6 +90,17 @@ return [
             'livewire-tmp',
         ],
 
+        // File types the manager will accept. Enforced server-side as well as
+        // hinted to the file picker: storage/app/public is served directly by
+        // nginx, so an executable extension landing there is worth refusing
+        // even from an admin.
+        'allowed_upload_extensions' => [
+            'jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg',
+            'mp4', 'mov', 'webm', 'mkv',
+            'mp3', 'wav', 'ogg', 'm4a',
+            'pdf', 'vtt', 'srt', 'txt', 'csv',
+        ],
+
         // Number of files shown per page in the file manager grid/list.
         'per_page' => 50,
 
