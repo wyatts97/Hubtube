@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Events\VideoProcessed;
 use App\Filament\Exports\VideoExporter;
 use App\Filament\Resources\VideoResource\Pages\CreateVideo;
@@ -63,6 +64,8 @@ use Illuminate\Support\HtmlString;
 
 class VideoResource extends Resource
 {
+    use AuthorizesWithPermissions;
+
     protected static ?string $model = Video::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-video-camera';
@@ -187,15 +190,6 @@ class VideoResource extends Resource
                                     ->required()
                                     ->searchable()
                                     ->preload(),
-                                Select::make('privacy')
-                                    ->options([
-                                        'public' => 'Public',
-                                        'unlisted' => 'Unlisted — anyone with the link',
-                                        'private' => 'Private — uploader and admins only',
-                                    ])
-                                    ->default('public')
-                                    ->required()
-                                    ->native(false),
                                 Select::make('status')
                                     ->options([
                                         'pending_download' => 'Pending Download',
@@ -209,12 +203,6 @@ class VideoResource extends Resource
                                     ->default('pending')
                                     ->required()
                                     ->hiddenOn('create'),
-                                DateTimePicker::make('scheduled_at')
-                                    ->label('Schedule Publish')
-                                    ->helperText('Leave empty to publish when approved. Set a future date/time to auto-publish.')
-                                    ->native(false)
-                                    ->minDate(now())
-                                    ->hiddenOn('create'),
                                 TagsInput::make('tags')
                                     ->separator(',')
                                     ->columnSpanFull(),
@@ -227,6 +215,35 @@ class VideoResource extends Resource
                                             'tags' => Hashtag::orderByDesc('usage_count')->limit(20)->pluck('name')->toArray(),
                                         ]
                                     )->render())),
+                            ])->columns(2),
+
+                        Tab::make('Publishing')
+                            ->icon('phosphor-globe')
+                            ->schema([
+                                Select::make('privacy')
+                                    ->options([
+                                        'public' => 'Public',
+                                        'unlisted' => 'Unlisted — anyone with the link',
+                                        'private' => 'Private — uploader and admins only',
+                                    ])
+                                    ->default('public')
+                                    ->required()
+                                    ->native(false),
+                                Toggle::make('is_draft')
+                                    ->label('Draft')
+                                    ->helperText('Keeps the video private to its uploader (and admins) and out of every listing, whatever its privacy says. Videos waiting on the publishing schedule are drafts until their time arrives.')
+                                    ->hiddenOn('create'),
+                                DateTimePicker::make('scheduled_at')
+                                    ->label('Schedule Publish')
+                                    ->helperText('Leave empty to publish when approved. Set a future date/time to auto-publish.')
+                                    ->native(false)
+                                    ->minDate(now())
+                                    ->hiddenOn('create'),
+                                DateTimePicker::make('published_at')
+                                    ->label('Published At')
+                                    ->helperText('When the video went live. Clearing this takes it out of listings.')
+                                    ->native(false)
+                                    ->hiddenOn('create'),
                             ])->columns(2),
 
                         Tab::make('Moderation')
@@ -376,6 +393,8 @@ class VideoResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn (string $state, Video $record): string => match (true) {
                         $state === 'processed' && filled($record->processing_fallback_reason) => 'Degraded',
+                        $state === 'processed' && $record->is_draft && ! is_null($record->queue_order) => 'Scheduled (draft)',
+                        $state === 'processed' && $record->is_draft => 'Draft',
                         $state === 'processed' && $record->is_approved && $record->published_at => 'Published',
                         $state === 'processed' && ! is_null($record->queue_order) => 'Scheduled',
                         $state === 'processed' && ! $record->is_approved => 'Needs Moderation',
@@ -386,6 +405,7 @@ class VideoResource extends Resource
                     })
                     ->color(fn (string $state, Video $record): string => match (true) {
                         $state === 'processed' && filled($record->processing_fallback_reason) => 'warning',
+                        $state === 'processed' && $record->is_draft => 'info',
                         $state === 'processed' && $record->is_approved && $record->published_at => 'success',
                         $state === 'processed' && ! is_null($record->queue_order) => 'info',
                         $state === 'processed' && ! $record->is_approved => 'warning',
@@ -480,6 +500,9 @@ class VideoResource extends Resource
                         'unlisted' => 'Unlisted',
                         'private' => 'Private',
                     ]),
+
+                TernaryFilter::make('is_draft')
+                    ->label('Draft'),
 
                 TernaryFilter::make('is_approved')
                     ->label('Approved'),
@@ -665,12 +688,13 @@ class VideoResource extends Resource
                         ->icon('phosphor-calendar')
                         ->color('info')
                         ->requiresConfirmation()
-                        ->modalDescription('This will add the video to the publishing schedule. It will be auto-approved and published at the scheduled time.')
+                        ->modalDescription('Adds the video to the publishing schedule. It becomes a draft — private to its uploader — and publishes automatically at its scheduled time.')
                         ->action(function (Video $record) {
                             $maxOrder = Video::max('queue_order') ?? 0;
                             $record->update([
                                 'queue_order' => $maxOrder + 1,
                                 'is_approved' => true,
+                                'is_draft' => true,
                                 'published_at' => null,
                                 'requires_schedule' => true,
                             ]);
@@ -703,6 +727,29 @@ class VideoResource extends Resource
                             ProcessVideoJob::dispatch($record)->onQueue('video-processing');
                         })
                         ->visible(fn (Video $record) => in_array($record->status, ['failed', 'processing'])),
+
+                    Action::make('publishDraft')
+                        ->label('Publish now')
+                        ->icon('phosphor-rocket-launch')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalDescription('Publishes this draft immediately: it becomes visible to viewers and appears in listings.')
+                        ->action(function (Video $record) {
+                            $record->update([
+                                'is_draft' => false,
+                                'is_approved' => true,
+                                'published_at' => $record->published_at ?? now(),
+                                'scheduled_at' => null,
+                                'queue_order' => null,
+                                'requires_schedule' => false,
+                            ]);
+
+                            app(VideoService::class)->recalculateScheduleQueue();
+                            app(VideoService::class)->notifyProcessedOnce($record);
+
+                            Notification::make()->title('Draft published')->success()->send();
+                        })
+                        ->visible(fn (Video $record) => $record->is_draft && $record->status === 'processed'),
 
                     Action::make('encode_missing')
                         ->label('Encode missing renditions')

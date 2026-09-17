@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\WalletTransactionResource\Pages\ListWalletTransactions;
 use App\Models\Setting;
 use App\Models\WalletTransaction;
@@ -18,6 +19,8 @@ use Filament\Tables\Table;
 
 class WalletTransactionResource extends Resource
 {
+    use AuthorizesWithPermissions;
+
     protected static ?string $model = WalletTransaction::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-currency-dollar';

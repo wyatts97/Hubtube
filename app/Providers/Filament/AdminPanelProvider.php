@@ -430,6 +430,8 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->authMiddleware([
+                // Handles banned accounts itself, before the panel's access
+                // check — see AuthenticateFilament.
                 AuthenticateFilament::class,
                 // Runs after authentication so it can inspect the logged-in user.
                 EnsureAdminTwoFactor::class,

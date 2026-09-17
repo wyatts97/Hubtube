@@ -9,6 +9,7 @@ use App\Models\PointsTransaction;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
+use App\Support\Permissions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -284,6 +285,11 @@ class VideoService
 
         // Global auto-approve: all videos
         if ($settings['video_auto_approve'] ?? false) {
+            return true;
+        }
+
+        // Role-based: a trusted uploader skips the moderation queue.
+        if ($video->user?->can(Permissions::BYPASS_VIDEO_APPROVAL)) {
             return true;
         }
 

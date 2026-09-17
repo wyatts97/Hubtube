@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\RequiresPermission;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -10,6 +11,10 @@ use Spatie\Health\ResultStores\EloquentHealthResultStore;
 
 class HealthChecks extends Page
 {
+    use RequiresPermission;
+
+    protected static string $requiredPermission = 'view_any_user';
+
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-heartbeat';
     protected static ?string $navigationLabel = 'Health Checks';
     protected static string | \UnitEnum | null $navigationGroup = 'Tools';

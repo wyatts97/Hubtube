@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\DmcaRequestResource\Pages\ListDmcaRequests;
 use App\Filament\Resources\DmcaRequestResource\Pages\ViewDmcaRequest;
 use App\Models\DmcaRequest;
@@ -28,6 +29,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class DmcaRequestResource extends Resource
 {
+    use AuthorizesWithPermissions;
+
     protected static ?string $model = DmcaRequest::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-scales';

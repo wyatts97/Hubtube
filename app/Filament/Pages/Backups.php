@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\RequiresPermission;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use Filament\Actions\Action;
@@ -19,6 +20,10 @@ use Livewire\Attributes\Computed;
 
 class Backups extends Page implements HasForms
 {
+    use RequiresPermission;
+
+    protected static string $requiredPermission = 'view_any_user';
+
     use InteractsWithForms;
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-archive';
     protected static ?string $navigationLabel = 'Backups';

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\MenuItemResource\Pages\CreateMenuItem;
 use App\Filament\Resources\MenuItemResource\Pages\EditMenuItem;
 use App\Filament\Resources\MenuItemResource\Pages\ListMenuItems;
@@ -28,6 +29,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class MenuItemResource extends Resource
 {
+    use AuthorizesWithPermissions;
+
     protected static ?string $model = MenuItem::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-list';

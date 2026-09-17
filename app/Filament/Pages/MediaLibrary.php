@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\RequiresPermission;
 use Throwable;
 use App\Models\Image;
 use App\Models\Video;
@@ -16,6 +17,10 @@ use Livewire\WithFileUploads;
 
 class MediaLibrary extends Page
 {
+    use RequiresPermission;
+
+    protected static string $requiredPermission = 'create_video';
+
     use WithFileUploads;
 
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-image';

@@ -27,6 +27,7 @@ class IndexNowSubmitRecent extends Command
         $videos = Video::query()
             ->where('status', 'processed')
             ->where('is_approved', true)
+            ->where('is_draft', false)
             ->where('privacy', 'public')
             ->whereNotNull('published_at')
             ->where('published_at', '>=', now()->subDays($days))

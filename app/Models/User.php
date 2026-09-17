@@ -5,28 +5,31 @@ namespace App\Models;
 use App\Services\AltTextService;
 use App\Services\ChannelService;
 use App\Services\EmailService;
-use Illuminate\Support\Facades\URL;
+use App\Support\Permissions;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\URL;
 use Laravel\Cashier\Billable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements MustVerifyEmail, FilamentUser
+class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
-    use HasApiTokens, HasFactory, HasRoles, LogsActivity, Notifiable, Billable;
+    use Billable, HasApiTokens, HasFactory, HasRoles, LogsActivity, Notifiable;
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -62,7 +65,6 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
      * points_balance, pro_expires_at, pro_source
      * must only be set via forceFill()/explicit assignment or admin panel.
      */
-
     protected $hidden = [
         'password',
         'remember_token',
@@ -81,6 +83,8 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
             'email_verified_at' => 'datetime',
             'age_verified_at' => 'datetime',
             'last_active_at' => 'datetime',
+            'banned_at' => 'datetime',
+            'suspended_until' => 'datetime',
             'password' => 'hashed',
             'wallet_balance' => 'decimal:2',
             'is_verified' => 'boolean',
@@ -99,6 +103,68 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     public function channel(): HasOne
     {
         return $this->hasOne(Channel::class);
+    }
+
+    /** The admin who applied the current block, if any. */
+    public function bannedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'banned_by');
+    }
+
+    public function isBanned(): bool
+    {
+        return $this->blockColumn('banned_at') !== null;
+    }
+
+    /** A suspension that has not yet run out. */
+    public function isSuspended(): bool
+    {
+        $until = $this->blockColumn('suspended_until');
+
+        return $until !== null && $until->isFuture();
+    }
+
+    /**
+     * Read a ban column, treating "not loaded" as "not set".
+     *
+     * Model::shouldBeStrict() makes reading an attribute the instance never
+     * loaded throw, and a freshly created model has only the attributes it was
+     * created with. Every check here runs on the request path, so it must not
+     * depend on the instance having been refreshed.
+     */
+    protected function blockColumn(string $column): ?Carbon
+    {
+        if (! array_key_exists($column, $this->getAttributes())) {
+            return null;
+        }
+
+        return $this->getAttribute($column);
+    }
+
+    /** Banned or suspended: may not sign in. */
+    public function isBlocked(): bool
+    {
+        return $this->isBanned() || $this->isSuspended();
+    }
+
+    /** What to tell a blocked account, including the reason when one was given. */
+    public function blockMessage(): string
+    {
+        $message = $this->isBanned()
+            ? 'This account has been banned.'
+            : 'This account is suspended until '.$this->blockColumn('suspended_until')?->format('j M Y, H:i').'.';
+
+        $reason = array_key_exists('ban_reason', $this->getAttributes()) ? $this->ban_reason : null;
+
+        return $reason ? $message.' Reason: '.$reason : $message;
+    }
+
+    /** Local scope: accounts currently banned or suspended. */
+    public function scopeBlocked(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $q) => $q
+            ->whereNotNull('banned_at')
+            ->orWhere('suspended_until', '>', now()));
     }
 
     public function videos(): HasMany
@@ -234,7 +300,7 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
 
     public function hasTwoFactorEnabled(): bool
     {
-        return !is_null($this->two_factor_secret) && !is_null($this->two_factor_confirmed_at);
+        return ! is_null($this->two_factor_secret) && ! is_null($this->two_factor_confirmed_at);
     }
 
     /**
@@ -373,22 +439,29 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
 
     public function canUpload(): bool
     {
-        $limit = $this->is_pro 
+        // The trusted_uploader role (and anything else granted this
+        // permission) is not held to the daily cap.
+        if ($this->can(Permissions::BYPASS_UPLOAD_LIMITS)) {
+            return true;
+        }
+
+        $limit = $this->is_pro
             ? (int) Setting::get('max_daily_uploads_pro', 50)
             : (int) Setting::get('max_daily_uploads_free', 5);
-            
+
         $todayUploads = $this->videos()
             ->whereDate('created_at', today())
             ->count();
-            
+
         return $todayUploads < $limit;
     }
 
     public function getMaxVideoSizeAttribute(): int
     {
-        $sizeMb = $this->is_pro 
+        $sizeMb = $this->is_pro
             ? (int) Setting::get('max_upload_size_pro', 5000)
             : (int) Setting::get('max_upload_size_free', 500);
+
         return $sizeMb * 1048576; // Convert MB to bytes
     }
 
@@ -408,6 +481,7 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         if ($raw) {
             return $raw;
         }
+
         return '/assets/default_avatar.webp';
     }
 
@@ -428,14 +502,17 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     public function getNameAttribute(): string
     {
         if ($this->first_name || $this->last_name) {
-            return trim($this->first_name . ' ' . $this->last_name);
+            return trim($this->first_name.' '.$this->last_name);
         }
+
         return $this->username ?? '';
     }
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->is_admin;
+        // Filament assembles its own middleware stack, so the ban check in the
+        // web group does not apply here.
+        return $this->is_admin && ! $this->isBlocked();
     }
 
     /**
@@ -467,7 +544,7 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
      */
     public function canBeImpersonated(): bool
     {
-        return !$this->is_admin;
+        return ! $this->is_admin;
     }
 
     /**
@@ -481,9 +558,10 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
             return;
         }
 
-        if (!EmailService::isMailConfigured()) {
+        if (! EmailService::isMailConfigured()) {
             // Fall back to Laravel's default if mail isn't configured via admin panel
             parent::sendEmailVerificationNotification();
+
             return;
         }
 
@@ -510,8 +588,9 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
             return;
         }
 
-        if (!EmailService::isMailConfigured()) {
+        if (! EmailService::isMailConfigured()) {
             parent::sendPasswordResetNotification($token);
+
             return;
         }
 

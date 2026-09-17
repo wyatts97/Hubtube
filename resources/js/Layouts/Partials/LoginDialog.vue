@@ -16,6 +16,9 @@ const page = usePage();
 const { t } = useI18n();
 
 const themeSettings = computed(() => page.props.theme || {});
+// Registration can be switched off in admin settings; don't offer a form the
+// server will refuse.
+const registrationEnabled = computed(() => page.props.app?.registration_enabled !== false);
 
 const { siteLogo: logoUrl } = useSiteLogo();
 const user = computed(() => page.props.auth?.user);
@@ -132,7 +135,7 @@ const submit = () => {
             </button>
         </form>
 
-        <p class="mt-6 text-center text-text-secondary">
+        <p v-if="registrationEnabled" class="mt-6 text-center text-text-secondary">
             {{ t('auth.no_account') }}
             <Link href="/register" class="font-semibold text-accent-text hover:underline" @click="dialogOpen = false">
                 {{ t('auth.sign_up') }}

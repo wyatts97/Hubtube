@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\RequiresPermission;
 use App\Filament\Widgets\Analytics\AdCountryChartWidget;
 use App\Filament\Widgets\Analytics\AdDeliveryChartWidget;
 use App\Filament\Widgets\Analytics\AdDeviceChartWidget;
@@ -18,6 +19,10 @@ use Filament\Pages\Page;
 
 class Analytics extends Page
 {
+    use RequiresPermission;
+
+    protected static string $requiredPermission = 'view_any_video';
+
     protected static string | \BackedEnum | null $navigationIcon  = 'phosphor-chart-bar';
     protected static ?string $navigationLabel = 'Analytics';
     protected static string | \UnitEnum | null $navigationGroup = 'Overview';

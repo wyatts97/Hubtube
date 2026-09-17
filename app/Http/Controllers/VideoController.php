@@ -363,11 +363,30 @@ class VideoController extends Controller
             'playlistContext' => $playlistContext,
             'userPlaylists' => $userPlaylists,
             'seo' => $this->seoService->forVideo($video),
+            // Ready-made iframe for the share dialog; empty when embedding is
+            // off or the video cannot be embedded (private, draft, unapproved).
+            'embedCode' => $this->embedCodeFor($video),
             'videoAdsEnabled' => !$this->shouldSuppressAds(),
             // The player's whole VAST break schedule, decided here because Fluid
             // takes its adList at construction and cannot be given more later.
             'playerAdList' => app(PlayerAdListBuilder::class)->build($video, $video->category_id),
         ]);
+    }
+
+    /**
+     * The iframe snippet offered in the share dialog, or '' when this video
+     * may not be embedded. Mirrors EmbedController's own rules.
+     */
+    protected function embedCodeFor(Video $video): string
+    {
+        $embeddable = (bool) Setting::get('embed_enabled', true)
+            && ! $video->is_draft
+            && $video->privacy !== 'private'
+            && $video->is_approved
+            && $video->status === 'processed'
+            && ! $video->is_embedded;
+
+        return $embeddable ? app(EmbedController::class)->iframe($video) : '';
     }
 
     public function create(): Response|RedirectResponse

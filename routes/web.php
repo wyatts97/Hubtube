@@ -27,6 +27,7 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DmcaController;
+use App\Http\Controllers\EmbedController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\HistoryController;
@@ -363,6 +364,14 @@ Route::middleware('installed:require')->group(function () {
     // Same, for server layouts that proxy the rewritten URI to a PHP backend.
     Route::get('/protected-media', ProtectedMediaController::class)->name('media.protected.proxied');
 
+    // Embeddable player for other sites, plus its oEmbed description.
+    // Outside the age gate: an iframe cannot usefully show the gate, and the
+    // player itself is what a third-party page asked to display.
+    Route::get('/embed/{video:slug}', [EmbedController::class, 'show'])->name('videos.embed');
+    Route::get('/api/oembed', [EmbedController::class, 'oembed'])
+        ->middleware('throttle:60,1')
+        ->name('oembed');
+
     // Thumbnail proxy for embedded video thumbnails
     Route::get('/api/thumb-proxy', [ThumbnailProxyController::class, 'proxy'])
         ->middleware('throttle:30,1')
@@ -482,8 +491,10 @@ Route::middleware('installed:require')->group(function () {
             ->name('social.callback');
 
         Route::middleware('guest')->group(function () {
-            Route::get('/register', [RegisterController::class, 'create'])->name('register');
-            Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:5,1');
+            Route::middleware('registration.open')->group(function () {
+                Route::get('/register', [RegisterController::class, 'create'])->name('register');
+                Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:5,1');
+            });
 
             Route::get('/login', [LoginController::class, 'create'])->name('login');
             Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:10,1');

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\PointsTransactionResource\Pages\ListPointsTransactions;
 use App\Models\PointsTransaction;
 use App\Models\User;
@@ -18,6 +19,8 @@ use Filament\Tables\Table;
 
 class PointsTransactionResource extends Resource
 {
+    use AuthorizesWithPermissions;
+
     protected static ?string $model = PointsTransaction::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-coins';

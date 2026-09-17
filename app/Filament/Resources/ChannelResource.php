@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\ChannelResource\Pages\CreateChannel;
 use App\Filament\Resources\ChannelResource\Pages\EditChannel;
 use App\Filament\Resources\ChannelResource\Pages\ListChannels;
@@ -29,6 +30,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ChannelResource extends Resource
 {
+    use AuthorizesWithPermissions;
+
     protected static bool $shouldRegisterNavigation = false;
 
     protected static ?string $recordTitleAttribute = 'name';

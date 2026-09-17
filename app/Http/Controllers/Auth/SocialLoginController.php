@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Models\SocialAccount;
 use App\Models\User;
 use App\Services\ChannelService;
+use App\Services\RegistrationGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -61,6 +62,10 @@ class SocialLoginController extends Controller
             ->first();
 
         if ($socialAccount) {
+            if ($socialAccount->user?->isBlocked()) {
+                return redirect()->route('login')->with('error', $socialAccount->user->blockMessage());
+            }
+
             // Update token info
             $socialAccount->update([
                 'provider_token' => $token,
@@ -91,6 +96,10 @@ class SocialLoginController extends Controller
             $existingUser = User::where('email', $email)->first();
 
             if ($existingUser) {
+                if ($existingUser->isBlocked()) {
+                    return redirect()->route('login')->with('error', $existingUser->blockMessage());
+                }
+
                 SocialAccount::create([
                     'user_id' => $existingUser->id,
                     'provider' => $provider,
@@ -105,7 +114,23 @@ class SocialLoginController extends Controller
             }
         }
 
-        // 4. Create new user + channel
+        // 4. Create new user + channel — a sign-up, so the same rules as the
+        // register form apply: the registration switch, blocked IPs and
+        // blocked or disposable email domains.
+        $guard = app(RegistrationGuard::class);
+
+        if (! $guard->registrationOpen()) {
+            return redirect()->route('login')->with('error', 'New account registration is currently closed.');
+        }
+
+        if (! $guard->requestAllowed(request())) {
+            return redirect()->route('login')->with('error', 'Registration is not available from your network.');
+        }
+
+        if ($email && ! $guard->emailAllowed($email)) {
+            return redirect()->route('login')->with('error', 'Please use a different email address. This email provider is not accepted.');
+        }
+
         $username = $this->generateUniqueUsername($name, $email);
 
         $user = User::create([

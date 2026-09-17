@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\TagResource\Pages\EditTag;
 use App\Filament\Resources\TagResource\Pages\ListTags;
 use App\Models\Hashtag;
@@ -22,6 +23,8 @@ use Illuminate\Support\Str;
 
 class TagResource extends Resource
 {
+    use AuthorizesWithPermissions;
+
     protected static ?string $model = Hashtag::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-hash';

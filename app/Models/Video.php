@@ -48,6 +48,7 @@ class Video extends Model
         'duration',
         'size',
         'privacy',
+        'is_draft',
         'status',
         'failure_reason',
         'processing_fallback_reason',
@@ -102,6 +103,7 @@ class Video extends Model
             'is_embedded' => 'boolean',
             'is_featured' => 'boolean',
             'is_approved' => 'boolean',
+            'is_draft' => 'boolean',
             'age_restricted' => 'boolean',
             'is_portrait' => 'boolean',
             'monetization_enabled' => 'boolean',
@@ -280,6 +282,7 @@ class Video extends Model
 
         return $this->status === 'processed'
             && $this->is_approved
+            && ! $this->is_draft
             && $this->privacy === 'public';
     }
 
@@ -380,12 +383,20 @@ class Video extends Model
 
     public function scopePublic($query)
     {
-        return $query->where('privacy', 'public');
+        return $query->where('privacy', 'public')->where('is_draft', false);
     }
 
     public function scopeApproved($query)
     {
-        return $query->where('is_approved', true)->whereNotNull('published_at');
+        return $query->where('is_approved', true)
+            ->where('is_draft', false)
+            ->whereNotNull('published_at');
+    }
+
+    /** Drafts: processed but not published, visible only to owner and admins. */
+    public function scopeDrafts($query)
+    {
+        return $query->where('is_draft', true);
     }
 
     public function scopeProcessed($query)
@@ -562,6 +573,13 @@ class Video extends Model
      */
     public function isAccessibleBy(?User $user): bool
     {
+        // A draft is the uploader's alone until it is published, whatever its
+        // privacy says — this is what keeps scheduled videos off the open web
+        // until their time comes.
+        if ($this->is_draft) {
+            return $user !== null && ($this->user_id === $user->id || (bool) $user->is_admin);
+        }
+
         if ($this->privacy === 'public' || $this->privacy === 'unlisted') {
             return true;
         }

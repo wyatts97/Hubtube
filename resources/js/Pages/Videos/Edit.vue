@@ -3,7 +3,7 @@ import { useForm, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useFetch } from '@/Composables/useFetch';
-import { X, Save, Trash2, Image, Loader2, CheckCircle, ShieldCheck } from 'lucide-vue-next';
+import { X, Save, Trash2, Image, Loader2, CheckCircle, ShieldCheck, FileClock } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
 import VideoPrivacySelect from '@/Components/VideoPrivacySelect.vue';
@@ -324,13 +324,6 @@ const statusColors = {
                         ></textarea>
                     </div>
 
-                    <VideoPrivacySelect
-                        v-if="privacyOptions.length > 1"
-                        v-model="form.privacy"
-                        :options="privacyOptions"
-                        :error="form.errors.privacy || ''"
-                    />
-
                     <div>
                         <label for="category" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('video.category') }}</label>
                         <select id="category" v-model="form.category_id" class="input">
@@ -380,6 +373,26 @@ const statusColors = {
                         </div>
                         <p v-if="tagNotice" class="text-xs text-accent-text mt-1">{{ tagNotice }}</p>
                     </div>
+                </div>
+
+                <!-- Publishing: who can see it, and when -->
+                <div v-if="privacyOptions.length > 1 || video.is_draft" class="card p-6 space-y-4">
+                    <h2 class="text-lg font-semibold text-text-primary">{{ t('video.publishing') }}</h2>
+
+                    <div
+                        v-if="video.is_draft"
+                        class="flex items-start gap-3 p-3 rounded-lg bg-bg-secondary"
+                    >
+                        <FileClock class="w-5 h-5 mt-0.5 flex-shrink-0 text-text-secondary" aria-hidden="true" />
+                        <p class="text-sm text-text-secondary">{{ t('video.draft_notice') }}</p>
+                    </div>
+
+                    <VideoPrivacySelect
+                        v-if="privacyOptions.length > 1"
+                        v-model="form.privacy"
+                        :options="privacyOptions"
+                        :error="form.errors.privacy || ''"
+                    />
                 </div>
 
                 <!-- Monetization -->

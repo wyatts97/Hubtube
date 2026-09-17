@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\SponsoredCardResource\Pages\CreateSponsoredCard;
 use App\Filament\Resources\SponsoredCardResource\Pages\EditSponsoredCard;
 use App\Filament\Resources\SponsoredCardResource\Pages\ListSponsoredCards;
@@ -29,6 +30,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class SponsoredCardResource extends Resource
 {
+    use AuthorizesWithPermissions;
+
     protected static ?string $model = SponsoredCard::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-megaphone';

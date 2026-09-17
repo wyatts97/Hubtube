@@ -49,6 +49,8 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
             \App\Http\Middleware\AddSecurityHeaders::class,
             \App\Http\Middleware\TrackVisitor::class,
+            // Signs out accounts banned or suspended while they had a session.
+            \App\Http\Middleware\EnsureUserIsNotBanned::class,
         ]);
 
         $middleware->alias([
@@ -57,6 +59,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'installed' => \App\Http\Middleware\CheckInstalled::class,
             'locale' => \App\Http\Middleware\SetLocale::class,
             'verified.if-required' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+            'registration.open' => \App\Http\Middleware\EnsureRegistrationOpen::class,
         ]);
 
         $middleware->statefulApi();

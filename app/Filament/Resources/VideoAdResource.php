@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\VideoAdResource\Pages\CreateVideoAd;
 use App\Filament\Resources\VideoAdResource\Pages\EditVideoAd;
 use App\Filament\Resources\VideoAdResource\Pages\ListVideoAds;
@@ -37,6 +38,8 @@ use Illuminate\Support\Str;
 
 class VideoAdResource extends Resource
 {
+    use AuthorizesWithPermissions;
+
     protected static ?string $model = VideoAd::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-film-strip';

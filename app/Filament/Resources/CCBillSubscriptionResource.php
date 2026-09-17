@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\CCBillSubscriptionResource\Pages\ListCCBillSubscriptions;
 use App\Models\CCBillSubscription;
 use App\Models\Setting;
@@ -18,6 +19,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class CCBillSubscriptionResource extends Resource
 {
+    use AuthorizesWithPermissions;
+
     protected static ?string $model = CCBillSubscription::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-credit-card';

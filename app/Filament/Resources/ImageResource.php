@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\ImageResource\Pages\CreateImage;
 use App\Filament\Resources\ImageResource\Pages\EditImage;
 use App\Filament\Resources\ImageResource\Pages\ListImages;
@@ -38,6 +39,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ImageResource extends Resource
 {
+    use AuthorizesWithPermissions;
+
     protected static ?string $model = Image::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-image';

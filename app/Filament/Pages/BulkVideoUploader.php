@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\RequiresPermission;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
 use Filament\Actions\Action;
@@ -34,6 +35,10 @@ use Illuminate\Support\Str;
 
 class BulkVideoUploader extends Page implements HasForms
 {
+    use RequiresPermission;
+
+    protected static string $requiredPermission = 'create_video';
+
     use InteractsWithForms;
 
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-tray-arrow-up';

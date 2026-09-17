@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\RequiresPermission;
 use App\Models\Category;
 use App\Models\Image;
 use App\Models\User;
@@ -33,6 +34,10 @@ use Illuminate\Support\Str;
 
 class BulkImageUploader extends Page implements HasForms
 {
+    use RequiresPermission;
+
+    protected static string $requiredPermission = 'create_image';
+
     use InteractsWithForms;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-images';

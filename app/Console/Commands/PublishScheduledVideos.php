@@ -31,6 +31,7 @@ class PublishScheduledVideos extends Command
         foreach ($videos as $video) {
             $video->update([
                 'is_approved' => true,
+                'is_draft' => false,
                 'published_at' => $video->scheduled_at ?? now(),
                 'scheduled_at' => null,
                 'queue_order' => null,

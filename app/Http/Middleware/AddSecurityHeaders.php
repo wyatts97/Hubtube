@@ -34,6 +34,11 @@ class AddSecurityHeaders
         $httpOrigin = $isProduction ? '' : ' http:';
         $wsOrigin = $isProduction ? '' : ' ws:';
 
+        // The embed player is meant to be framed by other sites; everything
+        // else stays same-origin only, which is what stops clickjacking of the
+        // watch page, the admin panel and the login form.
+        $embeddable = $request->routeIs('videos.embed');
+
         $csp = implode('; ', [
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' data: https:{$httpOrigin} https://poweredby.jads.co https://*.jads.co",
@@ -47,12 +52,19 @@ class AddSecurityHeaders
             "object-src 'none'",
             "base-uri 'self'",
             "form-action 'self'",
-            "frame-ancestors 'self'",
+            $embeddable ? 'frame-ancestors *' : "frame-ancestors 'self'",
         ]);
 
         $response->headers->set('Content-Security-Policy', $csp);
         $response->headers->set('X-Content-Type-Options', 'nosniff');
-        $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
+
+        // X-Frame-Options has no "allow any origin" value, so it is omitted for
+        // the embed route and frame-ancestors above governs framing there.
+        if ($embeddable) {
+            $response->headers->remove('X-Frame-Options');
+        } else {
+            $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
+        }
         $response->headers->set('X-XSS-Protection', '1; mode=block');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(self), geolocation=(), payment=()');

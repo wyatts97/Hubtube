@@ -7,15 +7,20 @@ use App\Filament\Resources\UserResource\Pages\CreateUser;
 use App\Filament\Resources\UserResource\Pages\EditUser;
 use App\Filament\Resources\UserResource\Pages\ListUsers;
 use App\Models\User;
+use App\Services\UserBanService;
+use Carbon\Carbon;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -24,6 +29,8 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -94,7 +101,7 @@ class UserResource extends Resource
 
                 Section::make('Account Status')
                     ->schema([
-                        Section::make('Roles')
+                        Section::make('Tiers')
                             ->schema([
                                 Toggle::make('is_verified')
                                     ->label('Verified'),
@@ -112,6 +119,17 @@ class UserResource extends Resource
                             ])->columns(4)
                             ->columnSpanFull()
                             ->compact(),
+                        Select::make('roles')
+                            ->label('Roles')
+                            ->relationship('roles', 'name')
+                            ->multiple()
+                            ->preload()
+                            ->searchable()
+                            ->helperText('Roles narrow what an administrator can reach in the panel, '
+                                .'and grant front-end permissions such as skipping the moderation queue. '
+                                .'An administrator with no roles keeps full access, except to super-admin areas. '
+                                .'Edit what each role may do in System → Roles.')
+                            ->columnSpanFull(),
                         TextInput::make('wallet_balance')
                             ->label('Wallet Balance')
                             ->numeric()
@@ -198,11 +216,42 @@ class UserResource extends Resource
                     ->size('sm')
                     ->color('gray')
                     ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('roles.name')
+                    ->label('Roles')
+                    ->badge()
+                    ->separator(',')
+                    ->placeholder('—')
+                    ->toggleable(),
+
+                TextColumn::make('block_status')
+                    ->label('Access')
+                    ->badge()
+                    ->state(fn (User $record): string => match (true) {
+                        $record->isBanned() => 'Banned',
+                        $record->isSuspended() => 'Suspended until '.$record->suspended_until->format('j M Y'),
+                        default => 'Active',
+                    })
+                    ->color(fn (User $record): string => match (true) {
+                        $record->isBanned() => 'danger',
+                        $record->isSuspended() => 'warning',
+                        default => 'gray',
+                    })
+                    ->tooltip(fn (User $record): ?string => $record->ban_reason)
+                    ->toggleable(),
             ])
             ->filters([
                 TernaryFilter::make('is_verified'),
                 TernaryFilter::make('is_pro'),
                 TernaryFilter::make('is_admin'),
+                TernaryFilter::make('blocked')
+                    ->label('Banned or suspended')
+                    ->queries(
+                        true: fn (Builder $query) => $query->blocked(),
+                        false: fn (Builder $query) => $query->whereNull('banned_at')
+                            ->where(fn (Builder $q) => $q->whereNull('suspended_until')->orWhere('suspended_until', '<=', now())),
+                        blank: fn (Builder $query) => $query,
+                    ),
             ])
             ->recordActions([
                 Action::make('verify')
@@ -232,6 +281,66 @@ class UserResource extends Resource
                         ])->save();
                     }),
 
+                Action::make('ban')
+                    ->label('Ban')
+                    ->icon('phosphor-prohibit')
+                    ->color('danger')
+                    ->schema([
+                        Textarea::make('reason')
+                            ->label('Reason')
+                            ->rows(2)
+                            ->maxLength(500)
+                            ->helperText('Shown to the user when they try to sign in.'),
+                    ])
+                    ->requiresConfirmation()
+                    ->modalDescription('The account can no longer sign in, and any open session ends.')
+                    ->action(function (User $record, array $data) {
+                        app(UserBanService::class)->ban($record, $data['reason'] ?? null, Auth::user());
+
+                        Notification::make()->title('User banned')->success()->send();
+                    })
+                    ->visible(fn (User $record) => ! $record->isBanned() && ! $record->is_admin),
+
+                Action::make('suspend')
+                    ->label('Suspend')
+                    ->icon('phosphor-clock-countdown')
+                    ->color('warning')
+                    ->schema([
+                        DateTimePicker::make('until')
+                            ->label('Suspended until')
+                            ->native(false)
+                            ->minDate(now()->addMinutes(5))
+                            ->default(now()->addWeek())
+                            ->required(),
+                        Textarea::make('reason')
+                            ->label('Reason')
+                            ->rows(2)
+                            ->maxLength(500),
+                    ])
+                    ->action(function (User $record, array $data) {
+                        app(UserBanService::class)->suspend(
+                            $record,
+                            Carbon::parse($data['until']),
+                            $data['reason'] ?? null,
+                            Auth::user(),
+                        );
+
+                        Notification::make()->title('User suspended')->success()->send();
+                    })
+                    ->visible(fn (User $record) => ! $record->isBlocked() && ! $record->is_admin),
+
+                Action::make('lift_block')
+                    ->label('Lift block')
+                    ->icon('phosphor-lock-open')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->action(function (User $record) {
+                        app(UserBanService::class)->lift($record, Auth::user());
+
+                        Notification::make()->title('Block lifted')->success()->send();
+                    })
+                    ->visible(fn (User $record) => $record->isBlocked()),
+
                 Action::make('view_videos')
                     ->icon('phosphor-video-camera')
                     ->color('info')
@@ -256,6 +365,37 @@ class UserResource extends Resource
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('ban')
+                        ->label('Ban')
+                        ->icon('phosphor-prohibit')
+                        ->color('danger')
+                        ->schema([
+                            Textarea::make('reason')->label('Reason')->rows(2)->maxLength(500),
+                        ])
+                        ->requiresConfirmation()
+                        ->action(function (Collection $records, array $data) {
+                            $service = app(UserBanService::class);
+                            $banned = $records->reject->is_admin
+                                ->each(fn (User $user) => $service->ban($user, $data['reason'] ?? null, Auth::user()))
+                                ->count();
+
+                            Notification::make()->title("Banned {$banned} user(s)")->success()->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('lift_block')
+                        ->label('Lift block')
+                        ->icon('phosphor-lock-open')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->action(function (Collection $records) {
+                            $service = app(UserBanService::class);
+                            $records->each(fn (User $user) => $service->lift($user, Auth::user()));
+
+                            Notification::make()->title('Blocks lifted')->success()->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
                     DeleteBulkAction::make(),
                 ]),
             ])

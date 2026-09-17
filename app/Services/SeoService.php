@@ -313,8 +313,10 @@ class SeoService
                 ],
             ];
 
-            if ($this->s('seo_video_embed_enabled', true)) {
-                $schema['embedUrl'] = url("/{$video->slug}");
+            // Must be a URL that plays the video on its own, not the watch
+            // page, or Google ignores it for video results.
+            if ($this->s('seo_video_embed_enabled', true) && $this->s('embed_enabled', true)) {
+                $schema['embedUrl'] = route('videos.embed', $video->slug);
             }
 
             if ($video->user) {
@@ -385,6 +387,12 @@ class SeoService
             // Build alternate URLs using translated slugs
             $translationService = app(TranslationService::class);
             $seo['alternateUrls'] = $translationService->getAlternateUrls(Video::class, $video->id, $video->slug);
+        }
+
+        // oEmbed discovery: lets editors and chat apps turn a pasted watch
+        // link into the player without hand-writing an iframe.
+        if ($this->s('embed_enabled', true)) {
+            $seo['oembed'] = route('oembed', ['url' => url("/{$video->slug}"), 'format' => 'json']);
         }
 
         static::$currentSeo = $seo;

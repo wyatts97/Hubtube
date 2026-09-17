@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\ContactMessageResource\Pages\ListContactMessages;
 use App\Filament\Resources\ContactMessageResource\Pages\ViewContactMessage;
 use App\Models\ContactMessage;
@@ -27,6 +28,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ContactMessageResource extends Resource
 {
+    use AuthorizesWithPermissions;
+
     protected static ?string $model = ContactMessage::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-envelope';

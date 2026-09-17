@@ -60,6 +60,9 @@ class SiteSettings extends Page implements HasForms
             'maintenance_mode' => Setting::get('maintenance_mode', false),
             'maintenance_message' => Setting::get('maintenance_message', ''),
             'registration_enabled' => Setting::get('registration_enabled', true),
+            'block_disposable_emails' => Setting::get('block_disposable_emails', true),
+            'blocked_email_domains' => Setting::get('blocked_email_domains', []),
+            'blocked_ips' => Setting::get('blocked_ips', []),
             // Must match EnsureEmailIsVerified's default, or an unsaved install
             // shows the toggle on while verification is not actually enforced.
             'email_verification_required' => Setting::get('email_verification_required', false),
@@ -67,6 +70,7 @@ class SiteSettings extends Page implements HasForms
             'age_verification_required' => Setting::get('age_verification_required', true),
             'private_profiles_enabled' => Setting::get('private_profiles_enabled', false),
             'channel_social_links_enabled' => Setting::get('channel_social_links_enabled', true),
+            'embed_enabled' => Setting::get('embed_enabled', true),
             'minimum_age' => Setting::get('minimum_age', 18),
             'allow_unlisted_uploads' => Setting::get('allow_unlisted_uploads', false),
             'allow_private_uploads' => Setting::get('allow_private_uploads', false),
@@ -369,7 +373,8 @@ class SiteSettings extends Page implements HasForms
                                 Section::make('Registration')
                                     ->schema([
                                         Toggle::make('registration_enabled')
-                                            ->label('Allow Registration'),
+                                            ->label('Allow Registration')
+                                            ->helperText('Off closes the register form and blocks new accounts through social sign-in. Existing users can still sign in.'),
                                         Toggle::make('email_verification_required')
                                             ->label('Require Email Verification'),
                                         Toggle::make('admin_require_2fa')
@@ -385,6 +390,24 @@ class SiteSettings extends Page implements HasForms
                                             ->minValue(13)
                                             ->maxValue(21),
                                     ])->columns(2),
+                                Section::make('Blocklists')
+                                    ->description('Applied when an account is created, including through social sign-in.')
+                                    ->schema([
+                                        Toggle::make('block_disposable_emails')
+                                            ->label('Block Disposable Email Addresses')
+                                            ->helperText('Refuses registration from the bundled list of throwaway email providers (resources/data/disposable-email-domains.txt).'),
+                                        TagsInput::make('blocked_email_domains')
+                                            ->label('Blocked Email Domains')
+                                            ->placeholder('example.com')
+                                            ->helperText('Additional domains to refuse, beyond the bundled list.')
+                                            ->columnSpanFull(),
+                                        TagsInput::make('blocked_ips')
+                                            ->label('Blocked IPs')
+                                            ->placeholder('203.0.113.5 or 203.0.113.0/24')
+                                            ->helperText('Single addresses or CIDR ranges, IPv4 and IPv6. These cannot register; they can still browse.')
+                                            ->columnSpanFull(),
+                                    ])->columns(2),
+
                                 Section::make('Channels & Privacy')
                                     ->schema([
                                         Toggle::make('private_profiles_enabled')
@@ -414,6 +437,13 @@ class SiteSettings extends Page implements HasForms
                                             ->label('Max Daily Uploads (Pro)')
                                             ->numeric(),
                                     ])->columns(2),
+                                Section::make('Embedding')
+                                    ->schema([
+                                        Toggle::make('embed_enabled')
+                                            ->label('Allow Embedding on Other Sites')
+                                            ->helperText('Serves /embed/{slug} for iframes, answers oEmbed requests, and offers embed codes in the share dialog. Private, draft and unapproved videos are never embeddable.'),
+                                    ]),
+
                                 Section::make('Video Privacy')
                                     ->description('Everything users upload is public unless these are on. Admins can always choose any privacy.')
                                     ->schema([

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\ReportResource\Pages\ListReports;
 use App\Filament\Resources\ReportResource\Pages\ViewReport;
 use App\Models\Comment;
@@ -31,6 +32,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ReportResource extends Resource
 {
+    use AuthorizesWithPermissions;
+
     protected static ?string $model = Report::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-flag';

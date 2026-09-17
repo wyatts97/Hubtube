@@ -87,7 +87,7 @@ class SubmitVideoToIndexNowListener implements ShouldQueue
         if ($video->status !== 'processed') {
             return false;
         }
-        if (!$video->is_approved) {
+        if (!$video->is_approved || $video->is_draft) {
             return false;
         }
         if ($video->privacy !== 'public') {

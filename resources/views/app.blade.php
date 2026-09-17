@@ -232,6 +232,11 @@
     <link rel="next" href="{{ $seo['pagination']['next'] }}">
     @endif
 
+    {{-- oEmbed discovery for the video player (see EmbedController::oembed). --}}
+    @if(!empty($seo['oembed']))
+    <link rel="alternate" type="application/json+oembed" href="{{ $seo['oembed'] }}" title="{{ $seo['title'] ?? '' }}">
+    @endif
+
     {{-- hreflang tags for multi-language SEO. Built by SeoService from the SEO
          payload the controller already produced — no re-querying here.
          Deliberately NOT marked with `inertia`: SeoHead.vue doesn't emit these,

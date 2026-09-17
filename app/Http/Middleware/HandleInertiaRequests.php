@@ -211,6 +211,7 @@ class HandleInertiaRequests extends Middleware
             'infinite_scroll_enabled' => $this->s('infinite_scroll_enabled', false),
             'videos_per_page' => $this->s('videos_per_page', 24),
             'monetization_enabled' => (bool)$this->s('monetization_enabled', true),
+            'registration_enabled' => (bool) $this->s('registration_enabled', true),
             'currency' => $this->s('currency', 'USD'),
             'pro_enabled' => (bool) $this->s('pro_enabled', true),
             'pro_ad_free' => (bool) $this->s('pro_ad_free', true),

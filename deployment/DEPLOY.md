@@ -570,10 +570,22 @@ sudo -u www-data php artisan route:cache
 sudo -u www-data php artisan view:cache
 sudo -u www-data php artisan event:cache
 
+# Create the permissions and the moderator/editor/uploader/trusted_uploader
+# roles (idempotent; keeps any edits made on the Roles screen)
+sudo -u www-data php artisan hubtube:sync-roles
+
 # Restart workers (picks up new code)
 sudo supervisorctl restart hubtube:*
 sudo systemctl reload php8.2-fpm
 ```
+
+### Roles, bans and embedding
+
+- **Roles** (Admin → System → Roles) narrow what an administrator can reach. `php artisan hubtube:sync-roles` seeds `moderator`, `editor`, `uploader` and `trusted_uploader`; assign them per user in Admin → Users. An administrator with **no** roles keeps the access they had before roles existed, so nobody is locked out by deploying this. Super-admins always pass every check.
+- **Bans** (Admin → Users → Ban / Suspend) stop an account signing in and end its open sessions, in the panel as well as the site. Suspensions lift by themselves.
+- **Registration controls** live in Admin → Settings → Site → Users: the registration switch is now enforced, and there are blocklists for email domains and IPs plus a bundled list of disposable email providers (`resources/data/disposable-email-domains.txt`).
+- **Embedding** is Admin → Settings → Site → Videos → "Allow Embedding on Other Sites". It serves `/embed/{slug}` for iframes, answers oEmbed at `/api/oembed`, and puts an embed code in the share dialog. Only that route may be framed cross-origin; everything else stays same-origin. Private, draft and unapproved videos are never embeddable.
+- **Drafts** are private to their uploader and stay out of every listing. Anything queued for scheduled publishing is a draft until its time arrives, which closes the old gap where a scheduled video was already openable by URL.
 
 ### Log Rotation
 

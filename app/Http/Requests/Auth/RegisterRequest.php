@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Auth;
 
 use App\Models\User;
+use App\Rules\AllowedEmailDomain;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
@@ -31,6 +32,7 @@ class RegisterRequest extends FormRequest
                 'email',
                 'max:255',
                 'unique:' . User::class,
+                new AllowedEmailDomain(),
             ],
             'password' => [
                 'required',

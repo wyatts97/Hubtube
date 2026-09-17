@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\GalleryResource\Pages\EditGallery;
 use App\Filament\Resources\GalleryResource\Pages\ListGalleries;
 use App\Models\Gallery;
@@ -26,6 +27,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class GalleryResource extends Resource
 {
+    use AuthorizesWithPermissions;
+
     protected static ?string $model = Gallery::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-squares-four';

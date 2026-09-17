@@ -10,6 +10,7 @@ const page = usePage();
 
 const showPassword = ref(false);
 const socialProviders = computed(() => page.props.socialLogin || []);
+const registrationEnabled = computed(() => page.props.app?.registration_enabled !== false);
 const siteLogo = computed(() => page.props.theme?.site_logo || '');
 const siteTitle = computed(() => page.props.theme?.siteTitle || 'H');
 
@@ -148,7 +149,7 @@ const providerMeta = {
                     </div>
                 </template>
 
-                <div class="mt-6 text-center">
+                <div v-if="registrationEnabled" class="mt-6 text-center">
                     <p class="text-text-secondary">
                         {{ t('auth.no_account') }}
                         <Link href="/register" class="font-medium text-accent-text">

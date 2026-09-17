@@ -96,6 +96,8 @@ class BulkVideoCreator
             'storage_disk' => 'public',
             'size' => Storage::disk('public')->size($newPath),
             'is_approved' => isset($entry['queue_order']),
+            // Queued for scheduled publishing: private to the uploader until then.
+            'is_draft' => isset($entry['queue_order']),
             'queue_order' => $entry['queue_order'] ?? null,
             'requires_schedule' => isset($entry['queue_order']),
             'suppress_notifications' => true,

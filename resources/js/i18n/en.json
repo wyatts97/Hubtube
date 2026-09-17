@@ -404,6 +404,9 @@
   },
   "share": {
     "copy_failed": "Failed to copy link",
+    "embed": "Embed",
+    "embed_copied": "Embed code copied",
+    "embed_hint": "Paste this into any web page to show the player.",
     "copy_link": "Link copied to clipboard",
     "title": "Share Video"
   },
@@ -457,6 +460,7 @@
     "delete_comment_body": "This cannot be undone.",
     "delete_comment_title": "Delete comment?",
     "delete_video": "Delete Video",
+    "draft_notice": "This is a draft. Only you can see it until it is published.",
     "description": "Description",
     "edit_video": "Edit Video",
     "keyboard_shortcuts": "Keyboard Shortcuts",
@@ -475,6 +479,7 @@
     "processing": "Processing video...",
     "public": "Public",
     "published_at": "Published {date}",
+    "publishing": "Publishing",
     "quality_hd": "HD",
     "quality_uhd": "4K",
     "rating": "Rating",

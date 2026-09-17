@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\PageResource\Pages\CreatePage;
 use App\Filament\Resources\PageResource\Pages\EditPage;
 use App\Filament\Resources\PageResource\Pages\ListPages;
@@ -22,6 +23,8 @@ use Illuminate\Support\Str;
 
 class PageResource extends Resource
 {
+    use AuthorizesWithPermissions;
+
     protected static ?string $model = Page::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-file-text';

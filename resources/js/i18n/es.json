@@ -364,6 +364,9 @@
     "withdraw": "Retirar"
   },
   "share": {
+    "embed": "Insertar",
+    "embed_copied": "Código de inserción copiado",
+    "embed_hint": "Pega esto en cualquier página web para mostrar el reproductor.",
     "copy_failed": "Error al copiar enlace",
     "copy_link": "Enlace copiado al portapapeles",
     "title": "Compartir Video"
@@ -416,6 +419,7 @@
     "delete_comment_body": "Esta acción no se puede deshacer.",
     "delete_comment_title": "¿Eliminar comentario?",
     "delete_video": "Eliminar Video",
+    "draft_notice": "Este es un borrador. Solo tú puedes verlo hasta que se publique.",
     "description": "Descripción",
     "edit_video": "Editar Video",
     "keyboard_shortcuts": "Atajos de Teclado",
@@ -433,6 +437,7 @@
     "processing": "Procesando video...",
     "public": "Público",
     "published_at": "Publicado {date}",
+    "publishing": "Publicación",
     "quality_hd": "HD",
     "quality_uhd": "4K",
     "rating": "Valoración",

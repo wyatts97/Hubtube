@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\WithdrawalRequestResource\Pages\EditWithdrawalRequest;
 use App\Filament\Resources\WithdrawalRequestResource\Pages\ListWithdrawalRequests;
 use App\Models\Setting;
@@ -28,6 +29,8 @@ use Illuminate\Support\Facades\DB;
 
 class WithdrawalRequestResource extends Resource
 {
+    use AuthorizesWithPermissions;
+
     protected static ?string $model = WithdrawalRequest::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-tray-arrow-up';

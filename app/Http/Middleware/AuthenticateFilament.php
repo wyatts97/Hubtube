@@ -22,6 +22,12 @@ class AuthenticateFilament extends FilamentAuthenticate
             ], 401, ['X-Refresh-Required' => 'true']);
         }
 
+        // Before the panel's own access check, so a banned admin is signed
+        // out and told why instead of meeting a bare 403.
+        if ($request->user()?->isBlocked()) {
+            return app(EnsureUserIsNotBanned::class)->handle($request, $next);
+        }
+
         return parent::handle($request, $next, ...$guards);
     }
 

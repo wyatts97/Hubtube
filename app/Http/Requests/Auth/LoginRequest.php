@@ -43,6 +43,8 @@ class LoginRequest extends FormRequest
             if (Auth::attempt([$loginField => $this->login, 'password' => $this->password], $this->boolean('remember'))) {
                 RateLimiter::clear($this->throttleKey());
 
+                $this->ensureIsNotBlocked();
+
                 if ($this->deferForTwoFactor(Auth::user(), $this->boolean('remember'))) {
                     return;
                 }
@@ -60,6 +62,8 @@ class LoginRequest extends FormRequest
         // If standard auth failed, check for WordPress password hashes
         if ($this->attemptWordPressAuth($loginField)) {
             RateLimiter::clear($this->throttleKey());
+            $this->ensureIsNotBlocked();
+
             return;
         }
 
@@ -68,6 +72,27 @@ class LoginRequest extends FormRequest
         throw ValidationException::withMessages([
             'login' => trans('auth.failed'),
         ]);
+    }
+
+    /**
+     * Refuse a banned or suspended account, with the reason.
+     *
+     * EnsureUserIsNotBanned would also catch this on the next request, but
+     * signing in only to be bounced gives the user nothing to act on.
+     */
+    protected function ensureIsNotBlocked(): void
+    {
+        $user = Auth::user();
+
+        if (! $user || ! $user->isBlocked()) {
+            return;
+        }
+
+        $message = $user->blockMessage();
+
+        Auth::guard('web')->logout();
+
+        throw ValidationException::withMessages(['login' => $message]);
     }
 
     /**

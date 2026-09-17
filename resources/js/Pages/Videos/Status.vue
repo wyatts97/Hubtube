@@ -3,7 +3,7 @@ import { router, usePage, useForm } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useFetch } from '@/Composables/useFetch';
-import { Loader2, CheckCircle, ShieldCheck, Trash2, Clock, XCircle, Edit, Eye } from 'lucide-vue-next';
+import { Loader2, CheckCircle, ShieldCheck, Trash2, Clock, XCircle, Edit, Eye, FileClock } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
 import VideoPrivacySelect from '@/Components/VideoPrivacySelect.vue';
@@ -84,6 +84,19 @@ const statusConfig = computed(() => {
                 animate: true,
             };
         case 'processed':
+            if (props.video.is_draft) {
+                return {
+                    icon: FileClock,
+                    title: 'Draft',
+                    description: scheduledFor.value
+                        ? `Only you can see this video. It publishes automatically on ${scheduledFor.value}.`
+                        : 'Only you can see this video. An administrator will publish it.',
+                    color: '#3b82f6',
+                    bgColor: 'rgba(59, 130, 246, 0.1)',
+                    animate: false,
+                };
+            }
+
             return {
                 icon: ShieldCheck,
                 title: 'Processing Complete — Awaiting Moderation',
@@ -114,7 +127,13 @@ const statusConfig = computed(() => {
 });
 
 const isPublished = computed(() => {
-    return videoStatus.value === 'processed' && props.video.is_approved;
+    return videoStatus.value === 'processed' && props.video.is_approved && !props.video.is_draft;
+});
+
+const scheduledFor = computed(() => {
+    if (!props.video.scheduled_at) return null;
+
+    return new Date(props.video.scheduled_at).toLocaleString();
 });
 </script>
 
@@ -193,7 +212,7 @@ const isPublished = computed(() => {
             </div>
 
             <!-- Moderation Notice -->
-            <div v-if="videoStatus === 'processed' && !video.is_approved" class="card p-4 mb-6">
+            <div v-if="videoStatus === 'processed' && !video.is_approved && !video.is_draft" class="card p-4 mb-6">
                 <div class="flex items-center gap-3">
                     <ShieldCheck class="w-5 h-5 flex-shrink-0 text-text-secondary" />
                     <p class="text-sm text-text-secondary">

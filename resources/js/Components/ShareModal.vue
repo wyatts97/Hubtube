@@ -9,6 +9,9 @@ const props = defineProps({
     modelValue: { type: Boolean, default: false },
     url: { type: String, required: true },
     title: { type: String, default: '' },
+    // Ready-made <iframe> markup for this video, built server-side so it
+    // matches what the oEmbed endpoint returns. Absent = embedding is off.
+    embedCode: { type: String, default: '' },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -17,6 +20,16 @@ const { t } = useI18n();
 const toast = useToast();
 
 const { copy, copied } = useClipboard({ legacy: true, copiedDuring: 2000 });
+const { copy: copyEmbedToClipboard, copied: embedCopied } = useClipboard({ legacy: true, copiedDuring: 2000 });
+
+const copyEmbed = async () => {
+    try {
+        await copyEmbedToClipboard(props.embedCode);
+        toast.success(t('share.embed_copied'));
+    } catch {
+        toast.error(t('share.copy_failed'));
+    }
+};
 
 const show = computed({
     get: () => props.modelValue,
@@ -98,6 +111,26 @@ const shareToSocial = (platform) => {
             <button @click="copyLink" class="btn btn-primary whitespace-nowrap text-sm px-4">
                 {{ copied ? (t('common.copied')) : (t('common.copy')) }}
             </button>
+        </div>
+
+        <div v-if="embedCode" class="mt-4">
+            <label for="share-embed-code" class="block text-sm font-medium mb-1 text-text-secondary">
+                {{ t('share.embed') }}
+            </label>
+            <div class="flex items-center gap-2">
+                <input
+                    id="share-embed-code"
+                    type="text"
+                    :value="embedCode"
+                    readonly
+                    class="input flex-1 text-sm font-mono"
+                    @click="$event.target.select()"
+                />
+                <button @click="copyEmbed" class="btn btn-secondary whitespace-nowrap text-sm px-4">
+                    {{ embedCopied ? (t('common.copied')) : (t('common.copy')) }}
+                </button>
+            </div>
+            <p class="text-xs mt-1 text-text-muted">{{ t('share.embed_hint') }}</p>
         </div>
     </BaseDialog>
 </template>

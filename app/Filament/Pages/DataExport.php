@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\RequiresPermission;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
@@ -22,6 +23,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DataExport extends Page implements HasForms
 {
+    use RequiresPermission;
+
+    protected static string $requiredPermission = 'view_any_user';
+
     use InteractsWithForms;
 
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-tray-arrow-down';

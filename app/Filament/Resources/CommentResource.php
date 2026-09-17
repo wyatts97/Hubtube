@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\CommentResource\Pages\EditComment;
 use App\Filament\Resources\CommentResource\Pages\ListComments;
 use App\Models\Comment;
@@ -27,6 +28,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class CommentResource extends Resource
 {
+    use AuthorizesWithPermissions;
+
     protected static ?string $model = Comment::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-chat-text';

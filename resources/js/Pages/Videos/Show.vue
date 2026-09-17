@@ -32,6 +32,7 @@ const props = defineProps({
     playlistContext: { type: Object, default: null },
     userPlaylists: { type: Array, default: () => [] },
     seo: { type: Object, default: () => ({}) },
+    embedCode: { type: String, default: '' },
     videoAdsEnabled: { type: Boolean, default: true },
     playerAdList: { type: Array, default: () => [] },
 });
@@ -810,6 +811,11 @@ const getRelatedTitle = (video) => {
         </div>
     </AppLayout>
 
-    <ShareModal v-model="showShareModal" :url="shareUrl" :title="props.video.title" />
+    <ShareModal
+        v-model="showShareModal"
+        :url="shareUrl"
+        :title="props.video.title"
+        :embed-code="embedCode || ''"
+    />
     <ReportModal v-model="showReportModal" :reportable-id="props.video.id" reportable-type="video" />
 </template>

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\RequiresPermission;
 use Filament\Actions\Action;
 use App\Events\VideoProcessed;
 use App\Models\Setting;
@@ -22,6 +23,10 @@ use Illuminate\Support\Facades\DB;
 
 class ScheduledVideos extends Page implements HasTable
 {
+    use RequiresPermission;
+
+    protected static string $requiredPermission = 'update_video';
+
     use InteractsWithTable;
 
     protected static string | \BackedEnum | null $navigationIcon = 'phosphor-clock';
@@ -188,6 +193,7 @@ class ScheduledVideos extends Page implements HasTable
             ->action(function (Video $record) {
             $record->update([
                     'is_approved' => true,
+                    'is_draft' => false,
                     'published_at' => now(),
                     'scheduled_at' => null,
                     'queue_order' => null,
@@ -211,12 +217,19 @@ class ScheduledVideos extends Page implements HasTable
             ->icon('phosphor-x-circle')
             ->color('danger')
             ->action(function (Video $record) {
+            // Stays a draft: it has no publish time any more, so leaving it
+            // reachable by URL would publish it by accident.
             $record->update([
                     'scheduled_at' => null,
                     'queue_order' => null,
+                    'requires_schedule' => false,
                 ]);
             app(VideoService::class)->recalculateScheduleQueue();
-            Notification::make()->title('Video removed from queue')->success()->send();
+            Notification::make()
+                ->title('Video removed from queue')
+                ->body('It stays a draft until you publish it.')
+                ->success()
+                ->send();
         }),
         ]);
     }

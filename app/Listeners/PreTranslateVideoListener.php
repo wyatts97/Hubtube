@@ -33,7 +33,7 @@ class PreTranslateVideoListener implements ShouldQueue
             $video->refresh();
 
             // Nothing to show publicly means nothing worth translating yet.
-            if ($video->privacy !== 'public' || ! $video->is_approved) {
+            if ($video->privacy !== 'public' || ! $video->is_approved || $video->is_draft) {
                 return;
             }
 
