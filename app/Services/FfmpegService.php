@@ -3,34 +3,54 @@
 namespace App\Services;
 
 use App\Models\Setting;
+use Illuminate\Support\Facades\Cache;
 
 class FfmpegService
 {
     public const DEFAULT_FFMPEG_PATH = '/usr/local/bin/ffmpeg';
+
     public const DEFAULT_FFPROBE_PATH = '/usr/local/bin/ffprobe';
 
     public static function ffmpegPath(): string
     {
         $configured = Setting::get('ffmpeg_path', '');
+
         return static::resolveBinaryPath('ffmpeg', $configured, static::DEFAULT_FFMPEG_PATH, '/usr/bin/ffmpeg');
     }
 
     public static function ffprobePath(): string
     {
         $configured = Setting::get('ffprobe_path', '');
+
         return static::resolveBinaryPath('ffprobe', $configured, static::DEFAULT_FFPROBE_PATH, '/usr/bin/ffprobe');
     }
 
+    /**
+     * Whether an ffmpeg binary can be found.
+     *
+     * Cached: the fallback branch spawns `which`/`where`, and callers ask per
+     * file — the media library asked once per video on every page render. The
+     * answer only changes when the server is reinstalled or the admin edits the
+     * configured path, and Setting::set() flushes the settings cache anyway, so
+     * ten minutes is generous.
+     */
     public static function isAvailable(): bool
     {
-        $ffmpeg = static::ffmpegPath();
-        if (file_exists($ffmpeg) && is_executable($ffmpeg)) {
-            return true;
-        }
+        return (bool) Cache::remember(
+            'ffmpeg:available:'.md5(static::ffmpegPath()),
+            600,
+            function () {
+                $ffmpeg = static::ffmpegPath();
+                if (file_exists($ffmpeg) && is_executable($ffmpeg)) {
+                    return true;
+                }
 
-        $binary = PHP_OS_FAMILY === 'Windows' ? 'where ffmpeg' : 'which ffmpeg 2>/dev/null';
-        $output = trim(shell_exec($binary) ?? '');
-        return !empty($output);
+                $binary = PHP_OS_FAMILY === 'Windows' ? 'where ffmpeg' : 'which ffmpeg 2>/dev/null';
+                $output = trim(shell_exec($binary) ?? '');
+
+                return ! empty($output);
+            }
+        );
     }
 
     /**
@@ -80,7 +100,7 @@ class FfmpegService
 
         $lookup = PHP_OS_FAMILY === 'Windows' ? "where {$binary}" : "which {$binary} 2>/dev/null";
         $which = trim(shell_exec($lookup) ?? '');
-        if (!empty($which)) {
+        if (! empty($which)) {
             return $which;
         }
 

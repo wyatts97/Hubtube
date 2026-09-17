@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use Throwable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Intervention\Image\ImageManager;
+use Throwable;
 
 class FileManagerThumbnailService
 {
@@ -18,7 +18,7 @@ class FileManagerThumbnailService
 
     public function __construct()
     {
-        $this->manager = new ImageManager(new GdDriver());
+        $this->manager = new ImageManager(new GdDriver);
     }
 
     /**
@@ -29,7 +29,13 @@ class FileManagerThumbnailService
     {
         $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 
-        if ($this->isImage($extension)) {
+        // An SVG is its own thumbnail: it scales losslessly, GD cannot decode
+        // it anyway, and in an <img> context it executes nothing.
+        if ($extension === 'svg') {
+            return Storage::disk('public')->url($path);
+        }
+
+        if ($this->isRasterisable($extension)) {
             return $this->imageThumbnailUrl($path);
         }
 
@@ -47,16 +53,10 @@ class FileManagerThumbnailService
     {
         $thumbPath = $this->thumbnailPath($path);
 
-        $cacheKey = 'filemanager_thumb:' . md5($thumbPath);
-        $cacheTtl = (int) config('hubtube.media_library.cache_ttl', 300);
-
-        $exists = Cache::remember($cacheKey, $cacheTtl, function () use ($thumbPath) {
-            return Storage::disk('public')->exists($thumbPath);
-        });
-
-        if (!$exists) {
-            $this->generateImageThumbnail($path, $thumbPath);
-        }
+        $this->resolveThumbnail(
+            $thumbPath,
+            fn () => $this->generateImageThumbnail($path, $thumbPath),
+        );
 
         return Storage::disk('public')->url($thumbPath);
     }
@@ -68,18 +68,69 @@ class FileManagerThumbnailService
     {
         $thumbPath = $this->thumbnailPath($path);
 
-        $cacheKey = 'filemanager_thumb:' . md5($thumbPath);
-        $cacheTtl = (int) config('hubtube.media_library.cache_ttl', 300);
-
-        $exists = Cache::remember($cacheKey, $cacheTtl, function () use ($thumbPath) {
-            return Storage::disk('public')->exists($thumbPath);
-        });
-
-        if (!$exists) {
-            $this->generateVideoThumbnail($path, $thumbPath);
-        }
+        $this->resolveThumbnail(
+            $thumbPath,
+            fn () => $this->generateVideoThumbnail($path, $thumbPath),
+        );
 
         return Storage::disk('public')->url($thumbPath);
+    }
+
+    /**
+     * Make sure a thumbnail exists, at most once per cache window.
+     *
+     * The bug this replaces: `Cache::remember($key, $ttl, fn () => exists())`
+     * cached the *cold* answer — `false` — and nothing ever wrote `true` back
+     * after a successful generate. So for the whole TTL every render re-read,
+     * re-decoded, re-resized and re-encoded every thumbnail on the page, and
+     * re-spawned ffmpeg for every video.
+     *
+     * The cache now holds the outcome either way: `true` once the file is
+     * there, `false` when generation was tried and failed, which is what stops
+     * a corrupt source being retried (and logged) on every single render.
+     */
+    protected function resolveThumbnail(string $thumbPath, callable $generate): bool
+    {
+        $cacheKey = 'filemanager_thumb:'.md5($thumbPath);
+        $cached = Cache::get($cacheKey);
+
+        if ($cached !== null) {
+            return (bool) $cached;
+        }
+
+        $resolved = Storage::disk('public')->exists($thumbPath) || (bool) $generate();
+
+        Cache::put($cacheKey, $resolved, (int) config('hubtube.media_library.cache_ttl', 300));
+
+        return $resolved;
+    }
+
+    /** Forget a thumbnail's cached state, so the next render re-checks it. */
+    public function forget(string $sourcePath): void
+    {
+        Cache::forget('filemanager_thumb:'.md5($this->thumbnailPath($sourcePath)));
+    }
+
+    /**
+     * Delete a source file's generated thumbnail, and forget its cached state.
+     *
+     * Thumbnails are content-addressed on the source path, so a deleted source
+     * leaves its thumbnail behind forever unless something removes it. Nothing
+     * did.
+     */
+    public function delete(string $sourcePath): void
+    {
+        $thumbPath = $this->thumbnailPath($sourcePath);
+
+        try {
+            if (Storage::disk('public')->exists($thumbPath)) {
+                Storage::disk('public')->delete($thumbPath);
+            }
+        } catch (Throwable) {
+            // A thumbnail we cannot remove is not worth failing a delete over.
+        }
+
+        Cache::forget('filemanager_thumb:'.md5($thumbPath));
     }
 
     /**
@@ -105,12 +156,12 @@ class FileManagerThumbnailService
     /**
      * Generate an image thumbnail using Intervention Image v3.
      */
-    protected function generateImageThumbnail(string $sourcePath, string $thumbPath): void
+    protected function generateImageThumbnail(string $sourcePath, string $thumbPath): bool
     {
         try {
             $absolutePath = Storage::disk('public')->path($sourcePath);
-            if (!file_exists($absolutePath)) {
-                return;
+            if (! file_exists($absolutePath)) {
+                return false;
             }
 
             $width = (int) config('hubtube.media_library.thumbnail_width', 300);
@@ -122,37 +173,41 @@ class FileManagerThumbnailService
 
             Storage::disk('public')->makeDirectory(dirname($thumbPath));
             Storage::disk('public')->put($thumbPath, (string) $encoded, 'public');
+
+            return true;
         } catch (Throwable $e) {
             Log::warning('FileManagerThumbnailService: failed to generate image thumbnail', [
                 'path' => $sourcePath,
                 'error' => $e->getMessage(),
             ]);
+
+            return false;
         }
     }
 
     /**
      * Generate a video poster thumbnail using FFmpeg.
      */
-    protected function generateVideoThumbnail(string $sourcePath, string $thumbPath): void
+    protected function generateVideoThumbnail(string $sourcePath, string $thumbPath): bool
     {
         try {
-            if (!FfmpegService::isAvailable()) {
-                return;
+            if (! FfmpegService::isAvailable()) {
+                return false;
             }
 
             $absolutePath = Storage::disk('public')->path($sourcePath);
-            if (!file_exists($absolutePath)) {
-                return;
+            if (! file_exists($absolutePath)) {
+                return false;
             }
 
             $width = (int) config('hubtube.media_library.thumbnail_width', 300);
             $height = (int) config('hubtube.media_library.thumbnail_height', 200);
             $ffmpeg = FfmpegService::ffmpegPath();
             $tempDir = storage_path('app/temp');
-            if (!is_dir($tempDir)) {
+            if (! is_dir($tempDir)) {
                 mkdir($tempDir, 0755, true);
             }
-            $tempOutput = $tempDir . '/' . Str::random(16) . '.webp';
+            $tempOutput = $tempDir.'/'.Str::random(16).'.webp';
 
             $cmd = sprintf(
                 '%s -y -ss 00:00:01 -i %s -vframes 1 -vf "scale=%d:%d:force_original_aspect_ratio=decrease:flags=lanczos,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black" -c:v libwebp -lossless 0 -q:v 85 %s 2>&1',
@@ -171,18 +226,38 @@ class FileManagerThumbnailService
                 Storage::disk('public')->makeDirectory(dirname($thumbPath));
                 Storage::disk('public')->put($thumbPath, file_get_contents($tempOutput), 'public');
                 unlink($tempOutput);
+
+                return true;
             }
+
+            return false;
         } catch (Throwable $e) {
             Log::warning('FileManagerThumbnailService: failed to generate video thumbnail', [
                 'path' => $sourcePath,
                 'error' => $e->getMessage(),
             ]);
+
+            return false;
         }
     }
 
-    protected function isImage(string $extension): bool
+    /**
+     * The formats GD can actually decode.
+     *
+     * svg, bmp and ico used to be in this list, so reading one threw inside
+     * generateImageThumbnail(), was caught, and logged a warning — once per
+     * such file per render. They now take the icon instead (svg is served as
+     * itself, see thumbnailUrl).
+     */
+    protected function isRasterisable(string $extension): bool
     {
-        return in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico']);
+        $supported = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+        if (function_exists('imagecreatefromavif')) {
+            $supported[] = 'avif';
+        }
+
+        return in_array($extension, $supported, true);
     }
 
     protected function isVideo(string $extension): bool

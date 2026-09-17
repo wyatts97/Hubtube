@@ -66,13 +66,25 @@ return [
     'media_library' => [
         // Top-level directories under storage/app/public that the admin file manager can browse.
         // Subdirectories are browsed automatically. Paths are relative to the public disk root.
+        // 'thumbnails' is deliberately absent: it holds nothing but this file
+        // manager's own generated thumbnail cache, sharded into 256
+        // subdirectories, so browsing it made the folder tree walk a directory
+        // that grows with every thumbnail ever made and showed the cache to
+        // the admin as if it were media.
         'allowed_paths' => [
             'media',
             'videos',
             'images',
             'avatars',
             'channel-covers',
-            'thumbnails',
+        ],
+
+        // Directories never browsed or indexed, even inside an allowed root.
+        // The file manager's own generated thumbnails live here.
+        'excluded_paths' => [
+            'thumbnails/.filemanager',
+            'temp',
+            'livewire-tmp',
         ],
 
         // Number of files shown per page in the file manager grid/list.
@@ -84,5 +96,10 @@ return [
 
         // Cache duration for generated file-manager thumbnails and folder metadata (seconds).
         'cache_ttl' => 300,
+
+        // Cache duration for probed video durations (seconds). Keyed on the
+        // file's mtime as well, so a replaced file is re-probed regardless;
+        // this only bounds how long a *missing* duration stays missing.
+        'duration_cache_ttl' => 86400,
     ],
 ];

@@ -7,9 +7,9 @@
 <li>
     <div class="ht-folder-row {{ $isActive ? 'ht-folder-row-active' : '' }}"
          style="padding:4px 8px;padding-left:{{ $paddingLeft }}px;"
-         wire:click="$set('currentDirectory', '{{ $node['path'] }}')">
+         wire:click="openDirectory(@js($node['path']))">
         @if (!empty($node['children']))
-            <button type="button" wire:click.stop="toggleNode('{{ $node['path'] }}')" style="padding:2px;border-radius:6px;color:#a1a1aa;background:none;border:none;cursor:pointer;">
+            <button type="button" wire:click.stop="toggleNode(@js($node['path']))" style="padding:2px;border-radius:6px;color:#a1a1aa;background:none;border:none;cursor:pointer;">
                 @if ($isExpanded)
                     <x-phosphor-caret-down style="width:12px;height:12px;" />
                 @else

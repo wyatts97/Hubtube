@@ -574,6 +574,11 @@ sudo -u www-data php artisan event:cache
 # roles (idempotent; keeps any edits made on the Roles screen)
 sudo -u www-data php artisan hubtube:sync-roles
 
+# Media Library index. Only needed the first time (and after restoring a
+# backup); the scheduler keeps it current after that. On a large library run
+# this under screen/tmux — it is one long process.
+sudo -u www-data php artisan media:index --full
+
 # Restart workers (picks up new code)
 sudo supervisorctl restart hubtube:*
 sudo systemctl reload php8.2-fpm
@@ -597,6 +602,18 @@ Nothing here needs configuring to work, but three things are worth knowing after
 - **Creator Studio** is at `/studio/videos` for every signed-in account — a filterable list of the creator's own videos with bulk privacy, category, tag and delete actions, plus per-video analytics at `/studio/videos/{id}/analytics`. Analytics read `video_views` and `watch_history`, which are already being written; the daily figures only reach as far back as `HUBTUBE_VIEW_LOG_RETENTION_DAYS` (90 by default), and watch time covers signed-in viewers only.
 
 This release adds two migrations: `edited_at` on `comments` (with an index for paginated replies) and a `video_id` index on `watch_history` for the analytics aggregates. Both are covered by the `php artisan migrate --force` above.
+
+### Media Library
+
+The admin Media Library used to read `storage/app/public` live on every render: it listed the directory, then stat'd, thumbnailed, ffprobed and ran two reference queries for **every file in the folder**, and only then sliced down to one page of fifty. A folder of a few thousand files took tens of seconds to open, and clicking a single file to see its details paid the whole cost again.
+
+It now reads an index (`media_files`, `media_folders`), so opening a folder is one query with a `LIMIT` regardless of how many files it holds.
+
+- **Run `php artisan media:index --full` once after migrating.** Until you do, folders show a "this folder hasn't been indexed yet" state with a Rescan button rather than pretending to be empty. The command writes nothing to the filesystem and is safe to re-run.
+- The scheduler keeps it current: an incremental pass every ten minutes (it only re-reads directories whose mtime has moved), plus `--full --prune` weekly at 03:40. **This needs the Laravel scheduler to be running** — it already is, for scheduled publishing and translations.
+- Files written outside the app — encoder renditions, imports, anything done over SSH — are picked up by that pass. If you have just dropped files in by hand and want them immediately, the page shows a "this folder has changed on disk" banner with a **Rescan folder** button, or run `php artisan media:index --path=media/whatever`.
+- `thumbnails` is no longer a browsable path: it only ever held the file manager's own generated thumbnail cache, sharded across 256 subdirectories, and browsing it made the folder tree walk that cache on every render. The new `media_library.excluded_paths` config keeps it, `temp` and `livewire-tmp` out of both the tree and the index.
+- **Two bugs worth knowing were fixed here.** Thumbnails were being regenerated — a full GD decode, resize and WebP encode — for every image on the page on *every* render for five minutes at a time, because the cache stored the answer from before generation and never corrected it. And a soft-deleted video's files were deletable from the library, because the reference lookup did not include trashed videos; deleting them silently broke the 30-day restore window that `videos:prune-deleted` provides.
 
 ### Log Rotation
 

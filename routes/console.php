@@ -1,10 +1,12 @@
 <?php
 
 use App\Models\Setting;
+use App\Models\VideoView;
 use App\Services\Translation\TranslationSchedule;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use Spatie\Health\Models\HealthCheckResultHistoryItem;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -31,6 +33,21 @@ Schedule::command('videos:prune-bulk-temp')->dailyAt('03:15')->withoutOverlappin
 // Publish scheduled videos every minute so they go live on time
 Schedule::command('videos:publish-scheduled')->everyMinute();
 
+// Media Library index. The page keeps the index in step with its own actions,
+// but files also arrive from the encoder, from imports and from the shell, so
+// the incremental pass picks those up. It only re-reads directories whose mtime
+// has moved, which is cheap — but a directory's mtime does not change when a
+// file's *contents* change, hence the weekly full pass. --prune stats every
+// indexed row, so it belongs in the weekly run rather than the ten-minute one.
+Schedule::command('media:index')
+    ->everyTenMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();
+Schedule::command('media:index --full --prune')
+    ->weeklyOn(0, '03:40')
+    ->withoutOverlapping()
+    ->onOneServer();
+
 // Revoke expired points-granted Pro access
 Schedule::command('points:expire-pro')->hourly();
 
@@ -45,9 +62,9 @@ Schedule::command('seo:backfill-alt-text')
 
 // Spatie Backup: nightly backup + weekly cleanup (skipped when backup_enabled setting is off)
 Schedule::command('backup:run')->dailyAt('01:00')->withoutOverlapping()
-    ->skip(fn () => !Setting::get('backup_enabled', true));
+    ->skip(fn () => ! Setting::get('backup_enabled', true));
 Schedule::command('backup:clean')->weekly()->sundays()->at('02:00')
-    ->skip(fn () => !Setting::get('backup_enabled', true));
+    ->skip(fn () => ! Setting::get('backup_enabled', true));
 
 // Scheduled content translation. Registered every minute with a lazily
 // evaluated gate: Schedule::cron() needs its expression as a string at
@@ -67,6 +84,6 @@ Schedule::command('health:queue-check-heartbeat')->everyMinute();
 // Heartbeat backing ScheduleCheck. Without it that check can never pass, since
 // it only reports whether this command has run recently.
 Schedule::command('health:schedule-check-heartbeat')->everyMinute();
-Schedule::command('model:prune', ['--model' => [\Spatie\Health\Models\HealthCheckResultHistoryItem::class]])->daily();
+Schedule::command('model:prune', ['--model' => [HealthCheckResultHistoryItem::class]])->daily();
 // Raw per-view rows; the running total on videos.views_count is unaffected.
-Schedule::command('model:prune', ['--model' => [\App\Models\VideoView::class]])->dailyAt('04:10');
+Schedule::command('model:prune', ['--model' => [VideoView::class]])->dailyAt('04:10');

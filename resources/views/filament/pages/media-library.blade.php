@@ -108,21 +108,30 @@
     videoOpen: false,
     videoSrc: null,
     videoName: ''
-}" style="display:flex;flex-direction:column;gap:16px;" @keydown.escape.window="lightboxOpen = false; videoOpen = false; $wire.clearSelection()">
+}" style="display:flex;flex-direction:column;gap:16px;" @keydown.escape.window="lightboxOpen = false; videoOpen = false">
 
     @php
         $files = $this->getFilesProperty();
         $tree = $this->getFolderTree();
-        $selectedFileData = null;
-        if ($selectedFile) {
-            foreach ($files->items() as $item) {
-                if ($item['path'] === $selectedFile) {
-                    $selectedFileData = $item;
-                    break;
-                }
-            }
-        }
+        // Resolved by path rather than by scanning the current page, so the
+        // panel no longer goes blank as soon as you turn the page.
+        $selectedFileData = $this->getSelectedFileDataProperty();
     @endphp
+
+    {{-- The index is refreshed by every action this page takes, but files also
+         arrive from the encoder, imports and the shell. One filemtime() on the
+         current folder is enough to notice and offer a rescan. --}}
+    @if ($this->getDirectoryStaleProperty())
+        <div class="ht-panel ht-flex ht-items-center ht-gap-3" style="padding:10px 14px;">
+            <x-phosphor-warning-circle class="ht-btn-icon" style="color:#fbbf24;" />
+            <span class="ht-text-sm ht-flex-1" style="color:#d4d4d8;">
+                This folder has changed on disk since it was last indexed.
+            </span>
+            <x-filament::button wire:click="rescanCurrentDirectory" size="sm" color="gray" icon="phosphor-arrows-clockwise">
+                Rescan folder
+            </x-filament::button>
+        </div>
+    @endif
 
     {{-- Delete confirmation modal --}}
     @if ($deleteTarget)
@@ -161,16 +170,24 @@
     </div>
     @endif
 
-    {{-- New folder modal --}}
-    @if ($newFolderName)
+    {{-- New folder modal. Its visibility is its own flag: it used to render
+         under @if ($newFolderName), so clearing the pre-filled name to type
+         your own closed the modal. --}}
+    @if ($showNewFolderModal)
     <div class="ht-modal-overlay">
         <div class="ht-modal-box">
             <p class="ht-text-sm ht-font-semibold ht-mb-3" style="color:#fff;">New Folder</p>
             <x-filament::input.wrapper style="margin-bottom:16px;">
-                <x-filament::input type="text" wire:model="newFolderName" placeholder="Folder name" />
+                <x-filament::input
+                    type="text"
+                    wire:model="newFolderName"
+                    wire:keydown.enter="createFolder"
+                    placeholder="Folder name"
+                    autofocus
+                />
             </x-filament::input.wrapper>
             <div class="ht-flex ht-gap-3 ht-w-full">
-                <x-filament::button wire:click="$set('newFolderName', '')" color="gray" size="sm" style="flex:1;">Cancel</x-filament::button>
+                <x-filament::button wire:click="closeNewFolderModal" color="gray" size="sm" style="flex:1;">Cancel</x-filament::button>
                 <x-filament::button wire:click="createFolder" color="primary" size="sm" style="flex:1;">Create</x-filament::button>
             </div>
         </div>
@@ -217,7 +234,7 @@
                 <div class="ht-flex-wrap ht-items-center ht-gap-3">
                     {{-- Breadcrumbs --}}
                     <div class="ht-flex ht-items-center ht-gap-1 ht-text-sm" style="color:#a1a1aa;">
-                        <button wire:click="$set('currentDirectory', 'media')" style="color:#d4d4d8;background:none;border:none;cursor:pointer;">Media</button>
+                        <button wire:click="openDirectory('media')" style="color:#d4d4d8;background:none;border:none;cursor:pointer;">Media</button>
                         @php
                             $crumbs = explode('/', trim($currentDirectory, '/'));
                             $crumbPath = '';
@@ -225,7 +242,7 @@
                         @foreach ($crumbs as $crumb)
                             @php $crumbPath .= ($crumbPath ? '/' : '') . $crumb; @endphp
                             <span class="ht-text-xs">/</span>
-                            <button wire:click="$set('currentDirectory', '{{ $crumbPath }}')" style="color:#d4d4d8;background:none;border:none;cursor:pointer;">{{ ucfirst($crumb) }}</button>
+                            <button wire:click="openDirectory(@js($crumbPath))" style="color:#d4d4d8;background:none;border:none;cursor:pointer;">{{ ucfirst($crumb) }}</button>
                         @endforeach
                     </div>
 
@@ -263,7 +280,7 @@
                     </div>
 
                     {{-- New folder + upload --}}
-                    <x-filament::button wire:click="$set('newFolderName', 'New Folder')" size="sm" icon="phosphor-folder-plus">
+                    <x-filament::button wire:click="openNewFolderModal" size="sm" icon="phosphor-folder-plus">
                         New Folder
                     </x-filament::button>
                 </div>
@@ -308,7 +325,7 @@
                 <div class="ht-file-grid">
                     @forelse ($files as $file)
                         <div wire:key="grid-{{ $file['path'] }}"
-                             wire:click="selectFile('{{ $file['path'] }}')"
+                             wire:click="selectFile(@js($file['path']))"
                              class="ht-file-card"
                              style="border:2px solid {{ in_array($file['path'], $selectedFiles) ? 'var(--color-primary-500)' : '#3f3f46' }};"
                              onmouseenter="this.style.borderColor='var(--color-primary-500)'" onmouseleave="this.style.borderColor='{{ in_array($file['path'], $selectedFiles) ? 'var(--color-primary-500)' : '#3f3f46' }}'">
@@ -357,7 +374,7 @@
                         </thead>
                         <tbody>
                             @forelse ($files as $file)
-                                <tr wire:key="list-{{ $file['path'] }}" wire:click="selectFile('{{ $file['path'] }}')" style="cursor:pointer;{{ in_array($file['path'], $selectedFiles) ? 'background:rgba(244,63,94,0.08);' : '' }}">
+                                <tr wire:key="list-{{ $file['path'] }}" wire:click="selectFile(@js($file['path']))" style="cursor:pointer;{{ in_array($file['path'], $selectedFiles) ? 'background:rgba(244,63,94,0.08);' : '' }}">
                                     <td>
                                         <input type="checkbox" @if (in_array($file['path'], $selectedFiles)) checked @endif style="border-radius:4px;accent-color:var(--color-primary-500);" onclick="event.stopPropagation()">
                                     </td>
@@ -390,10 +407,12 @@
                 </div>
             @endif
 
-            {{-- Pagination --}}
+            {{-- Pagination. Filament's component drives Livewire's gotoPage /
+                 nextPage / previousPage, so paging no longer reloads the page
+                 (which used to remount the component back on page 1). --}}
             @if ($files->hasPages())
-                <div class="ht-flex ht-justify-center">
-                    {{ $files->links() }}
+                <div class="ht-panel" style="padding:8px 12px;">
+                    <x-filament::pagination :paginator="$files" />
                 </div>
             @endif
         </div>
@@ -404,9 +423,9 @@
                 <div style="display:flex;flex-direction:column;gap:16px;">
                     <div class="ht-details-preview">
                         @if ($selectedFileData['type'] === 'image')
-                            <img src="{{ $selectedFileData['thumbnail'] }}" style="width:100%;height:100%;object-fit:cover;cursor:pointer;" x-on:click="lightboxSrc = '{{ $selectedFileData['url'] }}'; lightboxOpen = true">
+                            <img src="{{ $selectedFileData['thumbnail'] }}" style="width:100%;height:100%;object-fit:cover;cursor:pointer;" x-on:click="lightboxSrc = @js($selectedFileData['url']); lightboxOpen = true">
                         @elseif ($selectedFileData['type'] === 'video')
-                            <img src="{{ $selectedFileData['thumbnail'] }}" style="width:100%;height:100%;object-fit:cover;cursor:pointer;" x-on:click="videoSrc = '{{ $selectedFileData['url'] }}'; videoName = '{{ $selectedFileData['name'] }}'; videoOpen = true">
+                            <img src="{{ $selectedFileData['thumbnail'] }}" style="width:100%;height:100%;object-fit:cover;cursor:pointer;" x-on:click="videoSrc = @js($selectedFileData['url']); videoName = @js($selectedFileData['name']); videoOpen = true">
                             <div class="ht-absolute ht-inset-0 ht-flex ht-items-center ht-justify-center ht-pointer-events-none">
                                 <x-phosphor-play-circle class="ht-btn-icon-xl" style="color:#fff;opacity:0.8;" />
                             </div>
@@ -437,16 +456,16 @@
                     @endif
 
                     <div style="display:flex;flex-direction:column;gap:8px;">
-                        <x-filament::button wire:click="startRename('{{ $selectedFileData['path'] }}')" size="sm" icon="phosphor-pencil-simple" style="width:100%;" :disabled="$selectedFileData['type'] === 'video' && str_starts_with($selectedFileData['path'], 'videos/')">
+                        <x-filament::button wire:click="startRename(@js($selectedFileData['path']))" size="sm" icon="phosphor-pencil-simple" style="width:100%;" :disabled="$selectedFileData['type'] === 'video' && str_starts_with($selectedFileData['path'], 'videos/')">
                             Rename
                         </x-filament::button>
 
-                        <x-filament::button wire:click="confirmDelete('{{ $selectedFileData['path'] }}')" size="sm" color="danger" icon="phosphor-trash" style="width:100%;" :disabled="!empty($selectedFileData['references'])">
+                        <x-filament::button wire:click="confirmDelete(@js($selectedFileData['path']))" size="sm" color="danger" icon="phosphor-trash" style="width:100%;" :disabled="!empty($selectedFileData['references'])">
                             Delete
                         </x-filament::button>
 
                         <x-filament::button size="sm" color="gray" icon="phosphor-copy" style="width:100%;"
-                            onclick="navigator.clipboard.writeText('{{ $selectedFileData['url'] }}')">
+                            x-on:click="navigator.clipboard.writeText(@js($selectedFileData['url']))">
                             Copy URL
                         </x-filament::button>
 
