@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Throwable;
-use RuntimeException;
+use App\Http\Requests\UpdateSocialLinksRequest;
+use App\Models\Setting;
+use App\Services\Media\MediaIndexService;
+use App\Services\SocialLinkService;
+use App\Services\UserDataExportService;
 use App\Services\WordPressPasswordHasher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,16 +15,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules\Password;
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver as GdDriver;
-use App\Models\Setting;
-use App\Http\Requests\UpdateSocialLinksRequest;
-use App\Services\SocialLinkService;
-use App\Services\UserDataExportService;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Intervention\Image\ImageManager;
+use RuntimeException;
+use Throwable;
 
 class SettingsController extends Controller
 {
@@ -92,10 +93,10 @@ class SettingsController extends Controller
         }
 
         try {
-            $manager = new ImageManager(new GdDriver());
-            $image   = $manager->read($request->file('avatar')->getPathname());
+            $manager = new ImageManager(new GdDriver);
+            $image = $manager->read($request->file('avatar')->getPathname());
             $image->cover(256, 256);
-            $webp    = (string) $image->toWebp(85);
+            $webp = (string) $image->toWebp(85);
 
             $relativePath = "avatars/{$user->id}/avatar.webp";
             Storage::disk('public')->put($relativePath, $webp);
@@ -105,7 +106,11 @@ class SettingsController extends Controller
             $path = $request->file('avatar')->store("avatars/{$user->id}", 'public');
         }
 
-        $user->update(['avatar' => '/storage/' . $path]);
+        $user->update(['avatar' => '/storage/'.$path]);
+
+        // Keep the admin Media Library's index in step: it browses this disk
+        // but nothing here goes through that page.
+        app(MediaIndexService::class)->indexPath($path);
 
         return redirect()->route('settings')->with('success', 'Avatar updated successfully.');
     }
@@ -142,7 +147,7 @@ class SettingsController extends Controller
         // Re-encode to WebP the same way updateAvatar does. The banner was
         // previously stored as the raw upload.
         try {
-            $manager = new ImageManager(new GdDriver());
+            $manager = new ImageManager(new GdDriver);
             $image = $manager->read($request->file('banner')->getPathname());
             $image->scaleDown(width: 2048);
             $webp = (string) $image->toWebp(82);
@@ -155,7 +160,9 @@ class SettingsController extends Controller
             $path = $request->file('banner')->store("banners/{$user->id}", 'public');
         }
 
-        $channel->update(['banner_image' => '/storage/' . $path]);
+        $channel->update(['banner_image' => '/storage/'.$path]);
+
+        app(MediaIndexService::class)->indexPath($path);
 
         return redirect()->route('settings')->with('success', 'Banner updated successfully.');
     }
@@ -194,7 +201,7 @@ class SettingsController extends Controller
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
-        if (!$this->isValidCurrentPassword($request->user(), $validated['current_password'])) {
+        if (! $this->isValidCurrentPassword($request->user(), $validated['current_password'])) {
             throw ValidationException::withMessages([
                 'current_password' => __('The provided password does not match your current password.'),
             ]);
@@ -260,7 +267,7 @@ class SettingsController extends Controller
 
         $user = $request->user();
         $settings = $user->settings ?? [];
-        
+
         $user->update([
             'settings' => array_merge($settings, $validated),
         ]);
@@ -287,7 +294,7 @@ class SettingsController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (!$this->isValidCurrentPassword($request->user(), $validated['password'])) {
+        if (! $this->isValidCurrentPassword($request->user(), $validated['password'])) {
             throw ValidationException::withMessages([
                 'password' => __('The provided password does not match your current password.'),
             ]);
@@ -352,10 +359,10 @@ class SettingsController extends Controller
             // Non-bcrypt hash, fall through to WP hasher check.
         }
 
-        if (!WordPressPasswordHasher::isWordPressHash($user->password)) {
+        if (! WordPressPasswordHasher::isWordPressHash($user->password)) {
             return false;
         }
 
-        return (new WordPressPasswordHasher())->check($plainPassword, $user->password);
+        return (new WordPressPasswordHasher)->check($plainPassword, $user->password);
     }
 }

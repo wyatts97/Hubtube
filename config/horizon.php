@@ -103,6 +103,23 @@ return [
                 'timeout' => 300,
                 'nice' => 0,
             ],
+            // Media Library thumbnails. Its own queue for two reasons: an
+            // ffmpeg frame grab blows the default queue's 60s timeout, and a
+            // burst from a first `media:thumbnails` pass over an existing
+            // library would otherwise starve notifications and alt-text jobs.
+            // nice 10 so it always yields to encoding.
+            'media-thumbnails' => [
+                'connection' => 'redis',
+                'queue' => ['media-thumbnails'],
+                'balance' => 'simple',
+                'maxProcesses' => 2,
+                'maxTime' => 0,
+                'maxJobs' => 0,
+                'memory' => 256,
+                'tries' => 2,
+                'timeout' => 300,
+                'nice' => 10,
+            ],
         ],
         'local' => [
             'supervisor-1' => [
@@ -146,6 +163,18 @@ return [
                 'tries' => 1,
                 'timeout' => 3600,
                 'nice' => 0,
+            ],
+            'media-thumbnails' => [
+                'connection' => 'redis',
+                'queue' => ['media-thumbnails'],
+                'balance' => 'simple',
+                'maxProcesses' => 1,
+                'maxTime' => 0,
+                'maxJobs' => 0,
+                'memory' => 256,
+                'tries' => 2,
+                'timeout' => 300,
+                'nice' => 10,
             ],
         ],
     ],

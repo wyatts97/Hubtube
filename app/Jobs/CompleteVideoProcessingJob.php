@@ -38,9 +38,18 @@ class CompleteVideoProcessingJob implements ShouldQueue
     {
         $video = Video::find($this->videoId);
 
-        if ($video) {
-            $coordinator->complete($video);
+        if (! $video) {
+            return;
         }
+
+        $coordinator->complete($video);
+
+        // Index the finished video's folder in one pass. Every rendition,
+        // poster, sprite sheet and VTT this pipeline wrote lands under
+        // videos/{slug}, and none of it went through the Media Library — so
+        // without this it stays invisible there until the next scheduled scan.
+        // Once at completion rather than per rendition: they share the folder.
+        IndexMediaDirectoryJob::dispatch('videos/'.$video->slug);
     }
 
     public function failed(Throwable $exception): void

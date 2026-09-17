@@ -124,6 +124,21 @@ class MediaReferenceResolver
             return;
         }
 
+        // Only indexed files have a flag to maintain. This matters because the
+        // Video and Image observers call this on every save: without the guard
+        // a site whose library has never been indexed — or a test suite that
+        // creates thousands of videos — would pay three queries per save to
+        // update nothing.
+        $indexed = MediaFile::query()
+            ->whereIn('path_hash', array_map('md5', $paths))
+            ->pluck('path')
+            ->all();
+
+        if ($indexed === []) {
+            return;
+        }
+
+        $paths = $indexed;
         $found = $this->forPaths($paths);
         $now = now();
 

@@ -2,18 +2,18 @@
 
 namespace App\Services;
 
-use Throwable;
-use kornrunner\Blurhash\Blurhash;
+use App\Jobs\IndexMediaDirectoryJob;
 use App\Models\Image;
 use App\Models\PointsTransaction;
 use App\Models\Setting;
-use App\Services\PointsService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Intervention\Image\ImageManager;
+use kornrunner\Blurhash\Blurhash;
+use Throwable;
 
 class ImageService
 {
@@ -21,7 +21,7 @@ class ImageService
 
     public function __construct()
     {
-        $this->manager = new ImageManager(new GdDriver());
+        $this->manager = new ImageManager(new GdDriver);
     }
 
     /**
@@ -42,7 +42,7 @@ class ImageService
         $height = $imageData->height();
 
         // Store original
-        $originalFilename = 'original.' . $extension;
+        $originalFilename = 'original.'.$extension;
         $originalPath = "{$directory}/{$originalFilename}";
 
         if ($disk === 'public') {
@@ -56,17 +56,17 @@ class ImageService
 
         // Generate thumbnail (400x300 crop) — skip for animated GIFs to preserve animation
         $thumbnailPath = null;
-        if (!$isAnimated) {
+        if (! $isAnimated) {
             $thumbnailPath = $this->generateThumbnail($file, $directory, $disk, $width, $height);
         }
 
         // Generate responsive variants for non-animated images
-        if (!$isAnimated) {
+        if (! $isAnimated) {
             $this->generateVariants($file, $directory, $disk, $width, $height);
         }
 
         // Generate WebP version for optimized delivery (non-animated only)
-        if (!$isAnimated && !in_array($mimeType, ['image/webp'])) {
+        if (! $isAnimated && ! in_array($mimeType, ['image/webp'])) {
             $this->generateWebP($file, $directory, $disk);
         }
 
@@ -74,12 +74,12 @@ class ImageService
         $blurhash = $this->generateBlurhash($file);
 
         // Strip EXIF data from original (privacy — removes GPS, camera info)
-        if (!$isAnimated && in_array($mimeType, ['image/jpeg', 'image/tiff'])) {
+        if (! $isAnimated && in_array($mimeType, ['image/jpeg', 'image/tiff'])) {
             $this->stripExif($originalPath, $disk);
         }
 
         // For animated GIFs: generate a static thumbnail from first frame
-        if ($isAnimated && !$thumbnailPath) {
+        if ($isAnimated && ! $thumbnailPath) {
             $thumbnailPath = $this->generateStaticThumbnailFromAnimated($file, $directory, $disk);
         }
 
@@ -113,12 +113,21 @@ class ImageService
             $this->awardAutoApprovePoints($image);
         }
 
+        // Index the image's folder for the admin Media Library. It holds the
+        // original, the thumbnail and every generated variant, none of which
+        // went through that page — so without this they are invisible there
+        // until the next scheduled scan. Only for the local disk: the library
+        // browses storage/app/public and nothing else.
+        if ($disk === 'public') {
+            IndexMediaDirectoryJob::dispatch($directory);
+        }
+
         return $image;
     }
 
     protected function awardAutoApprovePoints(Image $image): void
     {
-        if (!Setting::get('points_enabled', true) || !Setting::get('points_image_upload_enabled', true)) {
+        if (! Setting::get('points_enabled', true) || ! Setting::get('points_image_upload_enabled', true)) {
             return;
         }
 
@@ -138,10 +147,10 @@ class ImageService
 
     protected function generateUniqueSlug(?string $title): string
     {
-        $baseSlug = Str::slug((string) $title) ?: 'image-' . Str::lower(Str::random(6));
+        $baseSlug = Str::slug((string) $title) ?: 'image-'.Str::lower(Str::random(6));
 
         if (Str::length($baseSlug) < 4) {
-            $baseSlug .= '-' . Str::lower(Str::random(6));
+            $baseSlug .= '-'.Str::lower(Str::random(6));
         }
 
         $baseSlug = Str::limit($baseSlug, 200, '');
@@ -149,9 +158,10 @@ class ImageService
         $slug = $baseSlug;
         $suffix = 2;
         while (Image::where('slug', $slug)->exists()) {
-            $slug = $baseSlug . '-' . $suffix;
+            $slug = $baseSlug.'-'.$suffix;
             $suffix++;
         }
+
         return $slug;
     }
 
@@ -173,6 +183,7 @@ class ImageService
             return $thumbPath;
         } catch (Throwable $e) {
             Log::warning('ImageService: thumbnail generation failed', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -248,6 +259,7 @@ class ImageService
             return Blurhash::encode($pixels, 4, 3);
         } catch (Throwable $e) {
             Log::warning('ImageService: blurhash generation failed', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -272,7 +284,7 @@ class ImageService
         try {
             // Read just the first frame using GD
             $gdImage = @imagecreatefromgif($file->getPathname());
-            if (!$gdImage) {
+            if (! $gdImage) {
                 return null;
             }
 
@@ -294,9 +306,11 @@ class ImageService
             }
 
             @unlink($tempPath);
+
             return $thumbPath;
         } catch (Throwable $e) {
             Log::warning('ImageService: animated thumbnail generation failed', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -308,12 +322,14 @@ class ImageService
         if ($mime === 'image/gif') {
             // Check for multiple frames in GIF
             $content = file_get_contents($file->getPathname());
+
             return substr_count($content, "\x00\x21\xF9\x04") > 1;
         }
 
         if ($mime === 'image/webp') {
             // Check for animated WebP (ANIM chunk)
             $content = file_get_contents($file->getPathname(), false, null, 0, 64);
+
             return str_contains($content, 'ANIM');
         }
 
@@ -323,6 +339,7 @@ class ImageService
     protected function getExtension(UploadedFile $file): string
     {
         $mime = $file->getMimeType();
+
         return match ($mime) {
             'image/jpeg' => 'jpg',
             'image/png' => 'png',

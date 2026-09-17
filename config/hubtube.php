@@ -71,12 +71,15 @@ return [
         // subdirectories, so browsing it made the folder tree walk a directory
         // that grows with every thumbnail ever made and showed the cache to
         // the admin as if it were media.
+        // 'channel-covers' used to be listed here and appears nowhere else in
+        // the codebase — nothing has ever written to it. Channel banners go to
+        // 'banners/{user}', which was missing, so they were never browsable.
         'allowed_paths' => [
             'media',
             'videos',
             'images',
             'avatars',
-            'channel-covers',
+            'banners',
         ],
 
         // Directories never browsed or indexed, even inside an allowed root.
@@ -93,6 +96,10 @@ return [
         // Thumbnail dimensions used by the file manager grid.
         'thumbnail_width' => 300,
         'thumbnail_height' => 200,
+
+        // Where generated thumbnails are written. Under 'thumbnails/' so it is
+        // covered by excluded_paths above and never appears as media.
+        'thumbnail_dir' => 'thumbnails/.filemanager',
 
         // Cache duration for generated file-manager thumbnails and folder metadata (seconds).
         'cache_ttl' => 300,

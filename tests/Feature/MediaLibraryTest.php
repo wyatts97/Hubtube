@@ -2,10 +2,8 @@
 
 use App\Filament\Pages\MediaLibrary;
 use App\Models\Video;
-use App\Services\FileManagerThumbnailService;
 use App\Services\Media\MediaIndexService;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Livewire\Livewire;
 
 /*
@@ -46,36 +44,6 @@ function seedMedia(string $directory, int $count, string $extension = 'jpg'): vo
 function indexMedia(): void
 {
     app(MediaIndexService::class)->indexAll();
-}
-
-/**
- * A tiny real PNG.
- *
- * Built with GD rather than pasted in as base64, so it is guaranteed to be
- * decodable by the same library that has to read it back.
- */
-function imagePixel(): string
-{
-    $image = imagecreatetruecolor(8, 8);
-
-    ob_start();
-    imagepng($image);
-    $data = (string) ob_get_clean();
-
-    imagedestroy($image);
-
-    return $data;
-}
-
-/**
- * The disk path behind a thumbnail URL.
- *
- * Derived from the URL rather than listed off the disk, because the cache lives
- * in a dot-directory that directory listings treat inconsistently.
- */
-function thumbnailDiskPath(string $url): string
-{
-    return ltrim(Str::after($url, '/storage/'), '/');
 }
 
 // ── Listing ─────────────────────────────────────────────────────────────────
@@ -264,56 +232,8 @@ test('page actions keep the index in step without a rescan', function () {
     expect($component->instance()->getFilesProperty()->total())->toBe(0);
 });
 
-// ── Thumbnails ──────────────────────────────────────────────────────────────
-
-test('a generated thumbnail is not regenerated on the next render', function () {
-    // The bug: Cache::remember() cached the cold `false` and nothing wrote
-    // `true` back, so every render re-decoded and re-encoded every thumbnail
-    // for the whole 300s TTL.
-    Storage::disk('public')->put('media/photo.png', imagePixel());
-
-    $service = new FileManagerThumbnailService;
-    $thumbPath = thumbnailDiskPath($service->thumbnailUrl('media/photo.png'));
-
-    expect(Storage::disk('public')->exists($thumbPath))->toBeTrue();
-
-    // Replace the thumbnail with a marker: a regeneration would overwrite it.
-    Storage::disk('public')->put($thumbPath, 'MARKER');
-    $service->thumbnailUrl('media/photo.png');
-
-    expect(Storage::disk('public')->get($thumbPath))->toBe('MARKER');
-});
-
-test('formats GD cannot decode never attempt generation', function () {
-    Storage::disk('public')->put('media/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>');
-    Storage::disk('public')->put('media/old.bmp', 'x');
-
-    $service = new FileManagerThumbnailService;
-
-    // An SVG is served as itself rather than rasterised — GD cannot read it,
-    // and it scales losslessly anyway.
-    expect($service->thumbnailUrl('media/logo.svg'))->toContain('media/logo.svg');
-
-    // A BMP takes the inline fallback icon instead of throwing and logging on
-    // every single render.
-    expect($service->thumbnailUrl('media/old.bmp'))->toStartWith('data:image/svg+xml');
-});
-
-test('deleting a file removes its thumbnail', function () {
-    Storage::disk('public')->put('media/photo.png', imagePixel());
-
-    $service = new FileManagerThumbnailService;
-    $thumbPath = thumbnailDiskPath($service->thumbnailUrl('media/photo.png'));
-
-    expect(Storage::disk('public')->exists($thumbPath))->toBeTrue();
-
-    Livewire::test(MediaLibrary::class)
-        ->call('confirmDelete', 'media/photo.png')
-        ->call('deleteFile');
-
-    expect(Storage::disk('public')->exists('media/photo.png'))->toBeFalse()
-        ->and(Storage::disk('public')->exists($thumbPath))->toBeFalse();
-});
+// Thumbnails moved off the render path in favour of a queued job and a state
+// machine on the row; MediaLibraryThumbnailTest covers all of it.
 
 // ── Reference protection ────────────────────────────────────────────────────
 

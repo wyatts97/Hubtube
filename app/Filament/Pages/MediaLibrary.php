@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\RequiresPermission;
+use App\Jobs\ReindexMediaLibraryJob;
 use App\Models\Image;
 use App\Models\MediaFile;
 use App\Models\MediaFolder;
@@ -12,6 +13,7 @@ use App\Services\FileManagerThumbnailService;
 use App\Services\Media\MediaIndexService;
 use App\Services\Media\MediaPathGuard;
 use App\Services\Media\MediaReferenceResolver;
+use App\Services\Media\MediaThumbnailDispatcher;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -90,6 +92,8 @@ class MediaLibrary extends Page
 
     protected MediaPathGuard $pathGuard;
 
+    protected MediaThumbnailDispatcher $thumbnailQueue;
+
     /**
      * Livewire re-hydrates the component on every request, so these are
      * resolved in boot() rather than injected into a constructor.
@@ -99,6 +103,7 @@ class MediaLibrary extends Page
         $this->thumbnailService = new FileManagerThumbnailService;
         $this->mediaIndex = app(MediaIndexService::class);
         $this->pathGuard = app(MediaPathGuard::class);
+        $this->thumbnailQueue = app(MediaThumbnailDispatcher::class);
     }
 
     public function updatingCurrentDirectory(): void
@@ -282,6 +287,11 @@ class MediaLibrary extends Page
             ->tap(fn ($query) => $this->applySort($query))
             ->paginate($perPage);
 
+        // Queue thumbnails for this page's files only. Bounded by page size,
+        // deduplicated by the job's uniqueness, and off the render path — the
+        // page never generates a thumbnail itself any more.
+        $this->thumbnailQueue->dispatchFor($paginator->getCollection());
+
         return $paginator->through(fn (MediaFile $file) => $this->presentFile($file));
     }
 
@@ -320,9 +330,9 @@ class MediaLibrary extends Page
             'path' => $file->path,
             'name' => $file->name,
             'url' => Storage::disk('public')->url($file->path),
-            'thumbnail' => $file->hasThumbnail()
-                ? Storage::disk('public')->url($file->thumbnail_path)
-                : $this->thumbnailService->thumbnailUrl($file->path),
+            'thumbnail' => $this->thumbnailUrlFor($file),
+            'thumbnail_state' => $file->thumbnail_state,
+            'thumbnail_pending' => $file->thumbnailPending(),
             'type' => $file->type,
             'extension' => (string) $file->extension,
             'size' => (int) $file->size,
@@ -336,14 +346,75 @@ class MediaLibrary extends Page
         ];
     }
 
-    /** A video's duration, preferring the indexed value over a fresh probe. */
-    protected function durationFor(MediaFile $file): ?string
+    /**
+     * What to show in a tile.
+     *
+     * Reads the row and nothing else: no disk probe, no generation. A file
+     * whose thumbnail has not been made yet gets the type icon and a pending
+     * marker rather than an <img> pointing at a file that does not exist.
+     */
+    protected function thumbnailUrlFor(MediaFile $file): string
     {
-        if ($file->duration_seconds !== null) {
-            return $this->formatDuration((int) $file->duration_seconds);
+        if ($file->hasThumbnail()) {
+            return Storage::disk('public')->url($file->thumbnail_path);
         }
 
-        return $file->type === 'video' ? $this->getVideoDuration($file->path) : null;
+        // An SVG is its own thumbnail — see FileManagerThumbnailService.
+        if ($file->thumbnail_state === MediaFile::THUMB_READY && strtolower((string) $file->extension) === 'svg') {
+            return Storage::disk('public')->url($file->path);
+        }
+
+        return $this->thumbnailService->fallbackIconUrl((string) $file->extension);
+    }
+
+    /**
+     * A video's duration, from the index.
+     *
+     * Filled by the thumbnail job while the file is already open. The page used
+     * to spawn an ffprobe per video per render to get this.
+     */
+    protected function durationFor(MediaFile $file): ?string
+    {
+        return $file->duration_seconds !== null
+            ? $this->formatDuration((int) $file->duration_seconds)
+            : null;
+    }
+
+    /**
+     * Whether anything on this page is still waiting for a thumbnail.
+     *
+     * Drives a poll that starts and stops itself, so the page is only ever
+     * refreshing while there is something to wait for.
+     */
+    public function getHasPendingThumbnailsProperty(): bool
+    {
+        return MediaFile::query()
+            ->inDirectory($this->sanitizePath($this->currentDirectory))
+            ->whereIn('thumbnail_state', [MediaFile::THUMB_PENDING, MediaFile::THUMB_QUEUED])
+            ->exists();
+    }
+
+    /** Re-queue one file's thumbnail, from the details panel. */
+    public function regenerateThumbnail(string $path): void
+    {
+        $file = MediaFile::query()->where('path_hash', md5($this->sanitizePath($path)))->first();
+
+        if (! $file) {
+            return;
+        }
+
+        $this->thumbnailService->deleteFor($file->path);
+
+        $file->update([
+            'thumbnail_state' => MediaFile::THUMB_PENDING,
+            'thumbnail_path' => null,
+            'thumbnail_error' => null,
+            'thumbnail_attempts' => 0,
+        ]);
+
+        $this->thumbnailQueue->dispatchFor([$file->refresh()]);
+
+        Notification::make()->title('Thumbnail queued')->success()->send();
     }
 
     /**
@@ -605,8 +676,7 @@ class MediaLibrary extends Page
 
         // The thumbnail is keyed on the source path, so the old one is now
         // orphaned and the new path has none. Nothing used to clear either.
-        $this->thumbnailService->forget($oldPath);
-        $this->thumbnailService->forget($newPath);
+        $this->thumbnailService->deleteFor($oldPath);
 
         $this->mediaIndex->movePath($oldPath, $newPath);
         $this->cancelRename();
@@ -622,7 +692,7 @@ class MediaLibrary extends Page
      */
     protected function deleteThumbnail(string $path): void
     {
-        $this->thumbnailService->delete($path);
+        $this->thumbnailService->deleteFor($path);
     }
 
     protected function sanitizeFilename(string $name): string
@@ -674,13 +744,11 @@ class MediaLibrary extends Page
             return;
         }
 
-        if (Storage::disk('public')->exists($path)) {
+        if ($this->stillOnDisk($path)) {
             Storage::disk('public')->delete($path);
             $this->deleteThumbnail($path);
             $this->mediaIndex->forgetPath($path);
             Notification::make()->title('File deleted')->success()->send();
-        } else {
-            Notification::make()->title('File not found')->warning()->send();
         }
 
         $this->deleteTarget = null;
@@ -884,6 +952,50 @@ class MediaLibrary extends Page
             ))
             ->success()
             ->send();
+    }
+
+    /**
+     * Rebuild the whole index in the background.
+     *
+     * Queued rather than synchronous: a full pass over a large library is far
+     * too slow for a request. The admin who asked gets a notification when it
+     * lands.
+     */
+    public function rescanLibrary(): void
+    {
+        ReindexMediaLibraryJob::dispatch(auth()->id(), prune: true);
+
+        Notification::make()
+            ->title('Rescanning the library')
+            ->body('This runs in the background. You will be notified when it finishes.')
+            ->success()
+            ->send();
+    }
+
+    /**
+     * Confirm a path is still on disk before acting on it, dropping its index
+     * row if it is not.
+     *
+     * The index can hold a row for a file something else deleted. Rather than
+     * showing a "missing file" state nobody would know what to do with, the
+     * row is removed the moment anyone touches it and the action reports why
+     * nothing happened.
+     */
+    protected function stillOnDisk(string $path): bool
+    {
+        if (Storage::disk('public')->exists($path)) {
+            return true;
+        }
+
+        $this->mediaIndex->forgetPath($path);
+
+        Notification::make()
+            ->title('That file no longer exists')
+            ->body('It has been removed from the library index.')
+            ->warning()
+            ->send();
+
+        return false;
     }
 
     /** Whether the folder on disk has moved on since it was last indexed. */

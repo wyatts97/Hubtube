@@ -48,6 +48,20 @@ Schedule::command('media:index --full --prune')
     ->withoutOverlapping()
     ->onOneServer();
 
+// Thumbnails for files nobody has browsed to yet. The page queues whatever
+// folder you open, so this is the trickle that eventually covers the rest —
+// limited per run so a first pass over an existing library spreads out instead
+// of flooding the queue. The prune sweep lists the whole thumbnail directory,
+// hence weekly.
+Schedule::command('media:thumbnails --limit=500')
+    ->hourly()
+    ->withoutOverlapping()
+    ->onOneServer();
+Schedule::command('media:thumbnails --limit=0 --prune')
+    ->weeklyOn(0, '04:05')
+    ->withoutOverlapping()
+    ->onOneServer();
+
 // Revoke expired points-granted Pro access
 Schedule::command('points:expire-pro')->hourly();
 

@@ -29,6 +29,7 @@ class ProcessAdCreativeJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 2;
+
     public int $timeout = 300;
 
     public function __construct(
@@ -42,16 +43,18 @@ class ProcessAdCreativeJob implements ShouldQueue
         // an ad with no <Duration> is rejected by strict VAST parsers.
         $this->probeMediaMetadata();
 
-        if (!Setting::get('ad_hls_enabled', true)) {
+        if (! Setting::get('ad_hls_enabled', true)) {
             $this->videoAd->update(['hls_status' => 'skipped']);
+
             return;
         }
 
-        if (!FfmpegService::isAvailable()) {
+        if (! FfmpegService::isAvailable()) {
             Log::warning('ProcessAdCreativeJob: FFmpeg not available, skipping HLS conversion', [
                 'video_ad_id' => $this->videoAd->id,
             ]);
             $this->videoAd->update(['hls_status' => 'skipped']);
+
             return;
         }
 
@@ -60,19 +63,20 @@ class ProcessAdCreativeJob implements ShouldQueue
         $localDisk = Storage::disk('public');
         $inputPath = $localDisk->path($this->videoAd->file_path);
 
-        if (!file_exists($inputPath)) {
+        if (! file_exists($inputPath)) {
             Log::warning('ProcessAdCreativeJob: source file missing', [
                 'video_ad_id' => $this->videoAd->id,
                 'file_path' => $this->videoAd->file_path,
             ]);
             $this->videoAd->update(['hls_status' => 'failed']);
+
             return;
         }
 
         $relativeOutDir = "media/ads/hls/{$this->videoAd->id}";
         $outDir = $localDisk->path($relativeOutDir);
 
-        if (!is_dir($outDir)) {
+        if (! is_dir($outDir)) {
             mkdir($outDir, 0755, true);
         }
 
@@ -101,7 +105,7 @@ class ProcessAdCreativeJob implements ShouldQueue
         $segments = glob("{$outDir}/segment_*.ts");
         $validSegments = array_filter($segments, fn ($s) => filesize($s) > 1024);
 
-        if ($exitCode === 0 && file_exists($playlistPath) && !empty($validSegments)) {
+        if ($exitCode === 0 && file_exists($playlistPath) && ! empty($validSegments)) {
             $this->videoAd->update([
                 'hls_path' => "{$relativeOutDir}/playlist.m3u8",
                 'hls_status' => 'ready',
@@ -111,6 +115,11 @@ class ProcessAdCreativeJob implements ShouldQueue
                 'video_ad_id' => $this->videoAd->id,
                 'segments' => count($validSegments),
             ]);
+
+            // The playlist and its segments live under media/, which the admin
+            // Media Library browses — index them rather than leaving them to
+            // turn up at the next scheduled scan.
+            IndexMediaDirectoryJob::dispatch($relativeOutDir);
         } else {
             // Clean up any partial output — raw MP4 fallback keeps the ad playable.
             array_map('unlink', $segments);
@@ -143,17 +152,17 @@ class ProcessAdCreativeJob implements ShouldQueue
      */
     protected function probeMediaMetadata(): void
     {
-        if ($this->videoAd->type !== 'mp4' || !$this->videoAd->file_path) {
+        if ($this->videoAd->type !== 'mp4' || ! $this->videoAd->file_path) {
             return;
         }
 
-        if (!FfmpegService::isAvailable()) {
+        if (! FfmpegService::isAvailable()) {
             return;
         }
 
         $path = Storage::disk('public')->path($this->videoAd->file_path);
 
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             return;
         }
 
@@ -170,6 +179,7 @@ class ProcessAdCreativeJob implements ShouldQueue
                 'video_ad_id' => $this->videoAd->id,
                 'exit_code' => $exitCode,
             ]);
+
             return;
         }
 
@@ -231,10 +241,11 @@ class ProcessAdCreativeJob implements ShouldQueue
                 'video_ad_id' => $this->videoAd->id,
                 'timeout' => $process->getTimeout(),
             ]);
-            return [1, 'Command timed out after ' . $process->getTimeout() . 's'];
+
+            return [1, 'Command timed out after '.$process->getTimeout().'s'];
         }
 
-        $output = trim($process->getOutput() . "\n" . $process->getErrorOutput());
+        $output = trim($process->getOutput()."\n".$process->getErrorOutput());
 
         return [$process->getExitCode() ?? 1, $output];
     }
