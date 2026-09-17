@@ -1,5 +1,5 @@
 <script setup>
-import { router, usePage } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import SeoHead from '@/Components/SeoHead.vue';
 import FilterRail from '@/Components/UI/FilterRail.vue';
 import { ref, watch, onMounted, computed } from 'vue';
@@ -14,7 +14,7 @@ import { useI18n } from '@/Composables/useI18n';
 import { useVirtualGrid } from '@/Composables/useVirtualGrid';
 import BannerAd from '@/Components/UI/BannerAd.vue';
 
-const { t } = useI18n();
+const { t, localizedUrl } = useI18n();
 
 const { translateVideos, tr } = useAutoTranslate(['title']);
 
@@ -65,15 +65,39 @@ watch(() => props.filters, (next) => {
     };
 }, { deep: true });
 
+/**
+ * Build the query string for a search navigation.
+ *
+ * Every navigation on this page goes through here so none of them can quietly
+ * drop the filter rail's state — paging used to send only `q`, `type` and
+ * `page`, which reset duration, quality, date, category and sort on page 2.
+ * Filters only describe videos, so they are left off the other two tabs.
+ */
+const searchParams = (extra = {}, type = activeType.value) => {
+    const params = { q: searchQuery.value, type };
+
+    if (type === 'videos') {
+        for (const [key, value] of Object.entries(activeFilters.value)) {
+            if (value !== '' && value != null) params[key] = value;
+        }
+    }
+
+    return { ...params, ...extra };
+};
+
+const visitSearch = (extra = {}, type = activeType.value, options = {}) => {
+    router.get(localizedUrl('/search'), searchParams(extra, type), {
+        preserveState: true,
+        ...options,
+    });
+};
+
 const applyFilters = (next) => {
     activeFilters.value = next;
 
-    const params = { q: searchQuery.value, type: activeType.value };
-    for (const [key, value] of Object.entries(next)) {
-        if (value !== '' && value != null) params[key] = value;
-    }
-
-    router.get('/search', params, { preserveState: true, preserveScroll: true });
+    // Changing a filter returns to page 1: the old page number rarely exists in
+    // the narrowed result set.
+    visitSearch({}, activeType.value, { preserveScroll: true });
 };
 
 const tabs = computed(() => [
@@ -84,17 +108,17 @@ const tabs = computed(() => [
 
 const switchTab = (type) => {
     activeType.value = type;
-    router.get('/search', { q: searchQuery.value, type }, { preserveState: true });
+    visitSearch({}, type);
 };
 
 const submitSearch = () => {
     if (searchQuery.value.trim()) {
-        router.get('/search', { q: searchQuery.value, type: activeType.value }, { preserveState: true });
+        visitSearch();
     }
 };
 
 const goToPage = (pageNum) => {
-    router.get('/search', { q: searchQuery.value, type: activeType.value, page: pageNum }, { preserveState: true, preserveScroll: false });
+    visitSearch({ page: pageNum }, activeType.value, { preserveScroll: false });
 };
 
 const resultsList = () => {
@@ -257,14 +281,15 @@ const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(
             <!-- Hashtag Results -->
             <template v-if="activeType === 'hashtags'">
                 <div v-if="resultsList().length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div
+                    <Link
                         v-for="hashtag in resultsList()"
                         :key="hashtag.id"
-                        class="card p-4"
+                        :href="localizedUrl(`/tag/${encodeURIComponent(hashtag.name)}`)"
+                        class="card p-4 hover:opacity-90 transition-opacity"
                     >
                         <h3 class="tag-label font-semibold text-accent-text">#{{ hashtag.name }}</h3>
                         <p class="text-sm mt-1 text-text-muted">{{ hashtag.usage_count || 0 }} {{ t('common.videos') }}</p>
-                    </div>
+                    </Link>
                 </div>
                 <div v-else class="text-center py-12">
                     <Hash class="w-12 h-12 mx-auto mb-4 text-text-muted" />

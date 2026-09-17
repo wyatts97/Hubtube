@@ -587,6 +587,17 @@ sudo systemctl reload php8.2-fpm
 - **Embedding** is Admin → Settings → Site → Videos → "Allow Embedding on Other Sites". It serves `/embed/{slug}` for iframes, answers oEmbed at `/api/oembed`, and puts an embed code in the share dialog. Only that route may be framed cross-origin; everything else stays same-origin. Private, draft and unapproved videos are never embeddable.
 - **Drafts** are private to their uploader and stay out of every listing. Anything queued for scheduled publishing is a draft until its time arrives, which closes the old gap where a scheduled video was already openable by URL.
 
+### Comments, playlists and the Creator Studio
+
+Nothing here needs configuring to work, but three things are worth knowing after this release.
+
+- **Comment moderation** (Admin → Settings → Site → Moderation) gained a **Blocked Words** list and a **Maximum Links Per Comment** limit (default 2). A comment that trips either is held for approval rather than refused, so the author is not handed the word list; it stays visible to them and to nobody else until a moderator clears it in Admin → Comments. The existing **Enable Comments** switch is now actually read — turning it off hides the comment section and refuses new comments, which it previously did not.
+- **`videos.comments_count` is now maintained by the model**, so approving or deleting a comment from the admin panel moves the counter too. Counts that drifted while that was handled per-controller will correct themselves the next time a comment on that video is added, approved or removed. To recount everything at once, `Comment::where('is_approved', true)->selectRaw('video_id, COUNT(*) c')->groupBy('video_id')` compared against `videos.comments_count` will show the difference.
+- **Watch Later** is created for each account the first time it is needed (opening `/playlists`, or the Watch Later button on a video), so no backfill is required. It cannot be deleted or renamed and starts private.
+- **Creator Studio** is at `/studio/videos` for every signed-in account — a filterable list of the creator's own videos with bulk privacy, category, tag and delete actions, plus per-video analytics at `/studio/videos/{id}/analytics`. Analytics read `video_views` and `watch_history`, which are already being written; the daily figures only reach as far back as `HUBTUBE_VIEW_LOG_RETENTION_DAYS` (90 by default), and watch time covers signed-in viewers only.
+
+This release adds two migrations: `edited_at` on `comments` (with an index for paginated replies) and a `video_id` index on `watch_history` for the analytics aggregates. Both are covered by the `php artisan migrate --force` above.
+
 ### Log Rotation
 
 Add to `/etc/logrotate.d/hubtube`:

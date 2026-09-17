@@ -47,15 +47,18 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShortsController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\StudioController;
 use App\Http\Controllers\SubscriptionController;
-use App\Http\Controllers\ThumbnailProxyController;
 use App\Http\Controllers\ThemeController;
+use App\Http\Controllers\ThumbnailProxyController;
 use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\VastController;
 use App\Http\Controllers\VideoAdController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\WalletController;
 use App\Models\Setting;
+use App\Support\SiteIcons;
+use App\Support\ThemeTokens;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -244,20 +247,20 @@ Route::middleware('installed:require')->group(function () {
     // overrode the uploaded favicon on Android home screens and PWA installs.
     Route::get('/manifest.json', function () {
         $name = (string) Setting::get('site_name', config('app.name', 'HubTube'));
-        $palette = \App\Support\ThemeTokens::palette(\App\Support\ThemeTokens::defaultMode());
+        $palette = ThemeTokens::palette(ThemeTokens::defaultMode());
 
         return response()->json([
-            'name'             => $name,
-            'short_name'       => (string) Setting::get('site_title', $name),
-            'description'      => (string) Setting::get('site_description', 'Video sharing platform'),
-            'start_url'        => '/',
-            'display'          => 'standalone',
+            'name' => $name,
+            'short_name' => (string) Setting::get('site_title', $name),
+            'description' => (string) Setting::get('site_description', 'Video sharing platform'),
+            'start_url' => '/',
+            'display' => 'standalone',
             'background_color' => $palette['bgPrimary'],
-            'theme_color'      => $palette['bgPrimary'],
-            'orientation'      => 'any',
-            'icons'            => \App\Support\SiteIcons::manifestIcons(),
+            'theme_color' => $palette['bgPrimary'],
+            'orientation' => 'any',
+            'icons' => SiteIcons::manifestIcons(),
         ], 200, [
-            'Content-Type'  => 'application/manifest+json',
+            'Content-Type' => 'application/manifest+json',
             'Cache-Control' => 'public, max-age=3600',
         ], JSON_UNESCAPED_SLASHES);
     })->name('manifest');
@@ -473,6 +476,12 @@ Route::middleware('installed:require')->group(function () {
         Route::get('/public-playlists', [PlaylistController::class, 'publicIndex'])->name('playlists.public');
         Route::get('/playlist/{playlist:slug}', [PlaylistController::class, 'show'])->name('playlists.show');
 
+        // Reading comments is public — these used to sit behind 'auth', so a
+        // guest watching a video saw an empty comment list. Posting, editing
+        // and reacting are still authenticated (below).
+        Route::get('/videos/{video}/comments', [CommentController::class, 'index'])->middleware('throttle:60,1')->name('comments.index');
+        Route::get('/comments/{comment}/replies', [CommentController::class, 'replies'])->middleware('throttle:60,1')->name('comments.replies');
+
         // Image & Gallery routes (public browse)
         Route::get('/images', [ImageController::class, 'index'])->name('images.index');
         Route::get('/image/{image:slug}', [ImageController::class, 'show'])->name('images.show');
@@ -556,7 +565,6 @@ Route::middleware('installed:require')->group(function () {
             Route::post('/videos/{video}/like', [LikeController::class, 'like'])->middleware('throttle:30,1')->name('videos.like');
             Route::post('/videos/{video}/dislike', [LikeController::class, 'dislike'])->middleware('throttle:30,1')->name('videos.dislike');
 
-            Route::get('/videos/{video}/comments', [CommentController::class, 'index'])->middleware('throttle:30,1')->name('comments.index');
             Route::post('/videos/{video}/comments', [CommentController::class, 'store'])->middleware(['verified.if-required', 'throttle:10,1'])->name('comments.store');
             Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
             Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
@@ -573,6 +581,8 @@ Route::middleware('installed:require')->group(function () {
             Route::delete('/playlists/{playlist}', [PlaylistController::class, 'destroy'])->name('playlists.destroy');
             Route::post('/playlists/{playlist}/videos', [PlaylistController::class, 'addVideo'])->name('playlists.addVideo');
             Route::delete('/playlists/{playlist}/videos', [PlaylistController::class, 'removeVideo'])->name('playlists.removeVideo');
+            Route::put('/playlists/{playlist}/order', [PlaylistController::class, 'reorder'])->name('playlists.reorder');
+            Route::post('/videos/{video}/watch-later', [PlaylistController::class, 'toggleWatchLater'])->name('playlists.watch-later');
             Route::post('/playlists/{playlist}/favorite', [PlaylistController::class, 'toggleFavorite'])->name('playlists.toggleFavorite');
 
             Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
@@ -628,6 +638,12 @@ Route::middleware('installed:require')->group(function () {
 
             // Creator Dashboard
             Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+            // Creator Studio: the creator's own video manager and analytics.
+            Route::get('/studio', fn () => redirect()->route('studio.videos'))->name('studio');
+            Route::get('/studio/videos', [StudioController::class, 'videos'])->name('studio.videos');
+            Route::post('/studio/videos/bulk', [StudioController::class, 'bulk'])->middleware('throttle:30,1')->name('studio.videos.bulk');
+            Route::get('/studio/videos/{video}/analytics', [StudioController::class, 'analytics'])->name('studio.analytics');
         });
 
         // Search autocomplete

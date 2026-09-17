@@ -399,6 +399,47 @@ class Video extends Model
         return $query->where('is_draft', true);
     }
 
+    /**
+     * The states a creator sees in their own video list.
+     *
+     * These are derived rather than stored: "needs review" is processed but not
+     * approved, "scheduled" is a draft with a date on it, and so on. Keeping
+     * the definitions here means the filter in the studio and the badge on the
+     * row can never disagree about what a video's state is.
+     */
+    public const STUDIO_STATUSES = ['published', 'scheduled', 'draft', 'processing', 'review', 'failed'];
+
+    public function scopeStudioStatus($query, ?string $status)
+    {
+        return match ($status) {
+            'published' => $query->where('status', 'processed')
+                ->where('is_approved', true)
+                ->where('is_draft', false)
+                ->whereNotNull('published_at'),
+            'scheduled' => $query->where('is_draft', true)->whereNotNull('scheduled_at'),
+            'draft' => $query->where('is_draft', true)->whereNull('scheduled_at'),
+            'processing' => $query->whereIn('status', ['pending', 'processing']),
+            'review' => $query->where('status', 'processed')
+                ->where('is_draft', false)
+                ->where('is_approved', false),
+            'failed' => $query->where('status', 'failed'),
+            default => $query,
+        };
+    }
+
+    /** One of STUDIO_STATUSES for this video, as the studio labels it. */
+    public function studioStatus(): string
+    {
+        return match (true) {
+            $this->status === 'failed' => 'failed',
+            in_array($this->status, ['pending', 'processing'], true) => 'processing',
+            (bool) $this->is_draft => $this->scheduled_at ? 'scheduled' : 'draft',
+            ! $this->is_approved => 'review',
+            $this->published_at === null => 'draft',
+            default => 'published',
+        };
+    }
+
     public function scopeProcessed($query)
     {
         return $query->where('status', 'processed');
@@ -422,14 +463,14 @@ class Video extends Model
 
     /** Duration buckets used by the browse and search filter rail, in seconds. */
     public const DURATION_BUCKETS = [
-        'short'  => [0, 300],
+        'short' => [0, 300],
         'medium' => [300, 1200],
-        'long'   => [1200, null],
+        'long' => [1200, null],
     ];
 
     /** Minimum vertical resolution for each quality filter band. */
     public const QUALITY_BANDS = [
-        'hd'  => 720,
+        'hd' => 720,
         'fhd' => 1080,
         'uhd' => 2160,
     ];
@@ -524,7 +565,7 @@ class Video extends Model
 
         return $query->where(function ($q) use ($labels) {
             foreach ($labels as $label) {
-                $q->orWhere('qualities_available', 'like', '%"' . $label . '"%');
+                $q->orWhere('qualities_available', 'like', '%"'.$label.'"%');
             }
         });
     }

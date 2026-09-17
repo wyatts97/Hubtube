@@ -15,7 +15,7 @@ import { Link, router, usePage } from '@inertiajs/vue3';
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxRoot, DropdownMenuItem, DropdownMenuLabel } from 'reka-ui';
 import {
     Search, Upload, Bell, User, LogOut, Settings, Wallet, Film, Shield,
-    Rss, LayoutDashboard, ImageIcon, Award, LogIn, PanelLeft,
+    Rss, LayoutDashboard, SlidersHorizontal, ImageIcon, Award, LogIn, PanelLeft,
 } from 'lucide-vue-next';
 import { useFetch } from '@/Composables/useFetch';
 import { useI18n } from '@/Composables/useI18n';
@@ -308,6 +308,12 @@ nextTick(loadUnreadCount);
                                 <Link href="/dashboard" class="nav-item cursor-pointer">
                                     <LayoutDashboard class="w-4 h-4" />
                                     <span>{{ t('nav.dashboard') }}</span>
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem as-child>
+                                <Link href="/studio/videos" class="nav-item cursor-pointer">
+                                    <SlidersHorizontal class="w-4 h-4" />
+                                    <span>{{ t('nav.studio') }}</span>
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem as-child>

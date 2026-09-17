@@ -499,13 +499,25 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             ?: app(AltTextService::class)->forUserAvatar($this);
     }
 
+    /**
+     * Display name, falling back to the username.
+     *
+     * Reads raw attributes for the same reason avatar_url and avatar_alt do:
+     * `name` is appended on every serialised user, including the partially
+     * selected ones in listings (`with('user:id,username')`), and under
+     * Model::shouldBeStrict() touching a column that was not selected throws.
+     * A listing should not 500 because it asked for two columns.
+     */
     public function getNameAttribute(): string
     {
-        if ($this->first_name || $this->last_name) {
-            return trim($this->first_name.' '.$this->last_name);
+        $first = $this->attributes['first_name'] ?? null;
+        $last = $this->attributes['last_name'] ?? null;
+
+        if ($first || $last) {
+            return trim($first.' '.$last);
         }
 
-        return $this->username ?? '';
+        return $this->attributes['username'] ?? '';
     }
 
     public function canAccessPanel(Panel $panel): bool

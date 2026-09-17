@@ -92,7 +92,9 @@ const statsGridCols = computed(() => monetizationEnabled.value ? 'grid-cols-2 sm
                 <div class="card">
                     <div class="p-4 border-b flex items-center justify-between border-border">
                         <h2 class="font-semibold text-text-primary">{{ t('dashboard.recent_videos') }}</h2>
-                        <Link href="/settings" class="text-sm text-accent-text">{{ t('common.manage') }}</Link>
+                        <!-- Manage used to point at account settings, which has
+                             nothing to do with managing videos. -->
+                        <Link href="/studio/videos" class="text-sm text-accent-text">{{ t('common.manage') }}</Link>
                     </div>
                     <div v-if="recentVideos?.length">
                         <div

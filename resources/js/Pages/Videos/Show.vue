@@ -18,7 +18,7 @@ import ReportModal from '@/Components/ReportModal.vue';
 import VideoPlayer from '@/Components/VideoPlayer.vue';
 import EmbeddedVideoPlayer from '@/Components/EmbeddedVideoPlayer.vue';
 import EmbedPreRollGate from '@/Components/EmbedPreRollGate.vue';
-import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff, Eye, ListVideo, Plus, Check, Loader2, Folder, Hash, Play, Shuffle, Repeat, SkipBack, SkipForward, ChevronLeft, ChevronRight, Download } from 'lucide-vue-next';
+import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff, Eye, ListVideo, Plus, Check, Loader2, Folder, Hash, Play, Shuffle, Repeat, SkipBack, SkipForward, ChevronLeft, ChevronRight, Download, Clock } from 'lucide-vue-next';
 
 const props = defineProps({
     video: Object,
@@ -31,6 +31,7 @@ const props = defineProps({
     bannerBelowPlayer: { type: Object, default: () => ({}) },
     playlistContext: { type: Object, default: null },
     userPlaylists: { type: Array, default: () => [] },
+    commentsEnabled: { type: Boolean, default: true },
     seo: { type: Object, default: () => ({}) },
     embedCode: { type: String, default: '' },
     videoAdsEnabled: { type: Boolean, default: true },
@@ -61,6 +62,23 @@ const startEmbeddedPlayback = async () => {
 };
 
 const videoPlayerRef = ref(null);
+
+/**
+ * Jump the player to a timestamp written in a comment.
+ *
+ * Goes through the media element rather than Fluid's API so it behaves the same
+ * whether or not an ad is on screen: setting currentTime during an ad break is
+ * ignored by the browser, which is the right outcome — the seek is lost, not
+ * applied to the ad.
+ */
+const seekTo = (seconds) => {
+    const element = videoPlayerRef.value?.getVideoElement?.();
+    if (!element || !Number.isFinite(seconds)) return;
+
+    element.currentTime = Math.max(0, seconds);
+    element.play?.().catch(() => {});
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
 
 // Break schedule for the main player, built server-side by PlayerAdListBuilder
 // so ad suppression and mid-roll timing live next to the rest of the ad rules.
@@ -310,6 +328,42 @@ const toggleVideoInPlaylist = async (playlist) => {
         }
     }
     savingPlaylist.value = null;
+};
+
+/*
+ * Watch Later gets its own endpoint rather than going through the playlist the
+ * save menu lists: it has to work on the first click even for an account that
+ * has never opened a playlist, and the server creates the list if it is the
+ * first time.
+ */
+const watchLaterId = computed(() => playlists.value.find((p) => p.is_default)?.id ?? null);
+const inWatchLater = ref(Boolean(props.userPlaylists.find((p) => p.is_default)?.has_video));
+const savingWatchLater = ref(false);
+
+const toggleWatchLater = async () => {
+    if (savingWatchLater.value) return;
+
+    savingWatchLater.value = true;
+    const { ok, data } = await post(`/videos/${props.video.id}/watch-later`);
+    savingWatchLater.value = false;
+
+    if (!ok || !data) {
+        toast.error(t('common.error'));
+        return;
+    }
+
+    inWatchLater.value = data.saved;
+    toast.success(data.saved ? t('playlist.saved_for_later') : t('playlist.removed_from_later'));
+
+    // Keep the save menu's own checkbox in step with the button.
+    const index = playlists.value.findIndex((p) => p.id === (watchLaterId.value ?? data.playlist_id));
+    if (index !== -1) {
+        playlists.value[index] = {
+            ...playlists.value[index],
+            has_video: data.saved,
+            videos_count: data.video_count,
+        };
+    }
 };
 
 const createAndAddPlaylist = async () => {
@@ -656,6 +710,21 @@ const getRelatedTitle = (video) => {
                                 <span class="hidden sm:inline">{{ t('common.share') }}</span>
                             </button>
 
+                            <!-- One click to the Watch Later list, which every
+                                 account has. The Save menu below can reach the
+                                 same list, but not in one click. -->
+                            <button
+                                v-if="user"
+                                @click="toggleWatchLater"
+                                :disabled="savingWatchLater"
+                                class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
+                                :style="{ color: inWatchLater ? 'var(--color-accent)' : undefined }"
+                                :title="t('playlist.watch_later')"
+                            >
+                                <Clock class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                                <span class="hidden sm:inline">{{ t('playlist.watch_later') }}</span>
+                            </button>
+
                             <a
                                 v-if="canDownload"
                                 :href="`/videos/${props.video.id}/download`"
@@ -785,7 +854,7 @@ const getRelatedTitle = (video) => {
                     </div>
 
                     <!-- Comments Section -->
-                    <CommentSection :video-id="video.id" />
+                    <CommentSection v-if="commentsEnabled" :video-id="video.id" @seek="seekTo" />
                 </div>
             </div>
 

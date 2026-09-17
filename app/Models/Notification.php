@@ -29,14 +29,25 @@ class Notification extends Model
     }
 
     const TYPE_NEW_VIDEO = 'new_video';
+
     const TYPE_NEW_SUBSCRIBER = 'new_subscriber';
+
     const TYPE_NEW_COMMENT = 'new_comment';
+
     const TYPE_COMMENT_REPLY = 'comment_reply';
+
+    const TYPE_COMMENT_MENTION = 'comment_mention';
+
     const TYPE_VIDEO_LIKE = 'video_like';
+
     const TYPE_WITHDRAWAL_APPROVED = 'withdrawal_approved';
+
     const TYPE_VIDEO_APPROVED = 'video_approved';
+
     const TYPE_VIDEO_PROCESSED = 'video_processed';
+
     const TYPE_VIDEO_REJECTED = 'video_rejected';
+
     const TYPE_REPORT_SUBMITTED = 'report_submitted';
 
     public function user(): BelongsTo

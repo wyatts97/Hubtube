@@ -317,13 +317,24 @@ class VideoController extends Controller
         if (auth()->check()) {
             $videoId = $video->id;
             $userPlaylists = auth()->user()->playlists()
-                ->select('id', 'title', 'slug')
+                ->select('id', 'title', 'slug', 'is_default')
                 ->withCount('videos')
                 ->withCount(['videos as has_video' => function ($q) use ($videoId) {
                     $q->where('video_id', $videoId);
                 }])
+                ->orderByDesc('is_default')
                 ->get()
                 ->each(fn ($p) => $p->has_video = (bool) $p->has_video);
+
+            // Watch Later is offered to everyone, so it has to exist before the
+            // save menu is drawn. Decided from what was just loaded rather than
+            // with a firstOrCreate, so the common case costs no extra query.
+            if (! $userPlaylists->contains(fn ($p) => (bool) $p->is_default)) {
+                $watchLater = Playlist::watchLaterFor(auth()->user());
+                $watchLater->has_video = false;
+                $watchLater->videos_count = 0;
+                $userPlaylists->prepend($watchLater);
+            }
         }
 
         // Append heavy accessors (StorageManager::exists() calls) only on the show page,
@@ -362,6 +373,9 @@ class VideoController extends Controller
             'bannerBelowPlayer' => $bannerBelowPlayer,
             'playlistContext' => $playlistContext,
             'userPlaylists' => $userPlaylists,
+            // The Enable Comments switch used to be shown in the admin without
+            // being read anywhere; turning it off now really does hide them.
+            'commentsEnabled' => (bool) Setting::get('comments_enabled', true),
             'seo' => $this->seoService->forVideo($video),
             // Ready-made iframe for the share dialog; empty when embedding is
             // off or the video cannot be embedded (private, draft, unapproved).

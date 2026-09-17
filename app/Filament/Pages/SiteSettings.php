@@ -122,6 +122,8 @@ class SiteSettings extends Page implements HasForms
             'video_auto_approve_usernames' => Setting::get('video_auto_approve_usernames', []),
             'comments_enabled' => Setting::get('comments_enabled', true),
             'comments_require_approval' => Setting::get('comments_require_approval', false),
+            'comment_blocked_words' => Setting::get('comment_blocked_words', []),
+            'comment_max_links' => Setting::get('comment_max_links', 2),
             'google_analytics_id' => Setting::get('google_analytics_id', ''),
             'custom_head_scripts' => Setting::get('custom_head_scripts', ''),
             'custom_footer_scripts' => Setting::get('custom_footer_scripts', ''),
@@ -849,6 +851,17 @@ class SiteSettings extends Page implements HasForms
                                             ->label('Enable Comments'),
                                         Toggle::make('comments_require_approval')
                                             ->label('Comments Require Approval'),
+                                        TagsInput::make('comment_blocked_words')
+                                            ->label('Blocked Words in Comments')
+                                            ->helperText('A comment containing any of these is held for approval instead of being published. Single words match whole words only; add a phrase to match it anywhere.')
+                                            ->placeholder('Add a word or phrase...')
+                                            ->columnSpanFull(),
+                                        TextInput::make('comment_max_links')
+                                            ->label('Maximum Links Per Comment')
+                                            ->numeric()
+                                            ->minValue(0)
+                                            ->default(2)
+                                            ->helperText('Comments with more links than this are held for approval. 0 = no limit.'),
                                     ])->columns(2),
                             ]),
                         Tab::make('Analytics')
