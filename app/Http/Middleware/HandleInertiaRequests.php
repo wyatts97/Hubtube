@@ -95,6 +95,32 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
+     * The shared props that need neither a session nor a signed-in user.
+     *
+     * The SPA error page is rendered from the exception handler (see
+     * bootstrap/app.php), which is often reached before — or entirely outside —
+     * the web middleware group, so share() above cannot run there: it reads
+     * $request->user() and csrf_token() eagerly and both need a session. This
+     * is the fallback, and it covers the props whose absence actually shows:
+     * without `locale` every label renders as its raw dot-path, and without
+     * `theme` the site's name and logo fall back to the built-in default.
+     */
+    public function shareForErrorPage(Request $request): array
+    {
+        return [
+            'auth' => ['user' => null],
+            'flash' => ['success' => null, 'error' => null, 'warning' => null, 'info' => null],
+            'csrf_token' => '',
+            'impersonating' => null,
+            'app' => fn() => $this->getAppSettings(),
+            'socialLogin' => fn() => $this->getSocialLoginProviders(),
+            'theme' => fn() => $this->getThemeSettings(),
+            'menuItems' => fn() => $this->getMenuItems(),
+            'locale' => fn() => $this->getLocaleData(),
+        ];
+    }
+
+    /**
      * Whether the current session is an active admin impersonation, and who
      * the real admin is — powers the "You are impersonating X" banner on the
      * public frontend (stechstudio/filament-impersonate's own banner only

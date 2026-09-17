@@ -194,8 +194,11 @@ const confirmRemove = async () => {
                             <span class="text-sm text-text-muted">
                                 {{ playlist.videos?.length || playlist.videos_count || 0 }} {{ t('common.videos') }}
                             </span>
+                            <!-- by_user carries a {name} placeholder, so it cannot
+                                 be used as a bare label next to a linked
+                                 username — the link supplies the name. -->
                             <span v-if="playlist.user" class="text-sm text-text-muted">
-                                {{ t('playlist.by_user') }}
+                                {{ t('playlist.by') }}
                                 <Link :href="`/channel/${playlist.user.username}`" class="text-accent-text">{{ playlist.user.username }}</Link>
                             </span>
                             <span v-if="favoritesCount > 0" class="text-sm text-text-muted">

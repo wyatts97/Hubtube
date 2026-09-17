@@ -13,23 +13,25 @@ const props = defineProps({
     message: String,
 });
 
-const title = {
-    419: 'Session Expired',
-    403: 'Forbidden',
-    404: 'Page Not Found',
-    451: 'Unavailable In Your Region',
-    500: 'Server Error',
-    503: 'Service Unavailable',
-}[props.status] || 'Error';
+/**
+ * Copy for the status, translated.
+ *
+ * These were hardcoded English, which the site's other pages are not. The
+ * error page is also rendered from the exception handler, outside the
+ * middleware that shares the translation catalogue — so a missing key here
+ * used to surface as a raw dot-path. The handler now shares the catalogue,
+ * and t() falls back to English anyway if it could not.
+ */
+const KNOWN_STATUSES = [403, 404, 419, 451, 500, 503];
 
-const description = props.message || {
-    419: 'Your session has expired. Please refresh the page to continue.',
-    403: 'You do not have permission to access this resource.',
-    404: 'The page you are looking for could not be found.',
-    451: 'This content is not available in your country.',
-    500: 'Something went wrong on our end. Please try again later.',
-    503: 'We are currently undergoing maintenance. Please check back soon.',
-}[props.status] || 'An unexpected error occurred.';
+const suffix = computed(() => (KNOWN_STATUSES.includes(props.status) ? props.status : 'generic'));
+
+const title = computed(() => t(`errors.title_${suffix.value}`));
+
+// A message the application set deliberately (an abort() reason) wins over the
+// generic copy; the handler drops anything that looks internal before it gets
+// this far.
+const description = computed(() => props.message || t(`errors.body_${suffix.value}`));
 
 const countdown = ref(10);
 let timer = null;
@@ -74,7 +76,7 @@ const refresh = () => {
                 <!-- 404 Countdown -->
                 <div v-if="is404" class="mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-bg-secondary text-text-muted border border-border">
                     <Clock class="w-4 h-4" />
-                    Redirecting to homepage in <span class="font-bold text-accent-text">{{ countdown }}</span>s
+                    {{ t('errors.redirecting', { count: countdown, n: countdown }) }}
                 </div>
 
                 <div class="flex flex-col sm:flex-row gap-3 justify-center">
