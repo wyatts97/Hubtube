@@ -636,6 +636,18 @@ It now reads an index (`media_files`, `media_folders`), so opening a folder is o
 - Acting on a file that has since vanished from disk drops its index row and says so, instead of reporting "file not found" and leaving the row in the listing.
 - **`allowed_paths` changed.** `channel-covers` was listed but appears nowhere else in the codebase — nothing has ever written to it. Channel banners go to `banners/{user}`, which was missing, so **channel banners were never visible in the Media Library**. That entry is now correct. If you have anything under `storage/app/public/channel-covers` from an older release, it will no longer be browsable; move it under `media/` if you still want it.
 
+**What the page can now do**, none of which needs configuring:
+
+- **Search reaches as far as you ask.** A scope selector next to the search box: this folder, this folder and below, or the whole library. It used to be a substring filter over one folder's listing, so you could not find a file unless you already knew where it was — and changing folder silently wiped whatever you had typed.
+- **Type chips and an In use / Unused filter**, with counts, from one grouped query. "Unused" is the quick way to find media nothing references any more.
+- **Folders appear in the main pane**, so you can navigate from the grid instead of only from the sidebar. Each tile shows its recursive file count and total size — the old tree computed that size and then never displayed it.
+- **Folder rename and delete**, from a menu on the folder tile. `deleteFolder()` had been fully implemented with no button anywhere in the UI. Renaming updates every Video and Image record pointing inside the folder; `videos/{slug}` and `images/{ulid}` are refused outright, because those records find their own directory by convention and renaming one orphans it.
+- **Move to…** for one file or a whole selection, as a folder picker. A name collision appends `-1` rather than overwriting. Files a record owns stay put.
+- **Upload progress**, and an extension allowlist (`media_library.allowed_upload_extensions`) enforced server-side as well as hinted to the file picker — `storage/app/public` is served directly by nginx, so an executable extension landing there is worth refusing even from an admin.
+- **Keyboard and mouse behave conventionally.** Arrow keys walk the grid, Enter opens details, Space toggles selection, Ctrl/Cmd-click toggles and Shift-click extends a range. Plain click now *replaces* the selection — the old server-side version toggled, so clicking a second file added it instead.
+- **Browsing state is in the URL** (`?path=…&q=…&in=…&type=…`), so a filtered view is a link you can send someone and browser Back walks back up the folders. Grid/list choice is remembered per admin.
+- The page's CSS moved into the panel's own stylesheet and now reads the `--ht-*` theme tokens, so it follows the primary colour set on the Theme & Appearance page. It used to ship ~100 lines of hand-rolled utility classes and ~40 hardcoded hex values in every response.
+
 ### Log Rotation
 
 Add to `/etc/logrotate.d/hubtube`:

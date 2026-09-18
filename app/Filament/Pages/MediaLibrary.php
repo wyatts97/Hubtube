@@ -8,7 +8,6 @@ use App\Models\Image;
 use App\Models\MediaFile;
 use App\Models\MediaFolder;
 use App\Models\Video;
-use App\Services\FfmpegService;
 use App\Services\FileManagerThumbnailService;
 use App\Services\Media\MediaGuard;
 use App\Services\Media\MediaIndexService;
@@ -18,11 +17,11 @@ use App\Services\Media\MediaThumbnailDispatcher;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Livewire\Attributes\Session;
-use Livewire\Attributes\Url;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Session;
+use Livewire\Attributes\Url;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Throwable;
@@ -109,9 +108,6 @@ class MediaLibrary extends Page
     public ?string $renameTarget = null;
 
     public string $renameNewName = '';
-
-    /** Paths handed to a bulk action by the client, re-validated server-side. */
-    public array $pendingBulkPaths = [];
 
     // The New Folder modal's visibility used to *be* $newFolderName: the modal
     // rendered under @if ($newFolderName), so clearing the field to type your
@@ -616,55 +612,6 @@ class MediaLibrary extends Page
             : 'modified';
     }
 
-    /**
-     * A video's duration, for the badge on its tile.
-     *
-     * Cached on path and mtime: this spawns an ffprobe subprocess, and it used
-     * to do so for every video in the directory on every single render. Keyed
-     * on mtime so replacing a file re-probes it.
-     *
-     * It also used to run a bare `ffprobe` from $PATH with a POSIX-only
-     * `2>/dev/null` appended, ignoring the binary the admin configured in
-     * Storage settings.
-     */
-    protected function getVideoDuration(string $path): ?string
-    {
-        $absolutePath = Storage::disk('public')->path($path);
-        if (! file_exists($absolutePath)) {
-            return null;
-        }
-
-        try {
-            $modified = Storage::disk('public')->lastModified($path);
-        } catch (Throwable) {
-            return null;
-        }
-
-        $seconds = Cache::remember(
-            'filemanager_duration:'.md5($path).':'.$modified,
-            (int) config('hubtube.media_library.duration_cache_ttl', 86400),
-            function () use ($absolutePath) {
-                if (! FfmpegService::isAvailable()) {
-                    return 0;
-                }
-
-                try {
-                    $output = shell_exec(sprintf(
-                        '%s -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 %s',
-                        FfmpegService::ffprobePath(),
-                        escapeshellarg($absolutePath),
-                    ));
-
-                    return max(0, (int) round((float) trim($output ?? '')));
-                } catch (Throwable) {
-                    return 0;
-                }
-            }
-        );
-
-        return $this->formatDuration((int) $seconds);
-    }
-
     /** Seconds as m:ss, or h:mm:ss past an hour. Null for an unknown length. */
     protected function formatDuration(int $seconds): ?string
     {
@@ -776,18 +723,15 @@ class MediaLibrary extends Page
 
     public function startRename(string $path): void
     {
-        $directory = dirname($path);
-        if ($directory === '.') {
-            $directory = '';
-        }
+        $path = $this->sanitizePath($path);
 
-        // Block renaming anything under a video slug directory (including the slug dir itself)
-        if ($this->isVideoSlugDirectory($path) || $this->isUnderVideoSlugDirectory($path)) {
-            Notification::make()
-                ->title('Cannot rename video slug directories')
-                ->body('Rename videos from the video editor to keep URLs in sync.')
-                ->warning()
-                ->send();
+        // MediaGuard owns this rule, so the button's disabled state and the
+        // action itself cannot disagree — they used to use different
+        // predicates.
+        $blocked = app(MediaGuard::class)->renameBlockedReason($path);
+
+        if ($blocked !== null) {
+            Notification::make()->title('Cannot rename this file')->body($blocked)->warning()->send();
 
             return;
         }
@@ -1071,7 +1015,7 @@ class MediaLibrary extends Page
     }
 
     /* ------------------------------------------------------------------ */
-    /* Folder actions                                                       */
+    /* Folder actions */
     /* ------------------------------------------------------------------ */
 
     /**
@@ -1170,7 +1114,7 @@ class MediaLibrary extends Page
     }
 
     /* ------------------------------------------------------------------ */
-    /* Move                                                                 */
+    /* Move */
     /* ------------------------------------------------------------------ */
 
     /**
