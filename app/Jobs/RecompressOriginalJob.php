@@ -89,6 +89,13 @@ class RecompressOriginalJob implements ShouldBeUnique, ShouldQueue
         $disk = Storage::disk('public');
         $source = (string) $video->video_path;
         $target = $reclaims->recompressedPathFor($source, $reclaim->id);
+        $sourceBytes = $reclaims->readableSize($source);
+
+        if ($sourceBytes === null) {
+            $this->settleAs($reclaim, StorageReclaim::SKIPPED, 'The uploaded file could not be read.');
+
+            return;
+        }
 
         $reclaim->forceFill([
             'status' => StorageReclaim::RUNNING,
@@ -97,7 +104,7 @@ class RecompressOriginalJob implements ShouldBeUnique, ShouldQueue
             // The old file stays exactly where it is and keeps serving; only
             // an accept repoints the column away from it.
             'kept_path' => $source,
-            'before_bytes' => $disk->size($source),
+            'before_bytes' => $sourceBytes,
             'before_duration_ms' => (int) round(((float) $video->duration) * 1000),
         ])->saveQuietly();
 

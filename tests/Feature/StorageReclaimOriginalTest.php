@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Storage;
 */
 
 /** A processed video whose original is big enough to be worth shrinking. */
-function videoWithBigOriginal(int $bytes = 900_000)
+function videoWithBigOriginal(int $bytes = 90_000)
 {
     $video = encodedVideo();
 
@@ -35,7 +35,7 @@ function videoWithBigOriginal(int $bytes = 900_000)
 test('the re-encode lands at a new filename beside the original', function () {
     $fake = fakeFfmpeg(duration: 60, height: 720, width: 1280);
     $video = videoWithBigOriginal();
-    $fake->outputBytes = 300_000;
+    $fake->outputBytes = 30_000;
 
     $reclaim = reclaims()->requestAndStart($video)['reclaim']->fresh();
 
@@ -53,7 +53,7 @@ test('the re-encode lands at a new filename beside the original', function () {
 test('nothing about the video changes before it is accepted', function () {
     $fake = fakeFfmpeg(duration: 60, height: 720, width: 1280);
     $video = videoWithBigOriginal();
-    $fake->outputBytes = 300_000;
+    $fake->outputBytes = 30_000;
 
     $reclaim = reclaims()->requestAndStart($video)['reclaim']->fresh();
     $after = $video->fresh();
@@ -62,15 +62,15 @@ test('nothing about the video changes before it is accepted', function () {
         // The column, the file, the size and the quality menu are all as they
         // were: the site is still serving the original upload.
         ->and($after->video_path)->toBe($video->video_path)
-        ->and(Storage::disk('public')->size($after->video_path))->toBe(900_000)
-        ->and($after->size)->toBe(900_000)
+        ->and(Storage::disk('public')->size($after->video_path))->toBe(90_000)
+        ->and($after->size)->toBe(90_000)
         ->and($after->quality_urls['original'])->toContain(basename($video->video_path));
 });
 
 test('the command re-compresses rather than re-encoding the audio or the keyframes', function () {
     $fake = fakeFfmpeg(duration: 60, height: 720, width: 1280);
     $video = videoWithBigOriginal();
-    $fake->outputBytes = 300_000;
+    $fake->outputBytes = 30_000;
     $fake->commands = [];
 
     reclaims()->requestAndStart($video);
@@ -91,7 +91,7 @@ test('the command re-compresses rather than re-encoding the audio or the keyfram
 test('accepting repoints the video and deletes the upload', function () {
     $fake = fakeFfmpeg(duration: 60, height: 720, width: 1280);
     $video = videoWithBigOriginal();
-    $fake->outputBytes = 300_000;
+    $fake->outputBytes = 30_000;
 
     $reclaim = reclaims()->requestAndStart($video)['reclaim']->fresh();
     $old = $video->video_path;
@@ -102,7 +102,7 @@ test('accepting repoints the video and deletes the upload', function () {
 
     expect($after->video_path)->toBe($reclaim->new_path)
         ->and(Storage::disk('public')->exists($old))->toBeFalse()
-        ->and($after->size)->toBe(300_000)
+        ->and($after->size)->toBe(30_000)
         ->and($after->quality_urls['original'])->toContain(basename($reclaim->new_path));
 });
 
@@ -111,7 +111,7 @@ test('the markers that gate re-processing survive', function () {
     // that must not be repeated; a reclaim touches one file, never the folder.
     $fake = fakeFfmpeg(duration: 60, height: 720, width: 1280);
     $video = videoWithBigOriginal();
-    $fake->outputBytes = 300_000;
+    $fake->outputBytes = 30_000;
     $dir = dirname($video->video_path);
     Storage::disk('public')->put($dir.'/.watermark_done', '');
 
@@ -129,7 +129,7 @@ test('the re-compressed file is in use, so the library will not offer to delete 
     // maintains that flag — so it has to be synced explicitly.
     $fake = fakeFfmpeg(duration: 60, height: 720, width: 1280);
     $video = videoWithBigOriginal();
-    $fake->outputBytes = 300_000;
+    $fake->outputBytes = 30_000;
 
     $reclaim = reclaims()->requestAndStart($video)['reclaim']->fresh();
     reclaims()->accept($reclaim);
@@ -142,10 +142,10 @@ test('the re-compressed file is in use, so the library will not offer to delete 
 // ── Every way it can be refused ─────────────────────────────────────────────
 
 dataset('bad results', [
-    'a bigger file' => [1_200_000, 60.0, 'threshold'],
-    'a saving below the threshold' => [850_000, 60.0, 'threshold'],
+    'a bigger file' => [120_000, 60.0, 'threshold'],
+    'a saving below the threshold' => [85_000, 60.0, 'threshold'],
     'a truncated file' => [4096, 60.0, 'too small'],
-    'a drifted duration' => [300_000, 52.0, 'drifted'],
+    'a drifted duration' => [30_000, 52.0, 'drifted'],
 ]);
 
 test('a result that cannot be trusted is discarded and the live file left alone', function (int $bytes, float $duration, string $expected) {
@@ -168,7 +168,7 @@ test('a result that cannot be trusted is discarded and the live file left alone'
         ->and($reclaim->error)->toContain($expected)
         // The three things that would break if this were wrong.
         ->and($after->video_path)->toBe($video->video_path)
-        ->and(Storage::disk('public')->size($after->video_path))->toBe(900_000)
+        ->and(Storage::disk('public')->size($after->video_path))->toBe(90_000)
         ->and(Storage::disk('public')->exists($reclaim->new_path ?? 'nothing'))->toBeFalse();
 })->with('bad results');
 
@@ -182,7 +182,7 @@ test('a failed encode leaves no half-written file behind', function () {
     expect($reclaim->status)->toBe(StorageReclaim::FAILED)
         ->and($reclaim->error)->toContain('exited with code')
         ->and($video->fresh()->video_path)->toBe($video->video_path)
-        ->and(Storage::disk('public')->size($video->video_path))->toBe(900_000);
+        ->and(Storage::disk('public')->size($video->video_path))->toBe(90_000);
 });
 
 test('a host with no ffmpeg skips rather than failing', function () {
@@ -201,12 +201,12 @@ test('a host with no ffmpeg skips rather than failing', function () {
 test('reverting discards the candidate and keeps the upload', function () {
     $fake = fakeFfmpeg(duration: 60, height: 720, width: 1280);
     $video = videoWithBigOriginal();
-    $fake->outputBytes = 300_000;
+    $fake->outputBytes = 30_000;
 
     $reclaim = reclaims()->requestAndStart($video)['reclaim']->fresh();
 
     expect(reclaims()->revert($reclaim))->toBeTrue()
         ->and(Storage::disk('public')->exists($reclaim->new_path))->toBeFalse()
         ->and($video->fresh()->video_path)->toBe($video->video_path)
-        ->and(Storage::disk('public')->size($video->video_path))->toBe(900_000);
+        ->and(Storage::disk('public')->size($video->video_path))->toBe(90_000);
 });

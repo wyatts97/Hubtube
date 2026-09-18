@@ -31,7 +31,7 @@ function awaitingReview(?Video $video = null): StorageReclaim
     $video ??= processedVideo();
     $new = dirname($video->video_path).'/recompressed.mp4';
 
-    Storage::disk('public')->put($new, str_repeat('n', 400_000));
+    Storage::disk('public')->put($new, str_repeat('n', 40_000));
 
     return StorageReclaim::create([
         'video_id' => $video->id,
@@ -43,8 +43,8 @@ function awaitingReview(?Video $video = null): StorageReclaim
         // The kept file *is* the live one: video_path is not repointed until
         // accept, so nothing changes for viewers until then.
         'kept_path' => $video->video_path,
-        'before_bytes' => 900_000,
-        'after_bytes' => 400_000,
+        'before_bytes' => 90_000,
+        'after_bytes' => 40_000,
     ]);
 }
 
@@ -64,7 +64,7 @@ test('accepting repoints the video and deletes the upload', function () {
         ->and(Storage::disk('public')->exists($video->video_path))->toBeTrue()
         // The size columns follow the disk, or the saving is invisible
         // everywhere except this ledger.
-        ->and($video->size)->toBe(400_000)
+        ->and($video->size)->toBe(40_000)
         ->and($reclaim->status)->toBe(StorageReclaim::ACCEPTED)
         ->and($reclaim->kept_path)->toBeNull()
         ->and($reclaim->finished_at)->not->toBeNull();
@@ -112,7 +112,7 @@ test('discarding throws the candidate away and keeps the upload', function () {
     expect(reclaims()->revert($reclaim))->toBeTrue()
         // video_path was never repointed, so there is nothing to restore.
         ->and($reclaim->video->fresh()->video_path)->toBe($live)
-        ->and(Storage::disk('public')->size($live))->toBe(900_000)
+        ->and(Storage::disk('public')->size($live))->toBe(90_000)
         ->and(Storage::disk('public')->exists($reclaim->new_path))->toBeFalse()
         ->and($reclaim->fresh()->status)->toBe(StorageReclaim::REVERTED);
 });
@@ -139,13 +139,17 @@ test('there is no scheduled acceptance', function () {
         ->and(class_exists('App\\Console\\Commands\\SweepStorageReclaims'))->toBeFalse();
 });
 
-test('a row left alone stays awaiting review indefinitely', function () {
+test('a row left alone keeps holding its upload, however old it is', function () {
+    // Asserted by ageing the row rather than the clock: there is no expiry to
+    // trip, which is the point — the only thing that can accept a reclaim is
+    // someone pressing the button.
     $reclaim = awaitingReview();
-
-    $this->travel(400)->days();
+    $reclaim->forceFill(['created_at' => now()->subYears(2)])->saveQuietly();
 
     expect($reclaim->fresh()->status)->toBe(StorageReclaim::AWAITING_REVIEW)
-        ->and(Storage::disk('public')->exists($reclaim->kept_path))->toBeTrue();
+        ->and(Storage::disk('public')->exists($reclaim->kept_path))->toBeTrue()
+        // Nothing in the row even records a deadline any more.
+        ->and(array_key_exists('keep_until', $reclaim->getAttributes()))->toBeFalse();
 });
 
 // ── Interaction with the encoder ────────────────────────────────────────────
@@ -180,9 +184,9 @@ test('the review page separates space freed from space merely held', function ()
 
     $totals = Livewire::test(StorageReclaims::class)->instance()->getTotalsProperty();
 
-    expect($totals['reclaimed'])->toBe(500_000)
+    expect($totals['reclaimed'])->toBe(50_000)
         // Not saved: both copies are still on disk while it waits.
-        ->and($totals['awaiting'])->toBe(500_000)
+        ->and($totals['awaiting'])->toBe(50_000)
         ->and($totals['awaiting_count'])->toBe(1);
 });
 

@@ -334,7 +334,9 @@ class StorageReclaimService
         $reclaim->forceFill([
             'status' => StorageReclaim::AWAITING_REVIEW,
             'new_path' => $newPath,
-            'after_bytes' => $disk->size($newPath),
+            // Already read once by rejectionReason(), which refused anything
+            // unreadable, so this cannot be null here.
+            'after_bytes' => $this->readableSize($newPath),
             'after_duration_ms' => $probe['duration_ms'] ?? null,
             'finished_at' => now(),
         ])->saveQuietly();
@@ -362,11 +364,11 @@ class StorageReclaimService
         $disk = Storage::disk('public');
         $settings = $reclaim->settings_snapshot ?? $this->settings();
 
-        if (! $disk->exists($newPath)) {
-            return 'The re-encoded file is missing.';
-        }
+        $after = $this->readableSize($newPath);
 
-        $after = $disk->size($newPath);
+        if ($after === null) {
+            return 'The re-encoded file could not be read.';
+        }
 
         if ($after < 10240) {
             return 'The re-encoded file is too small to be real.';
@@ -403,6 +405,26 @@ class StorageReclaimService
         }
 
         return null;
+    }
+
+    /**
+     * A file's size, or null if it cannot be read.
+     *
+     * Flysystem throws UnableToRetrieveMetadata when a stat fails, which is
+     * not always the same as "absent" — a file written moments ago can fail to
+     * stat transiently (an indexer or scanner holding it, a filesystem that
+     * has not caught up). Asking `exists()` and then `size()` is a check that
+     * can be stale by the time it is used, so the size is read once and a
+     * failure is treated as "unverifiable", which for a reclaim means the
+     * result is discarded rather than offered.
+     */
+    public function readableSize(string $path): ?int
+    {
+        try {
+            return Storage::disk('public')->size($path);
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     // ── Review ──────────────────────────────────────────────────────────────
@@ -542,8 +564,10 @@ class StorageReclaimService
     {
         $disk = Storage::disk('public');
 
-        if ($video->video_path && $disk->exists($video->video_path)) {
-            $video->forceFill(['size' => $disk->size($video->video_path)])->saveQuietly();
+        $size = $video->video_path ? $this->readableSize($video->video_path) : null;
+
+        if ($size !== null) {
+            $video->forceFill(['size' => $size])->saveQuietly();
         }
     }
 

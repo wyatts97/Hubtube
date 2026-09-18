@@ -164,23 +164,23 @@ function processedVideo(array $attributes = []): Video
     ], $attributes));
 
     $disk = Storage::disk('public');
-    $disk->put($video->video_path, str_repeat('x', 900_000));
+    $disk->put($video->video_path, str_repeat('x', 90_000));
 
     $dir = dirname($video->video_path);
 
     foreach (['720p', '480p'] as $quality) {
-        $disk->put($dir."/processed/{$quality}.mp4", str_repeat('x', 200_000));
+        $disk->put($dir."/processed/{$quality}.mp4", str_repeat('x', 20_000));
 
         VideoEncoding::create([
             'video_id' => $video->id,
             'quality' => $quality,
             'status' => VideoEncoding::COMPLETED,
             'run_id' => (string) Str::uuid(),
-            'size' => 200_000,
+            'size' => 20_000,
         ]);
     }
 
-    $disk->put($dir.'/processed/hls/720p/segment_000.ts', str_repeat('x', 150_000));
+    $disk->put($dir.'/processed/hls/720p/segment_000.ts', str_repeat('x', 15_000));
     $disk->put($dir.'/processed/master.m3u8', '#EXTM3U');
 
     return $video->fresh();
@@ -229,7 +229,7 @@ function uploadedVideo(array $attributes = []): Video
  * fake runner, whose rendition files are then given a realistic size — the
  * fake writes a fixed 20 KB, which would make every storage saving identical.
  */
-function encodedVideo(int $renditionBytes = 500_000): Video
+function encodedVideo(int $renditionBytes = 50_000): Video
 {
     onlyProfiles(['360p', '480p']);
     $video = uploadedVideo();
