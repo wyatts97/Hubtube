@@ -13,7 +13,9 @@ use App\Services\Media\MediaGuard;
 use App\Services\Media\MediaIndexService;
 use App\Services\Media\MediaPathGuard;
 use App\Services\Media\MediaReferenceResolver;
+use App\Services\Media\MediaStorageReport;
 use App\Services\Media\MediaThumbnailDispatcher;
+use App\Support\Bytes;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -50,6 +52,9 @@ class MediaLibrary extends Page
 
     protected static ?int $navigationSort = 99;
 
+    /** Columns the listing can be ordered by. Each has an index behind it. */
+    public const SORT_COLUMNS = ['name', 'size', 'type', 'modified', 'root'];
+
     protected string $view = 'filament.pages.media-library';
 
     /*
@@ -85,9 +90,37 @@ class MediaLibrary extends Page
     #[Url(except: 'desc')]
     public string $sortDirection = 'desc';
 
-    /** Layout preference: remembered per admin rather than per link. */
+    /**
+     * grid | list | flat.
+     *
+     * Both attributes, in this order. #[Session] supplies the remembered
+     * default and #[Url] overrides it when a link carries one — BaseUrl skips
+     * writing when the parameter is absent, so a bare visit keeps your own
+     * layout while a shared link wins. Reversing the order would make the
+     * session clobber the link.
+     *
+     * It needs to be shareable because the point of the flat view is "look at
+     * the 40 biggest files on this box": sort, scope and filters are already
+     * in the URL, so without this a shared link renders in the recipient's
+     * remembered mode with somebody else's sort applied.
+     */
     #[Session]
+    #[Url(as: 'view', except: 'grid')]
     public string $viewMode = 'grid';
+
+    /**
+     * Rows per page.
+     *
+     * Capped at 200 to match resolveBulkPaths()'s cap, so "Select page →
+     * Delete" can never quietly act on fewer files than are shown.
+     */
+    #[Session]
+    #[Url(as: 'per', except: 50)]
+    public int $perPage = 50;
+
+    /** Whether the storage summary strip is expanded. */
+    #[Session]
+    public bool $showStorageReport = true;
 
     // Upload state
     public $uploadedFiles = [];
@@ -191,6 +224,86 @@ class MediaLibrary extends Page
         $this->resetPage();
     }
 
+    /**
+     * Switch layout.
+     *
+     * Flat mode is a whole-library view, so it forces the library scope on the
+     * way in and restores folder scope on the way out. `currentDirectory` is
+     * left alone — the library scope ignores it — so leaving flat mode drops
+     * you back where you were browsing.
+     */
+    public function setViewMode(string $mode): void
+    {
+        if (! in_array($mode, ['grid', 'list', 'flat'], true)) {
+            return;
+        }
+
+        $wasFlat = $this->viewMode === 'flat';
+        $this->viewMode = $mode;
+
+        if ($mode === 'flat') {
+            $this->searchScope = 'library';
+        } elseif ($wasFlat) {
+            $this->searchScope = 'folder';
+        }
+
+        $this->selectedFile = null;
+        $this->resetPage();
+    }
+
+    /**
+     * Sort by a column, from a clickable header.
+     *
+     * Clicking the active column flips the direction; a new column starts in
+     * whichever direction is actually useful — biggest and newest first,
+     * names and types alphabetically.
+     */
+    public function sortByColumn(string $column): void
+    {
+        if (! in_array($column, self::SORT_COLUMNS, true)) {
+            return;
+        }
+
+        if ($this->sortKey() === $column) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortBy = $column;
+            $this->sortDirection = in_array($column, ['size', 'modified'], true) ? 'desc' : 'asc';
+        }
+
+        $this->resetPage();
+    }
+
+    /** Row counts offered in the page-size picker. */
+    public function perPageOptions(): array
+    {
+        return [25, 50, 100, 200];
+    }
+
+    /**
+     * The page size actually used.
+     *
+     * Clamped rather than trusted: $perPage comes from the query string, and
+     * an arbitrary value would let a link ask for the whole table in one
+     * render.
+     */
+    protected function resolvedPerPage(): int
+    {
+        return in_array($this->perPage, $this->perPageOptions(), true)
+            ? $this->perPage
+            : (int) config('hubtube.media_library.per_page', 50);
+    }
+
+    public function updatingPerPage(): void
+    {
+        $this->resetPage();
+    }
+
+    public function toggleStorageReport(): void
+    {
+        $this->showStorageReport = ! $this->showStorageReport;
+    }
+
     /** Clear every filter without leaving the folder. */
     public function clearFilters(): void
     {
@@ -198,6 +311,36 @@ class MediaLibrary extends Page
         $this->typeFilter = '';
         $this->usageFilter = '';
         $this->searchScope = 'folder';
+        $this->resetPage();
+    }
+
+    /** Where the disk is going, for the summary strip. */
+    public function getStorageReportProperty(): array
+    {
+        return app(MediaStorageReport::class)->all();
+    }
+
+    /** The biggest files in the library, for the summary strip. */
+    public function getBiggestFilesProperty(): array
+    {
+        return app(MediaStorageReport::class)->biggestFiles(10);
+    }
+
+    /**
+     * Jump into the flat view sorted by size, from the summary strip.
+     *
+     * The overview is a doorway into the grid rather than a parallel UI, so
+     * "show me these" lands you in the real browser with the real actions.
+     */
+    public function showBiggest(?string $type = null): void
+    {
+        $this->viewMode = 'flat';
+        $this->searchScope = 'library';
+        $this->typeFilter = in_array($type, MediaFile::TYPES, true) ? $type : '';
+        $this->sortBy = 'size';
+        $this->sortDirection = 'desc';
+        $this->search = '';
+        $this->usageFilter = '';
         $this->resetPage();
     }
 
@@ -363,7 +506,7 @@ class MediaLibrary extends Page
     public function getFilesProperty(): LengthAwarePaginator
     {
         $directory = $this->sanitizePath($this->currentDirectory);
-        $perPage = (int) config('hubtube.media_library.per_page', 50);
+        $perPage = $this->resolvedPerPage();
 
         $paginator = MediaFile::query()
             ->tap(fn ($query) => $this->applyScope($query, $directory))
@@ -422,6 +565,8 @@ class MediaLibrary extends Page
             'name' => $query->orderBy('name_lower', $direction),
             'size' => $query->orderBy('size', $direction),
             'type' => $query->orderBy('type', $direction)->orderBy('name_lower', $direction),
+            // Which root is eating the disk, answered without leaving the grid.
+            'root' => $query->orderBy('root', $direction)->orderBy('size', 'desc'),
             default => $query->orderBy('modified_at', $direction),
         };
 
@@ -498,6 +643,10 @@ class MediaLibrary extends Page
             'size_formatted' => $this->formatBytes((int) $file->size),
             'modified' => $file->modified_at?->getTimestamp() ?? 0,
             'modified_formatted' => $file->modified_at?->format('M j, Y g:i A') ?? '—',
+            // "3 months ago" — "sort by age" is what was asked for, and an
+            // absolute timestamp does not read as age.
+            'modified_relative' => $file->modified_at?->diffForHumans() ?? '—',
+            'root' => $file->root,
             'duration' => $this->durationFor($file),
             // From the row, not from two queries per file.
             'references' => $file->references ?? [],
@@ -605,9 +754,9 @@ class MediaLibrary extends Page
     }
 
     /** The sort column, narrowed to one this page actually supports. */
-    protected function sortKey(): string
+    public function sortKey(): string
     {
-        return in_array($this->sortBy, ['name', 'size', 'type', 'modified'], true)
+        return in_array($this->sortBy, self::SORT_COLUMNS, true)
             ? $this->sortBy
             : 'modified';
     }
@@ -628,19 +777,13 @@ class MediaLibrary extends Page
             : sprintf('%d:%02d', $minutes, $secs);
     }
 
+    /**
+     * This had no terabyte branch, so a large video root rendered as
+     * "3,481.22 GB" — in the very panel that now reports storage totals.
+     */
     protected function formatBytes(int $bytes): string
     {
-        if ($bytes >= 1073741824) {
-            return number_format($bytes / 1073741824, 2).' GB';
-        }
-        if ($bytes >= 1048576) {
-            return number_format($bytes / 1048576, 2).' MB';
-        }
-        if ($bytes >= 1024) {
-            return number_format($bytes / 1024, 2).' KB';
-        }
-
-        return $bytes.' B';
+        return Bytes::format($bytes);
     }
 
     /* ------------------------------------------------------------------ */
@@ -1342,6 +1485,7 @@ class MediaLibrary extends Page
         }
 
         $result = $this->mediaIndex->indexDirectory($directory);
+        MediaStorageReport::forget();
 
         Notification::make()
             ->title('Folder rescanned')
@@ -1365,6 +1509,7 @@ class MediaLibrary extends Page
     public function rescanLibrary(): void
     {
         ReindexMediaLibraryJob::dispatch(auth()->id(), prune: true);
+        MediaStorageReport::forget();
 
         Notification::make()
             ->title('Rescanning the library')

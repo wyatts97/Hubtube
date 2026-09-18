@@ -648,6 +648,19 @@ It now reads an index (`media_files`, `media_folders`), so opening a folder is o
 - **Browsing state is in the URL** (`?path=…&q=…&in=…&type=…`), so a filtered view is a link you can send someone and browser Back walks back up the folders. Grid/list choice is remembered per admin.
 - The page's CSS moved into the panel's own stylesheet and now reads the `--ht-*` theme tokens, so it follows the primary colour set on the Theme & Appearance page. It used to ship ~100 lines of hand-rolled utility classes and ~40 hardcoded hex values in every response.
 
+#### Flat view and the storage summary
+
+Browsing was folder-first, which answers "what is in this folder" but never "what is eating the disk" — the question that sends anyone into the media library in the first place. Two additions:
+
+- **A third view mode, "all files" (the rows icon next to grid/list).** Every file in the library in one table, sortable from the headers by name, folder, type, size and age. Entering it widens the search scope to the whole library and hides the folder tree and details pane; leaving it drops you back in the folder you were browsing. The choice is remembered per admin and also lives in the URL (`?view=flat`), so "here are the forty biggest files on the box" is a link you can send. There is a page-size picker (25/50/100/200); the maximum deliberately matches the bulk-action cap, so "select page → delete" can never silently act on fewer files than are shown.
+- **A collapsible storage strip at the top of the page**, in every view mode: total bytes and files, a per-root breakdown, what the `videos` root splits into (original uploads, encoded renditions, posters and sprites), the bytes held by duplicate HLS copies, and the five biggest files with buttons that drop you into the flat view pre-sorted. Every figure comes from the index or the folder rollups — no filesystem walk — and the whole thing is cached for five minutes, invalidated by either Rescan button.
+
+Deploying this needs `php artisan migrate --force` (four indexes on `media_files` for the library-wide sorts — without them a size sort filesorts the whole table), `npm run build`, and `php artisan optimize:clear && php artisan filament:optimize`. No queue changes, no jobs, and nothing to roll back beyond the migration.
+
+**Run `php artisan media:index --full --prune` once, under `screen`, before trusting the storage numbers.** The rollup figures are only as exact as the last full pass: an incremental pass skips directories whose mtime has not moved, so a file deleted out from under the app can leave its bytes counted. The strip shows when the least recently indexed root was last scanned, so you can tell at a glance whether that has been done.
+
+One figure there is worth reading carefully: **duplicate HLS copies**. `generate_hls` defaults to on, so `videos/{slug}/processed/hls` holds a complete second copy of every rendition as `.ts` segments — typically as many bytes again as the renditions themselves. Nothing reclaims it yet; this release only measures it.
+
 ### Log Rotation
 
 Add to `/etc/logrotate.d/hubtube`:

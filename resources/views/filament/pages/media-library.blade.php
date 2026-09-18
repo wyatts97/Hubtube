@@ -45,9 +45,14 @@
         </div>
     @endif
 
-    <div class="ht-ml-layout">
+    @include('filament.pages.partials.media-library-storage')
+
+    {{-- Flat mode is a whole-library view, so it drops the folder tree and the
+         details pane and gives the table the full width. --}}
+    <div @class(['ht-ml-layout', 'ht-ml-layout--flat' => $viewMode === 'flat'])>
 
         {{-- ── Sidebar: folder tree ─────────────────────────────────────── --}}
+        @if ($viewMode !== 'flat')
         <aside class="ht-ml-sidebar ht-ml-panel" aria-label="Folders">
             <p class="ht-ml-sidebar__heading">Folders</p>
             <ul class="ht-ml-tree" role="tree">
@@ -56,6 +61,7 @@
                 @endforeach
             </ul>
         </aside>
+        @endif
 
         {{-- ── Main ─────────────────────────────────────────────────────── --}}
         <div class="ht-ml-main">
@@ -122,7 +128,7 @@
                     <div class="ht-ml-viewtoggle" role="group" aria-label="View mode">
                         <button
                             type="button"
-                            wire:click="$set('viewMode', 'grid')"
+                            wire:click="setViewMode('grid')"
                             @class(['ht-ml-viewtoggle__btn', 'ht-ml-viewtoggle__btn--on' => $viewMode === 'grid'])
                             aria-pressed="{{ $viewMode === 'grid' ? 'true' : 'false' }}"
                             aria-label="Grid view"
@@ -131,14 +137,29 @@
                         </button>
                         <button
                             type="button"
-                            wire:click="$set('viewMode', 'list')"
+                            wire:click="setViewMode('list')"
                             @class(['ht-ml-viewtoggle__btn', 'ht-ml-viewtoggle__btn--on' => $viewMode === 'list'])
                             aria-pressed="{{ $viewMode === 'list' ? 'true' : 'false' }}"
                             aria-label="List view"
                         >
                             <x-phosphor-list class="ht-ml-icon" />
                         </button>
+                        <button
+                            type="button"
+                            wire:click="setViewMode('flat')"
+                            @class(['ht-ml-viewtoggle__btn', 'ht-ml-viewtoggle__btn--on' => $viewMode === 'flat'])
+                            aria-pressed="{{ $viewMode === 'flat' ? 'true' : 'false' }}"
+                            aria-label="All files, flat"
+                        >
+                            <x-phosphor-rows class="ht-ml-icon" />
+                        </button>
                     </div>
+
+                    <select wire:model.live="perPage" class="ht-ml-select" aria-label="Rows per page">
+                        @foreach ($this->perPageOptions() as $option)
+                            <option value="{{ $option }}">{{ $option }} / page</option>
+                        @endforeach
+                    </select>
 
                     <x-filament::button wire:click="openNewFolderModal" size="sm" icon="phosphor-folder-plus">
                         New Folder
@@ -303,7 +324,7 @@
             <div @if ($this->getHasPendingThumbnailsProperty()) wire:poll.5s @endif>
 
                 {{-- Loading overlay. Delayed so a fast response does not flash. --}}
-                <div class="ht-ml-loading" wire:loading.delay.flex wire:target="gotoPage, nextPage, previousPage, search, sortBy, sortDirection, searchScope, typeFilter, usageFilter, openDirectory, rescanCurrentDirectory">
+                <div class="ht-ml-loading" wire:loading.delay.flex wire:target="gotoPage, nextPage, previousPage, search, sortBy, sortDirection, searchScope, typeFilter, usageFilter, openDirectory, rescanCurrentDirectory, sortByColumn, setViewMode, perPage, showBiggest">
                     <x-filament::loading-indicator class="ht-ml-icon-lg" />
                 </div>
 
@@ -370,6 +391,97 @@
                         @empty
                             @include('filament.pages.partials.media-library-empty')
                         @endforelse
+                    </div>
+                @elseif ($viewMode === 'flat')
+                    {{-- Every file in the library, sortable from the headers.
+                         This is the view for "what is eating the disk": pick a
+                         column, biggest or oldest first, select and act. --}}
+                    <div class="ht-ml-panel ht-ml-tablewrap">
+                        <table class="ht-ml-table ht-ml-flat">
+                            <thead>
+                                <tr>
+                                    <th class="ht-ml-table__check">
+                                        <input
+                                            type="checkbox"
+                                            aria-label="Select all files on this page"
+                                            :checked="allPageSelected"
+                                            x-on:change="$event.target.checked ? selectPage() : clear()"
+                                        />
+                                    </th>
+                                    @foreach ([
+                                        'name' => 'Name',
+                                        'root' => 'Folder',
+                                        'type' => 'Type',
+                                        'size' => 'Size',
+                                        'modified' => 'Age',
+                                    ] as $column => $label)
+                                        @php
+                                            $active = $this->sortKey() === $column;
+                                            $ariaSort = $active
+                                                ? ($sortDirection === 'asc' ? 'ascending' : 'descending')
+                                                : 'none';
+                                        @endphp
+                                        <th
+                                            @class(['ht-ml-flat__th', 'ht-ml-table__num' => $column === 'size'])
+                                            aria-sort="{{ $ariaSort }}"
+                                        >
+                                            <button type="button" wire:click="sortByColumn(@js($column))" class="ht-ml-flat__sort">
+                                                {{ $label }}
+                                                @if ($active)
+                                                    @if ($sortDirection === 'asc')
+                                                        <x-phosphor-caret-up class="ht-ml-flat__caret" />
+                                                    @else
+                                                        <x-phosphor-caret-down class="ht-ml-flat__caret" />
+                                                    @endif
+                                                @endif
+                                            </button>
+                                        </th>
+                                    @endforeach
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody wire:key="flat-{{ $files->currentPage() }}-{{ $sortBy }}-{{ $sortDirection }}-{{ $typeFilter }}">
+                                @forelse ($files as $file)
+                                    <tr
+                                        wire:key="flat-{{ $file['path'] }}"
+                                        :class="isSelected(@js($file['path'])) && 'ht-ml-table__row--selected'"
+                                        :aria-selected="isSelected(@js($file['path']))"
+                                    >
+                                        <td>
+                                            <input
+                                                type="checkbox"
+                                                aria-label="Select {{ $file['name'] }}"
+                                                :checked="isSelected(@js($file['path']))"
+                                                x-on:change="toggle(@js($file['path']), { ctrlKey: true })"
+                                            />
+                                        </td>
+                                        <td>
+                                            <button type="button" class="ht-ml-table__name" wire:click="selectFile(@js($file['path']))">
+                                                {{ $file['name'] }}
+                                            </button>
+                                            <span class="ht-ml-table__dir">{{ $file['directory'] }}</span>
+                                        </td>
+                                        <td class="ht-ml-table__muted">{{ $file['root'] }}</td>
+                                        <td class="ht-ml-table__muted">{{ $file['type'] }}</td>
+                                        <td class="ht-ml-table__num ht-ml-flat__size">{{ $file['size_formatted'] }}</td>
+                                        <td class="ht-ml-table__muted" title="{{ $file['modified_formatted'] }}">
+                                            {{ $file['modified_relative'] }}
+                                        </td>
+                                        <td>
+                                            @if ($file['is_referenced'])
+                                                <span class="ht-ml-card__badge">In use</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="7">
+                                            @include('filament.pages.partials.media-library-empty')
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
                 @else
                     <div class="ht-ml-panel ht-ml-tablewrap">
@@ -447,9 +559,11 @@
         </div>
 
         {{-- ── Details ──────────────────────────────────────────────────── --}}
+        @if ($viewMode !== 'flat')
         <aside class="ht-ml-details ht-ml-panel" aria-label="File details">
             @include('filament.pages.partials.media-library-details', ['selectedFileData' => $selectedFileData])
         </aside>
+        @endif
     </div>
 
     {{-- ── Dialogs ──────────────────────────────────────────────────────── --}}
