@@ -3,6 +3,7 @@
 namespace App\Services\Storage;
 
 use App\Jobs\IndexMediaDirectoryJob;
+use App\Jobs\ReclaimHlsJob;
 use App\Models\Setting;
 use App\Models\StorageReclaim;
 use App\Models\User;
@@ -80,7 +81,7 @@ class StorageReclaimService
      * assertion — the pattern MediaGuard already uses. Every caller must go
      * through this; nothing else is allowed to decide.
      */
-    public function eligibility(Video $video, string $target, ?string $quality = null): ?string
+    public function eligibility(Video $video, string $target, ?string $quality = null, ?int $ignoreReclaimId = null): ?string
     {
         if (! in_array($target, StorageReclaim::TARGETS, true)) {
             return 'Unknown reclaim target.';
@@ -116,7 +117,11 @@ class StorageReclaimService
             return 'A watermark is configured but has not been applied yet.';
         }
 
-        if ($this->hasActive($video, $target, $quality)) {
+        // $ignoreReclaimId is how a running job re-checks its own work: its
+        // own row is active by definition, and without excluding it that
+        // answer would mask every per-target check below — including the one
+        // that stops HLS being dropped while it is a quality's only copy.
+        if ($this->hasActive($video, $target, $quality, $ignoreReclaimId)) {
             return 'A reclaim for this file is already in progress or awaiting review.';
         }
 
@@ -127,9 +132,9 @@ class StorageReclaimService
         };
     }
 
-    public function isEligible(Video $video, string $target, ?string $quality = null): bool
+    public function isEligible(Video $video, string $target, ?string $quality = null, ?int $ignoreReclaimId = null): bool
     {
-        return $this->eligibility($video, $target, $quality) === null;
+        return $this->eligibility($video, $target, $quality, $ignoreReclaimId) === null;
     }
 
     protected function watermarkPending(Video $video): bool
@@ -195,12 +200,13 @@ class StorageReclaimService
         return null;
     }
 
-    public function hasActive(Video $video, string $target, ?string $quality = null): bool
+    public function hasActive(Video $video, string $target, ?string $quality = null, ?int $ignoreReclaimId = null): bool
     {
         return StorageReclaim::query()
             ->where('video_id', $video->id)
             ->where('target', $target)
             ->when($target === StorageReclaim::TARGET_RENDITION, fn ($q) => $q->where('quality', $quality))
+            ->when($ignoreReclaimId, fn ($q) => $q->whereKeyNot($ignoreReclaimId))
             ->active()
             ->exists();
     }
@@ -359,6 +365,50 @@ class StorageReclaimService
         } finally {
             $lock->release();
         }
+    }
+
+    /**
+     * Queue the work for a pending reclaim.
+     *
+     * Everything lands on the `storage-reclaim` queue, whose supervisor runs a
+     * single niced process — that, rather than any per-request limit, is what
+     * stops a bulk reclaim of two hundred files from starving live uploads.
+     */
+    public function start(StorageReclaim $reclaim): bool
+    {
+        if ($reclaim->status !== StorageReclaim::PENDING) {
+            return false;
+        }
+
+        switch ($reclaim->target) {
+            case StorageReclaim::TARGET_HLS:
+                ReclaimHlsJob::dispatch($reclaim->id);
+
+                return true;
+            default:
+                // Rendition and original re-encoding land in later phases; a
+                // row with no worker would sit pending forever, so refuse it
+                // here rather than leave it looking queued.
+                $this->finish($reclaim, StorageReclaim::FAILED, 'No worker is available for this reclaim target yet.');
+
+                return false;
+        }
+    }
+
+    /**
+     * Request a reclaim and queue it in one step.
+     *
+     * @return array{reclaim: ?StorageReclaim, reason: ?string}
+     */
+    public function requestAndStart(Video $video, string $target, ?string $quality = null, ?User $by = null): array
+    {
+        $result = $this->request($video, $target, $quality, $by);
+
+        if ($result['reclaim']) {
+            $this->start($result['reclaim']);
+        }
+
+        return $result;
     }
 
     // ── Review ──────────────────────────────────────────────────────────────
@@ -637,6 +687,22 @@ class StorageReclaimService
      * second replacement of the same file serves the stale bytes it was meant
      * to bust.
      */
+    /**
+     * Note that files under this video changed in place.
+     *
+     * Bumps the cache-busting version and brings the Media Library index and
+     * the storage report back in line. Public because a job can change a
+     * video's files without a review step — the HLS master playlist is
+     * rewritten as part of the reclaim itself, not on accept.
+     */
+    public function markMediaChanged(Video $video): void
+    {
+        $this->bumpMediaVersion($video);
+
+        IndexMediaDirectoryJob::dispatch($this->videoDir($video));
+        MediaStorageReport::forget();
+    }
+
     protected function bumpMediaVersion(Video $video): void
     {
         Video::withTrashed()

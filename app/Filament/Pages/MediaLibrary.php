@@ -7,6 +7,8 @@ use App\Jobs\ReindexMediaLibraryJob;
 use App\Models\Image;
 use App\Models\MediaFile;
 use App\Models\MediaFolder;
+use App\Models\Setting;
+use App\Models\StorageReclaim;
 use App\Models\Video;
 use App\Services\FileManagerThumbnailService;
 use App\Services\Media\MediaGuard;
@@ -15,6 +17,7 @@ use App\Services\Media\MediaPathGuard;
 use App\Services\Media\MediaReferenceResolver;
 use App\Services\Media\MediaStorageReport;
 use App\Services\Media\MediaThumbnailDispatcher;
+use App\Services\Storage\StorageReclaimService;
 use App\Support\Bytes;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -160,6 +163,16 @@ class MediaLibrary extends Page
     public array $moveTargets = [];
 
     public string $moveDestination = '';
+
+    public bool $showReclaimModal = false;
+
+    /** @var list<array{video_id: int, title: string, target: string, quality: ?string, label: string}> */
+    public array $reclaimPlan = [];
+
+    /** @var list<array{title: string, target: string, reason: string}> */
+    public array $reclaimRefusals = [];
+
+    public bool $disableHlsGeneration = false;
 
     public bool $showMoveModal = false;
 
@@ -1282,6 +1295,116 @@ class MediaLibrary extends Page
 
         $this->moveDestination = '';
         $this->showMoveModal = true;
+    }
+
+    /**
+     * Offer to reclaim storage from the selected files.
+     *
+     * The Media Library is where you notice a big file, so it is where asking
+     * to shrink it belongs. Selecting files does not queue anything: this
+     * resolves them to the reclaims they imply — two hundred HLS segments are
+     * one tree, not two hundred jobs — and shows what would happen, with each
+     * refusal spelled out, before anything is queued.
+     *
+     * @param  list<string>  $paths
+     */
+    public function startReclaim(array $paths = []): void
+    {
+        $paths = $this->resolveBulkPaths($paths);
+        $service = app(StorageReclaimService::class);
+
+        $this->reclaimPlan = [];
+        $this->reclaimRefusals = [];
+
+        foreach ($service->targetsForPaths($paths) as $resolved) {
+            $reason = $service->eligibility($resolved['video'], $resolved['target'], $resolved['quality']);
+
+            $label = trim($resolved['target'].' '.($resolved['quality'] ?? ''));
+
+            if ($reason !== null) {
+                $this->reclaimRefusals[] = [
+                    'title' => $resolved['video']->title,
+                    'target' => $label,
+                    'reason' => $reason,
+                ];
+
+                continue;
+            }
+
+            $this->reclaimPlan[] = [
+                'video_id' => $resolved['video']->id,
+                'title' => $resolved['video']->title,
+                'target' => $resolved['target'],
+                'quality' => $resolved['quality'],
+                'label' => $label,
+            ];
+        }
+
+        if ($this->reclaimPlan === [] && $this->reclaimRefusals === []) {
+            Notification::make()
+                ->title('Nothing here can be reclaimed')
+                ->body('Storage reclaim works on a video’s original upload, its encoded renditions and its HLS copy.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $this->disableHlsGeneration = false;
+        $this->showReclaimModal = true;
+    }
+
+    public function cancelReclaim(): void
+    {
+        $this->showReclaimModal = false;
+        $this->reclaimPlan = [];
+        $this->reclaimRefusals = [];
+    }
+
+    /** Whether anything in the current plan gives up an HLS copy. */
+    public function getReclaimsHlsProperty(): bool
+    {
+        return collect($this->reclaimPlan)->contains('target', StorageReclaim::TARGET_HLS);
+    }
+
+    public function confirmReclaim(): void
+    {
+        $service = app(StorageReclaimService::class);
+        $queued = 0;
+
+        foreach ($this->reclaimPlan as $entry) {
+            $video = Video::find($entry['video_id']);
+
+            if (! $video) {
+                continue;
+            }
+
+            // Re-resolved from the id and re-checked inside the service, so a
+            // stale modal cannot queue work the current state would refuse.
+            if ($service->requestAndStart($video, $entry['target'], $entry['quality'])['reclaim']) {
+                $queued++;
+            }
+        }
+
+        // Offered here because reclaiming HLS from a video whose site setting
+        // still generates it means the next encode puts it straight back.
+        if ($this->disableHlsGeneration && $this->getReclaimsHlsProperty()) {
+            Setting::set('generate_hls', false, 'general', 'boolean');
+        }
+
+        $this->cancelReclaim();
+
+        if ($queued === 0) {
+            Notification::make()->title('Nothing was queued')->warning()->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title("Queued {$queued} reclaim".($queued === 1 ? '' : 's'))
+            ->body('They run one at a time. Review the results in Content → Storage Reclaim; nothing is deleted until you accept.')
+            ->success()
+            ->send();
     }
 
     public function cancelMove(): void
