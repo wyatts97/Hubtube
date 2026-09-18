@@ -88,6 +88,10 @@ class SiteSettings extends Page implements HasForms
             'video_quality_preset' => Setting::get('video_quality_preset', 'veryfast'),
             'ffmpeg_rate_control' => Setting::get('ffmpeg_rate_control', 'crf'),
             'ffmpeg_crf' => Setting::get('ffmpeg_crf', 22),
+            'reclaim_preset' => Setting::get('reclaim_preset', 'slow'),
+            'reclaim_crf_delta' => Setting::get('reclaim_crf_delta', 2),
+            'reclaim_min_saving_percent' => Setting::get('reclaim_min_saving_percent', 15),
+            'reclaim_keep_days' => Setting::get('reclaim_keep_days', 14),
             'ffmpeg_pix_fmt' => Setting::get('ffmpeg_pix_fmt', 'yuv420p'),
             'ffmpeg_mp4_extra_args' => Setting::get('ffmpeg_mp4_extra_args', ''),
             'ffmpeg_hls_extra_args' => Setting::get('ffmpeg_hls_extra_args', ''),
@@ -519,6 +523,41 @@ class SiteSettings extends Page implements HasForms
                                             ->maxValue(30)
                                             ->default(22)
                                             ->visible(fn ($get) => $get('ffmpeg_rate_control') === 'crf'),
+                                        // Storage reclaim re-encodes files that
+                                        // already work, so the quality trade is
+                                        // a judgement call and belongs here
+                                        // rather than in config.
+                                        Select::make('reclaim_preset')
+                                            ->label('Reclaim Preset')
+                                            ->options([
+                                                'medium' => 'Medium',
+                                                'slow' => 'Slow (Recommended)',
+                                                'slower' => 'Slower',
+                                                'veryslow' => 'Very Slow',
+                                            ])
+                                            ->default('slow')
+                                            ->helperText('Encoding is normally "very fast". A slower preset is where most of the storage saving comes from.'),
+                                        TextInput::make('reclaim_crf_delta')
+                                            ->label('Reclaim CRF Increase')
+                                            ->numeric()
+                                            ->minValue(0)
+                                            ->maxValue(6)
+                                            ->default(2)
+                                            ->helperText('Added to the CRF above when reclaiming. Each +1 is roughly 15% smaller and slightly softer.'),
+                                        TextInput::make('reclaim_min_saving_percent')
+                                            ->label('Minimum Saving to Offer (%)')
+                                            ->numeric()
+                                            ->minValue(1)
+                                            ->maxValue(90)
+                                            ->default(15)
+                                            ->helperText('A re-encode that saves less than this is discarded and the original left alone.'),
+                                        TextInput::make('reclaim_keep_days')
+                                            ->label('Keep Replaced Files For (days)')
+                                            ->numeric()
+                                            ->minValue(1)
+                                            ->maxValue(365)
+                                            ->default(14)
+                                            ->helperText('A reclaim holds the old file this long. Unreviewed after that, it is accepted automatically and the old file deleted.'),
                                         TextInput::make('ffmpeg_pix_fmt')
                                             ->label('Pixel Format')
                                             ->placeholder('yuv420p')

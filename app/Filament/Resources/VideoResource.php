@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Events\VideoProcessed;
+use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Exports\VideoExporter;
 use App\Filament\Resources\VideoResource\Pages\CreateVideo;
 use App\Filament\Resources\VideoResource\Pages\EditVideo;
@@ -59,7 +59,6 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 
 class VideoResource extends Resource
@@ -329,14 +328,13 @@ class VideoResource extends Resource
      * Whether "encode missing renditions" can run: a processed, uploaded (not
      * embedded) video whose source is still on local disk and isn't already
      * being encoded.
+     *
+     * A thin wrapper over the model so this and StorageReclaimService can
+     * never drift on what "this video can be encoded again" means.
      */
     public static function canEncodeMissing(Video $record): bool
     {
-        return $record->status === 'processed'
-            && ! $record->is_embedded
-            && $record->video_path
-            && Storage::disk('public')->exists($record->video_path)
-            && ! $record->isEncoding();
+        return $record->canReencode();
     }
 
     public static function dispatchMissingRenditions(Video $record): void

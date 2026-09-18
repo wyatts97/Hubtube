@@ -120,6 +120,24 @@ return [
                 'timeout' => 300,
                 'nice' => 10,
             ],
+            // Storage reclaim: re-encoding files that already work, to make
+            // them smaller. maxProcesses 1 is the whole answer to "a bulk
+            // reclaim of 200 files must not starve live uploads" — reclaim
+            // encoding is strictly serial, and nice 15 means it yields CPU to
+            // everything else on the box. tries 1 because a half-written
+            // re-encode must never be retried automatically.
+            'storage-reclaim' => [
+                'connection' => 'redis',
+                'queue' => ['storage-reclaim'],
+                'balance' => 'simple',
+                'maxProcesses' => 1,
+                'maxTime' => 0,
+                'maxJobs' => 0,
+                'memory' => 512,
+                'tries' => 1,
+                'timeout' => 7200,
+                'nice' => 15,
+            ],
         ],
         'local' => [
             'supervisor-1' => [
@@ -175,6 +193,18 @@ return [
                 'tries' => 2,
                 'timeout' => 300,
                 'nice' => 10,
+            ],
+            'storage-reclaim' => [
+                'connection' => 'redis',
+                'queue' => ['storage-reclaim'],
+                'balance' => 'simple',
+                'maxProcesses' => 1,
+                'maxTime' => 0,
+                'maxJobs' => 0,
+                'memory' => 512,
+                'tries' => 1,
+                'timeout' => 7200,
+                'nice' => 15,
             ],
         ],
     ],

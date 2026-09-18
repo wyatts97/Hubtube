@@ -1,12 +1,24 @@
 <?php
 
+use App\Models\Setting;
+use App\Models\User;
+use App\Models\Video;
+use App\Models\VideoEncoding;
+use App\Services\Storage\StorageReclaimService;
+use App\Services\Translation\TranslationProviderManager;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Testing\TestResponse;
+use Tests\Support\FakeTranslationProvider;
+use Tests\TestCase;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
 |--------------------------------------------------------------------------
 */
 
-uses(Tests\TestCase::class)->in('Feature', 'Unit');
+uses(TestCase::class)->in('Feature', 'Unit');
 
 /*
 |--------------------------------------------------------------------------
@@ -27,20 +39,22 @@ expect()->extend('toBeOne', function () {
 /**
  * Create and authenticate a regular user.
  */
-function asUser(?App\Models\User $user = null): App\Models\User
+function asUser(?User $user = null): User
 {
-    $user ??= App\Models\User::factory()->create();
+    $user ??= User::factory()->create();
     test()->actingAs($user);
+
     return $user;
 }
 
 /**
  * Create and authenticate an admin user.
  */
-function asAdmin(?App\Models\User $user = null): App\Models\User
+function asAdmin(?User $user = null): User
 {
-    $user ??= App\Models\User::factory()->admin()->create();
+    $user ??= User::factory()->admin()->create();
     test()->actingAs($user);
+
     return $user;
 }
 
@@ -52,17 +66,17 @@ function asAdmin(?App\Models\User $user = null): App\Models\User
  */
 function enableLocales(array $locales, string $default = 'en'): void
 {
-    App\Models\Setting::set('translation_enabled', '1', 'language');
-    App\Models\Setting::set('default_language', $default, 'language');
-    App\Models\Setting::set('enabled_languages', $locales, 'language');
-    App\Models\Setting::clearCache();
+    Setting::set('translation_enabled', '1', 'language');
+    Setting::set('default_language', $default, 'language');
+    Setting::set('enabled_languages', $locales, 'language');
+    Setting::clearCache();
 }
 
 /**
  * Extract the rel="alternate" hreflang links from a rendered page as
  * [hreflangCode => href], with the app URL stripped for readable assertions.
  */
-function hreflangLinks(Illuminate\Testing\TestResponse $response): array
+function hreflangLinks(TestResponse $response): array
 {
     preg_match_all(
         '/<link rel="alternate" hreflang="([^"]+)" href="([^"]*)"/',
@@ -84,7 +98,7 @@ function hreflangLinks(Illuminate\Testing\TestResponse $response): array
  * which a few routes lose — since this reads the same data-page payload the
  * browser consumes.
  */
-function inertiaPagePayload(Illuminate\Testing\TestResponse $response): array
+function inertiaPagePayload(TestResponse $response): array
 {
     expect($response->getContent())->toMatch('/data-page="/');
 
@@ -105,11 +119,11 @@ function inertiaPagePayload(Illuminate\Testing\TestResponse $response): array
  */
 function useFakeTranslationProvider(array $config = []): void
 {
-    Tests\Support\FakeTranslationProvider::reset();
+    FakeTranslationProvider::reset();
 
     config([
         'translation.drivers.fake' => array_merge(
-            ['class' => Tests\Support\FakeTranslationProvider::class],
+            ['class' => FakeTranslationProvider::class],
             $config,
         ),
         'translation.batch.fake' => array_merge(['max_items' => 25, 'max_chars' => 4000], $config),
@@ -117,7 +131,53 @@ function useFakeTranslationProvider(array $config = []): void
         'translation.locale_map.fake' => ['pt' => 'pt-BR'],
     ]);
 
-    App\Models\Setting::set('translation_provider', 'fake', 'translation', 'string');
-    App\Models\Setting::clearCache();
-    app(App\Services\Translation\TranslationProviderManager::class)->forget();
+    Setting::set('translation_provider', 'fake', 'translation', 'string');
+    Setting::clearCache();
+    app(TranslationProviderManager::class)->forget();
+}
+
+/**
+ * The storage reclaim service, for the reclaim feature tests.
+ */
+function reclaims(): StorageReclaimService
+{
+    return app(StorageReclaimService::class);
+}
+
+/**
+ * A finished video with real files on the public disk: an original, two
+ * renditions with completed encoding rows, an HLS segment tree and a master
+ * playlist — the layout the encoder actually writes, which is what the
+ * reclaim path parses and acts on.
+ */
+function processedVideo(array $attributes = []): Video
+{
+    $video = Video::factory()->create(array_merge([
+        'status' => 'processed',
+        'video_path' => 'videos/clip-'.Str::random(6).'/original.mp4',
+        'duration' => 600,
+        'qualities_available' => ['original', '720p', '480p'],
+    ], $attributes));
+
+    $disk = Storage::disk('public');
+    $disk->put($video->video_path, str_repeat('x', 900_000));
+
+    $dir = dirname($video->video_path);
+
+    foreach (['720p', '480p'] as $quality) {
+        $disk->put($dir."/processed/{$quality}.mp4", str_repeat('x', 200_000));
+
+        VideoEncoding::create([
+            'video_id' => $video->id,
+            'quality' => $quality,
+            'status' => VideoEncoding::COMPLETED,
+            'run_id' => (string) Str::uuid(),
+            'size' => 200_000,
+        ]);
+    }
+
+    $disk->put($dir.'/processed/hls/720p/segment_000.ts', str_repeat('x', 150_000));
+    $disk->put($dir.'/processed/master.m3u8', '#EXTM3U');
+
+    return $video->fresh();
 }
