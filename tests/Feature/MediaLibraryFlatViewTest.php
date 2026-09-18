@@ -258,7 +258,9 @@ test('the report totals each root from the maintained rollups', function () {
         ->and($report['roots'][0]['path'])->toBe('videos');
 });
 
-test('reclaimable HLS counts the duplicate segment tree and nothing else', function () {
+test('the HLS figure covers the segment tree and nothing else', function () {
+    // Reported so the disk is understandable, not as something to reclaim:
+    // the player streams from these.
     seedSized([
         'videos/clip/original.mp4' => 9000,
         'videos/clip/processed/720p.mp4' => 3000,
@@ -269,7 +271,7 @@ test('reclaimable HLS counts the duplicate segment tree and nothing else', funct
         'media/hls/unrelated.ts' => 8888,
     ]);
 
-    expect(app(MediaStorageReport::class)->reclaimableHls())->toBe(2600);
+    expect(app(MediaStorageReport::class)->hlsBytes())->toBe(2600);
 });
 
 test('the videos breakdown separates originals from renditions and HLS', function () {

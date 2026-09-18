@@ -2,50 +2,43 @@
 
 namespace App\Console\Commands;
 
-use App\Models\MediaFolder;
-use App\Models\StorageReclaim;
 use App\Models\Video;
 use App\Services\Storage\StorageReclaimService;
+use App\Support\Bytes;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 
 /**
- * Queue storage reclaims for the biggest candidates.
+ * Queue re-compressions of the biggest original uploads.
  *
- * Deliberately a limited command rather than a "reclaim everything" button:
- * this re-encodes or drops files a live site is serving, so the intended way
- * to use it is `--limit=1` on one known video, check the result in the review
- * page against `du -sh`, and only then widen.
+ * Deliberately a limited command rather than a "shrink everything" button:
+ * this re-encodes files a live site is serving, so the intended way to use it
+ * is `--limit=1` on one known video, check the result in the review page
+ * against `du -sh`, and only then widen.
+ *
+ * Nothing here deletes anything. Each queued encode writes a new file beside
+ * the original and waits for a human to accept it.
  */
 class ReclaimStorage extends Command
 {
     protected $signature = 'storage:reclaim
-                            {--target=hls : hls, rendition or original}
-                            {--quality= : Which rendition, for --target=rendition}
-                            {--video= : Reclaim one video by id, ignoring the ranking}
+                            {--video= : Re-compress one video by id, ignoring the ranking}
                             {--limit=10 : How many videos to queue}
-                            {--min-bytes= : Skip candidates holding less than this}
+                            {--min-bytes= : Skip uploads smaller than this}
                             {--dry-run : List the candidates and stop}';
 
-    protected $description = 'Queue storage reclaims, biggest candidates first';
+    protected $description = 'Queue re-compressions of the largest original uploads';
 
     public function handle(StorageReclaimService $reclaims): int
     {
-        $target = (string) $this->option('target');
-
-        if (! in_array($target, StorageReclaim::TARGETS, true)) {
-            $this->error('--target must be one of: '.implode(', ', StorageReclaim::TARGETS));
-
-            return self::FAILURE;
-        }
-
-        $quality = $this->option('quality') ? (string) $this->option('quality') : null;
         $limit = max(1, (int) $this->option('limit'));
         $minBytes = $this->option('min-bytes') !== null ? (int) $this->option('min-bytes') : 0;
 
         $candidates = $this->option('video')
             ? Video::where('id', (int) $this->option('video'))->get()
-            : $this->rank($target, $limit * 3, $minBytes);
+            // Over-fetched, because eligibility refuses some of these and the
+            // limit counts what was actually queued.
+            : $this->rank($limit * 3, $minBytes);
 
         if ($candidates->isEmpty()) {
             $this->info('No candidates found.');
@@ -61,24 +54,25 @@ class ReclaimStorage extends Command
                 break;
             }
 
-            if ($reason = $reclaims->eligibility($video, $target, $quality)) {
-                $rows[] = [$video->id, $this->truncate($video->title), 'skipped', $reason];
+            if ($reason = $reclaims->eligibility($video)) {
+                $rows[] = [$video->id, $this->truncate($video->title), Bytes::format((int) $video->size), 'skipped', $reason];
 
                 continue;
             }
 
             if ($this->option('dry-run')) {
-                $rows[] = [$video->id, $this->truncate($video->title), 'would queue', '—'];
+                $rows[] = [$video->id, $this->truncate($video->title), Bytes::format((int) $video->size), 'would queue', '—'];
                 $queued++;
 
                 continue;
             }
 
-            $result = $reclaims->requestAndStart($video, $target, $quality);
+            $result = $reclaims->requestAndStart($video);
 
             $rows[] = [
                 $video->id,
                 $this->truncate($video->title),
+                Bytes::format((int) $video->size),
                 $result['reclaim'] ? 'queued' : 'refused',
                 $result['reason'] ?? '—',
             ];
@@ -88,62 +82,25 @@ class ReclaimStorage extends Command
             }
         }
 
-        $this->table(['Video', 'Title', 'Result', 'Reason'], $rows);
+        $this->table(['Video', 'Title', 'Upload', 'Result', 'Reason'], $rows);
 
         $this->info($this->option('dry-run')
-            ? "{$queued} reclaim(s) would be queued."
-            : "Queued {$queued} reclaim(s) on the storage-reclaim queue. Review them in Admin → Content → Storage Reclaim.");
+            ? "{$queued} re-compression(s) would be queued."
+            : "Queued {$queued} re-compression(s) on the storage-reclaim queue. Review them in Admin → Content → Storage Reclaim; nothing is deleted until you accept.");
 
         return self::SUCCESS;
     }
 
     /**
-     * Videos ranked by how much the chosen target is holding.
+     * Processed videos with the largest uploads first.
      *
-     * For HLS this reads the folder rollups the media index already maintains
-     * — `videos/{slug}/processed/hls` at depth 3 — so the biggest duplicate
-     * trees come first without a filesystem walk. For the encode targets the
-     * file size is the ranking, biggest first.
+     * `videos.size` is the upload's own size, which is what this shrinks, so
+     * it is both the ranking and the thing being measured.
      *
      * @return Collection<int, Video>
      */
-    protected function rank(string $target, int $take, int $minBytes)
+    protected function rank(int $take, int $minBytes): Collection
     {
-        if ($target === StorageReclaim::TARGET_HLS) {
-            $directories = MediaFolder::query()
-                ->where('root', 'videos')
-                ->where('depth', 3)
-                ->where('name_lower', 'hls')
-                ->when($minBytes > 0, fn ($query) => $query->where('total_size', '>=', $minBytes))
-                ->orderByDesc('total_size')
-                ->limit($take)
-                ->pluck('path');
-
-            // videos/{slug}/processed/hls → videos/{slug}
-            $prefixes = $directories
-                ->map(fn (string $path) => dirname(dirname($path)).'/')
-                ->all();
-
-            if ($prefixes === []) {
-                return collect();
-            }
-
-            $videos = Video::query()
-                ->where(function ($query) use ($prefixes) {
-                    foreach ($prefixes as $prefix) {
-                        $query->orWhere('video_path', 'like', $prefix.'%');
-                    }
-                })
-                ->get()
-                ->keyBy(fn (Video $video) => dirname($video->video_path).'/');
-
-            // Preserve the biggest-first order the rollups gave us.
-            return collect($prefixes)
-                ->map(fn (string $prefix) => $videos->get($prefix))
-                ->filter()
-                ->values();
-        }
-
         return Video::query()
             ->where('status', 'processed')
             ->where('is_embedded', false)

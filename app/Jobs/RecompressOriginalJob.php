@@ -74,7 +74,7 @@ class RecompressOriginalJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        if ($reason = $reclaims->eligibility($video, StorageReclaim::TARGET_ORIGINAL, null, $reclaim->id)) {
+        if ($reason = $reclaims->eligibility($video, $reclaim->id)) {
             $this->settleAs($reclaim, StorageReclaim::SKIPPED, $reason);
 
             return;
@@ -97,7 +97,6 @@ class RecompressOriginalJob implements ShouldBeUnique, ShouldQueue
             // The old file stays exactly where it is and keeps serving; only
             // an accept repoints the column away from it.
             'kept_path' => $source,
-            'kept_is_hardlink' => false,
             'before_bytes' => $disk->size($source),
             'before_duration_ms' => (int) round(((float) $video->duration) * 1000),
         ])->saveQuietly();

@@ -52,12 +52,12 @@
                 <p class="ht-ml-storage__label">Videos breakdown</p>
                 <ul class="ht-ml-storage__list">
                     <li class="ht-ml-storage__row">
-                        <span class="ht-ml-storage__rowName">Original uploads</span>
-                        <span class="ht-ml-storage__rowBytes">{{ \App\Support\Bytes::format($videos['originals']) }}</span>
-                    </li>
-                    <li class="ht-ml-storage__row">
                         <span class="ht-ml-storage__rowName">Encoded renditions</span>
                         <span class="ht-ml-storage__rowBytes">{{ \App\Support\Bytes::format($videos['renditions']) }}</span>
+                    </li>
+                    <li class="ht-ml-storage__row">
+                        <span class="ht-ml-storage__rowName">HLS segments</span>
+                        <span class="ht-ml-storage__rowBytes">{{ \App\Support\Bytes::format($videos['hls']) }}</span>
                     </li>
                     <li class="ht-ml-storage__row">
                         <span class="ht-ml-storage__rowName">Posters &amp; sprites</span>
@@ -66,19 +66,21 @@
                 </ul>
             </div>
 
-            {{-- The one figure here that can be reclaimed with no
-                 re-encoding: generate_hls defaults to on, so processed/hls
-                 holds a complete second copy of every rendition. --}}
+            {{-- The one thing here worth reclaiming: the uploaded file is the
+                 biggest a video owns and nothing streams from it — the player
+                 uses the HLS manifest, or the rendition MP4s. --}}
             <div class="ht-ml-storage__group">
-                <p class="ht-ml-storage__label">Duplicate HLS copies</p>
-                <p class="ht-ml-storage__big">{{ \App\Support\Bytes::format($report['reclaimable_hls']) }}</p>
-                @if ($report['reclaimable_hls'] > 0)
-                    <p class="ht-ml-storage__hint">
-                        A second copy of every rendition, as HLS segments. Reclaimable without re-encoding anything.
-                    </p>
-                @else
-                    <p class="ht-ml-storage__hint">No HLS duplicates on disk.</p>
-                @endif
+                <p class="ht-ml-storage__label">Original uploads</p>
+                <p class="ht-ml-storage__big">{{ \App\Support\Bytes::format($videos['originals']) }}</p>
+                <p class="ht-ml-storage__hint">
+                    The files people uploaded, kept as-is. Usually the largest thing on the disk and the
+                    only one nothing plays from — re-compressing these is where the space is.
+                </p>
+                <div class="ht-ml-storage__actions">
+                    <x-filament::button wire:click="showBiggest('video')" size="xs" color="gray" icon="phosphor-sort-descending">
+                        Biggest videos
+                    </x-filament::button>
+                </div>
             </div>
 
             {{-- A doorway into the real grid, not a parallel UI. --}}
@@ -95,9 +97,6 @@
                 <div class="ht-ml-storage__actions">
                     <x-filament::button wire:click="showBiggest" size="xs" color="gray" icon="phosphor-sort-descending">
                         Show all by size
-                    </x-filament::button>
-                    <x-filament::button wire:click="showBiggest('video')" size="xs" color="gray" icon="phosphor-film-strip">
-                        Biggest videos
                     </x-filament::button>
                 </div>
             </div>

@@ -66,9 +66,7 @@ class EncodeVideoChunkJob implements ShouldQueue
             ->where('status', VideoEncoding::QUEUED)
             ->update(['status' => VideoEncoding::PROCESSING, 'started_at' => now()]);
 
-        // A storage reclaim re-encodes this rendition with a slower preset
-        // and a higher CRF than the site default; the row carries them.
-        $commands = (new FfmpegCommands(Setting::getAll()))->withOverrides($encoding->settings_overrides ?? []);
+        $commands = new FfmpegCommands(Setting::getAll());
         $source = $coordinator->sourcePath($video);
 
         if (! file_exists($source)) {

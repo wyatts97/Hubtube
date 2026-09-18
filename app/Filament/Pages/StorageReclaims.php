@@ -19,16 +19,16 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
- * Review screen for storage reclaims.
+ * Review screen for re-compressed original uploads.
  *
- * Every reclaim produces a smaller file and then *stops*, holding the old one
- * until someone here says yes. This page ships before any operation exists, so
- * there is never a release in which work can be created with no way to review
- * it.
+ * Each attempt produces a smaller file and then *stops*: video_path still names
+ * the upload, so the site serves exactly what it did before until someone here
+ * accepts. Nothing expires and nothing is swept — a reclaim waits indefinitely
+ * rather than delete a file nobody agreed to delete.
  *
  * The number to read carefully is "awaiting review": those bytes are not saved
- * yet — they are being held twice, once as the new file and once as the old —
- * so they are counted separately from what has actually been reclaimed.
+ * yet — both copies are on disk while it waits — so they are counted separately
+ * from what has actually been reclaimed.
  */
 class StorageReclaims extends Page implements HasTable
 {
@@ -70,14 +70,8 @@ class StorageReclaims extends Page implements HasTable
             ->get()
             ->keyBy('status');
 
-        $realised = 0;
-
-        foreach ([StorageReclaim::ACCEPTED, StorageReclaim::EXPIRED] as $status) {
-            $realised += (int) ($rows[$status]->saved ?? 0);
-        }
-
         return [
-            'reclaimed' => $realised,
+            'reclaimed' => (int) ($rows[StorageReclaim::ACCEPTED]->saved ?? 0),
             // Held, not saved: the old file is still on disk.
             'awaiting' => (int) ($rows[StorageReclaim::AWAITING_REVIEW]->saved ?? 0),
             'awaiting_count' => StorageReclaim::query()->awaitingReview()->count(),
@@ -105,7 +99,7 @@ class StorageReclaims extends Page implements HasTable
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         StorageReclaim::AWAITING_REVIEW => 'warning',
-                        StorageReclaim::ACCEPTED, StorageReclaim::EXPIRED => 'success',
+                        StorageReclaim::ACCEPTED => 'success',
                         StorageReclaim::FAILED, StorageReclaim::REVERT_FAILED => 'danger',
                         StorageReclaim::REVERTED, StorageReclaim::SKIPPED => 'gray',
                         default => 'info',
@@ -131,17 +125,8 @@ class StorageReclaims extends Page implements HasTable
 
                 TextColumn::make('requester.username')
                     ->label('Requested by')
-                    ->placeholder('Scheduled')
+                    ->placeholder('Console')
                     ->toggleable(),
-
-                TextColumn::make('keep_until')
-                    ->label('Auto-accepts')
-                    ->placeholder('—')
-                    ->state(fn (StorageReclaim $record): ?string => $record->status === StorageReclaim::AWAITING_REVIEW
-                        ? $record->keep_until?->diffForHumans()
-                        : null)
-                    ->tooltip(fn (StorageReclaim $record): ?string => $record->keep_until?->toDayDateTimeString())
-                    ->sortable(),
 
                 TextColumn::make('created_at')
                     ->label('Started')
@@ -156,17 +141,10 @@ class StorageReclaims extends Page implements HasTable
                         StorageReclaim::PENDING => 'Pending',
                         StorageReclaim::RUNNING => 'Running',
                         StorageReclaim::ACCEPTED => 'Accepted',
-                        StorageReclaim::EXPIRED => 'Auto-accepted',
-                        StorageReclaim::REVERTED => 'Reverted',
+                        StorageReclaim::REVERTED => 'Discarded',
                         StorageReclaim::SKIPPED => 'Skipped',
                         StorageReclaim::FAILED => 'Failed',
                         StorageReclaim::REVERT_FAILED => 'Revert failed',
-                    ]),
-                SelectFilter::make('target')
-                    ->options([
-                        StorageReclaim::TARGET_ORIGINAL => 'Original upload',
-                        StorageReclaim::TARGET_RENDITION => 'Rendition',
-                        StorageReclaim::TARGET_HLS => 'HLS duplicate',
                     ]),
             ])
             ->recordActions([
@@ -192,18 +170,18 @@ class StorageReclaims extends Page implements HasTable
                     }),
 
                 Action::make('revert')
-                    ->label('Revert')
+                    ->label('Discard')
                     ->icon('phosphor-arrow-u-up-left')
                     ->color('gray')
                     ->visible(fn (StorageReclaim $record): bool => $record->status === StorageReclaim::AWAITING_REVIEW)
                     ->requiresConfirmation()
-                    ->modalHeading('Put the original file back?')
-                    ->modalDescription('The kept file is restored and the re-encoded one discarded. Playback goes back to exactly what it was.')
+                    ->modalHeading('Throw the re-compressed file away?')
+                    ->modalDescription('The upload keeps serving, exactly as it is now — it was never repointed. Only the candidate is deleted.')
                     ->action(function (StorageReclaim $record) {
                         $this->announce(
                             app(StorageReclaimService::class)->revert($record),
-                            'The original file was restored',
-                            'The kept file could not be restored. The video is still playing the file it was.',
+                            'The re-compressed file was discarded',
+                            'That could not be discarded.',
                         );
                     }),
 
@@ -230,7 +208,7 @@ class StorageReclaims extends Page implements HasTable
                     }),
 
                 BulkAction::make('revertSelected')
-                    ->label('Revert selected')
+                    ->label('Discard selected')
                     ->icon('phosphor-arrow-u-up-left')
                     ->color('gray')
                     ->requiresConfirmation()
@@ -239,7 +217,7 @@ class StorageReclaims extends Page implements HasTable
                     }),
             ])
             ->emptyStateHeading('No storage reclaims yet')
-            ->emptyStateDescription('Reclaims are requested from the Media Library, or with `php artisan storage:reclaim`.')
+            ->emptyStateDescription('Re-compressions are requested from the Media Library, or with `php artisan storage:reclaim`.')
             ->emptyStateIcon('phosphor-recycle');
     }
 
@@ -264,7 +242,7 @@ class StorageReclaims extends Page implements HasTable
         Notification::make()
             ->title($method === 'accept'
                 ? "Accepted {$done} reclaim(s), freeing ".Bytes::format($freed)
-                : "Reverted {$done} reclaim(s)")
+                : "Discarded {$done} reclaim(s)")
             ->body($skipped > 0 ? "{$skipped} could not be processed and were left alone." : null)
             ->color($done > 0 ? 'success' : 'warning')
             ->send();

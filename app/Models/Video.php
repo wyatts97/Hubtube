@@ -111,7 +111,6 @@ class Video extends Model
             'price' => 'decimal:2',
             'rent_price' => 'decimal:2',
             'qualities_available' => 'array',
-            'media_version' => 'integer',
             'geo_blocked_countries' => 'array',
             'tags' => 'array',
             'published_at' => 'datetime',
@@ -733,28 +732,6 @@ class Video extends Model
         return StorageManager::temporaryUrl($path, (int) Setting::get('cloud_url_expiry_minutes', 120), $disk);
     }
 
-    /**
-     * Append the media version, so a file replaced in place is refetched.
-     *
-     * nginx sets `expires 30d` on .mp4 under /storage and Cloudflare sits in
-     * front of it with no purge integration, so overwriting a rendition would
-     * otherwise serve the old bytes for a month. Only on the public disk: a
-     * query string appended to a pre-signed cloud URL breaks its signature.
-     *
-     * Reads the raw attribute so a partial select cannot throw under
-     * Model::shouldBeStrict().
-     */
-    protected function versioned(string $url): string
-    {
-        $version = (int) ($this->attributes['media_version'] ?? 0);
-
-        if ($version < 1 || ($this->storage_disk ?? 'public') !== 'public') {
-            return $url;
-        }
-
-        return $url.(str_contains($url, '?') ? '&' : '?').'v='.$version;
-    }
-
     public function getFormattedDurationAttribute(): string
     {
         $seconds = $this->duration;
@@ -841,9 +818,7 @@ class Video extends Model
             return null;
         }
 
-        // Versioned: reclaiming or reverting HLS rewrites the master and its
-        // segments under the same names.
-        return $this->versioned($this->mediaUrl($masterPath));
+        return $this->mediaUrl($masterPath);
     }
 
     public function getQualityUrlsAttribute(): array
@@ -858,14 +833,11 @@ class Video extends Model
 
         foreach ($this->qualities_available as $quality) {
             if ($quality === 'original') {
-                // No version needed: a re-compressed original lands at a new
-                // filename, which sidesteps the cache by itself.
                 $urls['original'] = $this->mediaUrl($this->video_path);
             } else {
                 $path = $baseDir.'/processed/'.$quality.'.mp4';
                 if (StorageManager::exists($path, $disk)) {
-                    // A re-encoded rendition keeps its path, so it needs one.
-                    $urls[$quality] = $this->versioned($this->mediaUrl($path));
+                    $urls[$quality] = $this->mediaUrl($path);
                 }
             }
         }

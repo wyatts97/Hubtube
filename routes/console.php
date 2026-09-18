@@ -62,16 +62,6 @@ Schedule::command('media:thumbnails --limit=0 --prune')
     ->withoutOverlapping()
     ->onOneServer();
 
-// A storage reclaim holds the old file until an admin accepts it, so the space
-// is not actually free while it waits. Rows nobody reviews would hold those
-// bytes forever, which is the one way this feature could cost disk instead of
-// saving it — so a passed keep_until counts as acceptance. Overnight, because
-// accepting deletes files.
-Schedule::command('storage:reclaim-sweep')
-    ->dailyAt('04:25')
-    ->withoutOverlapping()
-    ->onOneServer();
-
 // Revoke expired points-granted Pro access
 Schedule::command('points:expire-pro')->hourly();
 

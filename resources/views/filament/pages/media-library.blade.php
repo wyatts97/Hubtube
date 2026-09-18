@@ -275,7 +275,7 @@
                     Move to…
                 </x-filament::button>
                 <x-filament::button size="xs" color="warning" icon="phosphor-recycle" x-on:click="$wire.startReclaim(paths())">
-                    Reclaim space…
+                    Re-compress…
                 </x-filament::button>
                 <x-filament::button size="xs" color="danger" icon="phosphor-trash" x-on:click="$wire.deleteSelectedFiles(paths())">
                     Delete
@@ -646,50 +646,39 @@
         </x-slot>
     </x-filament::modal>
 
-    {{-- Reclaim storage. Nothing here deletes anything: each queued job
-         produces a smaller file, keeps the old one, and waits for a decision
-         on the Storage Reclaim page. --}}
+    {{-- Re-compress original uploads. Nothing here deletes anything: each
+         queued encode writes a new file, leaves video_path alone, and waits
+         for a decision on the Storage Reclaim page. --}}
     <x-filament::modal id="ml-reclaim" :visible="$showReclaimModal" width="lg" alignment="center">
-        <x-slot name="heading">Reclaim storage</x-slot>
+        <x-slot name="heading">Re-compress original uploads</x-slot>
 
         @if ($reclaimPlan !== [])
             <p class="ht-ml-modal__lede">
-                {{ count($reclaimPlan) }} {{ \Illuminate\Support\Str::plural('file', count($reclaimPlan)) }} can be reclaimed.
-                Each one is re-encoded or set aside <strong>without deleting anything</strong> — the file it replaces is kept
-                until you accept it in Content → Storage Reclaim.
+                {{ count($reclaimPlan) }} {{ \Illuminate\Support\Str::plural('upload', count($reclaimPlan)) }}
+                will be encoded again at a slower preset. <strong>Nothing is deleted and nothing changes for
+                viewers</strong> — the result lands beside the original as a new file, and the site keeps
+                serving the upload until you accept it in Content → Storage Reclaim.
             </p>
             <ul class="ht-ml-reclaim__list">
                 @foreach ($reclaimPlan as $entry)
                     <li class="ht-ml-reclaim__row">
                         <span class="ht-ml-reclaim__title">{{ $entry['title'] }}</span>
-                        <span class="ht-ml-reclaim__target">{{ $entry['label'] }}</span>
+                        <span class="ht-ml-reclaim__target">{{ $entry['size'] }}</span>
                     </li>
                 @endforeach
             </ul>
-
-            @if ($this->getReclaimsHlsProperty())
-                {{-- Without this the next encode of this video puts the HLS
-                     copy straight back, and the reclaim was for nothing. --}}
-                <label class="ht-ml-reclaim__toggle">
-                    <input type="checkbox" wire:model="disableHlsGeneration" />
-                    <span>
-                        Also stop generating HLS for new uploads.
-                        <em>HLS generation is currently
-                            {{ \App\Models\Setting::get('generate_hls', true) ? 'on' : 'off' }}</em> —
-                        while it is on, every new encode writes a second copy of each rendition as segments.
-                    </span>
-                </label>
-            @endif
+            <p class="ht-ml-reclaim__note">
+                Encoded renditions and HLS segments are never touched — those are what the player streams.
+            </p>
         @endif
 
         @if ($reclaimRefusals !== [])
             <div class="ht-ml-reclaim__refusals">
-                <p class="ht-ml-reclaim__refusalsHead">Not reclaimable</p>
+                <p class="ht-ml-reclaim__refusalsHead">Not re-compressible</p>
                 <ul class="ht-ml-reclaim__list">
                     @foreach ($reclaimRefusals as $refusal)
                         <li class="ht-ml-reclaim__row">
                             <span class="ht-ml-reclaim__title">{{ $refusal['title'] }}</span>
-                            <span class="ht-ml-reclaim__target">{{ $refusal['target'] }}</span>
                             <span class="ht-ml-reclaim__reason">{{ $refusal['reason'] }}</span>
                         </li>
                     @endforeach
@@ -701,7 +690,7 @@
             <x-filament::button wire:click="cancelReclaim" color="gray">Cancel</x-filament::button>
             @if ($reclaimPlan !== [])
                 <x-filament::button wire:click="confirmReclaim" color="warning" icon="phosphor-recycle">
-                    Queue {{ count($reclaimPlan) }} {{ \Illuminate\Support\Str::plural('reclaim', count($reclaimPlan)) }}
+                    Queue {{ count($reclaimPlan) }} {{ \Illuminate\Support\Str::plural('encode', count($reclaimPlan)) }}
                 </x-filament::button>
             @endif
         </x-slot>

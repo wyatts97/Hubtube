@@ -28,7 +28,8 @@
                     {{ \App\Support\Bytes::format($totals['awaiting']) }}
                 </p>
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    {{ $totals['awaiting_count'] }} waiting. Not saved yet — the old file is still on disk until you accept.
+                    {{ $totals['awaiting_count'] }} waiting. Not saved yet — the upload is still on disk, and still
+                    what the site serves, until you accept.
                 </p>
             </x-filament::section>
 
@@ -46,7 +47,7 @@
         <x-filament::section
             heading="Reclaim history"
             icon="phosphor-recycle"
-            description="Every reclaim keeps the file it replaced until it is accepted here. Reverting puts the old file back exactly as it was; accepting deletes it permanently, and there are no backups of media files."
+            description="Each attempt re-compresses a video's original upload to a new file and waits. Until you accept, the site still serves the upload; accepting deletes it permanently, and there are no backups of media files. Renditions and HLS segments are never touched — those are what the player streams."
         >
             {{ $this->table }}
         </x-filament::section>

@@ -3,22 +3,17 @@
 namespace App\Services\Storage;
 
 use App\Jobs\IndexMediaDirectoryJob;
-use App\Jobs\ReclaimHlsJob;
 use App\Jobs\RecompressOriginalJob;
-use App\Jobs\ReencodeRenditionJob;
 use App\Models\Setting;
 use App\Models\StorageReclaim;
 use App\Models\User;
 use App\Models\Video;
-use App\Models\VideoEncoding;
 use App\Services\AdminLogger;
 use App\Services\Encoding\MediaProbe;
 use App\Services\Media\MediaReferenceResolver;
 use App\Services\Media\MediaStorageReport;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -26,22 +21,29 @@ use RuntimeException;
 use Throwable;
 
 /**
- * Requesting, reviewing and unwinding storage reclaims.
+ * Requesting and reviewing re-compressions of original uploads.
  *
- * Reclaiming space means deleting or replacing files a running site is
- * serving, on a box with no media backups (config/backup.php excludes
- * storage/app/public). Everything here is built around one invariant:
+ * Reclaiming space means replacing a file a running site is serving, on a box
+ * with no media backups (config/backup.php excludes storage/app/public).
+ * Everything here is built around one invariant:
  *
- *   **The file at the canonical path is always the current good one.**
+ *   **The file at video_path is always the current good one.**
  *
- * Every operation either leaves that path alone — as original re-compression
- * does, by encoding to a new filename and only repointing the column on
- * accept — or replaces it atomically with an already-verified file. There is
- * no window in which it holds a partial encode, which is also why a failed
- * revert can never lose the live file.
+ * The re-encode is written to a *new* filename and the column is not repointed
+ * until an admin accepts, so there is no window in which video_path names a
+ * partial encode — which is also why a failed accept or a discarded attempt
+ * can never lose the file the site is serving.
  *
- * The Filament page, the bulk actions, the console commands and the tests all
- * come through here, so those four can never disagree about what is allowed.
+ * Scope is deliberately narrow: **the original upload only.** The encoded
+ * renditions and the HLS segment tree are what the player actually streams
+ * (VideoPlayer.vue hands the player the HLS manifest whenever it exists, and
+ * falls back to the rendition MP4s), so shrinking or discarding those trades
+ * real playback capability for disk. This feature reclaims the one file
+ * nothing streams from.
+ *
+ * The Filament page, the Media Library action, the console command and the
+ * tests all come through here, so those four cannot disagree about what is
+ * allowed.
  */
 class StorageReclaimService
 {
@@ -56,9 +58,9 @@ class StorageReclaimService
      *
      * Normal encoding already uses CRF — the default is CRF 22 at preset
      * `veryfast` — so "compress this more precisely" means a slower preset and
-     * a higher CRF, not a different rate control. Those are the only two knobs
-     * that matter, and both are deliberately admin-visible: a reclaim is
-     * irreversible once accepted and the quality trade is a judgement call.
+     * a higher CRF, not a different rate control. Both are admin-visible: a
+     * reclaim is irreversible once accepted and the quality trade is a
+     * judgement call.
      */
     public function settings(): array
     {
@@ -66,34 +68,28 @@ class StorageReclaimService
             'preset' => (string) Setting::get('reclaim_preset', 'slow'),
             'crf' => (int) Setting::get('ffmpeg_crf', 22) + (int) Setting::get('reclaim_crf_delta', 2),
             'min_saving_percent' => (int) Setting::get('reclaim_min_saving_percent', 15),
-            'keep_days' => (int) Setting::get('reclaim_keep_days', 14),
         ];
-    }
-
-    public function keepUntil(): Carbon
-    {
-        return now()->addDays(max(1, $this->settings()['keep_days']));
     }
 
     // ── Eligibility ─────────────────────────────────────────────────────────
 
     /**
-     * Why this video's target cannot be reclaimed, or null if it can.
+     * Why this video's original cannot be re-compressed, or null if it can.
      *
      * Returns a human reason rather than a bool so the same call can drive a
      * disabled button's tooltip, a console command's output and a test's
      * assertion — the pattern MediaGuard already uses. Every caller must go
      * through this; nothing else is allowed to decide.
+     *
+     * $ignoreReclaimId is how a running job re-checks its own work: its own
+     * row is active by definition, and without excluding it that answer would
+     * mask every check below it.
      */
-    public function eligibility(Video $video, string $target, ?string $quality = null, ?int $ignoreReclaimId = null): ?string
+    public function eligibility(Video $video, ?int $ignoreReclaimId = null): ?string
     {
-        if (! in_array($target, StorageReclaim::TARGETS, true)) {
-            return 'Unknown reclaim target.';
-        }
-
-        // sourcePath() is hardcoded to the local public disk, and the encoder
-        // only offloads to cloud storage after it finishes, so an offloaded
-        // video has no local file to work from.
+        // The source is read from the local public disk, and the encoder only
+        // offloads to cloud storage after it finishes, so an offloaded video
+        // has no local file to work from.
         if (($video->storage_disk ?? 'public') !== 'public') {
             return 'This video is stored on '.$video->storage_disk.', and reclaim only works on local storage.';
         }
@@ -113,32 +109,23 @@ class StorageReclaimService
         }
 
         // A watermark is drawn once, into processed/original_watermarked.mp4,
-        // and .watermark_done records that it happened. Re-encoding the
-        // current original without that marker risks drawing a second
-        // watermark over the first — that video belongs in the normal
-        // pipeline, not here.
-        if ($target === StorageReclaim::TARGET_ORIGINAL && $this->watermarkPending($video)) {
+        // and .watermark_done records that it happened. Re-encoding the current
+        // original without that marker risks drawing a second watermark over
+        // the first — that video belongs in the normal pipeline, not here.
+        if ($this->watermarkPending($video)) {
             return 'A watermark is configured but has not been applied yet.';
         }
 
-        // $ignoreReclaimId is how a running job re-checks its own work: its
-        // own row is active by definition, and without excluding it that
-        // answer would mask every per-target check below — including the one
-        // that stops HLS being dropped while it is a quality's only copy.
-        if ($this->hasActive($video, $target, $quality, $ignoreReclaimId)) {
-            return 'A reclaim for this file is already in progress or awaiting review.';
+        if ($this->hasActive($video, $ignoreReclaimId)) {
+            return 'A reclaim for this video is already in progress or awaiting review.';
         }
 
-        return match ($target) {
-            StorageReclaim::TARGET_RENDITION => $this->renditionReason($video, $quality),
-            StorageReclaim::TARGET_HLS => $this->hlsReason($video),
-            default => null,
-        };
+        return null;
     }
 
-    public function isEligible(Video $video, string $target, ?string $quality = null, ?int $ignoreReclaimId = null): bool
+    public function isEligible(Video $video, ?int $ignoreReclaimId = null): bool
     {
-        return $this->eligibility($video, $target, $quality, $ignoreReclaimId) === null;
+        return $this->eligibility($video, $ignoreReclaimId) === null;
     }
 
     protected function watermarkPending(Video $video): bool
@@ -150,67 +137,11 @@ class StorageReclaimService
         return ! Storage::disk('public')->exists($this->videoDir($video).'/.watermark_done');
     }
 
-    protected function renditionReason(Video $video, ?string $quality): ?string
-    {
-        if (! $quality || $quality === VideoEncoding::ORIGINAL) {
-            return 'Pick a rendition to re-encode.';
-        }
-
-        $encoding = $video->encodings()
-            ->where('quality', $quality)
-            ->where('status', VideoEncoding::COMPLETED)
-            ->first();
-
-        if (! $encoding) {
-            return "There is no completed {$quality} encode to replace.";
-        }
-
-        if (! Storage::disk('public')->exists($this->renditionPath($video, $quality))) {
-            return "The {$quality} file is missing from disk.";
-        }
-
-        return null;
-    }
-
-    /**
-     * Whether the HLS tree can be given up.
-     *
-     * This is the one path in the feature that could make a video unplayable,
-     * so it is the one with a real pre-flight: HLS is the *only* copy of any
-     * quality whose progressive MP4 has been lost, and dropping the tree then
-     * takes that quality with it. Every advertised quality must have a real
-     * MP4 on disk first.
-     */
-    protected function hlsReason(Video $video): ?string
-    {
-        if (! Storage::disk('public')->exists($this->hlsDir($video))) {
-            return 'This video has no HLS copy.';
-        }
-
-        foreach ((array) $video->qualities_available as $quality) {
-            if ($quality === 'original') {
-                continue;
-            }
-
-            $path = $this->renditionPath($video, $quality);
-
-            // 10 KB: an ffmpeg run killed part-way leaves a header-only file
-            // that exists() is perfectly happy with.
-            if (! Storage::disk('public')->exists($path) || Storage::disk('public')->size($path) < 10240) {
-                return "The {$quality} MP4 is missing, so HLS is currently its only copy.";
-            }
-        }
-
-        return null;
-    }
-
-    public function hasActive(Video $video, string $target, ?string $quality = null, ?int $ignoreReclaimId = null): bool
+    public function hasActive(Video $video, ?int $ignoreReclaimId = null): bool
     {
         return StorageReclaim::query()
             ->where('video_id', $video->id)
-            ->where('target', $target)
-            ->when($target === StorageReclaim::TARGET_RENDITION, fn ($q) => $q->where('quality', $quality))
-            ->when($ignoreReclaimId, fn ($q) => $q->whereKeyNot($ignoreReclaimId))
+            ->when($ignoreReclaimId, fn ($query) => $query->whereKeyNot($ignoreReclaimId))
             ->active()
             ->exists();
     }
@@ -220,207 +151,6 @@ class StorageReclaimService
     public function videoDir(Video $video): string
     {
         return dirname((string) $video->video_path);
-    }
-
-    public function processedDir(Video $video): string
-    {
-        return $this->videoDir($video).'/processed';
-    }
-
-    public function renditionPath(Video $video, string $quality): string
-    {
-        return $this->processedDir($video).'/'.$quality.'.mp4';
-    }
-
-    public function hlsDir(Video $video): string
-    {
-        return $this->processedDir($video).'/hls';
-    }
-
-    /**
-     * Which reclaim a path in the Media Library corresponds to.
-     *
-     * media_files.references only ever resolves the original — a rendition
-     * MP4, an HLS segment, a sprite sheet and the scrubber VTT match no column
-     * in MediaReferenceResolver — so a file selected in the library has to be
-     * mapped back to its video by convention, from the `videos/{slug}/…`
-     * layout the encoder writes.
-     *
-     * @return array{video: Video, target: string, quality: ?string}|null
-     */
-    public function targetForPath(string $path): ?array
-    {
-        $path = ltrim(str_replace('\\', '/', $path), '/');
-
-        if (! str_starts_with($path, 'videos/')) {
-            return null;
-        }
-
-        $segments = explode('/', $path);
-
-        if (count($segments) < 3) {
-            return null;
-        }
-
-        $dir = 'videos/'.$segments[1];
-
-        $video = Video::withTrashed()
-            ->where('video_path', 'like', $dir.'/%')
-            ->first();
-
-        if (! $video || $video->trashed()) {
-            // A soft-deleted video can still be restored within the 30-day
-            // window, so its files are not ours to touch.
-            return null;
-        }
-
-        if ($path === $video->video_path) {
-            return ['video' => $video, 'target' => StorageReclaim::TARGET_ORIGINAL, 'quality' => null];
-        }
-
-        $relative = Str::after($path, $dir.'/');
-
-        if (str_starts_with($relative, 'processed/hls/')) {
-            return ['video' => $video, 'target' => StorageReclaim::TARGET_HLS, 'quality' => null];
-        }
-
-        if (preg_match('#^processed/([0-9]{3,4}p)\.mp4$#', $relative, $matches)) {
-            return [
-                'video' => $video,
-                'target' => StorageReclaim::TARGET_RENDITION,
-                'quality' => $matches[1],
-            ];
-        }
-
-        return null;
-    }
-
-    /**
-     * Collapse a selection of files into the reclaims they imply.
-     *
-     * Selecting 200 HLS segments means one reclaim of one tree, not 200.
-     *
-     * @param  array<int, string>  $paths
-     * @return array<int, array{video: Video, target: string, quality: ?string}>
-     */
-    public function targetsForPaths(array $paths): array
-    {
-        $targets = [];
-
-        foreach ($paths as $path) {
-            $resolved = $this->targetForPath($path);
-
-            if (! $resolved) {
-                continue;
-            }
-
-            $key = $resolved['video']->id.':'.$resolved['target'].':'.($resolved['quality'] ?? '');
-            $targets[$key] ??= $resolved;
-        }
-
-        return array_values($targets);
-    }
-
-    // ── Requesting ──────────────────────────────────────────────────────────
-
-    /**
-     * Open a reclaim, or return null with a reason if it is not allowed.
-     *
-     * The lock closes the window between the eligibility check and the insert:
-     * two admins pressing the same button, or a bulk action overlapping a
-     * console run, would otherwise both pass and queue two encodes of the same
-     * file — the second of which would hold the *first's* output as its "old"
-     * file and the real original would be lost.
-     *
-     * @return array{reclaim: ?StorageReclaim, reason: ?string}
-     */
-    public function request(Video $video, string $target, ?string $quality = null, ?User $by = null): array
-    {
-        $lock = Cache::lock("storage-reclaim:{$video->id}:{$target}:".($quality ?? ''), 10);
-
-        if (! $lock->get()) {
-            return ['reclaim' => null, 'reason' => 'Another reclaim request for this file is being processed.'];
-        }
-
-        try {
-            if ($reason = $this->eligibility($video, $target, $quality)) {
-                return ['reclaim' => null, 'reason' => $reason];
-            }
-
-            $reclaim = StorageReclaim::create([
-                'video_id' => $video->id,
-                'requested_by' => $by?->id ?? Auth::id(),
-                'target' => $target,
-                'quality' => $target === StorageReclaim::TARGET_RENDITION ? $quality : null,
-                'status' => StorageReclaim::PENDING,
-                'run_id' => (string) Str::uuid(),
-                'settings_snapshot' => $this->settings(),
-                'keep_until' => $this->keepUntil(),
-            ]);
-
-            AdminLogger::log(
-                "Requested storage reclaim ({$reclaim->targetLabel()}) for video #{$video->id}",
-                'admin',
-                ['reclaim_id' => $reclaim->id, 'target' => $target, 'quality' => $quality],
-                $video,
-            );
-
-            return ['reclaim' => $reclaim, 'reason' => null];
-        } finally {
-            $lock->release();
-        }
-    }
-
-    /**
-     * Queue the work for a pending reclaim.
-     *
-     * Everything lands on the `storage-reclaim` queue, whose supervisor runs a
-     * single niced process — that, rather than any per-request limit, is what
-     * stops a bulk reclaim of two hundred files from starving live uploads.
-     */
-    public function start(StorageReclaim $reclaim): bool
-    {
-        if ($reclaim->status !== StorageReclaim::PENDING) {
-            return false;
-        }
-
-        switch ($reclaim->target) {
-            case StorageReclaim::TARGET_HLS:
-                ReclaimHlsJob::dispatch($reclaim->id);
-
-                return true;
-            case StorageReclaim::TARGET_RENDITION:
-                ReencodeRenditionJob::dispatch($reclaim->id);
-
-                return true;
-            case StorageReclaim::TARGET_ORIGINAL:
-                RecompressOriginalJob::dispatch($reclaim->id);
-
-                return true;
-            default:
-                // Rendition and original re-encoding land in later phases; a
-                // row with no worker would sit pending forever, so refuse it
-                // here rather than leave it looking queued.
-                $this->finish($reclaim, StorageReclaim::FAILED, 'No worker is available for this reclaim target yet.');
-
-                return false;
-        }
-    }
-
-    /**
-     * Request a reclaim and queue it in one step.
-     *
-     * @return array{reclaim: ?StorageReclaim, reason: ?string}
-     */
-    public function requestAndStart(Video $video, string $target, ?string $quality = null, ?User $by = null): array
-    {
-        $result = $this->request($video, $target, $quality, $by);
-
-        if ($result['reclaim']) {
-            $this->start($result['reclaim']);
-        }
-
-        return $result;
     }
 
     /**
@@ -441,103 +171,156 @@ class StorageReclaimService
         return $directory.'/'.$stem.'_r'.$reclaimId.'.mp4';
     }
 
-    /** Where the bytes a reclaim replaces are held while it awaits review. */
-    public function keptPathFor(string $path, int $reclaimId): string
-    {
-        $extension = pathinfo($path, PATHINFO_EXTENSION);
-        $stem = $extension === '' ? $path : substr($path, 0, -(strlen($extension) + 1));
-
-        return $stem.'.reclaim-'.$reclaimId.($extension === '' ? '' : '.'.$extension);
-    }
-
     /**
-     * Keep a second reference to a file's current bytes.
+     * The video whose original this Media Library path is, or null.
      *
-     * A hardlink is the whole trick: another directory entry for the same
-     * inode, so it costs nothing, the canonical path keeps serving the old
-     * file for the entire encode, and the encoder's closing rename() replaces
-     * only that path's entry — this link still resolves to the original bytes.
-     * A copy is the fallback where the filesystem will not link (a different
-     * device, or a disk that does not support it), and costs the file's size
-     * again until review, which is why which one happened is recorded.
-     *
-     * @return array{0: string, 1: bool} The kept path, and whether it is a link.
+     * media_files.references only ever resolves the original — a rendition
+     * MP4, an HLS segment, a sprite sheet and the scrubber VTT match no column
+     * in MediaReferenceResolver — so a selected file has to be matched against
+     * video_path directly. Anything else returns null, including every
+     * rendition and segment: those are what the player streams.
      */
-    public function holdAside(string $path, string $keptPath): array
+    public function videoForPath(string $path): ?Video
     {
-        $disk = Storage::disk('public');
-        $from = $disk->path($path);
-        $to = $disk->path($keptPath);
+        $path = ltrim(str_replace('\\', '/', $path), '/');
 
-        if (! is_file($from)) {
-            throw new RuntimeException("There is nothing at {$path} to hold aside.");
+        if (! str_starts_with($path, 'videos/')) {
+            return null;
         }
 
-        if (is_file($to)) {
-            // A retried set-up: the file already held is the older, good one.
-            return [$keptPath, false];
-        }
+        $video = Video::withTrashed()->where('video_path', $path)->first();
 
-        if (@link($from, $to)) {
-            return [$keptPath, true];
-        }
-
-        if (! $disk->copy($path, $keptPath)) {
-            throw new RuntimeException("Could not keep a copy of {$path}.");
-        }
-
-        return [$keptPath, false];
+        // A soft-deleted video can still be restored within the 30-day window,
+        // so its files are not ours to touch.
+        return $video && ! $video->trashed() ? $video : null;
     }
 
     /**
-     * Measure a re-encoded rendition and decide whether to offer it.
+     * Collapse a selection of library paths into the videos they imply.
      *
-     * Called from RenditionCoordinator::renditionFinished(), which is the
-     * moment the result exists and can be compared against what it replaced.
+     * @param  array<int, string>  $paths
+     * @return array<int, Video>
      */
-    public function renditionEncoded(VideoEncoding $encoding): void
+    public function videosForPaths(array $paths): array
     {
-        $reclaim = StorageReclaim::query()
-            ->where('video_id', $encoding->video_id)
-            ->where('target', StorageReclaim::TARGET_RENDITION)
-            ->where('quality', $encoding->quality)
-            ->where('status', StorageReclaim::RUNNING)
-            ->latest('id')
-            ->first();
+        $videos = [];
 
-        if (! $reclaim) {
-            return;
+        foreach ($paths as $path) {
+            $video = $this->videoForPath($path);
+
+            if ($video) {
+                $videos[$video->id] ??= $video;
+            }
         }
 
-        $video = $this->videoFor($reclaim);
+        return array_values($videos);
+    }
 
-        if (! $video) {
-            $this->finish($reclaim, StorageReclaim::FAILED, 'The video no longer exists.');
+    // ── Requesting ──────────────────────────────────────────────────────────
 
-            return;
+    /**
+     * Open a reclaim, or return null with a reason if it is not allowed.
+     *
+     * The lock closes the window between the eligibility check and the insert:
+     * two admins pressing the same button, or a bulk action overlapping a
+     * console run, would otherwise both pass and queue two encodes of the same
+     * file — the second of which would hold the *first's* output as its "old"
+     * file, and the real original would be lost.
+     *
+     * @return array{reclaim: ?StorageReclaim, reason: ?string}
+     */
+    public function request(Video $video, ?User $by = null): array
+    {
+        $lock = Cache::lock("storage-reclaim:{$video->id}", 10);
+
+        if (! $lock->get()) {
+            return ['reclaim' => null, 'reason' => 'Another reclaim request for this video is being processed.'];
         }
 
-        $this->settle($reclaim, $this->renditionPath($video, (string) $reclaim->quality), $video);
+        try {
+            if ($reason = $this->eligibility($video)) {
+                return ['reclaim' => null, 'reason' => $reason];
+            }
+
+            $reclaim = StorageReclaim::create([
+                'video_id' => $video->id,
+                'requested_by' => $by?->id ?? Auth::id(),
+                'target' => StorageReclaim::TARGET_ORIGINAL,
+                'status' => StorageReclaim::PENDING,
+                'run_id' => (string) Str::uuid(),
+                'settings_snapshot' => $this->settings(),
+            ]);
+
+            AdminLogger::log(
+                "Requested a re-compression of the original upload for video #{$video->id}",
+                'admin',
+                ['reclaim_id' => $reclaim->id],
+                $video,
+            );
+
+            return ['reclaim' => $reclaim, 'reason' => null];
+        } finally {
+            $lock->release();
+        }
     }
 
     /**
-     * Verify a freshly encoded file and either offer it for review or put the
-     * old one back.
+     * Queue the encode for a pending reclaim.
      *
-     * Nothing is offered until it is proven sound, because accepting deletes
-     * the only other copy. Shared by the rendition and original paths: they
-     * differ in where the new file lands, not in what makes it acceptable.
+     * The `storage-reclaim` queue's supervisor runs a single niced process —
+     * that, rather than any per-request limit, is what stops a bulk reclaim
+     * from starving live uploads.
+     */
+    public function start(StorageReclaim $reclaim): bool
+    {
+        if ($reclaim->status !== StorageReclaim::PENDING) {
+            return false;
+        }
+
+        RecompressOriginalJob::dispatch($reclaim->id);
+
+        return true;
+    }
+
+    /**
+     * Request a reclaim and queue it in one step.
+     *
+     * @return array{reclaim: ?StorageReclaim, reason: ?string}
+     */
+    public function requestAndStart(Video $video, ?User $by = null): array
+    {
+        $result = $this->request($video, $by);
+
+        if ($result['reclaim']) {
+            $this->start($result['reclaim']);
+        }
+
+        return $result;
+    }
+
+    // ── Verifying a result ──────────────────────────────────────────────────
+
+    /**
+     * Verify a freshly encoded file and either offer it or discard it.
+     *
+     * Nothing reaches review until it is proven sound, because accepting is
+     * what deletes the only other copy.
      */
     public function settle(StorageReclaim $reclaim, string $newPath, Video $video): bool
     {
         $disk = Storage::disk('public');
 
         if ($reason = $this->rejectionReason($reclaim, $newPath)) {
-            $this->undo($reclaim, $newPath);
+            // video_path was never repointed, so the live file is untouched and
+            // discarding the candidate is the whole undo.
+            if ($disk->exists($newPath)) {
+                $disk->delete($newPath);
+            }
+
             $this->finish($reclaim, StorageReclaim::SKIPPED, $reason);
 
             AdminLogger::log(
-                "Discarded a storage reclaim of {$reclaim->targetLabel()} for video #{$video->id}: {$reason}",
+                "Discarded a re-compression for video #{$video->id}: {$reason}",
                 'admin',
                 ['reclaim_id' => $reclaim->id],
                 $video,
@@ -553,16 +336,8 @@ class StorageReclaimService
             'new_path' => $newPath,
             'after_bytes' => $disk->size($newPath),
             'after_duration_ms' => $probe['duration_ms'] ?? null,
-            'keep_until' => $this->keepUntil(),
             'finished_at' => now(),
         ])->saveQuietly();
-
-        // A rendition was replaced under its own name, so every cache in front
-        // of it has to be told. A re-compressed original changed filename and
-        // is not even live yet.
-        if ($reclaim->target !== StorageReclaim::TARGET_ORIGINAL) {
-            $this->markMediaChanged($video);
-        }
 
         return true;
     }
@@ -570,7 +345,7 @@ class StorageReclaimService
     /**
      * Why a re-encoded file must not be offered, or null if it is sound.
      *
-     * Three checks, each with a concrete failure it exists to catch:
+     * Each check exists for a concrete failure:
      *
      *  - **Duration within 250 ms.** The scrubber VTT's cue times and #xywh=
      *    offsets derive from videos.duration, and prepare() rewrites that
@@ -630,72 +405,17 @@ class StorageReclaimService
         return null;
     }
 
-    /**
-     * Put the kept bytes back over the canonical path and drop the candidate.
-     *
-     * The rejection path, so it has to restore exactly the file the site was
-     * serving before the reclaim started.
-     */
-    protected function undo(StorageReclaim $reclaim, string $newPath): void
-    {
-        $disk = Storage::disk('public');
-
-        if ($reclaim->target === StorageReclaim::TARGET_ORIGINAL) {
-            // video_path was never repointed, so the live file is untouched
-            // and discarding the candidate is the whole undo.
-            if ($disk->exists($newPath)) {
-                $disk->delete($newPath);
-            }
-
-            return;
-        }
-
-        if (! $reclaim->kept_path || ! $disk->exists($reclaim->kept_path)) {
-            return;
-        }
-
-        if ($disk->exists($newPath)) {
-            $disk->delete($newPath);
-        }
-
-        $disk->move($reclaim->kept_path, $newPath);
-    }
-
-    /**
-     * Encoder overrides for each rendition of this video being reclaimed.
-     *
-     * Read by RenditionCoordinator::plan(), which rebuilds every non-completed
-     * row from scratch on each pass. Keeping the settings here rather than on
-     * the encoding row means a reclaim survives a re-plan while an ordinary
-     * one cannot accidentally inherit them.
-     *
-     * @return array<string, array<string, mixed>> keyed by quality
-     */
-    public function overridesForEncoding(Video $video): array
-    {
-        return StorageReclaim::query()
-            ->where('video_id', $video->id)
-            ->where('target', StorageReclaim::TARGET_RENDITION)
-            ->where('status', StorageReclaim::RUNNING)
-            ->whereNotNull('quality')
-            ->get(['quality', 'settings_snapshot'])
-            ->mapWithKeys(fn (StorageReclaim $reclaim) => [
-                $reclaim->quality => $reclaim->settings_snapshot ?? $this->settings(),
-            ])
-            ->all();
-    }
-
     // ── Review ──────────────────────────────────────────────────────────────
 
     /**
-     * Keep the new file and release the old bytes.
+     * Point the video at the smaller file and delete the original upload.
      *
-     * Idempotent in the one way that matters: if the kept file has already
-     * gone — a second sweep pass, someone tidying up by hand — that is treated
-     * as already-freed and the row still completes. A sweep that could fail on
-     * its own previous success would stall every row behind it.
+     * The only irreversible step in the feature, and it only ever runs because
+     * a person pressed the button: there is no sweep, no expiry and no
+     * scheduled acceptance. A reclaim waits indefinitely rather than free
+     * space nobody agreed to free.
      */
-    public function accept(StorageReclaim $reclaim, ?User $by = null, string $status = StorageReclaim::ACCEPTED): bool
+    public function accept(StorageReclaim $reclaim, ?User $by = null): bool
     {
         if ($reclaim->status !== StorageReclaim::AWAITING_REVIEW) {
             return false;
@@ -713,11 +433,21 @@ class StorageReclaimService
             return false;
         }
 
+        $disk = Storage::disk('public');
+
         try {
-            match ($reclaim->target) {
-                StorageReclaim::TARGET_ORIGINAL => $this->acceptOriginal($reclaim, $video),
-                default => $this->discardKept($reclaim),
-            };
+            if (! $reclaim->new_path || ! $disk->exists($reclaim->new_path)) {
+                throw new RuntimeException('The re-compressed file is missing.');
+            }
+
+            $old = $reclaim->kept_path;
+
+            // Quiet, because Video::booted() flushes ~130 cache keys on update.
+            $video->forceFill(['video_path' => $reclaim->new_path])->saveQuietly();
+
+            if ($old && $old !== $reclaim->new_path && $disk->exists($old)) {
+                $disk->delete($old);
+            }
         } catch (Throwable $e) {
             Log::error('Storage reclaim accept failed', ['reclaim' => $reclaim->id, 'error' => $e->getMessage()]);
             $this->finish($reclaim, StorageReclaim::FAILED, $e->getMessage());
@@ -725,14 +455,7 @@ class StorageReclaimService
             return false;
         }
 
-        // A rendition or HLS tree was replaced under its own name, so anything
-        // holding the old bytes — nginx's 30 days, Cloudflare, a browser —
-        // needs to be told. A re-compressed original changed filename instead.
-        if ($reclaim->target !== StorageReclaim::TARGET_ORIGINAL) {
-            $this->bumpMediaVersion($video);
-        }
-
-        $this->refreshSizes($reclaim, $video);
+        $this->refreshSize($video);
         $this->resync($reclaim, $video);
 
         $reclaim->forceFill([
@@ -740,21 +463,15 @@ class StorageReclaimService
             'kept_path' => null,
         ])->saveQuietly();
 
-        $this->finish($reclaim, $status);
+        $this->finish($reclaim, StorageReclaim::ACCEPTED);
 
         AdminLogger::log(
-            sprintf(
-                'Accepted storage reclaim (%s) for video #%d — saved %s',
-                $reclaim->targetLabel(),
-                $video->id,
-                $reclaim->savingLabel(),
-            ),
+            sprintf('Accepted a re-compression for video #%d — saved %s', $video->id, $reclaim->savingLabel()),
             'admin',
             [
                 'reclaim_id' => $reclaim->id,
                 'before_bytes' => $reclaim->before_bytes,
                 'after_bytes' => $reclaim->after_bytes,
-                'auto' => $status === StorageReclaim::EXPIRED,
             ],
             $video,
         );
@@ -763,12 +480,10 @@ class StorageReclaimService
     }
 
     /**
-     * Put the old file back and throw away the new one.
+     * Throw the candidate away and keep the original upload.
      *
-     * If the kept file is gone there is nothing to restore, and the live file
-     * stays exactly as it is — the row goes to revert_failed and says so. That
-     * is the whole point of the invariant: the worst outcome of a failed revert
-     * is a smaller file than the admin wanted, never a missing one.
+     * Safe by construction: video_path was never repointed, so there is
+     * nothing to restore and the worst this can do is leave a file on disk.
      */
     public function revert(StorageReclaim $reclaim, ?User $by = null): bool
     {
@@ -776,36 +491,12 @@ class StorageReclaimService
             return false;
         }
 
-        // Resolved fresh rather than through the relation: callers hand us
-        // whatever instance they have, and a partially selected one (the review
-        // page lists `video:id,title,slug`) is missing every column the work
-        // below reads.
         $video = $this->videoFor($reclaim);
         $disk = Storage::disk('public');
 
-        if (! $video || ! $reclaim->kept_path || ! $this->exists($reclaim->kept_path)) {
-            $this->finish($reclaim, StorageReclaim::REVERT_FAILED, 'The kept file is no longer on disk.');
-
-            AdminLogger::log(
-                "Could not revert storage reclaim #{$reclaim->id}: the kept file is gone",
-                'error',
-                ['reclaim_id' => $reclaim->id],
-                $video,
-            );
-
-            return false;
-        }
-
         try {
-            if ($reclaim->target === StorageReclaim::TARGET_ORIGINAL) {
-                // Nothing was ever repointed, so reverting is just deleting
-                // the candidate: video_path still names the kept file.
-                if ($reclaim->new_path && $disk->exists($reclaim->new_path)) {
-                    $disk->delete($reclaim->new_path);
-                }
-            } else {
-                $this->restoreKept($reclaim);
-                $this->bumpMediaVersion($video);
+            if ($reclaim->new_path && $disk->exists($reclaim->new_path)) {
+                $disk->delete($reclaim->new_path);
             }
         } catch (Throwable $e) {
             Log::error('Storage reclaim revert failed', ['reclaim' => $reclaim->id, 'error' => $e->getMessage()]);
@@ -815,12 +506,15 @@ class StorageReclaimService
         }
 
         $reclaim->forceFill(['reviewed_by' => $by?->id ?? Auth::id()])->saveQuietly();
-        $this->refreshSizes($reclaim, $video, reverted: true);
-        $this->resync($reclaim, $video);
+
+        if ($video) {
+            $this->resync($reclaim, $video);
+        }
+
         $this->finish($reclaim, StorageReclaim::REVERTED);
 
         AdminLogger::log(
-            "Reverted storage reclaim ({$reclaim->targetLabel()}) for video #{$video->id}",
+            'Discarded a re-compression for video #'.$reclaim->video_id,
             'admin',
             ['reclaim_id' => $reclaim->id],
             $video,
@@ -829,163 +523,27 @@ class StorageReclaimService
         return true;
     }
 
-    /**
-     * Auto-accept everything whose review window has passed.
-     *
-     * Treating a passed keep_until as acceptance is the only reading under
-     * which this feature ever reclaims a byte unattended; rows left pending
-     * forever would mean nothing is saved without a human. Every auto-accept
-     * is logged with before and after, the review page shows the countdown,
-     * and reclaim_keep_days can be set high enough to disable it in practice.
-     */
-    public function sweep(?int $limit = null): int
-    {
-        $expired = StorageReclaim::query()
-            ->awaitingReview()
-            ->whereNotNull('keep_until')
-            ->where('keep_until', '<=', now())
-            ->orderBy('keep_until')
-            ->when($limit, fn ($q) => $q->limit($limit))
-            ->get();
-
-        $count = 0;
-
-        foreach ($expired as $reclaim) {
-            if ($this->accept($reclaim, null, StorageReclaim::EXPIRED)) {
-                $count++;
-            }
-        }
-
-        return $count;
-    }
-
     // ── Bookkeeping ─────────────────────────────────────────────────────────
 
-    /** Repoint the video at the smaller file and drop the old one. */
-    protected function acceptOriginal(StorageReclaim $reclaim, Video $video): void
+    /** The full video row a reclaim acts on, or null if it has gone. */
+    protected function videoFor(StorageReclaim $reclaim): ?Video
     {
-        $disk = Storage::disk('public');
-
-        if (! $reclaim->new_path || ! $disk->exists($reclaim->new_path)) {
-            throw new RuntimeException('The re-compressed file is missing.');
-        }
-
-        $old = $reclaim->kept_path;
-
-        // Quiet, because Video::booted() flushes ~130 cache keys on update.
-        $video->forceFill(['video_path' => $reclaim->new_path])->saveQuietly();
-
-        if ($old && $old !== $reclaim->new_path && $disk->exists($old)) {
-            $disk->delete($old);
-        }
-    }
-
-    /** Release the bytes a kept file or directory is holding. */
-    protected function discardKept(StorageReclaim $reclaim): void
-    {
-        if (! $reclaim->kept_path) {
-            return;
-        }
-
-        $disk = Storage::disk('public');
-
-        if ($disk->directoryExists($reclaim->kept_path)) {
-            $disk->deleteDirectory($reclaim->kept_path);
-        } elseif ($disk->exists($reclaim->kept_path)) {
-            $disk->delete($reclaim->kept_path);
-        }
-    }
-
-    /** Move the kept file or directory back over the canonical path. */
-    protected function restoreKept(StorageReclaim $reclaim): void
-    {
-        $disk = Storage::disk('public');
-        $target = $reclaim->source_path;
-
-        if (! $target) {
-            throw new RuntimeException('This reclaim did not record which path to restore.');
-        }
-
-        if ($disk->directoryExists($reclaim->kept_path)) {
-            if ($disk->directoryExists($target)) {
-                $disk->deleteDirectory($target);
-            }
-        } elseif ($disk->exists($target)) {
-            $disk->delete($target);
-        }
-
-        $disk->move($reclaim->kept_path, $target);
-    }
-
-    protected function exists(string $path): bool
-    {
-        $disk = Storage::disk('public');
-
-        return $disk->exists($path) || $disk->directoryExists($path);
+        return Video::find($reclaim->video_id);
     }
 
     /**
-     * Point the site's size columns at whatever is now on disk.
+     * Point videos.size at whatever is now on disk.
      *
-     * videos.size and video_encodings.size are shown in the admin and used for
-     * storage totals, so leaving them at the pre-reclaim figures would make
-     * the saving invisible everywhere except this ledger.
+     * It is shown in the admin and feeds storage totals, so leaving it at the
+     * pre-reclaim figure would make the saving invisible everywhere except
+     * this ledger.
      */
-    protected function refreshSizes(StorageReclaim $reclaim, Video $video, bool $reverted = false): void
+    protected function refreshSize(Video $video): void
     {
         $disk = Storage::disk('public');
 
         if ($video->video_path && $disk->exists($video->video_path)) {
             $video->forceFill(['size' => $disk->size($video->video_path)])->saveQuietly();
-        }
-
-        if ($reclaim->target === StorageReclaim::TARGET_RENDITION && $reclaim->quality) {
-            $path = $this->renditionPath($video, $reclaim->quality);
-
-            if ($disk->exists($path)) {
-                $video->encodings()
-                    ->where('quality', $reclaim->quality)
-                    ->update(['size' => $disk->size($path)]);
-            }
-        }
-    }
-
-    /**
-     * Move the cache-busting version on by one.
-     *
-     * Incremented in SQL rather than read-modify-written: callers hand us
-     * whatever Video instance they have, and a partially selected one (the
-     * review page loads `video:id,title,slug`) has no media_version to read.
-     * Under Model::shouldBeStrict() that throws; in production it would read
-     * as null and reset the counter to 1 on every reclaim, at which point a
-     * second replacement of the same file serves the stale bytes it was meant
-     * to bust.
-     */
-    /**
-     * Note that files under this video changed in place.
-     *
-     * Bumps the cache-busting version and brings the Media Library index and
-     * the storage report back in line. Public because a job can change a
-     * video's files without a review step — the HLS master playlist is
-     * rewritten as part of the reclaim itself, not on accept.
-     */
-    public function markMediaChanged(Video $video): void
-    {
-        $this->bumpMediaVersion($video);
-
-        IndexMediaDirectoryJob::dispatch($this->videoDir($video));
-        MediaStorageReport::forget();
-    }
-
-    protected function bumpMediaVersion(Video $video): void
-    {
-        Video::withTrashed()
-            ->whereKey($video->id)
-            ->update(['media_version' => DB::raw('media_version + 1')]);
-
-        if (array_key_exists('media_version', $video->getAttributes())) {
-            $video->setAttribute('media_version', (int) $video->getAttributes()['media_version'] + 1);
-            $video->syncOriginalAttribute('media_version');
         }
     }
 
@@ -1008,12 +566,6 @@ class StorageReclaimService
 
         IndexMediaDirectoryJob::dispatch($this->videoDir($video));
         MediaStorageReport::forget();
-    }
-
-    /** The full video row a reclaim acts on, or null if it has gone. */
-    protected function videoFor(StorageReclaim $reclaim): ?Video
-    {
-        return Video::find($reclaim->video_id);
     }
 
     protected function finish(StorageReclaim $reclaim, string $status, ?string $error = null): void

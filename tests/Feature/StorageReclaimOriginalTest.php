@@ -37,7 +37,7 @@ test('the re-encode lands at a new filename beside the original', function () {
     $video = videoWithBigOriginal();
     $fake->outputBytes = 300_000;
 
-    $reclaim = reclaims()->requestAndStart($video, StorageReclaim::TARGET_ORIGINAL)['reclaim']->fresh();
+    $reclaim = reclaims()->requestAndStart($video)['reclaim']->fresh();
 
     expect($reclaim->new_path)->toBe(dirname($video->video_path).'/clip_r'.$reclaim->id.'.mp4')
         // A new name sidesteps nginx's 30-day mp4 cache, which has no
@@ -55,7 +55,7 @@ test('nothing about the video changes before it is accepted', function () {
     $video = videoWithBigOriginal();
     $fake->outputBytes = 300_000;
 
-    $reclaim = reclaims()->requestAndStart($video, StorageReclaim::TARGET_ORIGINAL)['reclaim']->fresh();
+    $reclaim = reclaims()->requestAndStart($video)['reclaim']->fresh();
     $after = $video->fresh();
 
     expect($reclaim->status)->toBe(StorageReclaim::AWAITING_REVIEW)
@@ -64,9 +64,7 @@ test('nothing about the video changes before it is accepted', function () {
         ->and($after->video_path)->toBe($video->video_path)
         ->and(Storage::disk('public')->size($after->video_path))->toBe(900_000)
         ->and($after->size)->toBe(900_000)
-        ->and($after->quality_urls['original'])->toContain(basename($video->video_path))
-        // No cache-bust needed, because nothing a viewer can reach moved.
-        ->and($after->media_version)->toBe(0);
+        ->and($after->quality_urls['original'])->toContain(basename($video->video_path));
 });
 
 test('the command re-compresses rather than re-encoding the audio or the keyframes', function () {
@@ -75,7 +73,7 @@ test('the command re-compresses rather than re-encoding the audio or the keyfram
     $fake->outputBytes = 300_000;
     $fake->commands = [];
 
-    reclaims()->requestAndStart($video, StorageReclaim::TARGET_ORIGINAL);
+    reclaims()->requestAndStart($video);
 
     $encode = collect($fake->commands)->first(fn ($c) => str_contains($c, 'libx264'));
 
@@ -95,7 +93,7 @@ test('accepting repoints the video and deletes the upload', function () {
     $video = videoWithBigOriginal();
     $fake->outputBytes = 300_000;
 
-    $reclaim = reclaims()->requestAndStart($video, StorageReclaim::TARGET_ORIGINAL)['reclaim']->fresh();
+    $reclaim = reclaims()->requestAndStart($video)['reclaim']->fresh();
     $old = $video->video_path;
 
     expect(reclaims()->accept($reclaim))->toBeTrue();
@@ -117,7 +115,7 @@ test('the markers that gate re-processing survive', function () {
     $dir = dirname($video->video_path);
     Storage::disk('public')->put($dir.'/.watermark_done', '');
 
-    $reclaim = reclaims()->requestAndStart($video, StorageReclaim::TARGET_ORIGINAL)['reclaim']->fresh();
+    $reclaim = reclaims()->requestAndStart($video)['reclaim']->fresh();
     reclaims()->accept($reclaim);
 
     expect(Storage::disk('public')->exists($dir.'/.watermark_done'))->toBeTrue()
@@ -133,7 +131,7 @@ test('the re-compressed file is in use, so the library will not offer to delete 
     $video = videoWithBigOriginal();
     $fake->outputBytes = 300_000;
 
-    $reclaim = reclaims()->requestAndStart($video, StorageReclaim::TARGET_ORIGINAL)['reclaim']->fresh();
+    $reclaim = reclaims()->requestAndStart($video)['reclaim']->fresh();
     reclaims()->accept($reclaim);
 
     $this->artisan('media:index --full');
@@ -163,7 +161,7 @@ test('a result that cannot be trusted is discarded and the live file left alone'
         }
     };
 
-    $reclaim = reclaims()->requestAndStart($video, StorageReclaim::TARGET_ORIGINAL)['reclaim']->fresh();
+    $reclaim = reclaims()->requestAndStart($video)['reclaim']->fresh();
     $after = $video->fresh();
 
     expect($reclaim->status)->toBe(StorageReclaim::SKIPPED)
@@ -179,7 +177,7 @@ test('a failed encode leaves no half-written file behind', function () {
     $video = videoWithBigOriginal();
     $fake->failWhen = fn (string $command) => str_contains($command, '_r');
 
-    $reclaim = reclaims()->requestAndStart($video, StorageReclaim::TARGET_ORIGINAL)['reclaim']->fresh();
+    $reclaim = reclaims()->requestAndStart($video)['reclaim']->fresh();
 
     expect($reclaim->status)->toBe(StorageReclaim::FAILED)
         ->and($reclaim->error)->toContain('exited with code')
@@ -192,7 +190,7 @@ test('a host with no ffmpeg skips rather than failing', function () {
     fakeFfmpeg(duration: 60, height: 720, width: 1280);
     $video = videoWithBigOriginal();
 
-    $reclaim = reclaims()->requestAndStart($video, StorageReclaim::TARGET_ORIGINAL)['reclaim']->fresh();
+    $reclaim = reclaims()->requestAndStart($video)['reclaim']->fresh();
 
     expect($reclaim->status)->toBe(StorageReclaim::SKIPPED)
         ->and($reclaim->error)->toContain('FFmpeg is not available');
@@ -205,27 +203,10 @@ test('reverting discards the candidate and keeps the upload', function () {
     $video = videoWithBigOriginal();
     $fake->outputBytes = 300_000;
 
-    $reclaim = reclaims()->requestAndStart($video, StorageReclaim::TARGET_ORIGINAL)['reclaim']->fresh();
+    $reclaim = reclaims()->requestAndStart($video)['reclaim']->fresh();
 
     expect(reclaims()->revert($reclaim))->toBeTrue()
         ->and(Storage::disk('public')->exists($reclaim->new_path))->toBeFalse()
         ->and($video->fresh()->video_path)->toBe($video->video_path)
         ->and(Storage::disk('public')->size($video->video_path))->toBe(900_000);
-});
-
-test('every reclaim target has a worker', function () {
-    // start() refuses a target with no job behind it rather than leaving the
-    // row looking queued forever. This is the guard that a new target cannot
-    // be added to the ledger without one.
-    fakeFfmpeg(duration: 60, height: 720, width: 1280);
-
-    foreach (StorageReclaim::TARGETS as $target) {
-        $video = $target === StorageReclaim::TARGET_ORIGINAL ? videoWithBigOriginal() : encodedVideo();
-        $quality = $target === StorageReclaim::TARGET_RENDITION ? '480p' : null;
-
-        $reclaim = reclaims()->request($video, $target, $quality)['reclaim'];
-
-        expect($reclaim)->not->toBeNull()
-            ->and($reclaim->status)->not->toBe(StorageReclaim::FAILED);
-    }
 });

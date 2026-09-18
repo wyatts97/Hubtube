@@ -34,7 +34,6 @@ class MediaStorageReport
                 'total_bytes' => $this->totalBytes(),
                 'total_files' => $this->totalFiles(),
                 'videos' => $this->videoBreakdown(),
-                'reclaimable_hls' => $this->reclaimableHls(),
                 'indexed_at' => $this->indexedAt(),
             ]
         );
@@ -76,16 +75,19 @@ class MediaStorageReport
     }
 
     /**
-     * The bytes held by duplicate HLS copies.
+     * The bytes held by the HLS segment trees.
      *
-     * `generate_hls` defaults to on, so `videos/{slug}/processed/hls` holds a
-     * complete second copy of every rendition as .ts segments. That directory
-     * sits at depth 3, which is exactly what MediaIndexService writes, so this
-     * is one indexed aggregate over media_folders_root_depth_index — and it is
-     * the one number on this page that can be reclaimed with no re-encoding at
-     * all.
+     * `generate_hls` defaults to on, so `videos/{slug}/processed/hls` holds
+     * every rendition again as .ts segments. Reported because it is a large
+     * share of the disk and worth understanding — **not** as something to
+     * reclaim: VideoPlayer.vue streams the HLS manifest whenever it exists, so
+     * these are the files playback actually depends on.
+     *
+     * That directory sits at depth 3, which is exactly what MediaIndexService
+     * writes, so this is one indexed aggregate over
+     * media_folders_root_depth_index.
      */
-    public function reclaimableHls(): int
+    public function hlsBytes(): int
     {
         return (int) MediaFolder::query()
             ->where('root', 'videos')
@@ -115,7 +117,7 @@ class MediaStorageReport
             ->where('name_lower', 'processed')
             ->sum('total_size');
 
-        $hls = $this->reclaimableHls();
+        $hls = $this->hlsBytes();
 
         $originals = (int) MediaFile::query()
             ->where('root', 'videos')
