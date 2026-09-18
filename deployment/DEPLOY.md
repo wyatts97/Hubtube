@@ -661,6 +661,23 @@ Deploying this needs `php artisan migrate --force` (four indexes on `media_files
 
 One figure there is worth reading carefully: **duplicate HLS copies**. `generate_hls` defaults to on, so `videos/{slug}/processed/hls` holds a complete second copy of every rendition as `.ts` segments — typically as many bytes again as the renditions themselves. Nothing reclaims it yet; this release only measures it.
 
+### Storage Reclaim
+
+The groundwork for actually getting that space back. **This release adds no operation that touches a file** — the ledger, the review screen and the safety rails ship first, so there is never a state where reclaim work can be created with no way to review it.
+
+How it will work, and what to know before the operations land:
+
+- A reclaim produces a smaller file and then **stops**, holding the file it replaced until an admin accepts it at Admin → Content → **Storage Reclaim**. Accept deletes the held copy; revert puts it back and discards the new one. While a reclaim waits, the site is using *more* disk than before, not less — the review page reports "reclaimed" and "awaiting review" as two separate figures for exactly that reason.
+- **A passed review window counts as acceptance.** `storage:reclaim-sweep` runs daily at 04:25 and accepts anything older than `reclaim_keep_days` (14 by default, settable up to 365 to disable it in practice). Without that, unreviewed rows would hold their old files forever. Every auto-accept is written to the activity log with before and after sizes.
+- **New settings** at Admin → Settings → Video Encoding: reclaim preset (default `slow`, against the normal `veryfast`), CRF increase (+2 on the site CRF), minimum saving to bother offering (15%), and how long to keep the replaced file. Normal encoding is already CRF-based, so a slower preset is where most of the saving comes from.
+- **There is a new Horizon supervisor, `storage-reclaim`.** Run `php artisan horizon:terminate` after migrating and confirm it appears in Horizon before going further. It is `maxProcesses: 1`, `nice 15`, `tries: 1` — reclaim encoding is strictly serial and always yields CPU, so a bulk reclaim cannot starve live uploads, and a half-written re-encode is never retried automatically.
+- Deploy: `php artisan migrate --force` (the `storage_reclaims` table, `videos.media_version`, `video_encodings.settings_overrides`), then `php artisan horizon:terminate` and `php artisan filament:optimize`.
+
+Two design notes worth keeping, because they are not obvious from the code:
+
+- **`videos.media_version`** is appended to rendition and HLS URLs as `?v={n}` and bumped whenever a file is replaced under its own name. nginx sets `expires 30d` on `.mp4` under `/storage` and Cloudflare sits in front with no purge integration, so without it a replaced rendition would serve the old bytes for a month. It is deliberately **not** applied on cloud disks, where a query string would break a pre-signed URL — and not needed for a re-compressed original, which lands at a new filename instead.
+- **Reclaims are not tracked on `video_encodings`.** That table holds one row per rendition and re-planning nulls its `size`, which destroys the before-size a reclaim compares against; a non-terminal row there would also make the video read as permanently "encoding" and hide "encode missing renditions" for good.
+
 ### Log Rotation
 
 Add to `/etc/logrotate.d/hubtube`:
