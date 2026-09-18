@@ -51,6 +51,20 @@ class Bytes
     }
 
     /**
+     * The dashboard convention: two decimals from a gigabyte up, one below.
+     *
+     * Kept as its own method rather than folded into $precision so that the
+     * admin widgets keep rendering exactly the strings they did before this
+     * was centralised — "1.5 MB" there, not "1.50 MB".
+     */
+    public static function compact(int|float|null $bytes): string
+    {
+        $bytes = (float) ($bytes ?? 0);
+
+        return self::format($bytes, $bytes >= 1073741824 ? 2 : 1);
+    }
+
+    /**
      * Format a saving as "120 MB (43%)", or just the size when the original
      * size is unknown.
      */

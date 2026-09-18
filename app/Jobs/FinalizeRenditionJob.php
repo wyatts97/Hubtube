@@ -48,7 +48,9 @@ class FinalizeRenditionJob implements ShouldQueue
         }
 
         $video = $encoding->video;
-        $commands = new FfmpegCommands(Setting::getAll());
+        // Overrides matter here too: the chunk join is a stream copy, but
+        // HLS packaging and any whole-rendition fallback re-encode are not.
+        $commands = (new FfmpegCommands(Setting::getAll()))->withOverrides($encoding->settings_overrides ?? []);
         $output = $coordinator->outputPath($encoding);
         $partial = substr($output, 0, -4).'.part.mp4';
 

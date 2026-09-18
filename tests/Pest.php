@@ -1,14 +1,18 @@
 <?php
 
+use App\Jobs\ProcessVideoJob;
+use App\Models\EncodeProfile;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
 use App\Models\VideoEncoding;
+use App\Services\Encoding\FfmpegRunner;
 use App\Services\Storage\StorageReclaimService;
 use App\Services\Translation\TranslationProviderManager;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\FakeFfmpegRunner;
 use Tests\Support\FakeTranslationProvider;
 use Tests\TestCase;
 
@@ -180,4 +184,65 @@ function processedVideo(array $attributes = []): Video
     $disk->put($dir.'/processed/master.m3u8', '#EXTM3U');
 
     return $video->fresh();
+}
+
+/**
+ * Swap FFmpeg for the fake runner, which writes plausible output files.
+ *
+ * With QUEUE_CONNECTION=sync the whole job graph then runs inline, so one
+ * ProcessVideoJob::dispatchSync() walks a video from upload to fully encoded.
+ */
+function fakeFfmpeg(float $duration = 60, int $width = 1920, int $height = 1080, bool $audio = true): FakeFfmpegRunner
+{
+    $fake = new FakeFfmpegRunner($duration, $width, $height, $audio);
+    app()->instance(FfmpegRunner::class, $fake);
+
+    return $fake;
+}
+
+/** Narrow the encode ladder to the named profiles. */
+function onlyProfiles(array $names): void
+{
+    EncodeProfile::query()->update(['is_active' => false]);
+    EncodeProfile::whereIn('name', $names)->update(['is_active' => true]);
+}
+
+/** A freshly uploaded video with a source file, ready to be processed. */
+function uploadedVideo(array $attributes = []): Video
+{
+    $video = Video::factory()->create(array_merge([
+        'slug' => 'clip-'.uniqid(),
+        'status' => 'pending',
+        'is_approved' => false,
+        'qualities_available' => null,
+        'scrubber_vtt_path' => null,
+    ], $attributes));
+
+    $video->update(['video_path' => "videos/{$video->slug}/clip.mp4"]);
+    Storage::disk('public')->put($video->video_path, str_repeat('v', 4096));
+
+    return $video->fresh();
+}
+
+/**
+ * A fully processed video with two renditions on disk, encoded through the
+ * fake runner, whose rendition files are then given a realistic size — the
+ * fake writes a fixed 20 KB, which would make every storage saving identical.
+ */
+function encodedVideo(int $renditionBytes = 500_000): Video
+{
+    onlyProfiles(['360p', '480p']);
+    $video = uploadedVideo();
+
+    ProcessVideoJob::dispatchSync($video);
+    $video = $video->fresh();
+
+    foreach (['360p', '480p'] as $quality) {
+        Storage::disk('public')->put(
+            dirname($video->video_path)."/processed/{$quality}.mp4",
+            str_repeat('o', $renditionBytes),
+        );
+    }
+
+    return $video;
 }

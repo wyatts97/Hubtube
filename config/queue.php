@@ -15,7 +15,7 @@ return [
             'connection' => env('DB_QUEUE_CONNECTION'),
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
             'queue' => env('DB_QUEUE', 'default'),
-            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 3900),
+            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 7500),
             'after_commit' => false,
         ],
 
@@ -33,14 +33,19 @@ return [
              * The framework default is 90s, but ProcessVideoJob declares a
              * 3600s timeout — so any transcode over 90 seconds was eligible to
              * be re-reserved and re-run concurrently. TranslateModelJob (300s)
-             * had the same exposure. 3900 clears the longest timeout with room
-             * to spare.
+             * had the same exposure.
+             *
+             * The longest is now RecompressOriginalJob at 7200s: a storage
+             * reclaim re-encodes a whole original at preset `slow`, on a queue
+             * deliberately niced below everything else, so it can legitimately
+             * run for hours. 7500 clears it with room to spare.
              *
              * Trade-off: a worker that genuinely crashes now leaves its job
-             * reserved for up to 65 minutes before retry. Crashes are rare;
-             * duplicate transcodes are expensive.
+             * reserved for up to two hours before retry. Crashes are rare;
+             * two ffmpeg processes writing the same output file are not
+             * survivable.
              */
-            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 3900),
+            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 7500),
             'block_for' => null,
             'after_commit' => false,
         ],

@@ -10,11 +10,9 @@ use App\Models\User;
 use App\Models\Video;
 use App\Models\VideoEncoding;
 use App\Services\Encoding\FfmpegCommands;
-use App\Services\Encoding\FfmpegRunner;
 use App\Services\Encoding\RenditionCoordinator;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
-use Tests\Support\FakeFfmpegRunner;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,36 +24,6 @@ use Tests\Support\FakeFfmpegRunner;
 | upload to fully encoded.
 |
 */
-
-function fakeFfmpeg(float $duration = 60, int $width = 1920, int $height = 1080, bool $audio = true): FakeFfmpegRunner
-{
-    $fake = new FakeFfmpegRunner($duration, $width, $height, $audio);
-    app()->instance(FfmpegRunner::class, $fake);
-
-    return $fake;
-}
-
-function onlyProfiles(array $names): void
-{
-    EncodeProfile::query()->update(['is_active' => false]);
-    EncodeProfile::whereIn('name', $names)->update(['is_active' => true]);
-}
-
-function uploadedVideo(array $attributes = []): Video
-{
-    $video = Video::factory()->create(array_merge([
-        'slug' => 'clip-'.uniqid(),
-        'status' => 'pending',
-        'is_approved' => false,
-        'qualities_available' => null,
-        'scrubber_vtt_path' => null,
-    ], $attributes));
-
-    $video->update(['video_path' => "videos/{$video->slug}/clip.mp4"]);
-    Storage::disk('public')->put($video->video_path, str_repeat('v', 4096));
-
-    return $video->fresh();
-}
 
 beforeEach(function () {
     Setting::set('video_auto_approve', false, 'general', 'boolean');

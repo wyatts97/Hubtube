@@ -10,6 +10,7 @@ use App\Models\Setting;
 use App\Models\Video;
 use App\Models\VideoEncoding;
 use App\Services\AdminLogger;
+use App\Services\Storage\StorageReclaimService;
 use App\Services\StorageManager;
 use App\Services\VideoService;
 use Illuminate\Support\Collection;
@@ -45,6 +46,9 @@ class RenditionCoordinator
     public const PRIORITY_QUEUE = 'video-priority';
 
     public const QUEUE = 'video-processing';
+
+    /** Storage reclaims: one niced process, so they never delay an upload. */
+    public const RECLAIM_QUEUE = 'storage-reclaim';
 
     /** Seconds between progress writes to the database per chunk job. */
     protected const PROGRESS_WRITE_INTERVAL = 3.0;
@@ -169,6 +173,7 @@ class RenditionCoordinator
 
         $lowest = $targets->reject(fn ($t) => $t['quality'] === VideoEncoding::ORIGINAL)->first();
         $needsWork = collect();
+        $reclaimOverrides = app(StorageReclaimService::class)->overridesForEncoding($video);
 
         foreach ($targets as $target) {
             /** @var VideoEncoding|null $row */
@@ -193,6 +198,10 @@ class RenditionCoordinator
                 'chunks_completed' => 0,
                 'chunk_seconds' => $chunks > 1 ? $chunkSeconds : null,
                 'run_id' => (string) Str::uuid(),
+                // Taken from the reclaim ledger rather than carried over from
+                // the row, so a storage reclaim's slower settings survive this
+                // re-plan while an ordinary one cannot inherit them.
+                'settings_overrides' => $reclaimOverrides[$target['quality']] ?? null,
                 'error' => null,
                 'size' => null,
                 'started_at' => null,
@@ -321,7 +330,17 @@ class RenditionCoordinator
             return;
         }
 
-        $queue = $encoding->is_priority ? self::PRIORITY_QUEUE : self::QUEUE;
+        // A row carrying settings_overrides is a storage reclaim: files that
+        // already work, being re-encoded to save disk. It must never touch
+        // video-priority, which the encoding supervisor drains first — a bulk
+        // reclaim there would starve live uploads. is_priority is also cleared
+        // when the reclaim is set up; either alone would be insufficient,
+        // because a reclaim of the *lowest* rendition re-plans a priority row.
+        $queue = match (true) {
+            $encoding->settings_overrides !== null => self::RECLAIM_QUEUE,
+            $encoding->is_priority => self::PRIORITY_QUEUE,
+            default => self::QUEUE,
+        };
 
         for ($index = 0; $index < $encoding->chunks_total; $index++) {
             $this->dispatchSafely(fn () => EncodeVideoChunkJob::dispatch($encoding->id, $encoding->run_id, $index)->onQueue($queue));
@@ -495,6 +514,12 @@ class RenditionCoordinator
         // would otherwise deadlock trying to take it again.
         foreach ($toDispatch as $pending) {
             $this->dispatchRendition($pending);
+        }
+
+        // A reclaim's rendition finishing is the moment its result can be
+        // measured, which is where the ledger row stops being "running".
+        if ($encoding->settings_overrides !== null) {
+            app(StorageReclaimService::class)->renditionEncoded($encoding);
         }
 
         $this->dispatchCompletionIfDone($video);

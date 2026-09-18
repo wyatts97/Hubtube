@@ -6,6 +6,7 @@ use Throwable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use SplFileObject;
+use App\Support\Bytes;
 
 /**
  * LogViewerService
@@ -262,12 +263,6 @@ class LogViewerService
 
     private function formatBytes(int $bytes): string
     {
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $i = 0;
-        while ($bytes >= 1024 && $i < count($units) - 1) {
-            $bytes /= 1024;
-            $i++;
-        }
-        return round($bytes, 2) . ' ' . $units[$i];
+        return Bytes::format($bytes);
     }
 }

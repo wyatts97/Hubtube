@@ -233,16 +233,6 @@ test('an unknown target is refused by the command', function () {
     $this->artisan('storage:reclaim --target=everything')->assertFailed();
 });
 
-test('a reclaim target with no worker yet is failed rather than left looking queued', function () {
-    Queue::fake();
-    $video = processedVideo();
-
-    $result = reclaims()->requestAndStart($video, StorageReclaim::TARGET_RENDITION, '720p');
-
-    expect($result['reclaim']->fresh()->status)->toBe(StorageReclaim::FAILED)
-        ->and($result['reclaim']->fresh()->error)->toContain('No worker');
-});
-
 // ── Requesting from the Media Library ───────────────────────────────────────
 
 test('selecting many segments queues one reclaim of the tree', function () {

@@ -858,32 +858,13 @@ class VideoController extends Controller
             abort(451, 'This video is not available in your country.');
         }
 
-        // Pick the highest processed MP4 quality available.
-        $qualityUrls = $video->quality_urls;
-        $path = null;
+        // The highest processed MP4 on disk, with the original as the
+        // fallback. See Video::bestDownloadPath() for why this moved out of
+        // the controller.
         $disk = $video->storage_disk ?? 'public';
-
-        if (!empty($qualityUrls)) {
-            // Sort keys descending so 1080p > 720p > 480p > original
-            $ordered = collect($qualityUrls)->sortKeysDesc();
-            foreach ($ordered as $quality => $url) {
-                if ($quality === 'original') {
-                    $path = $video->video_path;
-                } else {
-                    $candidate = dirname($video->video_path) . '/processed/' . $quality . '.mp4';
-                    if (StorageManager::exists($candidate, $disk)) {
-                        $path = $candidate;
-                        break;
-                    }
-                }
-            }
-        }
+        $path = $video->bestDownloadPath();
 
         if (!$path) {
-            $path = $video->video_path;
-        }
-
-        if (!$path || !StorageManager::exists($path, $disk)) {
             abort(404);
         }
 

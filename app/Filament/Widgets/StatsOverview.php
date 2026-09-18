@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Schema;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use App\Support\Bytes;
 
 class StatsOverview extends BaseWidget
 {
@@ -228,16 +229,7 @@ class StatsOverview extends BaseWidget
 
     private function formatBytes(int|float $bytes): string
     {
-        if ($bytes >= 1099511627776) {
-            return number_format($bytes / 1099511627776, 2) . ' TB';
-        } elseif ($bytes >= 1073741824) {
-            return number_format($bytes / 1073741824, 2) . ' GB';
-        } elseif ($bytes >= 1048576) {
-            return number_format($bytes / 1048576, 1) . ' MB';
-        } elseif ($bytes >= 1024) {
-            return number_format($bytes / 1024, 1) . ' KB';
-        }
-        return $bytes . ' B';
+        return Bytes::compact($bytes);
     }
 
     /**

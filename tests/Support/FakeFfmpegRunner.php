@@ -22,6 +22,15 @@ class FakeFfmpegRunner extends FfmpegRunner
     /** @var (callable(string): void)|null Called before each command runs. */
     public $onRun = null;
 
+    /**
+     * Bytes written for each encoded output.
+     *
+     * Storage reclaim decides what to offer by comparing before and after, so
+     * its tests need to choose whether an encode came out smaller, bigger, or
+     * barely changed.
+     */
+    public int $outputBytes = 20480;
+
     public function __construct(
         public float $duration = 60.0,
         public int $width = 1920,
@@ -74,7 +83,7 @@ class FakeFfmpegRunner extends FfmpegRunner
             file_put_contents($output, "#EXTM3U\n");
             file_put_contents(dirname($output).'/segment_000.ts', str_repeat('t', 4096));
         } else {
-            file_put_contents($output, str_repeat('x', 20480));
+            file_put_contents($output, str_repeat('x', $this->outputBytes));
         }
 
         if ($onProgress) {

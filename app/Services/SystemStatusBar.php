@@ -23,6 +23,7 @@ use App\Filament\Resources\ReportResource;
 use App\Filament\Resources\WithdrawalRequestResource;
 use App\Filament\Pages\ScheduledVideos;
 use Illuminate\Support\Facades\Storage;
+use App\Support\Bytes;
 
 class SystemStatusBar
 {
@@ -355,15 +356,6 @@ class SystemStatusBar
 
     protected function formatBytes(int $bytes): string
     {
-        if ($bytes >= 1099511627776) {
-            return round($bytes / 1099511627776, 1) . ' TB';
-        }
-        if ($bytes >= 1073741824) {
-            return round($bytes / 1073741824, 1) . ' GB';
-        }
-        if ($bytes >= 1048576) {
-            return round($bytes / 1048576, 1) . ' MB';
-        }
-        return round($bytes / 1024, 1) . ' KB';
+        return Bytes::format($bytes, 1);
     }
 }

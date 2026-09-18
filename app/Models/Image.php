@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Services\AltTextService;
 use App\Services\StorageManager;
+use App\Support\Bytes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -182,7 +183,7 @@ class Image extends Model
             return true;
         }
 
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -204,7 +205,7 @@ class Image extends Model
 
     public function getImageUrlAttribute(): ?string
     {
-        if (!$this->file_path) {
+        if (! $this->file_path) {
             return null;
         }
 
@@ -213,7 +214,7 @@ class Image extends Model
 
     public function getThumbnailUrlAttribute(): ?string
     {
-        if (!$this->thumbnail_path) {
+        if (! $this->thumbnail_path) {
             return $this->image_url;
         }
 
@@ -236,13 +237,6 @@ class Image extends Model
 
     public function getFormattedSizeAttribute(): string
     {
-        $bytes = $this->file_size;
-        if ($bytes >= 1073741824) {
-            return number_format($bytes / 1073741824, 2) . ' GB';
-        }
-        if ($bytes >= 1048576) {
-            return number_format($bytes / 1048576, 2) . ' MB';
-        }
-        return number_format($bytes / 1024, 2) . ' KB';
+        return Bytes::format($this->file_size);
     }
 }

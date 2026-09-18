@@ -45,6 +45,40 @@ class FfmpegCommands
         return (int) $this->s('ffmpeg_command_timeout', 1800);
     }
 
+    /**
+     * A copy of this builder with storage-reclaim settings applied.
+     *
+     * Encoding is already CRF-based (CRF 22 at preset `veryfast`), so a
+     * reclaim's whole quality/size trade is a slower preset and a higher CRF —
+     * expressed as the same setting keys so there is one code path building
+     * the command line, not two.
+     *
+     * @param  array{preset?: string, crf?: int, keyframes?: bool, copy_audio?: bool}  $overrides
+     */
+    public function withOverrides(array $overrides): static
+    {
+        $settings = $this->settings;
+
+        if (isset($overrides['preset'])) {
+            $settings['video_quality_preset'] = (string) $overrides['preset'];
+        }
+
+        if (isset($overrides['crf'])) {
+            $settings['ffmpeg_crf'] = (int) $overrides['crf'];
+            // A CRF override is meaningless in bitrate mode, and a reclaim
+            // exists to hit a quality target rather than a size target.
+            $settings['ffmpeg_rate_control'] = 'crf';
+        }
+
+        foreach (['keyframes' => 'ffmpeg_force_keyframes', 'copy_audio' => 'ffmpeg_copy_audio'] as $key => $setting) {
+            if (array_key_exists($key, $overrides)) {
+                $settings[$setting] = (bool) $overrides[$key];
+            }
+        }
+
+        return new static($settings);
+    }
+
     /** x264 video arguments. $bitrate is used only in bitrate rate-control mode. */
     public function videoArgs(?string $bitrate = null): string
     {
@@ -52,19 +86,32 @@ class FfmpegCommands
             ? '-b:v '.escapeshellarg($bitrate)
             : '-crf '.(int) $this->s('ffmpeg_crf', 22);
 
+        // Load-bearing for renditions — HLS segments and chunk-boundary stream
+        // copies both need keyframes on this grid — and pure waste for a
+        // re-compressed original, which is neither chunked nor packaged.
+        $keyframes = $this->s('ffmpeg_force_keyframes', true)
+            ? '-force_key_frames '.escapeshellarg('expr:gte(t,n_forced*'.self::KEYFRAME_SECONDS.')')
+            : '';
+
         return trim(sprintf(
-            '-c:v libx264 -preset %s %s -pix_fmt %s -threads %d -force_key_frames %s %s',
+            '-c:v libx264 -preset %s %s -pix_fmt %s -threads %d %s %s',
             escapeshellarg((string) $this->s('video_quality_preset', 'veryfast')),
             $videoRate,
             escapeshellarg((string) $this->s('ffmpeg_pix_fmt', 'yuv420p')),
             (int) $this->s('ffmpeg_threads', 4),
-            escapeshellarg('expr:gte(t,n_forced*'.self::KEYFRAME_SECONDS.')'),
+            $keyframes,
             trim((string) $this->s('ffmpeg_mp4_extra_args', ''))
         ));
     }
 
     public function audioArgs(): string
     {
+        // Re-encoding already-lossy AAC costs quality for negligible bytes, so
+        // a reclaim copies the audio track through untouched.
+        if ($this->s('ffmpeg_copy_audio', false)) {
+            return '-c:a copy';
+        }
+
         return '-c:a aac -b:a '.escapeshellarg((string) $this->s('audio_bitrate', '128k'));
     }
 

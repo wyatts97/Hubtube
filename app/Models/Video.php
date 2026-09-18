@@ -873,6 +873,45 @@ class Video extends Model
         return $urls;
     }
 
+    /**
+     * The best file to hand a downloader, or null if there is nothing to send.
+     *
+     * The selector this replaces sorted the quality keys as *strings*, which
+     * orders them 'original', '720p', '480p', '360p', '1080p' — so a 1080p+720p
+     * ladder served 720p, and the 'original' branch never broke out of the
+     * loop, meaning a video with no rendition on disk handed out the raw
+     * upload. That last part matters more now: storage reclaim exists to shrink
+     * these files, and a fallback that prefers the largest file on the box
+     * works directly against it.
+     *
+     * Heights are compared numerically, highest first, with 'original' last as
+     * the genuine fallback rather than an accidental winner.
+     */
+    public function bestDownloadPath(): ?string
+    {
+        $disk = $this->storage_disk ?? 'public';
+        $labels = array_diff((array) $this->qualities_available, ['original']);
+
+        // Sort by the number in the label, so 1080p beats 720p.
+        usort($labels, fn ($a, $b) => (int) $b <=> (int) $a);
+
+        $baseDir = dirname((string) $this->video_path);
+
+        foreach ($labels as $label) {
+            $candidate = $baseDir.'/processed/'.$label.'.mp4';
+
+            if (StorageManager::exists($candidate, $disk)) {
+                return $candidate;
+            }
+        }
+
+        if ($this->video_path && StorageManager::exists($this->video_path, $disk)) {
+            return $this->video_path;
+        }
+
+        return null;
+    }
+
     public function getVideoUrlAttribute(): ?string
     {
         if ($this->is_embedded && $this->embed_url) {

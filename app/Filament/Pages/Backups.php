@@ -17,6 +17,7 @@ use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
+use App\Support\Bytes;
 
 class Backups extends Page implements HasForms
 {
@@ -200,15 +201,6 @@ class Backups extends Page implements HasForms
 
     protected function formatBytes(int $bytes): string
     {
-        $units = ['B', 'KB', 'MB', 'GB'];
-        $i = 0;
-        $size = (float) $bytes;
-
-        while ($size >= 1024 && $i < count($units) - 1) {
-            $size /= 1024;
-            $i++;
-        }
-
-        return round($size, 2) . ' ' . $units[$i];
+        return Bytes::format($bytes);
     }
 }
