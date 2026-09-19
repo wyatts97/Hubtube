@@ -42,4 +42,14 @@ test('compress smoke: service splits and page queues', function () {
 
     // Page still renders (blade with new toolbar/modal)
     Livewire::test(MediaLibrary::class)->assertOk()->assertSee('Largest');
+
+    // Every video row carries its own Compress button — no Alpine needed.
+    $flat = Livewire::test(MediaLibrary::class)->call('setViewMode', 'flat');
+    expect($flat->html())->toContain('Compress');
+
+    // Selecting a file in flat mode shows the server-side action strip.
+    $strip = Livewire::test(MediaLibrary::class)
+        ->call('setViewMode', 'flat')
+        ->call('selectFile', 'media/clip.mp4');
+    expect($strip->html())->toContain('clip.mp4')->toContain('Compress');
 });

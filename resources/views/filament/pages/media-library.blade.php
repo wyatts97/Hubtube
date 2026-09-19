@@ -320,6 +320,35 @@
                 </x-filament::button>
             </div>
 
+            {{-- Selected-file actions for the flat view. The details pane is
+                 hidden in flat mode, so without this clicking a filename
+                 appears to do nothing. Server-side ($selectedFile), so it
+                 works even if the Alpine selection state was reset. --}}
+            @if ($viewMode === 'flat' && $selectedFileData)
+                <div class="ht-ml-panel ht-ml-bulkbar">
+                    <span class="ht-ml-bulkbar__count" title="{{ $selectedFileData['path'] }}">
+                        {{ $selectedFileData['name'] }} · {{ $selectedFileData['size_formatted'] }}
+                    </span>
+                    @if ($selectedFileData['type'] === 'video')
+                        <x-filament::button size="xs" color="warning" icon="phosphor-film-strip" wire:click="startCompress([@js($selectedFileData['path'])])">
+                            Compress…
+                        </x-filament::button>
+                    @endif
+                    <x-filament::button size="xs" color="gray" icon="phosphor-folder-open" wire:click="startMove([@js($selectedFileData['path'])])">
+                        Move to…
+                    </x-filament::button>
+                    <x-filament::button size="xs" color="gray" icon="phosphor-pencil-simple" wire:click="startRename(@js($selectedFileData['path']))">
+                        Rename
+                    </x-filament::button>
+                    <x-filament::button size="xs" color="danger" icon="phosphor-trash" wire:click="confirmDelete(@js($selectedFileData['path']))">
+                        Delete
+                    </x-filament::button>
+                    <x-filament::button size="xs" color="gray" wire:click="clearSelection">
+                        Clear
+                    </x-filament::button>
+                </div>
+            @endif
+
             {{-- Subfolders. The grid was files-only, so the sidebar was the
                  only way into a folder. --}}
             @if ($subfolders !== [])
@@ -509,6 +538,14 @@
                                             @if ($file['is_referenced'])
                                                 <span class="ht-ml-card__badge">In use</span>
                                             @endif
+                                            @if ($file['type'] === 'video')
+                                                <button
+                                                    type="button"
+                                                    class="ht-ml-chip"
+                                                    wire:click="startCompress([@js($file['path'])])"
+                                                    title="Compress to H.265 / VP9 / AV1"
+                                                >Compress…</button>
+                                            @endif
                                         </td>
                                     </tr>
                                 @empty
@@ -567,9 +604,17 @@
                                         <td class="ht-ml-table__muted">{{ $file['type'] }}</td>
                                         <td class="ht-ml-table__num ht-ml-table__muted">{{ $file['size_formatted'] }}</td>
                                         <td class="ht-ml-table__muted">{{ $file['modified_formatted'] }}</td>
-                                        <td>
+                                        <td style="white-space: nowrap;">
                                             @if ($file['is_referenced'])
                                                 <span class="ht-ml-card__badge">In use</span>
+                                            @endif
+                                            @if ($file['type'] === 'video')
+                                                <button
+                                                    type="button"
+                                                    class="ht-ml-chip"
+                                                    wire:click="startCompress([@js($file['path'])])"
+                                                    title="Compress to H.265 / VP9 / AV1"
+                                                >Compress…</button>
                                             @endif
                                         </td>
                                     </tr>
