@@ -170,7 +170,29 @@ class MediaLibrary extends Page
     /** @var list<array{title: string, reason: string}> */
     public array $reclaimRefusals = [];
 
+    /** File-level compression (H.265 / VP9 / AV1) — writes a new file, never overwrites. */
+    public bool $showCompressModal = false;
+
+    /** @var list<string> */
+    public array $compressTargets = [];
+
+    /** @var list<array{name: string, reason: string}> */
+    public array $compressRefusals = [];
+
+    public string $compressCodec = 'h265';
+
+    public string $compressQuality = 'balanced';
+
     public bool $showMoveModal = false;
+
+    /**
+     * Explorer helpers.
+     *
+     * Thin conveniences over the existing filters — no new queries, no new
+     * state to persist. `largestFirst()` is the "find what is eating the disk"
+     * button: videos sorted biggest-first across this folder and below.
+     * Kept separate from sortBy so a shared URL still round-trips.
+     */
 
     // Tree expansion state
     public array $expandedNodes = [];
@@ -351,6 +373,46 @@ class MediaLibrary extends Page
         $this->search = '';
         $this->usageFilter = '';
         $this->resetPage();
+    }
+
+    /**
+     * Explorer shortcut: biggest videos first, this folder and below.
+     *
+     * Same indexed query as the flat view but scoped to the subtree you are
+     * standing in — the Windows-Explorer answer to "what is eating this disk".
+     * Stays in the current viewMode so the tree/preview layout does not jump.
+     */
+    public function largestFirst(bool $videosOnly = true): void
+    {
+        $this->searchScope = 'subtree';
+        $this->typeFilter = $videosOnly ? 'video' : '';
+        $this->sortBy = 'size';
+        $this->sortDirection = 'desc';
+        $this->search = '';
+        $this->resetPage();
+    }
+
+    /** Explorer shortcut: back to plain folder browsing. */
+    public function folderView(): void
+    {
+        $this->searchScope = 'folder';
+        $this->typeFilter = '';
+        $this->sortBy = 'modified';
+        $this->sortDirection = 'desc';
+        $this->search = '';
+        $this->resetPage();
+    }
+
+    /** Parent directory of the current folder, for the Explorer up-button. */
+    public function getParentDirectoryProperty(): ?string
+    {
+        $current = trim($this->sanitizePath($this->currentDirectory), '/');
+
+        if ($current === '' || ! str_contains($current, '/')) {
+            return null;
+        }
+
+        return dirname($current);
     }
 
     /** Whether anything is narrowing the listing right now. */
@@ -1392,6 +1454,122 @@ class MediaLibrary extends Page
         $this->showMoveModal = false;
         $this->moveTargets = [];
         $this->moveDestination = '';
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Compress (file-level H.265 / VP9 / AV1) */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Offer file-level compression for the selected videos.
+     *
+     * Unlike startReclaim() (Video-record originals → H.264 only), this takes
+     * any loose video file and encodes it to a modern codec, writing a NEW
+     * file alongside the original. Nothing is overwritten or deleted.
+     *
+     * @param  list<string>  $paths
+     */
+    public function startCompress(array $paths = []): void
+    {
+        $paths = $this->resolveBulkPaths($paths);
+
+        [$ok, $refused] = app(\App\Services\Media\MediaCompressService::class)->splitTargets($paths);
+
+        $this->compressTargets = array_values($ok);
+        $this->compressRefusals = $refused;
+
+        if ($this->compressTargets === [] && $this->compressRefusals === []) {
+            Notification::make()
+                ->title('Select video files to compress')
+                ->body('This works on video files (mp4, mov, mkv, webm, avi…).')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        if ($this->compressTargets === []) {
+            Notification::make()
+                ->title('Nothing here can be compressed')
+                ->body(implode(' ', array_map(fn ($r) => $r['name'].': '.$r['reason'], array_slice($this->compressRefusals, 0, 3))))
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        // Default to the first codec ffmpeg can actually encode.
+        $available = app(\App\Services\Media\MediaCompressService::class)->available();
+        if (! ($available[$this->compressCodec] ?? false)) {
+            foreach (['h265', 'vp9', 'av1'] as $codec) {
+                if ($available[$codec] ?? false) {
+                    $this->compressCodec = $codec;
+                    break;
+                }
+            }
+        }
+
+        $this->showCompressModal = true;
+    }
+
+    public function cancelCompress(): void
+    {
+        $this->showCompressModal = false;
+        $this->compressTargets = [];
+        $this->compressRefusals = [];
+    }
+
+    /** Which codecs the installed ffmpeg can encode, for the modal radio list. */
+    public function getCompressCodecsProperty(): array
+    {
+        return app(\App\Services\Media\MediaCompressService::class)->available();
+    }
+
+    public function confirmCompress(): void
+    {
+        if ($this->compressTargets === []) {
+            return;
+        }
+
+        $codec = in_array($this->compressCodec, \App\Services\Media\MediaCompressService::CODECS, true)
+            ? $this->compressCodec : 'h265';
+        $quality = in_array($this->compressQuality, \App\Services\Media\MediaCompressService::QUALITIES, true)
+            ? $this->compressQuality : 'balanced';
+
+        $available = app(\App\Services\Media\MediaCompressService::class)->available();
+        if (! ($available[$codec] ?? false)) {
+            Notification::make()
+                ->title('That codec is not available')
+                ->body('This server\'s ffmpeg cannot encode '.$codec.'. Pick another codec or install it (libx265 / libvpx-vp9 / libaom-av1).')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        // Re-validate: the modal may be stale and paths come from the client.
+        [$ok] = app(\App\Services\Media\MediaCompressService::class)
+            ->splitTargets($this->resolveBulkPaths($this->compressTargets));
+
+        $queued = 0;
+        foreach ($ok as $path) {
+            \App\Jobs\CompressMediaFileJob::dispatch($path, $codec, $quality, auth()->id());
+            $queued++;
+        }
+
+        $this->cancelCompress();
+
+        if ($queued === 0) {
+            Notification::make()->title('Nothing was queued')->warning()->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title("Queued {$queued} compression".($queued === 1 ? '' : 's')." ({$codec})")
+            ->body('Each writes a new file next to the original — nothing is overwritten. Rescan the folder when the queue finishes to see them.')
+            ->success()
+            ->send();
     }
 
     /**

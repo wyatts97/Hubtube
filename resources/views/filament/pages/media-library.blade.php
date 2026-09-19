@@ -66,9 +66,20 @@
         {{-- ── Main ─────────────────────────────────────────────────────── --}}
         <div class="ht-ml-main">
 
-            {{-- Toolbar --}}
+            {{-- Toolbar: Explorer-style — Up / breadcrumbs / search / Largest / Videos-only --}}
             <div class="ht-ml-panel ht-ml-toolbar">
                 <div class="ht-ml-toolbar__row">
+                    @if ($this->getParentDirectoryProperty())
+                        <button
+                            type="button"
+                            class="ht-ml-iconbtn"
+                            wire:click="openDirectory(@js($this->getParentDirectoryProperty()))"
+                            aria-label="Go up one folder"
+                            title="Up one folder"
+                        >
+                            <x-phosphor-arrow-up class="ht-ml-icon" />
+                        </button>
+                    @endif
                     <nav class="ht-ml-crumbs" aria-label="Breadcrumb">
                         @php
                             $crumbs = array_values(array_filter(explode('/', trim($currentDirectory, '/'))));
@@ -163,6 +174,27 @@
 
                     <x-filament::button wire:click="openNewFolderModal" size="sm" icon="phosphor-folder-plus">
                         New Folder
+                    </x-filament::button>
+
+                    {{-- Explorer shortcuts: biggest files first, without leaving the page. --}}
+                    <x-filament::button
+                        wire:click="largestFirst(true)"
+                        size="sm"
+                        color="gray"
+                        icon="phosphor-sort-descending"
+                        title="Show biggest videos first, this folder and below"
+                    >
+                        Largest
+                    </x-filament::button>
+
+                    <x-filament::button
+                        wire:click="folderView"
+                        size="sm"
+                        color="gray"
+                        icon="phosphor-folder"
+                        title="Back to plain folder browsing"
+                    >
+                        Folders
                     </x-filament::button>
 
                     <x-filament::button
@@ -276,6 +308,9 @@
                 </x-filament::button>
                 <x-filament::button size="xs" color="warning" icon="phosphor-recycle" x-on:click="$wire.startReclaim(paths())">
                     Re-compress…
+                </x-filament::button>
+                <x-filament::button size="xs" color="warning" icon="phosphor-film-strip" x-on:click="$wire.startCompress(paths())">
+                    Compress…
                 </x-filament::button>
                 <x-filament::button size="xs" color="danger" icon="phosphor-trash" x-on:click="$wire.deleteSelectedFiles(paths())">
                     Delete
@@ -693,6 +728,73 @@
                     Queue {{ count($reclaimPlan) }} {{ \Illuminate\Support\Str::plural('encode', count($reclaimPlan)) }}
                 </x-filament::button>
             @endif
+        </x-slot>
+    </x-filament::modal>
+
+    {{-- Compress videos to H.265 / VP9 / AV1. File-level: each encode writes a
+         NEW file next to the original (name.h265.mp4 etc.). Nothing is
+         overwritten or deleted — delete the original yourself once happy. --}}
+    <x-filament::modal id="ml-compress" :visible="$showCompressModal" width="lg" alignment="center">
+        <x-slot name="heading">Compress {{ count($compressTargets) }} {{ \Illuminate\Support\Str::plural('video', count($compressTargets)) }}</x-slot>
+
+        <p class="ht-ml-modal__lede">
+            Re-encode with a modern codec. <strong>Nothing is overwritten</strong> — each result lands
+            beside the original as a new file, e.g. <code>clip.h265.mp4</code>.
+        </p>
+
+        @php $codecsAvailable = $this->getCompressCodecsProperty(); @endphp
+        <div class="ht-ml-reclaim__list" role="radiogroup" aria-label="Codec">
+            @foreach (['h265' => 'H.265 / HEVC (.mp4) — best compatibility', 'vp9' => 'VP9 (.webm) — best for web', 'av1' => 'AV1 (.mp4) — smallest, slowest'] as $codec => $label)
+                <label class="ht-ml-reclaim__row" style="cursor: {{ ($codecsAvailable[$codec] ?? false) ? 'pointer' : 'not-allowed' }}; opacity: {{ ($codecsAvailable[$codec] ?? false) ? '1' : '0.5' }};">
+                    <input type="radio" wire:model.live="compressCodec" value="{{ $codec }}" @disabled(! ($codecsAvailable[$codec] ?? false)) />
+                    <span class="ht-ml-reclaim__title">{{ $label }}</span>
+                    @unless ($codecsAvailable[$codec] ?? false)
+                        <span class="ht-ml-reclaim__reason">ffmpeg on this server cannot encode {{ $codec }}</span>
+                    @endunless
+                </label>
+            @endforeach
+        </div>
+
+        <div class="ht-ml-reclaim__list" role="radiogroup" aria-label="Quality" style="margin-top: 0.5rem;">
+            @foreach (['balanced' => 'Balanced (recommended)', 'small' => 'Smaller file', 'smallest' => 'Smallest file'] as $q => $label)
+                <label class="ht-ml-reclaim__row" style="cursor: pointer;">
+                    <input type="radio" wire:model.live="compressQuality" value="{{ $q }}" />
+                    <span class="ht-ml-reclaim__title">{{ $label }}</span>
+                </label>
+            @endforeach
+        </div>
+
+        <ul class="ht-ml-reclaim__list" style="margin-top: 0.5rem;">
+            @foreach (array_slice($compressTargets, 0, 10) as $target)
+                <li class="ht-ml-reclaim__row">
+                    <span class="ht-ml-reclaim__title">{{ basename($target) }}</span>
+                    <span class="ht-ml-reclaim__target">{{ dirname($target) }}</span>
+                </li>
+            @endforeach
+            @if (count($compressTargets) > 10)
+                <li class="ht-ml-reclaim__row"><span class="ht-ml-reclaim__reason">…and {{ count($compressTargets) - 10 }} more</span></li>
+            @endif
+        </ul>
+
+        @if ($compressRefusals !== [])
+            <div class="ht-ml-reclaim__refusals">
+                <p class="ht-ml-reclaim__refusalsHead">Skipped</p>
+                <ul class="ht-ml-reclaim__list">
+                    @foreach ($compressRefusals as $refusal)
+                        <li class="ht-ml-reclaim__row">
+                            <span class="ht-ml-reclaim__title">{{ $refusal['name'] }}</span>
+                            <span class="ht-ml-reclaim__reason">{{ $refusal['reason'] }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <x-slot name="footerActions">
+            <x-filament::button wire:click="cancelCompress" color="gray">Cancel</x-filament::button>
+            <x-filament::button wire:click="confirmCompress" color="warning" icon="phosphor-film-strip">
+                Queue {{ count($compressTargets) }} {{ \Illuminate\Support\Str::plural('encode', count($compressTargets)) }}
+            </x-filament::button>
         </x-slot>
     </x-filament::modal>
 

@@ -119,6 +119,17 @@
                 Delete
             </x-filament::button>
 
+            @if ($selectedFileData['type'] === 'video')
+                <x-filament::button
+                    wire:click="startCompress([@js($selectedFileData['path'])])"
+                    size="sm"
+                    color="warning"
+                    icon="phosphor-film-strip"
+                >
+                    Compress…
+                </x-filament::button>
+            @endif
+
             <x-filament::button
                 size="sm"
                 color="gray"
