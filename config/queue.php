@@ -35,10 +35,10 @@ return [
              * be re-reserved and re-run concurrently. TranslateModelJob (300s)
              * had the same exposure.
              *
-             * The longest is now RecompressOriginalJob at 7200s: a storage
-             * reclaim re-encodes a whole original at preset `slow`, on a queue
-             * deliberately niced below everything else, so it can legitimately
-             * run for hours. 7500 clears it with room to spare.
+             * The longest is now CompressMediaFileJob at 7200s: it re-encodes a
+             * whole file to H.265, VP9 or AV1 on a queue deliberately niced
+             * below everything else, so it can legitimately run for hours.
+             * 7500 clears it with room to spare.
              *
              * Trade-off: a worker that genuinely crashes now leaves its job
              * reserved for up to two hours before retry. Crashes are rare;

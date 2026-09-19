@@ -1,863 +1,438 @@
 {{--
-    Admin Media Library.
+    Admin Media Library, laid out like a file explorer.
 
-    Styling lives in resources/css/filament/admin/theme.css under .ht-ml-*,
-    alongthe rest of this panel's component CSS. It used to be ~100 lines of
-    hand-rolled utility classes and ~40 hardcoded hex values inlined in a
-    <style> block shipped with every response, which also meant an admin
-    changing the panel's primary colour saw every page update except this one.
+    Styling is in resources/css/filament/admin/theme.css under .ht-ml-*.
 
     Multi-selection is client-side (the mediaSelection Alpine component at the
-    bottom): every card used to carry wire:click="selectFile(...)", so moving a
-    2px border cost a full server round-trip that rebuilt the entire listing.
-    The server is told only when a bulk action actually runs, and it
-    re-validates every path it is handed.
+    bottom), so moving a highlight never costs a round-trip. The server hears
+    about a selection only when an action runs, and every action re-validates
+    the paths it is handed. Dialogs are Filament actions on the page class.
 --}}
 <x-filament-panels::page>
 
 @php
     $files = $this->getFilesProperty();
-    $tree = $this->getFolderTree();
     $subfolders = $this->getSubfoldersProperty();
-    $typeCounts = $this->getTypeCountsProperty();
-    // Resolved by path rather than by scanning the current page, so the panel
-    // no longer goes blank as soon as you turn the page.
     $selectedFileData = $this->getSelectedFileDataProperty();
-    $pagePaths = collect($files->items())->pluck('path')->all();
-    $scope = $searchScope;
+    $directory = $this->directory();
+    $pageFiles = collect($files->items());
+    $statuses = $this->compressStatuses($pageFiles->pluck('path')->all());
+    $compressing = collect($statuses)->contains(fn ($s) => in_array($s['state'] ?? '', ['queued', 'running'], true));
+    $poll = $compressing || $pageFiles->contains('thumbnail_pending', true);
+    $searching = $this->isSearching();
+    $sortKey = $this->sortKey();
+    $crumbs = $directory === '' ? [] : explode('/', $directory);
 @endphp
 
+{{-- data-ml-sizes, not an x-data argument: Alpine keeps component state across
+     Livewire morphs, so an argument would go stale after the first page turn. --}}
 <div
     class="ht-ml"
-    x-data="mediaSelection(@js($pagePaths))"
+    x-data="mediaSelection"
+    data-ml-sizes="{{ json_encode((object) $pageFiles->pluck('size', 'path')->all()) }}"
     x-on:keydown.escape="clear()"
+    @if ($poll) wire:poll.5s @endif
 >
-    {{-- Staleness banner. The index is refreshed by every action this page
-         takes, but files also arrive from the encoder, imports and the shell.
-         One filemtime() on the current folder is enough to notice. --}}
-    @if ($this->getDirectoryStaleProperty())
-        <div class="ht-ml-banner" role="status">
-            <x-phosphor-warning-circle class="ht-ml-icon" />
-            <span class="ht-ml-banner__text">This folder has changed on disk since it was last indexed.</span>
-            <x-filament::button wire:click="rescanCurrentDirectory" size="sm" color="gray" icon="phosphor-arrows-clockwise">
-                Rescan folder
-            </x-filament::button>
+    {{-- ── Address bar ─────────────────────────────────────────────────── --}}
+    <div class="ht-ml-panel ht-ml-toolbar">
+        <div class="ht-ml-toolbar__row">
+            <button type="button" class="ht-ml-iconbtn" x-on:click="history.back()" aria-label="Back">
+                <x-phosphor-arrow-left class="ht-ml-icon" />
+            </button>
+            <button
+                type="button"
+                class="ht-ml-iconbtn"
+                @if ($this->parentDirectory === null) disabled @else wire:click="openDirectory(@js($this->parentDirectory))" @endif
+                aria-label="Up one folder"
+            >
+                <x-phosphor-arrow-up class="ht-ml-icon" />
+            </button>
+
+            <nav class="ht-ml-crumbs ht-ml-address" aria-label="Current folder">
+                <button type="button" class="ht-ml-crumbs__link" wire:click="openDirectory('')" @if ($directory === '') aria-current="page" @endif>
+                    All files
+                </button>
+                @foreach ($crumbs as $index => $crumb)
+                    <x-phosphor-caret-right class="ht-ml-crumbs__sep ht-ml-icon-sm" aria-hidden="true" />
+                    <button
+                        type="button"
+                        class="ht-ml-crumbs__link"
+                        wire:click="openDirectory(@js(implode('/', array_slice($crumbs, 0, $index + 1))))"
+                        @if ($index === count($crumbs) - 1) aria-current="page" @endif
+                    >{{ $index === 0 ? ucfirst($crumb) : $crumb }}</button>
+                @endforeach
+            </nav>
+
+            <x-filament::input.wrapper class="ht-ml-search" prefix-icon="phosphor-magnifying-glass">
+                <x-filament::input
+                    type="search"
+                    wire:model.live.debounce.400ms="search"
+                    placeholder="Search {{ $directory === '' ? 'all files' : basename($directory) }}"
+                />
+            </x-filament::input.wrapper>
         </div>
-    @endif
 
-    @include('filament.pages.partials.media-library-storage')
+        {{-- ── Command bar ─────────────────────────────────────────────── --}}
+        <div class="ht-ml-toolbar__row">
+            <x-filament::button size="sm" color="gray" icon="phosphor-folder-plus" wire:click="mountAction('newFolder')" :disabled="$directory === ''">
+                New folder
+            </x-filament::button>
 
-    {{-- Flat mode is a whole-library view, so it drops the folder tree and the
-         details pane and gives the table the full width. --}}
-    <div @class(['ht-ml-layout', 'ht-ml-layout--flat' => $viewMode === 'flat'])>
+            {{-- Upload, with real progress from Livewire's upload events. --}}
+            <label
+                @class(['ht-ml-upload', 'ht-ml-upload--disabled' => $directory === ''])
+                x-data="{ progress: 0, uploading: false }"
+                x-on:livewire-upload-start="uploading = true; progress = 0"
+                x-on:livewire-upload-finish="uploading = false"
+                x-on:livewire-upload-cancel="uploading = false"
+                x-on:livewire-upload-error="uploading = false"
+                x-on:livewire-upload-progress="progress = $event.detail.progress"
+            >
+                <input
+                    type="file"
+                    wire:model="uploadedFiles"
+                    multiple
+                    accept="{{ collect($this->allowedUploadExtensions())->map(fn ($e) => '.'.$e)->implode(',') }}"
+                    class="ht-ml-upload__input"
+                    @disabled($directory === '')
+                />
+                <x-phosphor-tray-arrow-up class="ht-ml-icon" />
+                <span x-show="!uploading">Upload</span>
+                <span x-show="uploading" x-cloak x-text="`Uploading ${progress}%`"></span>
+            </label>
 
-        {{-- ── Sidebar: folder tree ─────────────────────────────────────── --}}
-        @if ($viewMode !== 'flat')
+            <span class="ht-ml-toolbar__sep" aria-hidden="true"></span>
+
+            <select wire:model.live="typeFilter" class="ht-ml-select" aria-label="Type">
+                <option value="">All types</option>
+                <option value="video">Videos</option>
+                <option value="image">Images</option>
+                <option value="audio">Audio</option>
+                <option value="document">Documents</option>
+                <option value="other">Other</option>
+            </select>
+
+            <select wire:model.live="minSize" class="ht-ml-select" aria-label="Size">
+                <option value="">Any size</option>
+                <option value="100mb">100 MB or more</option>
+                <option value="1gb">1 GB or more</option>
+                <option value="10gb">10 GB or more</option>
+            </select>
+
+            @if ($directory !== '')
+                <label class="ht-ml-check">
+                    <input type="checkbox" wire:model.live="includeSubfolders" />
+                    Include subfolders
+                </label>
+            @endif
+
+            @if ($this->hasFilters())
+                <button type="button" class="ht-ml-chip ht-ml-chip--clear" wire:click="clearFilters">Clear filters</button>
+            @endif
+
+            <div class="ht-ml-spacer"></div>
+
+            <div class="ht-ml-viewtoggle" role="group" aria-label="Layout">
+                <button
+                    type="button"
+                    wire:click="setViewMode('details')"
+                    @class(['ht-ml-viewtoggle__btn', 'ht-ml-viewtoggle__btn--on' => $viewMode !== 'icons'])
+                    aria-pressed="{{ $viewMode !== 'icons' ? 'true' : 'false' }}"
+                    aria-label="Details"
+                ><x-phosphor-list class="ht-ml-icon" /></button>
+                <button
+                    type="button"
+                    wire:click="setViewMode('icons')"
+                    @class(['ht-ml-viewtoggle__btn', 'ht-ml-viewtoggle__btn--on' => $viewMode === 'icons'])
+                    aria-pressed="{{ $viewMode === 'icons' ? 'true' : 'false' }}"
+                    aria-label="Icons"
+                ><x-phosphor-squares-four class="ht-ml-icon" /></button>
+            </div>
+
+            <x-filament::dropdown placement="bottom-end">
+                <x-slot name="trigger">
+                    <button type="button" class="ht-ml-iconbtn" aria-label="Refresh">
+                        <x-phosphor-arrows-clockwise class="ht-ml-icon" />
+                    </button>
+                </x-slot>
+                <x-filament::dropdown.list>
+                    @if ($directory !== '')
+                        <x-filament::dropdown.list.item icon="phosphor-arrows-clockwise" wire:click="rescanCurrentDirectory">
+                            Refresh this folder
+                        </x-filament::dropdown.list.item>
+                    @endif
+                    <x-filament::dropdown.list.item icon="phosphor-database" wire:click="rescanLibrary">
+                        Rescan whole library
+                    </x-filament::dropdown.list.item>
+                </x-filament::dropdown.list>
+            </x-filament::dropdown>
+        </div>
+
+        @error('uploadedFiles.*')
+            <p class="ht-ml-dropzone__error">{{ $message }}</p>
+        @enderror
+    </div>
+
+    <div class="ht-ml-layout">
+        {{-- ── Folder tree ─────────────────────────────────────────────── --}}
         <aside class="ht-ml-sidebar ht-ml-panel" aria-label="Folders">
-            <p class="ht-ml-sidebar__heading">Folders</p>
             <ul class="ht-ml-tree" role="tree">
-                @foreach ($tree as $node)
+                <li role="treeitem">
+                    <div @class(['ht-ml-tree__row', 'ht-ml-tree__row--current' => $directory === ''])>
+                        <span class="ht-ml-tree__caret ht-ml-tree__caret--empty" aria-hidden="true"></span>
+                        <button type="button" class="ht-ml-tree__label" wire:click="openDirectory('')">
+                            <x-phosphor-hard-drives class="ht-ml-icon-sm" />
+                            <span class="ht-ml-tree__name">All files</span>
+                        </button>
+                    </div>
+                </li>
+                @foreach ($this->getFolderTree() as $node)
                     @include('filament.pages.media-library-tree-node', ['node' => $node, 'level' => 0])
                 @endforeach
             </ul>
         </aside>
-        @endif
 
-        {{-- ── Main ─────────────────────────────────────────────────────── --}}
-        <div class="ht-ml-main">
+        {{-- ── Contents ────────────────────────────────────────────────── --}}
+        <div
+            class="ht-ml-main ht-ml-panel"
+            x-data="{ dragging: false }"
+            @if ($directory !== '')
+                x-on:dragover.prevent="dragging = true"
+                x-on:dragleave.prevent="dragging = false"
+                x-on:drop.prevent="dragging = false; $wire.upload('uploadedFiles', $event.dataTransfer.files)"
+            @endif
+            :class="dragging && 'ht-ml-main--drop'"
+        >
+            {{-- A new page or folder is a new set of rows: drop the selection. --}}
+            <span hidden wire:key="page-{{ md5($directory.'|'.$files->currentPage().'|'.$pageFiles->pluck('path')->implode('|')) }}" x-init="clear()"></span>
 
-            {{-- Toolbar: Explorer-style — Up / breadcrumbs / search / Largest / Videos-only --}}
-            <div class="ht-ml-panel ht-ml-toolbar">
-                <div class="ht-ml-toolbar__row">
-                    @if ($this->getParentDirectoryProperty())
+            <div class="ht-ml-loading" wire:loading.delay.flex wire:target="gotoPage, nextPage, previousPage, search, typeFilter, minSize, includeSubfolders, openDirectory, sortByColumn, setViewMode, clearFilters">
+                <x-filament::loading-indicator class="ht-ml-icon-lg" />
+            </div>
+
+            @if ($viewMode === 'icons')
+                <div class="ht-ml-grid" role="listbox" aria-multiselectable="true" aria-label="Files">
+                    @foreach ($subfolders as $folder)
                         <button
                             type="button"
-                            class="ht-ml-iconbtn"
-                            wire:click="openDirectory(@js($this->getParentDirectoryProperty()))"
-                            aria-label="Go up one folder"
-                            title="Up one folder"
+                            class="ht-ml-card ht-ml-card--folder"
+                            wire:key="icon-folder-{{ $folder['path'] }}"
+                            wire:click="openDirectory(@js($folder['path']))"
+                            title="{{ $folder['count'] }} files · {{ $folder['size_formatted'] }}"
                         >
-                            <x-phosphor-arrow-up class="ht-ml-icon" />
+                            <div class="ht-ml-card__thumb"><x-phosphor-folder-fill class="ht-ml-card__foldericon" /></div>
+                            <div class="ht-ml-card__body">
+                                <p class="ht-ml-card__name">{{ $folder['name'] }}</p>
+                                <p class="ht-ml-card__meta">{{ $folder['size_formatted'] }}</p>
+                            </div>
                         </button>
-                    @endif
-                    <nav class="ht-ml-crumbs" aria-label="Breadcrumb">
-                        @php
-                            $crumbs = array_values(array_filter(explode('/', trim($currentDirectory, '/'))));
-                            $crumbPath = '';
-                        @endphp
-                        @foreach ($crumbs as $index => $crumb)
-                            @php $crumbPath .= ($crumbPath ? '/' : '').$crumb; @endphp
-                            @if ($index > 0)
-                                <span class="ht-ml-crumbs__sep" aria-hidden="true">/</span>
-                            @endif
-                            <button
-                                type="button"
-                                class="ht-ml-crumbs__link"
-                                wire:click="openDirectory(@js($crumbPath))"
-                                @if ($index === count($crumbs) - 1) aria-current="page" @endif
-                            >{{ ucfirst($crumb) }}</button>
-                        @endforeach
-                    </nav>
-
-                    <div class="ht-ml-spacer"></div>
-
-                    <x-filament::input.wrapper class="ht-ml-search">
-                        <x-filament::input
-                            type="search"
-                            wire:model.live.debounce.400ms="search"
-                            placeholder="Search files..."
-                            x-ref="search"
-                        />
-                    </x-filament::input.wrapper>
-
-                    <select wire:model.live="searchScope" class="ht-ml-select" aria-label="Search scope">
-                        <option value="folder">This folder</option>
-                        <option value="subtree">This folder and below</option>
-                        <option value="library">Whole library</option>
-                    </select>
-
-                    <select wire:model.live="sortBy" class="ht-ml-select" aria-label="Sort by">
-                        <option value="modified">Modified</option>
-                        <option value="name">Name</option>
-                        <option value="size">Size</option>
-                        <option value="type">Type</option>
-                    </select>
-
-                    <button
-                        type="button"
-                        wire:click="toggleSortDirection"
-                        class="ht-ml-iconbtn"
-                        aria-label="{{ $sortDirection === 'asc' ? 'Sort descending' : 'Sort ascending' }}"
-                    >
-                        @if ($sortDirection === 'asc')
-                            <x-phosphor-sort-ascending class="ht-ml-icon" />
-                        @else
-                            <x-phosphor-sort-descending class="ht-ml-icon" />
-                        @endif
-                    </button>
-
-                    <div class="ht-ml-viewtoggle" role="group" aria-label="View mode">
-                        <button
-                            type="button"
-                            wire:click="setViewMode('grid')"
-                            @class(['ht-ml-viewtoggle__btn', 'ht-ml-viewtoggle__btn--on' => $viewMode === 'grid'])
-                            aria-pressed="{{ $viewMode === 'grid' ? 'true' : 'false' }}"
-                            aria-label="Grid view"
-                        >
-                            <x-phosphor-squares-four class="ht-ml-icon" />
-                        </button>
-                        <button
-                            type="button"
-                            wire:click="setViewMode('list')"
-                            @class(['ht-ml-viewtoggle__btn', 'ht-ml-viewtoggle__btn--on' => $viewMode === 'list'])
-                            aria-pressed="{{ $viewMode === 'list' ? 'true' : 'false' }}"
-                            aria-label="List view"
-                        >
-                            <x-phosphor-list class="ht-ml-icon" />
-                        </button>
-                        <button
-                            type="button"
-                            wire:click="setViewMode('flat')"
-                            @class(['ht-ml-viewtoggle__btn', 'ht-ml-viewtoggle__btn--on' => $viewMode === 'flat'])
-                            aria-pressed="{{ $viewMode === 'flat' ? 'true' : 'false' }}"
-                            aria-label="All files, flat"
-                        >
-                            <x-phosphor-rows class="ht-ml-icon" />
-                        </button>
-                    </div>
-
-                    <select wire:model.live="perPage" class="ht-ml-select" aria-label="Rows per page">
-                        @foreach ($this->perPageOptions() as $option)
-                            <option value="{{ $option }}">{{ $option }} / page</option>
-                        @endforeach
-                    </select>
-
-                    <x-filament::button wire:click="openNewFolderModal" size="sm" icon="phosphor-folder-plus">
-                        New Folder
-                    </x-filament::button>
-
-                    {{-- Explorer shortcuts: biggest files first, without leaving the page. --}}
-                    <x-filament::button
-                        wire:click="largestFirst(true)"
-                        size="sm"
-                        color="gray"
-                        icon="phosphor-sort-descending"
-                        title="Show biggest videos first, this folder and below"
-                    >
-                        Largest
-                    </x-filament::button>
-
-                    <x-filament::button
-                        wire:click="folderView"
-                        size="sm"
-                        color="gray"
-                        icon="phosphor-folder"
-                        title="Back to plain folder browsing"
-                    >
-                        Folders
-                    </x-filament::button>
-
-                    <x-filament::button
-                        wire:click="rescanLibrary"
-                        wire:confirm="Rescan the whole media library? This runs in the background."
-                        size="sm"
-                        color="gray"
-                        icon="phosphor-arrows-clockwise"
-                    >
-                        Rescan library
-                    </x-filament::button>
-                </div>
-
-                {{-- Type chips. Counts come from one grouped query. --}}
-                <div class="ht-ml-chips" role="group" aria-label="Filter by type">
-                    <button
-                        type="button"
-                        wire:click="$set('typeFilter', '')"
-                        @class(['ht-ml-chip', 'ht-ml-chip--on' => $typeFilter === ''])
-                        aria-pressed="{{ $typeFilter === '' ? 'true' : 'false' }}"
-                    >All {{ $files->total() > 0 || $typeFilter !== '' ? '' : '' }}</button>
-
-                    @foreach (['image' => 'Images', 'video' => 'Videos', 'audio' => 'Audio', 'document' => 'Documents', 'other' => 'Other'] as $type => $label)
-                        @if (($typeCounts[$type] ?? 0) > 0 || $typeFilter === $type)
-                            <button
-                                type="button"
-                                wire:click="$set('typeFilter', @js($type))"
-                                @class(['ht-ml-chip', 'ht-ml-chip--on' => $typeFilter === $type])
-                                aria-pressed="{{ $typeFilter === $type ? 'true' : 'false' }}"
-                            >{{ $label }} ({{ $typeCounts[$type] ?? 0 }})</button>
-                        @endif
                     @endforeach
 
-                    <span class="ht-ml-chips__sep" aria-hidden="true"></span>
+                    @foreach ($files as $index => $file)
+                        @php $status = $statuses[$file['path']] ?? null; @endphp
+                        <div
+                            wire:key="icon-{{ $file['path'] }}"
+                            class="ht-ml-card"
+                            role="option"
+                            tabindex="{{ $index === 0 ? '0' : '-1' }}"
+                            :class="isSelected(@js($file['path'])) && 'ht-ml-card--selected'"
+                            :aria-selected="isSelected(@js($file['path']))"
+                            x-on:click="pick(@js($file['path']), $event)"
+                            x-on:dblclick="preview(@js($file))"
+                            x-on:keydown.space.prevent="toggle(@js($file['path']), { ctrlKey: true })"
+                            x-on:keydown.enter.prevent="preview(@js($file))"
+                            x-on:keydown.arrow-right.prevent="focusBy($el, 1)"
+                            x-on:keydown.arrow-left.prevent="focusBy($el, -1)"
+                        >
+                            <div class="ht-ml-card__thumb">
+                                @if ($file['thumbnail_pending'])
+                                    <div class="ht-ml-card__pending"><img src="{{ $file['thumbnail'] }}" alt="" class="ht-ml-card__icon" /></div>
+                                @elseif (in_array($file['type'], ['image', 'video'], true))
+                                    <img src="{{ $file['thumbnail'] }}" alt="" loading="lazy" decoding="async" class="ht-ml-card__img" />
+                                @else
+                                    <img src="{{ $file['thumbnail'] }}" alt="" class="ht-ml-card__icon" />
+                                @endif
 
-                    <button
-                        type="button"
-                        wire:click="$set('usageFilter', @js($usageFilter === 'used' ? '' : 'used'))"
-                        @class(['ht-ml-chip', 'ht-ml-chip--on' => $usageFilter === 'used'])
-                        aria-pressed="{{ $usageFilter === 'used' ? 'true' : 'false' }}"
-                    >In use</button>
-                    <button
-                        type="button"
-                        wire:click="$set('usageFilter', @js($usageFilter === 'unused' ? '' : 'unused'))"
-                        @class(['ht-ml-chip', 'ht-ml-chip--on' => $usageFilter === 'unused'])
-                        aria-pressed="{{ $usageFilter === 'unused' ? 'true' : 'false' }}"
-                    >Unused</button>
-
-                    @if ($this->getHasFiltersProperty())
-                        {{-- Changing folder no longer wipes the search, so say
-                             what is being searched and where. --}}
-                        <span class="ht-ml-chips__note">
-                            @if ($search !== '')
-                                Searching “{{ $search }}”
-                                {{ $scope === 'library' ? 'across the library' : ($scope === 'subtree' ? 'in this folder and below' : 'in '.$currentDirectory) }}
-                            @endif
-                        </span>
-                        <button type="button" wire:click="clearFilters" class="ht-ml-chip ht-ml-chip--clear">
-                            Clear filters
-                        </button>
-                    @endif
-                </div>
-
-                {{-- Upload dropzone, with real progress. Livewire emits these
-                     events natively; the page used to freeze with no feedback
-                     at all while an upload ran. --}}
-                <div
-                    class="ht-ml-dropzone"
-                    x-data="{ dragging: false, progress: 0, uploading: false }"
-                    x-on:dragover.prevent="dragging = true"
-                    x-on:dragleave.prevent="dragging = false"
-                    x-on:drop.prevent="dragging = false; $wire.upload('uploadedFiles', $event.dataTransfer.files)"
-                    x-on:livewire-upload-start="uploading = true; progress = 0"
-                    x-on:livewire-upload-finish="uploading = false; progress = 0"
-                    x-on:livewire-upload-cancel="uploading = false"
-                    x-on:livewire-upload-error="uploading = false"
-                    x-on:livewire-upload-progress="progress = $event.detail.progress"
-                    :class="dragging && 'ht-ml-dropzone--active'"
-                >
-                    <label class="ht-ml-dropzone__label">
-                        <input
-                            type="file"
-                            wire:model="uploadedFiles"
-                            multiple
-                            accept="{{ collect($this->allowedUploadExtensions())->map(fn ($e) => '.'.$e)->implode(',') }}"
-                            class="ht-ml-dropzone__input"
-                        />
-                        <x-phosphor-tray-arrow-up class="ht-ml-icon" />
-                        <span class="ht-ml-dropzone__text" x-show="!uploading">Drop files here or click to upload</span>
-                        <span class="ht-ml-dropzone__text" x-show="uploading" x-cloak>
-                            Uploading… <span x-text="progress + '%'"></span>
-                        </span>
-                    </label>
-                    <div class="ht-ml-progress" x-show="uploading" x-cloak>
-                        <div class="ht-ml-progress__bar" :style="`width: ${progress}%`"></div>
-                    </div>
-                    @error('uploadedFiles.*')
-                        <p class="ht-ml-dropzone__error">{{ $message }}</p>
-                    @enderror
-                </div>
-            </div>
-
-            {{-- Bulk action bar, driven entirely by client-side selection. --}}
-            <div class="ht-ml-panel ht-ml-bulkbar" x-show="count > 0" x-cloak>
-                <span class="ht-ml-bulkbar__count" aria-live="polite" x-text="`${count} selected`"></span>
-                <x-filament::button size="xs" color="gray" icon="phosphor-selection-all" x-on:click="selectPage()">
-                    Select page
-                </x-filament::button>
-                <x-filament::button size="xs" color="gray" icon="phosphor-folder-open" x-on:click="$wire.startMove(paths())">
-                    Move to…
-                </x-filament::button>
-                <x-filament::button size="xs" color="warning" icon="phosphor-recycle" x-on:click="$wire.startReclaim(paths())">
-                    Re-compress…
-                </x-filament::button>
-                <x-filament::button size="xs" color="warning" icon="phosphor-film-strip" x-on:click="$wire.startCompress(paths())">
-                    Compress…
-                </x-filament::button>
-                <x-filament::button size="xs" color="danger" icon="phosphor-trash" x-on:click="$wire.deleteSelectedFiles(paths())">
-                    Delete
-                </x-filament::button>
-                <x-filament::button size="xs" color="gray" x-on:click="clear()">
-                    Clear
-                </x-filament::button>
-            </div>
-
-            {{-- Selected-file actions for the flat view. The details pane is
-                 hidden in flat mode, so without this clicking a filename
-                 appears to do nothing. Server-side ($selectedFile), so it
-                 works even if the Alpine selection state was reset. --}}
-            @if ($viewMode === 'flat' && $selectedFileData)
-                <div class="ht-ml-panel ht-ml-bulkbar">
-                    <span class="ht-ml-bulkbar__count" title="{{ $selectedFileData['path'] }}">
-                        {{ $selectedFileData['name'] }} · {{ $selectedFileData['size_formatted'] }}
-                    </span>
-                    @if ($selectedFileData['type'] === 'video')
-                        <x-filament::button size="xs" color="warning" icon="phosphor-film-strip" wire:click="startCompress([@js($selectedFileData['path'])])">
-                            Compress…
-                        </x-filament::button>
-                    @endif
-                    <x-filament::button size="xs" color="gray" icon="phosphor-folder-open" wire:click="startMove([@js($selectedFileData['path'])])">
-                        Move to…
-                    </x-filament::button>
-                    <x-filament::button size="xs" color="gray" icon="phosphor-pencil-simple" wire:click="startRename(@js($selectedFileData['path']))">
-                        Rename
-                    </x-filament::button>
-                    <x-filament::button size="xs" color="danger" icon="phosphor-trash" wire:click="confirmDelete(@js($selectedFileData['path']))">
-                        Delete
-                    </x-filament::button>
-                    <x-filament::button size="xs" color="gray" wire:click="clearSelection">
-                        Clear
-                    </x-filament::button>
-                </div>
-            @endif
-
-            {{-- Subfolders. The grid was files-only, so the sidebar was the
-                 only way into a folder. --}}
-            @if ($subfolders !== [])
-                <div class="ht-ml-folders">
-                    @foreach ($subfolders as $folder)
-                        <div class="ht-ml-folder" wire:key="folder-{{ $folder['path'] }}">
-                            <button
-                                type="button"
-                                class="ht-ml-folder__open"
-                                wire:click="openDirectory(@js($folder['path']))"
-                            >
-                                <x-phosphor-folder class="ht-ml-icon-lg" />
-                                <span class="ht-ml-folder__name" title="{{ $folder['name'] }}">{{ $folder['name'] }}</span>
-                                <span class="ht-ml-folder__meta">{{ $folder['count'] }} files · {{ $folder['size'] }}</span>
-                            </button>
-
-                            <x-filament::dropdown placement="bottom-end">
-                                <x-slot name="trigger">
-                                    <button type="button" class="ht-ml-folder__menu" aria-label="Actions for {{ $folder['name'] }}">
-                                        <x-phosphor-dots-three-vertical class="ht-ml-icon" />
-                                    </button>
-                                </x-slot>
-                                <x-filament::dropdown.list>
-                                    <x-filament::dropdown.list.item icon="phosphor-pencil-simple" wire:click="startFolderRename(@js($folder['path']))">
-                                        Rename
-                                    </x-filament::dropdown.list.item>
-                                    <x-filament::dropdown.list.item icon="phosphor-trash" color="danger" wire:click="confirmFolderDelete(@js($folder['path']))">
-                                        Delete
-                                    </x-filament::dropdown.list.item>
-                                </x-filament::dropdown.list>
-                            </x-filament::dropdown>
+                                @if ($file['duration'])
+                                    <span class="ht-ml-card__duration">{{ $file['duration'] }}</span>
+                                @endif
+                                @if ($file['is_referenced'])
+                                    <span class="ht-ml-card__badge" title="Used by a video or image record">In use</span>
+                                @endif
+                            </div>
+                            <div class="ht-ml-card__body">
+                                <p class="ht-ml-card__name" title="{{ $file['name'] }}">{{ $file['name'] }}</p>
+                                <p class="ht-ml-card__meta">
+                                    {{ $file['size_formatted'] }}
+                                    @if ($status) · @include('filament.pages.partials.media-library-compress-status', ['status' => $status]) @endif
+                                </p>
+                            </div>
                         </div>
                     @endforeach
                 </div>
+            @else
+                <div class="ht-ml-tablewrap">
+                    <table class="ht-ml-table">
+                        <thead>
+                            <tr>
+                                <th class="ht-ml-table__check">
+                                    <input
+                                        type="checkbox"
+                                        aria-label="Select all files on this page"
+                                        :checked="allPageSelected"
+                                        x-on:change="$event.target.checked ? selectPage() : clear()"
+                                    />
+                                </th>
+                                @foreach (['name' => 'Name', 'modified' => 'Date modified', 'type' => 'Type', 'size' => 'Size'] as $column => $label)
+                                    <th
+                                        @class(['ht-ml-table__num' => $column === 'size'])
+                                        aria-sort="{{ $sortKey === $column ? ($sortDirection === 'asc' ? 'ascending' : 'descending') : 'none' }}"
+                                    >
+                                        <button type="button" class="ht-ml-sort" wire:click="sortByColumn(@js($column))">
+                                            {{ $label }}
+                                            @if ($sortKey === $column)
+                                                @if ($sortDirection === 'asc')
+                                                    <x-phosphor-caret-up class="ht-ml-sort__caret" />
+                                                @else
+                                                    <x-phosphor-caret-down class="ht-ml-sort__caret" />
+                                                @endif
+                                            @endif
+                                        </button>
+                                    </th>
+                                @endforeach
+                                <th><span class="sr-only">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($subfolders as $folder)
+                                <tr wire:key="row-folder-{{ $folder['path'] }}" class="ht-ml-table__row">
+                                    <td></td>
+                                    <td>
+                                        <button type="button" class="ht-ml-table__name" wire:click="openDirectory(@js($folder['path']))">
+                                            <x-phosphor-folder-fill class="ht-ml-table__foldericon" />
+                                            {{ $folder['name'] }}
+                                        </button>
+                                    </td>
+                                    <td class="ht-ml-table__muted">{{ number_format($folder['count']) }} {{ \Illuminate\Support\Str::plural('file', $folder['count']) }}</td>
+                                    <td class="ht-ml-table__muted">Folder</td>
+                                    <td class="ht-ml-table__num ht-ml-table__size">{{ $folder['size_formatted'] }}</td>
+                                    <td class="ht-ml-table__actions">
+                                        @if ($directory !== '')
+                                            <x-filament::dropdown placement="bottom-end">
+                                                <x-slot name="trigger">
+                                                    <button type="button" class="ht-ml-rowbtn" aria-label="Actions for {{ $folder['name'] }}">
+                                                        <x-phosphor-dots-three class="ht-ml-icon" />
+                                                    </button>
+                                                </x-slot>
+                                                <x-filament::dropdown.list>
+                                                    <x-filament::dropdown.list.item icon="phosphor-pencil-simple" wire:click="mountAction('rename', {{ \Illuminate\Support\Js::from(['path' => $folder['path']]) }})">Rename</x-filament::dropdown.list.item>
+                                                    <x-filament::dropdown.list.item icon="phosphor-trash" color="danger" wire:click="mountAction('delete', {{ \Illuminate\Support\Js::from(['paths' => [$folder['path']]]) }})">Delete</x-filament::dropdown.list.item>
+                                                </x-filament::dropdown.list>
+                                            </x-filament::dropdown>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+
+                            @foreach ($files as $file)
+                                @php $status = $statuses[$file['path']] ?? null; @endphp
+                                <tr
+                                    wire:key="row-{{ $file['path'] }}"
+                                    class="ht-ml-table__row"
+                                    :class="isSelected(@js($file['path'])) && 'ht-ml-table__row--selected'"
+                                    :aria-selected="isSelected(@js($file['path']))"
+                                    x-on:click="if (! $event.target.closest('input, button, a')) pick(@js($file['path']), $event)"
+                                    x-on:dblclick="preview(@js($file))"
+                                >
+                                    <td>
+                                        <input
+                                            type="checkbox"
+                                            aria-label="Select {{ $file['name'] }}"
+                                            :checked="isSelected(@js($file['path']))"
+                                            x-on:change="toggle(@js($file['path']), { ctrlKey: true })"
+                                        />
+                                    </td>
+                                    <td>
+                                        <span class="ht-ml-table__name">
+                                            <img src="{{ $file['thumbnail'] }}" alt="" class="ht-ml-table__thumb" loading="lazy" />
+                                            <span class="ht-ml-table__label">
+                                                {{ $file['name'] }}
+                                                @if ($searching)
+                                                    <span class="ht-ml-table__dir">{{ $file['directory'] }}</span>
+                                                @endif
+                                            </span>
+                                            @if ($file['is_referenced'])
+                                                <span class="ht-ml-tag" title="Used by a video or image record">In use</span>
+                                            @endif
+                                            @if ($status)
+                                                @include('filament.pages.partials.media-library-compress-status', ['status' => $status])
+                                            @endif
+                                        </span>
+                                    </td>
+                                    <td class="ht-ml-table__muted" title="{{ $file['modified_formatted'] }}">{{ $file['modified_relative'] }}</td>
+                                    <td class="ht-ml-table__muted">{{ $file['extension'] !== '' ? strtoupper($file['extension']) : ucfirst($file['type']) }}{{ $file['duration'] ? ' · '.$file['duration'] : '' }}</td>
+                                    <td class="ht-ml-table__num ht-ml-table__size">{{ $file['size_formatted'] }}</td>
+                                    <td class="ht-ml-table__actions">
+                                        @if ($file['type'] === 'video')
+                                            <button type="button" class="ht-ml-rowbtn" title="Compress…" aria-label="Compress {{ $file['name'] }}" wire:click="mountAction('compress', {{ \Illuminate\Support\Js::from(['paths' => [$file['path']]]) }})">
+                                                <x-phosphor-film-strip class="ht-ml-icon" />
+                                            </button>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             @endif
 
-            {{-- Thumbnails are generated by a queue worker, so the listing
-                 polls while — and only while — this folder has one
-                 outstanding. The condition is the off switch. --}}
-            <div @if ($this->getHasPendingThumbnailsProperty()) wire:poll.5s @endif>
+            @if ($subfolders === [] && $files->isEmpty())
+                @include('filament.pages.partials.media-library-empty')
+            @endif
 
-                {{-- Loading overlay. Delayed so a fast response does not flash. --}}
-                <div class="ht-ml-loading" wire:loading.delay.flex wire:target="gotoPage, nextPage, previousPage, search, sortBy, sortDirection, searchScope, typeFilter, usageFilter, openDirectory, rescanCurrentDirectory, sortByColumn, setViewMode, perPage, showBiggest">
-                    <x-filament::loading-indicator class="ht-ml-icon-lg" />
-                </div>
-
-                @if ($viewMode === 'grid')
-                    <div
-                        class="ht-ml-grid"
-                        role="listbox"
-                        aria-multiselectable="true"
-                        aria-label="Files"
-                        wire:key="grid-{{ $currentDirectory }}-{{ $files->currentPage() }}-{{ $sortBy }}-{{ $sortDirection }}"
-                    >
-                        @forelse ($files as $index => $file)
-                            <div
-                                wire:key="grid-{{ $file['path'] }}"
-                                class="ht-ml-card"
-                                role="option"
-                                tabindex="{{ $index === 0 ? '0' : '-1' }}"
-                                :class="isSelected(@js($file['path'])) && 'ht-ml-card--selected'"
-                                :aria-selected="isSelected(@js($file['path']))"
-                                x-on:click="toggle(@js($file['path']), $event); $wire.selectFile(@js($file['path']))"
-                                x-on:keydown.enter.prevent="$wire.selectFile(@js($file['path']))"
-                                x-on:keydown.space.prevent="toggle(@js($file['path']), { ctrlKey: true })"
-                                x-on:keydown.arrow-right.prevent="focusNext($el)"
-                                x-on:keydown.arrow-left.prevent="focusPrevious($el)"
-                                x-on:keydown.arrow-down.prevent="focusNext($el)"
-                                x-on:keydown.arrow-up.prevent="focusPrevious($el)"
-                            >
-                                <div class="ht-ml-card__thumb">
-                                    @if ($file['thumbnail_pending'])
-                                        {{-- Not an <img> pointing at a file that does not exist yet. --}}
-                                        <div class="ht-ml-card__pending" title="Generating thumbnail…">
-                                            <img src="{{ $file['thumbnail'] }}" alt="" class="ht-ml-card__icon" />
-                                        </div>
-                                    @elseif ($file['type'] === 'image' || $file['type'] === 'video')
-                                        <img
-                                            src="{{ $file['thumbnail'] }}"
-                                            alt="{{ $file['name'] }}"
-                                            loading="lazy"
-                                            decoding="async"
-                                            class="ht-ml-card__img"
-                                        />
-                                    @else
-                                        <img src="{{ $file['thumbnail'] }}" alt="" class="ht-ml-card__icon" />
-                                    @endif
-
-                                    @if ($file['type'] === 'video' && $file['duration'])
-                                        <span class="ht-ml-card__duration">{{ $file['duration'] }}</span>
-                                    @endif
-
-                                    @if ($file['is_referenced'])
-                                        <span class="ht-ml-card__badge" title="Used by a video or image record">In use</span>
-                                    @endif
-                                </div>
-                                <div class="ht-ml-card__body">
-                                    <p class="ht-ml-card__name" title="{{ $file['name'] }}">{{ $file['name'] }}</p>
-                                    <p class="ht-ml-card__meta">
-                                        {{ $file['size_formatted'] }}
-                                        @if ($scope !== 'folder')
-                                            · {{ $file['directory'] }}
-                                        @endif
-                                    </p>
-                                </div>
-                            </div>
-                        @empty
-                            @include('filament.pages.partials.media-library-empty')
-                        @endforelse
-                    </div>
-                @elseif ($viewMode === 'flat')
-                    {{-- Every file in the library, sortable from the headers.
-                         This is the view for "what is eating the disk": pick a
-                         column, biggest or oldest first, select and act. --}}
-                    <div class="ht-ml-panel ht-ml-tablewrap">
-                        <table class="ht-ml-table ht-ml-flat">
-                            <thead>
-                                <tr>
-                                    <th class="ht-ml-table__check">
-                                        <input
-                                            type="checkbox"
-                                            aria-label="Select all files on this page"
-                                            :checked="allPageSelected"
-                                            x-on:change="$event.target.checked ? selectPage() : clear()"
-                                        />
-                                    </th>
-                                    @foreach ([
-                                        'name' => 'Name',
-                                        'root' => 'Folder',
-                                        'type' => 'Type',
-                                        'size' => 'Size',
-                                        'modified' => 'Age',
-                                    ] as $column => $label)
-                                        @php
-                                            $active = $this->sortKey() === $column;
-                                            $ariaSort = $active
-                                                ? ($sortDirection === 'asc' ? 'ascending' : 'descending')
-                                                : 'none';
-                                        @endphp
-                                        <th
-                                            @class(['ht-ml-flat__th', 'ht-ml-table__num' => $column === 'size'])
-                                            aria-sort="{{ $ariaSort }}"
-                                        >
-                                            <button type="button" wire:click="sortByColumn(@js($column))" class="ht-ml-flat__sort">
-                                                {{ $label }}
-                                                @if ($active)
-                                                    @if ($sortDirection === 'asc')
-                                                        <x-phosphor-caret-up class="ht-ml-flat__caret" />
-                                                    @else
-                                                        <x-phosphor-caret-down class="ht-ml-flat__caret" />
-                                                    @endif
-                                                @endif
-                                            </button>
-                                        </th>
-                                    @endforeach
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody wire:key="flat-{{ $files->currentPage() }}-{{ $sortBy }}-{{ $sortDirection }}-{{ $typeFilter }}">
-                                @forelse ($files as $file)
-                                    <tr
-                                        wire:key="flat-{{ $file['path'] }}"
-                                        :class="isSelected(@js($file['path'])) && 'ht-ml-table__row--selected'"
-                                        :aria-selected="isSelected(@js($file['path']))"
-                                    >
-                                        <td>
-                                            <input
-                                                type="checkbox"
-                                                aria-label="Select {{ $file['name'] }}"
-                                                :checked="isSelected(@js($file['path']))"
-                                                x-on:change="toggle(@js($file['path']), { ctrlKey: true })"
-                                            />
-                                        </td>
-                                        <td>
-                                            <button type="button" class="ht-ml-table__name" wire:click="selectFile(@js($file['path']))">
-                                                {{ $file['name'] }}
-                                            </button>
-                                            <span class="ht-ml-table__dir">{{ $file['directory'] }}</span>
-                                        </td>
-                                        <td class="ht-ml-table__muted">{{ $file['root'] }}</td>
-                                        <td class="ht-ml-table__muted">{{ $file['type'] }}</td>
-                                        <td class="ht-ml-table__num ht-ml-flat__size">{{ $file['size_formatted'] }}</td>
-                                        <td class="ht-ml-table__muted" title="{{ $file['modified_formatted'] }}">
-                                            {{ $file['modified_relative'] }}
-                                        </td>
-                                        <td>
-                                            @if ($file['is_referenced'])
-                                                <span class="ht-ml-card__badge">In use</span>
-                                            @endif
-                                            @if ($file['type'] === 'video')
-                                                <button
-                                                    type="button"
-                                                    class="ht-ml-chip"
-                                                    wire:click="startCompress([@js($file['path'])])"
-                                                    title="Compress to H.265 / VP9 / AV1"
-                                                >Compress…</button>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="7">
-                                            @include('filament.pages.partials.media-library-empty')
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                @else
-                    <div class="ht-ml-panel ht-ml-tablewrap">
-                        <table class="ht-ml-table">
-                            <thead>
-                                <tr>
-                                    <th class="ht-ml-table__check">
-                                        <input
-                                            type="checkbox"
-                                            aria-label="Select all files on this page"
-                                            :checked="allPageSelected"
-                                            x-on:change="$event.target.checked ? selectPage() : clear()"
-                                        />
-                                    </th>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th class="ht-ml-table__num">Size</th>
-                                    <th>Modified</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody wire:key="list-{{ $currentDirectory }}-{{ $files->currentPage() }}-{{ $sortBy }}-{{ $sortDirection }}">
-                                @forelse ($files as $file)
-                                    <tr
-                                        wire:key="row-{{ $file['path'] }}"
-                                        :class="isSelected(@js($file['path'])) && 'ht-ml-table__row--selected'"
-                                        :aria-selected="isSelected(@js($file['path']))"
-                                    >
-                                        <td>
-                                            <input
-                                                type="checkbox"
-                                                aria-label="Select {{ $file['name'] }}"
-                                                :checked="isSelected(@js($file['path']))"
-                                                x-on:change="toggle(@js($file['path']), { ctrlKey: true })"
-                                            />
-                                        </td>
-                                        <td>
-                                            <button type="button" class="ht-ml-table__name" wire:click="selectFile(@js($file['path']))">
-                                                {{ $file['name'] }}
-                                            </button>
-                                            @if ($scope !== 'folder')
-                                                <span class="ht-ml-table__dir">{{ $file['directory'] }}</span>
-                                            @endif
-                                        </td>
-                                        <td class="ht-ml-table__muted">{{ $file['type'] }}</td>
-                                        <td class="ht-ml-table__num ht-ml-table__muted">{{ $file['size_formatted'] }}</td>
-                                        <td class="ht-ml-table__muted">{{ $file['modified_formatted'] }}</td>
-                                        <td style="white-space: nowrap;">
-                                            @if ($file['is_referenced'])
-                                                <span class="ht-ml-card__badge">In use</span>
-                                            @endif
-                                            @if ($file['type'] === 'video')
-                                                <button
-                                                    type="button"
-                                                    class="ht-ml-chip"
-                                                    wire:click="startCompress([@js($file['path'])])"
-                                                    title="Compress to H.265 / VP9 / AV1"
-                                                >Compress…</button>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="6">
-                                            @include('filament.pages.partials.media-library-empty')
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
-            </div>
-
-            {{-- Filament's component drives Livewire's gotoPage / nextPage /
-                 previousPage, so paging no longer reloads the page (which used
-                 to remount the component back on page 1). --}}
             @if ($files->hasPages())
-                <div class="ht-ml-panel ht-ml-pagination">
+                <div class="ht-ml-pagination">
                     <x-filament::pagination :paginator="$files" />
                 </div>
             @endif
+
+            {{-- ── Status bar ──────────────────────────────────────────── --}}
+            <div class="ht-ml-statusbar">
+                <span>
+                    {{ number_format($files->total() + count($subfolders)) }} {{ \Illuminate\Support\Str::plural('item', $files->total() + count($subfolders)) }}
+                    @if ($searching && $directory !== '')
+                        in {{ basename($directory) }} and below
+                    @endif
+                </span>
+                <span class="ht-ml-statusbar__selection" x-show="count > 0" x-cloak aria-live="polite">
+                    <span x-text="`${count} selected · ${formatBytes(selectedBytes)}`"></span>
+                    <x-filament::button size="xs" color="gray" icon="phosphor-film-strip" x-on:click="$wire.mountAction('compress', { paths: paths() })">Compress…</x-filament::button>
+                    <x-filament::button size="xs" color="gray" icon="phosphor-folder-open" x-on:click="$wire.mountAction('move', { paths: paths() })">Move…</x-filament::button>
+                    <x-filament::button size="xs" color="gray" icon="phosphor-pencil-simple" x-show="count === 1" x-on:click="$wire.mountAction('rename', { path: paths()[0] })">Rename</x-filament::button>
+                    <x-filament::button size="xs" color="danger" icon="phosphor-trash" x-on:click="$wire.mountAction('delete', { paths: paths() })">Delete</x-filament::button>
+                    <x-filament::button size="xs" color="gray" x-on:click="clear()">Clear</x-filament::button>
+                </span>
+            </div>
         </div>
 
-        {{-- ── Details ──────────────────────────────────────────────────── --}}
-        @if ($viewMode !== 'flat')
+        {{-- ── Details ─────────────────────────────────────────────────── --}}
         <aside class="ht-ml-details ht-ml-panel" aria-label="File details">
             @include('filament.pages.partials.media-library-details', ['selectedFileData' => $selectedFileData])
         </aside>
-        @endif
     </div>
 
-    {{-- ── Dialogs ──────────────────────────────────────────────────────── --}}
-
-    <x-filament::modal id="ml-delete-file" :visible="(bool) $deleteTarget" width="md" alignment="center" icon="phosphor-trash" icon-color="danger">
-        <x-slot name="heading">Delete file?</x-slot>
-        <x-slot name="description">{{ $deleteTarget ? basename($deleteTarget) : '' }}</x-slot>
-        <x-slot name="footerActions">
-            <x-filament::button wire:click="cancelDelete" color="gray">Cancel</x-filament::button>
-            <x-filament::button wire:click="deleteFile" color="danger">Delete</x-filament::button>
-        </x-slot>
-    </x-filament::modal>
-
-    <x-filament::modal id="ml-rename-file" :visible="(bool) $renameTarget" width="md" alignment="center">
-        <x-slot name="heading">Rename file</x-slot>
-        <x-filament::input.wrapper>
-            <x-filament::input type="text" wire:model="renameNewName" wire:keydown.enter="confirmRename" autofocus />
-        </x-filament::input.wrapper>
-        <x-slot name="footerActions">
-            <x-filament::button wire:click="cancelRename" color="gray">Cancel</x-filament::button>
-            <x-filament::button wire:click="confirmRename">Rename</x-filament::button>
-        </x-slot>
-    </x-filament::modal>
-
-    {{-- Its visibility is its own flag: it used to render under
-         @if ($newFolderName), so clearing the pre-filled name closed it. --}}
-    <x-filament::modal id="ml-new-folder" :visible="$showNewFolderModal" width="md" alignment="center">
-        <x-slot name="heading">New folder</x-slot>
-        <x-filament::input.wrapper>
-            <x-filament::input type="text" wire:model="newFolderName" wire:keydown.enter="createFolder" placeholder="Folder name" autofocus />
-        </x-filament::input.wrapper>
-        <x-slot name="footerActions">
-            <x-filament::button wire:click="closeNewFolderModal" color="gray">Cancel</x-filament::button>
-            <x-filament::button wire:click="createFolder">Create</x-filament::button>
-        </x-slot>
-    </x-filament::modal>
-
-    <x-filament::modal id="ml-rename-folder" :visible="(bool) $folderRenameTarget" width="md" alignment="center">
-        <x-slot name="heading">Rename folder</x-slot>
-        <x-slot name="description">
-            Every video and image record pointing inside this folder is updated to follow it.
-        </x-slot>
-        <x-filament::input.wrapper>
-            <x-filament::input type="text" wire:model="folderRenameNewName" wire:keydown.enter="confirmFolderRename" autofocus />
-        </x-filament::input.wrapper>
-        <x-slot name="footerActions">
-            <x-filament::button wire:click="cancelFolderRename" color="gray">Cancel</x-filament::button>
-            <x-filament::button wire:click="confirmFolderRename">Rename</x-filament::button>
-        </x-slot>
-    </x-filament::modal>
-
-    <x-filament::modal id="ml-delete-folder" :visible="(bool) $folderDeleteTarget" width="md" alignment="center" icon="phosphor-trash" icon-color="danger">
-        <x-slot name="heading">Delete folder?</x-slot>
-        <x-slot name="description">
-            {{ $folderDeleteTarget }} and everything in it. A folder containing files still used by a video or image record cannot be deleted.
-        </x-slot>
-        <x-slot name="footerActions">
-            <x-filament::button wire:click="cancelFolderDelete" color="gray">Cancel</x-filament::button>
-            <x-filament::button wire:click="confirmFolderDeletion" color="danger">Delete</x-filament::button>
-        </x-slot>
-    </x-filament::modal>
-
-    {{-- A folder picker rather than drag-and-drop: it works from the keyboard,
-         it works for a bulk selection, and it needs no drag library fighting
-         Livewire's DOM morphing. --}}
-    <x-filament::modal id="ml-move" :visible="$showMoveModal" width="md" alignment="center">
-        <x-slot name="heading">Move {{ count($moveTargets) }} file{{ count($moveTargets) === 1 ? '' : 's' }}</x-slot>
-        <select wire:model="moveDestination" class="ht-ml-select ht-ml-select--block" aria-label="Destination folder" size="10">
-            <option value="">Choose a destination…</option>
-            @foreach ($this->getMoveDestinationsProperty() as $destination)
-                <option value="{{ $destination }}">{{ $destination }}</option>
-            @endforeach
-        </select>
-        <x-slot name="footerActions">
-            <x-filament::button wire:click="cancelMove" color="gray">Cancel</x-filament::button>
-            <x-filament::button wire:click="confirmMove">Move</x-filament::button>
-        </x-slot>
-    </x-filament::modal>
-
-    {{-- Re-compress original uploads. Nothing here deletes anything: each
-         queued encode writes a new file, leaves video_path alone, and waits
-         for a decision on the Storage Reclaim page. --}}
-    <x-filament::modal id="ml-reclaim" :visible="$showReclaimModal" width="lg" alignment="center">
-        <x-slot name="heading">Re-compress original uploads</x-slot>
-
-        @if ($reclaimPlan !== [])
-            <p class="ht-ml-modal__lede">
-                {{ count($reclaimPlan) }} {{ \Illuminate\Support\Str::plural('upload', count($reclaimPlan)) }}
-                will be encoded again at a slower preset. <strong>Nothing is deleted and nothing changes for
-                viewers</strong> — the result lands beside the original as a new file, and the site keeps
-                serving the upload until you accept it in Content → Storage Reclaim.
-            </p>
-            <ul class="ht-ml-reclaim__list">
-                @foreach ($reclaimPlan as $entry)
-                    <li class="ht-ml-reclaim__row">
-                        <span class="ht-ml-reclaim__title">{{ $entry['title'] }}</span>
-                        <span class="ht-ml-reclaim__target">{{ $entry['size'] }}</span>
-                    </li>
-                @endforeach
-            </ul>
-            <p class="ht-ml-reclaim__note">
-                Encoded renditions and HLS segments are never touched — those are what the player streams.
-            </p>
-        @endif
-
-        @if ($reclaimRefusals !== [])
-            <div class="ht-ml-reclaim__refusals">
-                <p class="ht-ml-reclaim__refusalsHead">Not re-compressible</p>
-                <ul class="ht-ml-reclaim__list">
-                    @foreach ($reclaimRefusals as $refusal)
-                        <li class="ht-ml-reclaim__row">
-                            <span class="ht-ml-reclaim__title">{{ $refusal['title'] }}</span>
-                            <span class="ht-ml-reclaim__reason">{{ $refusal['reason'] }}</span>
-                        </li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
-        <x-slot name="footerActions">
-            <x-filament::button wire:click="cancelReclaim" color="gray">Cancel</x-filament::button>
-            @if ($reclaimPlan !== [])
-                <x-filament::button wire:click="confirmReclaim" color="warning" icon="phosphor-recycle">
-                    Queue {{ count($reclaimPlan) }} {{ \Illuminate\Support\Str::plural('encode', count($reclaimPlan)) }}
-                </x-filament::button>
-            @endif
-        </x-slot>
-    </x-filament::modal>
-
-    {{-- Compress videos to H.265 / VP9 / AV1. File-level: each encode writes a
-         NEW file next to the original (name.h265.mp4 etc.). Nothing is
-         overwritten or deleted — delete the original yourself once happy. --}}
-    <x-filament::modal id="ml-compress" :visible="$showCompressModal" width="lg" alignment="center">
-        <x-slot name="heading">Compress {{ count($compressTargets) }} {{ \Illuminate\Support\Str::plural('video', count($compressTargets)) }}</x-slot>
-
-        <p class="ht-ml-modal__lede">
-            Re-encode with a modern codec. <strong>Nothing is overwritten</strong> — each result lands
-            beside the original as a new file, e.g. <code>clip.h265.mp4</code>.
-        </p>
-
-        @php $codecsAvailable = $this->getCompressCodecsProperty(); @endphp
-        <div class="ht-ml-reclaim__list" role="radiogroup" aria-label="Codec">
-            @foreach (['h265' => 'H.265 / HEVC (.mp4) — best compatibility', 'vp9' => 'VP9 (.webm) — best for web', 'av1' => 'AV1 (.mp4) — smallest, slowest'] as $codec => $label)
-                <label class="ht-ml-reclaim__row" style="cursor: {{ ($codecsAvailable[$codec] ?? false) ? 'pointer' : 'not-allowed' }}; opacity: {{ ($codecsAvailable[$codec] ?? false) ? '1' : '0.5' }};">
-                    <input type="radio" wire:model.live="compressCodec" value="{{ $codec }}" @disabled(! ($codecsAvailable[$codec] ?? false)) />
-                    <span class="ht-ml-reclaim__title">{{ $label }}</span>
-                    @unless ($codecsAvailable[$codec] ?? false)
-                        <span class="ht-ml-reclaim__reason">ffmpeg on this server cannot encode {{ $codec }}</span>
-                    @endunless
-                </label>
-            @endforeach
-        </div>
-
-        <div class="ht-ml-reclaim__list" role="radiogroup" aria-label="Quality" style="margin-top: 0.5rem;">
-            @foreach (['balanced' => 'Balanced (recommended)', 'small' => 'Smaller file', 'smallest' => 'Smallest file'] as $q => $label)
-                <label class="ht-ml-reclaim__row" style="cursor: pointer;">
-                    <input type="radio" wire:model.live="compressQuality" value="{{ $q }}" />
-                    <span class="ht-ml-reclaim__title">{{ $label }}</span>
-                </label>
-            @endforeach
-        </div>
-
-        <ul class="ht-ml-reclaim__list" style="margin-top: 0.5rem;">
-            @foreach (array_slice($compressTargets, 0, 10) as $target)
-                <li class="ht-ml-reclaim__row">
-                    <span class="ht-ml-reclaim__title">{{ basename($target) }}</span>
-                    <span class="ht-ml-reclaim__target">{{ dirname($target) }}</span>
-                </li>
-            @endforeach
-            @if (count($compressTargets) > 10)
-                <li class="ht-ml-reclaim__row"><span class="ht-ml-reclaim__reason">…and {{ count($compressTargets) - 10 }} more</span></li>
-            @endif
-        </ul>
-
-        @if ($compressRefusals !== [])
-            <div class="ht-ml-reclaim__refusals">
-                <p class="ht-ml-reclaim__refusalsHead">Skipped</p>
-                <ul class="ht-ml-reclaim__list">
-                    @foreach ($compressRefusals as $refusal)
-                        <li class="ht-ml-reclaim__row">
-                            <span class="ht-ml-reclaim__title">{{ $refusal['name'] }}</span>
-                            <span class="ht-ml-reclaim__reason">{{ $refusal['reason'] }}</span>
-                        </li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
-        <x-slot name="footerActions">
-            <x-filament::button wire:click="cancelCompress" color="gray">Cancel</x-filament::button>
-            <x-filament::button wire:click="confirmCompress" color="warning" icon="phosphor-film-strip">
-                Queue {{ count($compressTargets) }} {{ \Illuminate\Support\Str::plural('encode', count($compressTargets)) }}
-            </x-filament::button>
-        </x-slot>
-    </x-filament::modal>
-
-    {{-- Lightbox and video preview. Alpine-local: no server round-trip to open
-         a picture. --}}
+    {{-- Lightbox. Alpine-local: no round-trip to open a picture. --}}
     <div x-data="{ open: false, src: null, name: '', video: false }"
          x-on:ml-preview.window="open = true; src = $event.detail.src; name = $event.detail.name; video = $event.detail.video">
         <div class="ht-ml-lightbox" x-show="open" x-cloak x-on:click.self="open = false" x-on:keydown.escape.window="open = false">
             <button type="button" class="ht-ml-lightbox__close" x-on:click="open = false" aria-label="Close preview">
                 <x-phosphor-x class="ht-ml-icon-lg" />
             </button>
-            <template x-if="!video">
-                <img :src="src" :alt="name" class="ht-ml-lightbox__img" />
-            </template>
-            <template x-if="video">
+            <template x-if="open && !video"><img :src="src" :alt="name" class="ht-ml-lightbox__img" /></template>
+            <template x-if="open && video">
                 <div class="ht-ml-lightbox__video">
                     <p class="ht-ml-lightbox__name" x-text="name"></p>
-                    <video :src="src" controls></video>
+                    <video :src="src" controls autoplay></video>
                 </div>
             </template>
         </div>
@@ -867,30 +442,46 @@
 @script
 <script>
     /**
-     * Client-side multi-selection for the file grid and list.
-     *
-     * Every card used to carry wire:click="selectFile(...)", which meant a full
-     * server round-trip — rebuilding the entire listing — just to move a 2px
-     * border. Selection is a rendering concern, so it lives here; the server is
-     * told only when a bulk action runs, and it re-validates every path it is
-     * handed (see MediaLibrary::resolveBulkPaths).
-     *
-     * The click semantics are the conventional ones. The old server-side
-     * version *toggled* on a plain click, so clicking a second file added it to
-     * the selection instead of replacing it.
+     * Client-side multi-selection, with the conventional rules: a plain click
+     * replaces the selection, Ctrl/Cmd toggles, Shift extends from the anchor.
+     * A plain click also opens the details pane — the only part that needs
+     * the server, because it resolves the records pointing at the file.
      */
-    Alpine.data('mediaSelection', (pagePaths = []) => ({
+    Alpine.data('mediaSelection', () => ({
         selected: new Set(),
-        pagePaths,
         anchor: null,
+
+        /**
+         * path => bytes for this page, read live from the morphed attribute.
+         * Found by selector, not $root: $root is the *nearest* x-data, and the
+         * listing sits inside the drop zone's own.
+         */
+        get sizes() {
+            try {
+                return JSON.parse(document.querySelector('[data-ml-sizes]')?.dataset.mlSizes || '{}');
+            } catch {
+                return {};
+            }
+        },
+
+        get pagePaths() {
+            return Object.keys(this.sizes);
+        },
 
         get count() {
             return this.selected.size;
         },
 
+        get selectedBytes() {
+            const sizes = this.sizes;
+            let total = 0;
+            this.selected.forEach((path) => { total += sizes[path] ?? 0; });
+            return total;
+        },
+
         get allPageSelected() {
-            return this.pagePaths.length > 0
-                && this.pagePaths.every((path) => this.selected.has(path));
+            const paths = this.pagePaths;
+            return paths.length > 0 && paths.every((path) => this.selected.has(path));
         },
 
         isSelected(path) {
@@ -901,21 +492,29 @@
             return Array.from(this.selected);
         },
 
-        /**
-         * Plain click replaces, Ctrl/Cmd toggles, Shift extends from the
-         * anchor — the same rules as every file manager.
-         */
+        pick(path, event) {
+            this.toggle(path, event);
+
+            if (!event.ctrlKey && !event.metaKey && !event.shiftKey) {
+                this.$wire.selectFile(path);
+            }
+        },
+
         toggle(path, event = {}) {
-            const index = this.pagePaths.indexOf(path);
+            const paths = this.pagePaths;
+            const index = paths.indexOf(path);
+            const next = new Set(this.selected);
 
             if (event.shiftKey && this.anchor !== null && index !== -1) {
                 const [from, to] = [this.anchor, index].sort((a, b) => a - b);
-                this.pagePaths.slice(from, to + 1).forEach((p) => this.selected.add(p));
+                paths.slice(from, to + 1).forEach((p) => next.add(p));
+                this.selected = next;
                 return;
             }
 
             if (event.ctrlKey || event.metaKey) {
-                this.selected.has(path) ? this.selected.delete(path) : this.selected.add(path);
+                next.has(path) ? next.delete(path) : next.add(path);
+                this.selected = next;
             } else {
                 this.selected = new Set([path]);
             }
@@ -924,7 +523,7 @@
         },
 
         selectPage() {
-            this.pagePaths.forEach((path) => this.selected.add(path));
+            this.selected = new Set(this.pagePaths);
         },
 
         clear() {
@@ -932,16 +531,14 @@
             this.anchor = null;
         },
 
-        /** Roving tabindex, so arrow keys walk the grid. */
-        focusNext(el) {
-            this.moveFocus(el, 1);
+        preview(file) {
+            if (file.type === 'image' || file.type === 'video') {
+                this.$dispatch('ml-preview', { src: file.url, name: file.name, video: file.type === 'video' });
+            }
         },
 
-        focusPrevious(el) {
-            this.moveFocus(el, -1);
-        },
-
-        moveFocus(el, delta) {
+        /** Roving tabindex, so arrow keys walk the icon grid. */
+        focusBy(el, delta) {
             const cards = Array.from(el.parentElement.querySelectorAll('[role="option"]'));
             const next = cards[cards.indexOf(el) + delta];
 
@@ -950,6 +547,13 @@
             cards.forEach((card) => card.setAttribute('tabindex', '-1'));
             next.setAttribute('tabindex', '0');
             next.focus();
+        },
+
+        formatBytes(bytes) {
+            const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+            let i = 0;
+            while (bytes >= 1024 && i < units.length - 1) { bytes /= 1024; i++; }
+            return `${bytes.toFixed(i === 0 ? 0 : 2)} ${units[i]}`;
         },
     }));
 </script>

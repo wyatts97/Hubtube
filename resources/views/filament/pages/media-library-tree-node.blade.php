@@ -1,33 +1,24 @@
 {{--
     One folder in the sidebar tree.
 
-    Recursive, but the whole tree already came from a single media_folders
-    query, so recursion here costs nothing — it used to sit on top of an
-    allFiles() walk per node.
+    The whole tree comes from one media_folders query, so recursion here costs
+    nothing. Expanding a branch is Alpine-local — no round-trip — and the
+    branch holding the current folder starts open.
 --}}
 @php
-    $isExpanded = in_array($node['path'], $expandedNodes, true);
-    $isCurrent = $currentDirectory === $node['path'];
+    $isCurrent = $directory === $node['path'];
+    $isOpen = $isCurrent || str_starts_with($directory, $node['path'].'/');
     $hasChildren = ! empty($node['children']);
 @endphp
 
-<li role="treeitem" @if ($hasChildren) aria-expanded="{{ $isExpanded ? 'true' : 'false' }}" @endif>
+<li role="treeitem" x-data="{ open: @js($isOpen) }" @if ($hasChildren) :aria-expanded="open" @endif>
     <div
         @class(['ht-ml-tree__row', 'ht-ml-tree__row--current' => $isCurrent])
         style="padding-inline-start: {{ 8 + $level * 12 }}px;"
     >
         @if ($hasChildren)
-            <button
-                type="button"
-                class="ht-ml-tree__caret"
-                wire:click.stop="toggleNode(@js($node['path']))"
-                aria-label="{{ $isExpanded ? 'Collapse' : 'Expand' }} {{ $node['name'] }}"
-            >
-                @if ($isExpanded)
-                    <x-phosphor-caret-down class="ht-ml-icon-sm" />
-                @else
-                    <x-phosphor-caret-right class="ht-ml-icon-sm" />
-                @endif
+            <button type="button" class="ht-ml-tree__caret" x-on:click="open = ! open" :aria-label="(open ? 'Collapse ' : 'Expand ') + @js($node['name'])">
+                <x-phosphor-caret-right class="ht-ml-icon-sm ht-ml-tree__chevron" x-bind:class="open && 'ht-ml-tree__chevron--open'" />
             </button>
         @else
             <span class="ht-ml-tree__caret ht-ml-tree__caret--empty" aria-hidden="true"></span>
@@ -47,15 +38,11 @@
             <span class="ht-ml-tree__name">{{ $node['name'] }}</span>
         </button>
 
-        {{-- Both counts are rendered now. `size` was computed and cached by the
-             old tree walk and then never shown at all. --}}
-        <span class="ht-ml-tree__meta" title="{{ $node['count'] }} files, {{ $node['size'] }}">
-            {{ $node['count'] }}
-        </span>
+        <span class="ht-ml-tree__meta" title="{{ number_format($node['count']) }} files">{{ $node['size'] }}</span>
     </div>
 
-    @if ($isExpanded && $hasChildren)
-        <ul role="group">
+    @if ($hasChildren)
+        <ul role="group" x-show="open" @if (! $isOpen) x-cloak @endif>
             @foreach ($node['children'] as $child)
                 @include('filament.pages.media-library-tree-node', ['node' => $child, 'level' => $level + 1])
             @endforeach

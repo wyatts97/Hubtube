@@ -99,7 +99,9 @@ class FfmpegService
         }
 
         $lookup = PHP_OS_FAMILY === 'Windows' ? "where {$binary}" : "which {$binary} 2>/dev/null";
-        $which = trim(shell_exec($lookup) ?? '');
+        // The first match only: Windows' `where` lists every one it finds, one
+        // per line, and the joined lines are not a path anything can run.
+        $which = trim(strtok(trim(shell_exec($lookup) ?? ''), "\r\n") ?: '');
         if (! empty($which)) {
             return $which;
         }

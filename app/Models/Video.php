@@ -349,18 +349,14 @@ class Video extends Model
             || $encodings->contains(fn (VideoEncoding $encoding) => ! $encoding->isTerminal());
     }
 
-    public function storageReclaims(): HasMany
-    {
-        return $this->hasMany(StorageReclaim::class);
-    }
-
     /**
      * Whether this video's files can be handed to the encoder again.
      *
      * The one predicate behind both "encode missing renditions" in the admin
-     * and every storage reclaim: the video must be finished, hold real local
-     * files, and not be mid-encode. StorageReclaimService layers its own
-     * per-target checks on top, but it never contradicts this.
+     * and replacing an original with a compressed copy in the Media Library:
+     * the video must be finished, hold real local files, and not be
+     * mid-encode. MediaCompressService layers its own checks on top, but it
+     * never contradicts this.
      */
     public function canReencode(): bool
     {
@@ -852,7 +848,7 @@ class Video extends Model
      * orders them 'original', '720p', '480p', '360p', '1080p' — so a 1080p+720p
      * ladder served 720p, and the 'original' branch never broke out of the
      * loop, meaning a video with no rendition on disk handed out the raw
-     * upload. That last part matters more now: storage reclaim exists to shrink
+     * upload. That last part matters more now: the media library compress exists to shrink
      * these files, and a fallback that prefers the largest file on the box
      * works directly against it.
      *

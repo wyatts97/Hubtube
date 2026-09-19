@@ -3,25 +3,29 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\RequiresPermission;
+use App\Jobs\CompressMediaFileJob;
 use App\Jobs\ReindexMediaLibraryJob;
 use App\Models\Image;
 use App\Models\MediaFile;
 use App\Models\MediaFolder;
 use App\Models\Video;
 use App\Services\FileManagerThumbnailService;
+use App\Services\Media\MediaCompressService;
 use App\Services\Media\MediaGuard;
 use App\Services\Media\MediaIndexService;
 use App\Services\Media\MediaPathGuard;
 use App\Services\Media\MediaReferenceResolver;
-use App\Services\Media\MediaStorageReport;
 use App\Services\Media\MediaThumbnailDispatcher;
-use App\Services\Storage\StorageReclaimService;
 use App\Support\Bytes;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Session;
 use Livewire\Attributes\Url;
@@ -29,21 +33,29 @@ use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Throwable;
 
+/**
+ * The admin media library, laid out like a file explorer.
+ *
+ * Folder tree on the left, the folder's contents in the middle, details on the
+ * right. Everything is read from the media_files / media_folders index, so a
+ * listing is one paginated, indexed query whatever the folder holds.
+ *
+ * "What is eating the disk" is answered with the explorer's own controls
+ * rather than a separate view: pick All files, set a minimum size and sort by
+ * the Size column. Any filter searches the current folder *and everything
+ * below it*, the way Explorer's search box does.
+ *
+ * Every dialog is a Filament action. The browser only ever sends paths, and
+ * each action re-validates them — client-side selection is a rendering
+ * convenience, never a permission.
+ */
 class MediaLibrary extends Page
 {
     use RequiresPermission;
+    use WithFileUploads;
+    use WithPagination;
 
     protected static string $requiredPermission = 'create_video';
-
-    use WithFileUploads;
-
-    // Pagination was hand-rolled: a plain `public int $page` and
-    // $paginator->links(), which renders ordinary <a href="?page=2"> anchors.
-    // Those caused a full browser navigation, after which the component
-    // mounted fresh with page = 1 — so clicking "2" put you back on page 1.
-    // WithPagination gives the gotoPage/nextPage/previousPage methods that
-    // Filament's pagination component drives over Livewire.
-    use WithPagination;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-image';
 
@@ -53,241 +65,122 @@ class MediaLibrary extends Page
 
     protected static ?int $navigationSort = 99;
 
-    /** Columns the listing can be ordered by. Each has an index behind it. */
-    public const SORT_COLUMNS = ['name', 'size', 'type', 'modified', 'root'];
-
     protected string $view = 'filament.pages.media-library';
 
+    public const SORT_COLUMNS = ['name', 'type', 'size', 'modified'];
+
+    /** The size filter's options, in bytes. */
+    public const MIN_SIZES = [
+        '100mb' => 100 * 1024 * 1024,
+        '1gb' => 1024 * 1024 * 1024,
+        '10gb' => 10 * 1024 * 1024 * 1024,
+    ];
+
+    public const PER_PAGE = 100;
+
     /*
-     * Browsing state lives in the URL.
-     *
-     * None of this used to be shareable or survive a revisit: opening the page
-     * always dropped you in `media` in grid view sorted by date, whatever you
-     * were looking at last. #[Url] makes a filtered view a link you can send
-     * someone, and `history: true` on the directory means browser Back walks
-     * back up the folders.
+     * Browsing state lives in the URL, so any view is a link you can send and
+     * browser Back walks back up the folders.
      */
+
+    /** The folder being shown. Empty means "All files" — every root at once. */
     #[Url(as: 'path', history: true)]
     public string $currentDirectory = 'media';
 
     #[Url(as: 'q', except: '')]
     public string $search = '';
 
-    /** folder | subtree | library — how wide a search reaches. */
-    #[Url(as: 'in', except: 'folder')]
-    public string $searchScope = 'folder';
-
     /** '' | image | video | audio | document | other */
     #[Url(as: 'type', except: '')]
     public string $typeFilter = '';
 
-    /** '' | used | unused */
-    #[Url(as: 'usage', except: '')]
-    public string $usageFilter = '';
+    /** '' or a key of MIN_SIZES. */
+    #[Url(as: 'min', except: '')]
+    public string $minSize = '';
 
-    #[Url(except: 'modified')]
-    public string $sortBy = 'modified';
+    /** List every file below this folder rather than just its own. */
+    #[Url(as: 'deep', except: false)]
+    public bool $includeSubfolders = false;
 
-    #[Url(except: 'desc')]
-    public string $sortDirection = 'desc';
+    #[Url(as: 'sort', except: 'name')]
+    public string $sortBy = 'name';
 
-    /**
-     * grid | list | flat.
-     *
-     * Both attributes, in this order. #[Session] supplies the remembered
-     * default and #[Url] overrides it when a link carries one — BaseUrl skips
-     * writing when the parameter is absent, so a bare visit keeps your own
-     * layout while a shared link wins. Reversing the order would make the
-     * session clobber the link.
-     *
-     * It needs to be shareable because the point of the flat view is "look at
-     * the 40 biggest files on this box": sort, scope and filters are already
-     * in the URL, so without this a shared link renders in the recipient's
-     * remembered mode with somebody else's sort applied.
-     */
-    #[Session]
-    #[Url(as: 'view', except: 'grid')]
-    public string $viewMode = 'grid';
+    #[Url(as: 'dir', except: 'asc')]
+    public string $sortDirection = 'asc';
 
     /**
-     * Rows per page.
-     *
-     * Capped at 200 to match resolveBulkPaths()'s cap, so "Select page →
-     * Delete" can never quietly act on fewer files than are shown.
+     * details | icons. #[Session] remembers your layout; #[Url] lets a shared
+     * link override it. In that order, or the session clobbers the link.
      */
     #[Session]
-    #[Url(as: 'per', except: 50)]
-    public int $perPage = 50;
+    #[Url(as: 'view', except: 'details')]
+    public string $viewMode = 'details';
 
-    /** Whether the storage summary strip is expanded. */
-    #[Session]
-    public bool $showStorageReport = true;
-
-    // Upload state
-    public $uploadedFiles = [];
-
-    /**
-     * The file whose details are open.
-     *
-     * Multi-selection is client-side now (see the mediaSelection Alpine
-     * component): every card used to carry wire:click="selectFile(...)", so
-     * moving a 2px border cost a full server round-trip that rebuilt the whole
-     * listing. Only the details panel genuinely needs the server, because it
-     * resolves reference records and their edit links.
-     */
+    /** The file whose details are open. Multi-selection is client-side. */
     public ?string $selectedFile = null;
 
-    public ?string $deleteTarget = null;
-
-    public ?string $renameTarget = null;
-
-    public string $renameNewName = '';
-
-    // The New Folder modal's visibility used to *be* $newFolderName: the modal
-    // rendered under @if ($newFolderName), so clearing the field to type your
-    // own name closed the modal out from under you.
-    public bool $showNewFolderModal = false;
-
-    public string $newFolderName = '';
-
-    // Folder actions
-    public ?string $folderRenameTarget = null;
-
-    public string $folderRenameNewName = '';
-
-    public ?string $folderDeleteTarget = null;
-
-    /** Move-to-folder modal: the paths being moved and the chosen destination. */
-    public array $moveTargets = [];
-
-    public string $moveDestination = '';
-
-    public bool $showReclaimModal = false;
-
-    /** @var list<array{video_id: int, title: string, size: string}> */
-    public array $reclaimPlan = [];
-
-    /** @var list<array{title: string, reason: string}> */
-    public array $reclaimRefusals = [];
-
-    /** File-level compression (H.265 / VP9 / AV1) — writes a new file, never overwrites. */
-    public bool $showCompressModal = false;
-
-    /** @var list<string> */
-    public array $compressTargets = [];
-
-    /** @var list<array{name: string, reason: string}> */
-    public array $compressRefusals = [];
-
-    public string $compressCodec = 'h265';
-
-    public string $compressQuality = 'balanced';
-
-    public bool $showMoveModal = false;
-
-    /**
-     * Explorer helpers.
-     *
-     * Thin conveniences over the existing filters — no new queries, no new
-     * state to persist. `largestFirst()` is the "find what is eating the disk"
-     * button: videos sorted biggest-first across this folder and below.
-     * Kept separate from sortBy so a shared URL still round-trips.
-     */
-
-    // Tree expansion state
-    public array $expandedNodes = [];
-
-    protected FileManagerThumbnailService $thumbnailService;
-
-    protected MediaIndexService $mediaIndex;
+    public $uploadedFiles = [];
 
     protected MediaPathGuard $pathGuard;
 
-    protected MediaThumbnailDispatcher $thumbnailQueue;
+    protected MediaIndexService $mediaIndex;
 
-    /**
-     * Livewire re-hydrates the component on every request, so these are
-     * resolved in boot() rather than injected into a constructor.
-     */
+    protected FileManagerThumbnailService $thumbnailService;
+
+    /** Resolved in boot() because Livewire re-hydrates on every request. */
     public function boot(): void
     {
-        $this->thumbnailService = new FileManagerThumbnailService;
-        $this->mediaIndex = app(MediaIndexService::class);
         $this->pathGuard = app(MediaPathGuard::class);
-        $this->thumbnailQueue = app(MediaThumbnailDispatcher::class);
+        $this->mediaIndex = app(MediaIndexService::class);
+        $this->thumbnailService = new FileManagerThumbnailService;
     }
+
+    public function updated(string $property): void
+    {
+        if (in_array($property, ['search', 'typeFilter', 'minSize', 'includeSubfolders', 'sortBy', 'sortDirection'], true)) {
+            $this->resetPage();
+        }
+    }
+
+    // ── Navigation ──────────────────────────────────────────────────────────
 
     /**
-     * Changing folder keeps the search term.
+     * Open a folder, or All files when $path is empty.
      *
-     * It used to be wiped silently, so typing a query and then clicking a
-     * folder to look for it there threw the query away. The toolbar shows what
-     * is being searched and where, with a way to clear it.
+     * Through a method rather than $set so the path is validated first and a
+     * folder name containing a quote cannot break the expression.
      */
-    public function updatingCurrentDirectory(): void
+    public function openDirectory(string $path): void
     {
-        $this->resetPage();
-        $this->selectedFile = null;
-    }
+        $path = $this->pathGuard->sanitize($path);
 
-    public function updatingSearch(): void
-    {
-        $this->resetPage();
-    }
+        if ($path !== '' && ! $this->pathGuard->isAllowed($path)) {
+            Notification::make()->title('Invalid path')->danger()->send();
 
-    public function updatingSortBy(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatingSearchScope(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatingTypeFilter(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatingUsageFilter(): void
-    {
-        $this->resetPage();
-    }
-
-    /**
-     * Switch layout.
-     *
-     * Flat mode is a whole-library view, so it forces the library scope on the
-     * way in and restores folder scope on the way out. `currentDirectory` is
-     * left alone — the library scope ignores it — so leaving flat mode drops
-     * you back where you were browsing.
-     */
-    public function setViewMode(string $mode): void
-    {
-        if (! in_array($mode, ['grid', 'list', 'flat'], true)) {
             return;
         }
 
-        $wasFlat = $this->viewMode === 'flat';
-        $this->viewMode = $mode;
-
-        if ($mode === 'flat') {
-            $this->searchScope = 'library';
-        } elseif ($wasFlat) {
-            $this->searchScope = 'folder';
-        }
-
+        $this->currentDirectory = $path;
         $this->selectedFile = null;
         $this->resetPage();
     }
 
+    /** The folder above this one, or null at All files. */
+    public function getParentDirectoryProperty(): ?string
+    {
+        $current = $this->directory();
+
+        if ($current === '') {
+            return null;
+        }
+
+        return str_contains($current, '/') ? dirname($current) : '';
+    }
+
     /**
-     * Sort by a column, from a clickable header.
-     *
-     * Clicking the active column flips the direction; a new column starts in
-     * whichever direction is actually useful — biggest and newest first,
-     * names and types alphabetically.
+     * Sort from a column header. Clicking the active column flips it; a new
+     * column starts the useful way round — biggest and newest first, names
+     * and types A–Z.
      */
     public function sortByColumn(string $column): void
     {
@@ -305,216 +198,121 @@ class MediaLibrary extends Page
         $this->resetPage();
     }
 
-    /** Row counts offered in the page-size picker. */
-    public function perPageOptions(): array
+    public function setViewMode(string $mode): void
     {
-        return [25, 50, 100, 200];
+        if (in_array($mode, ['details', 'icons'], true)) {
+            $this->viewMode = $mode;
+        }
     }
 
-    /**
-     * The page size actually used.
-     *
-     * Clamped rather than trusted: $perPage comes from the query string, and
-     * an arbitrary value would let a link ask for the whole table in one
-     * render.
-     */
-    protected function resolvedPerPage(): int
-    {
-        return in_array($this->perPage, $this->perPageOptions(), true)
-            ? $this->perPage
-            : (int) config('hubtube.media_library.per_page', 50);
-    }
-
-    public function updatingPerPage(): void
-    {
-        $this->resetPage();
-    }
-
-    public function toggleStorageReport(): void
-    {
-        $this->showStorageReport = ! $this->showStorageReport;
-    }
-
-    /** Clear every filter without leaving the folder. */
     public function clearFilters(): void
     {
         $this->search = '';
         $this->typeFilter = '';
-        $this->usageFilter = '';
-        $this->searchScope = 'folder';
+        $this->minSize = '';
+        $this->includeSubfolders = false;
         $this->resetPage();
     }
 
-    /** Where the disk is going, for the summary strip. */
-    public function getStorageReportProperty(): array
+    public function sortKey(): string
     {
-        return app(MediaStorageReport::class)->all();
+        return in_array($this->sortBy, self::SORT_COLUMNS, true) ? $this->sortBy : 'name';
     }
 
-    /** The biggest files in the library, for the summary strip. */
-    public function getBiggestFilesProperty(): array
+    /** The current folder, sanitised. '' is All files. */
+    public function directory(): string
     {
-        return app(MediaStorageReport::class)->biggestFiles(10);
+        return $this->pathGuard->sanitize($this->currentDirectory);
     }
 
     /**
-     * Jump into the flat view sorted by size, from the summary strip.
+     * Whether the listing reaches below the current folder.
      *
-     * The overview is a doorway into the grid rather than a parallel UI, so
-     * "show me these" lands you in the real browser with the real actions.
+     * Any filter does, like Explorer's search box, and All files always does.
+     * Subfolder rows are hidden then, because the result is a list of files.
      */
-    public function showBiggest(?string $type = null): void
+    public function isSearching(): bool
     {
-        $this->viewMode = 'flat';
-        $this->searchScope = 'library';
-        $this->typeFilter = in_array($type, MediaFile::TYPES, true) ? $type : '';
-        $this->sortBy = 'size';
-        $this->sortDirection = 'desc';
-        $this->search = '';
-        $this->usageFilter = '';
-        $this->resetPage();
+        return $this->hasFilters() || $this->directory() === '';
     }
 
-    /**
-     * Explorer shortcut: biggest videos first, this folder and below.
-     *
-     * Same indexed query as the flat view but scoped to the subtree you are
-     * standing in — the Windows-Explorer answer to "what is eating this disk".
-     * Stays in the current viewMode so the tree/preview layout does not jump.
-     */
-    public function largestFirst(bool $videosOnly = true): void
-    {
-        $this->searchScope = 'subtree';
-        $this->typeFilter = $videosOnly ? 'video' : '';
-        $this->sortBy = 'size';
-        $this->sortDirection = 'desc';
-        $this->search = '';
-        $this->resetPage();
-    }
-
-    /** Explorer shortcut: back to plain folder browsing. */
-    public function folderView(): void
-    {
-        $this->searchScope = 'folder';
-        $this->typeFilter = '';
-        $this->sortBy = 'modified';
-        $this->sortDirection = 'desc';
-        $this->search = '';
-        $this->resetPage();
-    }
-
-    /** Parent directory of the current folder, for the Explorer up-button. */
-    public function getParentDirectoryProperty(): ?string
-    {
-        $current = trim($this->sanitizePath($this->currentDirectory), '/');
-
-        if ($current === '' || ! str_contains($current, '/')) {
-            return null;
-        }
-
-        return dirname($current);
-    }
-
-    /** Whether anything is narrowing the listing right now. */
-    public function getHasFiltersProperty(): bool
+    public function hasFilters(): bool
     {
         return $this->search !== ''
             || $this->typeFilter !== ''
-            || $this->usageFilter !== ''
-            || $this->scopeKey() !== 'folder';
+            || $this->minSizeBytes() > 0
+            || $this->includeSubfolders;
+    }
+
+    protected function minSizeBytes(): int
+    {
+        return self::MIN_SIZES[$this->minSize] ?? 0;
+    }
+
+    // ── Listing ─────────────────────────────────────────────────────────────
+
+    /** One page of files, as a single indexed query. */
+    public function getFilesProperty(): LengthAwarePaginator
+    {
+        $directory = $this->directory();
+        $direction = $this->sortDirection === 'asc' ? 'asc' : 'desc';
+
+        $query = MediaFile::query()
+            ->when(
+                $directory === '',
+                fn ($query) => $query->whereIn('root', $this->pathGuard->allowedRoots()),
+                fn ($query) => $this->isSearching() ? $query->underDirectory($directory) : $query->inDirectory($directory),
+            )
+            ->matchingName($this->search !== '' ? $this->search : null)
+            ->ofType($this->typeFilter !== '' ? $this->typeFilter : null)
+            ->when($this->minSizeBytes() > 0, fn ($query) => $query->where('size', '>=', $this->minSizeBytes()));
+
+        // name_lower, not name: MySQL's collation ignores case, SQLite's does not.
+        match ($this->sortKey()) {
+            'size' => $query->orderBy('size', $direction),
+            'type' => $query->orderBy('type', $direction)->orderBy('name_lower', $direction),
+            'modified' => $query->orderBy('modified_at', $direction),
+            default => $query->orderBy('name_lower', $direction),
+        };
+
+        // A stable tiebreak, so paging never shows a row twice.
+        $paginator = $query->orderBy('id', $direction)->paginate(self::PER_PAGE);
+
+        // Thumbnails for this page only, off the render path.
+        app(MediaThumbnailDispatcher::class)->dispatchFor($paginator->getCollection());
+
+        return $paginator->through(fn (MediaFile $file) => $this->presentFile($file));
     }
 
     /**
-     * Navigate to a directory.
+     * The folders inside the current one — or the roots, at All files.
      *
-     * The tree and the breadcrumbs used to call $set('currentDirectory', '…')
-     * with the path interpolated raw into the expression, which breaks on a
-     * folder name containing a quote. Going through a method also means the
-     * path is validated before it is used, and the reset below is explicit —
-     * Livewire's updating hooks fire for client-side property updates, not for
-     * assignments made inside a method.
+     * Kept out of the paginator: mixing two row types makes page numbers lie.
      */
-    public function openDirectory(string $path): void
+    public function getSubfoldersProperty(): array
     {
-        $path = $this->sanitizePath($path);
-
-        if (! $this->isAllowedPath($path)) {
-            Notification::make()->title('Invalid path')->danger()->send();
-
-            return;
+        if ($this->hasFilters()) {
+            return [];
         }
 
-        $this->currentDirectory = $path;
-        $this->resetPage();
-        $this->selectedFile = null;
+        $folders = $this->directory() === ''
+            ? MediaFolder::query()->whereNull('parent_path_hash')->whereIn('path', $this->pathGuard->allowedRoots())
+            : MediaFolder::query()->childrenOf($this->directory());
+
+        return $folders
+            ->orderBy('name_lower')
+            ->get(['path', 'name', 'total_file_count', 'total_size'])
+            ->map(fn (MediaFolder $folder) => [
+                'path' => $folder->path,
+                'name' => $folder->name,
+                'count' => $folder->total_file_count,
+                'size' => (int) $folder->total_size,
+                'size_formatted' => Bytes::format((int) $folder->total_size),
+            ])
+            ->all();
     }
 
-    public function openNewFolderModal(): void
-    {
-        $this->newFolderName = '';
-        $this->showNewFolderModal = true;
-    }
-
-    public function closeNewFolderModal(): void
-    {
-        $this->showNewFolderModal = false;
-        $this->newFolderName = '';
-    }
-
-    public function toggleSortDirection(): void
-    {
-        $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Path validation */
-    /* ------------------------------------------------------------------ */
-
-    /*
-     * These all delegate to MediaPathGuard, which is the single definition of
-     * what the library may touch — the indexer, the jobs and the console
-     * commands have to agree with the page, and previously the page was the
-     * only place the rules existed.
-     */
-
-    protected function allowedPaths(): array
-    {
-        return $this->pathGuard->allowedRoots();
-    }
-
-    protected function isAllowedPath(string $path): bool
-    {
-        return $this->pathGuard->isAllowed($path);
-    }
-
-    protected function sanitizePath(string $path): string
-    {
-        return $this->pathGuard->sanitize($path);
-    }
-
-    protected function isVideoSlugDirectory(string $path): bool
-    {
-        return $this->pathGuard->isVideoSlugDirectory($path);
-    }
-
-    protected function isUnderVideoSlugDirectory(string $path): bool
-    {
-        return $this->pathGuard->isUnderVideoSlugDirectory($path);
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Folder tree */
-    /* ------------------------------------------------------------------ */
-
-    /**
-     * The sidebar folder tree, as one query.
-     *
-     * This used to call Storage::allFiles() *recursively at every node*, plus
-     * a size() stat per file, walking the entire disk on every render — and it
-     * built the whole tree whether or not a branch was expanded, despite the
-     * expansion state suggesting otherwise. The counts and sizes now come from
-     * media_folders, where MediaFolderRollup keeps them.
-     */
+    /** The sidebar tree, from one media_folders query. */
     public function getFolderTree(): array
     {
         $folders = MediaFolder::query()
@@ -522,7 +320,6 @@ class MediaLibrary extends Page
             ->orderBy('name_lower')
             ->get(['path', 'path_hash', 'parent_path_hash', 'name', 'total_file_count', 'total_size']);
 
-        // Group by parent so the tree can be assembled without re-querying.
         $childrenOf = $folders->groupBy(fn (MediaFolder $folder) => $folder->parent_path_hash ?? '');
 
         $build = function (MediaFolder $folder, bool $isRoot) use (&$build, $childrenOf): array {
@@ -530,7 +327,7 @@ class MediaLibrary extends Page
                 'path' => $folder->path,
                 'name' => $isRoot ? ucfirst($folder->name) : $folder->name,
                 'count' => $folder->total_file_count,
-                'size' => $this->formatBytes($folder->total_size),
+                'size' => Bytes::format((int) $folder->total_size),
                 'children' => $childrenOf->get($folder->path_hash, collect())
                     ->map(fn (MediaFolder $child) => $build($child, false))
                     ->all(),
@@ -540,170 +337,21 @@ class MediaLibrary extends Page
         // Roots in the order they are configured, not alphabetically.
         $roots = $folders->whereNull('parent_path_hash')->keyBy('path');
 
-        return collect($this->allowedPaths())
-            ->map(fn (string $root) => $roots->get(trim($root, '/')))
+        return collect($this->pathGuard->allowedRoots())
+            ->map(fn (string $root) => $roots->get($root))
             ->filter()
             ->map(fn (MediaFolder $folder) => $build($folder, true))
             ->values()
             ->all();
     }
 
-    public function toggleNode(string $path): void
-    {
-        if (in_array($path, $this->expandedNodes)) {
-            $this->expandedNodes = array_values(array_filter($this->expandedNodes, fn ($p) => $p !== $path));
-        } else {
-            $this->expandedNodes[] = $path;
-        }
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* File listing */
-    /* ------------------------------------------------------------------ */
-
-    /**
-     * One page of files in the current directory, read from the index.
-     *
-     * This used to list the directory from disk and build full metadata for
-     * every file in it — two stats, a thumbnail existence check that also
-     * generated the thumbnail, an ffprobe subprocess per video and two SQL
-     * queries per file — and only then slice down to one page. A folder of
-     * 1,000 files paid for all 1,000 on every render to show fifty.
-     *
-     * It is now an indexed query with a LIMIT, so the work is the same whether
-     * the folder holds fifty files or fifty thousand. Reference badges come
-     * from the row's denormalised `references`, so they cost nothing at all.
-     */
-    public function getFilesProperty(): LengthAwarePaginator
-    {
-        $directory = $this->sanitizePath($this->currentDirectory);
-        $perPage = $this->resolvedPerPage();
-
-        $paginator = MediaFile::query()
-            ->tap(fn ($query) => $this->applyScope($query, $directory))
-            ->matchingName($this->search !== '' ? $this->search : null)
-            ->ofType($this->typeFilter !== '' ? $this->typeFilter : null)
-            ->when($this->usageFilter === 'used', fn ($query) => $query->where('is_referenced', true))
-            ->when($this->usageFilter === 'unused', fn ($query) => $query->where('is_referenced', false))
-            ->tap(fn ($query) => $this->applySort($query))
-            ->paginate($perPage);
-
-        // Queue thumbnails for this page's files only. Bounded by page size,
-        // deduplicated by the job's uniqueness, and off the render path — the
-        // page never generates a thumbnail itself any more.
-        $this->thumbnailQueue->dispatchFor($paginator->getCollection());
-
-        return $paginator->through(fn (MediaFile $file) => $this->presentFile($file));
-    }
-
-    /**
-     * How wide the listing reaches.
-     *
-     * Search used to die at the folder boundary: a substring filter over one
-     * directory's listing, with no way to find a file unless you already knew
-     * which folder it was in. The index makes the wider scopes a `root`
-     * predicate or a path prefix, both of which have an index behind them.
-     */
-    protected function applyScope($query, string $directory): void
-    {
-        match ($this->scopeKey()) {
-            'library' => $query->whereIn('root', $this->allowedPaths()),
-            'subtree' => $query->underDirectory($directory),
-            default => $query->inDirectory($directory),
-        };
-    }
-
-    /** The search scope, narrowed to one this page supports. */
-    protected function scopeKey(): string
-    {
-        return in_array($this->searchScope, ['folder', 'subtree', 'library'], true)
-            ? $this->searchScope
-            : 'folder';
-    }
-
-    /**
-     * Apply the chosen sort, on an indexed column.
-     *
-     * name_lower rather than name: MySQL's collation is case-insensitive but
-     * SQLite's ORDER BY is not, so sorting on the raw column would order
-     * differently in the test suite than in production.
-     */
-    protected function applySort($query): void
-    {
-        $direction = $this->sortDirection === 'asc' ? 'asc' : 'desc';
-
-        match ($this->sortKey()) {
-            'name' => $query->orderBy('name_lower', $direction),
-            'size' => $query->orderBy('size', $direction),
-            'type' => $query->orderBy('type', $direction)->orderBy('name_lower', $direction),
-            // Which root is eating the disk, answered without leaving the grid.
-            'root' => $query->orderBy('root', $direction)->orderBy('size', 'desc'),
-            default => $query->orderBy('modified_at', $direction),
-        };
-
-        // A stable tiebreak, so paging cannot show the same row twice when
-        // several files share a timestamp or a size.
-        $query->orderBy('id', $direction);
-    }
-
-    /**
-     * The subfolders of the current directory, for the main pane.
-     *
-     * The grid was files-only (Storage::files() never returned directories), so
-     * the only way into a subfolder was the sidebar tree. These render as a row
-     * above the file grid rather than being merged into the paginator: folder
-     * counts are small, and mixing two row types into one paginated set makes
-     * the page numbers lie.
-     */
-    public function getSubfoldersProperty(): array
-    {
-        // Only in folder scope — a subtree or library search is about files.
-        if ($this->scopeKey() !== 'folder' || $this->search !== '') {
-            return [];
-        }
-
-        return MediaFolder::query()
-            ->childrenOf($this->sanitizePath($this->currentDirectory))
-            ->orderBy('name_lower')
-            ->get(['path', 'name', 'total_file_count', 'total_size'])
-            ->map(fn (MediaFolder $folder) => [
-                'path' => $folder->path,
-                'name' => $folder->name,
-                'count' => $folder->total_file_count,
-                'size' => $this->formatBytes($folder->total_size),
-            ])
-            ->all();
-    }
-
-    /**
-     * Counts per file type for the filter chips, in one grouped query.
-     *
-     * @return array<string, int>
-     */
-    public function getTypeCountsProperty(): array
-    {
-        $directory = $this->sanitizePath($this->currentDirectory);
-
-        return MediaFile::query()
-            ->tap(fn ($query) => $this->applyScope($query, $directory))
-            ->matchingName($this->search !== '' ? $this->search : null)
-            ->groupBy('type')
-            ->selectRaw('type, COUNT(*) as total')
-            ->pluck('total', 'type')
-            ->all();
-    }
-
-    /**
-     * Shape an index row the way the grid and list templates expect.
-     *
-     * The keys are unchanged from when this was built straight off the
-     * filesystem, so the templates did not have to change with the data source.
-     */
+    /** The shape the templates expect for one file. */
     protected function presentFile(MediaFile $file): array
     {
         return [
             'path' => $file->path,
             'name' => $file->name,
+            'directory' => $file->directory,
             'url' => Storage::disk('public')->url($file->path),
             'thumbnail' => $this->thumbnailUrlFor($file),
             'thumbnail_state' => $file->thumbnail_state,
@@ -711,37 +359,23 @@ class MediaLibrary extends Page
             'type' => $file->type,
             'extension' => (string) $file->extension,
             'size' => (int) $file->size,
-            'size_formatted' => $this->formatBytes((int) $file->size),
-            'modified' => $file->modified_at?->getTimestamp() ?? 0,
+            'size_formatted' => Bytes::format((int) $file->size),
             'modified_formatted' => $file->modified_at?->format('M j, Y g:i A') ?? '—',
-            // "3 months ago" — "sort by age" is what was asked for, and an
-            // absolute timestamp does not read as age.
             'modified_relative' => $file->modified_at?->diffForHumans() ?? '—',
-            'root' => $file->root,
-            'duration' => $this->durationFor($file),
-            // From the row, not from two queries per file.
-            'references' => $file->references ?? [],
+            'duration' => $this->formatDuration((int) $file->duration_seconds),
             'is_protected' => (bool) $file->is_protected,
             'is_referenced' => (bool) $file->is_referenced,
-            // Shown under the name when a search reached past this folder.
-            'directory' => $file->directory,
         ];
     }
 
-    /**
-     * What to show in a tile.
-     *
-     * Reads the row and nothing else: no disk probe, no generation. A file
-     * whose thumbnail has not been made yet gets the type icon and a pending
-     * marker rather than an <img> pointing at a file that does not exist.
-     */
+    /** Reads the row and nothing else: no disk probe, no generation. */
     protected function thumbnailUrlFor(MediaFile $file): string
     {
         if ($file->hasThumbnail()) {
             return Storage::disk('public')->url($file->thumbnail_path);
         }
 
-        // An SVG is its own thumbnail — see FileManagerThumbnailService.
+        // An SVG is its own thumbnail.
         if ($file->thumbnail_state === MediaFile::THUMB_READY && strtolower((string) $file->extension) === 'svg') {
             return Storage::disk('public')->url($file->path);
         }
@@ -749,37 +383,77 @@ class MediaLibrary extends Page
         return $this->thumbnailService->fallbackIconUrl((string) $file->extension);
     }
 
-    /**
-     * A video's duration, from the index.
-     *
-     * Filled by the thumbnail job while the file is already open. The page used
-     * to spawn an ffprobe per video per render to get this.
-     */
-    protected function durationFor(MediaFile $file): ?string
+    /** m:ss, or h:mm:ss past an hour. Null for an unknown length. */
+    protected function formatDuration(int $seconds): ?string
     {
-        return $file->duration_seconds !== null
-            ? $this->formatDuration((int) $file->duration_seconds)
-            : null;
+        if ($seconds <= 0) {
+            return null;
+        }
+
+        return $seconds >= 3600
+            ? sprintf('%d:%02d:%02d', intdiv($seconds, 3600), intdiv($seconds % 3600, 60), $seconds % 60)
+            : sprintf('%d:%02d', intdiv($seconds, 60), $seconds % 60);
     }
 
     /**
-     * Whether anything on this page is still waiting for a thumbnail.
+     * Compress progress for the files on this page, in one cache read.
      *
-     * Drives a poll that starts and stops itself, so the page is only ever
-     * refreshing while there is something to wait for.
+     * @param  list<string>  $paths
      */
-    public function getHasPendingThumbnailsProperty(): bool
+    public function compressStatuses(array $paths): array
     {
-        return MediaFile::query()
-            ->inDirectory($this->sanitizePath($this->currentDirectory))
-            ->whereIn('thumbnail_state', [MediaFile::THUMB_PENDING, MediaFile::THUMB_QUEUED])
-            ->exists();
+        return app(MediaCompressService::class)->statuses($paths);
     }
 
-    /** Re-queue one file's thumbnail, from the details panel. */
+    /** Whether this folder has ever been indexed, for the empty state. */
+    public function getDirectoryIndexedProperty(): bool
+    {
+        return $this->directory() === '' || $this->mediaIndex->isIndexed($this->directory());
+    }
+
+    // ── Details pane ────────────────────────────────────────────────────────
+
+    public function selectFile(string $path): void
+    {
+        $this->selectedFile = $this->pathGuard->sanitize($path);
+    }
+
+    public function clearSelection(): void
+    {
+        $this->selectedFile = null;
+    }
+
+    /** Resolved by path, so the pane survives paging. */
+    public function getSelectedFileDataProperty(): ?array
+    {
+        if (! $this->selectedFile) {
+            return null;
+        }
+
+        $file = MediaFile::query()->where('path_hash', md5($this->selectedFile))->first();
+
+        if (! $file) {
+            return null;
+        }
+
+        $compress = app(MediaCompressService::class);
+        $video = $file->type === 'video' ? $compress->videoOriginalFor($file->path) : null;
+
+        return $this->presentFile($file) + [
+            'width' => $file->width,
+            'height' => $file->height,
+            'reference_details' => app(MediaReferenceResolver::class)->describe($file),
+            'compress_status' => $compress->status($file->path),
+            // A video's original upload can be swapped for a compressed copy
+            // sitting beside it; any other file you just delete yourself.
+            'video' => $video ? ['id' => $video->id, 'title' => $video->title] : null,
+            'compressed_copies' => $video ? $compress->compressedCopiesOf($file->path) : [],
+        ];
+    }
+
     public function regenerateThumbnail(string $path): void
     {
-        $file = MediaFile::query()->where('path_hash', md5($this->sanitizePath($path)))->first();
+        $file = MediaFile::query()->where('path_hash', md5($this->pathGuard->sanitize($path)))->first();
 
         if (! $file) {
             return;
@@ -794,91 +468,13 @@ class MediaLibrary extends Page
             'thumbnail_attempts' => 0,
         ]);
 
-        $this->thumbnailQueue->dispatchFor([$file->refresh()]);
+        app(MediaThumbnailDispatcher::class)->dispatchFor([$file->refresh()]);
 
         Notification::make()->title('Thumbnail queued')->success()->send();
     }
 
-    /**
-     * The details panel's data for the selected file.
-     *
-     * Resolved by path, not by scanning the current page — the panel used to go
-     * blank as soon as you turned the page.
-     */
-    public function getSelectedFileDataProperty(): ?array
-    {
-        if (! $this->selectedFile) {
-            return null;
-        }
+    // ── Upload ──────────────────────────────────────────────────────────────
 
-        $file = MediaFile::query()->where('path_hash', md5($this->selectedFile))->first();
-
-        if (! $file) {
-            return null;
-        }
-
-        return $this->presentFile($file) + [
-            'width' => $file->width,
-            'height' => $file->height,
-            'reference_details' => app(MediaReferenceResolver::class)->describe($file),
-        ];
-    }
-
-    /** The sort column, narrowed to one this page actually supports. */
-    public function sortKey(): string
-    {
-        return in_array($this->sortBy, self::SORT_COLUMNS, true)
-            ? $this->sortBy
-            : 'modified';
-    }
-
-    /** Seconds as m:ss, or h:mm:ss past an hour. Null for an unknown length. */
-    protected function formatDuration(int $seconds): ?string
-    {
-        if ($seconds <= 0) {
-            return null;
-        }
-
-        $hours = intdiv($seconds, 3600);
-        $minutes = intdiv($seconds % 3600, 60);
-        $secs = $seconds % 60;
-
-        return $hours > 0
-            ? sprintf('%d:%02d:%02d', $hours, $minutes, $secs)
-            : sprintf('%d:%02d', $minutes, $secs);
-    }
-
-    /**
-     * This had no terabyte branch, so a large video root rendered as
-     * "3,481.22 GB" — in the very panel that now reports storage totals.
-     */
-    protected function formatBytes(int $bytes): string
-    {
-        return Bytes::format($bytes);
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Reference tracking */
-    /* ------------------------------------------------------------------ */
-
-    public function getReferences(string $path): array
-    {
-        return array_merge(
-            Video::findByFilePath($path),
-            Image::findByFilePath($path)
-        );
-    }
-
-    public function hasReferences(string $path): bool
-    {
-        return count($this->getReferences($path)) > 0;
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Upload */
-    /* ------------------------------------------------------------------ */
-
-    /** Extensions the library accepts, for both the rule and the file picker. */
     public function allowedUploadExtensions(): array
     {
         return array_values(array_unique(array_map(
@@ -889,24 +485,19 @@ class MediaLibrary extends Page
 
     public function uploadFiles(): void
     {
-        $directory = $this->sanitizePath($this->currentDirectory);
+        $directory = $this->directory();
 
-        if (! $this->isAllowedPath($directory)) {
-            Notification::make()->title('Invalid upload directory')->danger()->send();
+        if (! $this->pathGuard->isAllowed($directory)) {
+            Notification::make()->title('Open a folder to upload into')->warning()->send();
             $this->uploadedFiles = [];
 
             return;
         }
 
-        // Extension allowlist as well as a size cap. Admin-only, but a .phtml
-        // landing in storage/app/public — which nginx serves directly — is not
-        // a risk worth carrying for the sake of a shorter rule.
+        // An allowlist as well as a size cap: storage/app/public is served
+        // directly by nginx, so a .phtml must never land there.
         $this->validate([
-            'uploadedFiles.*' => [
-                'file',
-                'max:204800',
-                'mimes:'.implode(',', $this->allowedUploadExtensions()),
-            ],
+            'uploadedFiles.*' => ['file', 'max:204800', 'mimes:'.implode(',', $this->allowedUploadExtensions())],
         ], [
             'uploadedFiles.*.mimes' => 'That file type is not allowed in the media library.',
         ]);
@@ -914,784 +505,399 @@ class MediaLibrary extends Page
         Storage::disk('public')->makeDirectory($directory);
 
         $count = 0;
+
         foreach ($this->uploadedFiles as $file) {
-            $original = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-            $ext = strtolower($file->getClientOriginalExtension());
-            $filename = Str::slug($original).'-'.Str::random(6).'.'.$ext;
-            $file->storeAs($directory, $filename, 'public');
+            $name = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'-'.Str::random(6);
+            $file->storeAs($directory, $name.'.'.strtolower($file->getClientOriginalExtension()), 'public');
             $count++;
         }
 
         $this->uploadedFiles = [];
-        $this->syncIndexFor($directory);
+        $this->mediaIndex->indexDirectory($directory);
+
+        Notification::make()->title('Uploaded '.$count.' '.Str::plural('file', $count))->success()->send();
+    }
+
+    // ── Rescan ──────────────────────────────────────────────────────────────
+
+    /** Re-read the current folder from disk. Bounded, so synchronous. */
+    public function rescanCurrentDirectory(): void
+    {
+        $directory = $this->directory();
+
+        if (! $this->pathGuard->isAllowed($directory)) {
+            $this->rescanLibrary();
+
+            return;
+        }
+
+        $result = $this->mediaIndex->indexDirectory($directory);
 
         Notification::make()
-            ->title("Uploaded {$count} file".($count !== 1 ? 's' : ''))
+            ->title('Folder refreshed')
+            ->body(sprintf('%d added, %d updated, %d removed.', $result['added'], $result['updated'], $result['removed']))
             ->success()
             ->send();
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Rename */
-    /* ------------------------------------------------------------------ */
-
-    public function startRename(string $path): void
+    /** Rebuild the whole index in the background; far too slow for a request. */
+    public function rescanLibrary(): void
     {
-        $path = $this->sanitizePath($path);
-
-        // MediaGuard owns this rule, so the button's disabled state and the
-        // action itself cannot disagree — they used to use different
-        // predicates.
-        $blocked = app(MediaGuard::class)->renameBlockedReason($path);
-
-        if ($blocked !== null) {
-            Notification::make()->title('Cannot rename this file')->body($blocked)->warning()->send();
-
-            return;
-        }
-
-        $this->renameTarget = $path;
-        $this->renameNewName = basename($path);
-    }
-
-    public function cancelRename(): void
-    {
-        $this->renameTarget = null;
-        $this->renameNewName = '';
-    }
-
-    public function confirmRename(): void
-    {
-        if (! $this->renameTarget || ! $this->renameNewName) {
-            return;
-        }
-
-        $oldPath = $this->sanitizePath($this->renameTarget);
-        $directory = dirname($oldPath);
-        if ($directory === '.') {
-            $directory = '';
-        }
-
-        $newName = $this->sanitizeFilename($this->renameNewName);
-        if (! $newName) {
-            Notification::make()->title('Invalid filename')->danger()->send();
-
-            return;
-        }
-
-        $newPath = $directory ? $directory.'/'.$newName : $newName;
-
-        if ($oldPath === $newPath) {
-            $this->cancelRename();
-
-            return;
-        }
-
-        if (! $this->isAllowedPath($oldPath) || ! $this->isAllowedPath($newPath)) {
-            Notification::make()->title('Invalid path')->danger()->send();
-
-            return;
-        }
-
-        if (Storage::disk('public')->exists($newPath)) {
-            Notification::make()->title('A file with that name already exists')->danger()->send();
-
-            return;
-        }
-
-        if ($this->isVideoSlugDirectory($oldPath) || $this->isUnderVideoSlugDirectory($oldPath)) {
-            Notification::make()
-                ->title('Cannot rename video slug directories')
-                ->body('Rename videos from the video editor to keep URLs in sync.')
-                ->warning()
-                ->send();
-            $this->cancelRename();
-
-            return;
-        }
-
-        // Update database references first, then move the file.
-        Video::updateFilePath($oldPath, $newPath);
-        Image::updateFilePath($oldPath, $newPath);
-
-        Storage::disk('public')->move($oldPath, $newPath);
-
-        // The thumbnail is keyed on the source path, so the old one is now
-        // orphaned and the new path has none. Nothing used to clear either.
-        $this->thumbnailService->deleteFor($oldPath);
-
-        $this->mediaIndex->movePath($oldPath, $newPath);
-        $this->cancelRename();
-
-        Notification::make()->title('File renamed')->success()->send();
-    }
-
-    /**
-     * Remove a deleted file's generated thumbnail.
-     *
-     * Nothing did this before, so the thumbnail cache only ever grew: every
-     * file ever deleted left its WebP behind for good.
-     */
-    protected function deleteThumbnail(string $path): void
-    {
-        $this->thumbnailService->deleteFor($path);
-    }
-
-    protected function sanitizeFilename(string $name): string
-    {
-        $name = pathinfo($name, PATHINFO_BASENAME);
-        $name = preg_replace('/[^a-zA-Z0-9._-]/', '-', $name);
-        $name = trim($name, '-.');
-
-        return $name;
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Delete */
-    /* ------------------------------------------------------------------ */
-
-    public function confirmDelete(string $path): void
-    {
-        $this->deleteTarget = $path;
-    }
-
-    public function cancelDelete(): void
-    {
-        $this->deleteTarget = null;
-    }
-
-    public function deleteFile(): void
-    {
-        if (! $this->deleteTarget) {
-            return;
-        }
-
-        $path = $this->sanitizePath($this->deleteTarget);
-
-        if (! $this->isAllowedPath($path)) {
-            Notification::make()->title('Invalid path')->danger()->send();
-            $this->deleteTarget = null;
-
-            return;
-        }
-
-        if ($this->hasReferences($path)) {
-            Notification::make()
-                ->title('Cannot delete referenced file')
-                ->body('This file is used by a Video or Image record. Remove the reference first.')
-                ->danger()
-                ->send();
-            $this->deleteTarget = null;
-
-            return;
-        }
-
-        if ($this->stillOnDisk($path)) {
-            Storage::disk('public')->delete($path);
-            $this->deleteThumbnail($path);
-            $this->mediaIndex->forgetPath($path);
-            Notification::make()->title('File deleted')->success()->send();
-        }
-
-        $this->deleteTarget = null;
-        $this->selectedFile = null;
-    }
-
-    /**
-     * Delete the files the client selected.
-     *
-     * The paths arrive from the browser, so every one of them goes back
-     * through sanitizePath + isAllowedPath + the reference check. Client-side
-     * selection is a rendering convenience; it is never a permission.
-     *
-     * @param  list<string>  $paths
-     */
-    public function deleteSelectedFiles(array $paths = []): void
-    {
-        $blocked = [];
-        $deleted = 0;
-
-        foreach ($this->resolveBulkPaths($paths) as $path) {
-
-            if (! $this->isAllowedPath($path)) {
-                continue;
-            }
-
-            if ($this->hasReferences($path)) {
-                $blocked[] = basename($path);
-
-                continue;
-            }
-
-            if (Storage::disk('public')->exists($path)) {
-                Storage::disk('public')->delete($path);
-                $this->deleteThumbnail($path);
-                $deleted++;
-            }
-        }
-
-        $this->selectedFile = null;
-        $this->syncIndexFor($this->sanitizePath($this->currentDirectory));
-
-        if (! empty($blocked)) {
-            Notification::make()
-                ->title('Some files could not be deleted')
-                ->body('Blocked: '.implode(', ', array_slice($blocked, 0, 5)).(count($blocked) > 5 ? '...' : ''))
-                ->warning()
-                ->send();
-        } elseif ($deleted > 0) {
-            Notification::make()
-                ->title("Deleted {$deleted} file".($deleted !== 1 ? 's' : ''))
-                ->success()
-                ->send();
-        }
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Folders */
-    /* ------------------------------------------------------------------ */
-
-    public function createFolder(): void
-    {
-        $name = $this->sanitizeFilename($this->newFolderName);
-        if (! $name) {
-            Notification::make()->title('Invalid folder name')->danger()->send();
-
-            return;
-        }
-
-        $directory = $this->sanitizePath($this->currentDirectory);
-        $newPath = $directory ? $directory.'/'.$name : $name;
-
-        if (! $this->isAllowedPath($newPath)) {
-            Notification::make()->title('Invalid path')->danger()->send();
-
-            return;
-        }
-
-        if (Storage::disk('public')->exists($newPath)) {
-            Notification::make()->title('Folder already exists')->warning()->send();
-
-            return;
-        }
-
-        Storage::disk('public')->makeDirectory($newPath);
-        $this->closeNewFolderModal();
-        $this->syncIndexFor($newPath);
-
-        Notification::make()->title('Folder created')->success()->send();
-    }
-
-    public function deleteFolder(string $path): void
-    {
-        $path = $this->sanitizePath($path);
-
-        if (! $this->isAllowedPath($path)) {
-            Notification::make()->title('Invalid path')->danger()->send();
-
-            return;
-        }
-
-        // One batched reference lookup for the whole subtree, checked live
-        // against the database rather than against the index's flags.
-        $blocked = app(MediaGuard::class)->folderBlockedReason($path, $this->filesUnder($path));
-
-        if ($blocked !== null) {
-            Notification::make()->title('Cannot delete folder')->body($blocked)->danger()->send();
-            $this->folderDeleteTarget = null;
-
-            return;
-        }
-
-        foreach ($this->filesUnder($path) as $file) {
-            $this->thumbnailService->deleteFor($file);
-        }
-
-        Storage::disk('public')->deleteDirectory($path);
-        $this->mediaIndex->forgetDirectory($path);
-
-        if ($this->currentDirectory === $path || str_starts_with($this->currentDirectory, $path.'/')) {
-            $this->currentDirectory = str_contains($path, '/') ? dirname($path) : 'media';
-        }
-
-        $this->folderDeleteTarget = null;
-        $this->selectedFile = null;
-
-        Notification::make()->title('Folder deleted')->success()->send();
-    }
-
-    /** Delete the folder the confirmation dialog is open for. */
-    public function confirmFolderDeletion(): void
-    {
-        if ($this->folderDeleteTarget) {
-            $this->deleteFolder($this->folderDeleteTarget);
-        }
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Folder actions */
-    /* ------------------------------------------------------------------ */
-
-    /**
-     * Folder rename.
-     *
-     * The riskiest operation on this page: every Video and Image row pointing
-     * inside the folder has to follow it. `videos/` and `images/` are refused
-     * outright — a record locates its own directory by slug or ulid, so
-     * renaming one orphans it no matter how carefully the paths are rewritten.
-     */
-    public function startFolderRename(string $path): void
-    {
-        $path = $this->sanitizePath($path);
-
-        if (! $this->isAllowedPath($path) || in_array($path, $this->allowedPaths(), true)) {
-            Notification::make()->title('That folder cannot be renamed')->warning()->send();
-
-            return;
-        }
-
-        if ($this->pathGuard->isProtected($path) || $this->pathGuard->rootOf($path) === 'videos' || $this->pathGuard->rootOf($path) === 'images') {
-            Notification::make()
-                ->title('That folder belongs to a record')
-                ->body('Videos and images own their folders — rename them from their own editor.')
-                ->warning()
-                ->send();
-
-            return;
-        }
-
-        $this->folderRenameTarget = $path;
-        $this->folderRenameNewName = basename($path);
-    }
-
-    public function cancelFolderRename(): void
-    {
-        $this->folderRenameTarget = null;
-        $this->folderRenameNewName = '';
-    }
-
-    public function confirmFolderRename(): void
-    {
-        if (! $this->folderRenameTarget) {
-            return;
-        }
-
-        $oldPath = $this->sanitizePath($this->folderRenameTarget);
-        $name = $this->sanitizeFilename($this->folderRenameNewName);
-        $parent = str_contains($oldPath, '/') ? dirname($oldPath) : '';
-        $newPath = $parent !== '' ? $parent.'/'.$name : $name;
-
-        if (! $name || ! $this->isAllowedPath($newPath) || ! $this->isAllowedPath($oldPath)) {
-            Notification::make()->title('Invalid folder name')->danger()->send();
-
-            return;
-        }
-
-        if (Storage::disk('public')->exists($newPath)) {
-            Notification::make()->title('A folder with that name already exists')->danger()->send();
-
-            return;
-        }
-
-        // Rewrite the stored paths of everything inside before the directory
-        // moves, so a failure leaves the records pointing at files that exist.
-        foreach ($this->filesUnder($oldPath) as $filePath) {
-            $movedPath = $newPath.substr($filePath, strlen($oldPath));
-
-            Video::updateFilePath($filePath, $movedPath);
-            Image::updateFilePath($filePath, $movedPath);
-            $this->thumbnailService->deleteFor($filePath);
-        }
-
-        Storage::disk('public')->move($oldPath, $newPath);
-
-        $this->mediaIndex->forgetDirectory($oldPath);
-        $this->mediaIndex->indexDirectory($newPath, recursive: true);
-
-        if ($this->currentDirectory === $oldPath || str_starts_with($this->currentDirectory, $oldPath.'/')) {
-            $this->currentDirectory = $newPath.substr($this->currentDirectory, strlen($oldPath));
-        }
-
-        $this->cancelFolderRename();
-
-        Notification::make()->title('Folder renamed')->success()->send();
-    }
-
-    public function confirmFolderDelete(string $path): void
-    {
-        $this->folderDeleteTarget = $this->sanitizePath($path);
-    }
-
-    public function cancelFolderDelete(): void
-    {
-        $this->folderDeleteTarget = null;
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Move */
-    /* ------------------------------------------------------------------ */
-
-    /**
-     * Open the move dialog.
-     *
-     * A folder picker rather than drag-and-drop: it works from the keyboard,
-     * it works for a bulk selection, and it does not need a drag library
-     * fighting Livewire's DOM morphing. If drag-and-drop is ever added it can
-     * call moveFiles() directly.
-     *
-     * @param  list<string>  $paths
-     */
-    public function startMove(array $paths = []): void
-    {
-        $this->moveTargets = $this->resolveBulkPaths($paths);
-
-        if ($this->moveTargets === []) {
-            Notification::make()->title('Nothing selected to move')->warning()->send();
-
-            return;
-        }
-
-        $this->moveDestination = '';
-        $this->showMoveModal = true;
-    }
-
-    /**
-     * Offer to re-compress the selected videos' original uploads.
-     *
-     * The Media Library is where you notice a big file, so it is where asking
-     * to shrink it belongs. Selecting files queues nothing: this resolves them
-     * to the videos whose *original upload* they are, and shows what would
-     * happen — with each refusal spelled out — before anything is queued.
-     *
-     * A selected rendition or HLS segment resolves to nothing on purpose.
-     * Those are what the player streams; only the upload is dead weight.
-     *
-     * @param  list<string>  $paths
-     */
-    public function startReclaim(array $paths = []): void
-    {
-        $paths = $this->resolveBulkPaths($paths);
-        $service = app(StorageReclaimService::class);
-
-        $this->reclaimPlan = [];
-        $this->reclaimRefusals = [];
-
-        foreach ($service->videosForPaths($paths) as $video) {
-            $reason = $service->eligibility($video);
-
-            if ($reason !== null) {
-                $this->reclaimRefusals[] = [
-                    'title' => $video->title,
-                    'reason' => $reason,
-                ];
-
-                continue;
-            }
-
-            $this->reclaimPlan[] = [
-                'video_id' => $video->id,
-                'title' => $video->title,
-                'size' => Bytes::format((int) $video->size),
-            ];
-        }
-
-        if ($this->reclaimPlan === [] && $this->reclaimRefusals === []) {
-            Notification::make()
-                ->title('Nothing here can be re-compressed')
-                ->body('This works on a video’s original upload. Renditions and HLS segments are what the player streams, so they are left alone.')
-                ->warning()
-                ->send();
-
-            return;
-        }
-
-        $this->showReclaimModal = true;
-    }
-
-    public function cancelReclaim(): void
-    {
-        $this->showReclaimModal = false;
-        $this->reclaimPlan = [];
-        $this->reclaimRefusals = [];
-    }
-
-    public function confirmReclaim(): void
-    {
-        $service = app(StorageReclaimService::class);
-        $queued = 0;
-
-        foreach ($this->reclaimPlan as $entry) {
-            $video = Video::find($entry['video_id']);
-
-            if (! $video) {
-                continue;
-            }
-
-            // Re-resolved from the id and re-checked inside the service, so a
-            // stale modal cannot queue work the current state would refuse.
-            if ($service->requestAndStart($video)['reclaim']) {
-                $queued++;
-            }
-        }
-
-        $this->cancelReclaim();
-
-        if ($queued === 0) {
-            Notification::make()->title('Nothing was queued')->warning()->send();
-
-            return;
-        }
+        ReindexMediaLibraryJob::dispatch(auth()->id(), prune: true);
 
         Notification::make()
-            ->title("Queued {$queued} re-compression".($queued === 1 ? '' : 's'))
-            ->body('They run one at a time. Review the results in Content → Storage Reclaim; the upload keeps serving until you accept.')
+            ->title('Rescanning the library')
+            ->body('This runs in the background. You will be notified when it finishes.')
             ->success()
             ->send();
     }
 
-    public function cancelMove(): void
+    // ── Actions ─────────────────────────────────────────────────────────────
+
+    public function newFolderAction(): Action
     {
-        $this->showMoveModal = false;
-        $this->moveTargets = [];
-        $this->moveDestination = '';
-    }
+        return Action::make('newFolder')
+            ->color('success')
+            ->modalHeading('New folder')
+            ->modalWidth('md')
+            ->schema([TextInput::make('name')->label('Folder name')->required()->maxLength(120)->autofocus()])
+            ->action(function (array $data, Action $action): void {
+                $name = $this->sanitizeFilename($data['name']);
+                $path = ltrim($this->directory().'/'.$name, '/');
 
-    /* ------------------------------------------------------------------ */
-    /* Compress (file-level H.265 / VP9 / AV1) */
-    /* ------------------------------------------------------------------ */
-
-    /**
-     * Offer file-level compression for the selected videos.
-     *
-     * Unlike startReclaim() (Video-record originals → H.264 only), this takes
-     * any loose video file and encodes it to a modern codec, writing a NEW
-     * file alongside the original. Nothing is overwritten or deleted.
-     *
-     * @param  list<string>  $paths
-     */
-    public function startCompress(array $paths = []): void
-    {
-        $paths = $this->resolveBulkPaths($paths);
-
-        [$ok, $refused] = app(\App\Services\Media\MediaCompressService::class)->splitTargets($paths);
-
-        $this->compressTargets = array_values($ok);
-        $this->compressRefusals = $refused;
-
-        if ($this->compressTargets === [] && $this->compressRefusals === []) {
-            Notification::make()
-                ->title('Select video files to compress')
-                ->body('This works on video files (mp4, mov, mkv, webm, avi…).')
-                ->warning()
-                ->send();
-
-            return;
-        }
-
-        if ($this->compressTargets === []) {
-            Notification::make()
-                ->title('Nothing here can be compressed')
-                ->body(implode(' ', array_map(fn ($r) => $r['name'].': '.$r['reason'], array_slice($this->compressRefusals, 0, 3))))
-                ->warning()
-                ->send();
-
-            return;
-        }
-
-        // Default to the first codec ffmpeg can actually encode.
-        $available = app(\App\Services\Media\MediaCompressService::class)->available();
-        if (! ($available[$this->compressCodec] ?? false)) {
-            foreach (['h265', 'vp9', 'av1'] as $codec) {
-                if ($available[$codec] ?? false) {
-                    $this->compressCodec = $codec;
-                    break;
+                if ($name === '' || ! $this->pathGuard->isAllowed($path)) {
+                    $this->warn('Invalid folder name', 'Open a folder first, and use letters, numbers, dots, dashes or underscores.');
+                    $action->halt();
                 }
-            }
-        }
 
-        $this->showCompressModal = true;
-    }
+                if (Storage::disk('public')->exists($path)) {
+                    $this->warn('Something with that name already exists');
+                    $action->halt();
+                }
 
-    public function cancelCompress(): void
-    {
-        $this->showCompressModal = false;
-        $this->compressTargets = [];
-        $this->compressRefusals = [];
-    }
+                Storage::disk('public')->makeDirectory($path);
+                $this->mediaIndex->indexDirectory($path);
 
-    /** Which codecs the installed ffmpeg can encode, for the modal radio list. */
-    public function getCompressCodecsProperty(): array
-    {
-        return app(\App\Services\Media\MediaCompressService::class)->available();
-    }
-
-    public function confirmCompress(): void
-    {
-        if ($this->compressTargets === []) {
-            return;
-        }
-
-        $codec = in_array($this->compressCodec, \App\Services\Media\MediaCompressService::CODECS, true)
-            ? $this->compressCodec : 'h265';
-        $quality = in_array($this->compressQuality, \App\Services\Media\MediaCompressService::QUALITIES, true)
-            ? $this->compressQuality : 'balanced';
-
-        $available = app(\App\Services\Media\MediaCompressService::class)->available();
-        if (! ($available[$codec] ?? false)) {
-            Notification::make()
-                ->title('That codec is not available')
-                ->body('This server\'s ffmpeg cannot encode '.$codec.'. Pick another codec or install it (libx265 / libvpx-vp9 / libaom-av1).')
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        // Re-validate: the modal may be stale and paths come from the client.
-        [$ok] = app(\App\Services\Media\MediaCompressService::class)
-            ->splitTargets($this->resolveBulkPaths($this->compressTargets));
-
-        $queued = 0;
-        foreach ($ok as $path) {
-            \App\Jobs\CompressMediaFileJob::dispatch($path, $codec, $quality, auth()->id());
-            $queued++;
-        }
-
-        $this->cancelCompress();
-
-        if ($queued === 0) {
-            Notification::make()->title('Nothing was queued')->warning()->send();
-
-            return;
-        }
-
-        Notification::make()
-            ->title("Queued {$queued} compression".($queued === 1 ? '' : 's')." ({$codec})")
-            ->body('Each writes a new file next to the original — nothing is overwritten. Rescan the folder when the queue finishes to see them.')
-            ->success()
-            ->send();
+                Notification::make()->title('Folder created')->success()->send();
+            });
     }
 
     /**
-     * Move the chosen files into another folder.
+     * Rename a file or a folder.
      *
-     * File by file, not in a transaction: a filesystem move cannot be rolled
-     * back, so each one is completed or reported individually rather than
-     * leaving the database describing a state the disk does not share.
+     * Every Video and Image row pointing at or inside it follows. Folders a
+     * record locates by convention (videos/{slug}, images/{id}) are refused,
+     * because no stored path would move with them.
      */
-    public function confirmMove(): void
+    public function renameAction(): Action
     {
-        $destination = $this->sanitizePath($this->moveDestination);
+        return Action::make('rename')
+            ->color('info')
+            ->modalHeading(fn (array $arguments) => 'Rename '.basename((string) ($arguments['path'] ?? '')))
+            ->modalWidth('md')
+            ->fillForm(fn (array $arguments) => ['name' => basename((string) ($arguments['path'] ?? ''))])
+            ->schema([TextInput::make('name')->label('New name')->required()->maxLength(200)->autofocus()])
+            ->beforeFormFilled(function (array $arguments, Action $action): void {
+                if ($reason = $this->renameBlockedReason($this->pathGuard->sanitize((string) ($arguments['path'] ?? '')))) {
+                    $this->warn('This cannot be renamed', $reason);
+                    $action->cancel();
+                }
+            })
+            ->action(function (array $data, array $arguments, Action $action): void {
+                $old = $this->pathGuard->sanitize((string) ($arguments['path'] ?? ''));
+                $name = $this->sanitizeFilename($data['name']);
+                $new = ltrim((str_contains($old, '/') ? dirname($old) : '').'/'.$name, '/');
 
-        if (! $this->isAllowedPath($destination) || ! Storage::disk('public')->exists($destination)) {
-            Notification::make()->title('Pick a destination folder')->warning()->send();
+                if ($reason = $this->renameBlockedReason($old)) {
+                    $this->warn('This cannot be renamed', $reason);
+                    $action->halt();
+                }
 
-            return;
-        }
+                if ($name === '' || ! $this->pathGuard->isAllowed($new)) {
+                    $this->warn('Invalid name');
+                    $action->halt();
+                }
 
-        $moved = 0;
-        $blocked = [];
-        $sources = [];
+                // The same allowlist as uploads, or a rename could turn a
+                // picture into a .php that nginx serves from storage.
+                $extension = strtolower(pathinfo($new, PATHINFO_EXTENSION));
 
-        foreach ($this->moveTargets as $path) {
-            if (dirname($path) === $destination) {
-                continue;
-            }
+                if (! Storage::disk('public')->directoryExists($old)
+                    && $extension !== strtolower(pathinfo($old, PATHINFO_EXTENSION))
+                    && ! in_array($extension, $this->allowedUploadExtensions(), true)) {
+                    $this->warn('That file type is not allowed in the media library');
+                    $action->halt();
+                }
 
-            if ($this->pathGuard->isProtected($path)) {
-                $blocked[] = basename($path);
+                if ($new === $old) {
+                    return;
+                }
 
-                continue;
-            }
+                if (Storage::disk('public')->exists($new)) {
+                    $this->warn('Something with that name already exists');
+                    $action->halt();
+                }
 
-            if (! $this->stillOnDisk($path)) {
-                continue;
-            }
+                $this->movePath($old, $new);
 
-            $target = $this->availablePath($destination.'/'.basename($path));
+                if ($this->selectedFile === $old) {
+                    $this->selectedFile = $new;
+                }
 
-            Video::updateFilePath($path, $target);
-            Image::updateFilePath($path, $target);
+                Notification::make()->title('Renamed')->success()->send();
+            });
+    }
 
-            Storage::disk('public')->move($path, $target);
-            $this->thumbnailService->deleteFor($path);
-            $this->mediaIndex->movePath($path, $target);
+    /** Delete files and folders. Anything still in use by a record is skipped. */
+    public function deleteAction(): Action
+    {
+        return Action::make('delete')
+            ->requiresConfirmation()
+            ->color('danger')
+            ->modalIcon('phosphor-trash')
+            ->modalHeading(fn (array $arguments) => $this->describeTargets($arguments, 'Delete'))
+            ->modalDescription('This cannot be undone — media files are not backed up. Anything still used by a video or image is skipped.')
+            ->modalSubmitActionLabel('Delete')
+            ->action(function (array $arguments): void {
+                $deleted = 0;
+                $blocked = [];
+                $guard = app(MediaGuard::class);
+                $disk = Storage::disk('public');
 
-            $sources[] = dirname($path);
-            $moved++;
-        }
+                foreach ($this->resolveBulkPaths($arguments['paths'] ?? []) as $path) {
+                    if ($disk->directoryExists($path)) {
+                        if ($reason = $guard->folderBlockedReason($path, $this->filesUnder($path))) {
+                            $blocked[] = basename($path).' — '.$reason;
 
-        foreach (array_unique($sources) as $source) {
-            $this->syncIndexFor($source);
-        }
+                            continue;
+                        }
 
-        $this->cancelMove();
-        $this->selectedFile = null;
+                        foreach ($this->filesUnder($path) as $file) {
+                            $this->thumbnailService->deleteFor($file);
+                        }
 
-        if ($blocked !== []) {
-            Notification::make()
-                ->title('Some files could not be moved')
-                ->body('Files owned by a video or image record stay where they are: '.implode(', ', array_slice($blocked, 0, 5)))
-                ->warning()
-                ->send();
-        }
+                        $disk->deleteDirectory($path);
+                        $this->mediaIndex->forgetDirectory($path);
 
-        if ($moved > 0) {
-            Notification::make()->title("Moved {$moved} file".($moved !== 1 ? 's' : ''))->success()->send();
-        }
+                        // Standing inside what was just deleted: step out of it.
+                        if ($this->currentDirectory === $path || str_starts_with($this->currentDirectory, $path.'/')) {
+                            $this->currentDirectory = str_contains($path, '/') ? dirname($path) : '';
+                        }
+
+                        $deleted++;
+
+                        continue;
+                    }
+
+                    if ($reason = $guard->blockedReason($path)) {
+                        $blocked[] = basename($path).' — '.$reason;
+
+                        continue;
+                    }
+
+                    if ($this->stillOnDisk($path)) {
+                        $disk->delete($path);
+                        $this->thumbnailService->deleteFor($path);
+                        $this->mediaIndex->forgetPath($path);
+                        $deleted++;
+                    }
+                }
+
+                $this->selectedFile = null;
+                $this->report($deleted, 'Deleted', 'Not deleted', $blocked);
+            });
     }
 
     /**
-     * A free filename at $path, suffixing -1, -2… on collision rather than
-     * overwriting whatever is already there.
-     */
-    protected function availablePath(string $path): string
-    {
-        if (! Storage::disk('public')->exists($path)) {
-            return $path;
-        }
-
-        $directory = dirname($path);
-        $extension = pathinfo($path, PATHINFO_EXTENSION);
-        $base = pathinfo($path, PATHINFO_FILENAME);
-
-        for ($suffix = 1; $suffix < 1000; $suffix++) {
-            $candidate = $directory.'/'.$base.'-'.$suffix.($extension !== '' ? '.'.$extension : '');
-
-            if (! Storage::disk('public')->exists($candidate)) {
-                return $candidate;
-            }
-        }
-
-        return $directory.'/'.$base.'-'.Str::random(6).($extension !== '' ? '.'.$extension : '');
-    }
-
-    /**
-     * Every file under a directory, from the index where possible.
+     * Move files into another folder.
      *
-     * @return list<string>
+     * One at a time, not in a transaction: a filesystem move cannot be rolled
+     * back, so each is finished or reported on its own. A name collision gets
+     * a -1 suffix rather than overwriting.
      */
-    protected function filesUnder(string $directory): array
+    public function moveAction(): Action
     {
-        $indexed = MediaFile::query()
-            ->underDirectory($directory)
-            ->pluck('path')
-            ->all();
+        return Action::make('move')
+            ->color('info')
+            ->modalHeading(fn (array $arguments) => $this->describeTargets($arguments, 'Move'))
+            ->modalWidth('md')
+            ->schema([
+                Select::make('destination')
+                    ->label('Destination folder')
+                    ->options(fn () => collect($this->getMoveDestinationsProperty())->mapWithKeys(fn ($path) => [$path => $path])->all())
+                    ->searchable()
+                    ->required(),
+            ])
+            ->modalSubmitActionLabel('Move')
+            ->action(function (array $data, array $arguments, Action $action): void {
+                $destination = $this->pathGuard->sanitize((string) $data['destination']);
 
-        if ($indexed !== []) {
-            return $indexed;
-        }
+                if (! $this->pathGuard->isAllowed($destination) || $this->pathGuard->isProtected($destination)
+                    || ! Storage::disk('public')->directoryExists($destination)) {
+                    $this->warn('Pick a destination folder');
+                    $action->halt();
+                }
 
-        // Nothing indexed here yet — fall back to the disk so a folder action
-        // is still correct before the first scan.
-        try {
-            return Storage::disk('public')->allFiles($directory);
-        } catch (Throwable) {
-            return [];
-        }
+                $moved = 0;
+                $blocked = [];
+
+                foreach ($this->resolveBulkPaths($arguments['paths'] ?? []) as $path) {
+                    if (dirname($path) === $destination) {
+                        continue;
+                    }
+
+                    if ($this->pathGuard->isProtected($path)) {
+                        $blocked[] = basename($path).' — owned by a video or image record';
+
+                        continue;
+                    }
+
+                    // Files only: a folder could otherwise be moved into itself.
+                    if (Storage::disk('public')->directoryExists($path)) {
+                        $blocked[] = basename($path).' — folders are moved by renaming them';
+
+                        continue;
+                    }
+
+                    if (! $this->stillOnDisk($path)) {
+                        continue;
+                    }
+
+                    $this->movePath($path, $this->availablePath($destination.'/'.basename($path)));
+                    $moved++;
+                }
+
+                $this->selectedFile = null;
+                $this->report($moved, 'Moved', 'Not moved', $blocked);
+            });
     }
 
-    /** The folders a selection may be moved into. */
+    /** Queue re-encodes of the selected videos. Each writes a new file. */
+    public function compressAction(): Action
+    {
+        $compress = app(MediaCompressService::class);
+
+        return Action::make('compress')
+            ->color('info')
+            ->modalHeading(fn (array $arguments) => $this->describeTargets($arguments, 'Compress'))
+            ->modalIcon('phosphor-film-strip')
+            ->modalWidth('lg')
+            ->modalDescription(function (array $arguments) use ($compress): HtmlString {
+                [, $refused] = $compress->splitTargets($this->resolveBulkPaths($arguments['paths'] ?? []));
+
+                $text = 'Each video is encoded to a <strong>new file beside it</strong> (e.g. <code>clip.av1.mp4</code>). '
+                    .'Nothing is overwritten or deleted, and you are notified as each one finishes.';
+
+                if ($refused !== []) {
+                    $text .= '<br><br>Skipped: '.e(collect($refused)->take(5)->map(fn ($r) => $r['name'].' ('.$r['reason'].')')->implode(', '));
+                }
+
+                return new HtmlString($text);
+            })
+            ->fillForm(fn () => ['codec' => $compress->defaultCodec(), 'quality' => 'balanced'])
+            ->schema([
+                Radio::make('codec')
+                    ->options(collect(['av1', 'vp9', 'h265'])->mapWithKeys(fn ($codec) => [$codec => $compress->codecLabel($codec)])->all())
+                    ->descriptions([
+                        'av1' => 'Smallest files; plays in every modern browser. Recommended.',
+                        'vp9' => 'Plays in every modern browser.',
+                        'h265' => 'Fastest to encode. Plays on most devices, but not in every desktop browser.',
+                    ])
+                    ->disableOptionWhen(fn (string $value) => ! ($compress->available()[$value] ?? false))
+                    ->required(),
+                Radio::make('quality')
+                    ->options(collect(MediaCompressService::QUALITIES)->mapWithKeys(fn ($quality) => [$quality => $compress->qualityLabel($quality)])->all())
+                    ->inline()
+                    ->required(),
+            ])
+            ->beforeFormFilled(function (array $arguments, Action $action) use ($compress): void {
+                [$ok, $refused] = $compress->splitTargets($this->resolveBulkPaths($arguments['paths'] ?? []));
+
+                if ($ok === []) {
+                    $this->warn('Nothing here can be compressed', $refused[0]['reason'] ?? 'Select one or more video files.');
+                    $action->cancel();
+                }
+
+                if (! in_array(true, $compress->available(), true)) {
+                    $this->warn('No encoder available', "This server's ffmpeg has none of libx265, libvpx-vp9, libaom-av1 or libsvtav1.");
+                    $action->cancel();
+                }
+            })
+            ->modalSubmitActionLabel('Start')
+            ->action(function (array $data, array $arguments, Action $action) use ($compress): void {
+                $codec = (string) ($data['codec'] ?? '');
+
+                if (! ($compress->available()[$codec] ?? false)) {
+                    $this->warn('That codec is not available on this server');
+                    $action->halt();
+                }
+
+                $quality = in_array($data['quality'] ?? '', MediaCompressService::QUALITIES, true) ? $data['quality'] : 'balanced';
+
+                // Re-validated here: the paths came from the browser.
+                [$ok] = $compress->splitTargets($this->resolveBulkPaths($arguments['paths'] ?? []));
+
+                foreach ($ok as $path) {
+                    $compress->setStatus($path, ['state' => 'queued', 'codec' => $codec]);
+                    CompressMediaFileJob::dispatch($path, $codec, $quality, auth()->id());
+                }
+
+                Notification::make()
+                    ->title('Queued '.count($ok).' '.Str::plural('video', count($ok)).' for '.$compress->codecLabel($codec))
+                    ->body('They run one at a time in the background.')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    /**
+     * Swap a video's original upload for a compressed copy beside it.
+     *
+     * The only way a compress frees space on a file a record points at: the
+     * column is repointed first and the old file deleted after, so a failure
+     * can never leave the video without a file.
+     */
+    public function replaceOriginalAction(): Action
+    {
+        return Action::make('replaceOriginal')
+            ->requiresConfirmation()
+            ->color('danger')
+            ->modalIcon('phosphor-swap')
+            ->modalHeading(fn (array $arguments) => 'Replace the original with '.basename((string) ($arguments['replacement'] ?? '')).'?')
+            ->modalDescription(new HtmlString(
+                'The old upload is <strong>deleted permanently</strong> — media files are not backed up.<br><br>'
+                .'The original is the player\'s fallback source, the "Original" quality option and the Pro download. '
+                .'The HLS stream and renditions are not touched. <strong>H.265 does not play in some desktop browsers</strong> '
+                .'(Firefox, and Chrome without hardware support), so prefer an AV1 copy. '
+                .'Any later re-encode of this video starts from the compressed copy.'
+            ))
+            ->modalSubmitActionLabel('Replace and delete original')
+            ->action(function (array $arguments): void {
+                $compress = app(MediaCompressService::class);
+                $source = $this->pathGuard->sanitize((string) ($arguments['path'] ?? ''));
+                $replacement = $this->pathGuard->sanitize((string) ($arguments['replacement'] ?? ''));
+                $video = $compress->videoOriginalFor($source);
+
+                $reason = match (true) {
+                    ! $video => 'That file is no longer a video\'s original upload.',
+                    ! in_array($replacement, array_column($compress->compressedCopiesOf($source), 'path'), true) => 'That is not a compressed copy of this file.',
+                    default => $compress->replaceOriginal($video, $replacement),
+                };
+
+                if ($reason !== null) {
+                    $this->warn('The original was not replaced', $reason);
+
+                    return;
+                }
+
+                $this->selectedFile = $replacement;
+                Notification::make()->title('Original replaced')->success()->send();
+            });
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
+
+    /** Folders a selection may be moved into. */
     public function getMoveDestinationsProperty(): array
     {
         return MediaFolder::query()
@@ -1702,111 +908,115 @@ class MediaLibrary extends Page
             ->all();
     }
 
-    /** Open the details panel for one file. */
-    public function selectFile(string $path): void
-    {
-        $this->selectedFile = $this->sanitizePath($path);
-    }
-
-    public function clearSelection(): void
-    {
-        $this->selectedFile = null;
-    }
-
     /**
-     * Narrow a list of client-supplied paths to ones this page may act on.
+     * Narrow client-supplied paths to ones this page may act on. Capped, so a
+     * crafted request cannot ask for an unbounded loop of filesystem work.
      *
-     * Capped as well as validated: a crafted request should not be able to ask
-     * for an unbounded loop of filesystem work.
-     *
-     * @param  list<string>  $paths
      * @return list<string>
      */
-    protected function resolveBulkPaths(array $paths): array
+    protected function resolveBulkPaths(mixed $paths): array
     {
-        return collect($paths)
+        return collect(is_array($paths) ? $paths : [$paths])
             ->filter(fn ($path) => is_string($path))
-            ->map(fn (string $path) => $this->sanitizePath($path))
-            ->filter(fn (string $path) => $this->isAllowedPath($path))
+            ->map(fn (string $path) => $this->pathGuard->sanitize($path))
+            ->filter(fn (string $path) => $this->pathGuard->isAllowed($path))
             ->unique()
             ->take(200)
             ->values()
             ->all();
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Index bookkeeping */
-    /* ------------------------------------------------------------------ */
-
-    /**
-     * Bring one directory's index rows back in line with the disk.
-     *
-     * Called after every action this page takes, so the page is never wrong
-     * about its own work. This replaces a cache-clearing helper that only ever
-     * forgot the *root* node keys, leaving every subfolder's count stale for
-     * up to five minutes after an upload or a delete.
-     */
-    protected function syncIndexFor(string $directory): void
+    protected function renameBlockedReason(string $path): ?string
     {
-        $this->mediaIndex->indexDirectory($directory);
-    }
-
-    /**
-     * Re-read the current folder on request.
-     *
-     * The escape hatch for anything that wrote to the disk without telling the
-     * index. Bounded to one directory, so it stays a synchronous action.
-     */
-    public function rescanCurrentDirectory(): void
-    {
-        $directory = $this->sanitizePath($this->currentDirectory);
-
-        if (! $this->isAllowedPath($directory)) {
-            return;
+        if (! $this->pathGuard->isAllowed($path)) {
+            return 'That path is outside the media library.';
         }
 
-        $result = $this->mediaIndex->indexDirectory($directory);
-        MediaStorageReport::forget();
+        if (in_array($path, $this->pathGuard->allowedRoots(), true)) {
+            return 'Top-level media folders cannot be renamed.';
+        }
 
-        Notification::make()
-            ->title('Folder rescanned')
-            ->body(sprintf(
-                '%d added, %d updated, %d removed.',
-                $result['added'],
-                $result['updated'],
-                $result['removed'],
-            ))
-            ->success()
-            ->send();
+        if (Storage::disk('public')->directoryExists($path)) {
+            return $this->pathGuard->isProtected($path) || in_array($this->pathGuard->rootOf($path), ['videos', 'images'], true)
+                ? 'Videos and images own their folders — rename them from their own editor.'
+                : null;
+        }
+
+        return app(MediaGuard::class)->renameBlockedReason($path);
     }
 
     /**
-     * Rebuild the whole index in the background.
-     *
-     * Queued rather than synchronous: a full pass over a large library is far
-     * too slow for a request. The admin who asked gets a notification when it
-     * lands.
+     * Move a file or folder, taking every record that points into it along.
+     * Records are rewritten first, so a failed move leaves them pointing at
+     * files that exist.
      */
-    public function rescanLibrary(): void
+    protected function movePath(string $old, string $new): void
     {
-        ReindexMediaLibraryJob::dispatch(auth()->id(), prune: true);
-        MediaStorageReport::forget();
+        $disk = Storage::disk('public');
+        $isDirectory = $disk->directoryExists($old);
 
-        Notification::make()
-            ->title('Rescanning the library')
-            ->body('This runs in the background. You will be notified when it finishes.')
-            ->success()
-            ->send();
+        foreach ($isDirectory ? $this->filesUnder($old) : [$old] as $file) {
+            $moved = $new.substr($file, strlen($old));
+            Video::updateFilePath($file, $moved);
+            Image::updateFilePath($file, $moved);
+            $this->thumbnailService->deleteFor($file);
+        }
+
+        $disk->move($old, $new);
+
+        if ($isDirectory) {
+            $this->mediaIndex->forgetDirectory($old);
+            $this->mediaIndex->indexDirectory($new, recursive: true);
+
+            if ($this->currentDirectory === $old || str_starts_with($this->currentDirectory, $old.'/')) {
+                $this->currentDirectory = $new.substr($this->currentDirectory, strlen($old));
+            }
+        } else {
+            $this->mediaIndex->movePath($old, $new);
+        }
+    }
+
+    /** A free path, suffixing -1, -2… on collision. */
+    protected function availablePath(string $path): string
+    {
+        $disk = Storage::disk('public');
+
+        if (! $disk->exists($path)) {
+            return $path;
+        }
+
+        $stem = dirname($path).'/'.pathinfo($path, PATHINFO_FILENAME);
+        $extension = pathinfo($path, PATHINFO_EXTENSION);
+        $extension = $extension !== '' ? '.'.$extension : '';
+
+        for ($suffix = 1; $suffix < 1000; $suffix++) {
+            if (! $disk->exists($stem.'-'.$suffix.$extension)) {
+                return $stem.'-'.$suffix.$extension;
+            }
+        }
+
+        return $stem.'-'.Str::random(6).$extension;
+    }
+
+    /** @return list<string> every file under a directory, from the index or the disk */
+    protected function filesUnder(string $directory): array
+    {
+        $indexed = MediaFile::query()->underDirectory($directory)->pluck('path')->all();
+
+        if ($indexed !== []) {
+            return $indexed;
+        }
+
+        try {
+            return Storage::disk('public')->allFiles($directory);
+        } catch (Throwable) {
+            return [];
+        }
     }
 
     /**
-     * Confirm a path is still on disk before acting on it, dropping its index
-     * row if it is not.
-     *
-     * The index can hold a row for a file something else deleted. Rather than
-     * showing a "missing file" state nobody would know what to do with, the
-     * row is removed the moment anyone touches it and the action reports why
-     * nothing happened.
+     * Whether a file is still on disk, dropping its index row if not — the
+     * index can hold a row for something deleted behind the app's back.
      */
     protected function stillOnDisk(string $path): bool
     {
@@ -1815,25 +1025,38 @@ class MediaLibrary extends Page
         }
 
         $this->mediaIndex->forgetPath($path);
-
-        Notification::make()
-            ->title('That file no longer exists')
-            ->body('It has been removed from the library index.')
-            ->warning()
-            ->send();
+        $this->warn('That file no longer exists', 'It has been removed from the library index.');
 
         return false;
     }
 
-    /** Whether the folder on disk has moved on since it was last indexed. */
-    public function getDirectoryStaleProperty(): bool
+    protected function sanitizeFilename(string $name): string
     {
-        return $this->mediaIndex->isStale($this->sanitizePath($this->currentDirectory));
+        return trim((string) preg_replace('/[^a-zA-Z0-9._-]/', '-', basename($name)), '-.');
     }
 
-    /** Whether this folder has ever been indexed, for the empty state. */
-    public function getDirectoryIndexedProperty(): bool
+    /** "Delete clip.mp4" or "Delete 3 items", for a modal heading. */
+    protected function describeTargets(array $arguments, string $verb): string
     {
-        return $this->mediaIndex->isIndexed($this->sanitizePath($this->currentDirectory));
+        $paths = $this->resolveBulkPaths($arguments['paths'] ?? []);
+
+        return count($paths) === 1 ? $verb.' '.basename($paths[0]) : $verb.' '.count($paths).' items';
+    }
+
+    protected function warn(string $title, ?string $body = null): void
+    {
+        Notification::make()->title($title)->body($body)->warning()->send();
+    }
+
+    /** @param  list<string>  $blocked */
+    protected function report(int $count, string $verb, string $blockedTitle, array $blocked): void
+    {
+        if ($blocked !== []) {
+            $this->warn($blockedTitle, implode("\n", array_slice($blocked, 0, 5)).(count($blocked) > 5 ? "\n…" : ''));
+        }
+
+        if ($count > 0) {
+            Notification::make()->title($verb.' '.$count.' '.Str::plural('item', $count))->success()->send();
+        }
     }
 }

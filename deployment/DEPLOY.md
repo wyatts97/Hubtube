@@ -613,9 +613,9 @@ The admin Media Library used to read `storage/app/public` live on every render: 
 
 It now reads an index (`media_files`, `media_folders`), so opening a folder is one query with a `LIMIT` regardless of how many files it holds.
 
-- **Run `php artisan media:index --full` once after migrating.** Until you do, folders show a "this folder hasn't been indexed yet" state with a Rescan button rather than pretending to be empty. The command writes nothing to the filesystem and is safe to re-run.
+- **Run `php artisan media:index --full` once after migrating.** Until you do, folders show a "this folder hasn't been indexed yet" state with a Refresh button rather than pretending to be empty. The command writes nothing to the filesystem and is safe to re-run.
 - The scheduler keeps it current: an incremental pass every ten minutes (it only re-reads directories whose mtime has moved), plus `--full --prune` weekly at 03:40. **This needs the Laravel scheduler to be running** — it already is, for scheduled publishing and translations.
-- Files written outside the app — encoder renditions, imports, anything done over SSH — are picked up by that pass. If you have just dropped files in by hand and want them immediately, the page shows a "this folder has changed on disk" banner with a **Rescan folder** button, or run `php artisan media:index --path=media/whatever`.
+- Files written outside the app — encoder renditions, imports, anything done over SSH — are picked up by that pass. If you have just dropped files in by hand and want them immediately, use **Refresh this folder** in the page's ↻ menu, or run `php artisan media:index --path=media/whatever`.
 - `thumbnails` is no longer a browsable path: it only ever held the file manager's own generated thumbnail cache, sharded across 256 subdirectories, and browsing it made the folder tree walk that cache on every render. The new `media_library.excluded_paths` config keeps it, `temp` and `livewire-tmp` out of both the tree and the index.
 - **Two bugs worth knowing were fixed here.** Thumbnails were being regenerated — a full GD decode, resize and WebP encode — for every image on the page on *every* render for five minutes at a time, because the cache stored the answer from before generation and never corrected it. And a soft-deleted video's files were deletable from the library, because the reference lookup did not include trashed videos; deleting them silently broke the 30-day restore window that `videos:prune-deleted` provides.
 
@@ -632,58 +632,50 @@ It now reads an index (`media_files`, `media_folders`), so opening a folder is o
 
 - A finished video indexes its own `videos/{slug}` folder, image uploads index their `images/{ulid}` folder, ad-creative HLS output indexes itself, and avatar and banner uploads index the file they just wrote. These all go through `IndexMediaDirectoryJob` on the `media-thumbnails` queue, so they never delay encoding.
 - "In use" flags are maintained by the `Video` and `Image` models themselves, so pointing a video at a different file releases the old one immediately. A **soft-deleted** video keeps its files reserved (it can still be restored); a force delete releases them.
-- There is a **Rescan library** button in the page header for a full background rebuild, and the per-folder **Rescan folder** button on the staleness banner for something you just dropped in over SSH.
+- The page's ↻ menu has **Rescan whole library** for a full background rebuild, and **Refresh this folder** for something you just dropped in over SSH.
 - Acting on a file that has since vanished from disk drops its index row and says so, instead of reporting "file not found" and leaving the row in the listing.
 - **`allowed_paths` changed.** `channel-covers` was listed but appears nowhere else in the codebase — nothing has ever written to it. Channel banners go to `banners/{user}`, which was missing, so **channel banners were never visible in the Media Library**. That entry is now correct. If you have anything under `storage/app/public/channel-covers` from an older release, it will no longer be browsable; move it under `media/` if you still want it.
 
-**What the page can now do**, none of which needs configuring:
+#### The explorer layout
 
-- **Search reaches as far as you ask.** A scope selector next to the search box: this folder, this folder and below, or the whole library. It used to be a substring filter over one folder's listing, so you could not find a file unless you already knew where it was — and changing folder silently wiped whatever you had typed.
-- **Type chips and an In use / Unused filter**, with counts, from one grouped query. "Unused" is the quick way to find media nothing references any more.
-- **Folders appear in the main pane**, so you can navigate from the grid instead of only from the sidebar. Each tile shows its recursive file count and total size — the old tree computed that size and then never displayed it.
-- **Folder rename and delete**, from a menu on the folder tile. `deleteFolder()` had been fully implemented with no button anywhere in the UI. Renaming updates every Video and Image record pointing inside the folder; `videos/{slug}` and `images/{ulid}` are refused outright, because those records find their own directory by convention and renaming one orphans it.
-- **Move to…** for one file or a whole selection, as a folder picker. A name collision appends `-1` rather than overwriting. Files a record owns stay put.
-- **Upload progress**, and an extension allowlist (`media_library.allowed_upload_extensions`) enforced server-side as well as hinted to the file picker — `storage/app/public` is served directly by nginx, so an executable extension landing there is worth refusing even from an admin.
-- **Keyboard and mouse behave conventionally.** Arrow keys walk the grid, Enter opens details, Space toggles selection, Ctrl/Cmd-click toggles and Shift-click extends a range. Plain click now *replaces* the selection — the old server-side version toggled, so clicking a second file added it instead.
-- **Browsing state is in the URL** (`?path=…&q=…&in=…&type=…`), so a filtered view is a link you can send someone and browser Back walks back up the folders. Grid/list choice is remembered per admin.
-- The page's CSS moved into the panel's own stylesheet and now reads the `--ht-*` theme tokens, so it follows the primary colour set on the Theme & Appearance page. It used to ship ~100 lines of hand-rolled utility classes and ~40 hardcoded hex values in every response.
+The page is laid out like Windows File Explorer: an address bar with Back / Up and clickable breadcrumbs, a command bar, the folder tree on the left, the folder's contents in the middle with a status bar, and a details pane on the right. It replaced a page that had three view modes, a three-way search scope, a storage summary strip and seven hand-rolled dialogs.
 
-#### Flat view and the storage summary
+- **Two layouts:** Details (a sortable table — the default) and Icons (thumbnails). Subfolders are listed above the files, with their recursive size. The choice is remembered per admin.
+- **Filtering searches below you, like Explorer.** Typing a search, picking a type or a minimum size, or ticking *Include subfolders* lists matching files in the current folder **and everything under it**. The tree's **All files** node spans every root at once.
+- **Finding what is eating the disk:** click *All files*, set the size filter to *1 GB or more*, and click the **Size** column (it sorts biggest-first). There is no separate report view — the storage summary strip and the flat "all files" mode are gone, because these controls answer the same question in the real browser, with the real actions.
+- **Browsing state is in the URL** (`?path=…&q=…&type=…&min=1gb&deep=1&sort=size&dir=desc&view=icons`), so a filtered view is a link you can send, and browser Back walks back up the folders.
+- **Selection works as in any file manager:** click selects (and opens the details pane), Ctrl/Cmd-click toggles, Shift-click extends, and the header checkbox selects the page. The status bar shows how many are selected and their total size, with Compress, Move, Rename and Delete.
+- **Rename, Move, Delete and New folder are Filament actions.** Every one re-validates the paths the browser sent. Renaming a file or folder updates every Video and Image record pointing at or inside it; `videos/{slug}` and `images/{ulid}` folders are refused, because those records find their directory by convention. A move never overwrites — a name collision gets a `-1` suffix. Anything still used by a record is skipped by Delete, with the reason.
+- **Upload** from the command bar, or drop files onto the listing. An extension allowlist (`media_library.allowed_upload_extensions`) is enforced server-side — `storage/app/public` is served directly by nginx.
+- The ↻ menu has **Refresh this folder** (synchronous) and **Rescan whole library** (queued; you are notified when it finishes).
+- One page shows 100 files. The page-size picker is gone, and so is the `media_library.per_page` config key.
 
-Browsing was folder-first, which answers "what is in this folder" but never "what is eating the disk" — the question that sends anyone into the media library in the first place. Two additions:
+### Compressing videos
 
-- **A third view mode, "all files" (the rows icon next to grid/list).** Every file in the library in one table, sortable from the headers by name, folder, type, size and age. Entering it widens the search scope to the whole library and hides the folder tree and details pane; leaving it drops you back in the folder you were browsing. The choice is remembered per admin and also lives in the URL (`?view=flat`), so "here are the forty biggest files on the box" is a link you can send. There is a page-size picker (25/50/100/200); the maximum deliberately matches the bulk-action cap, so "select page → delete" can never silently act on fewer files than are shown.
-- **A collapsible storage strip at the top of the page**, in every view mode: total bytes and files, a per-root breakdown, what the `videos` root splits into (original uploads, encoded renditions, posters and sprites), the bytes held by duplicate HLS copies, and the five biggest files with buttons that drop you into the flat view pre-sorted. Every figure comes from the index or the folder rollups — no filesystem walk — and the whole thing is cached for five minutes, invalidated by either Rescan button.
+Select one or more videos and choose **Compress…** — from the status bar, the film-strip button on a row, or the details pane. Pick a codec and a quality level:
 
-Deploying this needs `php artisan migrate --force` (four indexes on `media_files` for the library-wide sorts — without them a size sort filesorts the whole table), `npm run build`, and `php artisan optimize:clear && php artisan filament:optimize`. No queue changes, no jobs, and nothing to roll back beyond the migration.
+| Codec | Output | Plays in | Needs in ffmpeg |
+|---|---|---|---|
+| **AV1** | `name.av1.mp4` | every modern browser; the smallest files; the slowest to encode | `libaom-av1` or `libsvtav1` (SVT-AV1 is used automatically when libaom is missing, and is much faster) |
+| **VP9** | `name.vp9.webm` | every modern browser | `libvpx-vp9` |
+| **H.265 / HEVC** | `name.h265.mp4` | most devices, but **not every desktop browser** (Firefox, and Chrome without hardware support) | `libx265` |
 
-**Run `php artisan media:index --full --prune` once, under `screen`, before trusting the storage numbers.** The rollup figures are only as exact as the last full pass: an incremental pass skips directories whose mtime has not moved, so a file deleted out from under the app can leave its bytes counted. The strip shows when the least recently indexed root was last scanned, so you can tell at a glance whether that has been done.
+Codecs your ffmpeg build lacks are greyed out in the dialog. Check with `ffmpeg -hide_banner -encoders | grep -E 'x265|vpx-vp9|aom|svtav1'`.
 
-One figure there is worth reading carefully: **HLS segments**. `generate_hls` defaults to on, so `videos/{slug}/processed/hls` holds every rendition a second time as `.ts` segments — typically as many bytes again as the MP4s themselves. They are not waste and nothing here reclaims them: HLS is what the player streams whenever it is present. They are reported so the disk is understandable, and the **Original uploads** figure beside them is the one that can actually be acted on.
+**An encode never overwrites or deletes anything.** It writes a new file beside the source and verifies it before keeping it: at least 10 KB, a real video stream, the same length to within 250 ms, and smaller than the source. Anything else is discarded, with the reason. The row shows a live *Compressing 42%* badge, and you get a notification with the saving when it finishes. After that, keep whichever file you want and delete the other.
 
-### Storage Reclaim
+**A video's original upload** cannot simply be deleted — `video_path` points at it. So when you select one, the details pane lists its compressed copies with a **Replace original** button. That repoints `video_path` (and `videos.size`) to the copy and then deletes the old upload. That order means a failure can never leave the video without a file. **It is the one irreversible step, and there are no backups of media files.** Before you use it:
 
-Admin → Content → **Storage Reclaim**. One thing only: **re-compress a video's original upload.**
+- The original upload is the player's fallback source, the *Original* entry in the quality menu, and the Pro download's fallback. **The HLS stream and the renditions are not touched** — HLS is what the player actually streams, so nothing here offers to shrink or remove it.
+- Only an **MP4** copy (AV1 or H.265) can replace an original, because the player declares every progressive source as `video/mp4`. **Prefer AV1**, because of the H.265 browser caveat above.
+- Any later re-encode of that video starts from the compressed copy.
+- Replace is refused for a video that is still encoding, embedded, stored off-box, soft-deleted, or waiting for its watermark to be drawn.
 
-The original is whatever the uploader gave you — often camera footage at tens of megabits — and it is the one video file *nothing streams from*. The player is handed the HLS manifest whenever one exists, and falls back to the progressive rendition MP4s; the upload is only the source those were encoded from, plus the Pro download's fallback. Encoding it again at a slower preset typically halves it.
+**Deploying this:**
 
-**Nothing else is touched, deliberately.** An earlier build of this feature also offered to re-encode renditions and to discard the `processed/hls` segment tree, on the reasoning that HLS is a second copy. It is a second *format*, not a spare copy: dropping it costs adaptive bitrate switching across the whole library, which is a real capability rather than recovered waste. Both were removed. Selecting a rendition or a segment in the Media Library now resolves to nothing at all.
-
-How a reclaim goes:
-
-1. Request it — the **Re-compress…** button on a Media Library selection, or `php artisan storage:reclaim --limit=1`. Ranked by `videos.size`, biggest upload first.
-2. The encode runs on the `storage-reclaim` queue: one niced process, `tries: 1`, so a bulk request cannot starve live uploads and a half-written encode is never retried.
-3. The result lands at a **new filename** beside the original (`{stem}_r{id}.mp4`). `video_path` still names the upload, so playback, the quality menu and the download route are untouched.
-4. It is verified before anyone is offered it: same duration to within 250 ms, a real video stream, at least 10 KB, and a saving over `reclaim_min_saving_percent`. Anything else is discarded and the row marked skipped with the reason.
-5. You accept or discard it on the review page. **Accept is the only destructive step** — it repoints `video_path` and deletes the upload permanently, and there are no backups of media files. Discard just deletes the candidate.
-
-**Nothing expires and nothing is swept.** A reclaim waits indefinitely for a human. There is no scheduled acceptance, by design.
-
-**Settings** at Admin → Settings → Video Encoding: reclaim preset (default `slow`, against the normal `veryfast`), CRF increase (+2 on the site CRF), and the minimum saving worth offering (15%).
-
-**There is a Horizon supervisor, `storage-reclaim`** — `maxProcesses: 1`, `nice 15`, `timeout 7200`. Run `php artisan horizon:terminate` after deploying and confirm it appears. `retry_after` on the redis and database queue connections is 7500 for the same reason: a reservation window shorter than a job's timeout hands a merely-slow encode to a second worker, and two ffmpeg processes writing the same output file is not survivable.
-
-Worth knowing: reclaims are tracked in their own `storage_reclaims` table rather than on `video_encodings`, which holds one row per rendition and nulls its `size` on every re-plan — that would destroy the before-size a reclaim compares against, and a non-terminal row there would make the video read as permanently "encoding".
+- **There is a Horizon supervisor, `media-compress`** — `maxProcesses: 1`, `nice 15`, `timeout 7200` — so a bulk compress runs one file at a time and always yields CPU to live uploads. It replaced the `storage-reclaim` supervisor. **Until this release, compress jobs queued onto `media-compress` with no supervisor for it, so they never ran.** Run `php artisan horizon:terminate` after deploying and confirm the supervisor appears. `retry_after` on the redis and database queue connections stays at 7500, so a merely-slow encode is never handed to a second worker.
+- `php artisan migrate --force` drops the old `storage_reclaims` table and its four `reclaim_*` settings. The Storage Reclaim review page and `php artisan storage:reclaim` are gone. A reclaim that was still awaiting review leaves its `{stem}_r{id}.mp4` beside the original, as an ordinary file to keep or delete.
+- `npm run build` for the page's CSS, then `php artisan optimize:clear && php artisan filament:optimize`.
 
 **Also fixed here: the Pro download served the wrong file.** `download()` sorted the quality labels as *strings*, which orders them `original, 720p, 480p, 360p, 1080p` — so a 1080p+720p ladder handed out **720p**, and the `original` branch never broke out of the loop, so a video with no rendition on disk served the raw upload. It now picks the highest rendition numerically with the original as a genuine fallback (`Video::bestDownloadPath()`).
 

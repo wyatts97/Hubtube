@@ -2,10 +2,14 @@
 
 namespace App\Jobs;
 
+use App\Models\MediaFile;
+use App\Models\User;
 use App\Services\Encoding\FfmpegRunner;
-use App\Services\FfmpegService;
 use App\Services\Media\MediaCompressService;
 use App\Services\Media\MediaIndexService;
+use App\Support\Bytes;
+use Filament\Notifications\Notification;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -13,16 +17,18 @@ use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
- * Compress one library video file to H.265 / VP9 / AV1.
+ * Compress one library video to H.265, VP9 or AV1.
  *
- * Always writes a NEW file next to the original (see MediaCompressService::
- * targetPathFor) — the source is never overwritten or deleted, so a failed
- * encode only leaves a temp file behind.
+ * Always writes a NEW file beside the source (see
+ * MediaCompressService::targetPathFor()); the source is never modified. The
+ * result is verified before it is kept, and whoever asked is notified either
+ * way — the explorer's progress badge is a convenience, not the record.
  */
-class CompressMediaFileJob implements ShouldQueue
+class CompressMediaFileJob implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
+    /** Never auto-retried: a failed encode is looked at, not repeated. */
     public int $tries = 1;
 
     public int $timeout = 7200;
@@ -33,109 +39,131 @@ class CompressMediaFileJob implements ShouldQueue
         public string $quality = 'balanced',
         public ?int $requestedBy = null,
     ) {
+        // One niced worker (config/horizon.php), so a bulk compress can never
+        // starve live upload encoding.
         $this->onQueue('media-compress');
+    }
+
+    public function uniqueId(): string
+    {
+        return md5($this->sourcePath.'|'.$this->codec);
     }
 
     public function handle(MediaCompressService $compress, FfmpegRunner $runner, MediaIndexService $index): void
     {
         $codec = in_array($this->codec, MediaCompressService::CODECS, true) ? $this->codec : 'h265';
         $quality = in_array($this->quality, MediaCompressService::QUALITIES, true) ? $this->quality : 'balanced';
+        $disk = Storage::disk('public');
 
-        if (! $runner->isAvailable()) {
-            Log::warning('CompressMediaFileJob skipped: ffmpeg unavailable.', ['path' => $this->sourcePath]);
+        if (! $runner->isAvailable() || ! ($compress->available()[$codec] ?? false)) {
+            $this->markFailed("This server's ffmpeg cannot encode {$codec}.", $compress);
 
             return;
         }
 
-        $disk = Storage::disk('public');
+        $before = $compress->readableSize($this->sourcePath);
 
-        try {
-            if (! $disk->exists($this->sourcePath)) {
-                return;
-            }
-        } catch (Throwable) {
+        if ($before === null) {
+            $this->markFailed('The file is no longer on disk.', $compress);
+
             return;
         }
 
         $target = $compress->targetPathFor($this->sourcePath, $codec);
+        $duration = (int) MediaFile::query()->where('path_hash', md5($this->sourcePath))->value('duration_seconds');
 
-        // Resolve paths to absolute for the shell command.
-        $absoluteIn = $this->absolute($this->sourcePath);
-        $absoluteOut = $this->absolute($target);
+        $status = ['state' => 'running', 'codec' => $codec, 'percent' => 0];
+        $compress->setStatus($this->sourcePath, $status);
 
-        if ($absoluteIn === null || $absoluteOut === null) {
+        $lastPercent = 0;
+        $onProgress = $duration <= 0 ? null : function (float $seconds) use ($compress, $duration, &$status, &$lastPercent): void {
+            $percent = min(99, (int) ($seconds / $duration * 100));
+
+            // Only on a whole-percent change: this fires many times a second.
+            if ($percent > $lastPercent) {
+                $lastPercent = $percent;
+                $compress->setStatus($this->sourcePath, ['percent' => $percent] + $status);
+            }
+        };
+
+        try {
+            [$exit, $output] = $runner->run(
+                $compress->buildCommand($disk->path($this->sourcePath), $disk->path($target), $codec, $quality),
+                $this->timeout - 60,
+                $onProgress,
+            );
+        } catch (Throwable $e) {
+            $this->discard($target);
+            $this->markFailed($e->getMessage(), $compress);
+
             return;
         }
-
-        $command = $compress->buildCommand($absoluteIn, $absoluteOut, $codec, $quality);
-
-        // AV1 fallback: prefer libaom, use SVT-AV1 when that encoder is missing.
-        if ($codec === 'av1' && ! $this->encoderPresent('libaom-av1')) {
-            $command = str_replace('-c:v libaom-av1 -b:v 0', '-c:v libsvtav1', $command);
-            $command = str_replace(' -cpu-used 4', ' -preset 6', $command);
-        }
-
-        [$exit, $output] = $runner->run($command, 7000);
 
         if ($exit !== 0) {
-            Log::warning('CompressMediaFileJob failed.', ['path' => $this->sourcePath, 'output' => mb_substr($output, -2000)]);
-            try {
-                $disk->delete($target);
-            } catch (Throwable) {
-            }
+            Log::warning('Media compression failed', ['path' => $this->sourcePath, 'output' => mb_substr($output, -2000)]);
+            $this->discard($target);
+            $this->markFailed('ffmpeg exited with code '.$exit.'.', $compress);
 
             return;
         }
 
-        try {
-            if (! $disk->exists($target) || (int) $disk->size($target) === 0) {
-                Log::warning('CompressMediaFileJob produced no output.', ['path' => $this->sourcePath]);
-                try {
-                    $disk->delete($target);
-                } catch (Throwable) {
-                }
+        if ($reason = $compress->verify($this->sourcePath, $target)) {
+            $this->discard($target);
+            $this->markFailed($reason, $compress);
 
-                return;
-            }
-        } catch (Throwable) {
             return;
         }
 
-        // Index the new file so it appears in the explorer immediately.
+        $after = (int) $compress->readableSize($target);
+        $index->indexPath($target);
+
+        $compress->setStatus($this->sourcePath, [
+            'state' => 'done',
+            'codec' => $codec,
+            'target' => $target,
+            'before' => $before,
+            'after' => $after,
+        ]);
+
+        $this->notify(true, basename($this->sourcePath).' compressed', sprintf(
+            'Saved %s as %s. The original is untouched — delete whichever you do not want%s.',
+            Bytes::saving($before, $after),
+            basename($target),
+            $compress->videoOriginalFor($this->sourcePath) ? ', or use "Replace original" on the upload' : '',
+        ));
+    }
+
+    /** Called by the queue when the job dies outright (timeout, worker crash). */
+    public function failed(?Throwable $exception): void
+    {
+        $this->markFailed($exception?->getMessage() ?? 'The job failed.', app(MediaCompressService::class));
+    }
+
+    protected function markFailed(string $reason, MediaCompressService $compress): void
+    {
+        $compress->setStatus($this->sourcePath, ['state' => 'failed', 'codec' => $this->codec, 'error' => $reason]);
+        $this->notify(false, 'Could not compress '.basename($this->sourcePath), $reason);
+    }
+
+    protected function discard(string $path): void
+    {
         try {
-            $index->indexPath($target);
-        } catch (Throwable $e) {
-            Log::warning('CompressMediaFileJob could not index output.', ['target' => $target, 'error' => $e->getMessage()]);
+            Storage::disk('public')->delete($path);
+        } catch (Throwable) {
+            // Nothing to clean up.
         }
     }
 
-    protected function absolute(string $path): ?string
+    protected function notify(bool $success, string $title, string $body): void
     {
-        try {
-            $disk = Storage::disk('public');
+        $user = $this->requestedBy ? User::find($this->requestedBy) : null;
 
-            // Adapters backed by the local filesystem expose path(); anything
-            // else (S3 etc.) cannot be shelled out to.
-            if (method_exists($disk, 'path')) {
-                return $disk->path($path);
-            }
-        } catch (Throwable) {
-            return null;
+        if (! $user) {
+            return;
         }
 
-        return null;
-    }
-
-    protected function encoderPresent(string $encoder): bool
-    {
-        try {
-            $ffmpeg = FfmpegService::ffmpegPath();
-            $binary = is_file($ffmpeg) ? escapeshellarg($ffmpeg) : 'ffmpeg';
-            $out = (string) shell_exec($binary.' -hide_banner -encoders 2>&1');
-
-            return str_contains($out, $encoder);
-        } catch (Throwable) {
-            return false;
-        }
+        $notification = Notification::make()->title($title)->body($body);
+        $success ? $notification->success() : $notification->danger();
+        $notification->sendToDatabase($user);
     }
 }

@@ -7,10 +7,10 @@ use App\Models\Setting;
 /**
  * Reads what is actually inside a media file.
  *
- * Extracted for storage reclaim, which has to prove a re-encode is sound
- * before it is offered for review: same length, real video stream, plausible
- * size. It goes through FfmpegRunner like every other command so tests can
- * swap in the fake rather than needing ffmpeg installed.
+ * Used by the Media Library's compress action, which has to prove a re-encode
+ * is sound before it is kept: same length, real video stream, plausible size.
+ * It goes through FfmpegRunner like every other command so tests can swap in
+ * the fake rather than needing ffmpeg installed.
  */
 class MediaProbe
 {
@@ -46,7 +46,7 @@ class MediaProbe
         }
 
         $result = [
-            // Milliseconds, because the reclaim tolerance is sub-second.
+            // Milliseconds, because the compress tolerance is sub-second.
             'duration_ms' => (int) round(((float) ($info['format']['duration'] ?? 0)) * 1000),
             'width' => 0,
             'height' => 0,

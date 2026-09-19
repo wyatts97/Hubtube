@@ -185,8 +185,7 @@ test('acting on a file that has vanished drops its row instead of failing', func
     Storage::disk('public')->delete('media/ghost.jpg');
 
     Livewire::test(MediaLibrary::class)
-        ->call('confirmDelete', 'media/ghost.jpg')
-        ->call('deleteFile');
+        ->callAction('delete', arguments: ['paths' => ['media/ghost.jpg']]);
 
     expect(MediaFile::where('path', 'media/ghost.jpg')->exists())->toBeFalse();
 });

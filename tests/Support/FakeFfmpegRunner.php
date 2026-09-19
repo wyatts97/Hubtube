@@ -25,7 +25,7 @@ class FakeFfmpegRunner extends FfmpegRunner
     /**
      * Bytes written for each encoded output.
      *
-     * Storage reclaim decides what to offer by comparing before and after, so
+     * Compression decides what to keep by comparing before and after, so
      * its tests need to choose whether an encode came out smaller, bigger, or
      * barely changed.
      */

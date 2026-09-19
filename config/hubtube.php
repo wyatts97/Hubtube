@@ -101,9 +101,6 @@ return [
             'pdf', 'vtt', 'srt', 'txt', 'csv',
         ],
 
-        // Number of files shown per page in the file manager grid/list.
-        'per_page' => 50,
-
         // Thumbnail dimensions used by the file manager grid.
         'thumbnail_width' => 300,
         'thumbnail_height' => 200,

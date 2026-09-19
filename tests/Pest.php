@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Models\Video;
 use App\Models\VideoEncoding;
 use App\Services\Encoding\FfmpegRunner;
-use App\Services\Storage\StorageReclaimService;
 use App\Services\Translation\TranslationProviderManager;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -141,18 +140,9 @@ function useFakeTranslationProvider(array $config = []): void
 }
 
 /**
- * The storage reclaim service, for the reclaim feature tests.
- */
-function reclaims(): StorageReclaimService
-{
-    return app(StorageReclaimService::class);
-}
-
-/**
  * A finished video with real files on the public disk: an original, two
  * renditions with completed encoding rows, an HLS segment tree and a master
- * playlist — the layout the encoder actually writes, which is what the
- * reclaim path parses and acts on.
+ * playlist — the layout the encoder actually writes.
  */
 function processedVideo(array $attributes = []): Video
 {

@@ -128,7 +128,7 @@ class ProDownloadTest extends TestCase
     /**
      * A label whose file never made it to disk must fall through to the next
      * one down, not to the original — the original is the largest file on the
-     * box, which is what storage reclaim exists to shrink.
+     * box, which is what compressing originals exists to shrink.
      */
     public function test_a_missing_rendition_falls_through_to_the_next_one_down(): void
     {

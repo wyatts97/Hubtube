@@ -120,15 +120,15 @@ return [
                 'timeout' => 300,
                 'nice' => 10,
             ],
-            // Storage reclaim: re-encoding files that already work, to make
-            // them smaller. maxProcesses 1 is the whole answer to "a bulk
-            // reclaim of 200 files must not starve live uploads" — reclaim
-            // encoding is strictly serial, and nice 15 means it yields CPU to
-            // everything else on the box. tries 1 because a half-written
-            // re-encode must never be retried automatically.
-            'storage-reclaim' => [
+            // Media Library compress: re-encoding files that already work, to
+            // make them smaller. maxProcesses 1 is the whole answer to "a bulk
+            // compress of 200 files must not starve live uploads" — it is
+            // strictly serial, and nice 15 means it yields CPU to everything
+            // else on the box. tries 1 because a half-written re-encode must
+            // never be retried automatically.
+            'media-compress' => [
                 'connection' => 'redis',
-                'queue' => ['storage-reclaim'],
+                'queue' => ['media-compress'],
                 'balance' => 'simple',
                 'maxProcesses' => 1,
                 'maxTime' => 0,
@@ -194,9 +194,9 @@ return [
                 'timeout' => 300,
                 'nice' => 10,
             ],
-            'storage-reclaim' => [
+            'media-compress' => [
                 'connection' => 'redis',
-                'queue' => ['storage-reclaim'],
+                'queue' => ['media-compress'],
                 'balance' => 'simple',
                 'maxProcesses' => 1,
                 'maxTime' => 0,

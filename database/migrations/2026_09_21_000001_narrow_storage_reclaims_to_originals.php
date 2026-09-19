@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\StorageReclaim;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +44,7 @@ return new class extends Migration
         // clean it up now.
         if (Schema::hasColumn('storage_reclaims', 'quality')) {
             DB::table('storage_reclaims')
-                ->where('target', '!=', StorageReclaim::TARGET_ORIGINAL)
+                ->where('target', '!=', 'original')
                 ->whereIn('status', ['pending', 'running', 'awaiting_review'])
                 ->update([
                     'status' => 'skipped',

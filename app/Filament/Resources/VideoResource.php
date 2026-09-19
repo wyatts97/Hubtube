@@ -329,7 +329,7 @@ class VideoResource extends Resource
      * embedded) video whose source is still on local disk and isn't already
      * being encoded.
      *
-     * A thin wrapper over the model so this and StorageReclaimService can
+     * A thin wrapper over the model so this and MediaCompressService can
      * never drift on what "this video can be encoded again" means.
      */
     public static function canEncodeMissing(Video $record): bool

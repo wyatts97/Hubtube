@@ -67,7 +67,7 @@ test('a newly indexed file starts pending and is not queued by the indexer', fun
 test('rendering a page queues thumbnails for that page only', function () {
     Queue::fake();
 
-    $perPage = (int) config('hubtube.media_library.per_page', 50);
+    $perPage = MediaLibrary::PER_PAGE;
 
     for ($i = 1; $i <= $perPage + 15; $i++) {
         Storage::disk('public')->put(sprintf('media/file-%03d.png', $i), thumbSourceImage());
@@ -244,8 +244,7 @@ test('deleting a file removes its thumbnail', function () {
     expect(Storage::disk('public')->exists($thumbPath))->toBeTrue();
 
     Livewire::test(MediaLibrary::class)
-        ->call('confirmDelete', 'media/photo.png')
-        ->call('deleteFile');
+        ->callAction('delete', arguments: ['paths' => ['media/photo.png']]);
 
     expect(Storage::disk('public')->exists($thumbPath))->toBeFalse()
         ->and(MediaFile::where('path', 'media/photo.png')->exists())->toBeFalse();
@@ -343,14 +342,13 @@ test('the grid polls only while something is pending', function () {
     indexThumbFixtures();
 
     $component = Livewire::test(MediaLibrary::class);
-    $component->instance()->getFilesProperty();
 
-    expect($component->instance()->getHasPendingThumbnailsProperty())->toBeTrue();
+    expect($component->html())->toContain('wire:poll.5s');
 
     MediaFile::where('path', 'media/photo.png')->update([
         'thumbnail_state' => MediaFile::THUMB_READY,
         'thumbnail_path' => 'thumbnails/.filemanager/aa/x.webp',
     ]);
 
-    expect($component->instance()->getHasPendingThumbnailsProperty())->toBeFalse();
+    expect($component->call('$refresh')->html())->not->toContain('wire:poll');
 });
