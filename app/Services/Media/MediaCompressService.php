@@ -158,6 +158,18 @@ class MediaCompressService
         return [$ok, $refused];
     }
 
+    /**
+     * Whether this path is already one of our compressed outputs.
+     *
+     * The naming convention is the only record that a file has been through
+     * here, and it is what stops a master being compressed again on every
+     * re-run — each pass would cost real quality.
+     */
+    public function isCompressedOutput(string $path): bool
+    {
+        return (bool) preg_match('/\.(h265|vp9|av1)(-\d+)?\.(mp4|webm)$/i', basename($path));
+    }
+
     /** `clip.mp4` → `clip.av1.mp4`, suffixed `-1`, `-2`… rather than overwriting. */
     public function targetPathFor(string $source, string $codec): string
     {
@@ -205,6 +217,17 @@ class MediaCompressService
     // ── Command ─────────────────────────────────────────────────────────────
 
     /**
+     * How often a keyframe is forced, in seconds.
+     *
+     * Load-bearing, not a tuning knob. Without it ffmpeg uses each encoder's
+     * default, and libaom's is effectively "one keyframe at the start": a
+     * 60-second clip came out with a single keyframe, so seeking anywhere made
+     * the player decode from the beginning and stall. Five seconds keeps
+     * seeking responsive at a negligible cost in size.
+     */
+    public const KEYFRAME_SECONDS = 5;
+
+    /**
      * The ffmpeg command line.
      *
      * `-progress pipe:1` feeds FfmpegRunner's progress callback. An MP4
@@ -225,11 +248,15 @@ class MediaCompressService
             default => [$this->h265Args($quality), $mp4Audio.' -movflags +faststart -tag:v hvc1'],
         };
 
+        // Encoder-agnostic, so it applies whichever AV1 encoder is installed.
+        $keyframes = '-force_key_frames '.escapeshellarg('expr:gte(t,n_forced*'.self::KEYFRAME_SECONDS.')');
+
         return sprintf(
-            '%s -hide_banner -nostdin -y -i %s -map 0:v:0 -map 0:a:0? %s %s -progress pipe:1 -nostats %s',
+            '%s -hide_banner -nostdin -y -i %s -map 0:v:0 -map 0:a:0? %s %s %s -progress pipe:1 -nostats %s',
             escapeshellarg(FfmpegService::ffmpegPath()),
             escapeshellarg($absoluteIn),
             $video,
+            $keyframes,
             $container,
             escapeshellarg($absoluteOut),
         );

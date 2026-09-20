@@ -650,6 +650,59 @@ The page is laid out like Windows File Explorer: an address bar with Back / Up a
 - The ↻ menu has **Refresh this folder** (synchronous) and **Rescan whole library** (queued; you are notified when it finishes).
 - One page shows 100 files. The page-size picker is gone, and so is the `media_library.per_page` config key.
 
+### One stored copy per rendition
+
+Every video used to be stored about three times. Measured on a live library of 2,218 videos:
+
+| | Size | Files |
+|---|---|---|
+| Originals | 66.2 GB | 2,218 |
+| HLS segments | 21.7 GB | 19,280 |
+| Rendition MP4s | 21.0 GB | 1,455 |
+| Artwork | 1.0 GB | 14,103 |
+| **Total** | **111 GB** | |
+
+HLS matching the renditions almost exactly is the giveaway: `HlsPackager` remuxes each `processed/{quality}.mp4` with `-c copy`, so the segments hold the same bytes again. Meanwhile the player is handed the HLS manifest whenever one exists, so the progressive MP4 ladder was the copy nothing streamed from.
+
+**What happens now:**
+
+- **Renditions are packaged as one file each.** `-hls_flags single_file` writes `hls/{quality}/stream.ts` with the playlist addressing it by `#EXT-X-BYTERANGE`. Same bytes, same directory layout, same `master.m3u8` — but one file per rendition instead of a dozen-plus, which is ~19,000 files gone from the disk and from the media index. Videos packaged the old way keep playing untouched.
+- **The rendition MP4 is deleted once its stream is verified.** `FinalizeRenditionJob` only deletes after `HlsPackager::verifyPackaged()` confirms the playlist exists, the segment data is there, and ffprobe reads the *playlist* at the same duration as the MP4. If any of that fails, both copies are kept and a warning is logged — there are no media backups, so an exit code is not evidence.
+- **The upload is compressed and swapped in.** Once encoding finishes, `CompleteVideoProcessingJob` queues the upload for re-compression (AV1, or H.265 where AV1 is unavailable) and `MediaCompressService::replaceOriginal()` swaps it in after the same verification the Media Library button uses. A master already compressed is skipped, so re-runs never re-encode it.
+- Downloads and the progressive fallback need no change: `quality_urls` and `bestDownloadPath()` already test each file and fall back to the master.
+- With `generate_hls` off, nothing is deleted — the MP4 ladder is then the only playable copy.
+
+**Backfilling the existing library.** Both commands are dry runs until `--apply`, both log to the admin log, and neither deletes anything it has not verified:
+
+```
+php artisan videos:repack-hls                 # report what would be reclaimed
+php artisan videos:repack-hls --apply --limit=5
+php artisan videos:encode-backlog             # report imported videos with no ladder
+php artisan videos:encode-backlog --apply --limit=10
+php artisan videos:compress-originals         # report, biggest uploads first
+php artisan videos:compress-originals --apply --limit=25
+```
+
+**Run them in that order**, because they depend on each other. An audit of the live library found 2,231 video directories in three states:
+
+| | Dirs | Uploads |
+|---|---|---|
+| Upload + renditions + HLS (processed) | 533 | 19.7 GB |
+| **Upload only — imported, never encoded** | **1,684** | **46.5 GB** |
+| Renditions + HLS but no upload | 12 | — |
+
+`repack-hls` only touches `processed/{quality}.mp4` for qualities with a completed `video_encodings` row, so imported videos are invisible to it — it cannot delete a video that has no ladder. It also skips any video whose upload is missing, because there the renditions are the only progressive copy rather than a duplicate.
+
+`encode-backlog` is for those 1,684: it hands them to the normal pipeline, which builds the ladder, packages HLS and then compresses the upload. Expect roughly break-even on disk for these — the compressed master saves about as much as the new ladder costs — the point is that they gain adaptive streaming. It refuses to run while a watermark is configured, because these videos have never been through this pipeline and some already carry the old site's burnt-in watermark; pass `--watermark` if drawing it on is what you want.
+
+`compress-originals` **skips any video whose upload is its only playable copy**. Without an HLS ladder the player streams the upload itself, so re-encoding it to AV1 would leave viewers without that decoder unable to play it at all. Those videos have to go through `encode-backlog` first.
+
+Realistic end state for the measured library: 111 GB → roughly 70 GB, with every video streaming adaptively. The 21 GB from `repack-hls` and ~12 GB from compressing the 533 processed uploads are the certain parts.
+
+Run the HLS repack first and check a few of those videos play, then let it run out. `repack-hls` repackages each rendition, verifies it, then removes the MP4 — about 21 GB on the measured library. `compress-originals` queues uploads onto `media-compress` (one niced worker), replacing each only after it verifies smaller and the same length — roughly another 35–40 GB. Afterwards run `php artisan media:index --full --prune` so the library index matches the disk.
+
+A rendition that fails verification is left with both copies; re-run the command after looking at it.
+
 ### Compressing videos
 
 Select one or more videos and choose **Compress…** — from the status bar, the film-strip button on a row, or the details pane. Pick a codec and a quality level:
@@ -662,7 +715,9 @@ Select one or more videos and choose **Compress…** — from the status bar, th
 
 Codecs your ffmpeg build lacks are greyed out in the dialog. Check with `ffmpeg -hide_banner -encoders | grep -E 'x265|vpx-vp9|aom|svtav1'`.
 
-**An encode never overwrites or deletes anything.** It writes a new file beside the source and verifies it before keeping it: at least 10 KB, a real video stream, the same length to within 250 ms, and smaller than the source. Anything else is discarded, with the reason. The row shows a live *Compressing 42%* badge, and you get a notification with the saving when it finishes. After that, keep whichever file you want and delete the other.
+Every encode forces a keyframe every 5 seconds. Without that ffmpeg uses the encoder's default, and libaom's is effectively one keyframe at the start — a 60-second test clip came out with a single keyframe, which made seeking stall the player. Anything compressed before this fix needs compressing again to become seekable.
+
+**An encode never overwrites anything.** It writes a new file beside the source and verifies it before keeping it: at least 10 KB, a real video stream, the same length to within 250 ms, and smaller than the source. Anything else is discarded, with the reason. The row shows a live *Compressing 42%* badge, and you get a notification with the saving when it finishes. After that, keep whichever file you want and delete the other.
 
 **A video's original upload** cannot simply be deleted — `video_path` points at it. So when you select one, the details pane lists its compressed copies with a **Replace original** button. That repoints `video_path` (and `videos.size`) to the copy and then deletes the old upload. That order means a failure can never leave the video without a file. **It is the one irreversible step, and there are no backups of media files.** Before you use it:
 

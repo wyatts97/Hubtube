@@ -408,6 +408,18 @@ class ProcessVideoJob implements ShouldBeUnique, ShouldQueue
             }
         }
 
+        $current = (string) $this->video->thumbnail;
+
+        // Only adopt a generated frame when the video has no poster already.
+        // Videos imported from elsewhere arrive with their own thumbnail under
+        // a different name, so this step's own "already generated?" check above
+        // does not recognise it — and re-encoding a video that has been live
+        // for months must not silently swap the poster the site has been
+        // showing for it.
+        if ($current !== '' && Storage::disk('public')->exists($current)) {
+            return;
+        }
+
         $this->video->update([
             'thumbnail' => "videos/{$this->video->slug}/{$slugTitle}_thumb_0.{$ext}",
         ]);

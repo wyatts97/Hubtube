@@ -76,6 +76,16 @@ test('each codec builds the command it names, with progress reporting', function
         ->toContain('libaom-av1');
 });
 
+test('every codec forces a keyframe interval, so the result can be seeked', function () {
+    // Without this, ffmpeg uses the encoder default — libaom's is effectively
+    // one keyframe at the start, which makes seeking stall the player.
+    foreach (MediaCompressService::CODECS as $codec) {
+        expect(compress()->buildCommand('/in.mp4', '/out.mp4', $codec, 'balanced'))
+            ->toContain('-force_key_frames')
+            ->toContain('n_forced*'.MediaCompressService::KEYFRAME_SECONDS);
+    }
+});
+
 test('audio is only copied from an MP4 source, whose audio an MP4 can hold', function () {
     expect(compress()->buildCommand('/in.mp4', '/out.mp4', 'av1', 'balanced'))->toContain('-c:a copy')
         // PCM in .mov, WMA in .wmv, Vorbis in .mkv would fail a stream copy.

@@ -174,7 +174,7 @@ class RenditionCoordinator
             /** @var VideoEncoding|null $row */
             $row = $existing->get($target['quality']);
 
-            if ($row && $row->status === VideoEncoding::COMPLETED && file_exists($this->outputPathFor($video, $target['quality']))) {
+            if ($row && $row->status === VideoEncoding::COMPLETED && $this->renditionOnDisk($video, $target['quality'])) {
                 continue;
             }
 
@@ -239,6 +239,26 @@ class RenditionCoordinator
     }
 
     /**
+     * Whether a finished rendition still exists in some playable form.
+     *
+     * Either its MP4 or its packaged HLS stream will do. FinalizeRenditionJob
+     * deletes the MP4 once the stream is verified, so "the MP4 is missing" no
+     * longer means "this quality needs encoding again" — without this, every
+     * re-run would re-encode the whole ladder.
+     */
+    protected function renditionOnDisk(Video $video, string $quality): bool
+    {
+        return file_exists($this->outputPathFor($video, $quality))
+            || ($quality !== VideoEncoding::ORIGINAL && HlsPackager::isPackaged($this->processedDir($video), $quality));
+    }
+
+    /** Bytes a packaged rendition occupies, for an adopted row's size. */
+    protected function packagedSizeOf(Video $video, string $quality): int
+    {
+        return app(HlsPackager::class)->packagedSize($this->processedDir($video), $quality);
+    }
+
+    /**
      * Create completed rows for renditions a legacy video already has on disk.
      *
      * @return Collection<string, VideoEncoding>
@@ -248,11 +268,12 @@ class RenditionCoordinator
         $profiles = EncodeProfile::all()->keyBy('name');
 
         foreach ((array) $video->qualities_available as $quality) {
-            if ($quality === 'original' || ! file_exists($this->outputPathFor($video, $quality))) {
+            if ($quality === 'original' || ! $this->renditionOnDisk($video, $quality)) {
                 continue;
             }
 
             $profile = $profiles->get($quality);
+            $mp4 = $this->outputPathFor($video, $quality);
 
             VideoEncoding::create([
                 'video_id' => $video->id,
@@ -262,7 +283,7 @@ class RenditionCoordinator
                 'status' => VideoEncoding::COMPLETED,
                 'progress' => 100,
                 'run_id' => (string) Str::uuid(),
-                'size' => filesize($this->outputPathFor($video, $quality)) ?: null,
+                'size' => (file_exists($mp4) ? filesize($mp4) : $this->packagedSizeOf($video, $quality)) ?: null,
                 'completed_at' => $video->processing_completed_at ?? now(),
             ]);
         }

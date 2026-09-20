@@ -13,6 +13,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
 
@@ -75,15 +76,21 @@ class FinalizeRenditionJob implements ShouldQueue
 
         rename($partial, $output);
 
+        $size = filesize($output);
+
         if (! $encoding->isOriginal() && $commands->s('generate_hls', true)) {
-            $hls->packageRendition($commands, $coordinator->processedDir($video), $encoding->quality);
+            $processedDir = $coordinator->processedDir($video);
+
+            if ($hls->packageRendition($commands, $processedDir, $encoding->quality)) {
+                $size = $this->dropMp4IfStreamable($hls, $commands, $processedDir, $encoding, $output) ?? $size;
+            }
         }
 
         $encoding->update([
             'status' => VideoEncoding::COMPLETED,
             'progress' => 100,
             'chunks_completed' => $encoding->chunks_total,
-            'size' => filesize($output),
+            'size' => $size,
             'error' => null,
             'completed_at' => now(),
         ]);
@@ -91,6 +98,49 @@ class FinalizeRenditionJob implements ShouldQueue
         $this->removeChunkDir($coordinator->chunkDir($encoding));
 
         $coordinator->renditionFinished($encoding);
+    }
+
+    /**
+     * Delete a rendition's MP4 once its HLS stream is proven to stand alone.
+     *
+     * The HLS segments used to be a `-c copy` of this very file, so every
+     * rendition was stored twice — on the measured library, 21 GB of MP4s
+     * beside 21.7 GB of the same bytes as segments. HLS is what the player is
+     * handed whenever it exists (VideoPlayer.vue), so the MP4 is the copy that
+     * can go; quality_urls and bestDownloadPath both test each file for
+     * existence and fall back to the master, so downloads and the progressive
+     * fallback keep working.
+     *
+     * Nothing is deleted unless verifyPackaged() proves the stream plays at
+     * the right length: there are no media backups, so a packaging run that
+     * exits 0 is not on its own evidence. A failure keeps both copies — the
+     * old, wasteful state, which is the safe one.
+     *
+     * @return int|null the size to record, or null to keep the MP4's own
+     */
+    protected function dropMp4IfStreamable(
+        HlsPackager $hls,
+        FfmpegCommands $commands,
+        string $processedDir,
+        VideoEncoding $encoding,
+        string $output,
+    ): ?int {
+        $expected = (float) ($encoding->video->duration ?? 0);
+        $reason = $hls->verifyPackaged($commands, $processedDir, $encoding->quality, $expected);
+
+        if ($reason !== null) {
+            Log::warning('HLS stream not verified; keeping the rendition MP4', [
+                'video' => $encoding->video_id,
+                'quality' => $encoding->quality,
+                'reason' => $reason,
+            ]);
+
+            return null;
+        }
+
+        @unlink($output);
+
+        return $hls->packagedSize($processedDir, $encoding->quality);
     }
 
     protected function join(RenditionCoordinator $coordinator, FfmpegRunner $runner, FfmpegCommands $commands, VideoEncoding $encoding, string $partial): void

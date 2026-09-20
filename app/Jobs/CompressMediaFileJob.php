@@ -38,6 +38,15 @@ class CompressMediaFileJob implements ShouldBeUnique, ShouldQueue
         public string $codec = 'h265',
         public string $quality = 'balanced',
         public ?int $requestedBy = null,
+        /**
+         * Swap the result in as the video's original upload once verified.
+         *
+         * Set by the encoding pipeline, which compresses each new upload's
+         * master so the originals do not grow back — on the measured library
+         * they were 66 GB, 60% of all video storage. From the Media Library
+         * this stays false: there a person presses "Replace original".
+         */
+        public bool $replaceOriginal = false,
     ) {
         // One niced worker (config/horizon.php), so a bulk compress can never
         // starve live upload encoding.
@@ -124,6 +133,15 @@ class CompressMediaFileJob implements ShouldBeUnique, ShouldQueue
             'before' => $before,
             'after' => $after,
         ]);
+
+        if ($this->replaceOriginal && ($video = $compress->videoOriginalFor($this->sourcePath))) {
+            // Verified inside replaceOriginal() before anything is deleted.
+            if ($reason = $compress->replaceOriginal($video, $target)) {
+                Log::warning('Compressed master not swapped in', ['video' => $video->id, 'reason' => $reason]);
+            }
+
+            return;
+        }
 
         $this->notify(true, basename($this->sourcePath).' compressed', sprintf(
             'Saved %s as %s. The original is untouched — delete whichever you do not want%s.',

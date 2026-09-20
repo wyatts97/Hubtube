@@ -19,7 +19,21 @@ class HlsPackager
         protected FfmpegRunner $runner,
     ) {}
 
-    /** Remux processed/{quality}.mp4 into processed/hls/{quality}/. */
+    /** The single media file every rendition's segments live inside. */
+    public const SEGMENT_FILE = 'stream.ts';
+
+    /**
+     * Remux processed/{quality}.mp4 into processed/hls/{quality}/.
+     *
+     * One `stream.ts` addressed by `#EXT-X-BYTERANGE`, not a segment per six
+     * seconds (`single_file`). The bytes are identical either way, but a
+     * library of a few thousand videos went from ~19,000 segment files to one
+     * per rendition — fewer inodes, a far smaller media index, and a directory
+     * listing that does not take seconds to read.
+     *
+     * The directory layout and master.m3u8 are unchanged, so videos packaged
+     * the old way keep playing without a migration.
+     */
     public function packageRendition(FfmpegCommands $commands, string $processedDir, string $quality): bool
     {
         $input = "{$processedDir}/{$quality}.mp4";
@@ -38,6 +52,7 @@ class HlsPackager
         }
 
         $playlist = "{$hlsDir}/playlist.m3u8";
+        $flags = $this->flagsWithSingleFile($commands->hlsFlags());
 
         $cmd = sprintf(
             '%s -hide_banner -nostdin -y -i %s -c copy -f hls -hls_time %d -hls_playlist_type %s -hls_flags %s -hls_list_size 0 %s -hls_segment_filename %s %s 2>&1',
@@ -45,22 +60,18 @@ class HlsPackager
             escapeshellarg($input),
             $commands->hlsSegmentSeconds(),
             escapeshellarg($commands->hlsPlaylistType()),
-            escapeshellarg($commands->hlsFlags()),
+            escapeshellarg($flags),
             $commands->hlsExtraArgs(),
-            escapeshellarg("{$hlsDir}/segment_%03d.ts"),
+            escapeshellarg("{$hlsDir}/".self::SEGMENT_FILE),
             escapeshellarg($playlist)
         );
 
         [$exitCode, $output] = $this->runner->run($cmd, $commands->timeout());
 
-        $segments = glob("{$hlsDir}/segment_*.ts") ?: [];
-        $valid = array_filter($segments, fn ($segment) => filesize($segment) > 2048);
-
-        if ($exitCode !== 0 || empty($valid) || ! file_exists($playlist)) {
+        if ($exitCode !== 0 || ! $this->hasMedia($hlsDir) || ! file_exists($playlist)) {
             Log::warning('HLS packaging failed or produced invalid segments', [
                 'quality' => $quality,
                 'exit_code' => $exitCode,
-                'segments' => count($segments),
                 'output' => substr($output, 0, 500),
             ]);
             array_map('unlink', glob("{$hlsDir}/*") ?: []);
@@ -70,6 +81,105 @@ class HlsPackager
         }
 
         return true;
+    }
+
+    /** `single_file`, added to whatever the admin configured. */
+    protected function flagsWithSingleFile(string $flags): string
+    {
+        $parts = array_filter(explode('+', $flags));
+
+        if (! in_array('single_file', $parts, true)) {
+            $parts[] = 'single_file';
+        }
+
+        return implode('+', $parts);
+    }
+
+    /** Whether a packaged directory holds real media, either layout. */
+    protected function hasMedia(string $hlsDir): bool
+    {
+        return static::hasMediaIn($hlsDir);
+    }
+
+    protected static function hasMediaIn(string $hlsDir): bool
+    {
+        $files = array_merge(
+            glob("{$hlsDir}/".self::SEGMENT_FILE) ?: [],
+            glob("{$hlsDir}/segment_*.ts") ?: [],
+        );
+
+        return array_filter($files, fn (string $file) => filesize($file) > 2048) !== [];
+    }
+
+    /**
+     * Whether this rendition is already streamable from its HLS stream.
+     *
+     * The other half of deleting rendition MP4s: once the MP4 is gone, a
+     * packaged stream is the only evidence that quality exists, and the
+     * encoder must not re-encode it just because the MP4 is missing.
+     */
+    public static function isPackaged(string $processedDir, string $quality): bool
+    {
+        $hlsDir = "{$processedDir}/hls/{$quality}";
+
+        return file_exists("{$hlsDir}/playlist.m3u8") && static::hasMediaIn($hlsDir);
+    }
+
+    /**
+     * Whether a packaged rendition can stand alone, so its MP4 may be deleted.
+     *
+     * Deleting the source of a stream on a box with no media backups is worth
+     * proving rather than assuming: the playlist has to exist, the media has
+     * to be there, and ffprobe has to read the *playlist* — following its
+     * segment references — at the same length as the MP4 it came from. A
+     * packaging run that exits 0 but writes a truncated stream fails here.
+     *
+     * Returns null when it is sound, or the reason it is not.
+     */
+    public function verifyPackaged(FfmpegCommands $commands, string $processedDir, string $quality, float $expectedSeconds): ?string
+    {
+        $hlsDir = "{$processedDir}/hls/{$quality}";
+        $playlist = "{$hlsDir}/playlist.m3u8";
+
+        if (! file_exists($playlist)) {
+            return 'the playlist is missing';
+        }
+
+        if (! $this->hasMedia($hlsDir)) {
+            return 'no segment data was written';
+        }
+
+        // -allowed_extensions ALL: ffprobe refuses unknown segment extensions
+        // when reading a playlist from disk.
+        [$exitCode, $output] = $this->runner->run(sprintf(
+            '%s -v quiet -allowed_extensions ALL -print_format json -show_format %s',
+            $commands->ffprobe(),
+            escapeshellarg($playlist),
+        ), $commands->timeout());
+
+        $duration = (float) (json_decode($output, true)['format']['duration'] ?? 0);
+
+        if ($exitCode !== 0 || $duration <= 0) {
+            return 'the packaged stream could not be probed';
+        }
+
+        if ($expectedSeconds > 0 && abs($duration - $expectedSeconds) > 1.0) {
+            return sprintf('it is %.1fs long against the rendition\'s %.1fs', $duration, $expectedSeconds);
+        }
+
+        return null;
+    }
+
+    /** Bytes the packaged rendition occupies, for the encoding row's size. */
+    public function packagedSize(string $processedDir, string $quality): int
+    {
+        $total = 0;
+
+        foreach (glob("{$processedDir}/hls/{$quality}/*") ?: [] as $file) {
+            $total += is_file($file) ? (int) filesize($file) : 0;
+        }
+
+        return $total;
     }
 
     /**

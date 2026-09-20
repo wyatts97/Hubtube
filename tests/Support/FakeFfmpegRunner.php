@@ -81,7 +81,10 @@ class FakeFfmpegRunner extends FfmpegRunner
 
         if (str_ends_with($output, '.m3u8')) {
             file_put_contents($output, "#EXTM3U\n");
-            file_put_contents(dirname($output).'/segment_000.ts', str_repeat('t', 4096));
+            // Whatever name the command asked for: the packager writes one
+            // `stream.ts` per rendition now, and it used to write a numbered
+            // segment per six seconds.
+            file_put_contents($this->segmentPath($command, dirname($output)), str_repeat('t', 4096));
         } else {
             file_put_contents($output, str_repeat('x', $this->outputBytes));
         }
@@ -92,6 +95,16 @@ class FakeFfmpegRunner extends FfmpegRunner
         }
 
         return [0, ''];
+    }
+
+    /** The file `-hls_segment_filename` names, with %03d filled in. */
+    protected function segmentPath(string $command, string $hlsDir): string
+    {
+        if (preg_match('/-hls_segment_filename\s+([\'"])(.+?)\1/', $command, $matches)) {
+            return str_replace('%03d', '000', $matches[2]);
+        }
+
+        return $hlsDir.'/segment_000.ts';
     }
 
     /** Commands whose last argument matched $needle. */
