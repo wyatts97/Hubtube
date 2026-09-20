@@ -5,14 +5,12 @@ namespace App\Console\Commands;
 use App\Jobs\IndexMediaDirectoryJob;
 use App\Models\Setting;
 use App\Models\Video;
-use App\Models\VideoEncoding;
 use App\Services\AdminLogger;
 use App\Services\Encoding\FfmpegCommands;
 use App\Services\Encoding\HlsPackager;
 use App\Services\Encoding\RenditionCoordinator;
 use App\Support\Bytes;
 use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -55,15 +53,18 @@ class RepackHls extends Command
             ->where('status', 'processed')
             ->where(fn ($query) => $query->whereNull('storage_disk')->orWhere('storage_disk', 'public'))
             ->when($this->option('video'), fn ($query, $id) => $query->whereKey($id))
-            ->when((int) $this->option('limit') > 0, fn ($query) => $query->limit((int) $this->option('limit')))
             ->orderBy('id')
-            ->get(['id', 'slug', 'title', 'video_path', 'duration']);
+            ->cursor();
 
+        $limit = max(0, (int) $this->option('limit'));
         $freed = 0;
         $reclaimed = 0;
         $skipped = 0;
+        $touched = 0;
+        $scanned = 0;
 
         foreach ($videos as $video) {
+            $scanned++;
             // A video whose upload has gone is served progressively from its
             // renditions — bestDownloadPath() falls back to them — so those
             // MP4s are its only downloadable copy, not a duplicate. Twelve of
@@ -78,19 +79,14 @@ class RepackHls extends Command
             $processedDir = $coordinator->processedDir($video);
             $changed = 0;
 
-            foreach ($this->renditionsOf($video) as $encoding) {
-                $mp4 = "{$processedDir}/{$encoding->quality}.mp4";
-
-                if (! file_exists($mp4)) {
-                    continue;
-                }
-
+            foreach ($this->renditionFiles($processedDir) as $quality => $mp4) {
                 $size = (int) filesize($mp4);
 
                 if (! $apply) {
-                    $this->line(sprintf('  would reclaim %s %s (%s)', $video->slug, $encoding->quality, Bytes::format($size)));
+                    $this->line(sprintf('  would reclaim %s %s (%s)', $video->slug, $quality, Bytes::format($size)));
                     $freed += $size;
                     $reclaimed++;
+                    $changed++;
 
                     continue;
                 }
@@ -98,44 +94,60 @@ class RepackHls extends Command
                 // Repackage even when a stream already exists: the old layout
                 // is hundreds of segment files, and the MP4 is still here to
                 // package from.
-                if (! $hls->packageRendition($commands, $processedDir, $encoding->quality)) {
-                    $this->components->warn("{$video->slug} {$encoding->quality}: packaging failed, keeping the MP4");
+                if (! $hls->packageRendition($commands, $processedDir, $quality)) {
+                    $this->components->warn("{$video->slug} {$quality}: packaging failed, keeping the MP4");
                     $skipped++;
 
                     continue;
                 }
 
-                $reason = $hls->verifyPackaged($commands, $processedDir, $encoding->quality, (float) $video->duration);
+                $reason = $hls->verifyPackaged($commands, $processedDir, $quality, (float) $video->duration);
 
                 if ($reason !== null) {
-                    $this->components->warn("{$video->slug} {$encoding->quality}: {$reason}, keeping the MP4");
+                    $this->components->warn("{$video->slug} {$quality}: {$reason}, keeping the MP4");
                     $skipped++;
 
                     continue;
                 }
 
                 @unlink($mp4);
-                $encoding->update(['size' => $hls->packagedSize($processedDir, $encoding->quality)]);
+
+                // Only videos encoded since rendition tracking have a row to
+                // correct; the older ones are tracked by their files alone.
+                $video->encodings()
+                    ->where('quality', $quality)
+                    ->update(['size' => $hls->packagedSize($processedDir, $quality)]);
 
                 $freed += $size;
                 $reclaimed++;
                 $changed++;
-                $this->line(sprintf('  %s %s reclaimed %s', $video->slug, $encoding->quality, Bytes::format($size)));
+                $this->line(sprintf('  %s %s reclaimed %s', $video->slug, $quality, Bytes::format($size)));
             }
 
-            // Only for videos this pass actually touched.
             if ($changed > 0) {
-                IndexMediaDirectoryJob::dispatch('videos/'.$video->slug);
+                $touched++;
+
+                if ($apply) {
+                    IndexMediaDirectoryJob::dispatch('videos/'.$video->slug);
+                }
+            }
+
+            // The limit counts videos this actually did something to, so
+            // `--limit=5` means five reclaimed videos rather than five looked at.
+            if ($limit > 0 && $touched >= $limit) {
+                break;
             }
         }
 
         $this->newLine();
         $this->components->info(sprintf(
-            '%s %d rendition%s across %d videos, %s%s',
+            '%s %d rendition%s across %d video%s (%d scanned), %s%s',
             $apply ? 'Reclaimed' : 'Would reclaim',
             $reclaimed,
             $reclaimed === 1 ? '' : 's',
-            $videos->count(),
+            $touched,
+            $touched === 1 ? '' : 's',
+            $scanned,
             Bytes::format($freed),
             $skipped > 0 ? ", {$skipped} left alone" : '',
         ));
@@ -163,15 +175,36 @@ class RepackHls extends Command
     }
 
     /**
-     * The renditions worth looking at: finished, and not the original.
+     * The rendition MP4s in a video's processed directory, keyed by quality.
      *
-     * @return Collection<int, VideoEncoding>
+     * Read from the disk, not from video_encodings. Videos encoded before
+     * rendition tracking existed have files and no rows — the same case
+     * RenditionCoordinator::adoptLegacyRenditions() exists for — and on the
+     * measured library they were the overwhelming majority: asking the
+     * database found 75 renditions where the disk holds 1,455.
+     *
+     * `original_watermarked.mp4` is not a rendition: it is the upload itself
+     * after the watermark was drawn in, and nothing streams it from HLS.
+     *
+     * @return array<string, string> quality => absolute path
      */
-    protected function renditionsOf(Video $video)
+    protected function renditionFiles(string $processedDir): array
     {
-        return $video->encodings()
-            ->where('status', VideoEncoding::COMPLETED)
-            ->where('quality', '!=', VideoEncoding::ORIGINAL)
-            ->get();
+        $found = [];
+
+        foreach (glob("{$processedDir}/*.mp4") ?: [] as $file) {
+            $quality = basename($file, '.mp4');
+
+            // Only the ladder's own naming, e.g. 720p.mp4.
+            if (preg_match('/^\d{3,4}p$/', $quality) !== 1) {
+                continue;
+            }
+
+            $found[$quality] = $file;
+        }
+
+        ksort($found);
+
+        return $found;
     }
 }

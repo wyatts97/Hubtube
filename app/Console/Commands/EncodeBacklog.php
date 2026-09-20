@@ -6,6 +6,7 @@ use App\Jobs\ProcessVideoJob;
 use App\Models\Setting;
 use App\Models\Video;
 use App\Services\AdminLogger;
+use App\Services\Encoding\FfmpegCommands;
 use App\Services\Encoding\HlsPackager;
 use App\Support\Bytes;
 use Illuminate\Console\Command;
@@ -107,7 +108,13 @@ class EncodeBacklog extends Command
      */
     protected function watermarkSafe(): bool
     {
-        if (! Setting::get('watermark_enabled', false) || $this->option('watermark')) {
+        // The encoder's own predicate, not just the image toggle: a text
+        // watermark is switched on by watermark_text_enabled and never
+        // consults watermark_enabled, so checking that alone would wave a
+        // text watermark straight onto every imported video.
+        $configured = (new FfmpegCommands(Setting::getAll()))->hasWatermark();
+
+        if (! $configured || $this->option('watermark')) {
             return true;
         }
 

@@ -77,6 +77,46 @@ test('repack-hls stores the rendition once and reclaims the MP4', function () {
         ->and($video->encodings()->where('quality', '360p')->value('size'))->toBeGreaterThan(0);
 });
 
+test('repack-hls finds renditions that have no encoding rows', function () {
+    // Videos encoded before rendition tracking have files and no rows. On the
+    // measured library they were nearly all of them: asking the database found
+    // 75 renditions where the disk held 1,455.
+    fakeFfmpeg(duration: 60);
+    $video = legacyPackagedVideo();
+    $video->encodings()->delete();
+
+    $this->artisan('videos:repack-hls --apply')->assertSuccessful();
+
+    expect(file_exists(Storage::disk('public')->path("videos/{$video->slug}/processed/360p.mp4")))->toBeFalse()
+        ->and(HlsPackager::isPackaged(Storage::disk('public')->path("videos/{$video->slug}/processed"), '360p'))->toBeTrue();
+});
+
+test('repack-hls counts its limit in videos it actually reclaimed', function () {
+    // --limit=1 used to mean "look at one video", so a run could report
+    // nothing at all while thousands of renditions sat there.
+    fakeFfmpeg(duration: 60);
+    uploadedVideo(['status' => 'processed']);      // nothing to reclaim
+    uploadedVideo(['status' => 'processed']);      // nothing to reclaim
+    $withWork = legacyPackagedVideo();
+
+    $this->artisan('videos:repack-hls --apply --limit=1')->assertSuccessful();
+
+    expect(file_exists(Storage::disk('public')->path("videos/{$withWork->slug}/processed/360p.mp4")))->toBeFalse();
+});
+
+test('repack-hls never touches a watermarked original', function () {
+    // processed/original_watermarked.mp4 is the upload with the watermark
+    // drawn in, not a rendition — nothing streams it from HLS.
+    fakeFfmpeg(duration: 60);
+    $video = legacyPackagedVideo();
+    $processed = Storage::disk('public')->path("videos/{$video->slug}/processed");
+    file_put_contents("{$processed}/original_watermarked.mp4", str_repeat('w', 65536));
+
+    $this->artisan('videos:repack-hls --apply')->assertSuccessful();
+
+    expect(file_exists("{$processed}/original_watermarked.mp4"))->toBeTrue();
+});
+
 test('repack-hls keeps the MP4 when the stream cannot be verified', function () {
     // The packaged stream probes at 60s; this video claims 900s, so the two
     // disagree and nothing may be deleted.
@@ -141,7 +181,9 @@ test('encode-backlog refuses to run into a watermark by accident', function () {
     // Imports have no .watermark_done marker, and some already carry the old
     // site's burnt-in watermark.
     Bus::fake([ProcessVideoJob::class]);
+    Storage::disk('public')->put('media/watermark.png', 'x');
     Setting::set('watermark_enabled', true, 'general', 'boolean');
+    Setting::set('watermark_image', 'media/watermark.png', 'general', 'string');
     Setting::clearCache();
     uploadedVideo(['status' => 'processed', 'qualities_available' => ['original']]);
 
@@ -177,6 +219,20 @@ test('a video with no thumbnail still gets one from the encoder', function () {
     ProcessVideoJob::dispatchSync($video);
 
     expect($video->fresh()->thumbnail)->toContain("videos/{$video->slug}/");
+});
+
+test('encode-backlog catches a text watermark too, not just an image one', function () {
+    // hasTextWatermark() never consults watermark_enabled, so checking that
+    // setting alone would burn text onto every imported video.
+    Bus::fake([ProcessVideoJob::class]);
+    Setting::set('watermark_enabled', false, 'general', 'boolean');
+    Setting::set('watermark_text_enabled', true, 'general', 'boolean');
+    Setting::set('watermark_text', 'wedgietube.com', 'general', 'string');
+    Setting::clearCache();
+    uploadedVideo(['status' => 'processed', 'qualities_available' => ['original']]);
+
+    $this->artisan('videos:encode-backlog --apply')->assertFailed();
+    Bus::assertNothingDispatched();
 });
 
 test('encode-backlog skips videos whose upload has gone', function () {
