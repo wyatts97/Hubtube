@@ -4,13 +4,16 @@ namespace App\Filament\Pages;
 
 use App\Filament\Clusters\Settings as SettingsCluster;
 use App\Filament\Concerns\RequiresSuperAdmin;
-use App\Filament\Resources\EncodeProfileResource;
+use App\Models\EncodeProfile;
 use App\Models\Setting;
 use App\Services\AdminLogger;
 use App\Services\Encoding\FfmpegCommands;
 use App\Services\FfmpegService;
 use App\Services\WatermarkService;
 use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
@@ -22,22 +25,30 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\EmbeddedTable;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 
 /**
- * Every FFmpeg setting in one place. FfmpegCommands reads these keys to build
- * the commands for uploads, so this page is the only place they are edited.
+ * Every FFmpeg setting in one place, including the resolution ladder
+ * (EncodeProfile). FfmpegCommands reads these keys to build the commands for
+ * uploads, so this page is the only place they are edited.
  */
-class EncodingSettings extends Page implements HasForms
+class EncodingSettings extends Page implements HasForms, HasTable
 {
     use InteractsWithForms;
+    use InteractsWithTable;
     use RequiresSuperAdmin;
 
     protected static string|\BackedEnum|null $navigationIcon = 'phosphor-film-strip';
@@ -209,13 +220,8 @@ class EncodingSettings extends Page implements HasForms
                                     ->schema([
                                         Toggle::make('multi_resolution_enabled')
                                             ->label('Multi-Resolution Transcoding')
+                                            ->helperText('Resolutions are set in the Profiles tab. Videos are never upscaled.')
                                             ->reactive(),
-                                        Placeholder::make('encode_profiles_link')
-                                            ->label('Resolutions')
-                                            ->content(fn (): HtmlString => new HtmlString(
-                                                'Set in <a href="'.e(EncodeProfileResource::getUrl()).'" class="text-primary-600 underline">Encoding Profiles</a>. Videos are never upscaled.'
-                                            ))
-                                            ->visible(fn ($get) => $get('multi_resolution_enabled')),
                                         Toggle::make('chunked_encoding_enabled')
                                             ->label('Chunked Parallel Encoding')
                                             ->helperText('Encodes long videos in parallel chunks across queue workers.')
@@ -274,6 +280,10 @@ class EncodingSettings extends Page implements HasForms
                                             ->label('HLS Flags')
                                             ->placeholder('independent_segments'),
                                     ])->columns(2),
+                            ]),
+                        Tab::make('Profiles')
+                            ->schema([
+                                EmbeddedTable::make(),
                             ]),
                         Tab::make('Watermark')
                             ->schema([
@@ -459,6 +469,92 @@ class EncodingSettings extends Page implements HasForms
                     ])->columnSpanFull(),
             ])
             ->statePath('data');
+    }
+
+    /** The resolution ladder, shown in the Profiles tab. */
+    public function table(Table $table): Table
+    {
+        return $table
+            ->query(EncodeProfile::query()->withCount('encodings'))
+            ->defaultSort('height')
+            ->heading('Encoding Profiles')
+            ->description('Videos are encoded to every active profile below their height. Changes apply to new uploads; use "Encode missing renditions" for existing videos.')
+            ->columns([
+                TextColumn::make('name')
+                    ->label('Quality')
+                    ->weight('bold'),
+                TextColumn::make('resolution')
+                    ->state(fn (EncodeProfile $record): string => "{$record->width}×{$record->height}"),
+                TextColumn::make('video_bitrate')
+                    ->label('Bitrate'),
+                TextColumn::make('codec')
+                    ->badge()
+                    ->formatStateUsing(fn (string $state): string => EncodeProfile::CODECS[$state] ?? $state)
+                    ->color('gray'),
+                TextColumn::make('encodings_count')
+                    ->label('Renditions')
+                    ->sortable(),
+                ToggleColumn::make('is_active')
+                    ->label('Active'),
+            ])
+            ->headerActions([
+                CreateAction::make()
+                    ->label('Add')
+                    ->icon('phosphor-plus')
+                    ->model(EncodeProfile::class)
+                    ->schema(fn () => $this->profileFields()),
+            ])
+            ->recordActions([
+                EditAction::make()->schema(fn () => $this->profileFields()),
+                DeleteAction::make(),
+            ])
+            ->paginated(false)
+            ->emptyStateIcon('phosphor-film-strip')
+            ->emptyStateHeading('No encoding profiles')
+            ->emptyStateDescription('Without an active profile, videos are published at their original resolution only.');
+    }
+
+    protected function profileFields(): array
+    {
+        return [
+            TextInput::make('name')
+                ->label('Quality Label')
+                ->helperText('Shown in the player\'s quality menu, e.g. 720p.')
+                ->required()
+                ->maxLength(32)
+                ->regex('/^[A-Za-z0-9_-]+$/')
+                ->unique(EncodeProfile::class, 'name', ignoreRecord: true)
+                ->notIn(['original']),
+            Select::make('codec')
+                ->options(EncodeProfile::CODECS)
+                ->default('h264')
+                ->required()
+                ->selectablePlaceholder(false)
+                ->helperText('H.264 plays in every browser, both as MP4 and over HLS.'),
+            TextInput::make('width')
+                ->numeric()
+                ->required()
+                ->minValue(64)
+                ->maxValue(7680)
+                ->helperText('Nominal 16:9 width, used in the HLS playlist. Output keeps the source aspect ratio.'),
+            TextInput::make('height')
+                ->numeric()
+                ->required()
+                ->minValue(64)
+                ->maxValue(4320)
+                ->helperText('Output height in pixels.'),
+            TextInput::make('video_bitrate')
+                ->label('Video Bitrate')
+                ->required()
+                ->maxLength(16)
+                ->regex('/^\d+(\.\d+)?[kKmM]?$/')
+                ->placeholder('2800k')
+                ->helperText('Used when rate control is "Bitrate", and as the HLS bandwidth hint.'),
+            Toggle::make('is_active')
+                ->label('Active')
+                ->default(true)
+                ->inline(false),
+        ];
     }
 
     protected static function gridPositions(): array

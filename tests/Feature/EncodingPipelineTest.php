@@ -1,6 +1,6 @@
 <?php
 
-use App\Filament\Resources\EncodeProfileResource;
+use App\Filament\Pages\EncodingSettings;
 use App\Jobs\EncodeVideoChunkJob;
 use App\Jobs\ProcessVideoJob;
 use App\Livewire\VideoEncodingProgress;
@@ -353,13 +353,22 @@ test('seek previews are one sprite sheet indexed by xywh fragments', function ()
 test('super admins can manage encoding profiles', function () {
     asAdmin();
 
-    $this->get(EncodeProfileResource::getUrl('index'))
+    $this->get(EncodingSettings::getUrl())
         ->assertOk()
         ->assertSee('1080p');
+
+    Livewire::test(EncodingSettings::class)
+        ->callTableAction('create', data: [
+            'name' => '900p', 'codec' => 'h264', 'width' => 1600, 'height' => 900,
+            'video_bitrate' => '9000k', 'is_active' => true,
+        ])
+        ->assertHasNoTableActionErrors();
+
+    expect(EncodeProfile::where('name', '900p')->value('height'))->toBe(900);
 });
 
 test('admins without the super-admin tier cannot', function () {
     asAdmin(User::factory()->plainAdmin()->create());
 
-    $this->get(EncodeProfileResource::getUrl('index'))->assertForbidden();
+    $this->get(EncodingSettings::getUrl())->assertForbidden();
 });

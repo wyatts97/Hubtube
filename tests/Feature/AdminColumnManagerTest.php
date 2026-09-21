@@ -29,7 +29,6 @@ const PINNED = [
     'PageResource' => 'title',
     'SponsoredCardResource' => 'title',
     'CategoryResource' => 'name',
-    'EncodeProfileResource' => 'name',
     'ChannelResource' => 'name',
     'TagResource' => 'name',
     'VideoAdResource' => 'name',
