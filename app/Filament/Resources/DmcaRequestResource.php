@@ -233,7 +233,7 @@ class DmcaRequestResource extends Resource
                 ->icon('phosphor-trash')
                 ->color('danger')
                 ->requiresConfirmation()
-                ->modalDescription('This will unpublish the linked video and mark this request as actioned.')
+                ->modalDescription('Unpublishes the linked video and marks this request actioned.')
                 ->visible(fn (DmcaRequest $record) => $record->status === DmcaRequest::STATUS_PENDING && $record->video)
                 ->schema([
                     Textarea::make('admin_notes')->label('Notes')->rows(3),

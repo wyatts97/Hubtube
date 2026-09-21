@@ -4,7 +4,7 @@
         {{-- Upload Zone --}}
         @if (!$isCreating)
             <x-filament::section heading="Upload Videos" icon="phosphor-tray-arrow-up"
-                description="Select multiple video files to upload. After uploading, fill in the details for each video below.">
+                description="Upload several videos, then fill in their details below.">
                 <x-slot:afterHeader>
                     <x-filament::button wire:click="addUploadedFiles" icon="phosphor-plus-circle">
                         Add to Queue
@@ -54,7 +54,7 @@
         {{-- Processing Status --}}
         @if (!empty($createdVideoIds) || $this->bulkToken)
             <x-filament::section heading="Processing Status" icon="phosphor-cpu"
-                description="Videos are being processed. Once complete, scheduled videos will auto-publish at their scheduled time.">
+                description="Processing. Scheduled videos publish at their set time.">
                 {{-- Poll for async job results when a token is present --}}
                 @if ($this->bulkToken)
                     <div wire:poll.3s="pollBulkResults"></div>

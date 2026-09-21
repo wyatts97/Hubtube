@@ -2,6 +2,7 @@
 
 use App\Filament\Clusters\Settings as SettingsCluster;
 use App\Filament\Pages\AdSettings;
+use App\Filament\Pages\EncodingSettings;
 use App\Filament\Pages\IntegrationSettings;
 use App\Filament\Pages\LanguageSettings;
 use App\Filament\Pages\NotificationSettings;
@@ -43,6 +44,7 @@ dataset('clusteredSettingsPages', [
     'search indexing' => [SearchIndexingSettings::class],
     'languages' => [LanguageSettings::class],
     'storage' => [StorageSettings::class],
+    'encoding' => [EncodingSettings::class],
     'pwa' => [PwaSettings::class],
     'email' => [IntegrationSettings::class],
     'notifications' => [NotificationSettings::class],
@@ -52,11 +54,11 @@ dataset('clusteredSettingsPages', [
     'reward points' => [PointsSettings::class],
 ]);
 
-test('all thirteen settings pages belong to the cluster', function (string $page) {
+test('all fourteen settings pages belong to the cluster', function (string $page) {
     expect($page::getCluster())->toBe(SettingsCluster::class);
 })->with('clusteredSettingsPages');
 
-test('the cluster collapses thirteen sidebar entries into one', function () {
+test('the cluster collapses the settings sidebar entries into one', function () {
     asAdmin();
 
     // A page inside a cluster returns early from registerNavigationItems(), so
@@ -65,7 +67,7 @@ test('the cluster collapses thirteen sidebar entries into one', function () {
         ->map(fn ($item) => $item->getLabel());
 
     foreach (['Site Settings', 'Theme & Appearance', 'SEO Settings', 'Ad Settings',
-        'Payment Settings', 'Reward Points', 'PWA & Push', 'Storage & CDN',
+        'Payment Settings', 'Reward Points', 'PWA & Push', 'Storage & CDN', 'Video Encoding',
         'Notifications', 'Languages', 'Social Login', 'Search Indexing'] as $label) {
         expect($items)->not->toContain($label);
     }
@@ -90,6 +92,7 @@ test('the cluster preserves per-page super-admin gating', function () {
     foreach ([SiteSettings::class,
         PaymentSettings::class,
         StorageSettings::class,
+        EncodingSettings::class,
         IntegrationSettings::class] as $page) {
         $this->get($page::getUrl())->assertStatus(403);
     }
@@ -123,6 +126,24 @@ test('a clustered settings page still saves', function () {
         ->assertHasNoErrors();
 
     expect((int) Setting::get('seo_sitemap_chunk_size'))->toBe(4321);
+});
+
+test('encoding settings live on one page', function () {
+    asAdmin();
+
+    Livewire::test(EncodingSettings::class)
+        ->set('data.ffmpeg_threads', 3)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect((int) Setting::get('ffmpeg_threads'))->toBe(3);
+
+    // No other settings page edits these keys any more.
+    foreach ([SiteSettings::class, StorageSettings::class] as $page) {
+        $data = Livewire::test($page)->get('data');
+
+        expect($data)->not->toHaveKeys(['ffmpeg_threads', 'ffmpeg_path', 'ffmpeg_enabled', 'watermark_enabled']);
+    }
 });
 
 test('the pages that also render tables still boot inside the cluster', function (string $page) {

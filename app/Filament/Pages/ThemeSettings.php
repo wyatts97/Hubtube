@@ -235,7 +235,7 @@ class ThemeSettings extends Page implements HasForms
                                     ])->columns(2),
 
                                 Section::make('Site Logo')
-                                    ->description('Upload your site logo and favicon. These are displayed in the header, browser tab, and PWA icon.')
+                                    ->description('Shown in the header, browser tab and PWA icon.')
                                     ->schema([
                                         // site_logo is the DARK-mode logo and the
                                         // fallback for both themes. The site was
@@ -252,7 +252,7 @@ class ThemeSettings extends Page implements HasForms
                                             ->visibility('public')
                                             ->imageResizeMode('contain')
                                             ->imageCropAspectRatio(null)
-                                            ->helperText('Your main logo, shown in dark mode and used as the fallback everywhere. Use light-coloured artwork. Recommended: PNG with transparency, ~40px display height.'),
+                                            ->helperText('Used in dark mode and as the fallback. Light artwork; transparent PNG, about 40px tall.'),
                                         FileUpload::make('site_logo_light')
                                             ->label('Site Logo (light mode)')
                                             ->image()
@@ -261,22 +261,22 @@ class ThemeSettings extends Page implements HasForms
                                             ->visibility('public')
                                             ->imageResizeMode('contain')
                                             ->imageCropAspectRatio(null)
-                                            ->helperText('Optional. Shown in light mode — use dark-coloured artwork. Leave empty to reuse the dark logo in both themes.'),
+                                            ->helperText('Optional light-mode version with dark artwork. Empty uses the dark logo.'),
                                         FileUpload::make('site_favicon')
                                             ->label('Favicon')
                                             ->acceptedFileTypes(['image/x-icon', 'image/png', 'image/svg+xml', 'image/vnd.microsoft.icon'])
                                             ->disk('public')
                                             ->directory('logos')
                                             ->visibility('public')
-                                            ->helperText('Upload a .ico, .png, or .svg favicon (recommended: 32x32 or 64x64)'),
+                                            ->helperText('.ico, .png or .svg, 32×32 or 64×64.'),
                                     ])->columns(2),
 
                                 Section::make('Footer Logo')
-                                    ->description('Display a logo in the footer above the legal links. Leave empty to show the site title text instead.')
+                                    ->description('Shown above the legal links. Empty shows the site title.')
                                     ->schema([
                                         Toggle::make('footer_logo_match_site')
                                             ->label('Use Site Logo for Footer')
-                                            ->helperText('When enabled, the footer uses the site logo above — including its light-mode variant, so it follows the theme.')
+                                            ->helperText('Reuse the site logo, including its light-mode version.')
                                             ->reactive()
                                             ->columnSpanFull(),
                                         // Mirrors the site logo pair: this is the
@@ -288,7 +288,7 @@ class ThemeSettings extends Page implements HasForms
                                             ->disk('public')
                                             ->directory('logos')
                                             ->visibility('public')
-                                            ->helperText('Shown in dark mode and used as the fallback. Use light-coloured artwork. Leave empty to show the site title text.')
+                                            ->helperText('Used in dark mode and as the fallback. Empty shows the site title.')
                                             ->visible(fn ($get) => ! $get('footer_logo_match_site')),
                                         FileUpload::make('footer_logo_url_light')
                                             ->label('Footer Logo (light mode)')
@@ -296,12 +296,11 @@ class ThemeSettings extends Page implements HasForms
                                             ->disk('public')
                                             ->directory('logos')
                                             ->visibility('public')
-                                            ->helperText('Optional. Shown in light mode — use dark-coloured artwork. Leave empty to reuse the dark footer logo.')
+                                            ->helperText('Optional light-mode version. Empty uses the dark footer logo.')
                                             ->visible(fn ($get) => ! $get('footer_logo_match_site')),
                                     ]),
 
                                 Section::make('Site Title Customization')
-                                    ->description('Customize your site title appearance with Google Fonts')
                                     ->schema([
                                         TextInput::make('site_title')
                                             ->label('Site Title')
@@ -334,7 +333,7 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
 
                                 Section::make('Page Loading Bar')
-                                    ->description('A thin progress bar shown at the top of the page during navigation. Leave empty to use the accent color.')
+                                    ->description('Bar at the top of the page while navigating. Empty uses the accent color.')
                                     ->schema([
                                         ColorPicker::make('progress_bar_color')
                                             ->label('Progress Bar Color'),
@@ -356,7 +355,7 @@ class ThemeSettings extends Page implements HasForms
                                             ])
                                             ->default('user')
                                             ->native(false)
-                                            ->helperText('"Visitor chooses" shows a light/dark switch in the header and remembers each visitor choice. The other options hide the switch and pin the whole site to one theme.'),
+                                            ->helperText('"Visitor chooses" adds a light/dark switch. The others lock the site to one theme.'),
                                     ]),
 
                                 Section::make('Dark Mode Colors')
@@ -364,7 +363,7 @@ class ThemeSettings extends Page implements HasForms
                                     ->schema(self::paletteFields('dark')),
 
                                 Section::make('Light Mode Colors')
-                                    ->description('Light mode is designed around a warm off-white ground with white cards, so thumbnails keep a visible edge. If you change the accent, pick one dark enough to read as text on white — the bright red used for badges will fail contrast at small sizes.')
+                                    ->description('Pick an accent dark enough to read as text on white.')
                                     ->schema(self::paletteFields('light')),
                             ]),
 
@@ -372,7 +371,7 @@ class ThemeSettings extends Page implements HasForms
                             ->icon('phosphor-text-aa')
                             ->schema([
                                 Section::make('Body & interface')
-                                    ->description('Metadata, buttons, form labels, navigation — everything that is not a heading. Leave empty to use the theme default (Archivo).')
+                                    ->description('Body text, buttons, labels and navigation. Empty uses Archivo.')
                                     ->schema([
                                         Grid::make(3)->schema([
                                             self::fontSelect('font_body_family', 'Font family', 'font_body_weight')
@@ -384,7 +383,7 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
 
                                 Section::make('Headings & titles')
-                                    ->description('Page titles, section headers, video card titles and the wordmark. This is the choice that most defines how the site reads. Leave empty for the theme default (Archivo Narrow).')
+                                    ->description('Page titles, headings, card titles and the wordmark. Empty uses Archivo Narrow.')
                                     ->schema([
                                         Grid::make(3)->schema([
                                             self::fontSelect('font_display_family', 'Font family', 'font_display_weight')
@@ -396,7 +395,7 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
 
                                 Section::make('Video card overrides')
-                                    ->description('Optional. Overrides the fonts above for video card text only — useful when a dense grid needs a narrower face than the rest of the site. Leave empty to inherit.')
+                                    ->description('Optional font for video card text only. Empty inherits the fonts above.')
                                     ->schema([
                                         Grid::make(3)->schema([
                                             self::fontSelect('video_card_title_font', 'Card title font', 'video_card_title_weight')
@@ -430,7 +429,6 @@ class ThemeSettings extends Page implements HasForms
                                     ])->columns(3),
 
                                 Section::make('Main Navigation Icons')
-                                    ->description('Customize icons for the main navigation menu')
                                     ->schema([
                                         Grid::make(2)->schema([
                                             Select::make('nav_home_icon')
@@ -475,7 +473,7 @@ class ThemeSettings extends Page implements HasForms
                             ->icon('phosphor-squares-four')
                             ->schema([
                                 Section::make('Category Title Typography')
-                                    ->description('Customize how category names appear as overlays on the category browse page thumbnails')
+                                    ->description('Category name overlays on category page thumbnails.')
                                     ->schema([
                                         Grid::make(2)->schema([
                                             Select::make('category_title_font')
@@ -509,7 +507,6 @@ class ThemeSettings extends Page implements HasForms
                             ->icon('phosphor-stack')
                             ->schema([
                                 Section::make('Visibility')
-                                    ->description('Choose which elements to show on video cards across the site')
                                     ->schema([
                                         Grid::make(3)->schema([
                                             Toggle::make('video_card_show_avatar')
@@ -544,7 +541,7 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
 
                                 Section::make('Title Styling')
-                                    ->description('Size, colour and clamping for the video title. The font family moved to the Typography tab.')
+                                    ->description('Size, colour and clamping for the title. Font is set under Typography.')
                                     ->schema([
                                         Grid::make(2)->schema([
                                             TextInput::make('video_card_title_size')
@@ -568,7 +565,7 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
 
                                 Section::make('Meta Text Styling')
-                                    ->description('Size and colour for the uploader name, views and timestamp. The font family moved to the Typography tab.')
+                                    ->description('Size and colour for uploader, views and time. Font is set under Typography.')
                                     ->schema([
                                         Grid::make(2)->schema([
                                             TextInput::make('video_card_meta_size')
@@ -619,7 +616,7 @@ class ThemeSettings extends Page implements HasForms
                                                 '2' => 'Two columns (2x2 grid)',
                                             ])
                                             ->default('1')
-                                            ->helperText('Ad spaces in the grid will remain full-width (300px) between rows regardless of this setting'),
+                                            ->helperText('Grid ads stay full-width (300px) between rows.'),
                                     ]),
                             ]),
 
@@ -627,7 +624,6 @@ class ThemeSettings extends Page implements HasForms
                             ->icon('phosphor-shield-check')
                             ->schema([
                                 Section::make('Overlay Settings')
-                                    ->description('Customize the modal overlay appearance')
                                     ->schema([
                                         Grid::make(2)->schema([
                                             TextInput::make('age_overlay_color')
@@ -647,7 +643,7 @@ class ThemeSettings extends Page implements HasForms
                                     ->schema([
                                         Toggle::make('age_show_logo')
                                             ->label('Show Site Logo')
-                                            ->helperText('When enabled, displays the site logo (set in Site Logo section above) instead of the shield icon.'),
+                                            ->helperText('Shows the site logo instead of the shield icon.'),
                                     ]),
 
                                 Section::make('Typography')
@@ -674,7 +670,6 @@ class ThemeSettings extends Page implements HasForms
                                     ]),
 
                                 Section::make('Content')
-                                    ->description('Customize all text displayed in the modal')
                                     ->schema([
                                         TextInput::make('age_header_text')
                                             ->label('Header Text')

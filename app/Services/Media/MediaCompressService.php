@@ -252,11 +252,12 @@ class MediaCompressService
         $keyframes = '-force_key_frames '.escapeshellarg('expr:gte(t,n_forced*'.self::KEYFRAME_SECONDS.')');
 
         return sprintf(
-            '%s -hide_banner -nostdin -y -i %s -map 0:v:0 -map 0:a:0? %s %s %s -progress pipe:1 -nostats %s',
+            '%s -hide_banner -nostdin -y -i %s -map 0:v:0 -map 0:a:0? %s %s -threads %d %s -progress pipe:1 -nostats %s',
             escapeshellarg(FfmpegService::ffmpegPath()),
             escapeshellarg($absoluteIn),
             $video,
             $keyframes,
+            max(1, (int) Setting::get('ffmpeg_threads', 4)),
             $container,
             escapeshellarg($absoluteOut),
         );

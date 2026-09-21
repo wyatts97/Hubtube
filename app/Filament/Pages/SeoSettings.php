@@ -176,7 +176,7 @@ class SeoSettings extends Page implements HasForms
                                             ->label('Default OG Image URL')
                                             ->url()
                                             ->placeholder('https://yoursite.com/images/og-default.jpg')
-                                            ->helperText('Recommended: 1200Ã—630px. Used when no page-specific image is available.'),
+                                            ->helperText('Recommended: 1200×630. Used when a page has no image of its own.'),
                                         Select::make('seo_og_type')
                                             ->label('Default OG Type')
                                             ->options([
@@ -203,7 +203,7 @@ class SeoSettings extends Page implements HasForms
                             ->icon('phosphor-check-circle')
                             ->schema([
                                 Section::make('Verification Codes')
-                                    ->description('Paste the verification meta tag content value from each search engine\'s webmaster tools.')
+                                    ->description('The content value of each search engine’s verification meta tag.')
                                     ->schema([
                                         TextInput::make('seo_google_verification')
                                             ->label('Google Search Console')
@@ -227,14 +227,14 @@ class SeoSettings extends Page implements HasForms
                                         Textarea::make('seo_robots_txt')
                                             ->label('robots.txt Content')
                                             ->rows(12)
-                                            ->helperText('Controls which pages search engines can crawl. Be careful editing this.'),
+                                            ->helperText('Which pages search engines may crawl. Edit with care.'),
                                         Toggle::make('seo_noindex_private_videos')
                                             ->label('Noindex Private/Unlisted Videos')
                                             ->helperText('Add noindex to private and unlisted video pages.'),
                                         Toggle::make('seo_noindex_user_pages')
                                             ->label('Noindex User Settings/Wallet Pages')
                                             ->default(true)
-                                            ->helperText('Adds noindex to signed-in account pages (settings, dashboard, wallet) and auth screens. Error pages are always noindex.'),
+                                            ->helperText('Noindex on account pages (settings, dashboard, wallet) and sign-in screens.'),
                                         Toggle::make('seo_canonical_enabled')
                                             ->label('Enable Canonical URLs')
                                             ->helperText('Adds <link rel="canonical"> to prevent duplicate content issues.'),
@@ -260,11 +260,11 @@ class SeoSettings extends Page implements HasForms
                                     ->schema([
                                         Toggle::make('seo_video_schema_enabled')
                                             ->label('Enable VideoObject JSON-LD Schema')
-                                            ->helperText('Generates structured data for Google/Bing/Yandex video rich results.')
+                                            ->helperText('Structured data for video rich results.')
                                             ->default(true),
                                         Toggle::make('seo_video_embed_enabled')
                                             ->label('Include Embed URL in Schema')
-                                            ->helperText('Tells search engines the video can be embedded. Improves rich result eligibility.'),
+                                            ->helperText('Marks videos as embeddable. Helps rich results.'),
                                     ])->columns(2),
 
                                 Section::make('Video Title & Description Templates')
@@ -289,7 +289,7 @@ class SeoSettings extends Page implements HasForms
                                     ])->columns(2),
 
                                 Section::make('Image Alt Text')
-                                    ->description('Alt text is generated from these templates and stored on each record. Empty variables and the words left dangling around them are removed automatically, so a template can safely reference a variable that only some records have. Run "php artisan seo:backfill-alt-text" after changing a template to regenerate existing records.')
+                                    ->description('Alt text is built from these templates; missing variables are dropped cleanly. Run `php artisan seo:backfill-alt-text` after a change.')
                                     ->schema([
                                         TextInput::make('seo_video_thumbnail_alt_template')
                                             ->label('Video Thumbnail')
@@ -460,18 +460,18 @@ class SeoSettings extends Page implements HasForms
                                             )),
                                     ])->columns(2),
                                 Section::make('Video Sitemap')
-                                    ->description('Enhanced sitemap with video-specific metadata for Google Video Search.')
+                                    ->description('Adds video metadata for Google Video Search.')
                                     ->schema([
                                         Toggle::make('seo_sitemap_video_enabled')
                                             ->label('Enable Video Sitemap Extensions')
-                                            ->helperText('Adds video:video namespace with thumbnail, duration, description, view count, and tags to sitemap entries.'),
+                                            ->helperText('Adds thumbnail, duration, description, views and tags to each entry.'),
                                         TextInput::make('seo_sitemap_chunk_size')
                                             ->label('URLs Per Sitemap File')
                                             ->numeric()
                                             ->minValue(100)
                                             ->maxValue(50000)
                                             ->default(10000)
-                                            ->helperText('Videos are split across sitemap-videos-N.xml files of this size. Google allows up to 50,000 URLs per file.'),
+                                            ->helperText('Videos per sitemap file. Google allows up to 50,000.'),
                                         TextInput::make('seo_sitemap_max_channels')
                                             ->label('Max Channels in Sitemap')
                                             ->numeric()

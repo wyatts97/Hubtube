@@ -16,7 +16,7 @@ use Filament\Clusters\Cluster;
  * PointsSettings' HasTable implementations working (a component can only
  * implement it once), avoids rendering ~400 form fields into a single DOM,
  * keeps the eight pages that already use top-level Tabs from nesting tabs in
- * tabs, and leaves the duplicated ffmpeg_* keys writing to their own groups.
+ * tabs.
  *
  * Per-page access control is preserved: Cluster::canAccessClusteredComponents()
  * calls each component's canAccess(), so the RequiresSuperAdmin trait on Site,

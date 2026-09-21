@@ -73,11 +73,11 @@ class SearchIndexingSettings extends Page implements HasForms
                                     ->schema([
                                         Toggle::make('indexnow_enabled')
                                             ->label('Enable IndexNow')
-                                            ->helperText('Master toggle. When off, no submissions are sent and the key file returns 404.'),
+                                            ->helperText('Off: nothing is submitted and the key file returns 404.'),
                                         TextInput::make('indexnow_key')
                                             ->label('IndexNow Key')
                                             ->placeholder('Click "Generate Key" to create one')
-                                            ->helperText('A 8–128 character alphanumeric string. Search engines fetch this at /{key}.txt to verify ownership.')
+                                            ->helperText('8–128 letters or digits, served at /{key}.txt.')
                                             ->regex('/^[A-Za-z0-9\-]{8,128}$/')
                                             ->maxLength(128),
                                         TextInput::make('indexnow_key_location')
@@ -89,14 +89,14 @@ class SearchIndexingSettings extends Page implements HasForms
                                             ->label('IndexNow Endpoint')
                                             ->url()
                                             ->default(IndexNowService::DEFAULT_ENDPOINT)
-                                            ->helperText('The default api.indexnow.org endpoint forwards to all participating engines.'),
+                                            ->helperText('The default forwards to every participating engine.'),
                                     ])->columns(2),
 
                                 Section::make('Automation')
                                     ->schema([
                                         Toggle::make('indexnow_auto_submit_videos')
                                             ->label('Auto-submit new videos')
-                                            ->helperText('Submit a video URL automatically when it is published, approved, and public.')
+                                            ->helperText('Submit a video when it becomes public.')
                                             ->default(true),
                                         Toggle::make('indexnow_submit_translated_urls')
                                             ->label('Include translated alternate URLs')

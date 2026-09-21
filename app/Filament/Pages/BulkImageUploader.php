@@ -125,7 +125,7 @@ class BulkImageUploader extends Page implements HasForms
         return $schema
             ->components([
                 Section::make('Apply to All')
-                    ->description('Defaults applied to each newly added file. Click "Apply to All" to overwrite existing entries.')
+                    ->description('Applied to each new file. "Apply to All" overwrites existing entries.')
                     ->icon('phosphor-sliders-horizontal')
                     ->collapsible()
                     ->schema([

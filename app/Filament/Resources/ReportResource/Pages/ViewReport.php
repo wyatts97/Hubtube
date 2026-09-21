@@ -20,7 +20,7 @@ class ViewReport extends ViewRecord
                     ->icon('phosphor-trash')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->modalDescription('This will permanently delete the report and its associated inbox entry. This action cannot be undone.'),
+                    ->modalDescription('Deletes the report and its inbox entry. Cannot be undone.'),
             ],
         );
     }

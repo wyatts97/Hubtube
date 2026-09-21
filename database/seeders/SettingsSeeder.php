@@ -48,10 +48,10 @@ class SettingsSeeder extends Seeder
             ['group' => 'storage', 'key' => 'wasabi_enabled', 'value' => '0', 'type' => 'boolean', 'is_public' => false],
             ['group' => 'storage', 'key' => 'b2_enabled', 'value' => '0', 'type' => 'boolean', 'is_public' => false],
             ['group' => 'storage', 'key' => 's3_enabled', 'value' => '0', 'type' => 'boolean', 'is_public' => false],
-            ['group' => 'storage', 'key' => 'ffmpeg_enabled', 'value' => '1', 'type' => 'boolean', 'is_public' => false],
-            ['group' => 'storage', 'key' => 'ffmpeg_path', 'value' => '/usr/bin/ffmpeg', 'type' => 'string', 'is_public' => false],
-            ['group' => 'storage', 'key' => 'ffprobe_path', 'value' => '/usr/bin/ffprobe', 'type' => 'string', 'is_public' => false],
-            ['group' => 'storage', 'key' => 'ffmpeg_threads', 'value' => '4', 'type' => 'integer', 'is_public' => false],
+            ['group' => 'encoding', 'key' => 'ffmpeg_enabled', 'value' => '1', 'type' => 'boolean', 'is_public' => false],
+            ['group' => 'encoding', 'key' => 'ffmpeg_path', 'value' => '/usr/bin/ffmpeg', 'type' => 'string', 'is_public' => false],
+            ['group' => 'encoding', 'key' => 'ffprobe_path', 'value' => '/usr/bin/ffprobe', 'type' => 'string', 'is_public' => false],
+            ['group' => 'encoding', 'key' => 'ffmpeg_threads', 'value' => '4', 'type' => 'integer', 'is_public' => false],
         ];
 
         foreach ($settings as $setting) {

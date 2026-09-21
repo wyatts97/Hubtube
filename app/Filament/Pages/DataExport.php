@@ -53,7 +53,6 @@ class DataExport extends Page implements HasForms
         return $schema
             ->components([
                 Section::make('Select Data to Export')
-                    ->description('Choose which data types you want to export from the site.')
                     ->schema([
                         Checkbox::make('export_users')
                             ->label('Export Users')
@@ -67,7 +66,6 @@ class DataExport extends Page implements HasForms
                     ]),
 
                 Section::make('Export Format')
-                    ->description('Choose the format for your export.')
                     ->schema([
                         Select::make('users_format')
                             ->label('Users Export Format')

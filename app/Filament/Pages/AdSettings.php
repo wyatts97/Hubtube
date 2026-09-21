@@ -185,7 +185,7 @@ class AdSettings extends Page implements HasForms
                         ->icon('phosphor-play')
                         ->schema([
                             Section::make('Pre-Roll, Mid-Roll & Post-Roll Settings')
-                                ->description('Configure video ads that play before, during, after and alongside video content. Every creative is served to the player as VAST. Manage individual ad creatives under Appearance > Ad Creatives.')
+                                ->description('Video ads served to the player as VAST. Creatives are managed in Monetization → Ad Creatives.')
                                 ->schema([
                                     Grid::make(3)->schema([
                                         Toggle::make('video_ad_pre_roll_enabled')
@@ -201,7 +201,7 @@ class AdSettings extends Page implements HasForms
                                     Grid::make(3)->schema([
                                         Toggle::make('video_ad_on_pause_roll_enabled')
                                             ->label('On-Pause Ads')
-                                            ->helperText('Show a banner over the player while the viewer has it paused. Use HTML creatives on the On-Pause placement.'),
+                                            ->helperText('Banner over the paused player. Uses On-Pause HTML creatives.'),
                                     ]),
                                     Grid::make(3)->schema([
                                         TextInput::make('video_ad_pre_roll_skip_after')
@@ -302,7 +302,7 @@ class AdSettings extends Page implements HasForms
                         ->icon('phosphor-grid-four')
                         ->schema([
                             Section::make('Video Grid Ad Settings')
-                                ->description('Ads injected between video cards on browsing pages (Home, Browse, Trending, Category). Recommended size: 300x250, but creatives of any size are automatically scaled to fit the grid on all devices. Multiple variants are randomly rotated per impression.')
+                                ->description('Ads between video cards on listing pages. 300×250 recommended; other sizes are scaled. Variants rotate randomly.')
                                 ->schema([
                                     Toggle::make('video_grid_ad_enabled')->label('Enable Video Grid Ads')->live(),
                                     TextInput::make('video_grid_ad_frequency')
@@ -315,7 +315,7 @@ class AdSettings extends Page implements HasForms
                                         ->options(['1' => '1', '2' => '2', '3' => '3', '4' => '4', '5' => '5'])
                                         ->default('1')
                                         ->live()
-                                        ->helperText('Each variant is randomly rotated. More variants = more ad diversity.')
+                                        ->helperText('Variants rotate randomly.')
                                         ->visible(fn ($get) => $get('video_grid_ad_enabled')),
                                 ]),
 
@@ -438,7 +438,7 @@ class AdSettings extends Page implements HasForms
                         ->schema([
                             Grid::make(2)->schema([
                                 Section::make('Popunder Ad')
-                                    ->description('Full-page popunder that opens in a new tab/window. Injected site-wide on every page load.')
+                                    ->description('Opens a full-page ad in a new tab, on every page.')
                                     ->icon('phosphor-app-window')
                                     ->collapsible()->collapsed()
                                     ->schema([
@@ -455,7 +455,7 @@ class AdSettings extends Page implements HasForms
                                     ]),
 
                                 Section::make('Zone Popunder (Click-Triggered)')
-                                    ->description('Raw zone URL popunder (e.g. pemsrv) triggered by our own click/time logic with frequency caps.')
+                                    ->description('Popunder from a raw zone URL, with site-controlled triggers and frequency caps.')
                                     ->icon('phosphor-browsers')
                                     ->collapsible()->collapsed()
                                     ->schema([
@@ -516,7 +516,7 @@ class AdSettings extends Page implements HasForms
                                         ])->visible(fn ($get) => $get('zone_popunder_enabled')),
                                     ]),
                                 Section::make('Interstitial / Full-Page Ad')
-                                    ->description('Manual mode uses a site-controlled overlay with frequency and skip timer. Automatic mode injects the ad code directly and lets the ad network handle timing.')
+                                    ->description('Manual: site overlay with frequency cap and skip timer. Automatic: the network’s code handles timing.')
                                     ->icon('phosphor-arrows-out')
                                     ->collapsible()->collapsed()
                                     ->schema([
@@ -551,7 +551,7 @@ class AdSettings extends Page implements HasForms
                                     ]),
 
                                 Section::make('Outstream Video Ads (In Video Grid)')
-                                    ->description('Native muted autoplay video ads that appear inline within the video grid. Manage ad creatives under Appearance → Ad Creatives with placement set to "Outstream".')
+                                    ->description('Muted autoplay video ads inside the video grid. Uses Outstream creatives.')
                                     ->icon('phosphor-play-circle')
                                     ->collapsible()->collapsed()
                                     ->schema([
@@ -564,7 +564,7 @@ class AdSettings extends Page implements HasForms
                                     ]),
 
                                 Section::make('Shorts Ads')
-                                    ->description('Full-screen interstitial ad slides inside the vertical Shorts feed. Manage creatives under Appearance → Ad Creatives with placement set to "Shorts".')
+                                    ->description('Full-screen ads between Shorts. Uses Shorts creatives.')
                                     ->icon('phosphor-device-mobile-camera')
                                     ->collapsible()->collapsed()
                                     ->schema([
@@ -598,7 +598,7 @@ class AdSettings extends Page implements HasForms
                         ->icon('phosphor-shield-check')
                         ->schema([
                             Section::make('Consent Management Platform')
-                                ->description('Required for EU/UK traffic. Without a TCF consent string most demand partners bid lower, and some will not bid at all.')
+                                ->description('Needed for EU/UK traffic. Without TCF consent, most partners bid lower or not at all.')
                                 ->schema([
                                     Toggle::make('cmp_enabled')
                                         ->label('Enable CMP')
@@ -608,17 +608,17 @@ class AdSettings extends Page implements HasForms
                                         ->label('CMP Loader Script')
                                         ->rows(6)->columnSpanFull()
                                         ->placeholder('<script src="https://cmp.example.com/loader.js"></script>')
-                                        ->helperText('Paste the loader snippet from your CMP vendor (Quantcast Choice, CookieYes, Sourcepoint, ...). Injected verbatim into <body>, before every ad tag.')
+                                        ->helperText('Loader snippet from your CMP (Quantcast Choice, CookieYes, Sourcepoint…). Added to <body> before every ad tag.')
                                         ->visible(fn ($get) => $get('cmp_enabled')),
                                     Toggle::make('cmp_wait_for_consent')
                                         ->label('Hold ads until consent resolves')
                                         ->default(true)
-                                        ->helperText('Ad slots wait for the CMP to report a TCF state before injecting. Turn this off only if your CMP handles gating itself.')
+                                        ->helperText('Ads wait for the CMP’s TCF signal. Turn off only if your CMP gates ads itself.')
                                         ->visible(fn ($get) => $get('cmp_enabled')),
                                     TextInput::make('cmp_timeout_ms')
                                         ->label('Consent Timeout (ms)')
                                         ->numeric()->default(3000)->minValue(500)->maxValue(15000)
-                                        ->helperText('If the CMP never answers, ads load anyway after this long so a broken CMP cannot blank every slot on the site.')
+                                        ->helperText('Ads load anyway after this long if the CMP never answers.')
                                         ->visible(fn ($get) => $get('cmp_enabled') && $get('cmp_wait_for_consent')),
                                 ]),
                         ]),

@@ -18,6 +18,7 @@ dataset('superAdminOnlyPages', [
     'site settings' => [App\Filament\Pages\SiteSettings::class],
     'payment settings' => [App\Filament\Pages\PaymentSettings::class],
     'storage settings' => [App\Filament\Pages\StorageSettings::class],
+    'encoding settings' => [App\Filament\Pages\EncodingSettings::class],
     'integration settings' => [App\Filament\Pages\IntegrationSettings::class],
     'archive importer' => [App\Filament\Pages\ArchiveImporter::class],
 ]);

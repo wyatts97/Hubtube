@@ -98,9 +98,9 @@ class MenuItemResource extends Resource
                                 default => '/categories or https://example.com',
                             })
                             ->helperText(fn ($get) => match ($get('type')) {
-                                'category' => 'Enter the category slug. URL will become /category/slug',
-                                'tag' => 'Enter the tag name. URL will become /tag/name',
-                                default => 'Relative or absolute URL',
+                                'category' => 'Links to /category/{slug}.',
+                                'tag' => 'Links to /tag/{name}.',
+                                default => 'Relative or absolute URL.',
                             })
                             ->visible(fn ($get) => ! in_array($get('type'), ['dropdown', 'divider']))
                             ->dehydrateStateUsing(function ($state, $get) {

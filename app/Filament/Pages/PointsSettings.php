@@ -66,7 +66,7 @@ class PointsSettings extends Page implements HasForms, HasTable
         return $schema
             ->components([
                 Section::make('Reward Points System')
-                    ->description('Reward users with points for contributing content. Points can be redeemed for temporary Ad-Free Pro access.')
+                    ->description('Users earn points for contributing and redeem them for ad-free Pro time.')
                     ->schema([
                         Toggle::make('points_enabled')
                             ->label('Enable Reward Points System')
@@ -75,7 +75,7 @@ class PointsSettings extends Page implements HasForms, HasTable
                     ]),
 
                 Section::make('Earning Points')
-                    ->description('Configure how many points users earn for each action. Each method can be independently enabled or disabled.')
+                    ->description('Points per action. Each can be turned off.')
                     ->visible(fn ($get) => $get('points_enabled'))
                     ->schema([
                         Grid::make(2)->schema([
@@ -119,7 +119,7 @@ class PointsSettings extends Page implements HasForms, HasTable
 
                         TextInput::make('points_comment_daily_cap')
                             ->label('Comment Daily Cap (points)')
-                            ->helperText('Maximum points a user can earn from comments per day. 0 = unlimited.')
+                            ->helperText('Daily cap on comment points. 0 = unlimited.')
                             ->numeric()
                             ->minValue(0)
                             ->default(50)
@@ -127,12 +127,12 @@ class PointsSettings extends Page implements HasForms, HasTable
                     ]),
 
                 Section::make('Redemption — Ad-Free Pro')
-                    ->description('Users can redeem accumulated points for temporary Pro membership (ad-free experience + all Pro perks).')
+                    ->description('Users can trade points for temporary Pro membership.')
                     ->visible(fn ($get) => $get('points_enabled'))
                     ->schema([
                         Toggle::make('points_redemption_enabled')
                             ->label('Enable Redemption')
-                            ->helperText('Allow users to spend points. Disable to let users keep accumulating without spending.')
+                            ->helperText('Off: users keep earning but cannot spend.')
                             ->live(),
                         Grid::make(2)->schema([
                             TextInput::make('points_per_redemption_cost')

@@ -45,7 +45,7 @@ class EncodeProfileResource extends Resource
         return $schema
             ->components([
                 Section::make()
-                    ->description('A video is transcoded to every active profile below its own height. Changes apply to new uploads; use "Encode missing renditions" on existing videos to add a newly enabled profile.')
+                    ->description('Videos are encoded to every active profile below their height. Changes apply to new uploads; use "Encode missing renditions" for existing videos.')
                     ->schema([
                         TextInput::make('name')
                             ->label('Quality Label')

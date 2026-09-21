@@ -85,7 +85,7 @@ class ImageResource extends Resource
                             ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
                             ->maxSize(524288) // 500MB
                             ->visibility('public')
-                            ->helperText('Upload JPG, PNG, GIF, or WebP. Max 500MB. Image will be processed after creation.')
+                            ->helperText('JPG, PNG, GIF or WebP, up to 500 MB. Processed after saving.')
                             ->columnSpanFull(),
                     ])
                     ->visibleOn('create'),
@@ -109,7 +109,7 @@ class ImageResource extends Resource
                         TextInput::make('alt_text')
                             ->label('Alt Text')
                             ->maxLength(255)
-                            ->helperText('Leave blank to generate from the SEO template. A value set here is never overwritten unless seo:backfill-alt-text is run with --force.')
+                            ->helperText('Blank uses the SEO template. A value set here is kept unless seo:backfill-alt-text runs with --force.')
                             ->columnSpanFull(),
                         Select::make('user_id')
                             ->label('Uploader')

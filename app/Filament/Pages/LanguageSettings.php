@@ -107,7 +107,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
         return $schema
             ->components([
                 Section::make('Translation Settings')
-                    ->description('Enable multi-language support for your site. When enabled, a language switcher appears in the sidebar and content is auto-translated.')
+                    ->description('Adds a language switcher and translates content automatically.')
                     ->schema([
                         Toggle::make('translation_enabled')
                             ->label('Enable Translation System')
@@ -121,22 +121,22 @@ class LanguageSettings extends Page implements HasForms, HasTable
 
                         Toggle::make('auto_translate_content')
                             ->label('Auto-Translate Dynamic Content')
-                            ->helperText('Master switch for translating video titles, descriptions, categories and pages. Translation runs on a schedule — never while a visitor is loading a page.'),
+                            ->helperText('Translates titles, descriptions, categories and pages on a schedule.'),
 
                         Toggle::make('translation_pretranslate_on_upload')
                             ->label('Translate New Videos Immediately')
-                            ->helperText('Queue a translation as soon as a video finishes processing, instead of waiting for the next scheduled run. Recommended on weekly or monthly schedules.'),
+                            ->helperText('Queue a translation as soon as a video is processed instead of waiting for the next run.'),
                     ]),
 
                 Section::make('Translation Provider')
-                    ->description('The engine used for all translation. There is no automatic fallback: if it fails, content simply stays untranslated until the next run.')
+                    ->description('No fallback: if it fails, content stays untranslated until the next run.')
                     ->schema([
                         Select::make('translation_provider')
                             ->label('Provider')
                             ->options(fn () => app(TranslationProviderManager::class)->available())
                             ->live()
                             ->required()
-                            ->helperText('LibreTranslate can be self-hosted or paid. Google is an unofficial scraper with no rate-limit guarantees.'),
+                            ->helperText('LibreTranslate: self-hosted or paid. Google: unofficial and may be rate-limited.'),
 
                         TextInput::make('libretranslate_endpoint')
                             ->label('LibreTranslate Endpoint')
@@ -162,7 +162,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
                     ])->columns(2),
 
                 Section::make('Translation Schedule')
-                    ->description('When outstanding content is translated. Runs are resumable and skip anything already translated.')
+                    ->description('Runs resume where they stopped and skip anything already translated.')
                     ->schema([
                         Select::make('translation_schedule_frequency')
                             ->label('Frequency')
@@ -197,7 +197,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
                             ->numeric()
                             ->minValue(10)
                             ->maxValue(10000)
-                            ->helperText('Caps a single run so it stays bounded; the next run continues where this one stopped.'),
+                            ->helperText('Items per run. The next run continues from there.'),
 
                         Text::make(fn () => new HtmlString($this->scheduleSummaryHtml()))
                             ->columnSpanFull(),
@@ -208,31 +208,31 @@ class LanguageSettings extends Page implements HasForms, HasTable
                                 ->icon('phosphor-play')
                                 ->color('success')
                                 ->requiresConfirmation()
-                                ->modalDescription('Queues a full translation sweep in the background using the configured provider.')
+                                ->modalDescription('Queues a full translation run in the background.')
                                 ->action('runTranslationsNow'),
                         ])->columnSpanFull(),
                     ])->columns(2),
 
                 Section::make('Language Code Overrides')
-                    ->description('Some engines use non-standard codes. LibreTranslate calls Brazilian Portuguese "pb" — plain "pt" is European Portuguese.')
+                    ->description('For engines with non-standard codes, e.g. LibreTranslate uses "pb" for Brazilian Portuguese.')
                     ->collapsed()
                     ->schema([
                         KeyValue::make('translation_locale_overrides')
                             ->label('Site locale → provider code')
                             ->keyLabel('Site locale')
                             ->valueLabel('Provider code')
-                            ->helperText('Only affects the outbound API call. Your URLs and stored translations keep using the site locale.'),
+                            ->helperText('Only used for the API call. URLs and stored translations keep the site locale.'),
                     ]),
 
                 Section::make('Enabled Languages')
-                    ->description('Select which languages visitors can switch to. Each enabled language creates SEO-friendly URLs (e.g. /es/video-title, /fr/trending).')
+                    ->description('Languages visitors can switch to. Each gets its own URLs, e.g. /es/video-title.')
                     ->schema([
                         CheckboxList::make('enabled_languages')
                             ->label('Available Languages')
                             ->options($languageOptions)
                             ->searchable()
                             ->columns(3)
-                            ->helperText('After enabling new languages, run `php artisan translations:generate` to auto-generate UI translation files.'),
+                            ->helperText('Run `php artisan translations:generate` after enabling a language.'),
                     ]),
             ])
             ->statePath('data');
@@ -337,7 +337,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
         return $table
             ->query(TranslationOverride::query())
             ->heading('Translation Overrides')
-            ->description('Fix or replace words/phrases that Google Translate gets wrong. Overrides apply to both dynamic content and static UI translations.')
+            ->description('Fix words the translator gets wrong. Applies to content and UI text.')
             ->defaultSort('locale')
             ->columns([
                 TextColumn::make('locale')
@@ -418,7 +418,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
                     ->icon('phosphor-trash')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->modalDescription('This will delete ALL cached translations. They will be re-translated (with overrides applied) on next request.')
+                    ->modalDescription('Deletes all cached translations. They are re-translated on the next request.')
                     ->action(function () {
                         $this->clearTranslationCache();
                     }),
@@ -427,7 +427,7 @@ class LanguageSettings extends Page implements HasForms, HasTable
                 DeleteBulkAction::make(),
             ])
             ->emptyStateHeading('No translation overrides')
-            ->emptyStateDescription('Add overrides to fix words that Google Translate gets wrong.')
+            ->emptyStateDescription('Add an override to fix a word the translator gets wrong.')
             ->emptyStateIcon('phosphor-translate')
             ->striped();
     }

@@ -67,6 +67,21 @@ class FfmpegCommands
         ));
     }
 
+    /**
+     * x264 arguments for the watermarked copy that replaces the upload. It is
+     * encoded near-losslessly regardless of the quality settings, since it
+     * becomes the only original the site keeps.
+     */
+    public function originalVideoArgs(): string
+    {
+        return sprintf(
+            '-c:v libx264 -preset fast -crf 18 -pix_fmt %s -threads %d -force_key_frames %s',
+            escapeshellarg((string) $this->s('ffmpeg_pix_fmt', 'yuv420p')),
+            (int) $this->s('ffmpeg_threads', 4),
+            escapeshellarg('expr:gte(t,n_forced*'.self::KEYFRAME_SECONDS.')')
+        );
+    }
+
     public function audioArgs(): string
     {
         return '-c:a aac -b:a '.escapeshellarg((string) $this->s('audio_bitrate', '128k'));

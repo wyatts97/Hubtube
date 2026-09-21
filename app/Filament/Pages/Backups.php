@@ -53,7 +53,7 @@ class Backups extends Page implements HasForms
                     ->schema([
                         Toggle::make('backup_enabled')
                             ->label('Enable automatic daily backups')
-                            ->helperText('When enabled, a full backup runs nightly at 1:00 AM. Old backups are cleaned weekly.'),
+                            ->helperText('Full backup nightly at 1:00 AM. Old backups are pruned weekly.'),
 
                         Actions::make([
                             Action::make('saveBackupSettings')

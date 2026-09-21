@@ -153,7 +153,7 @@ class VideoResource extends Resource
                             ->acceptedFileTypes(['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'])
                             ->maxSize(5242880) // 5GB
                             ->visibility('public')
-                            ->helperText('Upload MP4, MOV, AVI, MKV, or WebM. Max 5GB. Video will be processed after creation.')
+                            ->helperText('MP4, MOV, AVI, MKV or WebM, up to 5 GB. Processed after saving.')
                             ->columnSpanFull(),
                     ])
                     ->visibleOn('create'),
@@ -176,7 +176,7 @@ class VideoResource extends Resource
                                 TextInput::make('thumbnail_alt_text')
                                     ->label('Thumbnail Alt Text')
                                     ->maxLength(255)
-                                    ->helperText('Leave blank to generate from the SEO template. A value set here is never overwritten unless seo:backfill-alt-text is run with --force.')
+                                    ->helperText('Blank uses the SEO template. A value set here is kept unless seo:backfill-alt-text runs with --force.')
                                     ->columnSpanFull(),
                                 Select::make('user_id')
                                     ->label('Uploader')
@@ -230,11 +230,11 @@ class VideoResource extends Resource
                                     ->native(false),
                                 Toggle::make('is_draft')
                                     ->label('Draft')
-                                    ->helperText('Keeps the video private to its uploader (and admins) and out of every listing, whatever its privacy says. Videos waiting on the publishing schedule are drafts until their time arrives.')
+                                    ->helperText('Only the uploader and admins can see it, and it stays out of listings. Scheduled videos stay drafts until their time.')
                                     ->hiddenOn('create'),
                                 DateTimePicker::make('scheduled_at')
                                     ->label('Schedule Publish')
-                                    ->helperText('Leave empty to publish when approved. Set a future date/time to auto-publish.')
+                                    ->helperText('Empty publishes on approval. A future date schedules it.')
                                     ->native(false)
                                     ->minDate(now())
                                     ->hiddenOn('create'),
@@ -263,7 +263,7 @@ class VideoResource extends Resource
                                 TagsInput::make('geo_blocked_countries')
                                     ->label('Blocked Countries')
                                     ->placeholder('Add a country code, e.g. DE')
-                                    ->helperText('Two-letter ISO country codes. Viewers in these countries get "not available in your country" instead of the video. Uses the visitor country Cloudflare reports, so it has no effect on traffic that bypasses Cloudflare.')
+                                    ->helperText('Two-letter country codes to block. Uses Cloudflare’s visitor country, so traffic that bypasses Cloudflare is not blocked.')
                                     ->nestedRecursiveRules(['regex:/^[A-Za-z]{2}$/'])
                                     ->dehydrateStateUsing(fn (?array $state): ?array => $state
                                         ? array_values(array_unique(array_map('strtoupper', $state)))
@@ -622,7 +622,7 @@ class VideoResource extends Resource
                         ->color('warning')
                         ->requiresConfirmation()
                         ->modalHeading('Unpublish Video')
-                        ->modalDescription('This will hide the video from the live site and set it back to "needs moderation" status. The video will not be deleted.')
+                        ->modalDescription('Hides the video and sends it back to moderation. It is not deleted.')
                         ->action(function (Video $record) {
                             $record->update([
                                 'is_approved' => false,
@@ -635,7 +635,7 @@ class VideoResource extends Resource
                         ->icon('phosphor-x-circle')
                         ->color('danger')
                         ->modalHeading('Reject Video')
-                        ->modalDescription('Select a reason for rejecting this video. The uploader will be notified by email.')
+                        ->modalDescription('The uploader is emailed the reason.')
                         ->schema([
                             Select::make('rejection_reason')
                                 ->label('Reason for Rejection')
@@ -686,7 +686,7 @@ class VideoResource extends Resource
                         ->icon('phosphor-calendar')
                         ->color('info')
                         ->requiresConfirmation()
-                        ->modalDescription('Adds the video to the publishing schedule. It becomes a draft — private to its uploader — and publishes automatically at its scheduled time.')
+                        ->modalDescription('Adds the video to the schedule as a draft. It publishes automatically at its time.')
                         ->action(function (Video $record) {
                             $maxOrder = Video::max('queue_order') ?? 0;
                             $record->update([
@@ -719,7 +719,7 @@ class VideoResource extends Resource
                         ->icon('phosphor-arrows-clockwise')
                         ->color('info')
                         ->requiresConfirmation()
-                        ->modalDescription('This will re-dispatch the video processing job. Existing transcoded files will be skipped.')
+                        ->modalDescription('Re-runs processing. Existing encodes are skipped.')
                         ->action(function (Video $record) {
                             $record->update(['status' => 'pending']);
                             ProcessVideoJob::dispatch($record)->onQueue('video-processing');
@@ -731,7 +731,7 @@ class VideoResource extends Resource
                         ->icon('phosphor-rocket-launch')
                         ->color('success')
                         ->requiresConfirmation()
-                        ->modalDescription('Publishes this draft immediately: it becomes visible to viewers and appears in listings.')
+                        ->modalDescription('Makes this draft public and listed now.')
                         ->action(function (Video $record) {
                             $record->update([
                                 'is_draft' => false,
@@ -754,7 +754,7 @@ class VideoResource extends Resource
                         ->icon('phosphor-film-strip')
                         ->color('info')
                         ->requiresConfirmation()
-                        ->modalDescription('Encodes any active encoding profile this video does not have yet, for example one enabled after it was uploaded. The video stays live while this runs.')
+                        ->modalDescription('Encodes any active profile this video is missing. It stays live meanwhile.')
                         ->action(fn (Video $record) => static::dispatchMissingRenditions($record))
                         ->visible(fn (Video $record) => static::canEncodeMissing($record)),
 
@@ -775,7 +775,7 @@ class VideoResource extends Resource
                         ->icon('phosphor-film-strip')
                         ->color('info')
                         ->requiresConfirmation()
-                        ->modalDescription('Encodes any active encoding profile the selected videos do not have yet. Videos that are still processing, embedded, or no longer on local storage are skipped.')
+                        ->modalDescription('Encodes any active profile the selected videos are missing. Processing, embedded and cloud-stored videos are skipped.')
                         ->action(function (Collection $records) {
                             $queued = $records->filter(fn (Video $v) => static::canEncodeMissing($v))
                                 ->each(fn (Video $v) => static::dispatchMissingRenditions($v))

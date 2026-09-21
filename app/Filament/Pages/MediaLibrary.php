@@ -656,7 +656,7 @@ class MediaLibrary extends Page
             ->color('danger')
             ->modalIcon('phosphor-trash')
             ->modalHeading(fn (array $arguments) => $this->describeTargets($arguments, 'Delete'))
-            ->modalDescription('This cannot be undone — media files are not backed up. Anything still used by a video or image is skipped.')
+            ->modalDescription('Cannot be undone — media files are not backed up. Files still in use are skipped.')
             ->modalSubmitActionLabel('Delete')
             ->action(function (array $arguments): void {
                 $deleted = 0;
@@ -785,8 +785,7 @@ class MediaLibrary extends Page
             ->modalDescription(function (array $arguments) use ($compress): HtmlString {
                 [, $refused] = $compress->splitTargets($this->resolveBulkPaths($arguments['paths'] ?? []));
 
-                $text = 'Each video is encoded to a <strong>new file beside it</strong> (e.g. <code>clip.av1.mp4</code>). '
-                    .'Nothing is overwritten or deleted, and you are notified as each one finishes.';
+                $text = 'Each video is encoded to a <strong>new file beside it</strong> (e.g. <code>clip.av1.mp4</code>). Nothing is overwritten.';
 
                 if ($refused !== []) {
                     $text .= '<br><br>Skipped: '.e(collect($refused)->take(5)->map(fn ($r) => $r['name'].' ('.$r['reason'].')')->implode(', '));
@@ -866,10 +865,9 @@ class MediaLibrary extends Page
             ->modalHeading(fn (array $arguments) => 'Replace the original with '.basename((string) ($arguments['replacement'] ?? '')).'?')
             ->modalDescription(new HtmlString(
                 'The old upload is <strong>deleted permanently</strong> — media files are not backed up.<br><br>'
-                .'The original is the player\'s fallback source, the "Original" quality option and the Pro download. '
-                .'The HLS stream and renditions are not touched. <strong>H.265 does not play in some desktop browsers</strong> '
-                .'(Firefox, and Chrome without hardware support), so prefer an AV1 copy. '
-                .'Any later re-encode of this video starts from the compressed copy.'
+                .'The original is the player fallback, the "Original" quality and the Pro download; HLS is untouched. '
+                .'<strong>H.265 won\'t play in Firefox</strong> or Chrome without hardware support, so prefer AV1. '
+                .'Future re-encodes start from this copy.'
             ))
             ->modalSubmitActionLabel('Replace and delete original')
             ->action(function (array $arguments): void {

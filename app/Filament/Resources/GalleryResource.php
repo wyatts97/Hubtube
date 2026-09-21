@@ -76,7 +76,7 @@ class GalleryResource extends Resource
                         TextInput::make('cover_alt_text')
                             ->label('Cover Image Alt Text')
                             ->maxLength(255)
-                            ->helperText('Leave blank to generate from the SEO template. A value set here is never overwritten unless seo:backfill-alt-text is run with --force.')
+                            ->helperText('Blank uses the SEO template. A value set here is kept unless seo:backfill-alt-text runs with --force.')
                             ->columnSpanFull(),
                         Select::make('user_id')
                             ->label('Owner')

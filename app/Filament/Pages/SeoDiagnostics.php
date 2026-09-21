@@ -109,7 +109,7 @@ class SeoDiagnostics extends Page implements HasForms
                                             ->required()
                                             ->live(onBlur: true)
                                             ->placeholder(VideoDescriptionTemplate::DEFAULT_TEMPLATE)
-                                            ->helperText('This template is also used as the fallback whenever a video has no description.'),
+                                            ->helperText('Also used when a video has no description.'),
 
                                         Placeholder::make('description_preview')
                                             ->label('Preview (against latest public video)')
@@ -176,7 +176,7 @@ class SeoDiagnostics extends Page implements HasForms
                                         ->color('success')
                                         ->requiresConfirmation()
                                         ->modalHeading('Apply default description?')
-                                        ->modalDescription('Every video matching the selected scope that has no description will be updated with the rendered template. This action cannot be undone in bulk.')
+                                        ->modalDescription('Fills in every video in scope that has no description, using the template. Cannot be undone.')
                                         ->modalSubmitActionLabel('Apply now')
                                         ->action(fn () => $this->applyToMissing()),
 

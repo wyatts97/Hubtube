@@ -173,14 +173,9 @@ class EncodeVideoChunkJob implements ShouldQueue
             $parts[] = '-map '.escapeshellarg('0:a:0?').' '.$commands->audioArgs();
         }
 
-        if ($encoding->isOriginal()) {
-            // High quality, since this copy replaces the upload itself.
-            $parts[] = '-c:v libx264 -preset fast -crf 18 -pix_fmt '.escapeshellarg((string) $commands->s('ffmpeg_pix_fmt', 'yuv420p'))
-                .' -threads '.(int) $commands->s('ffmpeg_threads', 4)
-                .' -force_key_frames '.escapeshellarg('expr:gte(t,n_forced*'.FfmpegCommands::KEYFRAME_SECONDS.')');
-        } else {
-            $parts[] = $commands->videoArgs($encoding->profile?->video_bitrate);
-        }
+        $parts[] = $encoding->isOriginal()
+            ? $commands->originalVideoArgs()
+            : $commands->videoArgs($encoding->profile?->video_bitrate);
 
         $parts[] = '-movflags +faststart -progress pipe:1 -nostats';
         $parts[] = escapeshellarg($output);

@@ -85,7 +85,7 @@ class ScheduledVideos extends Page implements HasTable
             ->color('warning')
             ->requiresConfirmation()
             ->modalHeading('Shuffle the scheduled queue?')
-            ->modalDescription('Every pending video is put in a random order and its publish time is reassigned from the current schedule settings. The existing order cannot be recovered.')
+            ->modalDescription('Shuffles all pending videos and reassigns their publish times. The current order is lost.')
             ->modalSubmitActionLabel('Shuffle')
             ->action(function () {
             $count = $this->shuffleQueue();

@@ -83,7 +83,7 @@ class VideoAdResource extends Resource
                         ])
                         ->default('pre_roll')
                         ->helperText(fn ($get) => $get('placement') === 'shorts'
-                            ? 'Use 9:16 portrait creatives. VAST vertical video tags and HTML/banner ads are supported.'
+                            ? '9:16 portrait. VAST and HTML/banner creatives work.'
                             : null),
                 ]),
 
@@ -99,8 +99,8 @@ class VideoAdResource extends Resource
                         ->default('mp4')
                         ->live()
                         ->helperText(fn ($get) => match ($get('type')) {
-                            'vast', 'vpaid' => 'Wrapped and passed to the player, which resolves the tag itself. The ad network controls skip behavior.',
-                            'mp4' => 'Upload a file OR paste an external URL below.',
+                            'vast', 'vpaid' => 'The player resolves the tag; the network controls skipping.',
+                            'mp4' => 'Upload a file or paste a URL below.',
                             default => null,
                         }),
 
@@ -115,7 +115,7 @@ class VideoAdResource extends Resource
 
             // — MP4: file upload + URL (either/or) —
             Section::make('MP4 Video Source')
-                ->description('Upload a video file OR paste an external URL. Uploaded file takes priority.')
+                ->description('Upload a file or paste a URL. The upload wins if both are set.')
                 ->visible(fn ($get) => $get('type') === 'mp4')
                 ->schema([
                     FileUpload::make('file_path')
@@ -141,7 +141,7 @@ class VideoAdResource extends Resource
 
             // — VAST / VPAID: tag URL only —
             Section::make('VAST / VPAID Tag')
-                ->description('Paste your ad tag URL. Served via Google IMA SDK — the ad network controls skip, impression tracking, and click-through.')
+                ->description('Ad tag URL, played through Google IMA. The network handles skip, tracking and click-through.')
                 ->visible(fn ($get) => in_array($get('type'), ['vast', 'vpaid']))
                 ->schema([
                     TextInput::make('content')
@@ -197,7 +197,7 @@ class VideoAdResource extends Resource
                     ->url()
                     ->maxLength(2048)
                     ->placeholder('https://example.com/landing-page')
-                    ->helperText('Optional. Clicking the ad opens this URL. Not used for VAST/VPAID (handled by ad network).')
+                    ->helperText('Optional click-through URL. Not used for VAST/VPAID.')
                     ->columnSpanFull(),
             ])->visible(fn ($get) => in_array($get('type'), ['mp4', 'html'])),
 

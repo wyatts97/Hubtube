@@ -65,7 +65,7 @@ class IntegrationSettings extends Page implements HasForms
         return $schema
             ->components([
                 Section::make('Mail Server Configuration')
-                    ->description('Works with any SMTP server: Gmail, Mailgun, SendGrid, BillionMail (self-hosted), or any other provider. Set the host and port to match your mail server.')
+                    ->description('Works with any SMTP provider, hosted or self-hosted.')
                     ->schema([
                         Select::make('mail_mailer')
                             ->label('Mail Driver')
@@ -78,20 +78,20 @@ class IntegrationSettings extends Page implements HasForms
                                 'resend' => 'Resend',
                             ])
                             ->reactive()
-                            ->helperText('Select "SMTP" for most setups including BillionMail, Gmail, Mailgun, etc.'),
+                            ->helperText('SMTP for most setups.'),
                         TextInput::make('mail_host')
                             ->label('SMTP Host')
                             ->placeholder('127.0.0.1 or smtp.gmail.com')
-                            ->helperText('For self-hosted (BillionMail, Postal, etc.): use 127.0.0.1 or your server IP. For external: use the provider\'s SMTP host.')
+                            ->helperText('Self-hosted: 127.0.0.1 or the server IP. Otherwise, the provider’s SMTP host.')
                             ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
                         TextInput::make('mail_port')
                             ->label('SMTP Port')
                             ->placeholder('587')
-                            ->helperText('Common ports: 25 (unencrypted), 465 (SSL), 587 (TLS/STARTTLS), or custom (e.g. 8025, 8090)')
+                            ->helperText('Usually 587 (TLS), 465 (SSL) or 25.')
                             ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
                         TextInput::make('mail_username')
                             ->label('SMTP Username')
-                            ->helperText('Some self-hosted servers don\'t require authentication — leave blank if not needed.')
+                            ->helperText('Leave blank if the server needs no login.')
                             ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
                         TextInput::make('mail_password')
                             ->label('SMTP Password')
@@ -105,11 +105,11 @@ class IntegrationSettings extends Page implements HasForms
                                 'tls' => 'TLS / STARTTLS (port 587)',
                                 'ssl' => 'SSL (port 465)',
                             ])
-                            ->helperText('Use "None" for local self-hosted servers on non-standard ports. Use TLS for most external providers.')
+                            ->helperText('TLS for most providers. None for local servers on non-standard ports.')
                             ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
                         Toggle::make('mail_verify_peer')
                             ->label('Verify SSL Certificate')
-                            ->helperText('Disable for self-hosted mail servers with self-signed certificates. Keep enabled for external providers.')
+                            ->helperText('Turn off for self-hosted servers with self-signed certificates.')
                             ->visible(fn ($get) => $get('mail_mailer') === 'smtp'),
                         TextInput::make('mail_from_address')
                             ->label('From Address')

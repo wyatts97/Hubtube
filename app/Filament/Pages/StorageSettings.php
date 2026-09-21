@@ -76,11 +76,6 @@ class StorageSettings extends Page implements HasForms
             'bunnycdn_enabled' => Setting::get('bunnycdn_enabled', false),
             'bunnycdn_zone' => Setting::get('bunnycdn_zone', ''),
             'bunnycdn_key' => Setting::getDecrypted('bunnycdn_key', ''),
-            // FFmpeg
-            'ffmpeg_enabled' => Setting::get('ffmpeg_enabled', true),
-            'ffmpeg_path' => Setting::get('ffmpeg_path', '/usr/local/bin/ffmpeg'),
-            'ffprobe_path' => Setting::get('ffprobe_path', '/usr/local/bin/ffprobe'),
-            'ffmpeg_threads' => Setting::get('ffmpeg_threads', 4),
         ]);
     }
 
@@ -93,11 +88,10 @@ class StorageSettings extends Page implements HasForms
                         Tab::make('General')
                             ->schema([
                                 Section::make('Cloud Offloading')
-                                    ->description('When enabled, videos are processed locally with FFmpeg then automatically uploaded to your configured cloud storage. The video\'s storage_disk is updated after a successful upload.')
+                                    ->description('Videos are processed locally, then uploaded to cloud storage.')
                                     ->schema([
                                         Toggle::make('cloud_offloading_enabled')
                                             ->label('Enable Cloud Offloading')
-                                            ->helperText('Automatically upload processed videos, thumbnails, and previews to cloud storage after processing.')
                                             ->reactive()
                                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                                 if ($state) {
@@ -121,22 +115,22 @@ class StorageSettings extends Page implements HasForms
                                                 'b2' => 'Backblaze B2',
                                                 's3' => 'Amazon S3',
                                             ])
-                                            ->helperText('Which cloud provider to offload files to. Configure credentials in the provider\'s tab first.')
+                                            ->helperText('Add credentials in the provider’s tab first.')
                                             ->visible(fn ($get) => $get('cloud_offloading_enabled')),
                                         Toggle::make('cloud_offloading_delete_local')
                                             ->label('Delete Local Files After Upload')
-                                            ->helperText('Remove local copies after successful cloud upload to save disk space. Only enable if your cloud storage is reliable.')
+                                            ->helperText('Frees disk space. Only enable if your cloud storage is reliable.')
                                             ->visible(fn ($get) => $get('cloud_offloading_enabled')),
                                         Toggle::make('cloud_storage_public_bucket')
                                             ->label('Bucket Has Public Access')
-                                            ->helperText('Enable if your bucket policy allows public reads. When off (default), pre-signed temporary URLs are used — this works with private buckets and is more secure.')
+                                            ->helperText('On if the bucket allows public reads. Off uses signed URLs, which work with private buckets.')
                                             ->visible(fn ($get) => $get('cloud_offloading_enabled')),
                                         TextInput::make('cloud_url_expiry_minutes')
                                             ->label('Pre-signed URL Expiry (minutes)')
                                             ->numeric()
                                             ->minValue(5)
                                             ->maxValue(10080)
-                                            ->helperText('How long pre-signed URLs remain valid. Only applies when bucket is private. Default: 120 minutes (2 hours).')
+                                            ->helperText('How long signed URLs stay valid.')
                                             ->visible(fn ($get) => $get('cloud_offloading_enabled') && ! $get('cloud_storage_public_bucket')),
                                     ]),
                                 Section::make('CDN Configuration')
@@ -152,13 +146,13 @@ class StorageSettings extends Page implements HasForms
                                     ->schema([
                                         Toggle::make('media_x_accel_redirect')
                                             ->label('Serve private videos via X-Accel-Redirect')
-                                            ->helperText('Only enable once the "Private videos" block from deployment/nginx/hubtube.conf is in your nginx vhost. PHP still checks who is watching; nginx then sends the file. While off, PHP streams private video files itself, which works on any server but ties up a PHP worker per request. Private videos always bypass the CDN.'),
+                                            ->helperText('Requires the "Private videos" block from deployment/nginx/hubtube.conf. Off: PHP streams the file, which works anywhere but holds a worker per request.'),
                                     ]),
                             ]),
                         Tab::make('Wasabi')
                             ->schema([
                                 Section::make('Wasabi Cloud Storage')
-                                    ->description('S3-compatible object storage with no egress fees. Endpoint auto-resolves from region.')
+                                    ->description('S3-compatible storage with no egress fees.')
                                     ->schema([
                                         Toggle::make('wasabi_enabled')
                                             ->label('Enable Wasabi')
@@ -269,26 +263,6 @@ class StorageSettings extends Page implements HasForms
                                             ->label('API Key')
                                             ->password()
                                             ->revealable(),
-                                    ])->columns(2),
-                            ]),
-                        Tab::make('FFmpeg')
-                            ->schema([
-                                Section::make('Video Processing')
-                                    ->schema([
-                                        Toggle::make('ffmpeg_enabled')
-                                            ->label('Enable FFmpeg Processing')
-                                            ->helperText('Disable if FFmpeg is not installed'),
-                                        TextInput::make('ffmpeg_path')
-                                            ->label('FFmpeg Binary Path')
-                                            ->placeholder('/usr/local/bin/ffmpeg'),
-                                        TextInput::make('ffprobe_path')
-                                            ->label('FFprobe Binary Path')
-                                            ->placeholder('/usr/local/bin/ffprobe'),
-                                        TextInput::make('ffmpeg_threads')
-                                            ->label('Processing Threads')
-                                            ->numeric()
-                                            ->minValue(1)
-                                            ->maxValue(16),
                                     ])->columns(2),
                             ]),
                     ])->columnSpanFull(),

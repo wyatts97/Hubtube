@@ -53,11 +53,10 @@ class PwaSettings extends Page implements HasForms
         return $schema
             ->components([
                 Section::make('Progressive Web App (PWA)')
-                    ->description('Configure PWA settings for installability on mobile devices')
                     ->schema([
                         Toggle::make('pwa_enabled')
                             ->label('Enable PWA')
-                            ->helperText('Allow users to install the app on their device'),
+                            ->helperText('Lets users install the site as an app.'),
                         TextInput::make('pwa_name')
                             ->label('App Name')
                             ->maxLength(100),
@@ -79,7 +78,7 @@ class PwaSettings extends Page implements HasForms
                     ->columns(2),
 
                 Section::make('Push Notifications')
-                    ->description('Configure Web Push notifications using VAPID keys. Generate keys at https://web-push-codelab.glitch.me/')
+                    ->description('VAPID keys for Web Push. Generate them at https://web-push-codelab.glitch.me/')
                     ->schema([
                         Toggle::make('push_enabled')
                             ->label('Enable Push Notifications')

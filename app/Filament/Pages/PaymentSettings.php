@@ -91,7 +91,7 @@ class PaymentSettings extends Page implements HasForms
                 ->color('success')
                 ->requiresConfirmation()
                 ->modalHeading('Sync Pro prices to Stripe')
-                ->modalDescription('This will create or update Stripe Products and Prices for the monthly and annual Pro plans.')
+                ->modalDescription('Creates or updates the Stripe products and prices for the monthly and annual Pro plans.')
                 ->action(fn () => $this->syncStripePrices()),
             Action::make('syncCCBillPrices')
                 ->label('Sync Prices to CCBill')
@@ -99,7 +99,7 @@ class PaymentSettings extends Page implements HasForms
                 ->color('success')
                 ->requiresConfirmation()
                 ->modalHeading('Sync Pro prices to CCBill')
-                ->modalDescription('This writes the FlexForms dynamic-pricing fields (initial/recurring price, period in days, rebills) onto the monthly and annual Pro plans.')
+                ->modalDescription('Writes the FlexForms dynamic pricing fields onto the monthly and annual Pro plans.')
                 ->action(fn () => $this->syncCCBillPrices()),
         ];
     }
@@ -226,7 +226,7 @@ class PaymentSettings extends Page implements HasForms
                                     ->schema([
                                         Toggle::make('monetization_enabled')
                                             ->label('Enable Monetization')
-                                            ->helperText('When disabled, all billing, wallet, payment, and subscription features are hidden from the site. Only ad-based monetization remains active.'),
+                                            ->helperText('Off hides billing, wallet and subscriptions site-wide. Ads keep running.'),
                                     ]),
                                 Section::make('Currency & Fees')
                                     ->schema([
@@ -296,7 +296,7 @@ class PaymentSettings extends Page implements HasForms
                                             ->label('Enable CCBill'),
                                         Toggle::make('ccbill_primary')
                                             ->label('Use CCBill as primary Pro gateway')
-                                            ->helperText('When on, Pro checkout uses CCBill instead of Stripe.'),
+                                            ->helperText('Pro checkout uses CCBill instead of Stripe.'),
                                         TextInput::make('ccbill_account')
                                             ->label('Account Number')
                                             ->helperText('Your 6-digit main account (e.g. 999999).'),
@@ -313,7 +313,7 @@ class PaymentSettings extends Page implements HasForms
                                             ->helperText('From CCBill Admin. Stored encrypted at rest.'),
                                     ])->columns(2),
                                 Section::make('Webhooks')
-                                    ->description('Configure these in CCBill Admin → Webhooks (or Background Post). Entitlements are granted only via webhooks.')
+                                    ->description('Set up in CCBill Admin → Webhooks. Access is only granted through webhooks.')
                                     ->schema([
                                         Text::make(fn () => 'Webhook URL: '.url('/ccbill/webhook'))
                                             ->extraAttributes(['class' => 'text-sm font-mono text-gray-400']),
@@ -321,20 +321,19 @@ class PaymentSettings extends Page implements HasForms
                                             ->label('Webhook Secret')
                                             ->password()
                                             ->revealable()
-                                            ->helperText('A shared token appended to your webhook URL as ?secret=... — CCBill must include it. Stored encrypted.'),
+                                            ->helperText('Appended to the webhook URL as ?secret=… and checked on every call. Stored encrypted.'),
                                         TextInput::make('ccbill_webhook_ips')
                                             ->label('Allowed Webhook IPs')
-                                            ->helperText('Optional comma-separated IP allowlist for extra webhook security. Leave blank to allow any source.'),
+                                            ->helperText('Comma-separated IPs. Leave blank to allow any.'),
                                     ])->columns(1),
                             ]),
                         Tab::make('Pro Plans')
                             ->schema([
                                 Section::make('Pro Membership')
-                                    ->description('Configure the Pro subscription tier.')
                                     ->schema([
                                         Toggle::make('pro_enabled')
                                             ->label('Enable Pro memberships')
-                                            ->helperText('When disabled, the /pro page and all upgrade CTAs are hidden.'),
+                                            ->helperText('Off hides the /pro page and upgrade buttons.'),
                                     ]),
                                 Section::make('Pricing')
                                     ->schema([

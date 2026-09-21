@@ -55,7 +55,7 @@ class EditVideo extends EditRecord
                 ->icon('phosphor-arrows-clockwise')
                 ->color('info')
                 ->requiresConfirmation()
-                ->modalDescription('This will re-dispatch the video processing job. Existing transcoded files will be skipped.')
+                ->modalDescription('Re-runs processing. Existing encodes are skipped.')
                 ->action(function () {
                     $this->record->update(['status' => 'pending']);
                     ProcessVideoJob::dispatch($this->record)->onQueue('video-processing');

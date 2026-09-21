@@ -58,13 +58,13 @@ class NotificationSettings extends Page implements HasForms
         return $schema
             ->components([
                 Section::make('Admin Email Notifications')
-                    ->description('Configure which events trigger an email to the admin. Emails are only sent when the mail driver is configured in Services & Email settings.')
+                    ->description('Events that email the admin. Needs mail set up under Email settings.')
                     ->schema([
                         TextInput::make('admin_notification_email')
                             ->label('Admin Notification Email')
                             ->email()
                             ->placeholder('admin@yourdomain.com')
-                            ->helperText('Where admin notifications are sent. Falls back to the "From Address" if empty.')
+                            ->helperText('Falls back to the From Address if empty.')
                             ->columnSpanFull(),
                         Toggle::make('admin_notify_contact-form-admin')
                             ->label('Contact Form Submissions')
@@ -77,11 +77,11 @@ class NotificationSettings extends Page implements HasForms
                             ->helperText('Email admin when a new video is uploaded'),
                         Toggle::make('admin_notify_admin-new-report')
                             ->label('New Content Reports')
-                            ->helperText('Email admin when a user reports content (video, comment, user, etc.)'),
+                            ->helperText('When a video, comment or user is reported.'),
                     ])->columns(2),
 
                 Section::make('User Email Notifications')
-                    ->description('Toggle which emails are sent to users. Disabling a type here prevents that email from being sent to any user.')
+                    ->description('Emails sent to users. Turning one off stops it for everyone.')
                     ->schema([
                         Toggle::make('email_notify_verify-email')
                             ->label('Email Verification')

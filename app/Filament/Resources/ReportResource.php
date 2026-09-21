@@ -216,7 +216,7 @@ class ReportResource extends Resource
                     ->icon('phosphor-trash')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->modalDescription('This will permanently delete the report and its associated inbox entry. This action cannot be undone.'),
+                    ->modalDescription('Deletes the report and its inbox entry. Cannot be undone.'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -225,7 +225,7 @@ class ReportResource extends Resource
                         ->icon('phosphor-trash')
                         ->color('danger')
                         ->requiresConfirmation()
-                        ->modalDescription('This will permanently delete the selected reports and their associated inbox entries.')
+                        ->modalDescription('Deletes the selected reports and their inbox entries. Cannot be undone.')
                         ->deselectRecordsAfterCompletion(),
                     BulkAction::make('dismiss')
                         ->label('Dismiss')
@@ -305,7 +305,7 @@ class ReportResource extends Resource
                 ->icon('phosphor-trash')
                 ->color('danger')
                 ->requiresConfirmation()
-                ->modalDescription('This will hide/delete the reported content and mark this report as resolved.')
+                ->modalDescription('Hides or deletes the reported content and resolves the report.')
                 ->visible(fn (Report $record) => in_array($record->status, [Report::STATUS_PENDING, Report::STATUS_REVIEWING])
                     && in_array($record->reportable_type, [Video::class, Comment::class])
                     && $record->reportable)
