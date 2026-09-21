@@ -52,7 +52,7 @@ class SyncRoles extends Command
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $this->newLine();
-        $this->info('Roles are assigned per user in Admin → Users, and edited in Admin → System → Roles.');
+        $this->info('Roles are assigned per user in Admin → Users, and edited in Admin → Users & Email → Roles.');
 
         return self::SUCCESS;
     }

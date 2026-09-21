@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
  * Gates a Filament resource on role permissions.
  *
  * Permission names follow Shield's convention ("view_any_video"), so the
- * checkboxes on Admin → System → Roles drive exactly these checks.
+ * checkboxes on Admin → Users & Email → Roles drive exactly these checks.
  *
  * Two bypasses are applied in AuthServiceProvider's gate, not here: a
  * super-admin passes everything, and so does an admin who holds no roles at

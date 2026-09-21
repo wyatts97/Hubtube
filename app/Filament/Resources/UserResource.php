@@ -128,7 +128,7 @@ class UserResource extends Resource
                             ->helperText('Roles narrow what an administrator can reach in the panel, '
                                 .'and grant front-end permissions such as skipping the moderation queue. '
                                 .'An administrator with no roles keeps full access, except to super-admin areas. '
-                                .'Edit what each role may do in System → Roles.')
+                                .'Edit what each role may do in Users & Email → Roles.')
                             ->columnSpanFull(),
                         TextInput::make('wallet_balance')
                             ->label('Wallet Balance')
