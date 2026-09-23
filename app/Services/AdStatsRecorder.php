@@ -36,7 +36,8 @@ class AdStatsRecorder
 
     /**
      * Record one event. Returns false when it was suppressed as a duplicate or
-     * swallowed as an error — callers use this for tests, not for control flow.
+     * swallowed as an error. Sponsored card tracking uses it to keep the card's
+     * lifetime counters in step with the deduped daily numbers.
      */
     public function record(
         Request $request,

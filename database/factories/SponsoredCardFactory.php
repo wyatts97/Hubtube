@@ -15,6 +15,7 @@ class SponsoredCardFactory extends Factory
     public function definition(): array
     {
         return [
+            'type' => SponsoredCard::TYPE_IMAGE,
             'title' => $this->faker->sentence(3),
             'thumbnail_url' => 'sponsored/example.jpg',
             'click_url' => 'https://example.com/offer',
@@ -23,9 +24,18 @@ class SponsoredCardFactory extends Factory
             'target_pages' => ['home'],
             'category_ids' => [],
             'target_roles' => [],
-            'frequency' => 8,
             'weight' => 1,
             'is_active' => true,
         ];
+    }
+
+    public function html(): static
+    {
+        return $this->state([
+            'type' => SponsoredCard::TYPE_HTML,
+            'thumbnail_url' => null,
+            'click_url' => null,
+            'html_code' => '<div class="ad">ad</div>',
+        ]);
     }
 }

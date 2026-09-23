@@ -12,7 +12,6 @@ import {
     Trash2, ListOrdered, Globe, Link2, Lock, Check,
 } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
-import GridAdSlot from '@/Components/GridAdSlot.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { useGridAds } from '@/Composables/useGridAds';
 
@@ -23,11 +22,11 @@ const props = defineProps({
     isFavorited: { type: Boolean, default: false },
     canEdit: { type: Boolean, default: false },
     seo: { type: Object, default: () => ({}) },
-    adSettings: { type: Object, default: () => ({}) },
     sponsoredCards: { type: Array, default: () => [] },
+    sponsoredFrequency: { type: Number, default: 8 },
 });
 
-const { gridAds, shouldShowAd, getSponsoredCard, adCellClass } = useGridAds(props);
+const { getSponsoredCard, sponsoredCellClass } = useGridAds(props);
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
@@ -306,10 +305,7 @@ const confirmRemove = async () => {
                             <Trash2 class="w-4 h-4" />
                         </button>
                     </div>
-                    <div v-if="shouldShowAd(idx, playlist.videos.length)" class="rounded-xl p-2" :class="adCellClass">
-                        <GridAdSlot :ads="gridAds" />
-                    </div>
-                    <SponsoredVideoCard v-if="getSponsoredCard(idx)" :card="getSponsoredCard(idx)" />
+                    <SponsoredVideoCard v-if="getSponsoredCard(idx)" :card="getSponsoredCard(idx)" :class="sponsoredCellClass(getSponsoredCard(idx))" />
                 </template>
             </div>
 

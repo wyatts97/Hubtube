@@ -5,7 +5,6 @@ import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
-import GridAdSlot from '@/Components/GridAdSlot.vue';
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 import { useVideoGrid } from '@/Composables/useVideoGrid';
@@ -23,12 +22,12 @@ const props = defineProps({
     videos: Object,
     seo: { type: Object, default: () => ({}) },
     bannerAd: { type: Object, default: () => ({}) },
-    adSettings: { type: Object, default: () => ({}) },
     sponsoredCards: { type: Array, default: () => [] },
+    sponsoredFrequency: { type: Number, default: 8 },
 });
 
 // Grid ad interleaving — shared with every other listing page.
-const { gridAds, shouldShowAd, getSponsoredCard, adCellClass } = useGridAds(props);
+const { getSponsoredCard, sponsoredCellClass } = useGridAds(props);
 
 const displayName = props.translatedName || props.category.name;
 const breadcrumbs = computed(() => [
@@ -61,16 +60,10 @@ const goToPage = (pageNum) => {
         <div v-if="videos.data?.length" :class="gridClass">
             <template v-for="(video, index) in videos.data" :key="video.id">
                 <VideoCard :video="video" />
-                <div
-                    v-if="shouldShowAd(index, videos.data.length)"
-                    class="rounded-xl p-2"
-                    :class="adCellClass"
-                >
-                    <GridAdSlot :ads="gridAds" />
-                </div>
                 <SponsoredVideoCard
                     v-if="getSponsoredCard(index)"
                     :card="getSponsoredCard(index)"
+                    :class="sponsoredCellClass(getSponsoredCard(index))"
                 />
             </template>
         </div>

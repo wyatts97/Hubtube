@@ -109,30 +109,28 @@ class VideoAdController extends Controller
     }
 
     /**
-     * Record a sponsored card click and redirect to the target URL.
+     * Record a sponsored card click.
+     *
+     * The lifetime counter only moves when the daily bucket accepted the event,
+     * so a reload or a script hammering the endpoint cannot inflate the numbers
+     * shown in the admin. Unknown card ids are ignored.
      */
     public function recordSponsoredClick(Request $request, int $cardId): JsonResponse
     {
-        SponsoredCard::where('id', $cardId)->increment('clicks_count');
-        $this->stats->click(
-            $request,
-            AdStatDaily::SOURCE_SPONSORED_CARD,
-            $cardId,
-            $this->placement($request, 'sponsored_card'),
-        );
+        if (SponsoredCard::whereKey($cardId)->exists()
+            && $this->stats->click($request, AdStatDaily::SOURCE_SPONSORED_CARD, $cardId, $this->placement($request, 'sponsored_card'))) {
+            SponsoredCard::whereKey($cardId)->increment('clicks_count');
+        }
 
         return response()->json(['ok' => true]);
     }
 
     public function recordSponsoredImpression(Request $request, int $cardId): JsonResponse
     {
-        SponsoredCard::where('id', $cardId)->increment('impressions_count');
-        $this->stats->impression(
-            $request,
-            AdStatDaily::SOURCE_SPONSORED_CARD,
-            $cardId,
-            $this->placement($request, 'sponsored_card'),
-        );
+        if (SponsoredCard::whereKey($cardId)->exists()
+            && $this->stats->impression($request, AdStatDaily::SOURCE_SPONSORED_CARD, $cardId, $this->placement($request, 'sponsored_card'))) {
+            SponsoredCard::whereKey($cardId)->increment('impressions_count');
+        }
 
         return response()->json(['ok' => true]);
     }

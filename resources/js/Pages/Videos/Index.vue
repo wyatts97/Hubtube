@@ -6,7 +6,6 @@ import VideoCard from '@/Components/VideoCard.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import FilterRail from '@/Components/UI/FilterRail.vue';
 import EmptyState from '@/Components/UI/EmptyState.vue';
-import GridAdSlot from '@/Components/GridAdSlot.vue';
 import OutstreamAd from '@/Components/OutstreamAd.vue';
 import BannerAd from '@/Components/UI/BannerAd.vue';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
@@ -27,6 +26,7 @@ const props = defineProps({
     bannerAd: { type: Object, default: () => ({}) },
     adSettings: { type: Object, default: () => ({}) },
     sponsoredCards: { type: Array, default: () => [] },
+    sponsoredFrequency: { type: Number, default: 8 },
     outstreamAds: { type: Array, default: () => [] },
 });
 
@@ -92,7 +92,7 @@ const withTranslation = (video) => {
 
 // Grid ad interleaving — shared with every other listing page. This is the one
 // page that also carries outstream units.
-const { gridAds, shouldShowAd, getSponsoredCard, getOutstreamAd, adCellClass } = useGridAds(props);
+const { getSponsoredCard, getOutstreamAd, sponsoredCellClass } = useGridAds(props);
 </script>
 
 <template>
@@ -120,16 +120,10 @@ const { gridAds, shouldShowAd, getSponsoredCard, getOutstreamAd, adCellClass } =
         <div v-if="videos.data.length" :class="gridClass">
             <template v-for="(video, index) in videos.data" :key="video.id">
                 <VideoCard :video="withTranslation(video)" />
-                <div
-                    v-if="shouldShowAd(index, videos.data.length)"
-                    class="p-1"
-                    :class="adCellClass"
-                >
-                    <GridAdSlot :ads="gridAds" />
-                </div>
                 <SponsoredVideoCard
                     v-if="getSponsoredCard(index)"
                     :card="getSponsoredCard(index)"
+                    :class="sponsoredCellClass(getSponsoredCard(index))"
                 />
                 <OutstreamAd
                     v-if="getOutstreamAd(index)"

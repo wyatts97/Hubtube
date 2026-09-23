@@ -6,7 +6,6 @@ use App\Models\Category;
 use App\Models\Image;
 use App\Models\Playlist;
 use App\Models\Setting;
-use App\Models\SponsoredCard;
 use App\Models\Video;
 use App\Services\SeoService;
 use App\Services\TranslationService;
@@ -72,9 +71,7 @@ class HomeController extends Controller
                 ->get()
         );
 
-        // Grid keys come from the shared helper; the homepage rails are unique
-        // to this page and stay here.
-        $adSettings = $this->gridAdSettings() + [
+        $adSettings = [
             'rail1' => [
                 'enabled' => (bool) $s('home_rail_1_enabled', false),
                 'code' => (string) $s('home_rail_1_code', ''),
@@ -98,7 +95,6 @@ class HomeController extends Controller
         ];
 
         if ($this->shouldSuppressAds()) {
-            $adSettings['videoGridEnabled'] = false;
             foreach (['rail1', 'rail2', 'rail3', 'rail4'] as $rail) {
                 $adSettings[$rail]['enabled'] = false;
             }
@@ -143,7 +139,7 @@ class HomeController extends Controller
             'latestPlaylists' => $latestPlaylists,
             'adSettings' => $adSettings,
             'seo' => $this->seoService->forHome(),
-            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('home', $this->adTargetRole()),
+            ...$this->sponsoredCardProps('home'),
         ]);
     }
 
@@ -210,8 +206,7 @@ class HomeController extends Controller
             'videos'       => $videos,
             'period'       => $period,
             'seo'          => $this->seoService->forTrending(),
-            'adSettings'   => $this->gridAdSettings(),
-            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('trending', $this->adTargetRole()),
+            ...$this->sponsoredCardProps('trending'),
         ]);
     }
 
@@ -297,12 +292,7 @@ class HomeController extends Controller
                 'mobileImage' => (string) Setting::get('category_banner_ad_mobile_image', ''),
                 'mobileLink' => (string) Setting::get('category_banner_ad_mobile_link', ''),
             ],
-            'adSettings' => $this->gridAdSettings($category->id),
-            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage(
-                'category',
-                $this->adTargetRole(),
-                $category->id,
-            ),
+            ...$this->sponsoredCardProps('category', $category->id),
         ]);
     }
 
@@ -398,8 +388,7 @@ class HomeController extends Controller
             'translatedTag' => $translatedTag,
             'videos' => $videos,
             'seo' => $this->seoService->forTag($tag, $videos),
-            'adSettings' => $this->gridAdSettings(),
-            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('tag', $this->adTargetRole()),
+            ...$this->sponsoredCardProps('tag'),
         ]);
     }
 

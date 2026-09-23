@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Image;
-use App\Models\Setting;
+use App\Models\SponsoredCard;
 use App\Services\ImageService;
 use App\Services\SeoService;
 use Illuminate\Http\RedirectResponse;
@@ -46,10 +46,9 @@ class ImageController extends Controller
                 $request->category ? (string) $request->category : null,
                 $request->sort ? (string) $request->sort : null,
             ),
-            // Images use a square grid, so only the self-scaling GridAdSlot is
-            // sent — SponsoredVideoCard and OutstreamAd are 16:9 and would sit
-            // wrong among square thumbnails.
-            'adSettings' => $this->gridAdSettings(),
+            // Images use a square grid, so only HTML cards are sent: they scale
+            // to the cell, while image and video cards are 16:9.
+            ...$this->sponsoredCardProps('images', types: [SponsoredCard::TYPE_HTML]),
         ]);
     }
 

@@ -13,7 +13,6 @@ use App\Models\Video;
 use App\Models\WatchHistory;
 use App\Models\Category;
 use App\Models\Setting;
-use App\Models\SponsoredCard;
 use App\Services\PlayerAdListBuilder;
 use App\Services\EmailService;
 use App\Services\SeoService;
@@ -145,17 +144,13 @@ class VideoController extends Controller
                 'mobileImage' => (string) Setting::get('browse_banner_ad_mobile_image', ''),
                 'mobileLink' => (string) Setting::get('browse_banner_ad_mobile_link', ''),
             ],
-            'adSettings' => $this->gridAdSettings($request->category ? (int) $request->category : null) + [
+            'adSettings' => [
                 'outstreamFrequency' => (int) Setting::get('video_outstream_ad_frequency', 6),
             ],
             'outstreamAds' => $this->shouldSuppressAds() ? [] : ((bool) Setting::get('video_outstream_ad_enabled', false)
                 ? VideoAd::getAdsForPlacement('outstream', null, $this->adTargetRole(), false)
                 : []),
-            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage(
-                'browse',
-                $this->adTargetRole(),
-                $request->category ? (int) $request->category : null,
-            ),
+            ...$this->sponsoredCardProps('browse', $request->category ? (int) $request->category : null),
         ]);
     }
 

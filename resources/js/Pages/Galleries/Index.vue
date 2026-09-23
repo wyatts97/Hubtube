@@ -5,7 +5,6 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import SeoHead from '@/Components/SeoHead.vue';
 import { Eye, ImageIcon, Clock, Flame, Plus } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
-import GridAdSlot from '@/Components/GridAdSlot.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { useGridAds } from '@/Composables/useGridAds';
 
@@ -15,12 +14,12 @@ const props = defineProps({
     galleries: Object,
     filters: Object,
     seo: Object,
-    adSettings: { type: Object, default: () => ({}) },
     sponsoredCards: { type: Array, default: () => [] },
+    sponsoredFrequency: { type: Number, default: 8 },
 });
 
 // Gallery covers are 16:9, so the video-shaped ad units sit correctly here.
-const { gridAds, shouldShowAd, getSponsoredCard, adCellClass } = useGridAds(props);
+const { getSponsoredCard, sponsoredCellClass } = useGridAds(props);
 
 const sort = ref(props.filters?.sort || '');
 
@@ -114,10 +113,7 @@ const formatViews = (count) => {
                     </div>
                 </div>
             </Link>
-            <div v-if="shouldShowAd(index, galleries.data.length)" class="rounded-xl p-2" :class="adCellClass">
-                <GridAdSlot :ads="gridAds" />
-            </div>
-            <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" />
+            <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" :class="sponsoredCellClass(getSponsoredCard(index))" />
             </template>
         </div>
 

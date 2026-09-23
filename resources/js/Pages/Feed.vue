@@ -20,14 +20,13 @@ import { useFetch } from '@/Composables/useFetch';
 import { timeAgo } from '@/Composables/useFormatters';
 import { useI18n } from '@/Composables/useI18n';
 import { useVideoGrid } from '@/Composables/useVideoGrid';
-import GridAdSlot from '@/Components/GridAdSlot.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { useGridAds } from '@/Composables/useGridAds';
 
 const props = defineProps({
     activity: { type: Array, default: () => [] },
-    adSettings: { type: Object, default: () => ({}) },
     sponsoredCards: { type: Array, default: () => [] },
+    sponsoredFrequency: { type: Number, default: 8 },
     nextCursor: { type: String, default: null },
     hasSubscriptions: { type: Boolean, default: false },
 });
@@ -78,7 +77,7 @@ const isEmpty = computed(() => entries.value.length === 0);
 // recent uploads and is usually only a handful of videos, so counting cards
 // with the normal grid frequency would place an ad almost never. Every third
 // section is roughly one ad per screen of feed.
-const { gridAds, shouldShowAd, getSponsoredCard, adCellClass } = useGridAds(props, { frequency: 3 });
+const { getSponsoredCard } = useGridAds(props, { frequency: 3 });
 </script>
 
 <template>
@@ -144,9 +143,6 @@ const { gridAds, shouldShowAd, getSponsoredCard, adCellClass } = useGridAds(prop
                 </Link>
             </section>
 
-            <div v-if="shouldShowAd(index, entries.length)" class="rounded-xl p-2" :class="adCellClass">
-                <GridAdSlot :ads="gridAds" />
-            </div>
             <div v-if="getSponsoredCard(index)" :class="gridClass">
                 <SponsoredVideoCard :card="getSponsoredCard(index)" />
             </div>

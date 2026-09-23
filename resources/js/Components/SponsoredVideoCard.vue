@@ -1,11 +1,24 @@
 <script setup>
+/**
+ * SponsoredVideoCard — the in-grid ad unit.
+ *
+ * Three creative types:
+ *   - image: a video-card lookalike; preview images cycle on hover.
+ *   - video: muted MP4 that plays while at least half the card is on screen.
+ *   - html:  pasted ad network code or an <iframe>, scaled to the cell by
+ *            GridAdSlot. No link wrapper — the creative handles its own clicks,
+ *            and an iframe inside an <a> is invalid markup.
+ */
 import { usePage } from '@inertiajs/vue3';
 import { computed, ref, onUnmounted } from 'vue';
 import { useIntersectionObserver } from '@vueuse/core';
 import { useFetch } from '@/Composables/useFetch';
+import { useI18n } from '@/Composables/useI18n';
+import GridAdSlot from '@/Components/GridAdSlot.vue';
 
 const page = usePage();
 const { post } = useFetch();
+const { t } = useI18n();
 
 const props = defineProps({
     card: {
@@ -15,7 +28,13 @@ const props = defineProps({
 });
 
 const cardEl = ref(null);
+const videoEl = ref(null);
 let impressionFired = false;
+
+const isHtml = computed(() => props.card.type === 'html');
+const isVideo = computed(() => props.card.type === 'video' && !!props.card.video_src);
+
+const htmlAds = computed(() => [{ code: props.card.html_code, mobileCode: props.card.mobile_html_code }]);
 
 const vc = computed(() => page.props.theme?.videoCard || {});
 
@@ -31,16 +50,15 @@ const titleStyle = computed(() => ({
 const metaStyle = computed(() => ({
     fontFamily: vc.value.metaFont || undefined,
     fontSize: vc.value.metaSize ? `${vc.value.metaSize}px` : undefined,
+    color: vc.value.metaColor || 'var(--color-text-muted)',
 }));
-
-const metaColor = computed(() => vc.value.metaColor || 'var(--color-text-muted)');
 
 const thumbRadius = computed(() => {
     const r = vc.value.borderRadius;
     return r !== undefined && r !== null ? `${r}px` : '12px';
 });
 
-// Preview images cycling on hover
+// Preview images cycling on hover (image cards)
 const previewImages = computed(() => {
     const images = props.card.preview_images || [];
     if (images.length === 0 && props.card.thumbnail_url) {
@@ -53,13 +71,12 @@ const currentImageIndex = ref(0);
 const isHovering = ref(false);
 let previewInterval = null;
 
-const currentImage = computed(() => {
-    if (previewImages.value.length === 0) return props.card.thumbnail_url || placeholderImg;
-    return previewImages.value[currentImageIndex.value] || props.card.thumbnail_url || placeholderImg;
-});
+const currentImage = computed(() =>
+    previewImages.value[currentImageIndex.value] || props.card.thumbnail_url || placeholderImg
+);
 
 const startPreview = () => {
-    if (previewImages.value.length <= 1) return;
+    if (props.card.type !== 'image' || previewImages.value.length <= 1) return;
     isHovering.value = true;
     currentImageIndex.value = 0;
     previewInterval = setInterval(() => {
@@ -76,11 +93,7 @@ const stopPreview = () => {
     currentImageIndex.value = 0;
 };
 
-onUnmounted(() => {
-    if (previewInterval) clearInterval(previewInterval);
-});
-
-const handleClick = (e) => {
+const handleClick = () => {
     if (props.card?.id) {
         post(`/api/sponsored/${props.card.id}/click`, { placement: 'sponsored_card' }).catch(() => {});
     }
@@ -92,44 +105,84 @@ const fireImpression = () => {
     post(`/api/sponsored/${props.card.id}/impression`, { placement: 'sponsored_card' }).catch(() => {});
 };
 
-const { stop: stopImpressionObserver } = useIntersectionObserver(
+// One observer: counts the impression once and, for video cards, plays only
+// while at least half the card is visible.
+const { stop: stopObserver } = useIntersectionObserver(
     cardEl,
     ([entry]) => {
-        if (entry?.isIntersecting) {
-            fireImpression();
-            stopImpressionObserver();
+        if (!entry) return;
+        if (entry.isIntersecting) fireImpression();
+
+        if (!isVideo.value) {
+            if (entry.isIntersecting) stopObserver();
+            return;
+        }
+
+        const video = videoEl.value;
+        if (!video) return;
+        if (entry.isIntersecting) {
+            video.play().catch(() => {});
+        } else {
+            video.pause();
         }
     },
     { threshold: 0.5 }
 );
 
+onUnmounted(() => {
+    if (previewInterval) clearInterval(previewInterval);
+    videoEl.value?.pause();
+});
+
 // Price display
-const hasPrice = computed(() => props.card.price || props.card.formatted_price);
 const displayPrice = computed(() => props.card.formatted_sale_price || props.card.formatted_price);
 const originalPrice = computed(() => props.card.is_on_sale ? props.card.formatted_price : null);
-const discountPercent = computed(() => props.card.discount_percent);
 </script>
 
 <template>
+    <!-- HTML creative: the network's code, scaled to the cell -->
+    <div v-if="isHtml" ref="cardEl" class="sponsored-html">
+        <GridAdSlot :ads="htmlAds" placement="" />
+        <p class="mt-1 text-xs" :style="metaStyle">{{ t('common.sponsored') }}</p>
+    </div>
+
+    <!-- Image / video creative: looks like a video card -->
     <a
+        v-else
         ref="cardEl"
         :href="card.click_url"
         target="_blank"
         rel="noopener noreferrer sponsored"
         class="video-card group"
-        :aria-label="`Sponsored: ${card.title}`"
+        :aria-label="`${t('common.sponsored')}: ${card.title}`"
         @mouseenter="startPreview"
         @mouseleave="stopPreview"
         @click="handleClick"
     >
         <div class="thumbnail relative overflow-hidden" :style="{ borderRadius: thumbRadius }">
-            <!-- Sale Badge -->
-            <div v-if="discountPercent" class="absolute top-2 end-2 z-20">
-                <span class="sale-badge">-{{ discountPercent }}%</span>
+            <!-- Ad badge -->
+            <div class="absolute top-2 start-2 z-20">
+                <span class="ad-badge">Ad</span>
             </div>
 
-            <!-- Preview Image -->
+            <!-- Sale Badge -->
+            <div v-if="card.discount_percent" class="absolute top-2 end-2 z-20">
+                <span class="sale-badge">-{{ card.discount_percent }}%</span>
+            </div>
+
+            <video
+                v-if="isVideo"
+                ref="videoEl"
+                :src="card.video_src"
+                :poster="card.thumbnail_url || undefined"
+                class="w-full h-full object-cover"
+                muted
+                playsinline
+                loop
+                preload="none"
+            />
             <img
+                v-else
                 :src="currentImage"
                 :alt="card.title"
                 class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -162,38 +215,21 @@ const discountPercent = computed(() => props.card.discount_percent);
                 <h3 class="font-medium leading-tight" :class="`line-clamp-${vc.titleLines || 2}`" :style="titleStyle">
                     {{ card.title }}
                 </h3>
-                
-                <!-- Studio with price on same line (for clips/videos) -->
-                <p v-if="card.studio" class="mt-1 flex items-center gap-2" :style="{ ...metaStyle, color: metaColor }">
-                    <span>{{ card.studio }}</span>
-                    <template v-if="hasPrice">
-                        <span class="text-gray-500 dark:text-gray-600">•</span>
+
+                <!-- Studio, or description, followed by price when there is one -->
+                <p v-if="card.studio || card.description || displayPrice" class="mt-1 flex items-center gap-2" :style="metaStyle">
+                    <span v-if="card.studio || card.description" class="line-clamp-1 min-w-0" :class="{ 'flex-1': !card.studio }">
+                        {{ card.studio || card.description }}
+                    </span>
+                    <template v-if="displayPrice">
+                        <span v-if="card.studio" class="text-gray-500 dark:text-gray-600">•</span>
                         <span>{{ displayPrice }}</span>
                         <span v-if="originalPrice" class="line-through opacity-60">{{ originalPrice }}</span>
                     </template>
                 </p>
 
-                <!-- Price on same line as description (for products without studio) -->
-                <p v-else-if="hasPrice && card.description" class="mt-1 flex items-center gap-2" :style="{ ...metaStyle, color: metaColor }">
-                    <span class="line-clamp-1 flex-1">{{ card.description }}</span>
-                    <span>{{ displayPrice }}</span>
-                    <span v-if="originalPrice" class="line-through opacity-60">{{ originalPrice }}</span>
-                </p>
-
-                <!-- Price only (no studio, no description) -->
-                <p v-else-if="hasPrice" class="mt-1" :style="{ ...metaStyle, color: metaColor }">
-                    {{ displayPrice }}
-                    <span v-if="originalPrice" class="line-through opacity-60 ms-2">{{ originalPrice }}</span>
-                </p>
-
-                <!-- Description only (no price) -->
-                <p v-else-if="card.description" class="mt-1 line-clamp-2" :style="{ ...metaStyle, color: metaColor }">
-                    {{ card.description }}
-                </p>
-
-                <!-- Fallback: Sponsored label -->
-                <p v-else class="mt-1" :style="{ ...metaStyle, color: metaColor }">
-                    Sponsored
+                <p v-else class="mt-1" :style="metaStyle">
+                    {{ t('common.sponsored') }}
                 </p>
             </div>
         </div>
@@ -201,6 +237,16 @@ const discountPercent = computed(() => props.card.discount_percent);
 </template>
 
 <style scoped>
+.ad-badge {
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
 .sale-badge {
     background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
     color: white;

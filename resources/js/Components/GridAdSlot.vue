@@ -19,6 +19,9 @@ import AdSlot from '@/Components/AdSlot.vue';
 
 const props = defineProps({
     ads: { type: Array, default: () => [] }, // [{ code, mobileCode }]
+    // Reporting label passed to AdSlot. Empty when the caller tracks the
+    // impression itself, as sponsored cards do.
+    placement: { type: String, default: 'grid' },
 });
 
 const wrapper = ref(null);
@@ -130,7 +133,7 @@ onBeforeUnmount(() => {
         <AdSlot
             :key="isDesktop ? 'desktop' : 'mobile'"
             :html="activeCode"
-            placement="grid"
+            :placement="placement"
             format="rectangle"
         />
     </div>

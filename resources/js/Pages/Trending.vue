@@ -8,7 +8,6 @@ import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { Loader2 } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
-import GridAdSlot from '@/Components/GridAdSlot.vue';
 import { useI18n } from '@/Composables/useI18n';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 import { useVideoGrid } from '@/Composables/useVideoGrid';
@@ -25,8 +24,8 @@ const props = defineProps({
     videos: Object,
     period: { type: String, default: 'week' },
     seo: { type: Object, default: () => ({}) },
-    adSettings: { type: Object, default: () => ({}) },
     sponsoredCards: { type: Array, default: () => [] },
+    sponsoredFrequency: { type: Number, default: 8 },
 });
 
 const activePeriod = ref(props.period);
@@ -149,7 +148,7 @@ const goToPage = (pageNum) => {
 };
 
 // Grid ad interleaving — shared with every other listing page.
-const { gridAds, shouldShowAd, getSponsoredCard, adCellClass } = useGridAds(props);
+const { getSponsoredCard, sponsoredCellClass } = useGridAds(props);
 </script>
 
 <template>
@@ -190,14 +189,7 @@ const { gridAds, shouldShowAd, getSponsoredCard, adCellClass } = useGridAds(prop
             <div v-if="videoList.length" :class="gridClass">
                 <template v-for="(video, index) in videoList" :key="video.id">
                     <VideoCard :video="withTranslation(video)" />
-                    <div
-                        v-if="shouldShowAd(index, videoList.length)"
-                        class="rounded-xl p-2"
-                        :class="adCellClass"
-                    >
-                        <GridAdSlot :ads="gridAds" />
-                    </div>
-                    <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" />
+                    <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" :class="sponsoredCellClass(getSponsoredCard(index))" />
                 </template>
             </div>
             
@@ -217,14 +209,7 @@ const { gridAds, shouldShowAd, getSponsoredCard, adCellClass } = useGridAds(prop
             <div v-if="videos.data?.length" :class="gridClass">
                 <template v-for="(video, index) in videos.data" :key="video.id">
                     <VideoCard :video="withTranslation(video)" />
-                    <div
-                        v-if="shouldShowAd(index, videos.data.length)"
-                        class="rounded-xl p-2"
-                        :class="adCellClass"
-                    >
-                        <GridAdSlot :ads="gridAds" />
-                    </div>
-                    <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" />
+                    <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" :class="sponsoredCellClass(getSponsoredCard(index))" />
                 </template>
             </div>
 

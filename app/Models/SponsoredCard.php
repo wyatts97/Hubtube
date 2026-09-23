@@ -9,11 +9,41 @@ class SponsoredCard extends Model
 {
     use HasFactory;
 
+    public const TYPE_IMAGE = 'image';
+    public const TYPE_VIDEO = 'video';
+    public const TYPE_HTML = 'html';
+
+    public const TYPES = [
+        self::TYPE_IMAGE => 'Image',
+        self::TYPE_VIDEO => 'Video',
+        self::TYPE_HTML => 'HTML code',
+    ];
+
+    /** Pages a card can target. Empty targeting means all of them. */
+    public const PAGES = [
+        'home' => 'Home',
+        'trending' => 'Trending',
+        'search' => 'Search Results',
+        'category' => 'Category Pages',
+        'browse' => 'Browse Videos',
+        'tag' => 'Tag Pages',
+        'playlist' => 'Playlist Pages',
+        'gallery' => 'Galleries',
+        'images' => 'Images',
+        'history' => 'Watch History',
+        'feed' => 'Subscription Feed',
+    ];
+
     protected $fillable = [
         'external_id',
+        'type',
         'title',
         'thumbnail_url',
         'click_url',
+        'html_code',
+        'mobile_html_code',
+        'video_path',
+        'video_url',
         'description',
         'price',
         'sale_price',
@@ -22,11 +52,14 @@ class SponsoredCard extends Model
         'studio',
         'duration',
         'target_pages',
-        'frequency',
         'weight',
         'is_active',
         'category_ids',
         'target_roles',
+    ];
+
+    protected $attributes = [
+        'type' => self::TYPE_IMAGE,
     ];
 
     protected $casts = [
@@ -35,12 +68,27 @@ class SponsoredCard extends Model
         'target_roles' => 'array',
         'preview_images' => 'array',
         'is_active' => 'boolean',
-        'frequency' => 'integer',
         'weight' => 'integer',
         'price' => 'decimal:2',
         'sale_price' => 'decimal:2',
         'duration' => 'integer',
     ];
+
+    protected static function booted(): void
+    {
+        // Empty targeting is stored as NULL so the "match everything" branch of
+        // the scopes below is a plain IS NULL check.
+        static::saving(function (SponsoredCard $card) {
+            foreach (['target_pages', 'target_roles', 'category_ids', 'preview_images'] as $field) {
+                $value = array_values(array_filter((array) ($card->{$field} ?? [])));
+                $card->{$field} = $value ?: null;
+            }
+
+            if ($card->category_ids) {
+                $card->category_ids = array_map('intval', $card->category_ids);
+            }
+        });
+    }
 
     public function scopeActive($query)
     {
@@ -96,75 +144,95 @@ class SponsoredCard extends Model
 
     /**
      * Get sponsored cards for a given page context, weighted randomly.
+     *
+     * @param  array<int, string>|null  $types  Restrict to these creative types.
      */
-    public static function getForPage(string $page, ?string $role = null, ?int $categoryId = null, int $limit = 5): array
-    {
-        $cards = static::active()
+    public static function getForPage(
+        string $page,
+        ?string $role = null,
+        ?int $categoryId = null,
+        int $limit = 5,
+        ?array $types = null,
+    ): array {
+        $pool = static::active()
             ->forPage($page)
             ->forRole($role)
             ->forCategory($categoryId)
-            ->get();
-
-        if ($cards->isEmpty()) {
-            return [];
-        }
-
-        // Shuffle first so equal-weight cards are randomly ordered
-        $pool = $cards->toArray();
-        shuffle($pool);
+            ->when($types, fn ($q) => $q->whereIn('type', $types))
+            ->get()
+            ->shuffle() // equal-weight cards come out in random order
+            ->values()
+            ->all();
 
         $selected = [];
 
         while (count($selected) < $limit && !empty($pool)) {
-            $totalWeight = array_sum(array_map(fn($c) => max(0, (int) ($c['weight'] ?? 0)), $pool));
+            $totalWeight = array_sum(array_map(fn (self $c) => max(0, $c->weight), $pool));
 
             if ($totalWeight <= 0) {
-                // All weights are zero — just take the next (pool is already shuffled)
-                $card = array_shift($pool);
-            } else {
-                $rand = mt_rand(1, $totalWeight);
-                $cumulative = 0;
-                $chosenKey = null;
+                // All weights are zero — the pool is already shuffled.
+                $selected[] = array_shift($pool)->toCardPayload();
+                continue;
+            }
 
-                foreach ($pool as $key => $card) {
-                    $w = max(0, (int) ($card['weight'] ?? 0));
-                    if ($w === 0) continue;
-                    $cumulative += $w;
-                    if ($rand <= $cumulative) {
-                        $chosenKey = $key;
-                        break;
-                    }
+            $rand = mt_rand(1, $totalWeight);
+            $cumulative = 0;
+
+            foreach ($pool as $key => $card) {
+                $cumulative += max(0, $card->weight);
+                if ($rand <= $cumulative) {
+                    $selected[] = $card->toCardPayload();
+                    array_splice($pool, $key, 1);
+                    break;
                 }
-
-                if ($chosenKey === null) break;
-
-                $card = $pool[$chosenKey];
-                array_splice($pool, $chosenKey, 1);
             }
-
-            $card['thumbnail_url'] = static::resolveThumbUrl($card['thumbnail_url'] ?? '');
-
-            if (!empty($card['preview_images']) && is_array($card['preview_images'])) {
-                $card['preview_images'] = array_map(fn($img) => static::resolveThumbUrl($img), $card['preview_images']);
-            }
-
-            $card['formatted_price'] = $card['price'] ? '$' . number_format((float) $card['price'], 2) : null;
-            $card['formatted_sale_price'] = $card['sale_price'] ? '$' . number_format((float) $card['sale_price'], 2) : null;
-            $card['is_on_sale'] = $card['sale_price'] && $card['price'] && $card['sale_price'] < $card['price'];
-            $card['discount_percent'] = $card['is_on_sale']
-                ? (int) round((($card['price'] - $card['sale_price']) / $card['price']) * 100)
-                : null;
-
-            if (!empty($card['duration'])) {
-                $minutes = floor($card['duration'] / 60);
-                $seconds = $card['duration'] % 60;
-                $card['formatted_duration'] = sprintf('%d:%02d', $minutes, $seconds);
-            }
-
-            $selected[] = $card;
         }
 
         return $selected;
+    }
+
+    /**
+     * The fields the grid needs for this card's type, and nothing else.
+     *
+     * HTML cards never ship product fields and image cards never ship ad code,
+     * so the page payload stays small.
+     */
+    public function toCardPayload(): array
+    {
+        $base = [
+            'id' => $this->id,
+            'type' => $this->type,
+            'title' => $this->title,
+        ];
+
+        if ($this->type === self::TYPE_HTML) {
+            return $base + [
+                'html_code' => (string) $this->html_code,
+                'mobile_html_code' => (string) ($this->mobile_html_code ?: $this->html_code),
+            ];
+        }
+
+        $payload = $base + [
+            'click_url' => $this->click_url,
+            'thumbnail_url' => static::resolveThumbUrl($this->thumbnail_url),
+            'description' => $this->description,
+            'studio' => $this->studio,
+            'formatted_price' => $this->formatted_price,
+            'formatted_sale_price' => $this->formatted_sale_price,
+            'is_on_sale' => $this->is_on_sale,
+            'discount_percent' => $this->discount_percent,
+            'formatted_duration' => $this->formatted_duration,
+        ];
+
+        if ($this->type === self::TYPE_VIDEO) {
+            $payload['video_src'] = $this->video_path
+                ? static::resolveThumbUrl($this->video_path)
+                : (string) $this->video_url;
+        } else {
+            $payload['preview_images'] = $this->resolved_preview_images;
+        }
+
+        return $payload;
     }
 
     /**

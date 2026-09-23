@@ -9,23 +9,31 @@ use App\Filament\Resources\SponsoredCardResource\Pages\ListSponsoredCards;
 use App\Models\Category;
 use App\Models\SponsoredCard;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ReplicateAction;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 class SponsoredCardResource extends Resource
@@ -52,143 +60,166 @@ class SponsoredCardResource extends Resource
     public static function getGlobalSearchResultDetails(Model $record): array
     {
         return [
-            'Studio' => $record->studio ?: '-',
-            'Weight' => (string) $record->weight,
+            'Type' => SponsoredCard::TYPES[$record->type] ?? $record->type,
             'Active' => $record->is_active ? 'Yes' : 'No',
         ];
     }
 
     public static function form(Schema $schema): Schema
     {
+        $is = fn (string ...$types) => fn ($get) => in_array($get('type'), $types, true);
+
         return $schema
             ->components([
-                Section::make('Creative')
+                Section::make('Ad')
                     ->schema([
-                        TextInput::make('external_id')
-                            ->label('External ID')
-                            ->maxLength(100)
-                            ->placeholder('Optional external reference ID'),
+                        ToggleButtons::make('type')
+                            ->options(SponsoredCard::TYPES)
+                            ->icons([
+                                'image' => 'phosphor-image',
+                                'video' => 'phosphor-film-strip',
+                                'html' => 'phosphor-code',
+                            ])
+                            ->default('image')
+                            ->inline()
+                            ->required()
+                            ->live()
+                            ->columnSpanFull(),
+
                         TextInput::make('title')
+                            ->label(fn ($get) => $get('type') === 'html' ? 'Name' : 'Title')
+                            ->helperText(fn ($get) => $get('type') === 'html' ? 'Only shown in the admin.' : null)
                             ->required()
-                            ->maxLength(255)
-                            ->placeholder('e.g. Check out our new product!'),
+                            ->maxLength(255),
                         TextInput::make('click_url')
-                            ->label('Click-Through URL')
-                            ->required()
+                            ->label('Link')
                             ->url()
                             ->maxLength(2048)
-                            ->placeholder('https://example.com/landing-page'),
+                            ->placeholder('https://')
+                            ->required($is('image', 'video'))
+                            ->visible($is('image', 'video')),
+
+                        // Image
                         FileUpload::make('thumbnail_url')
-                            ->label('Thumbnail Image')
+                            ->label(fn ($get) => $get('type') === 'video' ? 'Poster image' : 'Image')
+                            ->helperText(fn ($get) => $get('type') === 'video' ? 'Optional. Shown until the video starts.' : '16:9, e.g. 640×360.')
                             ->image()
                             ->disk('public')
                             ->directory('sponsored')
                             ->visibility('public')
-                            ->helperText('Recommended: 640×360 (16:9). Can also use external URL.'),
-                        TextInput::make('description')
-                            ->maxLength(255)
-                            ->placeholder('Optional short description shown below the title'),
-                        TextInput::make('studio')
-                            ->maxLength(255)
-                            ->placeholder('Studio or brand name'),
+                            ->required($is('image'))
+                            ->visible($is('image', 'video')),
+
+                        // Video
+                        FileUpload::make('video_path')
+                            ->label('Video file')
+                            ->disk('public')
+                            ->directory('sponsored/video')
+                            ->visibility('public')
+                            ->acceptedFileTypes(['video/mp4', 'video/webm'])
+                            ->maxSize(51200)
+                            ->helperText('MP4 or WebM, up to 50 MB. Plays muted.')
+                            ->requiredWithout('video_url')
+                            ->visible($is('video')),
+                        TextInput::make('video_url')
+                            ->label('Or video URL')
+                            ->url()
+                            ->maxLength(2048)
+                            ->placeholder('https://example.com/ad.mp4')
+                            ->requiredWithout('video_path')
+                            ->visible($is('video')),
+
+                        // HTML
+                        Textarea::make('html_code')
+                            ->label('Ad code')
+                            ->helperText('Network code or an <iframe>. Scaled to fit the card.')
+                            ->rows(6)
+                            ->extraInputAttributes(['class' => 'font-mono text-xs'])
+                            ->required($is('html'))
+                            ->visible($is('html'))
+                            ->columnSpanFull(),
+                        Textarea::make('mobile_html_code')
+                            ->label('Mobile ad code')
+                            ->helperText('Optional. Used on phones.')
+                            ->rows(4)
+                            ->extraInputAttributes(['class' => 'font-mono text-xs'])
+                            ->visible($is('html'))
+                            ->columnSpanFull(),
                     ])->columns(2),
 
-                Section::make('Pricing')
+                Section::make('Details')
+                    ->description('Optional text under the title.')
+                    ->visible($is('image', 'video'))
+                    ->collapsible()
+                    ->collapsed()
                     ->schema([
+                        TextInput::make('studio')
+                            ->label('Studio / brand')
+                            ->maxLength(255),
+                        TextInput::make('description')
+                            ->maxLength(255),
                         Grid::make(3)->schema([
                             TextInput::make('price')
-                                ->label('Price')
                                 ->numeric()
                                 ->prefix('$')
-                                ->step(0.01)
-                                ->placeholder('9.99'),
+                                ->step(0.01),
                             TextInput::make('sale_price')
-                                ->label('Sale Price')
                                 ->numeric()
                                 ->prefix('$')
-                                ->step(0.01)
-                                ->placeholder('7.99')
-                                ->helperText('Leave empty if not on sale'),
+                                ->step(0.01),
                             TextInput::make('duration')
                                 ->label('Duration (seconds)')
-                                ->numeric()
-                                ->placeholder('300'),
-                        ]),
-                    ]),
-
-                Section::make('Preview Images')
-                    ->description('Multiple images that cycle on hover (like video card previews)')
-                    ->schema([
+                                ->numeric(),
+                        ])->columnSpanFull(),
                         Repeater::make('preview_images')
-                            ->label('Preview Images')
+                            ->label('Hover preview images')
                             ->simple(
                                 TextInput::make('url')
-                                    ->label('Image URL')
                                     ->url()
-                                    ->placeholder('https://example.com/preview1.jpg')
+                                    ->placeholder('https://example.com/preview.jpg')
                             )
-                            ->addActionLabel('Add Preview Image')
+                            ->addActionLabel('Add image')
                             ->reorderable()
-                            ->collapsible()
-                            ->defaultItems(0),
-                    ])->collapsed(),
+                            ->defaultItems(0)
+                            ->visible($is('image'))
+                            ->columnSpanFull(),
+                        TextInput::make('external_id')
+                            ->label('External ID')
+                            ->maxLength(100),
+                    ])->columns(2),
 
-                Section::make('Targeting & Display')
+                Section::make('Where it shows')
+                    ->description('Leave a list empty to show everywhere.')
                     ->schema([
                         CheckboxList::make('target_pages')
-                            ->label('Show on Pages')
+                            ->label('Pages')
+                            ->options(SponsoredCard::PAGES)
+                            ->columns(3)
+                            ->columnSpanFull(),
+                        CheckboxList::make('category_ids')
+                            ->label('Categories')
+                            ->options(fn () => Category::active()->orderBy('name')->pluck('name', 'id')->toArray())
+                            ->searchable()
+                            ->columns(2),
+                        CheckboxList::make('target_roles')
+                            ->label('Viewers')
                             ->options([
-                                'home' => 'Home',
-                                'trending' => 'Trending',
-                                'search' => 'Search Results',
-                                'category' => 'Category Pages',
-                                'browse' => 'Browse Videos',
-                                'tag' => 'Tag Pages',
-                                'playlist' => 'Playlist Pages',
-                                'gallery' => 'Galleries',
-                                'history' => 'Watch History',
-                                'feed' => 'Subscription Feed',
-                            ])
-                            ->helperText('Leave empty to show on all pages — including any page added later')
-                            ->columns(3),
-
-                        Grid::make(3)->schema([
-                            TextInput::make('frequency')
-                                ->label('Frequency (1 per N videos)')
-                                ->numeric()
-                                ->default(8)
-                                ->minValue(2)
-                                ->maxValue(50)
-                                ->helperText('Insert 1 sponsored card every N videos'),
-                            TextInput::make('weight')
-                                ->label('Weight / Priority')
-                                ->numeric()
-                                ->default(1)
-                                ->minValue(1)
-                                ->maxValue(100)
-                                ->helperText('Higher = more likely when multiple cards compete'),
-                            Toggle::make('is_active')
-                                ->label('Active')
-                                ->default(true),
-                        ]),
-
-                        Grid::make(2)->schema([
-                            CheckboxList::make('category_ids')
-                                ->label('Target Categories')
-                                ->options(fn () => Category::active()->orderBy('name')->pluck('name', 'id')->toArray())
-                                ->helperText('Leave empty for all categories')
-                                ->columns(2),
-                            CheckboxList::make('target_roles')
-                                ->label('Target User Roles')
-                                ->options([
-                                    'guest' => 'Guests (not logged in)',
-                                    'default' => 'Default Users (free)',
-                                    'pro' => 'Pro Users',
-                                    'admin' => 'Admins',
-                                ])
-                                ->helperText('Leave empty for all users'),
-                        ]),
-                    ]),
+                                'guest' => 'Guests',
+                                'default' => 'Free users',
+                                'pro' => 'Pro users',
+                                'admin' => 'Admins',
+                            ]),
+                        TextInput::make('weight')
+                            ->numeric()
+                            ->default(1)
+                            ->minValue(1)
+                            ->maxValue(100)
+                            ->helperText('Higher shows more often.'),
+                        Toggle::make('is_active')
+                            ->label('Active')
+                            ->default(true)
+                            ->inline(false),
+                    ])->columns(2),
             ]);
     }
 
@@ -197,60 +228,53 @@ class SponsoredCardResource extends Resource
         return $table
             ->columns([
                 ImageColumn::make('thumbnail_url')
-                    ->label('Thumb')
+                    ->label('')
                     ->disk('public')
-                    ->square()
-                    ->size(60)
+                    ->imageWidth(80)
+                    ->imageHeight(45)
                     ->defaultImageUrl(url('/assets/placeholder.svg'))
                     ->toggleable(),
                 TextColumn::make('title')
-                    ->searchable()
+                    ->searchable(['title', 'external_id'])
                     ->sortable()
                     ->weight('bold')
-                    ->limit(40),
-                TextColumn::make('click_url')
-                    ->label('URL')
-                    ->limit(30)
-                    ->color('gray')
-                    ->copyable()
+                    ->limit(40)
+                    ->description(fn (SponsoredCard $record) => $record->type === 'html' ? null : $record->click_url),
+                TextColumn::make('type')
+                    ->badge()
+                    ->formatStateUsing(fn (string $state) => SponsoredCard::TYPES[$state] ?? $state)
+                    ->color(fn (string $state) => match ($state) {
+                        'video' => 'info',
+                        'html' => 'warning',
+                        default => 'gray',
+                    })
+                    ->sortable()
                     ->toggleable(),
-
                 TextColumn::make('target_pages')
                     ->label('Pages')
-                    ->formatStateUsing(function ($state): string {
-                        if (empty($state) || ! is_array($state)) {
-                            return 'All';
-                        }
-
-                        return implode(', ', array_map('ucfirst', $state));
-                    })
-                    ->badge()
+                    ->formatStateUsing(fn ($state) => collect((array) $state)
+                        ->map(fn ($page) => SponsoredCard::PAGES[$page] ?? $page)
+                        ->implode(', '))
+                    ->placeholder('All')
+                    ->limit(40)
                     ->color('gray')
-                    ->toggleable(),
-                TextColumn::make('frequency')
-                    ->label('Every N')
-                    ->alignCenter()
-                    ->sortable()
                     ->toggleable(),
                 TextColumn::make('weight')
                     ->alignCenter()
                     ->sortable()
                     ->toggleable(),
-
-                TextColumn::make('clicks_count')
-                    ->label('Clicks')
-                    ->numeric()
-                    ->sortable()
-                    ->alignCenter()
-                    ->toggleable(),
-
                 TextColumn::make('impressions_count')
                     ->label('Impr.')
                     ->numeric()
                     ->sortable()
                     ->alignCenter()
                     ->toggleable(),
-
+                TextColumn::make('clicks_count')
+                    ->label('Clicks')
+                    ->numeric()
+                    ->sortable()
+                    ->alignCenter()
+                    ->toggleable(),
                 TextColumn::make('ctr')
                     ->label('CTR')
                     ->state(fn ($record) => $record->impressions_count > 0
@@ -258,14 +282,8 @@ class SponsoredCardResource extends Resource
                         : '—')
                     ->alignCenter()
                     ->toggleable(),
-
-                IconColumn::make('is_active')
+                ToggleColumn::make('is_active')
                     ->label('Active')
-                    ->boolean()
-                    ->sortable()
-                    ->toggleable(),
-                TextColumn::make('price')
-                    ->money('USD')
                     ->sortable()
                     ->toggleable(),
                 TextColumn::make('created_at')
@@ -274,18 +292,43 @@ class SponsoredCardResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort(fn (Builder $query, string $direction) => $query->orderBy('created_at', $direction)->orderBy('id', $direction), 'desc')
+            ->filters([
+                SelectFilter::make('type')->options(SponsoredCard::TYPES),
+                TernaryFilter::make('is_active')->label('Active'),
+            ])
             ->recordActions([
                 EditAction::make(),
+                ReplicateAction::make()
+                    ->label('Duplicate')
+                    ->excludeAttributes(['impressions_count', 'clicks_count'])
+                    ->beforeReplicaSaved(function (SponsoredCard $replica) {
+                        $replica->title = $replica->title.' (copy)';
+                        $replica->is_active = false;
+                    }),
                 DeleteAction::make(),
             ])
             ->toolbarActions([
-                DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    BulkAction::make('activate')
+                        ->label('Activate')
+                        ->icon('phosphor-play')
+                        ->color('success')
+                        ->action(fn (Collection $records) => $records->each->update(['is_active' => true]))
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('deactivate')
+                        ->label('Deactivate')
+                        ->icon('phosphor-pause')
+                        ->color('gray')
+                        ->action(fn (Collection $records) => $records->each->update(['is_active' => false]))
+                        ->deselectRecordsAfterCompletion(),
+                    DeleteBulkAction::make(),
+                ]),
             ])
             ->striped()
             ->paginated([10, 25, 50, 100])
             ->emptyStateIcon('phosphor-megaphone')
             ->emptyStateHeading('No sponsored cards')
-            ->emptyStateDescription('Create native in-feed ads that look like video cards with a "Sponsored" badge.')
+            ->emptyStateDescription('Ads shown between videos in the grid: an image, a video or ad code.')
             ->emptyStateActions([
                 Action::make('create')
                     ->color('success')

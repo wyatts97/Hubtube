@@ -12,7 +12,6 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
-use App\Models\SponsoredCard;
 
 class GalleryController extends Controller
 {
@@ -39,8 +38,7 @@ class GalleryController extends Controller
             'seo' => $this->seoService->forGalleriesIndex(
                 $request->sort ? (string) $request->sort : null,
             ),
-            'adSettings' => $this->gridAdSettings(),
-            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('gallery', $this->adTargetRole()),
+            ...$this->sponsoredCardProps('gallery'),
         ]);
     }
 

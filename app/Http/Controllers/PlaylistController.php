@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Playlist;
-use App\Models\SponsoredCard;
 use App\Models\Video;
 use App\Services\SeoService;
 use Illuminate\Http\JsonResponse;
@@ -87,8 +86,7 @@ class PlaylistController extends Controller
             'isFavorited' => $request->user() ? $playlist->isFavoritedBy($request->user()) : false,
             'canEdit' => $request->user()?->can('update', $playlist) ?? false,
             'seo' => $this->seoService->forPlaylist($playlist),
-            'adSettings' => $this->gridAdSettings(),
-            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('playlist', $this->adTargetRole()),
+            ...$this->sponsoredCardProps('playlist'),
         ]);
     }
 

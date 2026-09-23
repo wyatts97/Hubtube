@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Hashtag;
 use App\Models\Category;
 use App\Models\Setting;
-use App\Models\SponsoredCard;
 use App\Models\User;
 use App\Models\Video;
 use App\Services\SeoService;
@@ -48,7 +47,7 @@ class SearchController extends Controller
                 'mobileImage' => (string) Setting::get('search_banner_ad_mobile_image', ''),
                 'mobileLink' => (string) Setting::get('search_banner_ad_mobile_link', ''),
             ],
-            'sponsoredCards' => $this->shouldSuppressAds() ? [] : SponsoredCard::getForPage('search', $this->adTargetRole()),
+            ...$this->sponsoredCardProps('search'),
         ]);
     }
 
