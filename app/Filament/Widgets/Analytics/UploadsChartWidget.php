@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets\Analytics;
 
+use App\Filament\Widgets\Analytics\Concerns\CachedChart;
 use App\Filament\Widgets\Analytics\Concerns\DarkThemeOptions;
 use App\Models\Video;
 use Illuminate\Support\Carbon;
@@ -10,6 +11,7 @@ use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
 
 class UploadsChartWidget extends ApexChartWidget
 {
+    use CachedChart;
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'uploadsChart';
@@ -20,7 +22,7 @@ class UploadsChartWidget extends ApexChartWidget
         return 'Video Uploads · Last 30 Days';
     }
 
-    protected function getOptions(): array
+    protected function buildOptions(): array
     {
         [$labels, $values] = $this->buildSeries();
         $hasData = max($values) > 0;

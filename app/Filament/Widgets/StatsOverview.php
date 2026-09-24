@@ -23,6 +23,10 @@ class StatsOverview extends BaseWidget
 
     protected static ?int $sort = 0;
 
+    // About twenty aggregate queries; Filament's default re-ran them every
+    // 5 seconds while the dashboard stayed open.
+    protected ?string $pollingInterval = null;
+
     protected function getColumns(): int
     {
         return 3;

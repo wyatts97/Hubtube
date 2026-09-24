@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets\Analytics;
 
+use App\Filament\Widgets\Analytics\Concerns\CachedChart;
 use App\Filament\Widgets\Analytics\Concerns\DarkThemeOptions;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,7 @@ use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
  */
 class AdDeliveryChartWidget extends ApexChartWidget
 {
+    use CachedChart;
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'adDeliveryChart';
@@ -31,7 +33,7 @@ class AdDeliveryChartWidget extends ApexChartWidget
         return Schema::hasTable('ad_stats_daily');
     }
 
-    protected function getOptions(): array
+    protected function buildOptions(): array
     {
         [$labels, $impressions, $clicks] = $this->buildSeries();
 

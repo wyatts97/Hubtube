@@ -4,18 +4,6 @@
             {{ $this->settingsForm }}
         </form>
 
-        @if ($running)
-            <x-filament::section>
-                <div class="flex items-center gap-3">
-                    <x-filament::loading-indicator class="w-5 h-5" />
-                    <span class="text-sm text-gray-600 dark:text-gray-400">Processing... Please wait.</span>
-                </div>
-                @if ($status)
-                    <pre class="mt-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs overflow-auto max-h-64">{{ $status }}</pre>
-                @endif
-            </x-filament::section>
-        @endif
-
         <x-filament::section heading="Existing Backups" icon="phosphor-archive" description="Backups stored on the local disk.">
             @if (empty($this->backups))
                 <div class="text-center py-8 text-gray-500 dark:text-gray-400">

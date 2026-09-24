@@ -8,6 +8,9 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class VideoStatsOverview extends BaseWidget
 {
+    // Filament polls stats widgets every 5 seconds by default.
+    protected ?string $pollingInterval = null;
+
     protected function getStats(): array
     {
         return [

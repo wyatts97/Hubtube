@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets\Analytics;
 
+use App\Filament\Widgets\Analytics\Concerns\CachedChart;
 use App\Filament\Widgets\Analytics\Concerns\DarkThemeOptions;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -9,6 +10,7 @@ use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
 
 class SignupsChartWidget extends ApexChartWidget
 {
+    use CachedChart;
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'signupsChart';
@@ -19,7 +21,7 @@ class SignupsChartWidget extends ApexChartWidget
         return 'New Registrations · Last 30 Days';
     }
 
-    protected function getOptions(): array
+    protected function buildOptions(): array
     {
         [$labels, $values] = $this->buildSeries();
         $hasData = max($values) > 0;

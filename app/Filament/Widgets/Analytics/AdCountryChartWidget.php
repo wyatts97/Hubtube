@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets\Analytics;
 
+use App\Filament\Widgets\Analytics\Concerns\CachedChart;
 use App\Filament\Widgets\Analytics\Concerns\DarkThemeOptions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -17,6 +18,7 @@ use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
  */
 class AdCountryChartWidget extends ApexChartWidget
 {
+    use CachedChart;
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'adCountryChart';
@@ -32,7 +34,7 @@ class AdCountryChartWidget extends ApexChartWidget
         return Schema::hasTable('ad_stats_daily');
     }
 
-    protected function getOptions(): array
+    protected function buildOptions(): array
     {
         $rows = DB::table('ad_stats_daily')
             ->selectRaw('country, SUM(impressions) as impressions')

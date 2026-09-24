@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Jobs\RunBackupCommandJob;
 use App\Filament\Concerns\RequiresPermission;
 use App\Models\Setting;
 use App\Services\AdminLogger;
@@ -14,7 +15,6 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
 use App\Support\Bytes;
@@ -33,8 +33,6 @@ class Backups extends Page implements HasForms
 
     protected string $view = 'filament.pages.backups';
 
-    public bool $running = false;
-    public string $status = '';
     public ?array $settingsData = [];
 
     public function mount(): void
@@ -87,66 +85,26 @@ class Backups extends Page implements HasForms
                 ->color('success')
                 ->label('Create Backup')
                 ->icon('phosphor-plus')
-                ->action(function () {
-                    $this->running = true;
-                    $this->status = 'Backup started...';
-
-                    try {
-                        Artisan::call('backup:run');
-                        $output = Artisan::output();
-                        $this->status = $output;
-
-                        Notification::make()
-                            ->title('Backup created')
-                            ->body('The backup was created successfully.')
-                            ->success()
-                            ->send();
-                    } catch (\Throwable $e) {
-                        $this->status = 'Error: ' . $e->getMessage();
-
-                        Notification::make()
-                            ->title('Backup failed')
-                            ->body($e->getMessage())
-                            ->danger()
-                            ->send();
-                    } finally {
-                        $this->running = false;
-                    }
-                })
-                ->disabled(fn () => $this->running),
+                ->action(fn () => $this->queueBackupCommand('backup:run')),
 
             Action::make('cleanup')
                 ->label('Clean Old Backups')
                 ->icon('phosphor-broom')
                 ->color('warning')
-                ->action(function () {
-                    $this->running = true;
-                    $this->status = 'Cleanup started...';
-
-                    try {
-                        Artisan::call('backup:clean');
-                        $output = Artisan::output();
-                        $this->status = $output;
-
-                        Notification::make()
-                            ->title('Cleanup complete')
-                            ->body('Old backups have been cleaned up.')
-                            ->success()
-                            ->send();
-                    } catch (\Throwable $e) {
-                        $this->status = 'Error: ' . $e->getMessage();
-
-                        Notification::make()
-                            ->title('Cleanup failed')
-                            ->body($e->getMessage())
-                            ->danger()
-                            ->send();
-                    } finally {
-                        $this->running = false;
-                    }
-                })
-                ->disabled(fn () => $this->running),
+                ->action(fn () => $this->queueBackupCommand('backup:clean')),
         ];
+    }
+
+    /** Backups outlast a web request, so they run on the queue and report back. */
+    protected function queueBackupCommand(string $command): void
+    {
+        RunBackupCommandJob::dispatch($command, auth()->id());
+
+        Notification::make()
+            ->title('Started in the background')
+            ->body("You'll get a notification when it finishes.")
+            ->success()
+            ->send();
     }
 
     #[Computed]

@@ -48,7 +48,16 @@ class DynamicConfigServiceProvider extends ServiceProvider
         $fromName = Setting::get('mail_from_name', '');
 
         if (!empty($fromAddress)) {
-            config(['mail.from.address' => $fromAddress]);
+            config([
+                'mail.from.address' => $fromAddress,
+                'health.notifications.mail.from.address' => $fromAddress,
+            ]);
+        }
+
+        // Health-check failures go to the same inbox as other admin alerts.
+        $adminEmail = Setting::get('admin_notification_email', '') ?: $fromAddress;
+        if (!empty($adminEmail)) {
+            config(['health.notifications.mail.to' => $adminEmail]);
         }
         if (!empty($fromName)) {
             config(['mail.from.name' => $fromName]);

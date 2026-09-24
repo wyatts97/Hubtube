@@ -351,7 +351,9 @@ class VideoResource extends Resource
     {
         return $table
             ->defaultSort('created_at', 'desc')
-            ->poll('15s')
+            // Refresh only while something is encoding, so progress stays live
+            // without reloading the whole table every 15 seconds forever.
+            ->poll(fn (): ?string => Video::whereIn('status', ['pending', 'processing'])->exists() ? '15s' : null)
             ->columns([
                 ImageColumn::make('thumbnail_display')
                     ->label('Thumbnail')

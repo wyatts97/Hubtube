@@ -2,12 +2,14 @@
 
 namespace App\Filament\Widgets\Analytics;
 
+use App\Filament\Widgets\Analytics\Concerns\CachedChart;
 use App\Filament\Widgets\Analytics\Concerns\DarkThemeOptions;
 use Illuminate\Support\Facades\DB;
 use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
 
 class CategoryViewsChartWidget extends ApexChartWidget
 {
+    use CachedChart;
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'categoryViewsChart';
@@ -18,7 +20,7 @@ class CategoryViewsChartWidget extends ApexChartWidget
         return 'Views by Category · Top 10';
     }
 
-    protected function getOptions(): array
+    protected function buildOptions(): array
     {
         $rows = DB::table('videos')
             ->join('categories', 'videos.category_id', '=', 'categories.id')

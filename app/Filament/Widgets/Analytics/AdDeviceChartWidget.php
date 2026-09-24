@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets\Analytics;
 
+use App\Filament\Widgets\Analytics\Concerns\CachedChart;
 use App\Filament\Widgets\Analytics\Concerns\DarkThemeOptions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -10,6 +11,7 @@ use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
 /** Desktop / mobile / tablet split of ad impressions over the last 30 days. */
 class AdDeviceChartWidget extends ApexChartWidget
 {
+    use CachedChart;
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'adDeviceChart';
@@ -25,7 +27,7 @@ class AdDeviceChartWidget extends ApexChartWidget
         return Schema::hasTable('ad_stats_daily');
     }
 
-    protected function getOptions(): array
+    protected function buildOptions(): array
     {
         $rows = DB::table('ad_stats_daily')
             ->selectRaw('device, SUM(impressions) as impressions')

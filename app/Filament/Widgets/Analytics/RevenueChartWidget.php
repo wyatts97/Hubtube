@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets\Analytics;
 
+use App\Filament\Widgets\Analytics\Concerns\CachedChart;
 use App\Filament\Widgets\Analytics\Concerns\DarkThemeOptions;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +11,7 @@ use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
 
 class RevenueChartWidget extends ApexChartWidget
 {
+    use CachedChart;
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'revenueChart';
@@ -25,7 +27,7 @@ class RevenueChartWidget extends ApexChartWidget
         return Schema::hasTable('wallet_transactions');
     }
 
-    protected function getOptions(): array
+    protected function buildOptions(): array
     {
         [$labels, $values] = $this->buildSeries();
         $hasData = max($values) > 0;
