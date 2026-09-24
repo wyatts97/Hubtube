@@ -18,6 +18,7 @@ class CategoryObserver
 
         if (! $menuItem) {
             $this->syncToMenu($category);
+
             return;
         }
 
@@ -43,18 +44,18 @@ class CategoryObserver
         }
 
         return [
-            'category_id'  => $category->id,
-            'label'        => $category->name,
-            'type'         => 'category',
-            'url'          => '/category/' . $category->slug,
-            'target'       => '_self',
-            'icon'         => null,
-            'parent_id'    => $parentMenuId,
-            'sort_order'   => $category->sort_order,
-            'is_active'    => $category->is_active,
-            'is_mega'      => false,
+            'category_id' => $category->id,
+            'label' => $category->name,
+            'type' => 'category',
+            'url' => '/category/'.$category->slug,
+            'target' => '_self',
+            'icon' => null,
+            'parent_id' => $parentMenuId,
+            'sort_order' => $category->sort_order,
+            'is_active' => $category->is_active,
+            'is_mega' => false,
             'mega_columns' => 4,
-            'location'     => 'both',
+            'location' => 'both',
         ];
     }
 }

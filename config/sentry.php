@@ -1,5 +1,13 @@
 <?php
 
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Session\TokenMismatchException;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
 return [
 
     // Sentry Laravel SDK Configuration
@@ -29,13 +37,13 @@ return [
 
     // Exceptions to never report to Sentry
     'ignore_exceptions' => [
-        \Illuminate\Auth\AuthenticationException::class,
-        \Illuminate\Auth\Access\AuthorizationException::class,
-        \Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class,
-        \Illuminate\Database\Eloquent\ModelNotFoundException::class,
-        \Illuminate\Validation\ValidationException::class,
-        \Illuminate\Session\TokenMismatchException::class,
-        \Symfony\Component\HttpKernel\Exception\HttpException::class,
+        AuthenticationException::class,
+        AuthorizationException::class,
+        NotFoundHttpException::class,
+        ModelNotFoundException::class,
+        ValidationException::class,
+        TokenMismatchException::class,
+        HttpException::class,
     ],
 
 ];

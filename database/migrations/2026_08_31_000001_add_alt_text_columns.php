@@ -32,7 +32,7 @@ return new class extends Migration
     public function up(): void
     {
         foreach (self::COLUMNS as $table => [$column, $after]) {
-            if (!Schema::hasTable($table) || Schema::hasColumn($table, $column)) {
+            if (! Schema::hasTable($table) || Schema::hasColumn($table, $column)) {
                 continue;
             }
 
@@ -52,7 +52,7 @@ return new class extends Migration
     public function down(): void
     {
         foreach (self::COLUMNS as $table => [$column, $after]) {
-            if (!Schema::hasTable($table) || !Schema::hasColumn($table, $column)) {
+            if (! Schema::hasTable($table) || ! Schema::hasColumn($table, $column)) {
                 continue;
             }
 

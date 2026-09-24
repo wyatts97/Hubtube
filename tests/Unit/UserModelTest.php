@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /*
 |--------------------------------------------------------------------------
@@ -81,17 +82,17 @@ test('user password is hidden from serialization', function () {
 
 test('user has many videos relationship', function () {
     $user = User::factory()->create();
-    expect($user->videos())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($user->videos())->toBeInstanceOf(HasMany::class);
 });
 
 test('user has many comments relationship', function () {
     $user = User::factory()->create();
-    expect($user->comments())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($user->comments())->toBeInstanceOf(HasMany::class);
 });
 
 test('user has many playlists relationship', function () {
     $user = User::factory()->create();
-    expect($user->playlists())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($user->playlists())->toBeInstanceOf(HasMany::class);
 });
 
 test('user wallet_balance is cast to decimal', function () {

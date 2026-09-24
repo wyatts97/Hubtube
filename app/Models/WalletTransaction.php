@@ -32,17 +32,27 @@ class WalletTransaction extends Model
     }
 
     const TYPE_DEPOSIT = 'deposit';
+
     const TYPE_WITHDRAWAL = 'withdrawal';
+
     const TYPE_VIDEO_PURCHASE = 'video_purchase';
+
     const TYPE_VIDEO_SALE = 'video_sale';
+
     const TYPE_SUBSCRIPTION = 'subscription';
+
     const TYPE_SUBSCRIPTION_EARNING = 'subscription_earning';
+
     const TYPE_AD_REVENUE = 'ad_revenue';
+
     const TYPE_REFUND = 'refund';
 
     const STATUS_PENDING = 'pending';
+
     const STATUS_COMPLETED = 'completed';
+
     const STATUS_FAILED = 'failed';
+
     const STATUS_CANCELLED = 'cancelled';
 
     public function user(): BelongsTo

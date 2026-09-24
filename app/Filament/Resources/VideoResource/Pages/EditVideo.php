@@ -2,13 +2,12 @@
 
 namespace App\Filament\Resources\VideoResource\Pages;
 
-use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
 use App\Events\VideoProcessed;
 use App\Filament\Resources\VideoResource;
 use App\Jobs\ProcessVideoJob;
 use App\Models\Notification as AppNotification;
-use Filament\Actions;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditVideo extends EditRecord
@@ -24,7 +23,7 @@ class EditVideo extends EditRecord
                 ->label('View on Site')
                 ->icon('phosphor-eye')
                 ->color('gray')
-                ->url(fn () => url('/' . $this->record->slug))
+                ->url(fn () => url('/'.$this->record->slug))
                 ->openUrlInNewTab()
                 ->visible(fn () => $this->record->status === 'processed' && $this->record->is_approved),
 
@@ -45,11 +44,11 @@ class EditVideo extends EditRecord
                         ->where('type', 'video_processed')
                         ->where('data->video_id', $this->record->id)
                         ->exists();
-                    if (!$alreadyNotified) {
+                    if (! $alreadyNotified) {
                         event(new VideoProcessed($this->record));
                     }
                 })
-                ->visible(fn () => !$this->record->is_approved && $this->record->status === 'processed'),
+                ->visible(fn () => ! $this->record->is_approved && $this->record->status === 'processed'),
 
             Action::make('reprocess')
                 ->icon('phosphor-arrows-clockwise')

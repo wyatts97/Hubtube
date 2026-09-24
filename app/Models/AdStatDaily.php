@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Read model for `ad_stats_daily`.
@@ -30,7 +30,9 @@ class AdStatDaily extends Model
     ];
 
     public const SOURCE_VIDEO_AD = 'video_ad';
+
     public const SOURCE_SPONSORED_CARD = 'sponsored_card';
+
     public const SOURCE_NETWORK = 'network';
 
     /** Rows on or after the given date string (Y-m-d). */

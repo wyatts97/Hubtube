@@ -23,11 +23,15 @@ class Analytics extends Page
 
     protected static string $requiredPermission = 'view_any_video';
 
-    protected static string | \BackedEnum | null $navigationIcon  = 'phosphor-chart-bar';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-chart-bar';
+
     protected static ?string $navigationLabel = 'Analytics';
-    protected static string | \UnitEnum | null $navigationGroup = 'Overview';
-    protected static ?int    $navigationSort  = 2;
-    protected string  $view            = 'filament.pages.analytics';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Overview';
+
+    protected static ?int $navigationSort = 2;
+
+    protected string $view = 'filament.pages.analytics';
 
     /**
      * Widgets are rendered inside the page content rather than as header
@@ -68,16 +72,16 @@ class Analytics extends Page
     public function getSummaryStats(): array
     {
         return [
-            'total_videos'      => Video::count(),
-            'total_users'       => User::count(),
-            'total_views'       => Video::sum('views_count'),
-            'videos_this_week'  => Video::where('created_at', '>=', now()->subWeek())->count(),
-            'users_this_week'   => User::where('created_at', '>=', now()->subWeek())->count(),
+            'total_videos' => Video::count(),
+            'total_users' => User::count(),
+            'total_views' => Video::sum('views_count'),
+            'videos_this_week' => Video::where('created_at', '>=', now()->subWeek())->count(),
+            'users_this_week' => User::where('created_at', '>=', now()->subWeek())->count(),
             // Sponsored cards were previously excluded, so the headline
             // impression and click figures under-reported every install that
             // runs them — they are ad inventory just as much as video ads.
             'total_impressions' => VideoAd::sum('impressions_count') + SponsoredCard::sum('impressions_count'),
-            'total_clicks'      => VideoAd::sum('clicks_count') + SponsoredCard::sum('clicks_count'),
+            'total_clicks' => VideoAd::sum('clicks_count') + SponsoredCard::sum('clicks_count'),
         ];
     }
 
@@ -92,14 +96,15 @@ class Analytics extends Page
                 $ctr = $ad->impressions_count > 0
                     ? round(($ad->clicks_count / $ad->impressions_count) * 100, 2)
                     : 0;
+
                 return [
-                    'id'          => $ad->id,
-                    'name'        => $ad->name,
-                    'placement'   => $ad->placement,
-                    'type'        => $ad->type,
+                    'id' => $ad->id,
+                    'name' => $ad->name,
+                    'placement' => $ad->placement,
+                    'type' => $ad->type,
                     'impressions' => $ad->impressions_count,
-                    'clicks'      => $ad->clicks_count,
-                    'ctr'         => $ctr,
+                    'clicks' => $ad->clicks_count,
+                    'ctr' => $ctr,
                 ];
             })
             ->toArray();

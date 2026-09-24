@@ -17,7 +17,9 @@ namespace App\Support;
 class DeviceType
 {
     public const DESKTOP = 'desktop';
+
     public const MOBILE = 'mobile';
+
     public const TABLET = 'tablet';
 
     /**

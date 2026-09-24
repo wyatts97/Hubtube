@@ -18,7 +18,7 @@ class EmailServiceChannel
 {
     public function send(object $notifiable, Notification $notification): void
     {
-        if (!method_exists($notification, 'toEmailService')) {
+        if (! method_exists($notification, 'toEmailService')) {
             return;
         }
 
@@ -30,7 +30,7 @@ class EmailServiceChannel
 
         $to = $payload['to'] ?? ($notifiable->email ?? null);
 
-        if (!$to) {
+        if (! $to) {
             return;
         }
 

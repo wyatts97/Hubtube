@@ -12,9 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 class TwoFactorAuthenticationController extends Controller
 {
-    public function __construct(protected TwoFactorAuthenticationService $twoFactor)
-    {
-    }
+    public function __construct(protected TwoFactorAuthenticationService $twoFactor) {}
 
     /**
      * Generate (or regenerate) an unconfirmed secret and return the QR code
@@ -60,13 +58,13 @@ class TwoFactorAuthenticationController extends Controller
 
         $user = $request->user();
 
-        if (!$user->two_factor_secret) {
+        if (! $user->two_factor_secret) {
             throw ValidationException::withMessages([
                 'code' => 'Please start the two-factor setup process first.',
             ]);
         }
 
-        if (!$this->twoFactor->verify($user->two_factor_secret, $request->string('code'))) {
+        if (! $this->twoFactor->verify($user->two_factor_secret, $request->string('code'))) {
             throw ValidationException::withMessages([
                 'code' => 'The provided code is invalid.',
             ]);
@@ -93,7 +91,7 @@ class TwoFactorAuthenticationController extends Controller
 
         $user = $request->user();
 
-        if (!Hash::check($request->string('password'), $user->password)) {
+        if (! Hash::check($request->string('password'), $user->password)) {
             throw ValidationException::withMessages([
                 'password' => 'The provided password is incorrect.',
             ]);
@@ -115,7 +113,7 @@ class TwoFactorAuthenticationController extends Controller
     {
         $user = $request->user();
 
-        if (!$user->hasTwoFactorEnabled()) {
+        if (! $user->hasTwoFactorEnabled()) {
             throw ValidationException::withMessages([
                 'code' => 'Two-factor authentication is not enabled.',
             ]);

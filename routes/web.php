@@ -56,10 +56,11 @@ use App\Http\Controllers\VastController;
 use App\Http\Controllers\VideoAdController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\WalletController;
+use App\Http\Middleware\EnsureAdminTwoFactor;
+use App\Http\Middleware\RequireStripeWebhookSecret;
 use App\Models\Setting;
 use App\Support\SiteIcons;
 use App\Support\ThemeTokens;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Laravel\Cashier\Http\Controllers\WebhookController as StripeWebhookController;
@@ -112,7 +113,7 @@ Route::middleware('installed:require')->group(function () {
 
     // ── Admin Logs: export, download ─────────────────────────────
     // Same gate as the panel itself: admin plus the optional 2FA requirement.
-    $adminOnly = ['admin', \App\Http\Middleware\EnsureAdminTwoFactor::class];
+    $adminOnly = ['admin', EnsureAdminTwoFactor::class];
 
     // Export a single activity log entry (json | csv | txt)
     Route::get('/admin/logs/export/{id}', function ($id) {
@@ -379,7 +380,7 @@ Route::middleware('installed:require')->group(function () {
 
     // Stripe webhook (must be outside auth + age gates)
     Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
-        ->middleware(\App\Http\Middleware\RequireStripeWebhookSecret::class)
+        ->middleware(RequireStripeWebhookSecret::class)
         ->name('stripe.webhook');
 
     // CCBill webhook (must be outside auth + age gates; CSRF-exempt in bootstrap/app.php)

@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Video;
 
-use App\Rules\KnownTags;
 use App\Models\Video;
+use App\Rules\KnownTags;
 use App\Support\VideoPrivacy;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -49,7 +49,7 @@ class FinalizeVideoRequest extends FormRequest
             'category_id' => 'required|exists:categories,id',
             'age_restricted' => 'boolean',
             'privacy' => ['required', 'string', Rule::in(VideoPrivacy::allowedFor($this->user()))],
-            'tags' => ['required', 'array', 'min:3', 'max:20', new KnownTags()],
+            'tags' => ['required', 'array', 'min:3', 'max:20', new KnownTags],
             'tags.*' => 'string|min:2|max:50',
         ];
 

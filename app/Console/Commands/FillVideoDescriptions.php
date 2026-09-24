@@ -24,6 +24,7 @@ class FillVideoDescriptions extends Command
         $template = (string) ($this->option('template') ?: VideoDescriptionTemplate::template());
         if (trim($template) === '') {
             $this->error('Empty template — nothing to apply.');
+
             return self::FAILURE;
         }
 
@@ -32,11 +33,11 @@ class FillVideoDescriptions extends Command
         $dry = (bool) $this->option('dry-run');
 
         $opts = [
-            'only_public'    => !$all,
-            'only_approved'  => !$all,
-            'only_processed' => !$all,
-            'limit'          => $limit !== null ? max(1, (int) $limit) : null,
-            'dry_run'        => $dry,
+            'only_public' => ! $all,
+            'only_approved' => ! $all,
+            'only_processed' => ! $all,
+            'limit' => $limit !== null ? max(1, (int) $limit) : null,
+            'dry_run' => $dry,
         ];
 
         $missing = VideoDescriptionTemplate::missingCount($opts);
@@ -48,12 +49,14 @@ class FillVideoDescriptions extends Command
 
         if ($dry) {
             $this->warn("Dry run — would update up to {$missing} video(s) using template:");
-            $this->line('  ' . $template);
+            $this->line('  '.$template);
+
             return self::SUCCESS;
         }
 
-        if (!$this->confirm("Apply template to all eligible videos?", true)) {
+        if (! $this->confirm('Apply template to all eligible videos?', true)) {
             $this->info('Cancelled.');
+
             return self::SUCCESS;
         }
 

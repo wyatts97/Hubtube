@@ -2,10 +2,9 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\User;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
-use App\Models\User;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 
@@ -30,7 +29,7 @@ class RecentSignupsTable extends BaseWidget
             ->columns([
                 ImageColumn::make('avatar')
                     ->circular()
-                    ->defaultImageUrl(fn (User $record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->username) . '&background=random')
+                    ->defaultImageUrl(fn (User $record) => 'https://ui-avatars.com/api/?name='.urlencode($record->username).'&background=random')
                     ->size(32),
 
                 TextColumn::make('username')

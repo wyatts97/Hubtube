@@ -23,17 +23,18 @@ class PruneSoftDeletedVideos extends Command
             ->get();
 
         if ($videos->isEmpty()) {
-            $this->info('No soft-deleted videos older than ' . $days . ' days.');
+            $this->info('No soft-deleted videos older than '.$days.' days.');
+
             return self::SUCCESS;
         }
 
-        $this->info(($dryRun ? '[DRY RUN] ' : '') . "Found {$videos->count()} videos to permanently delete.");
+        $this->info(($dryRun ? '[DRY RUN] ' : '')."Found {$videos->count()} videos to permanently delete.");
 
         $deleted = 0;
         foreach ($videos as $video) {
             $this->line("  - [{$video->id}] {$video->title} (deleted {$video->deleted_at->diffForHumans()})");
 
-            if (!$dryRun) {
+            if (! $dryRun) {
                 $disk = $video->storage_disk ?? 'public';
 
                 // Delete video directory from storage
@@ -54,9 +55,9 @@ class PruneSoftDeletedVideos extends Command
             }
         }
 
-        $this->info(($dryRun ? '[DRY RUN] Would delete' : 'Permanently deleted') . " {$deleted} videos.");
+        $this->info(($dryRun ? '[DRY RUN] Would delete' : 'Permanently deleted')." {$deleted} videos.");
 
-        if (!$dryRun) {
+        if (! $dryRun) {
             Log::info('PruneSoftDeletedVideos: permanently deleted videos', ['count' => $deleted, 'days_threshold' => $days]);
         }
 

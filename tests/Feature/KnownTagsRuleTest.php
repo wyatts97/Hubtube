@@ -23,7 +23,7 @@ class KnownTagsRuleTest extends TestCase
 
     private function validate(array $tags): \Illuminate\Validation\Validator
     {
-        return Validator::make(['tags' => $tags], ['tags' => [new KnownTags()]]);
+        return Validator::make(['tags' => $tags], ['tags' => [new KnownTags]]);
     }
 
     private function hashtag(string $name, string $slug): Hashtag

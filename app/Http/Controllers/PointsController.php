@@ -19,8 +19,8 @@ class PointsController extends Controller
 
     public function index(Request $request): Response
     {
-        if (!Setting::get('points_enabled', true)) {
-            throw new NotFoundHttpException();
+        if (! Setting::get('points_enabled', true)) {
+            throw new NotFoundHttpException;
         }
 
         $user = $request->user();
@@ -78,7 +78,7 @@ class PointsController extends Controller
 
     public function redeem(Request $request): RedirectResponse
     {
-        if (!Setting::get('points_enabled', true) || !Setting::get('points_redemption_enabled', true)) {
+        if (! Setting::get('points_enabled', true) || ! Setting::get('points_redemption_enabled', true)) {
             return back()->with('error', 'Point redemption is currently disabled.');
         }
 

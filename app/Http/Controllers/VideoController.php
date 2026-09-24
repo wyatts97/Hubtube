@@ -2,19 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\VideoAd;
-use App\Models\Hashtag;
-use Illuminate\Http\UploadedFile;
 use App\Http\Requests\Video\FinalizeVideoRequest;
 use App\Http\Requests\Video\StoreVideoRequest;
-use App\Models\Playlist;
 use App\Http\Requests\Video\UpdateVideoRequest;
-use App\Models\Video;
-use App\Models\WatchHistory;
 use App\Models\Category;
+use App\Models\Hashtag;
+use App\Models\Playlist;
 use App\Models\Setting;
-use App\Services\PlayerAdListBuilder;
+use App\Models\Video;
+use App\Models\VideoAd;
+use App\Models\WatchHistory;
 use App\Services\EmailService;
+use App\Services\PlayerAdListBuilder;
 use App\Services\SeoService;
 use App\Services\StorageManager;
 use App\Services\TranslationService;
@@ -27,10 +26,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -76,7 +75,7 @@ class VideoController extends Controller
                 // Cheap pre-filter so scoring runs over a relevant slice rather
                 // than the whole table. Exact matching happens below.
                 foreach ($tags->take(6) as $tag) {
-                    $q->orWhere('tags', 'like', '%' . $tag . '%');
+                    $q->orWhere('tags', 'like', '%'.$tag.'%');
                 }
             })
             ->latest('published_at')
@@ -116,8 +115,8 @@ class VideoController extends Controller
             ->public()
             ->approved()
             ->processed()
-            ->when($request->category, fn($q, $cat) => $q->where('category_id', $cat))
-            ->when($escapedSearch, fn($q, $search) => $q->where('title', 'like', "%{$search}%"))
+            ->when($request->category, fn ($q, $cat) => $q->where('category_id', $cat))
+            ->when($escapedSearch, fn ($q, $search) => $q->where('title', 'like', "%{$search}%"))
             // Duration / quality / recency filters and the sort order all live
             // as scopes on the model so /videos and /search stay in step.
             ->ofDuration($request->string('duration')->toString())
@@ -174,7 +173,7 @@ class VideoController extends Controller
         $video = Video::where('slug', $slug)->first();
 
         // If not found, try translated slug
-        if (!$video) {
+        if (! $video) {
             $currentLocale = app()->getLocale();
             $translationService = app(TranslationService::class);
             $videoId = $translationService->findByTranslatedSlug(Video::class, $slug, $currentLocale);
@@ -183,7 +182,7 @@ class VideoController extends Controller
             }
         }
 
-        if (!$video) {
+        if (! $video) {
             abort(404);
         }
 
@@ -192,18 +191,18 @@ class VideoController extends Controller
 
     public function show(Request $request, Video $video): Response
     {
-        if (!$video->isAccessibleBy(auth()->user())) {
+        if (! $video->isAccessibleBy(auth()->user())) {
             abort(403);
         }
 
         // Non-owners can only see approved+processed videos
         $isOwner = auth()->check() && (auth()->id() === $video->user_id || auth()->user()->is_admin);
-        if (!$isOwner && (!$video->is_approved || $video->status !== 'processed')) {
+        if (! $isOwner && (! $video->is_approved || $video->status !== 'processed')) {
             abort(404);
         }
 
         // 451 Unavailable For Legal Reasons is the status meant for exactly this.
-        if (!$isOwner && $video->isGeoBlockedFor(VisitorCountry::fromRequest($request))) {
+        if (! $isOwner && $video->isGeoBlockedFor(VisitorCountry::fromRequest($request))) {
             abort(451, 'This video is not available in your country.');
         }
 
@@ -221,7 +220,7 @@ class VideoController extends Controller
                 'video_id' => $video->id,
             ]);
 
-            if (!$history->wasRecentlyCreated) {
+            if (! $history->wasRecentlyCreated) {
                 $history->touch();
             }
         }
@@ -357,7 +356,7 @@ class VideoController extends Controller
             $translatedFields = $cached['complete'] ? $cached['fields'] : [];
         }
 
-        if ($locale !== $defaultLocale && !empty($video->tags)) {
+        if ($locale !== $defaultLocale && ! empty($video->tags)) {
             // Cache-only: translateText() is an uncached, throttled provider
             // call, so doing it inline re-translated every tag on every view.
             $translationService = app(TranslationService::class);
@@ -375,11 +374,11 @@ class VideoController extends Controller
             'translatedDescription' => $translatedFields['description'] ?? null,
             'translatedTags' => $translatedTags,
             'relatedVideos' => $relatedVideos,
-            'userLike' => auth()->check() 
-                ? $video->likes()->where('user_id', auth()->id())->first()?->type 
+            'userLike' => auth()->check()
+                ? $video->likes()->where('user_id', auth()->id())->first()?->type
                 : null,
-            'isSubscribed' => auth()->check() 
-                ? auth()->user()->isSubscribedTo($video->user) 
+            'isSubscribed' => auth()->check()
+                ? auth()->user()->isSubscribedTo($video->user)
                 : false,
             'sidebarAd' => $sidebarAd,
             'bannerAbovePlayer' => $bannerAbovePlayer,
@@ -393,7 +392,7 @@ class VideoController extends Controller
             // Ready-made iframe for the share dialog; empty when embedding is
             // off or the video cannot be embedded (private, draft, unapproved).
             'embedCode' => $this->embedCodeFor($video),
-            'videoAdsEnabled' => !$this->shouldSuppressAds(),
+            'videoAdsEnabled' => ! $this->shouldSuppressAds(),
             // The player's whole VAST break schedule, decided here because Fluid
             // takes its adList at construction and cannot be given more later.
             'playerAdList' => app(PlayerAdListBuilder::class)->build($video, $video->category_id),
@@ -418,11 +417,11 @@ class VideoController extends Controller
 
     public function create(): Response|RedirectResponse
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()->route('login');
         }
 
-        if (!auth()->user()->canUpload()) {
+        if (! auth()->user()->canUpload()) {
             return Inertia::render('Videos/Create', [
                 'categories' => Category::active()->get(),
                 'existingTags' => [],
@@ -452,7 +451,7 @@ class VideoController extends Controller
 
     public function store(StoreVideoRequest $request): RedirectResponse
     {
-        if (!$request->user()->canUpload()) {
+        if (! $request->user()->canUpload()) {
             return back()->withErrors(['upload' => 'You have reached your daily upload limit. Please try again tomorrow.']);
         }
 
@@ -487,7 +486,7 @@ class VideoController extends Controller
     {
         $clean = preg_replace('/[^a-zA-Z0-9_-]/', '', $uploadId);
 
-        return substr(hash('sha256', $userId . ':' . $clean), 0, 40);
+        return substr(hash('sha256', $userId.':'.$clean), 0, 40);
     }
 
     /**
@@ -497,7 +496,7 @@ class VideoController extends Controller
      */
     public function uploadChunk(Request $request): JsonResponse
     {
-        if (!$request->user()?->canUpload()) {
+        if (! $request->user()?->canUpload()) {
             return response()->json([
                 'error' => 'You have reached your daily upload limit. Please try again tomorrow.',
                 'limit_reached' => true,
@@ -529,12 +528,12 @@ class VideoController extends Controller
         $filename = $request->input('filename');
         $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION) ?: '');
         $allowedExtensions = config('hubtube.video.allowed_extensions', []);
-        if (empty($extension) || !in_array($extension, $allowedExtensions, true)) {
+        if (empty($extension) || ! in_array($extension, $allowedExtensions, true)) {
             return response()->json(['error' => 'Invalid video file type.'], 422);
         }
         $chunkDir = storage_path("app/chunks/{$uploadId}");
 
-        if (!is_dir($chunkDir)) {
+        if (! is_dir($chunkDir)) {
             mkdir($chunkDir, 0755, true);
         }
 
@@ -590,8 +589,9 @@ class VideoController extends Controller
             $output = fopen($assembledPath, 'wb');
             for ($i = 0; $i < $totalChunks; $i++) {
                 $chunkPath = "{$chunkDir}/chunk_{$i}";
-                if (!file_exists($chunkPath)) {
+                if (! file_exists($chunkPath)) {
                     fclose($output);
+
                     return response()->json(['error' => "Missing chunk {$i}"], 422);
                 }
                 $chunk = fopen($chunkPath, 'rb');
@@ -620,13 +620,14 @@ class VideoController extends Controller
      */
     public function finalize(FinalizeVideoRequest $request): JsonResponse|RedirectResponse
     {
-        if (!$request->user()->canUpload()) {
+        if (! $request->user()->canUpload()) {
             if ($request->wantsJson()) {
                 return response()->json([
                     'error' => 'You have reached your daily upload limit. Please try again tomorrow.',
                     'limit_reached' => true,
                 ], 429);
             }
+
             return back()->withErrors(['upload' => 'You have reached your daily upload limit. Please try again tomorrow.']);
         }
 
@@ -635,11 +636,12 @@ class VideoController extends Controller
         $extension = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $data['extension']));
         $assembledPath = storage_path("app/chunks/{$uploadId}.{$extension}");
 
-        if (!is_file($assembledPath)) {
+        if (! is_file($assembledPath)) {
             $msg = 'The uploaded file could not be found. Please re-upload.';
             if ($request->wantsJson()) {
                 return response()->json(['error' => $msg], 422);
             }
+
             return back()->withErrors(['video_file' => $msg]);
         }
 
@@ -651,10 +653,11 @@ class VideoController extends Controller
             if ($request->wantsJson()) {
                 return response()->json(['error' => $msg], 422);
             }
+
             return back()->withErrors(['video_file' => $msg]);
         }
 
-        $originalName = $data['original_filename'] ?? ('video.' . $extension);
+        $originalName = $data['original_filename'] ?? ('video.'.$extension);
         $mime = function_exists('mime_content_type')
             ? (mime_content_type($assembledPath) ?: 'video/mp4')
             : 'video/mp4';
@@ -763,7 +766,7 @@ class VideoController extends Controller
      */
     public function recordProgress(Request $request, Video $video): HttpResponse
     {
-        if (!$video->isAccessibleBy($request->user())) {
+        if (! $video->isAccessibleBy($request->user())) {
             abort(404);
         }
 
@@ -832,7 +835,7 @@ class VideoController extends Controller
             // Check local disk first (processing happens locally)
             $localPath = Storage::disk('public')->path($thumbRelative);
             if (file_exists($localPath)) {
-                $thumbnails[] = asset('storage/' . $thumbRelative);
+                $thumbnails[] = asset('storage/'.$thumbRelative);
             } elseif ($video->storage_disk && $video->storage_disk !== 'public') {
                 // After cloud offload, check cloud disk
                 if (StorageManager::exists($thumbRelative, $video->storage_disk)) {
@@ -854,7 +857,7 @@ class VideoController extends Controller
         $this->authorize('update', $video);
 
         $count = (int) Setting::get('thumbnail_count', 4);
-        $request->validate(['index' => "required|integer|min:0|max:" . ($count - 1)]);
+        $request->validate(['index' => 'required|integer|min:0|max:'.($count - 1)]);
 
         $index = $request->input('index');
         $slugTitle = Str::slug($video->title, '_') ?: 'video';
@@ -865,7 +868,7 @@ class VideoController extends Controller
         $localPath = Storage::disk('public')->path($thumbRelative);
         $disk = $video->storage_disk ?? 'public';
 
-        if (!file_exists($localPath) && !StorageManager::exists($thumbRelative, $disk)) {
+        if (! file_exists($localPath) && ! StorageManager::exists($thumbRelative, $disk)) {
             return response()->json(['error' => 'Thumbnail not found'], 404);
         }
 
@@ -875,7 +878,7 @@ class VideoController extends Controller
         if ($disk !== 'public' && StorageManager::exists($thumbRelative, $disk)) {
             $url = StorageManager::url($thumbRelative, $disk);
         } else {
-            $url = asset('storage/' . $thumbRelative);
+            $url = asset('storage/'.$thumbRelative);
         }
 
         return response()->json([
@@ -887,19 +890,19 @@ class VideoController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user) {
+        if (! $user) {
             abort(403);
         }
 
-        if (!$user->is_pro && $user->id !== $video->user_id && !$user->is_admin) {
+        if (! $user->is_pro && $user->id !== $video->user_id && ! $user->is_admin) {
             abort(403);
         }
 
-        if (!$video->isViewableBy($user)) {
+        if (! $video->isViewableBy($user)) {
             abort(403);
         }
 
-        if ($user->id !== $video->user_id && !$user->is_admin
+        if ($user->id !== $video->user_id && ! $user->is_admin
             && $video->isGeoBlockedFor(VisitorCountry::fromRequest($request))) {
             abort(451, 'This video is not available in your country.');
         }
@@ -910,11 +913,11 @@ class VideoController extends Controller
         $disk = $video->storage_disk ?? 'public';
         $path = $video->bestDownloadPath();
 
-        if (!$path) {
+        if (! $path) {
             abort(404);
         }
 
-        $filename = Str::slug($video->title, '_') . '.mp4';
+        $filename = Str::slug($video->title, '_').'.mp4';
 
         if ($disk === 'public') {
             return Storage::disk('public')->download($path, $filename);
@@ -922,7 +925,7 @@ class VideoController extends Controller
 
         // Remote storage: redirect to a signed temporary URL with attachment disposition.
         $url = Storage::disk($disk)->temporaryUrl($path, now()->addMinutes(5), [
-            'ResponseContentDisposition' => 'attachment; filename="' . $filename . '"',
+            'ResponseContentDisposition' => 'attachment; filename="'.$filename.'"',
         ]);
 
         return redirect()->away($url);

@@ -1,6 +1,29 @@
 <?php
 
+use App\Events\VideoProcessed;
+use App\Health\Checks\TranslationQueueCheck;
+use App\Http\Middleware\AddSecurityHeaders;
+use App\Http\Middleware\AgeVerification;
+use App\Http\Middleware\CheckInstalled;
+use App\Http\Middleware\SetLocale;
+use App\Jobs\TranslateModelJob;
+use App\Listeners\PreTranslateVideoListener;
 use App\Models\Setting;
+use App\Models\Translation;
+use App\Models\Video;
+use App\Services\SeoService;
+use App\Services\StorageManager;
+use App\Services\TranslationService;
+use App\Services\VideoService;
+use App\Services\WalletService;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
+use Spatie\Health\Enums\Status;
 
 /*
 |--------------------------------------------------------------------------
@@ -57,50 +80,50 @@ test('app locale is set', function () {
 // ── Database ────────────────────────────────────────────────────────────
 
 test('database connection works', function () {
-    expect(fn () => \Illuminate\Support\Facades\DB::connection()->getPdo())
-        ->not->toThrow(\Exception::class);
+    expect(fn () => DB::connection()->getPdo())
+        ->not->toThrow(Exception::class);
 });
 
 test('migrations are up to date', function () {
-    $pending = \Illuminate\Support\Facades\Artisan::call('migrate:status');
+    $pending = Artisan::call('migrate:status');
     // migrate:status returns 0 when all migrations have run
     expect($pending)->toBe(0);
 });
 
 test('users table exists', function () {
-    expect(\Illuminate\Support\Facades\Schema::hasTable('users'))->toBeTrue();
+    expect(Schema::hasTable('users'))->toBeTrue();
 });
 
 test('videos table exists', function () {
-    expect(\Illuminate\Support\Facades\Schema::hasTable('videos'))->toBeTrue();
+    expect(Schema::hasTable('videos'))->toBeTrue();
 });
 
 test('categories table exists', function () {
-    expect(\Illuminate\Support\Facades\Schema::hasTable('categories'))->toBeTrue();
+    expect(Schema::hasTable('categories'))->toBeTrue();
 });
 
 test('settings table exists', function () {
-    expect(\Illuminate\Support\Facades\Schema::hasTable('settings'))->toBeTrue();
+    expect(Schema::hasTable('settings'))->toBeTrue();
 });
 
 test('comments table exists', function () {
-    expect(\Illuminate\Support\Facades\Schema::hasTable('comments'))->toBeTrue();
+    expect(Schema::hasTable('comments'))->toBeTrue();
 });
 
 test('playlists table exists', function () {
-    expect(\Illuminate\Support\Facades\Schema::hasTable('playlists'))->toBeTrue();
+    expect(Schema::hasTable('playlists'))->toBeTrue();
 });
 
 test('subscriptions table exists', function () {
-    expect(\Illuminate\Support\Facades\Schema::hasTable('subscriptions'))->toBeTrue();
+    expect(Schema::hasTable('subscriptions'))->toBeTrue();
 });
 
 test('video_ads table exists', function () {
-    expect(\Illuminate\Support\Facades\Schema::hasTable('video_ads'))->toBeTrue();
+    expect(Schema::hasTable('video_ads'))->toBeTrue();
 });
 
 test('translations table exists', function () {
-    expect(\Illuminate\Support\Facades\Schema::hasTable('translations'))->toBeTrue();
+    expect(Schema::hasTable('translations'))->toBeTrue();
 });
 
 // ── Cache & Session ─────────────────────────────────────────────────────
@@ -124,9 +147,9 @@ test('queue driver is configured', function () {
 });
 
 test('cache operations work', function () {
-    \Illuminate\Support\Facades\Cache::put('test_production_readiness', 'works', 60);
-    expect(\Illuminate\Support\Facades\Cache::get('test_production_readiness'))->toBe('works');
-    \Illuminate\Support\Facades\Cache::forget('test_production_readiness');
+    Cache::put('test_production_readiness', 'works', 60);
+    expect(Cache::get('test_production_readiness'))->toBe('works');
+    Cache::forget('test_production_readiness');
 });
 
 // ── Security ────────────────────────────────────────────────────────────
@@ -305,19 +328,19 @@ test('locale-prefixed routes are registered', function () {
 // ── Middleware ───────────────────────────────────────────────────────────
 
 test('security headers middleware is registered', function () {
-    expect(class_exists(\App\Http\Middleware\AddSecurityHeaders::class))->toBeTrue();
+    expect(class_exists(AddSecurityHeaders::class))->toBeTrue();
 });
 
 test('age verification middleware is registered', function () {
-    expect(class_exists(\App\Http\Middleware\AgeVerification::class))->toBeTrue();
+    expect(class_exists(AgeVerification::class))->toBeTrue();
 });
 
 test('set locale middleware is registered', function () {
-    expect(class_exists(\App\Http\Middleware\SetLocale::class))->toBeTrue();
+    expect(class_exists(SetLocale::class))->toBeTrue();
 });
 
 test('check installed middleware is registered', function () {
-    expect(class_exists(\App\Http\Middleware\CheckInstalled::class))->toBeTrue();
+    expect(class_exists(CheckInstalled::class))->toBeTrue();
 });
 
 test('installer routes are blocked after installation', function () {
@@ -328,34 +351,34 @@ test('installer routes are blocked after installation', function () {
 // ── Services ────────────────────────────────────────────────────────────
 
 test('SeoService class exists', function () {
-    expect(class_exists(\App\Services\SeoService::class))->toBeTrue();
+    expect(class_exists(SeoService::class))->toBeTrue();
 });
 
 test('VideoService class exists', function () {
-    expect(class_exists(\App\Services\VideoService::class))->toBeTrue();
+    expect(class_exists(VideoService::class))->toBeTrue();
 });
 
 test('StorageManager class exists', function () {
-    expect(class_exists(\App\Services\StorageManager::class))->toBeTrue();
+    expect(class_exists(StorageManager::class))->toBeTrue();
 });
 
 test('TranslationService class exists', function () {
-    expect(class_exists(\App\Services\TranslationService::class))->toBeTrue();
+    expect(class_exists(TranslationService::class))->toBeTrue();
 });
 
 test('WalletService class exists', function () {
-    expect(class_exists(\App\Services\WalletService::class))->toBeTrue();
+    expect(class_exists(WalletService::class))->toBeTrue();
 });
 
 // ── Artisan Commands ────────────────────────────────────────────────────
 
 test('artisan optimize runs without error', function () {
-    $exitCode = \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+    $exitCode = Artisan::call('optimize:clear');
     expect($exitCode)->toBe(0);
 });
 
 test('artisan route:list runs without error', function () {
-    $exitCode = \Illuminate\Support\Facades\Artisan::call('route:list', ['--json' => true]);
+    $exitCode = Artisan::call('route:list', ['--json' => true]);
     expect($exitCode)->toBe(0);
 });
 
@@ -470,10 +493,10 @@ test('batch translate returns source text and queues nothing', function () {
     // Updated for scheduled-only translation: this endpoint used to queue a job
     // per miss. Nothing on the request path may reach the provider now, so it
     // reports what is outstanding and leaves it to translations:run.
-    Illuminate\Support\Facades\Queue::fake();
+    Queue::fake();
     enableLocales(['en', 'es']);
 
-    $videos = App\Models\Video::factory()->count(3)->create();
+    $videos = Video::factory()->count(3)->create();
 
     $response = $this->postJson('/api/translate/batch', [
         'type' => 'video',
@@ -487,16 +510,16 @@ test('batch translate returns source text and queues nothing', function () {
     expect($response->json('pending'))->toBe(3)
         ->and($response->json('translations.0.title'))->toBe($videos[0]->title);
 
-    Illuminate\Support\Facades\Queue::assertNothingPushed();
+    Queue::assertNothingPushed();
 });
 
 test('batch translate returns stored translations without queueing', function () {
-    Illuminate\Support\Facades\Queue::fake();
+    Queue::fake();
     enableLocales(['en', 'es']);
 
-    $video = App\Models\Video::factory()->create();
-    App\Models\Translation::create([
-        'translatable_type' => App\Models\Video::class,
+    $video = Video::factory()->create();
+    Translation::create([
+        'translatable_type' => Video::class,
         'translatable_id' => $video->id,
         'field' => 'title',
         'locale' => 'es',
@@ -515,16 +538,16 @@ test('batch translate returns stored translations without queueing', function ()
         ->and($response->json('translations.0.translated_slug'))->toBe('titulo-traducido')
         ->and($response->json('pending'))->toBe(0);
 
-    Illuminate\Support\Facades\Queue::assertNothingPushed();
+    Queue::assertNothingPushed();
 });
 
 test('auto_translate_content off stops background translation being queued', function () {
-    Illuminate\Support\Facades\Queue::fake();
+    Queue::fake();
     enableLocales(['en', 'es']);
     Setting::set('auto_translate_content', false, 'language', 'boolean');
     Setting::clearCache();
 
-    $video = App\Models\Video::factory()->create();
+    $video = Video::factory()->create();
 
     $this->postJson('/api/translate/batch', [
         'type' => 'video',
@@ -534,42 +557,42 @@ test('auto_translate_content off stops background translation being queued', fun
     ])->assertStatus(200);
 
     // The setting used to be written by the admin panel and read by nothing.
-    Illuminate\Support\Facades\Queue::assertNothingPushed();
+    Queue::assertNothingPushed();
 });
 
 test('the translate job is unique per model and locale', function () {
-    Illuminate\Support\Facades\Queue::fake();
+    Queue::fake();
     enableLocales(['en', 'es']);
 
-    $job = new App\Jobs\TranslateModelJob(App\Models\Video::class, 7, ['title'], 'es');
+    $job = new TranslateModelJob(Video::class, 7, ['title'], 'es');
 
-    expect($job->uniqueId())->toBe(App\Models\Video::class.':7:es')
-        ->and($job)->toBeInstanceOf(Illuminate\Contracts\Queue\ShouldBeUnique::class);
+    expect($job->uniqueId())->toBe(Video::class.':7:es')
+        ->and($job)->toBeInstanceOf(ShouldBeUnique::class);
 });
 
 test('a processed video is pre-translated into every enabled locale', function () {
     // Pre-translation on publish is what keeps the request path's cache-only
     // reads from showing source text to real visitors.
-    Illuminate\Support\Facades\Queue::fake();
+    Queue::fake();
     enableLocales(['en', 'es', 'pt']);
 
-    $video = App\Models\Video::factory()->create(['privacy' => 'public', 'is_approved' => true]);
+    $video = Video::factory()->create(['privacy' => 'public', 'is_approved' => true]);
 
-    (new App\Listeners\PreTranslateVideoListener)->handle(new App\Events\VideoProcessed($video));
+    (new PreTranslateVideoListener)->handle(new VideoProcessed($video));
 
     // en is the default locale, so only es and pt are queued.
-    Illuminate\Support\Facades\Queue::assertPushed(App\Jobs\TranslateModelJob::class, 2);
+    Queue::assertPushed(TranslateModelJob::class, 2);
 });
 
 test('a private video is not pre-translated', function () {
-    Illuminate\Support\Facades\Queue::fake();
+    Queue::fake();
     enableLocales(['en', 'es']);
 
-    $video = App\Models\Video::factory()->create(['privacy' => 'private']);
+    $video = Video::factory()->create(['privacy' => 'private']);
 
-    (new App\Listeners\PreTranslateVideoListener)->handle(new App\Events\VideoProcessed($video));
+    (new PreTranslateVideoListener)->handle(new VideoProcessed($video));
 
-    Illuminate\Support\Facades\Queue::assertNothingPushed();
+    Queue::assertNothingPushed();
 });
 
 test('the translation queue check surfaces failed translation jobs', function () {
@@ -577,26 +600,26 @@ test('the translation queue check surfaces failed translation jobs', function ()
     // the source language — so this check is the only thing that reveals it.
     enableLocales(['en', 'es']);
 
-    Illuminate\Support\Facades\DB::table('failed_jobs')->insert([
-        'uuid' => (string) Illuminate\Support\Str::uuid(),
+    DB::table('failed_jobs')->insert([
+        'uuid' => (string) Str::uuid(),
         'connection' => 'redis',
         'queue' => 'default',
-        'payload' => json_encode(['displayName' => App\Jobs\TranslateModelJob::class]),
+        'payload' => json_encode(['displayName' => TranslateModelJob::class]),
         'exception' => 'boom',
         'failed_at' => now(),
     ]);
 
-    $result = (new App\Health\Checks\TranslationQueueCheck)->run();
+    $result = (new TranslationQueueCheck)->run();
 
-    expect($result->status)->toBe(Spatie\Health\Enums\Status::failed())
+    expect($result->status)->toBe(Status::failed())
         ->and($result->notificationMessage)->toContain('translation job');
 });
 
 test('the translation queue check stays quiet on single-language installs', function () {
     enableLocales(['en']);
 
-    expect((new App\Health\Checks\TranslationQueueCheck)->run()->status)
-        ->toBe(Spatie\Health\Enums\Status::ok());
+    expect((new TranslationQueueCheck)->run()->status)
+        ->toBe(Status::ok());
 });
 
 // ── RTL ─────────────────────────────────────────────────────────────────
@@ -662,7 +685,7 @@ test('a failed text translation is negatively cached so it is not re-queued fore
     // an unbounded loop that rate-limited the whole site.
     enableLocales(['en', 'es']);
 
-    $service = app(App\Services\TranslationService::class);
+    $service = app(TranslationService::class);
 
     // Simulate the failure path directly; the job calls this on a null result.
     $service->rememberFailedText('sometag', 'es');

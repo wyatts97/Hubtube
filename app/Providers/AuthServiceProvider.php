@@ -2,13 +2,13 @@
 
 namespace App\Providers;
 
-use App\Models\Video;
-use App\Policies\VideoPolicy;
 use App\Models\Comment;
-use App\Policies\CommentPolicy;
 use App\Models\Playlist;
-use App\Policies\PlaylistPolicy;
 use App\Models\Setting;
+use App\Models\Video;
+use App\Policies\CommentPolicy;
+use App\Policies\PlaylistPolicy;
+use App\Policies\VideoPolicy;
 use App\Support\Permissions;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;

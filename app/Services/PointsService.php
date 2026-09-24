@@ -28,7 +28,7 @@ class PointsService
             return null;
         }
 
-        if (!Setting::get('points_enabled', true)) {
+        if (! Setting::get('points_enabled', true)) {
             return null;
         }
 
@@ -70,7 +70,7 @@ class PointsService
      */
     public function awardCommentPoints(User $user, Model $comment): ?PointsTransaction
     {
-        if (!Setting::get('points_enabled', true) || !Setting::get('points_comment_enabled', true)) {
+        if (! Setting::get('points_enabled', true) || ! Setting::get('points_comment_enabled', true)) {
             return null;
         }
 
@@ -139,7 +139,7 @@ class PointsService
      */
     public function redeemForPro(User $user): PointsRedemption
     {
-        if (!Setting::get('points_enabled', true) || !Setting::get('points_redemption_enabled', true)) {
+        if (! Setting::get('points_enabled', true) || ! Setting::get('points_redemption_enabled', true)) {
             throw new Exception('Point redemption is currently disabled.');
         }
 
@@ -172,7 +172,7 @@ class PointsService
             ];
 
             // Only claim is_pro/pro_source if user isn't already Pro via a paid gateway.
-            if (!in_array($freshUser->pro_source, ['stripe', 'ccbill'], true)) {
+            if (! in_array($freshUser->pro_source, ['stripe', 'ccbill'], true)) {
                 $update['is_pro'] = true;
                 $update['pro_source'] = 'points';
             }

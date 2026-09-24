@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\Jobs\ProcessAdCreativeJob;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
 
 class VideoAd extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'name',
         'type',
@@ -78,28 +79,28 @@ class VideoAd extends Model
 
     public function scopeForCategory(Builder $query, ?int $categoryId): Builder
     {
-        if (!$categoryId) {
+        if (! $categoryId) {
             return $query;
         }
 
         return $query->where(function ($q) use ($categoryId) {
             $q->whereNull('category_ids')
-              ->orWhereJsonContains('category_ids', $categoryId)
-              ->orWhereJsonContains('category_ids', (string) $categoryId)
-              ->orWhereJsonLength('category_ids', 0);
+                ->orWhereJsonContains('category_ids', $categoryId)
+                ->orWhereJsonContains('category_ids', (string) $categoryId)
+                ->orWhereJsonLength('category_ids', 0);
         });
     }
 
     public function scopeForRole(Builder $query, ?string $role): Builder
     {
-        if (!$role) {
+        if (! $role) {
             return $query;
         }
 
         return $query->where(function ($q) use ($role) {
             $q->whereNull('target_roles')
-              ->orWhereJsonContains('target_roles', $role)
-              ->orWhereJsonLength('target_roles', 0);
+                ->orWhereJsonContains('target_roles', $role)
+                ->orWhereJsonLength('target_roles', 0);
         });
     }
 
@@ -149,6 +150,7 @@ class VideoAd extends Model
         if ($shuffle) {
             // Return one weighted-random ad
             $picked = static::pickWeightedRandom($ads);
+
             return $picked ? [self::formatAd($picked)] : [];
         }
 
@@ -164,7 +166,7 @@ class VideoAd extends Model
     public function mediaUrl(): string
     {
         if ($this->type === 'mp4' && $this->file_path) {
-            return asset('storage/' . $this->file_path);
+            return asset('storage/'.$this->file_path);
         }
 
         return (string) $this->content;
@@ -177,7 +179,7 @@ class VideoAd extends Model
     public function hlsUrl(): ?string
     {
         return ($this->type === 'mp4' && $this->hls_status === 'ready' && $this->hls_path)
-            ? asset('storage/' . $this->hls_path)
+            ? asset('storage/'.$this->hls_path)
             : null;
     }
 
@@ -207,17 +209,17 @@ class VideoAd extends Model
         $content = $ad->mediaUrl();
 
         return [
-            'id'                  => $ad->id,
-            'type'                => $ad->type,
-            'placement'           => $ad->placement,
-            'content'             => $content,
+            'id' => $ad->id,
+            'type' => $ad->type,
+            'placement' => $ad->placement,
+            'content' => $content,
             // HLS variant of a local mp4 ad, when ready — the player prefers this
             // for a faster start and falls back to `content` (the raw mp4) otherwise.
-            'hls_url'             => $ad->hlsUrl(),
-            'click_url'           => $ad->click_url,
-            'name'                => $ad->name,
+            'hls_url' => $ad->hlsUrl(),
+            'click_url' => $ad->click_url,
+            'name' => $ad->name,
             'outstream_thumbnail' => $ad->outstream_thumbnail
-                ? asset('storage/' . $ad->outstream_thumbnail)
+                ? asset('storage/'.$ad->outstream_thumbnail)
                 : null,
         ];
     }

@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use PDO;
-use Exception;
-use DateTimeZone;
-use App\Models\User;
 use App\Models\Channel;
-use Redis;
+use App\Models\User;
+use DateTimeZone;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use PDO;
+use Redis;
 
 class InstallController extends Controller
 {
@@ -77,7 +77,7 @@ class InstallController extends Controller
                 ->withInput($request->except('db_password'))
                 ->with('db_password_value', $password)
                 ->withErrors(['db_connection' => 'Could not connect to MySQL. Check the host, port, '
-                    . 'username and password, and that the server accepts connections from this host.']);
+                    .'username and password, and that the server accepts connections from this host.']);
         }
 
         // Try to create the database if it doesn't exist
@@ -90,7 +90,7 @@ class InstallController extends Controller
                 ->withInput($request->except('db_password'))
                 ->with('db_password_value', $password)
                 ->withErrors(['db_connection' => 'Connected to MySQL, but could not create or select that '
-                    . 'database. Check the user has CREATE privileges, or create the database manually first.']);
+                    .'database. Check the user has CREATE privileges, or create the database manually first.']);
         }
 
         // Ensure .env is writable before writing
@@ -174,7 +174,7 @@ class InstallController extends Controller
             $envUpdates['MAIL_ENCRYPTION'] = $validated['mail_encryption'] ?? 'tls';
         }
 
-        if (!empty($validated['mail_from_address'])) {
+        if (! empty($validated['mail_from_address'])) {
             $envUpdates['MAIL_FROM_ADDRESS'] = $validated['mail_from_address'];
         }
 
@@ -230,7 +230,7 @@ class InstallController extends Controller
     public function finalize()
     {
         $adminData = session('install_admin');
-        if (!$adminData) {
+        if (! $adminData) {
             return redirect()->route('install.admin');
         }
 
@@ -243,7 +243,7 @@ class InstallController extends Controller
     public function executeFinalize(Request $request)
     {
         $adminData = session('install_admin');
-        if (!$adminData) {
+        if (! $adminData) {
             return redirect()->route('install.admin');
         }
 
@@ -270,15 +270,17 @@ class InstallController extends Controller
                     $steps[] = ['label' => 'Database migrations', 'status' => 'success', 'message' => 'Ran fresh migration (previous tables were cleared)'];
                 } catch (Exception $e2) {
                     $steps[] = ['label' => 'Database migrations', 'status' => 'error', 'message' => $e2->getMessage()];
+
                     return view('install.finalize', ['adminData' => $adminData, 'steps' => $steps, 'failed' => true]);
                 }
             } else {
                 $message = str_contains($e->getMessage(), 'already exists')
                     ? 'This database already contains HubTube tables. Point the installer at an empty '
-                        . 'database, or re-run this step with "Erase existing data" checked to drop and '
-                        . 'recreate every table. That action is irreversible.'
+                        .'database, or re-run this step with "Erase existing data" checked to drop and '
+                        .'recreate every table. That action is irreversible.'
                     : $e->getMessage();
                 $steps[] = ['label' => 'Database migrations', 'status' => 'error', 'message' => $message];
+
                 return view('install.finalize', ['adminData' => $adminData, 'steps' => $steps, 'failed' => true]);
             }
         }
@@ -294,14 +296,15 @@ class InstallController extends Controller
             $steps[] = ['label' => 'Seed default data', 'status' => 'success'];
         } catch (Exception $e) {
             $steps[] = ['label' => 'Seed default data', 'status' => 'error', 'message' => $e->getMessage()];
+
             return view('install.finalize', ['adminData' => $adminData, 'steps' => $steps, 'failed' => true]);
         }
 
         // 3. Create admin user
         try {
             $admin = User::where('email', $adminData['email'])->first();
-            if (!$admin) {
-                $admin = new User();
+            if (! $admin) {
+                $admin = new User;
                 $admin->forceFill([
                     'username' => $adminData['username'],
                     'email' => $adminData['email'],
@@ -320,7 +323,7 @@ class InstallController extends Controller
                 ['user_id' => $admin->id],
                 [
                     'name' => $adminData['username'],
-                    'slug' => Str::slug($adminData['username']) . '-' . $admin->id,
+                    'slug' => Str::slug($adminData['username']).'-'.$admin->id,
                     'is_verified' => true,
                 ]
             );
@@ -328,6 +331,7 @@ class InstallController extends Controller
             $steps[] = ['label' => 'Create admin account', 'status' => 'success'];
         } catch (Exception $e) {
             $steps[] = ['label' => 'Create admin account', 'status' => 'error', 'message' => $e->getMessage()];
+
             return view('install.finalize', ['adminData' => $adminData, 'steps' => $steps, 'failed' => true]);
         }
 
@@ -389,7 +393,7 @@ class InstallController extends Controller
         $this->fixOpenBasedir();
 
         // Create .env from .env.example if missing
-        if (!File::exists(base_path('.env')) && File::exists(base_path('.env.example'))) {
+        if (! File::exists(base_path('.env')) && File::exists(base_path('.env.example'))) {
             File::copy(base_path('.env.example'), base_path('.env'));
             try {
                 Artisan::call('key:generate', ['--force' => true]);
@@ -419,7 +423,7 @@ class InstallController extends Controller
         ];
 
         foreach ($dirs as $dir) {
-            if (!is_dir($dir)) {
+            if (! is_dir($dir)) {
                 @mkdir($dir, 0775, true);
             }
         }
@@ -444,7 +448,7 @@ class InstallController extends Controller
     protected function ensureEnvWritable(): void
     {
         $envPath = base_path('.env');
-        if (File::exists($envPath) && !is_writable($envPath)) {
+        if (File::exists($envPath) && ! is_writable($envPath)) {
             @chmod($envPath, 0664);
         }
     }
@@ -495,23 +499,23 @@ class InstallController extends Controller
         $ffmpegPath = file_exists('/usr/local/bin/ffmpeg')
             ? '/usr/local/bin/ffmpeg'
             : trim(shell_exec('which ffmpeg 2>/dev/null') ?? '');
-        $ffmpegInstalled = !empty($ffmpegPath) && is_executable($ffmpegPath);
+        $ffmpegInstalled = ! empty($ffmpegPath) && is_executable($ffmpegPath);
 
         // Check for Node.js
         $nodePath = trim(shell_exec('which node 2>/dev/null') ?? '');
-        $nodeInstalled = !empty($nodePath);
+        $nodeInstalled = ! empty($nodePath);
         $nodeVersion = $nodeInstalled ? trim(shell_exec('node --version 2>/dev/null') ?? '') : '';
 
         // Check for Composer
         $composerPath = trim(shell_exec('which composer 2>/dev/null') ?? '');
-        $composerInstalled = !empty($composerPath);
+        $composerInstalled = ! empty($composerPath);
 
         // Check MySQL/MariaDB connectivity
         $mysqlAvailable = false;
         $mysqlVersion = '';
         try {
             $pdo = new PDO(
-                'mysql:host=' . env('DB_HOST', '127.0.0.1') . ';port=' . env('DB_PORT', '3306'),
+                'mysql:host='.env('DB_HOST', '127.0.0.1').';port='.env('DB_PORT', '3306'),
                 env('DB_USERNAME', 'root'),
                 env('DB_PASSWORD', ''),
                 [PDO::ATTR_TIMEOUT => 2]
@@ -534,7 +538,7 @@ class InstallController extends Controller
         $redisNeedsAuth = false;
         $redisPassword = env('REDIS_PASSWORD');
         try {
-            $redis = new Redis();
+            $redis = new Redis;
             $connected = @$redis->connect(
                 env('REDIS_HOST', '127.0.0.1'),
                 (int) env('REDIS_PORT', 6379),
@@ -571,8 +575,8 @@ class InstallController extends Controller
             $redisAvailable = false;
         }
 
-        $allExtensionsOk = !in_array(false, array_diff_key($extensions, ['redis' => true]));
-        $allDirsOk = !in_array(false, $directories);
+        $allExtensionsOk = ! in_array(false, array_diff_key($extensions, ['redis' => true]));
+        $allDirsOk = ! in_array(false, $directories);
         $canProceed = $phpOk && $allExtensionsOk && $allDirsOk && $envExists;
 
         return [
@@ -591,7 +595,7 @@ class InstallController extends Controller
             'mysql_available' => $mysqlAvailable,
             'mysql_version' => $mysqlVersion,
             'redis_available' => $redisAvailable,
-            'redis_needs_auth' => $redisNeedsAuth && !$redisAvailable,
+            'redis_needs_auth' => $redisNeedsAuth && ! $redisAvailable,
             'can_proceed' => $canProceed,
         ];
     }
@@ -611,11 +615,11 @@ class InstallController extends Controller
         ];
 
         foreach ($configPaths as $path) {
-            if (!is_readable($path)) {
+            if (! is_readable($path)) {
                 continue;
             }
             $contents = @file_get_contents($path);
-            if (!$contents) {
+            if (! $contents) {
                 continue;
             }
             // Match "requirepass <password>" (not commented out)
@@ -644,7 +648,7 @@ class InstallController extends Controller
             $env['panel'] = 'aapanel';
             $env['web_user'] = 'www';
             // Detect PHP-FPM socket
-            $phpVer = PHP_MAJOR_VERSION . PHP_MINOR_VERSION;
+            $phpVer = PHP_MAJOR_VERSION.PHP_MINOR_VERSION;
             $sock = "/tmp/php-cgi-{$phpVer}.sock";
             if (file_exists($sock)) {
                 $env['php_socket'] = $sock;
@@ -677,7 +681,7 @@ class InstallController extends Controller
 
         // Ensure public/vendor directory exists
         $vendorPath = public_path('vendor');
-        if (!is_dir($vendorPath)) {
+        if (! is_dir($vendorPath)) {
             @mkdir($vendorPath, 0775, true);
         }
 
@@ -686,7 +690,7 @@ class InstallController extends Controller
             Artisan::call('filament:assets');
             $results[] = 'Filament assets published';
         } catch (Exception $e) {
-            $results[] = 'Filament assets failed: ' . $e->getMessage();
+            $results[] = 'Filament assets failed: '.$e->getMessage();
         }
 
         // Publish Livewire assets
@@ -713,7 +717,7 @@ class InstallController extends Controller
 
         // If Filament assets still don't exist, try to manually copy from vendor
         $filamentAssetPath = public_path('vendor/filament');
-        if (!is_dir($filamentAssetPath)) {
+        if (! is_dir($filamentAssetPath)) {
             $this->copyFilamentAssetsManually();
         }
 
@@ -728,7 +732,7 @@ class InstallController extends Controller
         $sourceBase = base_path('vendor/filament');
         $destBase = public_path('vendor/filament');
 
-        if (!is_dir($sourceBase)) {
+        if (! is_dir($sourceBase)) {
             return;
         }
 
@@ -736,12 +740,12 @@ class InstallController extends Controller
         $packages = ['filament', 'forms', 'tables', 'support', 'actions', 'infolists', 'notifications', 'widgets'];
         foreach ($packages as $package) {
             $publicDir = "{$sourceBase}/{$package}/resources/dist";
-            if (!is_dir($publicDir)) {
+            if (! is_dir($publicDir)) {
                 $publicDir = "{$sourceBase}/{$package}/dist";
             }
             if (is_dir($publicDir)) {
                 $dest = "{$destBase}/{$package}";
-                if (!is_dir($dest)) {
+                if (! is_dir($dest)) {
                     @mkdir($dest, 0775, true);
                 }
                 $this->recursiveCopy($publicDir, $dest);
@@ -751,7 +755,7 @@ class InstallController extends Controller
         // Also handle Livewire
         $livewireSrc = base_path('vendor/livewire/livewire/dist');
         $livewireDest = public_path('vendor/livewire');
-        if (is_dir($livewireSrc) && !is_dir($livewireDest)) {
+        if (is_dir($livewireSrc) && ! is_dir($livewireDest)) {
             @mkdir($livewireDest, 0775, true);
             $this->recursiveCopy($livewireSrc, $livewireDest);
         }
@@ -763,12 +767,16 @@ class InstallController extends Controller
     protected function recursiveCopy(string $src, string $dst): void
     {
         $dir = opendir($src);
-        if (!$dir) return;
+        if (! $dir) {
+            return;
+        }
         @mkdir($dst, 0775, true);
         while (($file = readdir($dir)) !== false) {
-            if ($file === '.' || $file === '..') continue;
-            $srcPath = $src . '/' . $file;
-            $dstPath = $dst . '/' . $file;
+            if ($file === '.' || $file === '..') {
+                continue;
+            }
+            $srcPath = $src.'/'.$file;
+            $dstPath = $dst.'/'.$file;
             if (is_dir($srcPath)) {
                 $this->recursiveCopy($srcPath, $dstPath);
             } else {
@@ -805,12 +813,12 @@ class InstallController extends Controller
         $userIniPath = public_path('.user.ini');
         if (file_exists($userIniPath)) {
             // Try to remove immutable flag (aaPanel sets this)
-            @exec('chattr -i ' . escapeshellarg($userIniPath) . ' 2>/dev/null');
+            @exec('chattr -i '.escapeshellarg($userIniPath).' 2>/dev/null');
 
             $content = @file_get_contents($userIniPath);
             if ($content !== false) {
                 // Replace the open_basedir line to include full project root
-                $newBasedir = $projectRoot . ':/tmp/:/proc/';
+                $newBasedir = $projectRoot.':/tmp/:/proc/';
                 $newContent = preg_replace(
                     '/^open_basedir\s*=.*/m',
                     "open_basedir={$newBasedir}",
@@ -818,7 +826,8 @@ class InstallController extends Controller
                 );
                 if ($newContent !== $content) {
                     @file_put_contents($userIniPath, $newContent);
-                    return "Fixed open_basedir in .user.ini";
+
+                    return 'Fixed open_basedir in .user.ini';
                 }
             }
         }
@@ -839,10 +848,10 @@ class InstallController extends Controller
             // newlines, so a value containing a line break appended arbitrary extra
             // variables to .env. Strip CR/LF outright, then always quote and escape.
             $value = str_replace(["\r", "\n"], '', (string) $value);
-            $formatted = '"' . addcslashes($value, '"\\') . '"';
+            $formatted = '"'.addcslashes($value, '"\\').'"';
 
             // Use preg_replace_callback to avoid replacement string escaping issues
-            $pattern = "/^" . preg_quote($key, '/') . "=.*/m";
+            $pattern = '/^'.preg_quote($key, '/').'=.*/m';
             if (preg_match($pattern, $envContent)) {
                 $envContent = preg_replace($pattern, "{$key}={$formatted}", $envContent);
             } else {

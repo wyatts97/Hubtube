@@ -2,16 +2,17 @@
 
 namespace App\Providers;
 
-use App\Models\Setting;
+use App\Health\Checks\TranslationQueueCheck;
 use App\Http\Middleware\SetAdminTimezone;
 use App\Models\Category;
+use App\Models\Channel;
 use App\Models\Comment;
 use App\Models\ContactMessage;
-use App\Models\Channel;
 use App\Models\Gallery;
 use App\Models\Image;
-use App\Models\User;
 use App\Models\Report;
+use App\Models\Setting;
+use App\Models\User;
 use App\Models\Video;
 use App\Models\WithdrawalRequest;
 use App\Observers\CategoryObserver;
@@ -20,29 +21,28 @@ use App\Observers\GalleryObserver;
 use App\Observers\ImageObserver;
 use App\Observers\UserObserver;
 use App\Observers\VideoObserver;
-use Filament\Auth\Http\Responses\Contracts\LogoutResponse;
-use Illuminate\Queue\Events\JobProcessing;
-use Illuminate\Support\ServiceProvider;
 use App\Services\SystemStatusBar;
 use App\Services\Translation\Contracts\TranslationProvider;
 use App\Services\Translation\TranslationProviderManager;
+use Filament\Auth\Http\Responses\Contracts\LogoutResponse;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
-use STS\FilamentImpersonate\Events\EnterImpersonation;
-use STS\FilamentImpersonate\Events\LeaveImpersonation;
-use Spatie\Health\Facades\Health;
+use Illuminate\Support\ServiceProvider;
 use Spatie\Health\Checks\Checks\BackupsCheck;
 use Spatie\Health\Checks\Checks\CacheCheck;
 use Spatie\Health\Checks\Checks\DatabaseCheck;
 use Spatie\Health\Checks\Checks\DebugModeCheck;
 use Spatie\Health\Checks\Checks\EnvironmentCheck;
-use App\Health\Checks\TranslationQueueCheck;
 use Spatie\Health\Checks\Checks\HorizonCheck;
-use Spatie\Health\Checks\Checks\RedisCheck;
 use Spatie\Health\Checks\Checks\QueueCheck;
+use Spatie\Health\Checks\Checks\RedisCheck;
 use Spatie\Health\Checks\Checks\ScheduleCheck;
 use Spatie\Health\Checks\Checks\UsedDiskSpaceCheck;
+use Spatie\Health\Facades\Health;
+use STS\FilamentImpersonate\Events\EnterImpersonation;
+use STS\FilamentImpersonate\Events\LeaveImpersonation;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -71,7 +71,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        Model::shouldBeStrict(!$this->app->isProduction());
+        Model::shouldBeStrict(! $this->app->isProduction());
 
         Category::observe(CategoryObserver::class);
         User::observe(UserObserver::class);
@@ -135,7 +135,7 @@ class AppServiceProvider extends ServiceProvider
                 $logger->performedOn($event->impersonated);
             }
 
-            $logger->log('Stopped impersonating user' . ($event->impersonated ? " \"{$event->impersonated->username}\" (#{$event->impersonated->getAuthIdentifier()})" : ''));
+            $logger->log('Stopped impersonating user'.($event->impersonated ? " \"{$event->impersonated->username}\" (#{$event->impersonated->getAuthIdentifier()})" : ''));
         });
 
         Health::checks([

@@ -15,6 +15,7 @@ class AdDeviceChartWidget extends ApexChartWidget
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'adDeviceChart';
+
     protected static ?int $contentHeight = 260;
 
     protected function getHeading(): ?string

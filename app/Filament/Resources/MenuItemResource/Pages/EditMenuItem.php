@@ -2,9 +2,8 @@
 
 namespace App\Filament\Resources\MenuItemResource\Pages;
 
-use Filament\Actions\DeleteAction;
 use App\Filament\Resources\MenuItemResource;
-use Filament\Actions;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditMenuItem extends EditRecord

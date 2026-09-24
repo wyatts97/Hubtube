@@ -27,8 +27,8 @@ class GalleryController extends Controller
             ->withCount('images')
             ->when(
                 $request->sort === 'popular',
-                fn($q) => $q->orderByDesc('views_count'),
-                fn($q) => $q->latest()
+                fn ($q) => $q->orderByDesc('views_count'),
+                fn ($q) => $q->latest()
             )
             ->paginate(24);
 
@@ -44,7 +44,7 @@ class GalleryController extends Controller
 
     public function show(Gallery $gallery): Response
     {
-        if (!$gallery->isAccessibleBy(auth()->user())) {
+        if (! $gallery->isAccessibleBy(auth()->user())) {
             abort(403);
         }
 
@@ -111,7 +111,7 @@ class GalleryController extends Controller
         $gallery->images()->sync($syncData);
 
         // Set first image as cover
-        if (!empty($request->image_ids)) {
+        if (! empty($request->image_ids)) {
             $gallery->update(['cover_image_id' => $request->image_ids[0]]);
         }
 
@@ -149,7 +149,7 @@ class GalleryController extends Controller
             $gallery->images()->sync($syncData);
             $gallery->update(['images_count' => count($request->image_ids)]);
 
-            if (!empty($request->image_ids) && !$gallery->cover_image_id) {
+            if (! empty($request->image_ids) && ! $gallery->cover_image_id) {
                 $gallery->update(['cover_image_id' => $request->image_ids[0]]);
             }
         }
@@ -175,9 +175,10 @@ class GalleryController extends Controller
         $slug = $baseSlug;
         $suffix = 2;
         while (Gallery::where('slug', $slug)->exists()) {
-            $slug = $baseSlug . '-' . $suffix;
+            $slug = $baseSlug.'-'.$suffix;
             $suffix++;
         }
+
         return $slug;
     }
 }

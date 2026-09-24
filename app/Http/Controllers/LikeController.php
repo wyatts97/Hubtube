@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Database\QueryException;
 use App\Models\Like;
 use App\Models\Video;
 use App\Notifications\VideoLikeNotification;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +27,7 @@ class LikeController extends Controller
                     $existing->delete();
                     $video->decrementQuietly('likes_count');
                     $video = $video->fresh();
+
                     return response()->json([
                         'liked' => false,
                         'disliked' => false,
@@ -78,6 +79,7 @@ class LikeController extends Controller
                     $existing->delete();
                     $video->decrementQuietly('dislikes_count');
                     $video = $video->fresh();
+
                     return response()->json([
                         'liked' => false,
                         'disliked' => false,
@@ -121,6 +123,7 @@ class LikeController extends Controller
                 if (in_array($e->getCode(), ['40001', '23000'], true) && $attempt < $maxAttempts) {
                     // Exponential backoff: 100ms, 200ms, 400ms
                     usleep(100000 * (2 ** ($attempt - 1)));
+
                     continue;
                 }
                 throw $e;

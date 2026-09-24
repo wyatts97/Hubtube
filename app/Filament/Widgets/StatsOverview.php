@@ -2,8 +2,6 @@
 
 namespace App\Filament\Widgets;
 
-use Illuminate\Support\Str;
-use Throwable;
 use App\Models\Comment;
 use App\Models\Setting;
 use App\Models\User;
@@ -11,15 +9,18 @@ use App\Models\Video;
 use App\Models\VisitorDaily;
 use App\Models\WalletTransaction;
 use App\Services\StorageManager;
+use App\Support\Bytes;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Schema;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use App\Support\Bytes;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Throwable;
 
 class StatsOverview extends BaseWidget
 {
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected static ?int $sort = 0;
 
@@ -74,7 +75,7 @@ class StatsOverview extends BaseWidget
             // We can't track historical view snapshots, so show top video's views instead
             $topVideo = Video::orderByDesc('views_count')->first();
             $topVideoLabel = $topVideo
-                ? Str::limit($topVideo->title, 25) . ' (' . number_format($topVideo->views_count) . ')'
+                ? Str::limit($topVideo->title, 25).' ('.number_format($topVideo->views_count).')'
                 : 'No videos yet';
 
             // ── Comments (7-day sparkline) ──
@@ -133,19 +134,19 @@ class StatsOverview extends BaseWidget
             $isCloud = StorageManager::isCloudDisk();
             if ($isCloud) {
                 $storageLabel = $this->formatBytes($totalSize);
-                $storageDescription = number_format($totalVideos) . ' files · Cloud disk';
+                $storageDescription = number_format($totalVideos).' files · Cloud disk';
             } else {
-                $storagePath = \Illuminate\Support\Facades\Storage::disk('public')->path('');
+                $storagePath = Storage::disk('public')->path('');
                 $diskTotal = @disk_total_space($storagePath);
                 $diskFree = @disk_free_space($storagePath);
                 $diskUsed = $diskTotal ? $diskTotal - $diskFree : 0;
                 if ($diskTotal && $diskFree !== false) {
-                    $storageLabel = $this->formatBytes($diskUsed) . ' / ' . $this->formatBytes($diskTotal);
+                    $storageLabel = $this->formatBytes($diskUsed).' / '.$this->formatBytes($diskTotal);
                     $percent = round(($diskUsed / $diskTotal) * 100, 1);
-                    $storageDescription = $percent . '% used';
+                    $storageDescription = $percent.'% used';
                 } else {
                     $storageLabel = $this->formatBytes($totalSize);
-                    $storageDescription = number_format($totalVideos) . ' files on disk';
+                    $storageDescription = number_format($totalVideos).' files on disk';
                 }
             }
 
@@ -158,7 +159,7 @@ class StatsOverview extends BaseWidget
                         ->distinct()
                         ->count('visitor_hash');
                 }
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // Fallback to zero
             }
 
@@ -218,8 +219,8 @@ class StatsOverview extends BaseWidget
             if ($monetizationEnabled) {
                 // Insert after Total Views (index 2) to keep it in row 1
                 array_splice($stats, 3, 0, [
-                    Stat::make('Revenue', '$' . number_format($totalRevenue, 2))
-                        ->description('$' . number_format($revenue7d, 2) . ' this week · $' . number_format($revenue30d, 2) . ' this month')
+                    Stat::make('Revenue', '$'.number_format($totalRevenue, 2))
+                        ->description('$'.number_format($revenue7d, 2).' this week · $'.number_format($revenue30d, 2).' this month')
                         ->descriptionIcon('phosphor-currency-dollar')
                         ->color('warning'),
                 ]);
@@ -246,6 +247,7 @@ class StatsOverview extends BaseWidget
             $date = $now->copy()->subDays($i)->toDateString();
             $result[] = $data[$date] ?? 0;
         }
+
         return $result;
     }
 }

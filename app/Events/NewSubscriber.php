@@ -2,7 +2,6 @@
 
 namespace App\Events;
 
-use Throwable;
 use App\Models\Subscription;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -10,13 +9,16 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class NewSubscriber implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $tries = 1;
+
     public int $maxExceptions = 1;
+
     public bool $afterCommit = true;
 
     public function __construct(
@@ -30,7 +32,7 @@ class NewSubscriber implements ShouldBroadcast
     public function broadcastWhen(): bool
     {
         $host = config('broadcasting.connections.reverb.options.host',
-                config('broadcasting.connections.pusher.options.host', 'localhost'));
+            config('broadcasting.connections.pusher.options.host', 'localhost'));
 
         // Don't attempt to broadcast if still pointing at localhost in production
         if (app()->environment('production') && in_array($host, ['localhost', '127.0.0.1'])) {
@@ -42,13 +44,13 @@ class NewSubscriber implements ShouldBroadcast
 
     public function failed(Throwable $e): void
     {
-        Log::warning('NewSubscriber broadcast failed (Reverb may be down): ' . $e->getMessage());
+        Log::warning('NewSubscriber broadcast failed (Reverb may be down): '.$e->getMessage());
     }
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('user.' . $this->subscription->channel_id),
+            new PrivateChannel('user.'.$this->subscription->channel_id),
         ];
     }
 

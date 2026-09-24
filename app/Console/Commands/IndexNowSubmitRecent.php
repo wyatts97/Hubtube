@@ -16,8 +16,9 @@ class IndexNowSubmitRecent extends Command
 
     public function handle(IndexNowService $service): int
     {
-        if (!$service->isEnabled()) {
+        if (! $service->isEnabled()) {
             $this->warn('IndexNow is disabled or missing key.');
+
             return self::FAILURE;
         }
 
@@ -38,6 +39,7 @@ class IndexNowSubmitRecent extends Command
 
         if ($videos->isEmpty()) {
             $this->info('No recent eligible videos found.');
+
             return self::SUCCESS;
         }
 
@@ -45,11 +47,13 @@ class IndexNowSubmitRecent extends Command
         $ok = $service->submitUrls($urls);
 
         if ($ok) {
-            $this->info('Submitted ' . count($urls) . ' video URL(s).');
+            $this->info('Submitted '.count($urls).' video URL(s).');
+
             return self::SUCCESS;
         }
 
         $this->error('Submission failed (see logs).');
+
         return self::FAILURE;
     }
 }

@@ -2,22 +2,23 @@
 
 namespace App\Events;
 
-use Throwable;
-use Illuminate\Support\Facades\Log;
 use App\Models\Video;
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class VideoProcessed implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $tries = 1;
+
     public int $maxExceptions = 1;
+
     public bool $afterCommit = true;
 
     public function __construct(
@@ -28,7 +29,7 @@ class VideoProcessed implements ShouldBroadcast
     public function broadcastWhen(): bool
     {
         $host = config('broadcasting.connections.reverb.options.host',
-                config('broadcasting.connections.pusher.options.host', 'localhost'));
+            config('broadcasting.connections.pusher.options.host', 'localhost'));
 
         if (app()->environment('production') && in_array($host, ['localhost', '127.0.0.1'])) {
             return false;
@@ -39,13 +40,13 @@ class VideoProcessed implements ShouldBroadcast
 
     public function failed(Throwable $e): void
     {
-        Log::warning('VideoProcessed broadcast failed (Reverb may be down): ' . $e->getMessage());
+        Log::warning('VideoProcessed broadcast failed (Reverb may be down): '.$e->getMessage());
     }
 
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('user.' . $this->video->user_id),
+            new PrivateChannel('user.'.$this->video->user_id),
         ];
     }
 

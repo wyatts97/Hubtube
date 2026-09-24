@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Hashtag;
 use App\Models\Category;
+use App\Models\Hashtag;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
 use App\Services\SeoService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -52,7 +53,7 @@ class SearchController extends Controller
     }
 
     /**
-     * @param array{duration?:string,quality?:string,date?:string,category?:string,sort?:string} $filters
+     * @param  array{duration?:string,quality?:string,date?:string,category?:string,sort?:string}  $filters
      */
     private function searchVideos(?string $query, array $filters = [])
     {
@@ -73,7 +74,7 @@ class SearchController extends Controller
 
         // Use Scout search if a real driver is configured, otherwise fallback to LIKE
         $driver = config('scout.driver');
-        if ($driver && !in_array($driver, ['database', 'null', 'collection'])) {
+        if ($driver && ! in_array($driver, ['database', 'null', 'collection'])) {
             return Video::search($query)
                 ->query(function ($q) use ($applyFilters, $filters) {
                     $q = $applyFilters($q->with(['user.channel'])->public()->approved()->processed());
@@ -93,8 +94,8 @@ class SearchController extends Controller
             ->processed()
             ->where(function ($q) use ($escapedQuery, $query) {
                 $q->where('title', 'like', "%{$escapedQuery}%")
-                  ->orWhere('description', 'like', "%{$escapedQuery}%")
-                  ->orWhereJsonContains('tags', $query);
+                    ->orWhere('description', 'like', "%{$escapedQuery}%")
+                    ->orWhereJsonContains('tags', $query);
             });
 
         return $applyFilters($builder)
@@ -115,7 +116,7 @@ class SearchController extends Controller
             ->with('channel')
             ->where(function ($q) use ($escapedQuery) {
                 $q->where('username', 'like', "%{$escapedQuery}%")
-                  ->orWhereHas('channel', fn($sub) => $sub->where('name', 'like', "%{$escapedQuery}%"));
+                    ->orWhereHas('channel', fn ($sub) => $sub->where('name', 'like', "%{$escapedQuery}%"));
             })
             ->paginate(24);
     }
@@ -138,7 +139,7 @@ class SearchController extends Controller
      * Live search autocomplete suggestions.
      * Returns top videos + channels for the navbar dropdown.
      */
-    public function suggest(Request $request): \Illuminate\Http\JsonResponse
+    public function suggest(Request $request): JsonResponse
     {
         $query = $request->get('q', '');
         if (empty($query) || strlen($query) < 2) {
@@ -147,12 +148,12 @@ class SearchController extends Controller
 
         $escapedQuery = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $query);
         $driver = config('scout.driver');
-        $useScout = $driver && !in_array($driver, ['database', 'null', 'collection']);
+        $useScout = $driver && ! in_array($driver, ['database', 'null', 'collection']);
 
         // Videos: top 5
         if ($useScout) {
             $videos = Video::search($query)
-                ->query(fn($q) => $q->with(['user'])->public()->approved()->processed())
+                ->query(fn ($q) => $q->with(['user'])->public()->approved()->processed())
                 ->take(5)
                 ->get();
         } else {
@@ -163,8 +164,8 @@ class SearchController extends Controller
                 ->processed()
                 ->where(function ($q) use ($escapedQuery, $query) {
                     $q->where('title', 'like', "%{$escapedQuery}%")
-                      ->orWhere('description', 'like', "%{$escapedQuery}%")
-                      ->orWhereJsonContains('tags', $query);
+                        ->orWhere('description', 'like', "%{$escapedQuery}%")
+                        ->orWhereJsonContains('tags', $query);
                 })
                 ->latest('published_at')
                 ->limit(5)
@@ -176,13 +177,13 @@ class SearchController extends Controller
             ->with('channel')
             ->where(function ($q) use ($escapedQuery) {
                 $q->where('username', 'like', "%{$escapedQuery}%")
-                  ->orWhereHas('channel', fn($sub) => $sub->where('name', 'like', "%{$escapedQuery}%"));
+                    ->orWhereHas('channel', fn ($sub) => $sub->where('name', 'like', "%{$escapedQuery}%"));
             })
             ->limit(3)
             ->get();
 
         return response()->json([
-            'videos' => $videos->map(fn($v) => [
+            'videos' => $videos->map(fn ($v) => [
                 'id' => $v->id,
                 'slug' => $v->slug,
                 'title' => $v->title,
@@ -190,7 +191,7 @@ class SearchController extends Controller
                 'duration_formatted' => $v->formatted_duration ?? null,
                 'username' => $v->user?->username,
             ]),
-            'channels' => $channels->map(fn($u) => [
+            'channels' => $channels->map(fn ($u) => [
                 'id' => $u->id,
                 'username' => $u->username,
                 'avatar_url' => $u->avatar_url ?? $u->avatar,

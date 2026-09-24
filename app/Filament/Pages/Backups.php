@@ -2,10 +2,11 @@
 
 namespace App\Filament\Pages;
 
-use App\Jobs\RunBackupCommandJob;
 use App\Filament\Concerns\RequiresPermission;
+use App\Jobs\RunBackupCommandJob;
 use App\Models\Setting;
 use App\Services\AdminLogger;
+use App\Support\Bytes;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -17,7 +18,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
-use App\Support\Bytes;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class Backups extends Page implements HasForms
 {
@@ -26,9 +27,13 @@ class Backups extends Page implements HasForms
     protected static string $requiredPermission = 'view_any_user';
 
     use InteractsWithForms;
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-archive';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-archive';
+
     protected static ?string $navigationLabel = 'Backups';
-    protected static string | \UnitEnum | null $navigationGroup = 'Tools';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Tools';
+
     protected static ?int $navigationSort = 90;
 
     protected string $view = 'filament.pages.backups';
@@ -113,7 +118,7 @@ class Backups extends Page implements HasForms
         $disk = Storage::disk('local');
         $backupDir = config('backup.backup.name', 'backups');
 
-        if (!$disk->exists($backupDir)) {
+        if (! $disk->exists($backupDir)) {
             return [];
         }
 
@@ -152,7 +157,7 @@ class Backups extends Page implements HasForms
         unset($this->backups);
     }
 
-    public function downloadBackup(string $path): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function downloadBackup(string $path): StreamedResponse
     {
         return Storage::disk('local')->download($path);
     }

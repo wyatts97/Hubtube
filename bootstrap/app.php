@@ -1,16 +1,38 @@
 <?php
 
+use App\Http\Middleware\AddSecurityHeaders;
+use App\Http\Middleware\AgeVerification;
+use App\Http\Middleware\CheckInstalled;
+use App\Http\Middleware\CheckMaintenanceMode;
+use App\Http\Middleware\EnsureEmailIsVerified;
+use App\Http\Middleware\EnsureRegistrationOpen;
+use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\EnsureUserIsNotBanned;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\SetLocale;
+use App\Http\Middleware\TrackVisitor;
+use App\Providers\Filament\AdminPanelProvider;
+use App\Services\AdminLogger;
 use App\Services\SeoService;
+use App\Support\TrustedProxies;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Sentry\Laravel\Integration;
+use Sentry\Laravel\ServiceProvider;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 // Force file sessions during installation so CSRF works before Redis/DB is configured
-if (!file_exists(dirname(__DIR__) . '/storage/installed')) {
+if (! file_exists(dirname(__DIR__).'/storage/installed')) {
     $_ENV['SESSION_DRIVER'] = 'file';
     $_SERVER['SESSION_DRIVER'] = 'file';
     putenv('SESSION_DRIVER=file');
@@ -18,8 +40,8 @@ if (!file_exists(dirname(__DIR__) . '/storage/installed')) {
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withProviders(array_filter([
-        \App\Providers\Filament\AdminPanelProvider::class,
-        class_exists(\Sentry\Laravel\ServiceProvider::class) ? \Sentry\Laravel\ServiceProvider::class : null,
+        AdminPanelProvider::class,
+        class_exists(ServiceProvider::class) ? ServiceProvider::class : null,
     ]))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
@@ -31,7 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         // Trust loopback and Cloudflare for client IP and HTTPS detection
         $middleware->trustProxies(
-            at: \App\Support\TrustedProxies::list(),
+            at: TrustedProxies::list(),
             headers: Request::HEADER_X_FORWARDED_FOR |
                      Request::HEADER_X_FORWARDED_HOST |
                      Request::HEADER_X_FORWARDED_PORT |
@@ -43,23 +65,23 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->web(append: [
-            \App\Http\Middleware\CheckMaintenanceMode::class,
-            \App\Http\Middleware\SetLocale::class,
-            \App\Http\Middleware\HandleInertiaRequests::class,
-            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
-            \App\Http\Middleware\AddSecurityHeaders::class,
-            \App\Http\Middleware\TrackVisitor::class,
+            CheckMaintenanceMode::class,
+            SetLocale::class,
+            HandleInertiaRequests::class,
+            AddLinkHeadersForPreloadedAssets::class,
+            AddSecurityHeaders::class,
+            TrackVisitor::class,
             // Signs out accounts banned or suspended while they had a session.
-            \App\Http\Middleware\EnsureUserIsNotBanned::class,
+            EnsureUserIsNotBanned::class,
         ]);
 
         $middleware->alias([
-            'age.verified' => \App\Http\Middleware\AgeVerification::class,
-            'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
-            'installed' => \App\Http\Middleware\CheckInstalled::class,
-            'locale' => \App\Http\Middleware\SetLocale::class,
-            'verified.if-required' => \App\Http\Middleware\EnsureEmailIsVerified::class,
-            'registration.open' => \App\Http\Middleware\EnsureRegistrationOpen::class,
+            'age.verified' => AgeVerification::class,
+            'admin' => EnsureUserIsAdmin::class,
+            'installed' => CheckInstalled::class,
+            'locale' => SetLocale::class,
+            'verified.if-required' => EnsureEmailIsVerified::class,
+            'registration.open' => EnsureRegistrationOpen::class,
         ]);
 
         $middleware->statefulApi();
@@ -73,10 +95,9 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // Report all unhandled exceptions to Sentry (if DSN is configured)
-        if (class_exists(\Sentry\Laravel\Integration::class)) {
-            \Sentry\Laravel\Integration::handles($exceptions);
+        if (class_exists(Integration::class)) {
+            Integration::handles($exceptions);
         }
-
 
         /**
          * Render the SPA error page with the application's normal shared props.
@@ -99,13 +120,13 @@ return Application::configure(basePath: dirname(__DIR__))
          * throwing a second exception on the way out.
          */
         $errorPage = function (Request $request, int $status, ?string $message, ?string $seoTitle = null) {
-            $shared = app(\App\Http\Middleware\HandleInertiaRequests::class);
+            $shared = app(HandleInertiaRequests::class);
 
             foreach (['share', 'shareForErrorPage'] as $method) {
                 try {
                     Inertia::share($shared->{$method}($request));
                     break;
-                } catch (\Throwable) {
+                } catch (Throwable) {
                     Inertia::flushShared();
                 }
             }
@@ -118,7 +139,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
             try {
                 return Inertia::render('Error', $props)->toResponse($request)->setStatusCode($status);
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // A shared prop threw while it was being resolved. Without them
                 // the page is plain, but it is still the right status code and
                 // still a page rather than a stack trace.
@@ -145,18 +166,18 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            return \Illuminate\Support\Str::limit($message, 200);
+            return Str::limit($message, 200);
         };
 
         // Log major errors to the activity log for admin visibility
-        $exceptions->report(function (\Throwable $e) {
+        $exceptions->report(function (Throwable $e) {
             // Only log server errors and critical exceptions, skip 4xx client errors
             $skipClasses = [
-                \Illuminate\Auth\AuthenticationException::class,
-                \Illuminate\Validation\ValidationException::class,
-                \Illuminate\Session\TokenMismatchException::class,
-                \Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class,
-                \Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException::class,
+                AuthenticationException::class,
+                ValidationException::class,
+                TokenMismatchException::class,
+                NotFoundHttpException::class,
+                MethodNotAllowedHttpException::class,
             ];
 
             foreach ($skipClasses as $class) {
@@ -166,20 +187,20 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             // Skip 4xx HTTP exceptions
-            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException && $e->getStatusCode() < 500) {
+            if ($e instanceof HttpException && $e->getStatusCode() < 500) {
                 return false;
             }
 
             try {
-                \App\Services\AdminLogger::error(
-                    class_basename($e) . ': ' . \Illuminate\Support\Str::limit($e->getMessage(), 200),
+                AdminLogger::error(
+                    class_basename($e).': '.Str::limit($e->getMessage(), 200),
                     [
                         'exception' => get_class($e),
-                        'file' => $e->getFile() . ':' . $e->getLine(),
+                        'file' => $e->getFile().':'.$e->getLine(),
                         'url' => request()->fullUrl(),
                     ]
                 );
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // Silently fail — don't let logging break the app
             }
 

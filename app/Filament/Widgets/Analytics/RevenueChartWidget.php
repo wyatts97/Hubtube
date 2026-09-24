@@ -15,6 +15,7 @@ class RevenueChartWidget extends ApexChartWidget
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'revenueChart';
+
     protected static ?int $contentHeight = 260;
 
     protected function getHeading(): ?string
@@ -38,7 +39,7 @@ class RevenueChartWidget extends ApexChartWidget
 
         return $this->mergeTheme($this->darkThemeBase(), [
             'chart' => [
-                'type'   => 'area',
+                'type' => 'area',
                 'height' => 260,
             ],
             'series' => [[
@@ -64,9 +65,9 @@ class RevenueChartWidget extends ApexChartWidget
                 'type' => 'gradient',
                 'gradient' => [
                     'shadeIntensity' => 1,
-                    'opacityFrom'    => 0.45,
-                    'opacityTo'      => 0.05,
-                    'stops'          => [0, 90, 100],
+                    'opacityFrom' => 0.45,
+                    'opacityTo' => 0.05,
+                    'stops' => [0, 90, 100],
                 ],
             ],
             'markers' => ['size' => 0, 'hover' => ['size' => 4]],
@@ -92,6 +93,7 @@ class RevenueChartWidget extends ApexChartWidget
             $labels[] = Carbon::parse($d)->format('M j');
             $values[] = round((float) ($rows[$d] ?? 0), 2);
         }
+
         return [$labels, $values];
     }
 }

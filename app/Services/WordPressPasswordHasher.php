@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-
 class WordPressPasswordHasher
 {
     private string $itoa64 = './0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -76,9 +75,9 @@ class WordPressPasswordHasher
         $count = 1 << $countLog2;
         $salt = substr($storedHash, 4, 8);
 
-        $hash = md5($salt . $password, true);
+        $hash = md5($salt.$password, true);
         do {
-            $hash = md5($hash . $password, true);
+            $hash = md5($hash.$password, true);
         } while (--$count);
 
         $output = substr($storedHash, 0, 12);
@@ -97,12 +96,12 @@ class WordPressPasswordHasher
 
         do {
             $value = ord($input[$i++]);
-            $output .= $this->itoa64[$value & 0x3f];
+            $output .= $this->itoa64[$value & 0x3F];
 
             if ($i < $count) {
                 $value |= ord($input[$i]) << 8;
             }
-            $output .= $this->itoa64[($value >> 6) & 0x3f];
+            $output .= $this->itoa64[($value >> 6) & 0x3F];
 
             if ($i++ >= $count) {
                 break;
@@ -111,13 +110,13 @@ class WordPressPasswordHasher
             if ($i < $count) {
                 $value |= ord($input[$i]) << 16;
             }
-            $output .= $this->itoa64[($value >> 12) & 0x3f];
+            $output .= $this->itoa64[($value >> 12) & 0x3F];
 
             if ($i++ >= $count) {
                 break;
             }
 
-            $output .= $this->itoa64[($value >> 18) & 0x3f];
+            $output .= $this->itoa64[($value >> 18) & 0x3F];
         } while ($i < $count);
 
         return $output;

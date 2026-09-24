@@ -2,28 +2,27 @@
 
 namespace App\Services;
 
-use Croustibat\FilamentJobsMonitor\Models\FailureGroup;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
-use Exception;
-use Throwable;
+use App\Filament\Pages\ScheduledVideos;
+use App\Filament\Resources\CommentResource;
+use App\Filament\Resources\ContactMessageResource;
+use App\Filament\Resources\ImageResource;
+use App\Filament\Resources\ReportResource;
+use App\Filament\Resources\VideoResource;
+use App\Filament\Resources\WithdrawalRequestResource;
 use App\Models\Comment;
 use App\Models\ContactMessage;
 use App\Models\Image;
 use App\Models\Report;
 use App\Models\Setting;
-use App\Models\WithdrawalRequest;
-use App\Services\FfmpegService;
 use App\Models\Video;
-use App\Filament\Resources\VideoResource;
-use App\Filament\Resources\ImageResource;
-use App\Filament\Resources\CommentResource;
-use App\Filament\Resources\ContactMessageResource;
-use App\Filament\Resources\ReportResource;
-use App\Filament\Resources\WithdrawalRequestResource;
-use App\Filament\Pages\ScheduledVideos;
-use Illuminate\Support\Facades\Storage;
+use App\Models\WithdrawalRequest;
 use App\Support\Bytes;
+use Croustibat\FilamentJobsMonitor\Models\FailureGroup;
+use Exception;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class SystemStatusBar
 {
@@ -219,7 +218,7 @@ class SystemStatusBar
      * the wrong domain on a multi-domain install.
      *
      * @param  array<int, array<string, mixed>>  $definitions
-     * @return array<string, int>  keyed by item key; a key is absent if its query threw
+     * @return array<string, int> keyed by item key; a key is absent if its query threw
      */
     protected function resolveCounts(array $definitions): array
     {

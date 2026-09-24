@@ -2,22 +2,21 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
-use Exception;
 use App\Models\Category;
 use App\Models\MenuItem;
 use App\Models\Setting;
 use App\Services\AdService;
 use App\Services\SeoService;
+use App\Services\TranslationService;
 use App\Support\ThemeTokens;
 use App\Support\Typography;
-use App\Services\TranslationService;
+use Closure;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 use STS\FilamentImpersonate\Facades\Impersonation;
-
 
 class HandleInertiaRequests extends Middleware
 {
@@ -44,9 +43,10 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user() ? (function () use ($request) {
-            $user = $request->user();
-            $user->loadMissing('channel');
-            return [
+                    $user = $request->user();
+                    $user->loadMissing('channel');
+
+                    return [
                         'id' => $user->id,
                         'username' => $user->username,
                         'email' => $user->email,
@@ -75,22 +75,22 @@ class HandleInertiaRequests extends Middleware
                                 : [],
                         ] : null,
                     ];
-        })() : null,
+                })() : null,
             ],
             'flash' => [
-                'success' => fn() => $request->session()->get('success'),
-                'error' => fn() => $request->session()->get('error'),
-                'warning' => fn() => $request->session()->get('warning'),
-                'info' => fn() => $request->session()->get('info'),
-            ],
+                        'success' => fn () => $request->session()->get('success'),
+                        'error' => fn () => $request->session()->get('error'),
+                        'warning' => fn () => $request->session()->get('warning'),
+                        'info' => fn () => $request->session()->get('info'),
+                    ],
             'csrf_token' => csrf_token(),
             'impersonating' => fn () => $this->getImpersonationData(),
-            'app' => fn() => $this->getAppSettings(),
-            'socialLogin' => fn() => $this->getSocialLoginProviders(),
-            'theme' => fn() => $this->getThemeSettings(),
-            'menuItems' => fn() => $this->getMenuItems(),
-            'locale' => fn() => $this->getLocaleData(),
-            'seo' => fn() => $this->getSeoData($request),
+            'app' => fn () => $this->getAppSettings(),
+            'socialLogin' => fn () => $this->getSocialLoginProviders(),
+            'theme' => fn () => $this->getThemeSettings(),
+            'menuItems' => fn () => $this->getMenuItems(),
+            'locale' => fn () => $this->getLocaleData(),
+            'seo' => fn () => $this->getSeoData($request),
         ];
     }
 
@@ -112,11 +112,11 @@ class HandleInertiaRequests extends Middleware
             'flash' => ['success' => null, 'error' => null, 'warning' => null, 'info' => null],
             'csrf_token' => '',
             'impersonating' => null,
-            'app' => fn() => $this->getAppSettings(),
-            'socialLogin' => fn() => $this->getSocialLoginProviders(),
-            'theme' => fn() => $this->getThemeSettings(),
-            'menuItems' => fn() => $this->getMenuItems(),
-            'locale' => fn() => $this->getLocaleData(),
+            'app' => fn () => $this->getAppSettings(),
+            'socialLogin' => fn () => $this->getSocialLoginProviders(),
+            'theme' => fn () => $this->getThemeSettings(),
+            'menuItems' => fn () => $this->getMenuItems(),
+            'locale' => fn () => $this->getLocaleData(),
         ];
     }
 
@@ -129,7 +129,7 @@ class HandleInertiaRequests extends Middleware
     protected function getImpersonationData(): ?array
     {
         try {
-            if (!Impersonation::isImpersonating()) {
+            if (! Impersonation::isImpersonating()) {
                 return null;
             }
 
@@ -181,7 +181,7 @@ class HandleInertiaRequests extends Middleware
         }
 
         foreach ($route->gatherMiddleware() as $middleware) {
-            if (!is_string($middleware)) {
+            if (! is_string($middleware)) {
                 continue;
             }
             $name = explode(':', $middleware)[0];
@@ -198,14 +198,14 @@ class HandleInertiaRequests extends Middleware
      */
     protected function allSettings(): array
     {
-        if (!isset($this->cachedSettings)) {
+        if (! isset($this->cachedSettings)) {
             try {
                 $this->cachedSettings = Setting::getAll();
-            }
-            catch (Exception $e) {
+            } catch (Exception $e) {
                 $this->cachedSettings = [];
             }
         }
+
         return $this->cachedSettings;
     }
 
@@ -233,10 +233,10 @@ class HandleInertiaRequests extends Middleware
 
         return [
             'name' => config('app.name'),
-            'age_verification_required' => (bool)$this->s('age_verification_required', true),
+            'age_verification_required' => (bool) $this->s('age_verification_required', true),
             'infinite_scroll_enabled' => $this->s('infinite_scroll_enabled', false),
             'videos_per_page' => $this->s('videos_per_page', 24),
-            'monetization_enabled' => (bool)$this->s('monetization_enabled', true),
+            'monetization_enabled' => (bool) $this->s('monetization_enabled', true),
             'registration_enabled' => (bool) $this->s('registration_enabled', true),
             'currency' => $this->s('currency', 'USD'),
             'pro_enabled' => (bool) $this->s('pro_enabled', true),
@@ -267,24 +267,24 @@ class HandleInertiaRequests extends Middleware
                 'code' => '',
                 'mobileCode' => '',
             ] : [
-                'enabled'    => (bool) $this->s('custom_sticky_banner_enabled', false),
-                'code'       => (string) $this->s('custom_sticky_banner_code', ''),
+                'enabled' => (bool) $this->s('custom_sticky_banner_enabled', false),
+                'code' => (string) $this->s('custom_sticky_banner_code', ''),
                 'mobileCode' => (string) $this->s('custom_sticky_banner_mobile_code', ''),
             ],
             'interstitial' => $suppressAds ? [
-                'enabled'    => false,
-                'mode'       => 'manual',
-                'code'       => '',
+                'enabled' => false,
+                'mode' => 'manual',
+                'code' => '',
                 'mobileCode' => '',
-                'frequency'  => 0,
-                'skipDelay'  => 0,
+                'frequency' => 0,
+                'skipDelay' => 0,
             ] : [
-                'enabled'    => (bool) $this->s('custom_interstitial_enabled', false),
-                'mode'       => (string) $this->s('custom_interstitial_mode', 'manual'),
-                'code'       => (string) $this->s('custom_interstitial_code', ''),
+                'enabled' => (bool) $this->s('custom_interstitial_enabled', false),
+                'mode' => (string) $this->s('custom_interstitial_mode', 'manual'),
+                'code' => (string) $this->s('custom_interstitial_code', ''),
                 'mobileCode' => (string) $this->s('custom_interstitial_mobile_code', ''),
-                'frequency'  => (int) $this->s('interstitial_frequency', 5),
-                'skipDelay'  => (int) $this->s('interstitial_skip_delay', 5),
+                'frequency' => (int) $this->s('interstitial_frequency', 5),
+                'skipDelay' => (int) $this->s('interstitial_skip_delay', 5),
             ],
         ];
     }
@@ -322,11 +322,11 @@ class HandleInertiaRequests extends Middleware
             ],
             'ageVerification' => [
                 'overlayColor' => $this->s('age_overlay_color', 'rgba(0, 0, 0, 0.85)'),
-                'overlayBlur' => (int)$this->s('age_overlay_blur', 8),
-                'showLogo' => (bool)$this->s('age_show_logo', false),
+                'overlayBlur' => (int) $this->s('age_overlay_blur', 8),
+                'showLogo' => (bool) $this->s('age_show_logo', false),
                 'logoUrl' => $this->storageUrl($this->s('site_logo', '')),
                 'headerText' => $this->s('age_header_text', 'Age Verification Required'),
-                'headerSize' => (int)$this->s('age_header_size', 28),
+                'headerSize' => (int) $this->s('age_header_size', 28),
                 'headerColor' => $this->s('age_header_color', ''),
                 'descriptionText' => $this->s('age_description_text', 'This website contains age-restricted content. You must be at least 18 years old to enter.'),
                 'disclaimerText' => $this->s('age_disclaimer_text', 'By clicking "{confirm}", you confirm that you are at least 18 years of age and consent to viewing adult content.'),
@@ -355,39 +355,39 @@ class HandleInertiaRequests extends Middleware
             // Footer logo pair, plus the flag that makes the footer mirror the
             // site logo. Resolved at render by useSiteLogo.js so it tracks the
             // active theme instead of freezing one path at save time.
-            'footer_logo_match_site' => (bool)$this->s('footer_logo_match_site', false),
+            'footer_logo_match_site' => (bool) $this->s('footer_logo_match_site', false),
             'footer_logo_url' => $this->storageUrl($this->s('footer_logo_url', '')),
             'footer_logo_url_light' => $this->storageUrl($this->s('footer_logo_url_light', '')),
             'progressBarColor' => $this->s('progress_bar_color', ''),
             // Gated server-side: this slot was shared unconditionally, so every
             // Pro/ad-free user saw the footer ad on every page.
-            'footer_ad_enabled' => !$suppressAds && (bool)$this->s('footer_ad_enabled', false),
+            'footer_ad_enabled' => ! $suppressAds && (bool) $this->s('footer_ad_enabled', false),
             'footer_ad_code' => $suppressAds ? '' : $this->s('footer_ad_code', ''),
             'footer_ad_mobile_code' => $suppressAds ? '' : $this->s('footer_ad_mobile_code', ''),
             'videoCard' => [
                 // Dense-grid default drops the channel avatar in favour of the
                 // rating bar and tag chips. Still switchable per install.
-                'showAvatar' => (bool)$this->s('video_card_show_avatar', false),
-                'showRating' => (bool)$this->s('video_card_show_rating', true),
-                'showQuality' => (bool)$this->s('video_card_show_quality', true),
-                'showTags' => (bool)$this->s('video_card_show_tags', true),
-                'showUploader' => (bool)$this->s('video_card_show_uploader', true),
-                'showViews' => (bool)$this->s('video_card_show_views', true),
-                'showDuration' => (bool)$this->s('video_card_show_duration', true),
-                'showTimestamp' => (bool)$this->s('video_card_show_timestamp', true),
+                'showAvatar' => (bool) $this->s('video_card_show_avatar', false),
+                'showRating' => (bool) $this->s('video_card_show_rating', true),
+                'showQuality' => (bool) $this->s('video_card_show_quality', true),
+                'showTags' => (bool) $this->s('video_card_show_tags', true),
+                'showUploader' => (bool) $this->s('video_card_show_uploader', true),
+                'showViews' => (bool) $this->s('video_card_show_views', true),
+                'showDuration' => (bool) $this->s('video_card_show_duration', true),
+                'showTimestamp' => (bool) $this->s('video_card_show_timestamp', true),
                 // Resolved by Typography: a stored family becomes a full CSS
                 // stack with a sensible generic fallback, and a weight the
                 // family actually publishes. Empty means inherit the theme font.
                 'titleFont' => $cardFonts['titleFont'],
                 'titleWeight' => $cardFonts['titleWeight'],
-                'titleSize' => (int)$this->s('video_card_title_size', 14),
+                'titleSize' => (int) $this->s('video_card_title_size', 14),
                 'titleColor' => $this->s('video_card_title_color', ''),
-                'titleLines' => (int)$this->s('video_card_title_lines', 2),
+                'titleLines' => (int) $this->s('video_card_title_lines', 2),
                 'metaFont' => $cardFonts['metaFont'],
                 'metaWeight' => $cardFonts['metaWeight'],
-                'metaSize' => (int)$this->s('video_card_meta_size', 13),
+                'metaSize' => (int) $this->s('video_card_meta_size', 13),
                 'metaColor' => $this->s('video_card_meta_color', ''),
-                'borderRadius' => (int)$this->s('video_card_border_radius', 12),
+                'borderRadius' => (int) $this->s('video_card_border_radius', 12),
             ],
             'mobileVideoGrid' => $this->s('mobile_video_grid', '2'),
             // 'comfortable' keeps the roomier 4-column desktop grid; 'dense'
@@ -400,10 +400,11 @@ class HandleInertiaRequests extends Middleware
     {
         $providers = [];
         foreach (['google', 'twitter', 'reddit'] as $provider) {
-            if ((bool)$this->s("social_login_{$provider}_enabled", false)) {
+            if ((bool) $this->s("social_login_{$provider}_enabled", false)) {
                 $providers[] = $provider;
             }
         }
+
         return $providers;
     }
 
@@ -429,8 +430,7 @@ class HandleInertiaRequests extends Middleware
                 // payload on every response.
                 'fallback' => $isTranslated ? $this->uiTranslations($defaultLocale) : [],
             ];
-        }
-        catch (Exception $e) {
+        } catch (Exception $e) {
             return [
                 'current' => 'en',
                 'default' => 'en',
@@ -477,7 +477,7 @@ class HandleInertiaRequests extends Middleware
     {
         $file = resource_path("js/i18n/{$locale}.json");
 
-        if (!file_exists($file)) {
+        if (! file_exists($file)) {
             return [];
         }
 
@@ -492,7 +492,7 @@ class HandleInertiaRequests extends Middleware
      */
     protected function storageUrl(?string $path): string
     {
-        if (!$path) {
+        if (! $path) {
             return '';
         }
 
@@ -501,14 +501,14 @@ class HandleInertiaRequests extends Middleware
             return $path;
         }
 
-        return '/storage/' . $path;
+        return '/storage/'.$path;
     }
 
     protected function getMenuItems(): array
     {
         try {
             return Cache::remember(MenuItem::CACHE_KEY, MenuItem::CACHE_TTL, function () {
-                $items      = MenuItem::getMenuTree('both');
+                $items = MenuItem::getMenuTree('both');
                 $headerOnly = MenuItem::getMenuTree('header');
                 $mobileOnly = MenuItem::getMenuTree('mobile');
 
@@ -516,16 +516,16 @@ class HandleInertiaRequests extends Middleware
                     $categories = Category::active()->parentCategories()->orderBy('sort_order')->get();
 
                     $default = $categories->map(fn (Category $category) => [
-                        'id'         => 'category_' . $category->id,
-                        'label'      => $category->name,
-                        'type'       => 'category',
-                        'url'        => route('categories.show', $category->slug),
-                        'target'     => '_self',
-                        'icon'       => null,
-                        'is_active'  => true,
-                        'is_mega'    => false,
+                        'id' => 'category_'.$category->id,
+                        'label' => $category->name,
+                        'type' => 'category',
+                        'url' => route('categories.show', $category->slug),
+                        'target' => '_self',
+                        'icon' => null,
+                        'is_active' => true,
+                        'is_mega' => false,
                         'mega_columns' => null,
-                        'children'   => [],
+                        'children' => [],
                         'sort_order' => $category->sort_order ?? 0,
                     ])->values()->toArray();
 
@@ -540,8 +540,7 @@ class HandleInertiaRequests extends Middleware
                     'mobile' => $items->merge($mobileOnly)->sortBy('sort_order')->values()->toArray(),
                 ];
             });
-        }
-        catch (Exception $e) {
+        } catch (Exception $e) {
             // Table may not exist yet (pre-migration)
             return ['header' => [], 'mobile' => []];
         }

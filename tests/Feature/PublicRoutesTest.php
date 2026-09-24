@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Category;
+use App\Models\Page;
+use App\Models\Translation;
 use App\Models\User;
 use App\Models\Video;
 
@@ -117,9 +119,9 @@ test('health check endpoint returns 200', function () {
 test('every locale-prefixed route behaves like its unprefixed twin', function () {
     enableLocales(['en', 'es']);
 
-    $user = App\Models\User::factory()->create(['username' => 'parityuser']);
-    $category = App\Models\Category::factory()->create(['slug' => 'paritycat']);
-    App\Models\Page::create([
+    $user = User::factory()->create(['username' => 'parityuser']);
+    $category = Category::factory()->create(['slug' => 'paritycat']);
+    Page::create([
         'title' => 'Parity', 'slug' => 'paritypage', 'content' => 'x', 'is_published' => true,
     ]);
 
@@ -146,9 +148,9 @@ test('every locale-prefixed route behaves like its unprefixed twin', function ()
 test('a locale-prefixed video page resolves its translated slug', function () {
     enableLocales(['en', 'es']);
 
-    $video = App\Models\Video::factory()->create(['slug' => 'parity-video']);
-    App\Models\Translation::create([
-        'translatable_type' => App\Models\Video::class,
+    $video = Video::factory()->create(['slug' => 'parity-video']);
+    Translation::create([
+        'translatable_type' => Video::class,
         'translatable_id' => $video->id,
         'field' => 'title',
         'locale' => 'es',

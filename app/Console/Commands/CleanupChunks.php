@@ -2,14 +2,15 @@
 
 namespace App\Console\Commands;
 
-use RecursiveIteratorIterator;
-use RecursiveDirectoryIterator;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 
 class CleanupChunks extends Command
 {
     protected $signature = 'uploads:cleanup-chunks {--hours=24 : Remove chunks older than this many hours}';
+
     protected $description = 'Remove abandoned chunk upload files';
 
     public function handle(): int
@@ -17,8 +18,9 @@ class CleanupChunks extends Command
         $hours = (int) $this->option('hours');
         $chunksDir = storage_path('app/chunks');
 
-        if (!is_dir($chunksDir)) {
+        if (! is_dir($chunksDir)) {
             $this->info('No chunks directory found. Nothing to clean.');
+
             return self::SUCCESS;
         }
 
@@ -32,7 +34,7 @@ class CleanupChunks extends Command
                 continue;
             }
 
-            $path = $chunksDir . DIRECTORY_SEPARATOR . $entry;
+            $path = $chunksDir.DIRECTORY_SEPARATOR.$entry;
 
             if (is_dir($path)) {
                 // Check if the directory is older than the cutoff

@@ -13,8 +13,9 @@ class IndexNowSubmitUrl extends Command
 
     public function handle(IndexNowService $service): int
     {
-        if (!$service->isEnabled()) {
+        if (! $service->isEnabled()) {
             $this->warn('IndexNow is disabled or missing key. Configure it in Admin → SEO Settings → Search Indexing.');
+
             return self::FAILURE;
         }
 
@@ -23,10 +24,12 @@ class IndexNowSubmitUrl extends Command
 
         if ($ok) {
             $this->info("Submitted: {$url}");
+
             return self::SUCCESS;
         }
 
         $this->error("Submission failed for: {$url} (see logs and search_index_submissions table)");
+
         return self::FAILURE;
     }
 }

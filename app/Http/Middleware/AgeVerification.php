@@ -2,13 +2,13 @@
 
 namespace App\Http\Middleware;
 
-use Throwable;
-use Exception;
 use App\Models\Setting;
 use Closure;
+use Exception;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class AgeVerification
 {
@@ -26,7 +26,7 @@ class AgeVerification
             return $next($request);
         }
 
-        if ($required && !app()->environment('testing') && $this->shouldEnforce($request) && !$this->isAgeVerified($request)) {
+        if ($required && ! app()->environment('testing') && $this->shouldEnforce($request) && ! $this->isAgeVerified($request)) {
             return response()->json([
                 'error' => 'Age verification required.',
             ], 451);

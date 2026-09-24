@@ -10,7 +10,7 @@ return new class extends Migration
     {
         $table = config('fin-mail.table_names.templates') ?? 'email_templates';
 
-        if (!Schema::hasTable($table) || Schema::hasColumn($table, 'reply_to')) {
+        if (! Schema::hasTable($table) || Schema::hasColumn($table, 'reply_to')) {
             return;
         }
 
@@ -23,7 +23,7 @@ return new class extends Migration
     {
         $table = config('fin-mail.table_names.templates') ?? 'email_templates';
 
-        if (!Schema::hasTable($table) || !Schema::hasColumn($table, 'reply_to')) {
+        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, 'reply_to')) {
             return;
         }
 

@@ -2,6 +2,7 @@
 
 use App\Models\Setting;
 use App\Models\User;
+use App\Models\Video;
 
 /*
 |--------------------------------------------------------------------------
@@ -64,7 +65,7 @@ test('the owner and admins still see a private channel', function () {
 test('a private channel leaks no content in the payload', function () {
     enablePrivateProfiles();
     $user = privateUser();
-    App\Models\Video::factory()->create(['user_id' => $user->id, 'title' => 'Secret Video']);
+    Video::factory()->create(['user_id' => $user->id, 'title' => 'Secret Video']);
 
     $this->get("/channel/{$user->username}")
         ->assertOk()

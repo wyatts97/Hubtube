@@ -14,7 +14,7 @@ return new class extends Migration
         $pivotPermission = $columnNames['permission_pivot_key'] ?? 'permission_id';
 
         if (empty($tableNames)) {
-            throw new \Exception('Error: config/permission.php not loaded. Run [php artisan config:clear] and try again.');
+            throw new Exception('Error: config/permission.php not loaded. Run [php artisan config:clear] and try again.');
         }
 
         Schema::create($tableNames['permissions'] ?? 'permissions', function (Blueprint $table) {
@@ -48,7 +48,7 @@ return new class extends Migration
                 ->onDelete('cascade');
 
             $table->primary([$pivotPermission, $columnNames['model_morph_key'], 'model_type'],
-                    'model_has_permissions_permission_model_type_primary');
+                'model_has_permissions_permission_model_type_primary');
         });
 
         Schema::create($tableNames['model_has_roles'] ?? 'model_has_roles', function (Blueprint $table) use ($tableNames, $columnNames, $pivotRole) {
@@ -64,7 +64,7 @@ return new class extends Migration
                 ->onDelete('cascade');
 
             $table->primary([$pivotRole, $columnNames['model_morph_key'], 'model_type'],
-                    'model_has_roles_role_model_type_primary');
+                'model_has_roles_role_model_type_primary');
         });
 
         Schema::create($tableNames['role_has_permissions'] ?? 'role_has_permissions', function (Blueprint $table) use ($tableNames, $pivotRole, $pivotPermission) {
@@ -94,7 +94,7 @@ return new class extends Migration
         $tableNames = config('permission.table_names');
 
         if (empty($tableNames)) {
-            throw new \Exception('Error: config/permission.php not found and target tables could not be dropped.');
+            throw new Exception('Error: config/permission.php not found and target tables could not be dropped.');
         }
 
         Schema::drop($tableNames['role_has_permissions'] ?? 'role_has_permissions');

@@ -14,6 +14,7 @@ class SignupsChartWidget extends ApexChartWidget
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'signupsChart';
+
     protected static ?int $contentHeight = 260;
 
     protected function getHeading(): ?string
@@ -32,7 +33,7 @@ class SignupsChartWidget extends ApexChartWidget
 
         return $this->mergeTheme($this->darkThemeBase(), [
             'chart' => [
-                'type'   => 'area',
+                'type' => 'area',
                 'height' => 260,
             ],
             'series' => [[
@@ -55,9 +56,9 @@ class SignupsChartWidget extends ApexChartWidget
                 'type' => 'gradient',
                 'gradient' => [
                     'shadeIntensity' => 1,
-                    'opacityFrom'    => 0.45,
-                    'opacityTo'      => 0.05,
-                    'stops'          => [0, 90, 100],
+                    'opacityFrom' => 0.45,
+                    'opacityTo' => 0.05,
+                    'stops' => [0, 90, 100],
                 ],
             ],
             'markers' => ['size' => 0, 'hover' => ['size' => 4]],
@@ -79,6 +80,7 @@ class SignupsChartWidget extends ApexChartWidget
             $labels[] = Carbon::parse($d)->format('M j');
             $values[] = (int) ($rows[$d] ?? 0);
         }
+
         return [$labels, $values];
     }
 }

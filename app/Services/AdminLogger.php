@@ -9,10 +9,10 @@ class AdminLogger
     /**
      * Log an admin action to the activity log.
      *
-     * @param string $description  Human-readable description
-     * @param string $logName      Log channel: 'admin', 'error', 'auth', 'system'
-     * @param array  $properties   Extra context data
-     * @param mixed  $subject      Optional Eloquent model the action relates to
+     * @param  string  $description  Human-readable description
+     * @param  string  $logName  Log channel: 'admin', 'error', 'auth', 'system'
+     * @param  array  $properties  Extra context data
+     * @param  mixed  $subject  Optional Eloquent model the action relates to
      */
     public static function log(
         string $description,
@@ -44,7 +44,7 @@ class AdminLogger
             'admin',
             array_filter([
                 'page' => $page,
-                'changed_keys' => !empty($changedKeys) ? $changedKeys : null,
+                'changed_keys' => ! empty($changedKeys) ? $changedKeys : null,
             ]),
         );
     }

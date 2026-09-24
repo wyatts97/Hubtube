@@ -2,26 +2,27 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Pages\Dashboard;
+use App\Filament\Pages\ThemeSettings;
 use App\Http\Middleware\AuthenticateFilament;
 use App\Http\Middleware\EnsureAdminTwoFactor;
 use App\Http\Middleware\SetAdminTimezone;
 use App\Models\Setting;
 use App\Services\SystemStatusBar;
+use App\Support\GoogleFonts;
+use App\Support\SiteIcons;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Boquizo\FilamentLogViewer\FilamentLogViewerPlugin;
 use Croustibat\FilamentJobsMonitor\FilamentJobsMonitorPlugin;
 use Filafly\Icons\Phosphor\PhosphorIcons;
-use App\Filament\Pages\ThemeSettings;
-use App\Support\GoogleFonts;
 use Filament\Actions\Action;
 use Filament\Contracts\Plugin;
-use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\Artisan;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\MenuItem;
 use Filament\Navigation\NavigationGroup;
+use Filament\Notifications\Notification;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -37,6 +38,7 @@ use Illuminate\Foundation\Vite;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Leandrocfe\FilamentApexCharts\FilamentApexChartsPlugin;
@@ -261,7 +263,7 @@ class AdminPanelProvider extends PanelProvider
         // front-end layout and the manifest so all three cannot drift apart.
         $faviconUrl = null;
         try {
-            $faviconUrl = \App\Support\SiteIcons::faviconUrl();
+            $faviconUrl = SiteIcons::faviconUrl();
         } catch (Throwable $e) {
             // Database may not be available during boot
         }
@@ -297,7 +299,7 @@ class AdminPanelProvider extends PanelProvider
 
         return $builder
             ->login()
-            ->profile(\App\Filament\Pages\Auth\EditProfile::class)
+            ->profile(EditProfile::class)
             ->userMenuItems([
                 MenuItem::make()
                     ->label('View Site')
@@ -404,9 +406,9 @@ class AdminPanelProvider extends PanelProvider
                     // Loaded async (media=print, swapped on load) so a 450KB
                     // stylesheet never blocks the settings page rendering.
                     return '<link rel="preconnect" href="https://fonts.bunny.net" crossorigin>'
-                        . sprintf(
+                        .sprintf(
                             '<link rel="stylesheet" media="print" onload="this.media=%s" href="%s">',
-                            "&quot;all&quot;",
+                            '&quot;all&quot;',
                             e($url)
                         );
                 },

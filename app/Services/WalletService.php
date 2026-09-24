@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\User;
+use App\Models\WalletTransaction;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Exception;
-use App\Models\User;
-use App\Models\WalletTransaction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -84,10 +84,10 @@ class WalletService
         float $platformCut = 0
     ): array {
         return DB::transaction(function () use ($from, $to, $amount, $type, $description, $platformCut) {
-            $debit = $this->debit($from, $amount, $type . '_sent', $description);
-            
+            $debit = $this->debit($from, $amount, $type.'_sent', $description);
+
             $receiverAmount = $amount - $platformCut;
-            $credit = $this->credit($to, $receiverAmount, $type . '_received', $description);
+            $credit = $this->credit($to, $receiverAmount, $type.'_received', $description);
 
             return [
                 'debit' => $debit,

@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use Exception;
-use Log;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Inertia\Inertia;
 use Inertia\Response;
+use Log;
 
 class AgeVerificationController extends Controller
 {
@@ -24,7 +24,7 @@ class AgeVerificationController extends Controller
             $request->session()->put('age_verified', true);
             $request->session()->save();
         } catch (Exception $e) {
-            Log::error('Session save failed: ' . $e->getMessage());
+            Log::error('Session save failed: '.$e->getMessage());
         }
 
         // Get intended URL or default to home
@@ -34,7 +34,7 @@ class AgeVerificationController extends Controller
         } catch (Exception $e) {
             // Use default
         }
-        
+
         // Create cookie that lasts 24 hours
         // Using Cookie::make with explicit parameters
         $cookie = cookie(
@@ -47,8 +47,8 @@ class AgeVerificationController extends Controller
             false               // httpOnly (false = allow JS access)
         );
 
-        Log::debug('Age verification confirmed, redirecting to: ' . $intended);
-        
+        Log::debug('Age verification confirmed, redirecting to: '.$intended);
+
         return redirect($intended)->withCookie($cookie);
     }
 

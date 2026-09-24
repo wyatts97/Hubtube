@@ -17,7 +17,7 @@ class CustomDatabaseChannel
 {
     public function send(object $notifiable, Notification $notification): void
     {
-        if (!method_exists($notification, 'toDatabase')) {
+        if (! method_exists($notification, 'toDatabase')) {
             return;
         }
 
@@ -30,7 +30,7 @@ class CustomDatabaseChannel
         // Prevent duplicate notifications for the same event when idempotency
         // data is provided (e.g. video_id, comment_id) via a "dedupe" key.
         // Accepts either a single [column, value] pair or an array of pairs.
-        if (!empty($payload['dedupe'])) {
+        if (! empty($payload['dedupe'])) {
             $conditions = is_array($payload['dedupe'][0]) ? $payload['dedupe'] : [$payload['dedupe']];
 
             $query = NotificationModel::where('user_id', $notifiable->id)

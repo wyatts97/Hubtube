@@ -2,14 +2,16 @@
 
 namespace App\Console\Commands;
 
-use Exception;
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\TranslationOverride;
-use App\Services\TranslationService;
-use Illuminate\Console\Command;
-use Illuminate\Support\Str;
 use App\Services\Translation\Contracts\TranslationProvider;
 use App\Services\Translation\TranslationProviderException;
 use App\Services\Translation\TranslationProviderManager;
+use App\Services\TranslationService;
+use Exception;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 class GenerateTranslations extends Command
 {
@@ -22,6 +24,7 @@ class GenerateTranslations extends Command
     protected $description = 'Auto-generate i18n JSON files for UI strings using the configured translation provider. By default, merges new/missing keys into existing files without overwriting existing translations.';
 
     protected int $newKeysCount = 0;
+
     protected int $removedKeysCount = 0;
 
     /** Keys the provider could not translate; deliberately left out of the file. */
@@ -47,14 +50,16 @@ class GenerateTranslations extends Command
     public function handle(): int
     {
         $sourcePath = resource_path('js/i18n/en.json');
-        if (!file_exists($sourcePath)) {
+        if (! file_exists($sourcePath)) {
             $this->error('Source file not found: resources/js/i18n/en.json');
+
             return 1;
         }
 
         $source = json_decode(file_get_contents($sourcePath), true);
-        if (!$source) {
+        if (! $source) {
             $this->error('Failed to parse en.json');
+
             return 1;
         }
 
@@ -64,18 +69,20 @@ class GenerateTranslations extends Command
         $this->delayMs = max(0, (int) $this->option('delay'));
 
         if ($targetLocale) {
-            if (!isset(TranslationService::LANGUAGES[$targetLocale])) {
+            if (! isset(TranslationService::LANGUAGES[$targetLocale])) {
                 $this->error("Unknown locale: {$targetLocale}");
+
                 return 1;
             }
             $locales = [$targetLocale];
         } else {
             $locales = TranslationService::getEnabledLocales();
-            $locales = array_filter($locales, fn($l) => $l !== 'en');
+            $locales = array_filter($locales, fn ($l) => $l !== 'en');
         }
 
         if (empty($locales)) {
             $this->info('No locales to generate (only English is enabled).');
+
             return 0;
         }
 
@@ -135,19 +142,19 @@ class GenerateTranslations extends Command
             }
 
             $dir = dirname($targetPath);
-            if (!is_dir($dir)) {
+            if (! is_dir($dir)) {
                 mkdir($dir, 0755, true);
             }
 
             file_put_contents(
                 $targetPath,
-                json_encode($translated, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n"
+                json_encode($translated, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)."\n"
             );
 
             // HandleInertiaRequests caches these catalogues forever.
-            \Illuminate\Support\Facades\Cache::forget("i18n:ui:{$locale}");
-            \Illuminate\Support\Facades\Cache::forget(
-                \App\Http\Middleware\HandleInertiaRequests::uiTranslationCacheKey($locale)
+            Cache::forget("i18n:ui:{$locale}");
+            Cache::forget(
+                HandleInertiaRequests::uiTranslationCacheKey($locale)
             );
 
             $this->line("  <info>✓</info> Written to resources/js/i18n/{$locale}.json");
@@ -183,7 +190,7 @@ class GenerateTranslations extends Command
                     && is_string($existing[$key])
                     && $existing[$key] === $value;
 
-                if (isset($existing[$key]) && is_string($existing[$key]) && !$stale) {
+                if (isset($existing[$key]) && is_string($existing[$key]) && ! $stale) {
                     // Key exists — keep existing translation
                     $result[$key] = $existing[$key];
                 } else {
@@ -206,7 +213,7 @@ class GenerateTranslations extends Command
 
         // Count removed keys (in existing but not in source)
         foreach ($existing as $key => $value) {
-            if (!array_key_exists($key, $source)) {
+            if (! array_key_exists($key, $source)) {
                 $this->removedKeysCount++;
             }
         }
@@ -278,8 +285,9 @@ class GenerateTranslations extends Command
         // Preserve interpolation placeholders like {count}, {name}
         $placeholders = [];
         $text = preg_replace_callback('/\{(\w+)\}/', function ($match) use (&$placeholders) {
-            $token = '___PH' . count($placeholders) . '___';
+            $token = '___PH'.count($placeholders).'___';
             $placeholders[$token] = $match[0];
+
             return $token;
         }, $value);
 

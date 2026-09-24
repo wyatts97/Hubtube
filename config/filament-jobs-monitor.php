@@ -1,5 +1,7 @@
 <?php
 
+use Croustibat\FilamentJobsMonitor\Resources\QueueMonitorResource;
+
 return [
     'resources' => [
         'enabled' => true,
@@ -9,7 +11,7 @@ return [
         'navigation_icon' => 'heroicon-o-cpu-chip',
         'navigation_sort' => 97,
         'navigation_count_badge' => true,
-        'resource' => Croustibat\FilamentJobsMonitor\Resources\QueueMonitorResource::class,
+        'resource' => QueueMonitorResource::class,
         'cluster' => null,
     ],
     'pruning' => [

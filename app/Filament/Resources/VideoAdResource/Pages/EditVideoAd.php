@@ -2,9 +2,8 @@
 
 namespace App\Filament\Resources\VideoAdResource\Pages;
 
-use Filament\Actions\DeleteAction;
 use App\Filament\Resources\VideoAdResource;
-use Filament\Actions;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Support\Facades\Storage;
 
@@ -29,19 +28,20 @@ class EditVideoAd extends EditRecord
     {
         $data['category_ids'] = $data['category_ids'] ?? [];
         $data['target_roles'] = $data['target_roles'] ?? [];
+
         return $data;
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        $data['category_ids'] = !empty($data['category_ids']) ? array_map('intval', $data['category_ids']) : null;
-        $data['target_roles'] = !empty($data['target_roles']) ? $data['target_roles'] : null;
+        $data['category_ids'] = ! empty($data['category_ids']) ? array_map('intval', $data['category_ids']) : null;
+        $data['target_roles'] = ! empty($data['target_roles']) ? $data['target_roles'] : null;
 
         // Ensure content is never null (DB column is NOT NULL)
         $data['content'] = $data['content'] ?? '';
 
         // If a new file was uploaded, clear the external URL
-        if (!empty($data['file_path']) && $data['file_path'] !== $this->getRecord()->file_path) {
+        if (! empty($data['file_path']) && $data['file_path'] !== $this->getRecord()->file_path) {
             // Delete old file if it existed
             $oldPath = $this->getRecord()->file_path;
             if ($oldPath && Storage::disk('public')->exists($oldPath)) {

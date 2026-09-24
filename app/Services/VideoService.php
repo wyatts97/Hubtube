@@ -11,10 +11,9 @@ use App\Models\User;
 use App\Models\Video;
 use App\Support\Permissions;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Carbon;
 
 class VideoService
 {
@@ -87,7 +86,7 @@ class VideoService
         // (e.g. "otk" → sitename.com/otk could conflict with /api, /admin, etc.)
         // Append a short random suffix to make them distinct and URL-safe.
         if (Str::length($baseSlug) < 4) {
-            $baseSlug .= '-' . Str::lower(Str::random(6));
+            $baseSlug .= '-'.Str::lower(Str::random(6));
         }
 
         // Truncate very long slugs to 200 chars to keep URLs manageable
@@ -96,9 +95,10 @@ class VideoService
         $slug = $baseSlug;
         $suffix = 2;
         while (Video::withTrashed()->where('slug', $slug)->exists()) {
-            $slug = $baseSlug . '-' . $suffix;
+            $slug = $baseSlug.'-'.$suffix;
             $suffix++;
         }
+
         return $slug;
     }
 
@@ -141,7 +141,7 @@ class VideoService
         // Str::slug() can return an empty string for titles with no ASCII-safe
         // characters, which would produce a dotfile like ".mp4" — fall back to the slug.
         $basename = Str::slug($video->title, '_') ?: $slug;
-        $filename = $basename . '.' . $extension;
+        $filename = $basename.'.'.$extension;
 
         // Always upload to local first — FFmpeg needs local filesystem access for processing.
         // ProcessVideoJob will offload to cloud and update storage_disk after successful upload.
@@ -166,13 +166,12 @@ class VideoService
         // Store custom thumbnail in the video's directory
         $directory = "videos/{$video->slug}";
         $extension = ImageService::extensionFor($file);
-        $filename = Str::slug($video->title, '_') . '_custom_thumb.' . $extension;
+        $filename = Str::slug($video->title, '_').'_custom_thumb.'.$extension;
 
         if (StorageManager::isCloudDisk($disk)) {
             $path = "{$directory}/{$filename}";
             StorageManager::put($path, file_get_contents($file->getRealPath()), $disk);
-        }
-        else {
+        } else {
             $path = $file->storeAs($directory, $filename, 'public');
         }
 
@@ -188,12 +187,12 @@ class VideoService
     }
 
     /**
-     * @param string|null $degradedReason When set, the video is being marked processed with a
-     *   degraded/fallback output (e.g. raw original after a transcoding failure) rather than a
-     *   clean multi-quality result. Recorded in `processing_fallback_reason` — a column separate
-     *   from `failure_reason`, which is already reused for admin rejection reasons — surfaced in
-     *   the admin panel without changing `status`, which many publish/approval/listing checks
-     *   compare directly against 'processed'.
+     * @param  string|null  $degradedReason  When set, the video is being marked processed with a
+     *                                       degraded/fallback output (e.g. raw original after a transcoding failure) rather than a
+     *                                       clean multi-quality result. Recorded in `processing_fallback_reason` — a column separate
+     *                                       from `failure_reason`, which is already reused for admin rejection reasons — surfaced in
+     *                                       the admin panel without changing `status`, which many publish/approval/listing checks
+     *                                       compare directly against 'processed'.
      */
     public function markAsProcessed(Video $video, array $qualities, ?string $degradedReason = null): void
     {
@@ -214,7 +213,7 @@ class VideoService
         $video->update($updateData);
 
         // Award points if the video was auto-approved
-        if (!empty($updateData['is_approved']) && $video->user) {
+        if (! empty($updateData['is_approved']) && $video->user) {
             $this->awardAutoApprovePoints($video);
         }
     }
@@ -299,7 +298,7 @@ class VideoService
             $trustedUsernames = json_decode($trustedUsernames, true) ?? [];
         }
 
-        if (!empty($trustedUsernames) && $video->user) {
+        if (! empty($trustedUsernames) && $video->user) {
             return in_array($video->user->username, $trustedUsernames, true);
         }
 
@@ -310,7 +309,7 @@ class VideoService
     {
         $settings = Setting::getAll();
 
-        if (!($settings['points_enabled'] ?? true) || !($settings['points_video_upload_enabled'] ?? true)) {
+        if (! ($settings['points_enabled'] ?? true) || ! ($settings['points_video_upload_enabled'] ?? true)) {
             return;
         }
 
@@ -347,10 +346,11 @@ class VideoService
             ->orderBy('queue_order')
             ->get();
 
-        if ($videos->isEmpty())
+        if ($videos->isEmpty()) {
             return;
+        }
 
-        $postsPerDay = (int)Setting::get('schedule_posts_per_day', 1);
+        $postsPerDay = (int) Setting::get('schedule_posts_per_day', 1);
         $startHourInput = Setting::get('schedule_start_hour', '08:00:00');
 
         $intervalHours = 24 / max(1, $postsPerDay);

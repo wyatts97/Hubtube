@@ -18,7 +18,7 @@ class PlaylistFactory extends Factory
         return [
             'user_id' => User::factory(),
             'title' => ucwords($title),
-            'slug' => Str::slug($title) . '-' . Str::random(4),
+            'slug' => Str::slug($title).'-'.Str::random(4),
             'description' => fake()->sentence(),
             'privacy' => 'public',
             'is_default' => false,

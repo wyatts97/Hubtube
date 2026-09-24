@@ -20,7 +20,9 @@ use Throwable;
 class AdStatsRecorder
 {
     public const EVENT_IMPRESSION = 'impressions';
+
     public const EVENT_CLICK = 'clicks';
+
     public const EVENT_COMPLETION = 'completions';
 
     /**
@@ -112,7 +114,7 @@ class AdStatsRecorder
      */
     protected function claim(Request $request, string $source, int $adId, string $placement, string $event): bool
     {
-        $viewer = sha1(($request->ip() ?? '') . '|' . ($request->userAgent() ?? ''));
+        $viewer = sha1(($request->ip() ?? '').'|'.($request->userAgent() ?? ''));
 
         $key = "adstat:{$viewer}:{$source}:{$adId}:{$placement}:{$event}";
 

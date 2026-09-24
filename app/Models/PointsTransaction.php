@@ -32,9 +32,13 @@ class PointsTransaction extends Model
     }
 
     const TYPE_VIDEO_UPLOAD = 'video_upload';
+
     const TYPE_IMAGE_UPLOAD = 'image_upload';
+
     const TYPE_COMMENT = 'comment';
+
     const TYPE_REDEMPTION = 'redemption';
+
     const TYPE_ADMIN_ADJUSTMENT = 'admin_adjustment';
 
     const EARN_TYPES = [

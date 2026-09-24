@@ -24,18 +24,18 @@ return new class extends Migration
 
         foreach ($categories as $category) {
             $menuItem = MenuItem::create([
-                'category_id'  => $category->id,
-                'label'        => $category->name,
-                'type'         => 'category',
-                'url'          => '/category/' . $category->slug,
-                'target'       => '_self',
-                'icon'         => null,
-                'parent_id'    => null,
-                'sort_order'   => $category->sort_order,
-                'is_active'    => $category->is_active,
-                'is_mega'      => false,
+                'category_id' => $category->id,
+                'label' => $category->name,
+                'type' => 'category',
+                'url' => '/category/'.$category->slug,
+                'target' => '_self',
+                'icon' => null,
+                'parent_id' => null,
+                'sort_order' => $category->sort_order,
+                'is_active' => $category->is_active,
+                'is_mega' => false,
                 'mega_columns' => 4,
-                'location'     => 'both',
+                'location' => 'both',
             ]);
 
             $map[$category->id] = $menuItem->id;

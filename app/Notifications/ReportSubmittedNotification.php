@@ -18,9 +18,7 @@ class ReportSubmittedNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(protected Report $report, protected string $reportedContentLabel)
-    {
-    }
+    public function __construct(protected Report $report, protected string $reportedContentLabel) {}
 
     public function via(object $notifiable): array
     {

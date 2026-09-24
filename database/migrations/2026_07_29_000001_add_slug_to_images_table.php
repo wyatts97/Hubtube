@@ -37,7 +37,7 @@ return new class extends Migration
 
     protected function uniqueSlug(?string $title, int $ignoreId): string
     {
-        $baseSlug = Str::slug((string) $title) ?: 'image-' . Str::lower(Str::random(6));
+        $baseSlug = Str::slug((string) $title) ?: 'image-'.Str::lower(Str::random(6));
         $baseSlug = Str::limit($baseSlug, 200, '');
 
         $slug = $baseSlug;
@@ -45,7 +45,7 @@ return new class extends Migration
         while (
             DB::table('images')->where('slug', $slug)->where('id', '!=', $ignoreId)->exists()
         ) {
-            $slug = $baseSlug . '-' . $suffix;
+            $slug = $baseSlug.'-'.$suffix;
             $suffix++;
         }
 

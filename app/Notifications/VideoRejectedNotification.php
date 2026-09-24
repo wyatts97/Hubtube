@@ -13,9 +13,7 @@ class VideoRejectedNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(protected Video $video, protected ?string $reason = null)
-    {
-    }
+    public function __construct(protected Video $video, protected ?string $reason = null) {}
 
     public function via(object $notifiable): array
     {
@@ -27,7 +25,7 @@ class VideoRejectedNotification extends Notification
         return [
             'type' => NotificationModel::TYPE_VIDEO_REJECTED,
             'title' => 'Video Rejected',
-            'message' => "Your video \"{$this->video->title}\" was rejected" . ($this->reason ? ": {$this->reason}" : '.'),
+            'message' => "Your video \"{$this->video->title}\" was rejected".($this->reason ? ": {$this->reason}" : '.'),
             'data' => [
                 'video_id' => $this->video->id,
                 'reason' => $this->reason,

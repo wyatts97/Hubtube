@@ -2,20 +2,21 @@
 
 namespace App\Providers;
 
-use App\Events\VideoUploaded;
-use App\Listeners\ProcessVideoUpload;
+use App\Events\NewSubscriber;
 use App\Events\VideoProcessed;
+use App\Events\VideoUploaded;
+use App\Listeners\HandleStripeSubscriptionChanges;
+use App\Listeners\NotifyChannelOfNewSubscriber;
 use App\Listeners\NotifyVideoProcessed;
 use App\Listeners\PreTranslateVideoListener;
+use App\Listeners\ProcessVideoUpload;
 use App\Listeners\SubmitVideoToIndexNowListener;
-use App\Events\NewSubscriber;
-use App\Listeners\NotifyChannelOfNewSubscriber;
-use SocialiteProviders\Manager\SocialiteWasCalled;
-use SocialiteProviders\Reddit\RedditExtendSocialite;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Laravel\Cashier\Events\WebhookReceived;
+use SocialiteProviders\Manager\SocialiteWasCalled;
+use SocialiteProviders\Reddit\RedditExtendSocialite;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -35,10 +36,10 @@ class EventServiceProvider extends ServiceProvider
             NotifyChannelOfNewSubscriber::class,
         ],
         SocialiteWasCalled::class => [
-            RedditExtendSocialite::class . '@handle',
+            RedditExtendSocialite::class.'@handle',
         ],
         WebhookReceived::class => [
-            \App\Listeners\HandleStripeSubscriptionChanges::class,
+            HandleStripeSubscriptionChanges::class,
         ],
     ];
 

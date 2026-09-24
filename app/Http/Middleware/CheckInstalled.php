@@ -30,9 +30,9 @@ class CheckInstalled
             return redirect('/');
         }
 
-        if ($mode === 'require' && !$installed) {
+        if ($mode === 'require' && ! $installed) {
             // Not installed — redirect to installer (unless already on /install)
-            if (!$request->is('install*')) {
+            if (! $request->is('install*')) {
                 return redirect()->route('install.requirements');
             }
         }
@@ -65,7 +65,7 @@ class CheckInstalled
             return true;
         }
 
-        if (!$this->databaseLooksInstalled()) {
+        if (! $this->databaseLooksInstalled()) {
             return false;
         }
 

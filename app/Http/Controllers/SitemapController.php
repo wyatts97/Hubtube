@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Throwable;
-use Carbon\Carbon;
 use App\Models\Category;
 use App\Models\Gallery;
 use App\Models\Image;
@@ -15,8 +13,10 @@ use App\Models\User;
 use App\Models\Video;
 use App\Services\StorageManager;
 use App\Services\TranslationService;
+use Carbon\Carbon;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
+use Throwable;
 
 /**
  * Sitemap controller. Emits a true <sitemapindex> at /sitemap.xml
@@ -35,7 +35,9 @@ use Illuminate\Support\Facades\Cache;
 class SitemapController extends Controller
 {
     private array $locales = [];
+
     private string $defaultLocale = 'en';
+
     private bool $multiLang = false;
 
     public function __construct()
@@ -76,13 +78,13 @@ class SitemapController extends Controller
             $entries[] = ['loc' => url('/sitemap-playlists.xml'), 'lastmod' => $this->maxUpdatedAt(Playlist::query()->public())];
         }
 
-        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-        $xml .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
+        $xml .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
         foreach ($entries as $entry) {
             $xml .= "  <sitemap>\n";
-            $xml .= '    <loc>' . $this->xmlEscape($entry['loc']) . "</loc>\n";
-            if (!empty($entry['lastmod'])) {
-                $xml .= '    <lastmod>' . $entry['lastmod'] . "</lastmod>\n";
+            $xml .= '    <loc>'.$this->xmlEscape($entry['loc'])."</loc>\n";
+            if (! empty($entry['lastmod'])) {
+                $xml .= '    <lastmod>'.$entry['lastmod']."</lastmod>\n";
             }
             $xml .= "  </sitemap>\n";
         }
@@ -145,7 +147,7 @@ class SitemapController extends Controller
                 $q->where('is_active', true)->orWhereNull('is_active');
             })
             ->whereNull('parent_id')
-            ->whereHas('videos', fn($q) => $q->public()->approved()->processed())
+            ->whereHas('videos', fn ($q) => $q->public()->approved()->processed())
             ->select(['id', 'slug', 'updated_at'])
             ->get();
 
@@ -182,21 +184,27 @@ class SitemapController extends Controller
 
         $tagMap = [];
         foreach ($rows as $row) {
-            if (!is_array($row->tags)) continue;
+            if (! is_array($row->tags)) {
+                continue;
+            }
             foreach ($row->tags as $tag) {
                 $tag = trim((string) $tag);
-                if ($tag === '') continue;
-                if (!isset($tagMap[$tag]) || $tagMap[$tag] < $row->updated_at) {
+                if ($tag === '') {
+                    continue;
+                }
+                if (! isset($tagMap[$tag]) || $tagMap[$tag] < $row->updated_at) {
                     $tagMap[$tag] = $row->updated_at;
                 }
-                if (count($tagMap) >= $maxTags) break 2;
+                if (count($tagMap) >= $maxTags) {
+                    break 2;
+                }
             }
         }
 
         $urls = [];
         foreach ($tagMap as $tag => $lastmod) {
             $urls[] = $this->staticUrlEntry(
-                '/tag/' . rawurlencode($tag),
+                '/tag/'.rawurlencode($tag),
                 ($lastmod?->toW3cString()) ?? now()->toW3cString(),
                 'weekly',
                 '0.4'
@@ -214,7 +222,7 @@ class SitemapController extends Controller
         $maxChannels = (int) Setting::get('seo_sitemap_max_channels', 5000);
 
         $channels = User::query()
-            ->whereHas('videos', fn($q) => $q->public()->approved()->processed())
+            ->whereHas('videos', fn ($q) => $q->public()->approved()->processed())
             ->select(['id', 'username', 'updated_at'])
             ->limit($maxChannels)
             ->get();
@@ -241,13 +249,13 @@ class SitemapController extends Controller
             : ['id', 'slug', 'updated_at'];
 
         // Crawlers walk every chunk; an hour-old sitemap is fine.
-        $urls = Cache::remember("sitemap:videos:{$page}:" . ($videoSitemapEnabled ? 'full' : 'simple'), 3600, function () use ($page, $chunkSize, $videoSitemapEnabled, $columns) {
+        $urls = Cache::remember("sitemap:videos:{$page}:".($videoSitemapEnabled ? 'full' : 'simple'), 3600, function () use ($page, $chunkSize, $videoSitemapEnabled, $columns) {
             $videos = Video::query()
                 ->public()
                 ->approved()
                 ->processed()
                 ->select($columns)
-                ->when($videoSitemapEnabled, fn($q) => $q->with('user:id,username', 'category:id,name'))
+                ->when($videoSitemapEnabled, fn ($q) => $q->with('user:id,username', 'category:id,name'))
                 // By id, not updated_at: chunk boundaries stay put as videos change.
                 ->orderBy('id')
                 ->offset(($page - 1) * $chunkSize)
@@ -262,7 +270,7 @@ class SitemapController extends Controller
                     ->whereNotNull('translated_slug')
                     ->get()
                     ->groupBy('translatable_id')
-                    ->map(fn($group) => $group->pluck('translated_slug', 'locale')->toArray())
+                    ->map(fn ($group) => $group->pluck('translated_slug', 'locale')->toArray())
                     ->toArray();
             }
 
@@ -289,7 +297,7 @@ class SitemapController extends Controller
      */
     public function images(): Response
     {
-        if (!Setting::get('seo_sitemap_images_enabled', true)) {
+        if (! Setting::get('seo_sitemap_images_enabled', true)) {
             return $this->urlsetResponse([], multiLang: $this->multiLang);
         }
 
@@ -310,21 +318,21 @@ class SitemapController extends Controller
                 : null;
 
             $entry = "  <url>\n";
-            $entry .= '    <loc>' . $this->xmlEscape(url("/image/{$image->slug}")) . "</loc>\n";
-            $entry .= '    <lastmod>' . $image->updated_at->toW3cString() . "</lastmod>\n";
+            $entry .= '    <loc>'.$this->xmlEscape(url("/image/{$image->slug}"))."</loc>\n";
+            $entry .= '    <lastmod>'.$image->updated_at->toW3cString()."</lastmod>\n";
             $entry .= "    <changefreq>monthly</changefreq>\n";
             $entry .= "    <priority>0.5</priority>\n";
 
             if ($imageUrl) {
                 $entry .= "    <image:image>\n";
-                $entry .= '      <image:loc>' . $this->xmlEscape($imageUrl) . "</image:loc>\n";
-                if (!empty($image->title)) {
-                    $entry .= '      <image:title>' . $this->xmlEscape($image->title) . "</image:title>\n";
+                $entry .= '      <image:loc>'.$this->xmlEscape($imageUrl)."</image:loc>\n";
+                if (! empty($image->title)) {
+                    $entry .= '      <image:title>'.$this->xmlEscape($image->title)."</image:title>\n";
                 }
                 // The caption is what Google Images shows beneath a result,
                 // so it gets the descriptive alt text rather than the bare title.
-                if (!empty($image->alt_text)) {
-                    $entry .= '      <image:caption>' . $this->xmlEscape($image->alt_text) . "</image:caption>\n";
+                if (! empty($image->alt_text)) {
+                    $entry .= '      <image:caption>'.$this->xmlEscape($image->alt_text)."</image:caption>\n";
                 }
                 $entry .= "    </image:image>\n";
             }
@@ -340,7 +348,7 @@ class SitemapController extends Controller
      */
     public function galleries(): Response
     {
-        if (!Setting::get('seo_sitemap_galleries_enabled', true)) {
+        if (! Setting::get('seo_sitemap_galleries_enabled', true)) {
             return $this->urlsetResponse([], multiLang: $this->multiLang);
         }
 
@@ -357,8 +365,8 @@ class SitemapController extends Controller
         $urls = [];
         foreach ($galleries as $gallery) {
             $entry = "  <url>\n";
-            $entry .= '    <loc>' . $this->xmlEscape(url("/gallery/{$gallery->slug}")) . "</loc>\n";
-            $entry .= '    <lastmod>' . $gallery->updated_at->toW3cString() . "</lastmod>\n";
+            $entry .= '    <loc>'.$this->xmlEscape(url("/gallery/{$gallery->slug}"))."</loc>\n";
+            $entry .= '    <lastmod>'.$gallery->updated_at->toW3cString()."</lastmod>\n";
             $entry .= "    <changefreq>weekly</changefreq>\n";
             $entry .= "    <priority>0.6</priority>\n";
 
@@ -369,12 +377,12 @@ class SitemapController extends Controller
                 );
                 if ($coverUrl) {
                     $entry .= "    <image:image>\n";
-                    $entry .= '      <image:loc>' . $this->xmlEscape($coverUrl) . "</image:loc>\n";
-                    if (!empty($gallery->title)) {
-                        $entry .= '      <image:title>' . $this->xmlEscape($gallery->title) . "</image:title>\n";
+                    $entry .= '      <image:loc>'.$this->xmlEscape($coverUrl)."</image:loc>\n";
+                    if (! empty($gallery->title)) {
+                        $entry .= '      <image:title>'.$this->xmlEscape($gallery->title)."</image:title>\n";
                     }
-                    if (!empty($gallery->cover_alt_text)) {
-                        $entry .= '      <image:caption>' . $this->xmlEscape($gallery->cover_alt_text) . "</image:caption>\n";
+                    if (! empty($gallery->cover_alt_text)) {
+                        $entry .= '      <image:caption>'.$this->xmlEscape($gallery->cover_alt_text)."</image:caption>\n";
                     }
                     $entry .= "    </image:image>\n";
                 }
@@ -391,7 +399,7 @@ class SitemapController extends Controller
      */
     public function playlists(): Response
     {
-        if (!Setting::get('seo_sitemap_playlists_enabled', true)) {
+        if (! Setting::get('seo_sitemap_playlists_enabled', true)) {
             return $this->urlsetResponse([], multiLang: $this->multiLang);
         }
 
@@ -423,6 +431,7 @@ class SitemapController extends Controller
     private function videoChunkSize(): int
     {
         $size = (int) Setting::get('seo_sitemap_chunk_size', 10000);
+
         return max(100, min($size, 50000));
     }
 
@@ -436,6 +445,7 @@ class SitemapController extends Controller
         } catch (Throwable) {
             // Table may be missing — fall through
         }
+
         return now()->toW3cString();
     }
 
@@ -452,7 +462,7 @@ class SitemapController extends Controller
             $namespaces .= ' xmlns:xhtml="http://www.w3.org/1999/xhtml"';
         }
 
-        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
         $xml .= "<urlset {$namespaces}>\n";
         foreach ($urls as $entry) {
             $xml .= $entry;
@@ -475,14 +485,14 @@ class SitemapController extends Controller
      */
     private function hreflangLinks(string $path): string
     {
-        if (!$this->multiLang) {
+        if (! $this->multiLang) {
             return '';
         }
 
         $map = TranslationService::hreflangMapForPath($path);
         $links = '';
         foreach ($map as $hl => $href) {
-            $links .= '    <xhtml:link rel="alternate" hreflang="' . $hl . '" href="' . $this->xmlEscape($href) . '" />' . "\n";
+            $links .= '    <xhtml:link rel="alternate" hreflang="'.$hl.'" href="'.$this->xmlEscape($href).'" />'."\n";
         }
 
         return $links;
@@ -494,12 +504,12 @@ class SitemapController extends Controller
      */
     private function videoHreflangLinks(Video $video, array $slugsByLocale): string
     {
-        if (!$this->multiLang) {
+        if (! $this->multiLang) {
             return '';
         }
 
         $defaultUrl = url("/{$video->slug}");
-        $links = '    <xhtml:link rel="alternate" hreflang="x-default" href="' . $this->xmlEscape($defaultUrl) . '" />' . "\n";
+        $links = '    <xhtml:link rel="alternate" hreflang="x-default" href="'.$this->xmlEscape($defaultUrl).'" />'."\n";
 
         $seen = [$defaultUrl => true];
 
@@ -507,12 +517,13 @@ class SitemapController extends Controller
             if ($locale === $this->defaultLocale) {
                 $href = $defaultUrl;
                 $tag = TranslationService::toHreflang($locale);
-                $links .= '    <xhtml:link rel="alternate" hreflang="' . $tag . '" href="' . $this->xmlEscape($href) . '" />' . "\n";
+                $links .= '    <xhtml:link rel="alternate" hreflang="'.$tag.'" href="'.$this->xmlEscape($href).'" />'."\n";
+
                 continue;
             }
 
             // Only emit hreflang for locales that have a confirmed translated slug
-            if (!isset($slugsByLocale[$locale])) {
+            if (! isset($slugsByLocale[$locale])) {
                 continue;
             }
             $href = url("/{$locale}/{$slugsByLocale[$locale]}");
@@ -521,7 +532,7 @@ class SitemapController extends Controller
             }
             $seen[$href] = true;
             $tag = TranslationService::toHreflang($locale);
-            $links .= '    <xhtml:link rel="alternate" hreflang="' . $tag . '" href="' . $this->xmlEscape($href) . '" />' . "\n";
+            $links .= '    <xhtml:link rel="alternate" hreflang="'.$tag.'" href="'.$this->xmlEscape($href).'" />'."\n";
         }
 
         return $links;
@@ -530,24 +541,26 @@ class SitemapController extends Controller
     private function staticUrlEntry(string $path, string $lastmod, string $changefreq, string $priority): string
     {
         $entry = "  <url>\n";
-        $entry .= '    <loc>' . $this->xmlEscape(url($path)) . "</loc>\n";
+        $entry .= '    <loc>'.$this->xmlEscape(url($path))."</loc>\n";
         $entry .= "    <lastmod>{$lastmod}</lastmod>\n";
         $entry .= "    <changefreq>{$changefreq}</changefreq>\n";
         $entry .= "    <priority>{$priority}</priority>\n";
         $entry .= $this->hreflangLinks($path);
         $entry .= "  </url>\n";
+
         return $entry;
     }
 
     private function videoSimpleEntry(Video $video, array $slugsByLocale): string
     {
         $entry = "  <url>\n";
-        $entry .= '    <loc>' . $this->xmlEscape(url("/{$video->slug}")) . "</loc>\n";
-        $entry .= '    <lastmod>' . $video->updated_at->toW3cString() . "</lastmod>\n";
+        $entry .= '    <loc>'.$this->xmlEscape(url("/{$video->slug}"))."</loc>\n";
+        $entry .= '    <lastmod>'.$video->updated_at->toW3cString()."</lastmod>\n";
         $entry .= "    <changefreq>weekly</changefreq>\n";
         $entry .= "    <priority>0.9</priority>\n";
         $entry .= $this->videoHreflangLinks($video, $slugsByLocale);
         $entry .= "  </url>\n";
+
         return $entry;
     }
 
@@ -556,17 +569,19 @@ class SitemapController extends Controller
         $path = "/channel/{$channel->username}";
 
         $entry = "  <url>\n";
-        $entry .= '    <loc>' . $this->xmlEscape(url($path)) . "</loc>\n";
-        $entry .= '    <lastmod>' . $channel->updated_at->toW3cString() . "</lastmod>\n";
+        $entry .= '    <loc>'.$this->xmlEscape(url($path))."</loc>\n";
+        $entry .= '    <lastmod>'.$channel->updated_at->toW3cString()."</lastmod>\n";
         $entry .= "    <changefreq>weekly</changefreq>\n";
         $entry .= "    <priority>0.7</priority>\n";
         $entry .= $this->hreflangLinks($path);
         $entry .= "  </url>\n";
+
         return $entry;
     }
 
     /**
      * Video URL entry with full video:video extensions and hreflang alternates.
+     *
      * @see https://developers.google.com/search/docs/crawling-indexing/sitemaps/video-sitemaps
      */
     private function videoUrlEntry(Video $video, array $slugsByLocale = []): string
@@ -586,7 +601,7 @@ class SitemapController extends Controller
         $thumbnailUrl = $this->xmlEscape($thumbnailUrl);
 
         $contentUrl = '';
-        if (!$video->is_embedded && $video->video_path) {
+        if (! $video->is_embedded && $video->video_path) {
             $contentUrl = $this->xmlEscape(StorageManager::permanentUrl($video->video_path, $video->storage_disk ?? 'public'));
         }
 
@@ -634,7 +649,7 @@ class SitemapController extends Controller
             $entry .= "      <video:category>{$category}</video:category>\n";
         }
         foreach ($tags as $tag) {
-            $entry .= "      <video:tag>" . $this->xmlEscape($tag) . "</video:tag>\n";
+            $entry .= '      <video:tag>'.$this->xmlEscape($tag)."</video:tag>\n";
         }
         $entry .= "      <video:live>no</video:live>\n";
         $entry .= "    </video:video>\n";

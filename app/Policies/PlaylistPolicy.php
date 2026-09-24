@@ -19,6 +19,6 @@ class PlaylistPolicy
 
     public function delete(User $user, Playlist $playlist): bool
     {
-        return $user->id === $playlist->user_id && !$playlist->is_default;
+        return $user->id === $playlist->user_id && ! $playlist->is_default;
     }
 }

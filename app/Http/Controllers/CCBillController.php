@@ -55,7 +55,7 @@ class CCBillController extends Controller
 
         // The transaction id tells two renewals apart when CCBill omits the timestamp.
         $transactionId = (string) ($data['transactionId'] ?? $data['transaction_id'] ?? '');
-        $fingerprint = hash('sha256', $subscriptionId . '|' . $eventType . '|' . $timestamp . '|' . $transactionId);
+        $fingerprint = hash('sha256', $subscriptionId.'|'.$eventType.'|'.$timestamp.'|'.$transactionId);
 
         // Idempotency: acknowledge duplicates without reprocessing.
         if (CCBillWebhookEvent::where('fingerprint', $fingerprint)->exists()) {
@@ -135,6 +135,7 @@ class CCBillController extends Controller
                 'user' => $userId,
                 'plan' => $planId,
             ]);
+
             return;
         }
 

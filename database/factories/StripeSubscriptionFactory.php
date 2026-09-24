@@ -15,9 +15,9 @@ class StripeSubscriptionFactory extends Factory
         return [
             'user_id' => User::factory(),
             'type' => 'pro',
-            'stripe_id' => 'sub_' . $this->faker->unique()->uuid,
+            'stripe_id' => 'sub_'.$this->faker->unique()->uuid,
             'stripe_status' => 'active',
-            'stripe_price' => 'price_' . $this->faker->uuid,
+            'stripe_price' => 'price_'.$this->faker->uuid,
             'quantity' => 1,
             'trial_ends_at' => null,
             'ends_at' => null,

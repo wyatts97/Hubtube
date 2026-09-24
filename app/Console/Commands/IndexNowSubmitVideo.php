@@ -2,11 +2,11 @@
 
 namespace App\Console\Commands;
 
-use Throwable;
 use App\Models\Video;
 use App\Services\IndexNowService;
 use App\Services\TranslationService;
 use Illuminate\Console\Command;
+use Throwable;
 
 class IndexNowSubmitVideo extends Command
 {
@@ -16,8 +16,9 @@ class IndexNowSubmitVideo extends Command
 
     public function handle(IndexNowService $service): int
     {
-        if (!$service->isEnabled()) {
+        if (! $service->isEnabled()) {
             $this->warn('IndexNow is disabled or missing key.');
+
             return self::FAILURE;
         }
 
@@ -26,8 +27,9 @@ class IndexNowSubmitVideo extends Command
             ? Video::find((int) $arg)
             : Video::where('slug', $arg)->first();
 
-        if (!$video) {
+        if (! $video) {
             $this->error("Video not found: {$arg}");
+
             return self::FAILURE;
         }
 
@@ -47,11 +49,13 @@ class IndexNowSubmitVideo extends Command
         $ok = $service->submitUrls(array_values(array_unique($urls)), Video::class, $video->id);
 
         if ($ok) {
-            $this->info("Submitted video {$video->id} (" . count($urls) . " URL(s))");
+            $this->info("Submitted video {$video->id} (".count($urls).' URL(s))');
+
             return self::SUCCESS;
         }
 
         $this->error("Submission failed for video {$video->id}");
+
         return self::FAILURE;
     }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\WatchHistory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;

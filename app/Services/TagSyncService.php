@@ -74,7 +74,7 @@ class TagSyncService
         }
 
         $hashtag = $tag ?: Hashtag::query()->where('slug', $oldSlug)->first();
-        if (!$hashtag) {
+        if (! $hashtag) {
             return;
         }
 
@@ -110,7 +110,7 @@ class TagSyncService
                         }
                     }
 
-                    if (!$changed) {
+                    if (! $changed) {
                         continue;
                     }
 

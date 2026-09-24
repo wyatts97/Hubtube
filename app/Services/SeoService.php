@@ -7,7 +7,6 @@ use App\Models\Gallery;
 use App\Models\Image;
 use App\Models\Page;
 use App\Models\Playlist;
-use App\Services\SocialLinkService;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
@@ -225,7 +224,7 @@ class SeoService
      * Generate SEO data for a video page.
      */
     /**
-     * @param array{title?: string, description?: string} $translated Cached translations for the current locale
+     * @param  array{title?: string, description?: string}  $translated  Cached translations for the current locale
      */
     public function forVideo(Video $video, array $translated = []): array
     {

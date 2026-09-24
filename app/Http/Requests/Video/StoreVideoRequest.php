@@ -2,13 +2,13 @@
 
 namespace App\Http\Requests\Video;
 
-use App\Rules\KnownTags;
 use App\Models\Video;
+use App\Rules\KnownTags;
 use App\Rules\ValidVideoFile;
 use App\Support\VideoPrivacy;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Number;
+use Illuminate\Validation\Rule;
 
 class StoreVideoRequest extends FormRequest
 {
@@ -41,14 +41,14 @@ class StoreVideoRequest extends FormRequest
             'category_id' => 'required|exists:categories,id',
             'age_restricted' => 'boolean',
             'privacy' => ['required', 'string', Rule::in(VideoPrivacy::allowedFor($this->user()))],
-            'tags' => ['required', 'array', 'min:3', 'max:20', new KnownTags()],
+            'tags' => ['required', 'array', 'min:3', 'max:20', new KnownTags],
             'tags.*' => 'string|min:2|max:50',
             'video_file' => [
                 'required',
                 'file',
                 'mimetypes:video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm,video/x-flv,video/x-ms-wmv',
                 "max:{$maxSize}",
-                new ValidVideoFile(),
+                new ValidVideoFile,
             ],
         ];
 
@@ -63,7 +63,7 @@ class StoreVideoRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'video_file.max' => 'Video file is too large. Maximum size is ' . 
+            'video_file.max' => 'Video file is too large. Maximum size is '.
                 Number::fileSize($this->user()->max_video_size),
             'video_file.mimetypes' => 'The video must be a valid video file (MP4, MOV, AVI, MKV, WebM, FLV, or WMV).',
             'title.required' => 'A title is required.',

@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\Setting;
 use App\Models\User;
-use App\Models\Video;
 use App\Models\VideoAd;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -29,7 +28,7 @@ class ProAdSuppressionTest extends TestCase
 
         $user = User::factory()->create(['is_pro' => true]);
 
-        $response = $this->actingAs($user)->getJson('/api/video-ads?category_id=' . $category->id);
+        $response = $this->actingAs($user)->getJson('/api/video-ads?category_id='.$category->id);
 
         $response->assertOk()
             ->assertJsonPath('ads.pre_roll', [])
@@ -53,7 +52,7 @@ class ProAdSuppressionTest extends TestCase
 
         $user = User::factory()->create(['is_pro' => false]);
 
-        $response = $this->actingAs($user)->getJson('/api/video-ads?category_id=' . $category->id);
+        $response = $this->actingAs($user)->getJson('/api/video-ads?category_id='.$category->id);
 
         $response->assertOk();
         $this->assertNotEmpty($response->json('ads.pre_roll'));
@@ -74,7 +73,7 @@ class ProAdSuppressionTest extends TestCase
 
         $user = User::factory()->create(['is_pro' => true]);
 
-        $response = $this->actingAs($user)->getJson('/api/video-ads?category_id=' . $category->id);
+        $response = $this->actingAs($user)->getJson('/api/video-ads?category_id='.$category->id);
 
         $response->assertOk();
         $this->assertNotEmpty($response->json('ads.pre_roll'));

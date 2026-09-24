@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
-use Throwable;
 use App\Models\Setting;
 use Illuminate\Contracts\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class StorageManager
 {
@@ -37,21 +37,22 @@ class StorageManager
 
     /**
      * Wasabi region-to-endpoint mapping per Wasabi docs.
+     *
      * @see https://docs.wasabi.com/docs/service-urls-for-wasabis-storage-regions
      */
     public const WASABI_ENDPOINTS = [
-        'us-east-1'      => 'https://s3.wasabisys.com',
-        'us-east-2'      => 'https://s3.us-east-2.wasabisys.com',
-        'us-central-1'   => 'https://s3.us-central-1.wasabisys.com',
-        'us-west-1'      => 'https://s3.us-west-1.wasabisys.com',
-        'us-west-2'      => 'https://s3.us-west-2.wasabisys.com',
-        'ca-central-1'   => 'https://s3.ca-central-1.wasabisys.com',
-        'eu-central-1'   => 'https://s3.eu-central-1.wasabisys.com',
-        'eu-central-2'   => 'https://s3.eu-central-2.wasabisys.com',
-        'eu-west-1'      => 'https://s3.eu-west-1.wasabisys.com',
-        'eu-west-2'      => 'https://s3.eu-west-2.wasabisys.com',
-        'eu-west-3'      => 'https://s3.eu-west-3.wasabisys.com',
-        'eu-south-1'     => 'https://s3.eu-south-1.wasabisys.com',
+        'us-east-1' => 'https://s3.wasabisys.com',
+        'us-east-2' => 'https://s3.us-east-2.wasabisys.com',
+        'us-central-1' => 'https://s3.us-central-1.wasabisys.com',
+        'us-west-1' => 'https://s3.us-west-1.wasabisys.com',
+        'us-west-2' => 'https://s3.us-west-2.wasabisys.com',
+        'ca-central-1' => 'https://s3.ca-central-1.wasabisys.com',
+        'eu-central-1' => 'https://s3.eu-central-1.wasabisys.com',
+        'eu-central-2' => 'https://s3.eu-central-2.wasabisys.com',
+        'eu-west-1' => 'https://s3.eu-west-1.wasabisys.com',
+        'eu-west-2' => 'https://s3.eu-west-2.wasabisys.com',
+        'eu-west-3' => 'https://s3.eu-west-3.wasabisys.com',
+        'eu-south-1' => 'https://s3.eu-south-1.wasabisys.com',
         'ap-northeast-1' => 'https://s3.ap-northeast-1.wasabisys.com',
         'ap-northeast-2' => 'https://s3.ap-northeast-2.wasabisys.com',
         'ap-southeast-1' => 'https://s3.ap-southeast-1.wasabisys.com',
@@ -64,7 +65,7 @@ class StorageManager
      */
     public static function getActiveDiskName(): string
     {
-        if (!static::setting('cloud_offloading_enabled', false)) {
+        if (! static::setting('cloud_offloading_enabled', false)) {
             return 'public';
         }
 
@@ -72,9 +73,9 @@ class StorageManager
 
         return match ($driver) {
             'wasabi' => 'wasabi',
-            'b2'     => 'b2',
-            's3'     => 's3',
-            default  => 'public',
+            'b2' => 'b2',
+            's3' => 's3',
+            default => 'public',
         };
     }
 
@@ -100,10 +101,10 @@ class StorageManager
      */
     protected static function buildWasabiDisk(): Filesystem
     {
-        $key      = Setting::getDecrypted('wasabi_key', '');
-        $secret   = Setting::getDecrypted('wasabi_secret', '');
-        $region   = static::setting('wasabi_region', 'us-east-1');
-        $bucket   = static::setting('wasabi_bucket', '');
+        $key = Setting::getDecrypted('wasabi_key', '');
+        $secret = Setting::getDecrypted('wasabi_secret', '');
+        $region = static::setting('wasabi_region', 'us-east-1');
+        $bucket = static::setting('wasabi_bucket', '');
         $endpoint = static::setting('wasabi_endpoint', '');
 
         // Auto-resolve endpoint from region if not explicitly set
@@ -124,16 +125,16 @@ class StorageManager
 
         config([
             'filesystems.disks.wasabi' => [
-                'driver'                  => 's3',
-                'key'                     => $key,
-                'secret'                  => $secret,
-                'region'                  => $region,
-                'bucket'                  => $bucket,
-                'endpoint'                => $endpoint,
-                'url'                     => $url,
+                'driver' => 's3',
+                'key' => $key,
+                'secret' => $secret,
+                'region' => $region,
+                'bucket' => $bucket,
+                'endpoint' => $endpoint,
+                'url' => $url,
                 'use_path_style_endpoint' => false,
-                'visibility'              => 'public',
-                'throw'                   => true,
+                'visibility' => 'public',
+                'throw' => true,
             ],
         ]);
 
@@ -152,7 +153,7 @@ class StorageManager
     {
         // CDN URL takes priority if configured
         $cdnUrl = static::setting('cdn_url', '');
-        if (!empty($cdnUrl) && static::setting('cdn_enabled', false)) {
+        if (! empty($cdnUrl) && static::setting('cdn_enabled', false)) {
             return rtrim($cdnUrl, '/');
         }
 
@@ -178,11 +179,12 @@ class StorageManager
             // CDN override for local storage
             if (static::setting('cdn_enabled', false)) {
                 $cdnUrl = static::setting('cdn_url', '');
-                if (!empty($cdnUrl)) {
-                    return rtrim($cdnUrl, '/') . '/' . ltrim($path, '/');
+                if (! empty($cdnUrl)) {
+                    return rtrim($cdnUrl, '/').'/'.ltrim($path, '/');
                 }
             }
-            return asset('storage/' . $path);
+
+            return asset('storage/'.$path);
         }
 
         // For cloud disks, use pre-signed URLs unless bucket is public
@@ -195,12 +197,14 @@ class StorageManager
                     'path' => $path,
                     'error' => $e->getMessage(),
                 ]);
-                return asset('storage/' . $path);
+
+                return asset('storage/'.$path);
             }
         }
 
         // Default: pre-signed temporary URL (works with private buckets)
         $minutes = (int) static::setting('cloud_url_expiry_minutes', 120);
+
         return static::temporaryUrl($path, $minutes, $diskName);
     }
 
@@ -216,18 +220,19 @@ class StorageManager
         if ($diskName === 'public') {
             if (static::setting('cdn_enabled', false)) {
                 $cdnUrl = static::setting('cdn_url', '');
-                if (!empty($cdnUrl)) {
-                    return rtrim($cdnUrl, '/') . '/' . ltrim($path, '/');
+                if (! empty($cdnUrl)) {
+                    return rtrim($cdnUrl, '/').'/'.ltrim($path, '/');
                 }
             }
-            return asset('storage/' . $path);
+
+            return asset('storage/'.$path);
         }
 
         // For cloud disks, build a permanent URL from the endpoint + bucket + path
         try {
             return static::disk($diskName)->url($path);
         } catch (Throwable $e) {
-            return asset('storage/' . $path);
+            return asset('storage/'.$path);
         }
     }
 
@@ -240,7 +245,7 @@ class StorageManager
         $diskName = $diskName ?? static::getActiveDiskName();
 
         if ($diskName === 'public') {
-            return asset('storage/' . $path);
+            return asset('storage/'.$path);
         }
 
         try {
@@ -255,7 +260,7 @@ class StorageManager
             try {
                 return static::disk($diskName)->url($path);
             } catch (Throwable $e2) {
-                return asset('storage/' . $path);
+                return asset('storage/'.$path);
             }
         }
     }
@@ -266,6 +271,7 @@ class StorageManager
     public static function isCloudDisk(?string $diskName = null): bool
     {
         $diskName = $diskName ?? static::getActiveDiskName();
+
         return in_array($diskName, ['wasabi', 'b2', 's3']);
     }
 
@@ -283,13 +289,13 @@ class StorageManager
 
         try {
             $disk = static::disk($diskName);
-            $testFile = '.hubtube-connection-test-' . time();
+            $testFile = '.hubtube-connection-test-'.time();
 
             // Write test file
             $disk->put($testFile, 'HubTube connection test');
 
             // Verify it exists
-            if (!$disk->exists($testFile)) {
+            if (! $disk->exists($testFile)) {
                 return ['success' => false, 'message' => 'File was written but could not be verified.'];
             }
 
@@ -297,6 +303,7 @@ class StorageManager
             $content = $disk->get($testFile);
             if ($content !== 'HubTube connection test') {
                 $disk->delete($testFile);
+
                 return ['success' => false, 'message' => 'File content mismatch after write.'];
             }
 
@@ -330,6 +337,7 @@ class StorageManager
 
         try {
             $disk = static::disk($diskName);
+
             return $disk->putFile($directory, $file, 'public');
         } catch (Throwable $e) {
             Log::error('StorageManager: putFile failed', [
@@ -337,6 +345,7 @@ class StorageManager
                 'directory' => $directory,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -350,6 +359,7 @@ class StorageManager
 
         try {
             $disk = static::disk($diskName);
+
             return $disk->put($path, $contents, 'public');
         } catch (Throwable $e) {
             Log::error('StorageManager: put failed', [
@@ -357,6 +367,7 @@ class StorageManager
                 'path' => $path,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -376,6 +387,7 @@ class StorageManager
                 'path' => $path,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -395,6 +407,7 @@ class StorageManager
                 'path' => $path,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -442,10 +455,10 @@ class StorageManager
         // For cloud disks, download to a temp file for FFmpeg processing
         try {
             $disk = static::disk($diskName);
-            $tempPath = storage_path('app/temp/' . basename($storagePath));
+            $tempPath = storage_path('app/temp/'.basename($storagePath));
             $tempDir = dirname($tempPath);
 
-            if (!is_dir($tempDir)) {
+            if (! is_dir($tempDir)) {
                 mkdir($tempDir, 0755, true);
             }
 
@@ -455,6 +468,7 @@ class StorageManager
                 if (is_resource($stream)) {
                     fclose($stream);
                 }
+
                 return $tempPath;
             }
 
@@ -465,6 +479,7 @@ class StorageManager
                 'path' => $storagePath,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -485,7 +500,7 @@ class StorageManager
             $disk = static::disk($diskName);
             $stream = fopen($localPath, 'r');
 
-            if (!$stream) {
+            if (! $stream) {
                 return false;
             }
 
@@ -503,6 +518,7 @@ class StorageManager
                 'storagePath' => $storagePath,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }

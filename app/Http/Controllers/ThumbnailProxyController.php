@@ -29,7 +29,7 @@ class ThumbnailProxyController extends Controller
     {
         $url = $request->query('url');
 
-        if (!$url || !filter_var($url, FILTER_VALIDATE_URL)) {
+        if (! $url || ! filter_var($url, FILTER_VALIDATE_URL)) {
             abort(400, 'Invalid URL');
         }
 
@@ -55,17 +55,17 @@ class ThumbnailProxyController extends Controller
         // Strict domain suffix matching
         $allowed = false;
         foreach (self::ALLOWED_DOMAINS as $domain) {
-            if ($host === $domain || str_ends_with($host, '.' . $domain)) {
+            if ($host === $domain || str_ends_with($host, '.'.$domain)) {
                 $allowed = true;
                 break;
             }
         }
 
-        if (!$allowed) {
+        if (! $allowed) {
             abort(403, 'Domain not allowed');
         }
 
-        $cacheKey = 'thumb_proxy_' . md5($url);
+        $cacheKey = 'thumb_proxy_'.md5($url);
 
         // Uses the configured cache driver — set CACHE_DRIVER=redis in .env for production
         $store = Cache::store(config('cache.default'));
@@ -81,7 +81,7 @@ class ThumbnailProxyController extends Controller
                     ->withHeaders([
                         'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                         'Accept' => 'image/*,*/*;q=0.8',
-                        'Referer' => parse_url($url, PHP_URL_SCHEME) . '://' . parse_url($url, PHP_URL_HOST) . '/',
+                        'Referer' => parse_url($url, PHP_URL_SCHEME).'://'.parse_url($url, PHP_URL_HOST).'/',
                     ])
                     ->get($url);
 
@@ -98,7 +98,7 @@ class ThumbnailProxyController extends Controller
             return null;
         });
 
-        if (!$imageData) {
+        if (! $imageData) {
             abort(404, 'Image not found');
         }
 
@@ -132,6 +132,6 @@ class ThumbnailProxyController extends Controller
      */
     protected function isInternalIp(string $ip): bool
     {
-        return !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+        return ! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
     }
 }

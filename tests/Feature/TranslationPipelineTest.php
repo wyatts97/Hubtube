@@ -1,9 +1,12 @@
 <?php
 
+use App\Filament\Pages\LanguageSettings;
 use App\Jobs\TranslateModelJob;
 use App\Models\Category;
 use App\Models\Page;
+use App\Models\Setting;
 use App\Models\Translation;
+use App\Models\TranslationOverride;
 use App\Models\Video;
 use App\Services\Translation\Providers\LibreTranslateProvider;
 use App\Services\Translation\TranslationProviderException;
@@ -77,8 +80,8 @@ test('the configured provider is resolved from settings', function () {
 
 test('an unknown provider throws instead of silently falling back to Google', function () {
     // Silent failover is what turned a LibreTranslate outage into a Google ban.
-    App\Models\Setting::set('translation_provider', 'nope', 'translation', 'string');
-    App\Models\Setting::clearCache();
+    Setting::set('translation_provider', 'nope', 'translation', 'string');
+    Setting::clearCache();
     app(TranslationProviderManager::class)->forget();
 
     expect(fn () => app(TranslationProviderManager::class)->default())
@@ -242,9 +245,9 @@ test('a failed chunk is re-split so one bad string cannot poison its neighbours'
 */
 
 test('the schedule is due on exactly one minute per period', function () {
-    App\Models\Setting::set('translation_schedule_frequency', 'daily', 'translation', 'string');
-    App\Models\Setting::set('translation_schedule_time', '03:30', 'translation', 'string');
-    App\Models\Setting::clearCache();
+    Setting::set('translation_schedule_frequency', 'daily', 'translation', 'string');
+    Setting::set('translation_schedule_time', '03:30', 'translation', 'string');
+    Setting::clearCache();
 
     $tz = TranslationSchedule::timezone();
 
@@ -254,8 +257,8 @@ test('the schedule is due on exactly one minute per period', function () {
 });
 
 test('a disabled schedule is never due', function () {
-    App\Models\Setting::set('translation_schedule_frequency', 'disabled', 'translation', 'string');
-    App\Models\Setting::clearCache();
+    Setting::set('translation_schedule_frequency', 'disabled', 'translation', 'string');
+    Setting::clearCache();
 
     expect(TranslationSchedule::isDueAt(Carbon\Carbon::now()))->toBeFalse()
         ->and(TranslationSchedule::isDueNow())->toBeFalse();
@@ -263,10 +266,10 @@ test('a disabled schedule is never due', function () {
 
 test('a missed run is caught up rather than lost for a whole period', function () {
     // Without catch-up a monthly run missed by one minute waits a month.
-    App\Models\Setting::set('translation_schedule_frequency', 'daily', 'translation', 'string');
-    App\Models\Setting::set('translation_schedule_time', '03:30', 'translation', 'string');
-    App\Models\Setting::set('translation_last_run_at', now()->subDays(3)->toDateTimeString(), 'translation', 'string');
-    App\Models\Setting::clearCache();
+    Setting::set('translation_schedule_frequency', 'daily', 'translation', 'string');
+    Setting::set('translation_schedule_time', '03:30', 'translation', 'string');
+    Setting::set('translation_last_run_at', now()->subDays(3)->toDateTimeString(), 'translation', 'string');
+    Setting::clearCache();
 
     $now = Carbon\Carbon::parse('2099-01-01 09:00:00', TranslationSchedule::timezone());
 
@@ -285,7 +288,7 @@ test('language settings persist with correct types and never expose the API key'
     // the string "3" would quietly misbehave.
     asAdmin();
 
-    Livewire\Livewire::test(App\Filament\Pages\LanguageSettings::class)
+    Livewire\Livewire::test(LanguageSettings::class)
         ->fillForm([
             'translation_enabled' => true,
             'default_language' => 'en',
@@ -300,23 +303,23 @@ test('language settings persist with correct types and never expose the API key'
         ])
         ->call('save');
 
-    App\Models\Setting::clearCache();
+    Setting::clearCache();
 
-    expect(App\Models\Setting::get('translation_schedule_day'))->toBe(3)
-        ->and(App\Models\Setting::get('translation_run_limit'))->toBe(250)
-        ->and(App\Models\Setting::get('translation_schedule_frequency'))->toBe('weekly')
-        ->and(App\Models\Setting::getDecrypted('libretranslate_api_key'))->toBe('super-secret');
+    expect(Setting::get('translation_schedule_day'))->toBe(3)
+        ->and(Setting::get('translation_run_limit'))->toBe(250)
+        ->and(Setting::get('translation_schedule_frequency'))->toBe('weekly')
+        ->and(Setting::getDecrypted('libretranslate_api_key'))->toBe('super-secret');
 
     // Setting::get() returns raw cached column values and never decrypts, so
     // the ciphertext must not be mistaken for the key.
-    expect(App\Models\Setting::get('libretranslate_api_key'))->not->toBe('super-secret');
+    expect(Setting::get('libretranslate_api_key'))->not->toBe('super-secret');
 
     // A blank key on the next save keeps the stored one.
-    Livewire\Livewire::test(App\Filament\Pages\LanguageSettings::class)
+    Livewire\Livewire::test(LanguageSettings::class)
         ->fillForm(['libretranslate_api_key' => ''])
         ->call('save');
 
-    expect(App\Models\Setting::getDecrypted('libretranslate_api_key'))->toBe('super-secret');
+    expect(Setting::getDecrypted('libretranslate_api_key'))->toBe('super-secret');
 });
 
 /*
@@ -331,14 +334,14 @@ test('admin translation overrides are applied to single and batch translations',
     enableLocales(['en', 'es']);
     useFakeTranslationProvider();
 
-    App\Models\TranslationOverride::create([
+    TranslationOverride::create([
         'locale' => 'es',
         'original_text' => 'corda',
         'replacement_text' => 'cadena',
         'case_sensitive' => false,
         'is_active' => true,
     ]);
-    App\Models\TranslationOverride::clearCache();
+    TranslationOverride::clearCache();
 
     $service = app(TranslationService::class);
 
@@ -354,16 +357,16 @@ test('overrides survive a scheduled run and reach the stored translation', funct
     enableLocales(['en', 'es']);
     useFakeTranslationProvider();
 
-    App\Models\TranslationOverride::create([
+    TranslationOverride::create([
         'locale' => 'es',
         'original_text' => 'Wedgie',
         'replacement_text' => 'Calzón',
         'case_sensitive' => false,
         'is_active' => true,
     ]);
-    App\Models\TranslationOverride::clearCache();
+    TranslationOverride::clearCache();
 
-    $video = App\Models\Video::factory()->create([
+    $video = Video::factory()->create([
         'title' => 'Wedgie Compilation',
         'privacy' => 'public', 'is_approved' => true, 'status' => 'processed',
     ]);
@@ -378,7 +381,7 @@ test('overrides survive a scheduled run and reach the stored translation', funct
 
 test('translation work runs on its own queue, not the 60s default', function () {
     // A full sweep takes minutes; the default supervisor kills at 60s.
-    expect((new TranslateModelJob(App\Models\Video::class, 1, ['title'], 'es'))->queue)
+    expect((new TranslateModelJob(Video::class, 1, ['title'], 'es'))->queue)
         ->toBe('translations');
 
     expect(config('horizon.environments.production.translations.timeout'))->toBe(3600)

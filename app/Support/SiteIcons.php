@@ -62,12 +62,12 @@ class SiteIcons
         $extension = strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?: '', PATHINFO_EXTENSION));
 
         return match ($extension) {
-            'ico'          => 'image/x-icon',
-            'png'          => 'image/png',
-            'svg'          => 'image/svg+xml',
-            'jpg', 'jpeg'  => 'image/jpeg',
-            'webp'         => 'image/webp',
-            default        => null,
+            'ico' => 'image/x-icon',
+            'png' => 'image/png',
+            'svg' => 'image/svg+xml',
+            'jpg', 'jpeg' => 'image/jpeg',
+            'webp' => 'image/webp',
+            default => null,
         };
     }
 
@@ -86,18 +86,18 @@ class SiteIcons
 
         if ($custom !== null) {
             $icons[] = array_filter([
-                'src'     => $custom,
-                'sizes'   => static::faviconMimeType() === 'image/svg+xml' ? 'any' : '64x64',
-                'type'    => static::faviconMimeType(),
+                'src' => $custom,
+                'sizes' => static::faviconMimeType() === 'image/svg+xml' ? 'any' : '64x64',
+                'type' => static::faviconMimeType(),
                 'purpose' => 'any',
             ]);
         }
 
         foreach ([72, 96, 128, 144, 152, 192, 384, 512] as $size) {
             $icons[] = [
-                'src'     => "/icons/icon-{$size}x{$size}.png",
-                'sizes'   => "{$size}x{$size}",
-                'type'    => 'image/png',
+                'src' => "/icons/icon-{$size}x{$size}.png",
+                'sizes' => "{$size}x{$size}",
+                'type' => 'image/png',
                 'purpose' => 'any maskable',
             ];
         }

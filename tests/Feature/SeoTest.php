@@ -2,10 +2,10 @@
 
 use App\Models\Category;
 use App\Models\Setting;
-use Illuminate\Support\Facades\Storage;
 use App\Models\Translation;
 use App\Models\User;
 use App\Models\Video;
+use Illuminate\Support\Facades\Storage;
 
 /*
 |--------------------------------------------------------------------------
@@ -168,8 +168,8 @@ test('long descriptions are truncated at a word boundary', function () {
 });
 
 test('user page noindex honours its setting, but error pages never do', function () {
-    App\Models\Setting::set('seo_noindex_user_pages', false, 'seo', 'boolean');
-    App\Models\Setting::clearCache();
+    Setting::set('seo_noindex_user_pages', false, 'seo', 'boolean');
+    Setting::clearCache();
 
     expect($this->get('/login')->getContent())->not->toContain('content="noindex, nofollow"');
 

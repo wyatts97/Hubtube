@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Video;
 use App\Models\Comment;
-use App\Models\User;
 use App\Models\ContactMessage;
 use App\Models\Report;
+use App\Models\User;
+use App\Models\Video;
 use App\Notifications\ReportSubmittedNotification;
 use App\Services\EmailService;
 use Illuminate\Http\JsonResponse;
@@ -31,7 +31,7 @@ class ReportController extends Controller
 
         $morphType = $typeMap[$validated['reportable_type']] ?? null;
 
-        if (!$morphType || !$morphType::find($validated['reportable_id'])) {
+        if (! $morphType || ! $morphType::find($validated['reportable_id'])) {
             return response()->json(['error' => 'Content not found'], 404);
         }
 
@@ -56,7 +56,7 @@ class ReportController extends Controller
         ]);
 
         // Try to get a meaningful label for the reported content
-        $reportedContent = ucfirst($validated['reportable_type']) . ' #' . $validated['reportable_id'];
+        $reportedContent = ucfirst($validated['reportable_type']).' #'.$validated['reportable_id'];
         $reportable = $morphType::find($validated['reportable_id']);
         if ($reportable) {
             $reportedContent = $reportable->title ?? $reportable->username ?? $reportable->name ?? $reportedContent;
@@ -78,11 +78,11 @@ class ReportController extends Controller
             'email' => $request->user()->email,
             'user_id' => $request->user()->id,
             'report_id' => $report->id,
-            'subject' => 'Report: ' . ($reasonLabels[$validated['reason']] ?? $validated['reason']) . ' — ' . $reportedContent,
+            'subject' => 'Report: '.($reasonLabels[$validated['reason']] ?? $validated['reason']).' — '.$reportedContent,
             'message' => ($validated['description'] ?? '(No additional details)')
-                . "\n\n---\nType: " . ucfirst($validated['reportable_type'])
-                . "\nContent: " . $reportedContent
-                . "\nReason: " . ($reasonLabels[$validated['reason']] ?? $validated['reason']),
+                ."\n\n---\nType: ".ucfirst($validated['reportable_type'])
+                ."\nContent: ".$reportedContent
+                ."\nReason: ".($reasonLabels[$validated['reason']] ?? $validated['reason']),
             'is_read' => false,
         ]);
 

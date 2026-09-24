@@ -2,23 +2,22 @@
 
 namespace App\Filament\Pages;
 
-use App\Filament\Concerns\RequiresPermission;
-use Filament\Actions\Action;
 use App\Events\VideoProcessed;
+use App\Filament\Concerns\RequiresPermission;
 use App\Models\Setting;
 use App\Models\Video;
 use App\Services\AdminLogger;
 use App\Services\VideoService;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TimePicker;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
-use Filament\Notifications\Notification;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class ScheduledVideos extends Page implements HasTable
@@ -29,10 +28,14 @@ class ScheduledVideos extends Page implements HasTable
 
     use InteractsWithTable;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-clock';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-clock';
+
     protected static ?string $navigationLabel = 'Scheduled';
-    protected static string | \UnitEnum | null $navigationGroup = 'Content';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Content';
+
     protected static ?int $navigationSort = 6;
+
     protected string $view = 'filament.pages.scheduled-videos';
 
     // Scheduled count is surfaced as a topbar pill (see SystemStatusBar::getActionItems).
@@ -41,68 +44,68 @@ class ScheduledVideos extends Page implements HasTable
     {
         return [
             Action::make('configureSchedule')
-            ->color('success')
-            ->label('Schedule Settings')
-            ->icon('phosphor-gear')
-            ->schema([
-                Select::make('posts_per_day')
-                ->label('Posts Per Day')
-                ->options([
-                    1 => '1 Post per Day',
-                    2 => '2 Posts per Day (Every 12h)',
-                    3 => '3 Posts per Day (Every 8h)',
-                    4 => '4 Posts per Day (Every 6h)',
-                    6 => '6 Posts per Day (Every 4h)',
+                ->color('success')
+                ->label('Schedule Settings')
+                ->icon('phosphor-gear')
+                ->schema([
+                    Select::make('posts_per_day')
+                        ->label('Posts Per Day')
+                        ->options([
+                            1 => '1 Post per Day',
+                            2 => '2 Posts per Day (Every 12h)',
+                            3 => '3 Posts per Day (Every 8h)',
+                            4 => '4 Posts per Day (Every 6h)',
+                            6 => '6 Posts per Day (Every 4h)',
+                        ])
+                        ->default((int) Setting::get('schedule_posts_per_day', 1))
+                        ->required(),
+                    TimePicker::make('start_hour')
+                        ->label('Daily Start Time')
+                        ->seconds(false)
+                        ->default(Setting::get('schedule_start_hour', '08:00:00'))
+                        ->required(),
                 ])
-                ->default((int)Setting::get('schedule_posts_per_day', 1))
-                ->required(),
-                TimePicker::make('start_hour')
-                ->label('Daily Start Time')
-                ->seconds(false)
-                ->default(Setting::get('schedule_start_hour', '08:00:00'))
-                ->required(),
-            ])
-            ->action(function (array $data) {
-            Setting::set('schedule_posts_per_day', $data['posts_per_day']);
-            Setting::set('schedule_start_hour', $data['start_hour']);
-            AdminLogger::settingsSaved('Queue Configuration', array_keys($data));
-            Notification::make()->title('Schedule Settings Updated')->success()->send();
-            app(VideoService::class)->recalculateScheduleQueue();
-        }),
+                ->action(function (array $data) {
+                    Setting::set('schedule_posts_per_day', $data['posts_per_day']);
+                    Setting::set('schedule_start_hour', $data['start_hour']);
+                    AdminLogger::settingsSaved('Queue Configuration', array_keys($data));
+                    Notification::make()->title('Schedule Settings Updated')->success()->send();
+                    app(VideoService::class)->recalculateScheduleQueue();
+                }),
 
             Action::make('recalculate')
-            ->label('Recalculate Times')
-            ->icon('phosphor-arrows-clockwise')
-            ->color('warning')
-            ->action(function () {
-            app(VideoService::class)->recalculateScheduleQueue();
-            Notification::make()->title('Queue times updated!')->success()->send();
-        }),
+                ->label('Recalculate Times')
+                ->icon('phosphor-arrows-clockwise')
+                ->color('warning')
+                ->action(function () {
+                    app(VideoService::class)->recalculateScheduleQueue();
+                    Notification::make()->title('Queue times updated!')->success()->send();
+                }),
 
             Action::make('shuffle')
-            ->label('Shuffle Queue')
-            ->icon('phosphor-shuffle')
-            ->color('warning')
-            ->requiresConfirmation()
-            ->modalHeading('Shuffle the scheduled queue?')
-            ->modalDescription('Shuffles all pending videos and reassigns their publish times. The current order is lost.')
-            ->modalSubmitActionLabel('Shuffle')
-            ->action(function () {
-            $count = $this->shuffleQueue();
+                ->label('Shuffle Queue')
+                ->icon('phosphor-shuffle')
+                ->color('warning')
+                ->requiresConfirmation()
+                ->modalHeading('Shuffle the scheduled queue?')
+                ->modalDescription('Shuffles all pending videos and reassigns their publish times. The current order is lost.')
+                ->modalSubmitActionLabel('Shuffle')
+                ->action(function () {
+                    $count = $this->shuffleQueue();
 
-            if ($count === 0) {
-                Notification::make()->title('Nothing to shuffle')->warning()->send();
+                    if ($count === 0) {
+                        Notification::make()->title('Nothing to shuffle')->warning()->send();
 
-                return;
-            }
+                        return;
+                    }
 
-            AdminLogger::settingsSaved('Queue Shuffle', ['queue_order', 'scheduled_at']);
-            Notification::make()
-            ->title("Shuffled {$count} scheduled videos")
-            ->body('Publish times were reassigned to match the new order.')
-            ->success()
-            ->send();
-        }),
+                    AdminLogger::settingsSaved('Queue Shuffle', ['queue_order', 'scheduled_at']);
+                    Notification::make()
+                        ->title("Shuffled {$count} scheduled videos")
+                        ->body('Publish times were reassigned to match the new order.')
+                        ->success()
+                        ->send();
+                }),
         ];
     }
 
@@ -118,7 +121,7 @@ class ScheduledVideos extends Page implements HasTable
      * posts-per-day and start hour. It is the same method the "Recalculate
      * Times" action calls.
      *
-     * @return int  number of videos reordered
+     * @return int number of videos reordered
      */
     protected function shuffleQueue(): int
     {
@@ -149,88 +152,88 @@ class ScheduledVideos extends Page implements HasTable
     {
         return $table
             ->query(
-            Video::query()
-            ->with('user', 'category')
-            ->whereNotNull('queue_order')
-            ->whereNull('published_at')
-        )
+                Video::query()
+                    ->with('user', 'category')
+                    ->whereNotNull('queue_order')
+                    ->whereNull('published_at')
+            )
             ->reorderable('queue_order')
             ->defaultSort('queue_order')
             ->columns([
-                ImageColumn::make('thumbnail_display')
-                    ->label('Thumbnail')
-                    ->getStateUsing(fn (Video $record): ?string => $record->thumbnail_url)
-                    ->height(50)
-                    ->width(89)
-                    ->extraImgAttributes(['class' => 'rounded object-cover'])
-                    ->defaultImageUrl(url('/icons/icon-192x192.png')),
-                TextColumn::make('title')
-                    ->searchable()
-                    ->sortable()
-                    ->weight('bold')
-                    ->limit(50)
-                    ->description(fn(Video $record): string => $record->formatted_duration ?: '—'),
-                TextColumn::make('user.username')
-                    ->label('Uploader')
-                    ->size('sm'),
+                    ImageColumn::make('thumbnail_display')
+                        ->label('Thumbnail')
+                        ->getStateUsing(fn (Video $record): ?string => $record->thumbnail_url)
+                        ->height(50)
+                        ->width(89)
+                        ->extraImgAttributes(['class' => 'rounded object-cover'])
+                        ->defaultImageUrl(url('/icons/icon-192x192.png')),
+                    TextColumn::make('title')
+                        ->searchable()
+                        ->sortable()
+                        ->weight('bold')
+                        ->limit(50)
+                        ->description(fn (Video $record): string => $record->formatted_duration ?: '—'),
+                    TextColumn::make('user.username')
+                        ->label('Uploader')
+                        ->size('sm'),
 
-                TextColumn::make('scheduled_at')
-                    ->label('Scheduled For')
-                    ->dateTime('M j, Y g:i A')
-                    ->sortable()
-                    ->description(fn(Video $record) => $record->scheduled_at ? $record->scheduled_at->diffForHumans() : ''),
-                TextColumn::make('status')
-                    ->badge()
-                    ->color(fn(string $state) => $state === 'processed' ? 'success' : 'warning')
-                    ->formatStateUsing(fn(string $state) => $state === 'processed' ? 'Ready' : ucfirst($state)),
-            ])
+                    TextColumn::make('scheduled_at')
+                        ->label('Scheduled For')
+                        ->dateTime('M j, Y g:i A')
+                        ->sortable()
+                        ->description(fn (Video $record) => $record->scheduled_at ? $record->scheduled_at->diffForHumans() : ''),
+                    TextColumn::make('status')
+                        ->badge()
+                        ->color(fn (string $state) => $state === 'processed' ? 'success' : 'warning')
+                        ->formatStateUsing(fn (string $state) => $state === 'processed' ? 'Ready' : ucfirst($state)),
+                ])
             ->recordActions([
-            Action::make('publishNow')
-            ->label('Publish Now')
-            ->icon('phosphor-rocket-launch')
-            ->color('success')
-            ->requiresConfirmation()
-            ->action(function (Video $record) {
-            $record->update([
-                    'is_approved' => true,
-                    'is_draft' => false,
-                    'published_at' => now(),
-                    'scheduled_at' => null,
-                    'queue_order' => null,
-                    'requires_schedule' => false,
-                ]);
-            app(VideoService::class)->recalculateScheduleQueue();
+                    Action::make('publishNow')
+                        ->label('Publish Now')
+                        ->icon('phosphor-rocket-launch')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->action(function (Video $record) {
+                            $record->update([
+                                'is_approved' => true,
+                                'is_draft' => false,
+                                'published_at' => now(),
+                                'scheduled_at' => null,
+                                'queue_order' => null,
+                                'requires_schedule' => false,
+                            ]);
+                            app(VideoService::class)->recalculateScheduleQueue();
 
-            // Fire notification now that video is actually live
-            $alreadyNotified = \App\Models\Notification::where('user_id', $record->user_id)
-                ->where('type', 'video_processed')
-                ->where('data->video_id', $record->id)
-                ->exists();
-            if (!$alreadyNotified) {
-                event(new VideoProcessed($record));
-            }
+                            // Fire notification now that video is actually live
+                            $alreadyNotified = \App\Models\Notification::where('user_id', $record->user_id)
+                                ->where('type', 'video_processed')
+                                ->where('data->video_id', $record->id)
+                                ->exists();
+                            if (! $alreadyNotified) {
+                                event(new VideoProcessed($record));
+                            }
 
-            Notification::make()->title('Video published immediately')->success()->send();
-        }),
-            Action::make('removeFromQueue')
-            ->label('Remove')
-            ->icon('phosphor-x-circle')
-            ->color('danger')
-            ->action(function (Video $record) {
-            // Stays a draft: it has no publish time any more, so leaving it
-            // reachable by URL would publish it by accident.
-            $record->update([
-                    'scheduled_at' => null,
-                    'queue_order' => null,
-                    'requires_schedule' => false,
+                            Notification::make()->title('Video published immediately')->success()->send();
+                        }),
+                    Action::make('removeFromQueue')
+                        ->label('Remove')
+                        ->icon('phosphor-x-circle')
+                        ->color('danger')
+                        ->action(function (Video $record) {
+                            // Stays a draft: it has no publish time any more, so leaving it
+                            // reachable by URL would publish it by accident.
+                            $record->update([
+                                'scheduled_at' => null,
+                                'queue_order' => null,
+                                'requires_schedule' => false,
+                            ]);
+                            app(VideoService::class)->recalculateScheduleQueue();
+                            Notification::make()
+                                ->title('Video removed from queue')
+                                ->body('It stays a draft until you publish it.')
+                                ->success()
+                                ->send();
+                        }),
                 ]);
-            app(VideoService::class)->recalculateScheduleQueue();
-            Notification::make()
-                ->title('Video removed from queue')
-                ->body('It stays a draft until you publish it.')
-                ->success()
-                ->send();
-        }),
-        ]);
     }
 }

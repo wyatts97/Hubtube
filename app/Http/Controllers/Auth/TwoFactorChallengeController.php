@@ -16,13 +16,11 @@ use Inertia\Response;
 
 class TwoFactorChallengeController extends Controller
 {
-    public function __construct(protected TwoFactorAuthenticationService $twoFactor)
-    {
-    }
+    public function __construct(protected TwoFactorAuthenticationService $twoFactor) {}
 
     public function create(Request $request): Response|RedirectResponse
     {
-        if (!$request->session()->has('two_factor.user_id')) {
+        if (! $request->session()->has('two_factor.user_id')) {
             return redirect()->route('login');
         }
 
@@ -33,11 +31,11 @@ class TwoFactorChallengeController extends Controller
     {
         $userId = $request->session()->get('two_factor.user_id');
 
-        if (!$userId) {
+        if (! $userId) {
             return redirect()->route('login');
         }
 
-        $throttleKey = 'two-factor-challenge:' . $userId . '|' . $request->ip();
+        $throttleKey = 'two-factor-challenge:'.$userId.'|'.$request->ip();
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
@@ -51,7 +49,7 @@ class TwoFactorChallengeController extends Controller
 
         $user = User::find($userId);
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login');
         }
 
@@ -59,7 +57,7 @@ class TwoFactorChallengeController extends Controller
         $verified = $this->twoFactor->verify($user->two_factor_secret, $code)
             || $user->consumeRecoveryCode($code);
 
-        if (!$verified) {
+        if (! $verified) {
             RateLimiter::hit($throttleKey);
 
             throw ValidationException::withMessages([

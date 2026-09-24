@@ -2,12 +2,11 @@
 
 namespace App\Livewire;
 
-use RuntimeException;
-use Throwable;
 use App\Jobs\ProcessVideoJob;
 use App\Models\Setting;
 use App\Models\Video;
 use App\Services\FfmpegService;
+use App\Services\ImageService;
 use App\Services\StorageManager;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
@@ -15,23 +14,37 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use RuntimeException;
+use Throwable;
 
 class VideoPreviewManager extends Component
 {
     use WithFileUploads;
 
     public int $videoId;
+
     public ?string $videoUrl = null;
+
     public ?string $hlsUrl = null;
+
     public ?string $currentThumbnail = null;
+
     public ?string $currentThumbnailUrl = null;
+
     public array $thumbnails = [];
+
     public $customThumbnail = null;
+
     public $replacementVideo = null;
+
     public bool $isCapturing = false;
+
     public bool $isReplacing = false;
+
     public bool $isPortrait = false;
+
     public array $stats = [];
+
     public array $shareUrls = [];
 
     public function mount(int $videoId): void
@@ -43,7 +56,9 @@ class VideoPreviewManager extends Component
     public function loadVideoData(): void
     {
         $video = Video::find($this->videoId);
-        if (!$video) return;
+        if (! $video) {
+            return;
+        }
 
         // Use the admin streaming route for Range request support (enables seekbar scrubbing)
         // storage_disk is null or 'public' for locally stored videos
@@ -51,7 +66,7 @@ class VideoPreviewManager extends Component
         $streamUrl = null;
         if ($video->video_path && $disk === 'public') {
             $normalizedPath = ltrim(str_replace('\\', '/', $video->video_path), '/');
-            $streamUrl = route('admin.video-stream') . '?path=' . rawurlencode($normalizedPath);
+            $streamUrl = route('admin.video-stream').'?path='.rawurlencode($normalizedPath);
             $this->videoUrl = $streamUrl;
         } else {
             $this->videoUrl = $video->video_url;
@@ -63,16 +78,16 @@ class VideoPreviewManager extends Component
         $this->isPortrait = (bool) ($video->is_portrait ?? false);
 
         $this->stats = [
-            'views'    => (int) $video->views_count,
-            'likes'    => (int) $video->likes_count,
+            'views' => (int) $video->views_count,
+            'likes' => (int) $video->likes_count,
             'duration' => $video->formatted_duration ?: '—',
-            'size'     => $video->size ? number_format($video->size / 1048576, 1) . ' MB' : '—',
-            'disk'     => $disk,
-            'status'   => $video->status,
+            'size' => $video->size ? number_format($video->size / 1048576, 1).' MB' : '—',
+            'disk' => $disk,
+            'status' => $video->status,
         ];
 
         $this->shareUrls = [
-            'public' => $video->slug ? url('/' . $video->slug) : null,
+            'public' => $video->slug ? url('/'.$video->slug) : null,
             'stream' => $streamUrl ?: $video->video_url,
             'source' => $video->video_path,
         ];
@@ -81,7 +96,9 @@ class VideoPreviewManager extends Component
     public function selectThumbnail(string $path): void
     {
         $video = Video::find($this->videoId);
-        if (!$video) return;
+        if (! $video) {
+            return;
+        }
 
         $video->update(['thumbnail' => $path]);
         $this->currentThumbnail = $path;
@@ -100,12 +117,14 @@ class VideoPreviewManager extends Component
         ]);
 
         $video = Video::find($this->videoId);
-        if (!$video) return;
+        if (! $video) {
+            return;
+        }
 
         $disk = $video->storage_disk ?? 'public';
         $directory = "videos/{$video->slug}";
         $slugTitle = Str::slug($video->title, '_') ?: 'video';
-        $extension = \App\Services\ImageService::extensionFor($this->customThumbnail);
+        $extension = ImageService::extensionFor($this->customThumbnail);
         $filename = "{$slugTitle}_custom_thumb.{$extension}";
 
         if (StorageManager::isCloudDisk($disk)) {
@@ -128,11 +147,12 @@ class VideoPreviewManager extends Component
     public function captureFrame(float $timestamp): void
     {
         $video = Video::find($this->videoId);
-        if (!$video || !$video->video_path) {
+        if (! $video || ! $video->video_path) {
             Notification::make()
                 ->title('Video file not found')
                 ->danger()
                 ->send();
+
             return;
         }
 
@@ -144,27 +164,28 @@ class VideoPreviewManager extends Component
             // Check if file is cloud-only (offloaded with local deletion)
             if ($disk !== 'public' && Setting::get('cloud_offloading_delete_local', false)) {
                 $localDiskPath = Storage::disk('public')->path($video->video_path);
-                if (!file_exists($localDiskPath)) {
+                if (! file_exists($localDiskPath)) {
                     Notification::make()
                         ->title('Frame capture unavailable')
                         ->body('The original video file has been offloaded to cloud storage and deleted locally. FFmpeg cannot capture frames from remote files. Use the custom thumbnail upload instead.')
                         ->warning()
                         ->persistent()
                         ->send();
+
                     return;
                 }
             }
 
             $localPath = StorageManager::localPath($video->video_path, $disk);
 
-            if (!$localPath || !file_exists($localPath)) {
+            if (! $localPath || ! file_exists($localPath)) {
                 throw new RuntimeException('Could not access video file locally. The file may have been moved or deleted.');
             }
 
             $ffmpeg = FfmpegService::ffmpegPath();
             $videoDir = "videos/{$video->slug}";
             $slugTitle = Str::slug($video->title, '_') ?: 'video';
-            $outputFilename = "{$slugTitle}_frame_" . intval($timestamp) . '.jpg';
+            $outputFilename = "{$slugTitle}_frame_".intval($timestamp).'.jpg';
 
             if ($disk === 'public') {
                 $outputPath = Storage::disk('public')->path("{$videoDir}/{$outputFilename}");
@@ -173,7 +194,7 @@ class VideoPreviewManager extends Component
             }
 
             $outputDir = dirname($outputPath);
-            if (!is_dir($outputDir)) {
+            if (! is_dir($outputDir)) {
                 mkdir($outputDir, 0755, true);
             }
 
@@ -187,8 +208,8 @@ class VideoPreviewManager extends Component
 
             exec($cmd, $output, $exitCode);
 
-            if ($exitCode !== 0 || !file_exists($outputPath)) {
-                throw new RuntimeException('FFmpeg frame capture failed (exit code ' . $exitCode . ')');
+            if ($exitCode !== 0 || ! file_exists($outputPath)) {
+                throw new RuntimeException('FFmpeg frame capture failed (exit code '.$exitCode.')');
             }
 
             $storagePath = "{$videoDir}/{$outputFilename}";
@@ -230,22 +251,24 @@ class VideoPreviewManager extends Component
         ]);
 
         $video = Video::find($this->videoId);
-        if (!$video) return;
+        if (! $video) {
+            return;
+        }
 
         $this->isReplacing = true;
 
         try {
             $directory = 'videos/admin-uploads';
             $extension = $this->replacementVideo->guessExtension() ?: 'mp4';
-            $filename = Str::random(24) . '.' . $extension;
+            $filename = Str::random(24).'.'.$extension;
             $path = $this->replacementVideo->storeAs($directory, $filename, 'public');
 
             $video->update([
-                'video_path'         => $path,
-                'storage_disk'       => 'public',
-                'status'             => 'pending',
-                'hls_playlist_url'   => null,
-                'failure_reason'     => null,
+                'video_path' => $path,
+                'storage_disk' => 'public',
+                'status' => 'pending',
+                'hls_playlist_url' => null,
+                'failure_reason' => null,
             ]);
 
             ProcessVideoJob::dispatch($video)->onQueue('video-processing');
@@ -261,7 +284,7 @@ class VideoPreviewManager extends Component
         } catch (Throwable $e) {
             Log::error('Replace source video failed', [
                 'video_id' => $this->videoId,
-                'error'    => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             Notification::make()

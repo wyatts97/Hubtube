@@ -2,11 +2,10 @@
 
 namespace App\Filament\Resources\UserResource\Pages;
 
-use Filament\Actions\DeleteAction;
-use Illuminate\Support\Facades\Auth;
 use App\Filament\Resources\UserResource;
-use Filament\Actions;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Support\Facades\Auth;
 
 class EditUser extends EditRecord
 {

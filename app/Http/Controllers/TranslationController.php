@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Page;
-use App\Models\Translation;
 use App\Models\Video;
 use App\Services\TranslationService;
 use Illuminate\Http\JsonResponse;
@@ -35,7 +34,7 @@ class TranslationController extends Controller
         ]);
 
         $locale = $validated['locale'];
-        if (!TranslationService::isValidLocale($locale)) {
+        if (! TranslationService::isValidLocale($locale)) {
             return response()->json(['error' => 'Invalid locale'], 422);
         }
 
@@ -46,12 +45,12 @@ class TranslationController extends Controller
         ];
 
         $modelClass = $modelMap[$validated['type']] ?? null;
-        if (!$modelClass) {
+        if (! $modelClass) {
             return response()->json(['error' => 'Invalid type'], 422);
         }
 
         $model = $modelClass::find($validated['id']);
-        if (!$model) {
+        if (! $model) {
             return response()->json(['error' => 'Not found'], 404);
         }
 
@@ -68,7 +67,7 @@ class TranslationController extends Controller
         return response()->json([
             'translations' => $cached['fields'],
             'locale' => $locale,
-            'pending' => !$cached['complete'],
+            'pending' => ! $cached['complete'],
         ]);
     }
 
@@ -88,7 +87,7 @@ class TranslationController extends Controller
         ]);
 
         $locale = $validated['locale'];
-        if (!TranslationService::isValidLocale($locale)) {
+        if (! TranslationService::isValidLocale($locale)) {
             return response()->json(['error' => 'Invalid locale'], 422);
         }
 
@@ -100,6 +99,7 @@ class TranslationController extends Controller
             foreach ($validated['fields'] as $field) {
                 $item[$field] = $model->{$field} ?? '';
             }
+
             return $item;
         })->toArray();
 
@@ -142,7 +142,7 @@ class TranslationController extends Controller
         ]);
 
         $locale = $validated['locale'];
-        if (!TranslationService::isValidLocale($locale)) {
+        if (! TranslationService::isValidLocale($locale)) {
             return response()->json(['error' => 'Invalid locale'], 422);
         }
 
@@ -176,13 +176,13 @@ class TranslationController extends Controller
             }
         }
 
-        if (!$isKnownPrefix && count($pathSegments) === 1 && $pathSegments[0] !== '' && !in_array($currentPath, $knownRoutes)) {
+        if (! $isKnownPrefix && count($pathSegments) === 1 && $pathSegments[0] !== '' && ! in_array($currentPath, $knownRoutes)) {
             // Single-segment path that isn't a known route — likely a video slug
             $slug = $pathSegments[0];
             $video = Video::where('slug', $slug)->first();
 
             // If not found by original slug, try finding by translated slug (user might already be on a translated URL)
-            if (!$video) {
+            if (! $video) {
                 $videoId = $this->translationService->findByTranslatedSlug(Video::class, $slug, app()->getLocale());
                 if ($videoId) {
                     $video = Video::find($videoId);
@@ -196,7 +196,7 @@ class TranslationController extends Controller
                 } else {
                     // Get translated slug for target locale
                     $translatedSlug = $this->translationService->getTranslatedSlug(Video::class, $video->id, $locale);
-                    $translatedPath = '/' . ($translatedSlug ?: $video->slug);
+                    $translatedPath = '/'.($translatedSlug ?: $video->slug);
                 }
             }
         }
@@ -207,7 +207,7 @@ class TranslationController extends Controller
             $redirect = url($translatedPath);
         } else {
             session(['locale' => $locale]);
-            $redirect = url("/{$locale}" . ($translatedPath === '/' ? '' : $translatedPath));
+            $redirect = url("/{$locale}".($translatedPath === '/' ? '' : $translatedPath));
         }
 
         return response()->json([

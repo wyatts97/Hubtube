@@ -2,12 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Actions;
-use Filament\Actions\Action;
 use App\Models\Category;
 use App\Models\Setting;
 use App\Models\Translation;
@@ -15,6 +9,7 @@ use App\Models\Video;
 use App\Services\AdminLogger;
 use App\Services\TranslationService;
 use App\Services\VideoDescriptionTemplate;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
@@ -22,16 +17,25 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
 
 class SeoDiagnostics extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-clipboard-text';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-clipboard-text';
+
     protected static ?string $navigationLabel = 'SEO Diagnostics';
-    protected static string | \UnitEnum | null $navigationGroup = 'Appearance';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Appearance';
+
     protected static ?int $navigationSort = 5;
+
     protected string $view = 'filament.pages.site-settings';
 
     public ?array $data = [];
@@ -89,15 +93,15 @@ class SeoDiagnostics extends Page implements HasForms
                                 Placeholder::make('description_help')
                                     ->label('')
                                     ->content(new HtmlString(
-                                        '<div class="ht-info-banner">' .
-                                        '<strong>📝 Mass-fill missing video descriptions</strong><br>' .
-                                        'Apply a description template to every video that currently has no description. ' .
-                                        'This is purely a content fill — search engines and viewers prefer pages with body text, ' .
-                                        'and missing descriptions are the single biggest SEO miss on most video sites.<br><br>' .
-                                        '<strong>Available variables:</strong> ' .
-                                        '<code>{title}</code>, <code>{category}</code>, <code>{site_name}</code>, ' .
-                                        '<code>{uploader}</code>, <code>{tags}</code>, <code>{duration}</code>, ' .
-                                        '<code>{views}</code>, <code>{year}</code>' .
+                                        '<div class="ht-info-banner">'.
+                                        '<strong>📝 Mass-fill missing video descriptions</strong><br>'.
+                                        'Apply a description template to every video that currently has no description. '.
+                                        'This is purely a content fill — search engines and viewers prefer pages with body text, '.
+                                        'and missing descriptions are the single biggest SEO miss on most video sites.<br><br>'.
+                                        '<strong>Available variables:</strong> '.
+                                        '<code>{title}</code>, <code>{category}</code>, <code>{site_name}</code>, '.
+                                        '<code>{uploader}</code>, <code>{tags}</code>, <code>{duration}</code>, '.
+                                        '<code>{views}</code>, <code>{year}</code>'.
                                         '</div>'
                                     )),
 
@@ -119,17 +123,18 @@ class SeoDiagnostics extends Page implements HasForms
                                                     ->with(['user:id,username', 'category:id,name'])
                                                     ->public()->approved()->processed()
                                                     ->latest('published_at')->first();
-                                                if (!$sample) {
+                                                if (! $sample) {
                                                     return new HtmlString('<em class="text-gray-500">No published videos found to preview against.</em>');
                                                 }
                                                 $rendered = VideoDescriptionTemplate::render($tpl, $sample);
                                                 $missing = VideoDescriptionTemplate::missingCount();
+
                                                 return new HtmlString(
-                                                    '<div class="p-3 rounded-md border border-gray-300/50 dark:border-gray-700 text-sm">' .
-                                                    e($rendered) .
-                                                    '</div>' .
-                                                    '<p class="text-xs text-gray-500 mt-2">' .
-                                                    "<strong>{$missing}</strong> public, approved, processed video(s) currently have no description and would receive this." .
+                                                    '<div class="p-3 rounded-md border border-gray-300/50 dark:border-gray-700 text-sm">'.
+                                                    e($rendered).
+                                                    '</div>'.
+                                                    '<p class="text-xs text-gray-500 mt-2">'.
+                                                    "<strong>{$missing}</strong> public, approved, processed video(s) currently have no description and would receive this.".
                                                     '</p>'
                                                 );
                                             }),
@@ -223,20 +228,20 @@ class SeoDiagnostics extends Page implements HasForms
         $tpl = (string) ($data['seo_video_default_description_template'] ?? VideoDescriptionTemplate::DEFAULT_TEMPLATE);
 
         // Persist the template alongside the apply so settings stay in sync
-        if (!$dryRun) {
+        if (! $dryRun) {
             Setting::set(VideoDescriptionTemplate::SETTING_KEY, $tpl, 'seo', 'string');
         }
 
         $opts = [
-            'only_public'    => (bool) ($data['fill_only_public']    ?? true),
-            'only_approved'  => (bool) ($data['fill_only_approved']  ?? true),
+            'only_public' => (bool) ($data['fill_only_public'] ?? true),
+            'only_approved' => (bool) ($data['fill_only_approved'] ?? true),
             'only_processed' => (bool) ($data['fill_only_processed'] ?? true),
-            'dry_run'        => $dryRun,
+            'dry_run' => $dryRun,
         ];
 
         $count = VideoDescriptionTemplate::applyToMissing($tpl, $opts);
 
-        if (!$dryRun) {
+        if (! $dryRun) {
             AdminLogger::log(
                 'SEO Diagnostics — bulk-filled descriptions',
                 'admin',
@@ -258,8 +263,8 @@ class SeoDiagnostics extends Page implements HasForms
 
     protected function renderContentStatsHtml(): string
     {
-        $total      = Video::count();
-        $indexable  = Video::query()->public()->approved()->processed()->count();
+        $total = Video::count();
+        $indexable = Video::query()->public()->approved()->processed()->count();
         $missingDesc = Video::query()->public()->approved()->processed()
             ->where(fn ($q) => $q->whereNull('description')->orWhere('description', ''))
             ->count();
@@ -287,28 +292,29 @@ class SeoDiagnostics extends Page implements HasForms
 
         $card = function (string $label, int|string $value, ?string $hint = null, string $tone = 'default') {
             $border = match ($tone) {
-                'warn'    => 'border-amber-500/40',
-                'danger'  => 'border-rose-500/40',
+                'warn' => 'border-amber-500/40',
+                'danger' => 'border-rose-500/40',
                 'success' => 'border-emerald-500/40',
-                default   => 'border-gray-500/30',
+                default => 'border-gray-500/30',
             };
-            $hintHtml = $hint ? '<div class="text-xs text-gray-500 mt-1">' . e($hint) . '</div>' : '';
-            return '<div class="p-3 rounded-md border ' . $border . '">' .
-                '<div class="text-xs uppercase tracking-wide text-gray-500">' . e($label) . '</div>' .
-                '<div class="text-2xl font-semibold mt-1">' . e((string) $value) . '</div>' .
-                $hintHtml .
+            $hintHtml = $hint ? '<div class="text-xs text-gray-500 mt-1">'.e($hint).'</div>' : '';
+
+            return '<div class="p-3 rounded-md border '.$border.'">'.
+                '<div class="text-xs uppercase tracking-wide text-gray-500">'.e($label).'</div>'.
+                '<div class="text-2xl font-semibold mt-1">'.e((string) $value).'</div>'.
+                $hintHtml.
                 '</div>';
         };
 
-        return '<div class="grid grid-cols-2 md:grid-cols-4 gap-3">' .
-            $card('Total videos', $total) .
-            $card('Indexable (public+approved+processed)', $indexable, 'Visible to crawlers') .
-            $card('Missing description', $missingDesc, $missingDesc > 0 ? 'Run "Apply to videos missing a description"' : null, $missingDesc > 0 ? 'warn' : 'success') .
-            $card('Missing thumbnail', $missingThumb, $missingThumb > 0 ? 'No og:image, no rich results' : null, $missingThumb > 0 ? 'danger' : 'success') .
-            $card('Missing category', $missingCategory, null, $missingCategory > 0 ? 'warn' : 'default') .
-            $card('Missing tags', $missingTags) .
-            $card('Categories', $totalCategories) .
-            $card('Empty categories', $emptyCategories, $emptyCategories > 0 ? 'Hidden from category sitemap' : null) .
+        return '<div class="grid grid-cols-2 md:grid-cols-4 gap-3">'.
+            $card('Total videos', $total).
+            $card('Indexable (public+approved+processed)', $indexable, 'Visible to crawlers').
+            $card('Missing description', $missingDesc, $missingDesc > 0 ? 'Run "Apply to videos missing a description"' : null, $missingDesc > 0 ? 'warn' : 'success').
+            $card('Missing thumbnail', $missingThumb, $missingThumb > 0 ? 'No og:image, no rich results' : null, $missingThumb > 0 ? 'danger' : 'success').
+            $card('Missing category', $missingCategory, null, $missingCategory > 0 ? 'warn' : 'default').
+            $card('Missing tags', $missingTags).
+            $card('Categories', $totalCategories).
+            $card('Empty categories', $emptyCategories, $emptyCategories > 0 ? 'Hidden from category sitemap' : null).
             '</div>';
     }
 
@@ -326,9 +332,10 @@ class SeoDiagnostics extends Page implements HasForms
         $rows = '';
         foreach ($locales as $locale) {
             if ($locale === $default) {
-                $rows .= '<tr><td class="py-1 pr-4 font-mono">' . e($locale) . ' <span class="text-xs text-gray-500">(default)</span></td>' .
-                    '<td class="py-1 pr-4">' . number_format($indexable) . '</td>' .
+                $rows .= '<tr><td class="py-1 pr-4 font-mono">'.e($locale).' <span class="text-xs text-gray-500">(default)</span></td>'.
+                    '<td class="py-1 pr-4">'.number_format($indexable).'</td>'.
                     '<td class="py-1 pr-4 text-gray-500">—</td></tr>';
+
                 continue;
             }
             $titleCount = Translation::where('translatable_type', Video::class)
@@ -342,20 +349,20 @@ class SeoDiagnostics extends Page implements HasForms
                 ->where('translated_slug', '!=', '')
                 ->count();
             $coverage = $indexable > 0 ? round(($titleCount / $indexable) * 100, 1) : 0;
-            $rows .= '<tr>' .
-                '<td class="py-1 pr-4 font-mono">' . e($locale) . '</td>' .
-                '<td class="py-1 pr-4">' . number_format($titleCount) . ' <span class="text-xs text-gray-500">(' . $coverage . '%)</span></td>' .
-                '<td class="py-1 pr-4">' . number_format($slugCount) . '</td>' .
+            $rows .= '<tr>'.
+                '<td class="py-1 pr-4 font-mono">'.e($locale).'</td>'.
+                '<td class="py-1 pr-4">'.number_format($titleCount).' <span class="text-xs text-gray-500">('.$coverage.'%)</span></td>'.
+                '<td class="py-1 pr-4">'.number_format($slugCount).'</td>'.
                 '</tr>';
         }
 
-        return '<table class="text-sm w-full"><thead><tr class="text-xs uppercase text-gray-500 text-left">' .
-            '<th class="py-1 pr-4">Locale</th>' .
-            '<th class="py-1 pr-4">Translated titles</th>' .
-            '<th class="py-1 pr-4">With translated slug</th>' .
-            '</tr></thead><tbody>' .
-            $rows .
-            '</tbody></table>' .
+        return '<table class="text-sm w-full"><thead><tr class="text-xs uppercase text-gray-500 text-left">'.
+            '<th class="py-1 pr-4">Locale</th>'.
+            '<th class="py-1 pr-4">Translated titles</th>'.
+            '<th class="py-1 pr-4">With translated slug</th>'.
+            '</tr></thead><tbody>'.
+            $rows.
+            '</tbody></table>'.
             '<p class="text-xs text-gray-500 mt-2">Run <code>php artisan translations:backfill-slugs</code> to regenerate any missing translated slugs.</p>';
     }
 
@@ -380,7 +387,7 @@ class SeoDiagnostics extends Page implements HasForms
         if ($videoChunks > 1) {
             for ($i = 2; $i <= $videoChunks; $i++) {
                 $count = min($videoCount - ($chunk * ($i - 1)), $chunk);
-                $rows[] = ['Videos (chunk ' . $i . ')', "/sitemap-videos-{$i}.xml", number_format($count)];
+                $rows[] = ['Videos (chunk '.$i.')', "/sitemap-videos-{$i}.xml", number_format($count)];
             }
         }
         if (Setting::get('seo_sitemap_images_enabled', true)) {
@@ -393,21 +400,21 @@ class SeoDiagnostics extends Page implements HasForms
             $rows[] = ['Playlists', '/sitemap-playlists.xml', '—'];
         }
 
-        $html = '<table class="text-sm w-full"><thead><tr class="text-xs uppercase text-gray-500 text-left">' .
-            '<th class="py-1 pr-4">Sitemap</th>' .
-            '<th class="py-1 pr-4">URL</th>' .
-            '<th class="py-1 pr-4">Approx. count</th>' .
+        $html = '<table class="text-sm w-full"><thead><tr class="text-xs uppercase text-gray-500 text-left">'.
+            '<th class="py-1 pr-4">Sitemap</th>'.
+            '<th class="py-1 pr-4">URL</th>'.
+            '<th class="py-1 pr-4">Approx. count</th>'.
             '</tr></thead><tbody>';
         foreach ($rows as [$label, $path, $count]) {
             $absUrl = url($path);
-            $html .= '<tr>' .
-                '<td class="py-1 pr-4">' . e($label) . '</td>' .
-                '<td class="py-1 pr-4"><a href="' . e($absUrl) . '" target="_blank" class="text-primary-500 underline font-mono text-xs">' . e($path) . '</a></td>' .
-                '<td class="py-1 pr-4">' . e($count) . '</td>' .
+            $html .= '<tr>'.
+                '<td class="py-1 pr-4">'.e($label).'</td>'.
+                '<td class="py-1 pr-4"><a href="'.e($absUrl).'" target="_blank" class="text-primary-500 underline font-mono text-xs">'.e($path).'</a></td>'.
+                '<td class="py-1 pr-4">'.e($count).'</td>'.
                 '</tr>';
         }
         $html .= '</tbody></table>';
-        $html .= '<p class="text-xs text-gray-500 mt-2">Total indexable videos: <strong>' . number_format($videoCount) . '</strong> across ' . $videoChunks . ' chunk(s) of ' . number_format($chunk) . '.</p>';
+        $html .= '<p class="text-xs text-gray-500 mt-2">Total indexable videos: <strong>'.number_format($videoCount).'</strong> across '.$videoChunks.' chunk(s) of '.number_format($chunk).'.</p>';
 
         return $html;
     }

@@ -56,12 +56,12 @@ class SubscriptionController extends Controller
             'channel_id' => $user->id,
         ])->first();
 
-        if (!$subscription) {
+        if (! $subscription) {
             return response()->json(['error' => 'Not subscribed'], 404);
         }
 
         $subscription->update([
-            'notifications_enabled' => !$subscription->notifications_enabled,
+            'notifications_enabled' => ! $subscription->notifications_enabled,
         ]);
 
         return response()->json([

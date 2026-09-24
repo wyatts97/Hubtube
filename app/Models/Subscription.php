@@ -43,7 +43,7 @@ class Subscription extends Model
     {
         return $query->where(function ($q) {
             $q->where('is_paid', false)
-              ->orWhere('expires_at', '>', now());
+                ->orWhere('expires_at', '>', now());
         });
     }
 
@@ -54,7 +54,7 @@ class Subscription extends Model
 
     public function isActive(): bool
     {
-        if (!$this->is_paid) {
+        if (! $this->is_paid) {
             return true;
         }
 

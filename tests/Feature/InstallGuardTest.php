@@ -2,6 +2,8 @@
 
 use App\Http\Middleware\CheckInstalled;
 use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\File;
 
 /*
@@ -69,15 +71,15 @@ test('the installer stays blocked when the marker is lost but the site is instal
  */
 function installGuard(string $mode, string $uri = '/install'): string
 {
-    $middleware = new CheckInstalled();
+    $middleware = new CheckInstalled;
 
     $response = $middleware->handle(
-        Illuminate\Http\Request::create($uri, 'GET'),
-        fn () => new Illuminate\Http\Response('passed-through'),
+        Request::create($uri, 'GET'),
+        fn () => new Response('passed-through'),
         $mode
     );
 
-    return $response->isRedirect() ? 'redirect:' . $response->headers->get('Location') : 'passed-through';
+    return $response->isRedirect() ? 'redirect:'.$response->headers->get('Location') : 'passed-through';
 }
 
 test('the installer is reachable when there is genuinely no admin', function () {

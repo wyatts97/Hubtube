@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Storage;
 class PruneBulkUploadTemp extends Command
 {
     protected $signature = 'videos:prune-bulk-temp {--hours=24}';
+
     protected $description = 'Prune orphaned bulk upload temp files older than N hours (default: 24)';
 
     public function handle(): int
@@ -25,14 +26,16 @@ class PruneBulkUploadTemp extends Command
         $hours = (int) $this->option('hours');
         if ($hours < 1) {
             $this->error('Hours must be at least 1.');
+
             return self::FAILURE;
         }
 
         $cutoff = now()->subHours($hours);
         $directory = 'videos/admin-uploads';
 
-        if (!Storage::disk('public')->exists($directory)) {
+        if (! Storage::disk('public')->exists($directory)) {
             $this->info("Directory '{$directory}' does not exist — nothing to prune.");
+
             return self::SUCCESS;
         }
 
@@ -40,6 +43,7 @@ class PruneBulkUploadTemp extends Command
 
         if (empty($files)) {
             $this->info("No files in '{$directory}' — nothing to prune.");
+
             return self::SUCCESS;
         }
 
@@ -62,6 +66,7 @@ class PruneBulkUploadTemp extends Command
             // Skip if the file is referenced by any Video row (defensive guard)
             if (isset($allVideoPaths[$relative])) {
                 $skipped++;
+
                 continue;
             }
 

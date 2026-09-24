@@ -13,9 +13,7 @@ class CommentReplyNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(protected Comment $reply, protected Comment $parentComment)
-    {
-    }
+    public function __construct(protected Comment $reply, protected Comment $parentComment) {}
 
     public function via(object $notifiable): array
     {

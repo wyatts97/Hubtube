@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Exception;
-use Throwable;
-use Illuminate\Support\Facades\Log;
 use App\Models\Page;
 use App\Services\SeoService;
 use App\Services\TranslationService;
+use Exception;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class PageController extends Controller
 {
@@ -20,7 +20,7 @@ class PageController extends Controller
 
     public function show(Page $page): Response
     {
-        if (!$page->is_published) {
+        if (! $page->is_published) {
             abort(404);
         }
 
@@ -52,7 +52,7 @@ class PageController extends Controller
                 $content = $cached['fields']['content'] ?: $content;
             } catch (Throwable $e) {
                 // Lookup failed — fall back to original content
-                Log::warning('Page translation lookup failed: ' . $e->getMessage(), [
+                Log::warning('Page translation lookup failed: '.$e->getMessage(), [
                     'page_id' => $page->id,
                     'locale' => $locale,
                 ]);
@@ -69,5 +69,4 @@ class PageController extends Controller
             'seo' => $this->seoService->forPage($page, $title, $content),
         ]);
     }
-
 }

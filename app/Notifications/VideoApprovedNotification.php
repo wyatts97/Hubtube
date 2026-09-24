@@ -13,9 +13,7 @@ class VideoApprovedNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(protected Video $video)
-    {
-    }
+    public function __construct(protected Video $video) {}
 
     public function via(object $notifiable): array
     {

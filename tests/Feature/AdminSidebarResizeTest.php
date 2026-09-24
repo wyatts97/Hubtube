@@ -70,7 +70,7 @@ it('keeps every navigation group iconed so the collapsed flyout still renders', 
 
     foreach ($groups as $group) {
         expect($group->getIcon())->not->toBeNull(
-            'Navigation group [' . $group->getLabel() . '] has no icon.'
+            'Navigation group ['.$group->getLabel().'] has no icon.'
         );
     }
 });

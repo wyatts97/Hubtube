@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Playlist;
 use App\Models\User;
 use App\Models\Video;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
@@ -159,7 +160,7 @@ class ActivityFeedService
         }
 
         try {
-            return \Illuminate\Support\Carbon::parse($cursor)->toDateTimeString();
+            return Carbon::parse($cursor)->toDateTimeString();
         } catch (\Throwable) {
             // A malformed cursor is a bad request, not a reason to 500 — just
             // serve the first page.

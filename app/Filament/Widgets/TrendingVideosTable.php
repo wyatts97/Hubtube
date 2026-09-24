@@ -34,10 +34,10 @@ class TrendingVideosTable extends Widget
     {
         return [
             'today' => 'Today',
-            'week'  => 'This Week',
+            'week' => 'This Week',
             'month' => 'This Month',
-            'year'  => 'This Year',
-            'all'   => 'All Time',
+            'year' => 'This Year',
+            'all' => 'All Time',
         ][$this->trendingPeriod] ?? 'This Week';
     }
 
@@ -45,10 +45,10 @@ class TrendingVideosTable extends Widget
     {
         return [
             'today' => 'Trending Today',
-            'week'  => 'Trending This Week',
+            'week' => 'Trending This Week',
             'month' => 'Trending This Month',
-            'year'  => 'Trending This Year',
-            'all'   => 'Trending All Time',
+            'year' => 'Trending This Year',
+            'all' => 'Trending All Time',
         ][$this->trendingPeriod] ?? 'Trending Videos';
     }
 
@@ -64,9 +64,9 @@ class TrendingVideosTable extends Widget
 
         match ($this->trendingPeriod) {
             'today' => $query->where('published_at', '>=', now()->startOfDay()),
-            'week'  => $query->where('published_at', '>=', now()->subWeek()),
+            'week' => $query->where('published_at', '>=', now()->subWeek()),
             'month' => $query->where('published_at', '>=', now()->subMonth()),
-            'year'  => $query->where('published_at', '>=', now()->subYear()),
+            'year' => $query->where('published_at', '>=', now()->subYear()),
             default => null,
         };
 
@@ -76,8 +76,8 @@ class TrendingVideosTable extends Widget
     public function render(): View
     {
         return view($this->view, [
-            'videos'      => $this->getVideos(),
-            'heading'     => $this->getHeading(),
+            'videos' => $this->getVideos(),
+            'heading' => $this->getHeading(),
             'periodLabel' => $this->getPeriodLabel(),
         ]);
     }

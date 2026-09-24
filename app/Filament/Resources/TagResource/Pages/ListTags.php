@@ -2,10 +2,9 @@
 
 namespace App\Filament\Resources\TagResource\Pages;
 
-use Filament\Actions\Action;
 use App\Filament\Resources\TagResource;
 use App\Services\TagSyncService;
-use Filament\Actions;
+use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 

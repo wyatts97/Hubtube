@@ -31,6 +31,7 @@ class VideoDescriptionTemplate
     public static function template(): string
     {
         $tpl = Setting::get(self::SETTING_KEY, self::DEFAULT_TEMPLATE);
+
         return is_string($tpl) && trim($tpl) !== '' ? $tpl : self::DEFAULT_TEMPLATE;
     }
 
@@ -68,6 +69,7 @@ class VideoDescriptionTemplate
             '/\{([a-z_][a-z0-9_]*)\}/i',
             function ($m) use ($vars) {
                 $key = strtolower($m[1]);
+
                 return $vars[$key] ?? $m[0];
             },
             $template,
@@ -75,6 +77,7 @@ class VideoDescriptionTemplate
 
         // Collapse whitespace and trim
         $rendered = preg_replace('/[ \t]+/', ' ', $rendered) ?? $rendered;
+
         return trim($rendered);
     }
 
@@ -92,7 +95,7 @@ class VideoDescriptionTemplate
             ->latest('published_at')
             ->first();
 
-        if (!$sample) {
+        if (! $sample) {
             return null;
         }
 
@@ -113,11 +116,11 @@ class VideoDescriptionTemplate
      */
     public static function applyToMissing(string $template, array $opts = []): int
     {
-        $onlyPublic    = $opts['only_public']    ?? true;
-        $onlyApproved  = $opts['only_approved']  ?? true;
+        $onlyPublic = $opts['only_public'] ?? true;
+        $onlyApproved = $opts['only_approved'] ?? true;
         $onlyProcessed = $opts['only_processed'] ?? true;
-        $limit         = $opts['limit']          ?? null;
-        $dryRun        = $opts['dry_run']        ?? false;
+        $limit = $opts['limit'] ?? null;
+        $dryRun = $opts['dry_run'] ?? false;
 
         $query = Video::query()
             ->with(['user:id,username', 'category:id,name'])
@@ -125,10 +128,18 @@ class VideoDescriptionTemplate
                 $q->whereNull('description')->orWhere('description', '');
             });
 
-        if ($onlyPublic)    { $query->public(); }
-        if ($onlyApproved)  { $query->approved(); }
-        if ($onlyProcessed) { $query->processed(); }
-        if ($limit !== null) { $query->limit($limit); }
+        if ($onlyPublic) {
+            $query->public();
+        }
+        if ($onlyApproved) {
+            $query->approved();
+        }
+        if ($onlyProcessed) {
+            $query->processed();
+        }
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
 
         $updated = 0;
         $query->orderBy('id')->chunkById(200, function ($videos) use (&$updated, $template, $dryRun) {
@@ -137,7 +148,7 @@ class VideoDescriptionTemplate
                 if ($rendered === '') {
                     continue;
                 }
-                if (!$dryRun) {
+                if (! $dryRun) {
                     // Use updateQuietly so we don't trigger the description-translation
                     // invalidation hook for an auto-fill (no human change to translate).
                     $video->description = $rendered;
@@ -156,8 +167,8 @@ class VideoDescriptionTemplate
      */
     public static function missingCount(array $opts = []): int
     {
-        $onlyPublic    = $opts['only_public']    ?? true;
-        $onlyApproved  = $opts['only_approved']  ?? true;
+        $onlyPublic = $opts['only_public'] ?? true;
+        $onlyApproved = $opts['only_approved'] ?? true;
         $onlyProcessed = $opts['only_processed'] ?? true;
 
         $query = Video::query()
@@ -165,9 +176,15 @@ class VideoDescriptionTemplate
                 $q->whereNull('description')->orWhere('description', '');
             });
 
-        if ($onlyPublic)    { $query->public(); }
-        if ($onlyApproved)  { $query->approved(); }
-        if ($onlyProcessed) { $query->processed(); }
+        if ($onlyPublic) {
+            $query->public();
+        }
+        if ($onlyApproved) {
+            $query->approved();
+        }
+        if ($onlyProcessed) {
+            $query->processed();
+        }
 
         return $query->count();
     }

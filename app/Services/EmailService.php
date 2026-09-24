@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use Throwable;
 use App\Models\Setting;
 use FinityLabs\FinMail\Enums\EmailStatus;
 use FinityLabs\FinMail\Mail\TemplateMail as FinMailTemplateMail;
@@ -11,6 +10,7 @@ use FinityLabs\FinMail\Models\EmailTheme;
 use FinityLabs\FinMail\Models\SentEmail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 class EmailService
 {
@@ -19,7 +19,7 @@ class EmailService
      */
     public static function sendToUser(string $templateKey, string $toEmail, array $data = []): bool
     {
-        if (!static::isMailConfigured()) {
+        if (! static::isMailConfigured()) {
             return false;
         }
 
@@ -48,9 +48,11 @@ class EmailService
             Mail::to($toEmail)->sendNow(
                 $mail->withLogging($sentEmail)
             );
+
             return true;
         } catch (Throwable $e) {
             Log::error("EmailService: failed to send '{$templateKey}' to {$toEmail}: {$e->getMessage()}");
+
             return false;
         }
     }
@@ -60,13 +62,13 @@ class EmailService
      */
     public static function sendToAdmin(string $templateKey, array $data = [], ?string $replyTo = null, ?string $replyToName = null): bool
     {
-        if (!static::isMailConfigured()) {
+        if (! static::isMailConfigured()) {
             return false;
         }
 
         $settingKey = "admin_notify_{$templateKey}";
         $enabled = Setting::get($settingKey, true);
-        if (!filter_var($enabled, FILTER_VALIDATE_BOOLEAN)) {
+        if (! filter_var($enabled, FILTER_VALIDATE_BOOLEAN)) {
             return false;
         }
 
@@ -77,6 +79,7 @@ class EmailService
 
         if (empty($adminEmail)) {
             Log::warning("EmailService: no admin email configured for notification '{$templateKey}'.");
+
             return false;
         }
 
@@ -103,9 +106,11 @@ class EmailService
             Mail::to($adminEmail)->sendNow(
                 $mail->withLogging($sentEmail)
             );
+
             return true;
         } catch (Throwable $e) {
             Log::error("EmailService: failed to send admin notification '{$templateKey}': {$e->getMessage()}");
+
             return false;
         }
     }
@@ -130,7 +135,8 @@ class EmailService
     public static function isMailConfigured(): bool
     {
         $mailer = Setting::get('mail_mailer', config('mail.default', 'log'));
-        return !empty($mailer) && $mailer !== 'log';
+
+        return ! empty($mailer) && $mailer !== 'log';
     }
 
     public static function resolveEmailThemeColors(EmailTemplate $template): array
@@ -157,7 +163,7 @@ class EmailService
      */
     protected static function prepareData(array $data): array
     {
-        if (!array_key_exists('site_name', $data)) {
+        if (! array_key_exists('site_name', $data)) {
             $data['site_name'] = config('app.name', 'HubTube');
         }
 

@@ -13,9 +13,7 @@ class WithdrawalApprovedNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(protected WithdrawalRequest $withdrawal)
-    {
-    }
+    public function __construct(protected WithdrawalRequest $withdrawal) {}
 
     public function via(object $notifiable): array
     {

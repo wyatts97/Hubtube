@@ -3,6 +3,11 @@
 use App\Models\StripeSubscription;
 use App\Models\StripeSubscriptionItem;
 use App\Models\User;
+use Laravel\Cashier\Currency;
+use Laravel\Cashier\Customer;
+use Laravel\Cashier\Notifications\ConfirmPayment;
+use Laravel\Cashier\Payment;
+use Laravel\Cashier\Product;
 
 return [
     'key' => null,
@@ -17,14 +22,14 @@ return [
     'stripe_model' => User::class,
     'subscription_model' => StripeSubscription::class,
     'subscription_item_model' => StripeSubscriptionItem::class,
-    'payment_model' => env('CASHIER_PAYMENT_MODEL', Laravel\Cashier\Payment::class),
-    'customer_model' => env('CASHIER_CUSTOMER_MODEL', Laravel\Cashier\Customer::class),
-    'product_model' => env('CASHIER_PRODUCT_MODEL', Laravel\Cashier\Product::class),
+    'payment_model' => env('CASHIER_PAYMENT_MODEL', Payment::class),
+    'customer_model' => env('CASHIER_CUSTOMER_MODEL', Customer::class),
+    'product_model' => env('CASHIER_PRODUCT_MODEL', Product::class),
     'logger' => env('CASHIER_LOGGER'),
     'path' => env('CASHIER_PATH', 'stripe'),
-    'payment_notification' => env('CASHIER_PAYMENT_NOTIFICATION', Laravel\Cashier\Notifications\ConfirmPayment::class),
+    'payment_notification' => env('CASHIER_PAYMENT_NOTIFICATION', ConfirmPayment::class),
     'stripe_version' => env('CASHIER_STRIPE_VERSION', '2024-04-10'),
     'api_base' => env('CASHIER_API_BASE'),
-    'currency_model' => env('CASHIER_CURRENCY_MODEL', Laravel\Cashier\Currency::class),
+    'currency_model' => env('CASHIER_CURRENCY_MODEL', Currency::class),
     'receipt_url' => env('CASHIER_RECEIPT_URL'),
 ];

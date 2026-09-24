@@ -2,9 +2,8 @@
 
 namespace App\Filament\Resources\WithdrawalRequestResource\Pages;
 
-use Filament\Actions\DeleteAction;
 use App\Filament\Resources\WithdrawalRequestResource;
-use Filament\Actions;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditWithdrawalRequest extends EditRecord

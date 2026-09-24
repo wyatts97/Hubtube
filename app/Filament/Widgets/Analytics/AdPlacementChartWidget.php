@@ -21,6 +21,7 @@ class AdPlacementChartWidget extends ApexChartWidget
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'adPlacementChart';
+
     protected static ?int $contentHeight = 260;
 
     protected function getHeading(): ?string

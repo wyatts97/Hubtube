@@ -2,7 +2,6 @@
 
 namespace App\Listeners;
 
-use Throwable;
 use App\Events\VideoProcessed;
 use App\Models\SearchIndexSubmission;
 use App\Models\Setting;
@@ -11,6 +10,7 @@ use App\Services\IndexNowService;
 use App\Services\TranslationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class SubmitVideoToIndexNowListener implements ShouldQueue
 {
@@ -18,17 +18,17 @@ class SubmitVideoToIndexNowListener implements ShouldQueue
 
     public function handle(VideoProcessed $event): void
     {
-        if (!Setting::get('indexnow_enabled', false)) {
+        if (! Setting::get('indexnow_enabled', false)) {
             return;
         }
-        if (!Setting::get('indexnow_auto_submit_videos', true)) {
+        if (! Setting::get('indexnow_auto_submit_videos', true)) {
             return;
         }
 
         $video = $event->video;
         $video->refresh();
 
-        if (!$this->isIndexable($video)) {
+        if (! $this->isIndexable($video)) {
             return;
         }
 
@@ -87,18 +87,19 @@ class SubmitVideoToIndexNowListener implements ShouldQueue
         if ($video->status !== 'processed') {
             return false;
         }
-        if (!$video->is_approved || $video->is_draft) {
+        if (! $video->is_approved || $video->is_draft) {
             return false;
         }
         if ($video->privacy !== 'public') {
             return false;
         }
-        if (!$video->published_at || $video->published_at->isFuture()) {
+        if (! $video->published_at || $video->published_at->isFuture()) {
             return false;
         }
         if ($video->scheduled_at || $video->queue_order !== null || $video->requires_schedule) {
             return false;
         }
+
         return true;
     }
 }

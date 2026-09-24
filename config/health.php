@@ -1,16 +1,22 @@
 <?php
 
+use Spatie\Health\Models\HealthCheckResultHistoryItem;
+use Spatie\Health\Notifications\CheckFailedNotification;
+use Spatie\Health\Notifications\Notifiable;
+use Spatie\Health\ResultStores\CacheHealthResultStore;
+use Spatie\Health\ResultStores\EloquentHealthResultStore;
+
 return [
 
     'checks' => [],
 
     'result_stores' => [
-        \Spatie\Health\ResultStores\EloquentHealthResultStore::class => [
-            'model' => \Spatie\Health\Models\HealthCheckResultHistoryItem::class,
+        EloquentHealthResultStore::class => [
+            'model' => HealthCheckResultHistoryItem::class,
             'keep_history_for_days' => 14,
         ],
 
-        \Spatie\Health\ResultStores\CacheHealthResultStore::class => [
+        CacheHealthResultStore::class => [
             'store' => 'file',
         ],
     ],
@@ -18,9 +24,9 @@ return [
     'notifications' => [
         'enabled' => true,
         'notifications' => [
-            \Spatie\Health\Notifications\CheckFailedNotification::class => ['mail'],
+            CheckFailedNotification::class => ['mail'],
         ],
-        'notifiable' => \Spatie\Health\Notifications\Notifiable::class,
+        'notifiable' => Notifiable::class,
         'throttle_notifications_for_minutes' => 60,
         'only_on_failure' => true,
         'mail' => [

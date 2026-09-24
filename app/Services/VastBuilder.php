@@ -39,11 +39,14 @@ class VastBuilder
      * numbers.
      */
     public const FALLBACK_DURATION = 30;
+
     public const FALLBACK_WIDTH = 640;
+
     public const FALLBACK_HEIGHT = 360;
 
     /** Default slot for a non-linear (HTML) creative; matches Fluid Player's supported sizes. */
     public const NONLINEAR_WIDTH = 300;
+
     public const NONLINEAR_HEIGHT = 250;
 
     /**

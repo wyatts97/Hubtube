@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use Throwable;
 use App\Models\User;
 use App\Services\BulkVideoCreator;
 use Filament\Notifications\Notification;
@@ -13,6 +12,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Asynchronously creates videos from bulk-upload entries and caches the
@@ -24,6 +24,7 @@ class CreateBulkVideosJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $timeout = 600;
+
     public int $tries = 1;
 
     public function __construct(
@@ -57,7 +58,7 @@ class CreateBulkVideosJob implements ShouldQueue
                 $failed = count($this->entries) - count($createdIds);
                 Notification::make()
                     ->title('Bulk video upload finished')
-                    ->body(count($createdIds) . " video(s) processed, {$failed} failed.")
+                    ->body(count($createdIds)." video(s) processed, {$failed} failed.")
                     ->icon('phosphor-tray-arrow-up')
                     ->success()
                     ->sendToDatabase($actor);

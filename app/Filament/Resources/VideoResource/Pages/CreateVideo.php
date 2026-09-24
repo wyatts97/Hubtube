@@ -4,7 +4,6 @@ namespace App\Filament\Resources\VideoResource\Pages;
 
 use App\Events\VideoUploaded;
 use App\Filament\Resources\VideoResource;
-use App\Jobs\ProcessVideoJob;
 use App\Models\Video;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Storage;
@@ -21,12 +20,12 @@ class CreateVideo extends CreateRecord
         $data['status'] = 'pending';
 
         // Handle the uploaded video file
-        if (!empty($data['video_file'])) {
+        if (! empty($data['video_file'])) {
             $tempPath = $data['video_file'];
             $slug = $data['slug'];
             $directory = "videos/{$slug}";
             $extension = pathinfo($tempPath, PATHINFO_EXTENSION) ?: 'mp4';
-            $filename = Str::slug($data['title'], '_') . '.' . $extension;
+            $filename = Str::slug($data['title'], '_').'.'.$extension;
             $newPath = "{$directory}/{$filename}";
 
             // Move from Filament's temp upload location to the correct directory
@@ -66,9 +65,10 @@ class CreateVideo extends CreateRecord
         $slug = $baseSlug;
         $suffix = 2;
         while (Video::withTrashed()->where('slug', $slug)->exists()) {
-            $slug = $baseSlug . '-' . $suffix;
+            $slug = $baseSlug.'-'.$suffix;
             $suffix++;
         }
+
         return $slug;
     }
 

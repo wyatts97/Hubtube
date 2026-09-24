@@ -15,16 +15,16 @@ trait DarkThemeOptions
     {
         return [
             'chart' => [
-                'toolbar'      => ['show' => false],
-                'background'   => 'transparent',
-                'foreColor'    => '#9ca3af',
-                'animations'   => ['enabled' => true, 'speed' => 350],
-                'dropShadow'   => ['enabled' => false],
-                'fontFamily'   => 'Inter, ui-sans-serif, system-ui, sans-serif',
-                'zoom'         => ['enabled' => false],
+                'toolbar' => ['show' => false],
+                'background' => 'transparent',
+                'foreColor' => '#9ca3af',
+                'animations' => ['enabled' => true, 'speed' => 350],
+                'dropShadow' => ['enabled' => false],
+                'fontFamily' => 'Inter, ui-sans-serif, system-ui, sans-serif',
+                'zoom' => ['enabled' => false],
             ],
             'grid' => [
-                'borderColor'  => 'rgba(148, 163, 184, 0.12)',
+                'borderColor' => 'rgba(148, 163, 184, 0.12)',
                 'strokeDashArray' => 4,
                 'xaxis' => ['lines' => ['show' => false]],
                 'yaxis' => ['lines' => ['show' => true]],
@@ -34,20 +34,20 @@ trait DarkThemeOptions
             'tooltip' => [
                 'theme' => 'dark',
                 'style' => ['fontSize' => '12px', 'fontFamily' => 'Inter'],
-                'x'     => ['show' => true],
+                'x' => ['show' => true],
             ],
             'legend' => [
-                'show'           => false,
-                'labels'         => ['colors' => '#9ca3af'],
-                'fontFamily'     => 'Inter',
-                'fontSize'       => '12px',
+                'show' => false,
+                'labels' => ['colors' => '#9ca3af'],
+                'fontFamily' => 'Inter',
+                'fontSize' => '12px',
             ],
             'xaxis' => [
                 'labels' => [
                     'style' => ['colors' => '#64748b', 'fontSize' => '11px', 'fontFamily' => 'Inter'],
                 ],
                 'axisBorder' => ['show' => false],
-                'axisTicks'  => ['show' => false],
+                'axisTicks' => ['show' => false],
             ],
             'yaxis' => [
                 'labels' => [
@@ -72,6 +72,7 @@ trait DarkThemeOptions
                 }
             }
         }
+
         return $merged;
     }
 }

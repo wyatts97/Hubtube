@@ -5,9 +5,7 @@ namespace Tests\Feature;
 use App\Models\AdStatDaily;
 use App\Models\Setting;
 use App\Models\VideoAd;
-use App\Support\DeviceType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**

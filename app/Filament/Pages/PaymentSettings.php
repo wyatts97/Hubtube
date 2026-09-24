@@ -365,22 +365,22 @@ class PaymentSettings extends Page implements HasForms
                                 Section::make('Perks')
                                     ->schema([
                                         TextInput::make('pro_upload_limit_mb')
-                                        ->label('Pro upload limit (MB)')
-                                        ->numeric()
-                                        ->default(1024)
-                                        ->helperText('Default 1024 MB = 1 GB'),
+                                            ->label('Pro upload limit (MB)')
+                                            ->numeric()
+                                            ->default(1024)
+                                            ->helperText('Default 1024 MB = 1 GB'),
                                         TextInput::make('pro_daily_upload_cap')
-                                        ->label('Pro daily upload cap')
-                                        ->numeric()
-                                        ->default(50)
-                                        ->helperText('Number of videos a Pro user can upload per day.'),
+                                            ->label('Pro daily upload cap')
+                                            ->numeric()
+                                            ->default(50)
+                                            ->helperText('Number of videos a Pro user can upload per day.'),
                                         Toggle::make('pro_ad_free')
-                                        ->label('Ad-free viewing for Pro users')
-                                        ->default(true),
+                                            ->label('Ad-free viewing for Pro users')
+                                            ->default(true),
                                         TextInput::make('pro_badge_text')
-                                        ->label('Pro badge text')
-                                        ->default('PRO')
-                                        ->maxLength(10),
+                                            ->label('Pro badge text')
+                                            ->default('PRO')
+                                            ->maxLength(10),
                                     ])->columns(2),
                             ]),
                     ])->columnSpanFull(),

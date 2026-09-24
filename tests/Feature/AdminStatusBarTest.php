@@ -5,6 +5,7 @@ use App\Models\User;
 use App\Models\Video;
 use App\Services\SystemStatusBar;
 use Croustibat\FilamentJobsMonitor\Models\FailureGroup;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\DB;
 
 /*
@@ -198,7 +199,7 @@ test('the strip no longer carries an all-clear indicator', function () {
 });
 
 test('failed job tables are pruned on a schedule', function () {
-    $commands = collect(app(\Illuminate\Console\Scheduling\Schedule::class)->events())
+    $commands = collect(app(Schedule::class)->events())
         ->map(fn ($event) => $event->command ?? '');
 
     // failed_jobs has no default pruning, which is why a single old failure

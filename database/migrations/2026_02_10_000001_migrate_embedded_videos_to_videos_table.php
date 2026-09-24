@@ -9,7 +9,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('embedded_videos')) {
+        if (! Schema::hasTable('embedded_videos')) {
             return;
         }
 
@@ -30,7 +30,7 @@ return new class extends Migration
             $baseSlug = $slug;
             $suffix = 2;
             while (DB::table('videos')->where('slug', $slug)->exists()) {
-                $slug = $baseSlug . '-' . $suffix;
+                $slug = $baseSlug.'-'.$suffix;
                 $suffix++;
             }
 

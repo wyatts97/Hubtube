@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
-use Throwable;
 use App\Models\Setting;
 use Illuminate\Support\ServiceProvider;
+use Throwable;
 
 class SocialLoginServiceProvider extends ServiceProvider
 {
@@ -30,7 +30,7 @@ class SocialLoginServiceProvider extends ServiceProvider
             $clientId = Setting::getDecrypted("social_login_{$provider}_client_id", '');
             $clientSecret = Setting::getDecrypted("social_login_{$provider}_client_secret", '');
 
-            if (!empty($clientId) && !empty($clientSecret)) {
+            if (! empty($clientId) && ! empty($clientSecret)) {
                 $configKey = $provider === 'twitter' ? 'twitter-oauth-2' : $provider;
 
                 config([

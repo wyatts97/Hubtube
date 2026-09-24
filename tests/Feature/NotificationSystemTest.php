@@ -4,8 +4,9 @@ use App\Models\Comment;
 use App\Models\Notification as NotificationModel;
 use App\Models\User;
 use App\Models\Video;
-use App\Notifications\NewCommentNotification;
+use App\Models\WithdrawalRequest;
 use App\Notifications\VideoLikeNotification;
+use App\Notifications\WithdrawalApprovedNotification;
 use Illuminate\Support\Facades\Notification;
 
 /*
@@ -98,9 +99,9 @@ test('withdrawal approval notifies the requesting user', function () {
     $admin = asAdmin();
     $user = User::factory()->create(['wallet_balance' => 100]);
 
-    $withdrawal = \App\Models\WithdrawalRequest::create([
+    $withdrawal = WithdrawalRequest::create([
         'user_id' => $user->id,
-        'status' => \App\Models\WithdrawalRequest::STATUS_PENDING,
+        'status' => WithdrawalRequest::STATUS_PENDING,
         'amount' => 50,
         'currency' => 'USD',
         'payment_method' => 'paypal',
@@ -108,7 +109,7 @@ test('withdrawal approval notifies the requesting user', function () {
     ]);
 
     $withdrawal->approve($admin, 'TXN123');
-    $user->notify(new \App\Notifications\WithdrawalApprovedNotification($withdrawal->fresh()));
+    $user->notify(new WithdrawalApprovedNotification($withdrawal->fresh()));
 
     $this->assertDatabaseHas('notifications', [
         'user_id' => $user->id,

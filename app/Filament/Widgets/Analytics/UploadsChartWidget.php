@@ -4,7 +4,6 @@ namespace App\Filament\Widgets\Analytics;
 
 use App\Filament\Widgets\Analytics\Concerns\CachedChart;
 use App\Filament\Widgets\Analytics\Concerns\DarkThemeOptions;
-use App\Models\Video;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
@@ -15,6 +14,7 @@ class UploadsChartWidget extends ApexChartWidget
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'uploadsChart';
+
     protected static ?int $contentHeight = 260;
 
     protected function getHeading(): ?string
@@ -37,7 +37,7 @@ class UploadsChartWidget extends ApexChartWidget
 
         return $this->mergeTheme($this->darkThemeBase(), [
             'chart' => [
-                'type'   => 'area',
+                'type' => 'area',
                 'height' => 260,
             ],
             'series' => [[
@@ -60,9 +60,9 @@ class UploadsChartWidget extends ApexChartWidget
                 'type' => 'gradient',
                 'gradient' => [
                     'shadeIntensity' => 1,
-                    'opacityFrom'    => 0.45,
-                    'opacityTo'      => 0.05,
-                    'stops'          => [0, 90, 100],
+                    'opacityFrom' => 0.45,
+                    'opacityTo' => 0.05,
+                    'stops' => [0, 90, 100],
                 ],
             ],
             'markers' => ['size' => 0, 'hover' => ['size' => 4]],
@@ -87,6 +87,7 @@ class UploadsChartWidget extends ApexChartWidget
             $labels[] = Carbon::parse($d)->format('M j');
             $values[] = (int) ($rows[$d] ?? 0);
         }
+
         return [$labels, $values];
     }
 }

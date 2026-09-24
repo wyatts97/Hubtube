@@ -342,13 +342,13 @@ class GoogleFonts
             default => 'system-ui, -apple-system, sans-serif',
         };
 
-        return "'" . $family . "', " . $generic;
+        return "'".$family."', ".$generic;
     }
 
     /**
      * Bunny Fonts stylesheet URL for the given families.
      *
-     * @param array<string, list<int>> $families family => weights
+     * @param  array<string, list<int>>  $families  family => weights
      */
     public static function stylesheetUrl(array $families): ?string
     {
@@ -373,13 +373,13 @@ class GoogleFonts
 
             // Bunny uses the legacy Google CSS1 syntax: lowercase, hyphenated
             // family name, then a comma-separated weight list.
-            $parts[] = strtolower(str_replace(' ', '-', $family)) . ':' . implode(',', $weights);
+            $parts[] = strtolower(str_replace(' ', '-', $family)).':'.implode(',', $weights);
         }
 
         if (empty($parts)) {
             return null;
         }
 
-        return self::CDN . '/css?family=' . implode('|', $parts) . '&display=swap';
+        return self::CDN.'/css?family='.implode('|', $parts).'&display=swap';
     }
 }

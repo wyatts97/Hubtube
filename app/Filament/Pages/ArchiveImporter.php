@@ -3,26 +3,29 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\RequiresSuperAdmin;
-use Throwable;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Storage;
 use App\Models\User;
 use App\Models\Video;
-use App\Services\FfmpegService;
 use App\Services\ArchiveImportService;
+use App\Services\FfmpegService;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Throwable;
 
 class ArchiveImporter extends Page
 {
     use RequiresSuperAdmin;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-folder-open';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-folder-open';
+
     protected static ?string $navigationLabel = 'Archive Import';
-    protected static string | \UnitEnum | null $navigationGroup = 'Tools';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Tools';
+
     protected static ?int $navigationSort = 98;
+
     protected string $view = 'filament.pages.archive-importer';
 
     /**
@@ -36,31 +39,48 @@ class ArchiveImporter extends Page
 
     // Config inputs
     public string $archivePath = '';
+
     public string $sqlFilePath = '';
+
     public ?int $importUserId = null;
 
     // Archive detection
     public bool $archiveDetected = false;
+
     public string $archiveStatus = '';
 
     // Scan state
     public bool $isScanning = false;
+
     public bool $isScanned = false;
+
     public array $archiveStats = [];
+
     public array $parseStats = [];
+
     public array $fileValidation = [];
+
     public array $previewVideos = [];
+
     public int $totalImportable = 0;
 
     // Import state
     public bool $isImporting = false;
+
     public bool $importComplete = false;
+
     public int $processedCount = 0;
+
     public int $importedCount = 0;
+
     public int $skippedCount = 0;
+
     public int $errorCount = 0;
+
     public array $importErrors = [];
+
     public array $importLog = [];
+
     public int $alreadyImported = 0;
 
     // Internal: stored parsed video data for import (not displayed in full)
@@ -73,8 +93,8 @@ class ArchiveImporter extends Page
     {
         // Auto-detect default paths based on the app's base directory
         $basePath = base_path();
-        $this->archivePath = $basePath . '/WTARCHIVE';
-        $this->sqlFilePath = $basePath . '/wedgietu_wp_nnfpq.sql';
+        $this->archivePath = $basePath.'/WTARCHIVE';
+        $this->sqlFilePath = $basePath.'/wedgietu_wp_nnfpq.sql';
 
         // Check if archive exists at default path
         $this->checkArchive();
@@ -140,16 +160,19 @@ class ArchiveImporter extends Page
     {
         if (empty($this->archivePath) || empty($this->sqlFilePath)) {
             Notification::make()->title('Please provide both the archive directory path and SQL file path.')->warning()->send();
+
             return;
         }
 
-        if (!is_dir($this->archivePath)) {
+        if (! is_dir($this->archivePath)) {
             Notification::make()->title('Archive directory not found')->body($this->archivePath)->danger()->send();
+
             return;
         }
 
-        if (!file_exists($this->sqlFilePath)) {
+        if (! file_exists($this->sqlFilePath)) {
             Notification::make()->title('SQL file not found')->body($this->sqlFilePath)->danger()->send();
+
             return;
         }
 
@@ -193,7 +216,7 @@ class ArchiveImporter extends Page
 
             Notification::make()
                 ->title('Scan Complete')
-                ->body("Found {$validation['matched']} videos with matching files out of " . count($allVideos) . " total video posts.")
+                ->body("Found {$validation['matched']} videos with matching files out of ".count($allVideos).' total video posts.')
                 ->success()
                 ->send();
 
@@ -208,8 +231,9 @@ class ArchiveImporter extends Page
      */
     public function startImport(): void
     {
-        if (!$this->importUserId) {
+        if (! $this->importUserId) {
             Notification::make()->title('Please select a user to assign imported videos to.')->warning()->send();
+
             return;
         }
 
@@ -230,12 +254,12 @@ class ArchiveImporter extends Page
      */
     public function importNext(): void
     {
-        if (!$this->isImporting || !$this->shouldPoll) {
+        if (! $this->isImporting || ! $this->shouldPoll) {
             return;
         }
 
         // Find next unprocessed video that has a local file
-        $importableVideos = array_filter($this->allVideos, fn($v) => !empty($v['video_found']));
+        $importableVideos = array_filter($this->allVideos, fn ($v) => ! empty($v['video_found']));
         $importableVideos = array_values($importableVideos);
 
         if ($this->processedCount >= count($importableVideos)) {
@@ -421,7 +445,10 @@ class ArchiveImporter extends Page
 
     public function getProgressPercent(): int
     {
-        if ($this->totalImportable === 0) return 0;
+        if ($this->totalImportable === 0) {
+            return 0;
+        }
+
         return (int) round(($this->processedCount / $this->totalImportable) * 100);
     }
 
@@ -443,17 +470,18 @@ class ArchiveImporter extends Page
             $disk = $video->storage_disk ?? 'public';
             $filePath = Storage::disk($disk)->path($video->video_path);
 
-            if (!file_exists($filePath)) {
+            if (! file_exists($filePath)) {
                 $failed++;
+
                 continue;
             }
 
-            $tmpPath = $filePath . '.faststart.mp4';
+            $tmpPath = $filePath.'.faststart.mp4';
             $cmd = escapeshellarg($ffmpegPath)
-                . ' -i ' . escapeshellarg($filePath)
-                . ' -c copy -movflags +faststart'
-                . ' -y ' . escapeshellarg($tmpPath)
-                . ' 2>&1';
+                .' -i '.escapeshellarg($filePath)
+                .' -c copy -movflags +faststart'
+                .' -y '.escapeshellarg($tmpPath)
+                .' 2>&1';
 
             shell_exec($cmd);
 
@@ -471,7 +499,7 @@ class ArchiveImporter extends Page
 
         Notification::make()
             ->title('Seekability Fix Complete')
-            ->body("Fixed {$fixed} videos" . ($failed > 0 ? ", {$failed} failed" : '') . '. Videos should now be seekable in the player.')
+            ->body("Fixed {$fixed} videos".($failed > 0 ? ", {$failed} failed" : '').'. Videos should now be seekable in the player.')
             ->success()
             ->send();
     }

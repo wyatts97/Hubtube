@@ -2,18 +2,17 @@
 
 namespace App\Services;
 
-use InvalidArgumentException;
-use ZipArchive;
-use RuntimeException;
-use Throwable;
 use App\Models\Image;
 use App\Models\User;
 use App\Models\Video;
-use App\Services\StorageManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Zip;
+use InvalidArgumentException;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
+use ZipArchive;
 
 class DataExportService
 {
@@ -25,7 +24,7 @@ class DataExportService
     public function exportUsers(string $format): string
     {
         $users = User::all();
-        $filename = "users_export_{$format}_" . now()->format('Y-m-d_H-i-s');
+        $filename = "users_export_{$format}_".now()->format('Y-m-d_H-i-s');
 
         switch ($format) {
             case 'csv':
@@ -45,12 +44,12 @@ class DataExportService
     public function exportVideos(): string
     {
         $videos = Video::with('user', 'category')->get();
-        $filename = "videos_export_" . now()->format('Y-m-d_H-i-s') . '.zip';
-        $tempPath = Storage::disk($this->tempDisk)->path('exports/' . $filename);
+        $filename = 'videos_export_'.now()->format('Y-m-d_H-i-s').'.zip';
+        $tempPath = Storage::disk($this->tempDisk)->path('exports/'.$filename);
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         if ($zip->open($tempPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            throw new RuntimeException("Failed to create ZIP file");
+            throw new RuntimeException('Failed to create ZIP file');
         }
 
         // Add metadata JSON
@@ -63,10 +62,10 @@ class DataExportService
             $disk = $video->storage_disk ?? 'public';
 
             // Video file
-            $this->addFileToZip($zip, $video->video_path, $disk, $videoDir . basename($video->video_path));
+            $this->addFileToZip($zip, $video->video_path, $disk, $videoDir.basename($video->video_path));
 
             // Thumbnail
-            $this->addFileToZip($zip, $video->thumbnail, $disk, $videoDir . basename($video->thumbnail));
+            $this->addFileToZip($zip, $video->thumbnail, $disk, $videoDir.basename($video->thumbnail));
         }
 
         $zip->close();
@@ -80,12 +79,12 @@ class DataExportService
     public function exportImages(): string
     {
         $images = Image::with('user', 'category')->get();
-        $filename = "images_export_" . now()->format('Y-m-d_H-i-s') . '.zip';
-        $tempPath = Storage::disk($this->tempDisk)->path('exports/' . $filename);
+        $filename = 'images_export_'.now()->format('Y-m-d_H-i-s').'.zip';
+        $tempPath = Storage::disk($this->tempDisk)->path('exports/'.$filename);
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         if ($zip->open($tempPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            throw new RuntimeException("Failed to create ZIP file");
+            throw new RuntimeException('Failed to create ZIP file');
         }
 
         // Add metadata JSON
@@ -98,10 +97,10 @@ class DataExportService
             $disk = $image->storage_disk ?? 'public';
 
             // Original file
-            $this->addFileToZip($zip, $image->file_path, $disk, $imageDir . basename($image->file_path));
+            $this->addFileToZip($zip, $image->file_path, $disk, $imageDir.basename($image->file_path));
 
             // Thumbnail
-            $this->addFileToZip($zip, $image->thumbnail_path, $disk, $imageDir . basename($image->thumbnail_path));
+            $this->addFileToZip($zip, $image->thumbnail_path, $disk, $imageDir.basename($image->thumbnail_path));
         }
 
         $zip->close();
@@ -115,12 +114,12 @@ class DataExportService
      */
     private function addFileToZip(ZipArchive $zip, ?string $path, string $disk, string $zipPath): void
     {
-        if (!$path) {
+        if (! $path) {
             return;
         }
 
         try {
-            if (!StorageManager::exists($path, $disk)) {
+            if (! StorageManager::exists($path, $disk)) {
                 return;
             }
         } catch (Throwable $e) {
@@ -139,13 +138,14 @@ class DataExportService
 
         if ($localPath && file_exists($localPath)) {
             $zip->addFile($localPath, $zipPath);
+
             return;
         }
 
         // Cloud disk: stream to a temporary file
         try {
             $stream = Storage::disk($disk)->readStream($path);
-            if (!$stream) {
+            if (! $stream) {
                 return;
             }
 
@@ -256,7 +256,7 @@ class DataExportService
     private function exportUsersToSql($users, string $filename): string
     {
         $filepath = "exports/{$filename}.sql";
-        $statements = ["-- Users Export - " . now()->toDateTimeString() . "\n"];
+        $statements = ['-- Users Export - '.now()->toDateTimeString()."\n"];
 
         foreach ($users as $user) {
             $escaped = [

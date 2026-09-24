@@ -12,7 +12,7 @@ class PushNotificationController extends Controller
     public function vapidKey(): JsonResponse
     {
         $key = Setting::get('vapid_public_key', '');
-        
+
         if (empty($key)) {
             return response()->json(['error' => 'Push notifications not configured'], 503);
         }

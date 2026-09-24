@@ -10,7 +10,9 @@ class SponsoredCard extends Model
     use HasFactory;
 
     public const TYPE_IMAGE = 'image';
+
     public const TYPE_VIDEO = 'video';
+
     public const TYPE_HTML = 'html';
 
     public const TYPES = [
@@ -99,10 +101,10 @@ class SponsoredCard extends Model
     {
         return $query->where(function ($q) use ($page) {
             $q->whereNull('target_pages')
-              ->orWhere('target_pages', '[]')
-              ->orWhere('target_pages', 'null')
-              ->orWhereJsonLength('target_pages', 0)
-              ->orWhereJsonContains('target_pages', $page);
+                ->orWhere('target_pages', '[]')
+                ->orWhere('target_pages', 'null')
+                ->orWhereJsonLength('target_pages', 0)
+                ->orWhereJsonContains('target_pages', $page);
         });
     }
 
@@ -110,10 +112,10 @@ class SponsoredCard extends Model
     {
         return $query->where(function ($q) use ($role) {
             $q->whereNull('target_roles')
-              ->orWhere('target_roles', '[]')
-              ->orWhere('target_roles', 'null')
-              ->orWhereJsonLength('target_roles', 0)
-              ->orWhereJsonContains('target_roles', $role ?? 'guest');
+                ->orWhere('target_roles', '[]')
+                ->orWhere('target_roles', 'null')
+                ->orWhereJsonLength('target_roles', 0)
+                ->orWhereJsonContains('target_roles', $role ?? 'guest');
         });
     }
 
@@ -121,9 +123,9 @@ class SponsoredCard extends Model
     {
         return $query->where(function ($q) use ($categoryId) {
             $q->whereNull('category_ids')
-              ->orWhere('category_ids', '[]')
-              ->orWhere('category_ids', 'null')
-              ->orWhereJsonLength('category_ids', 0);
+                ->orWhere('category_ids', '[]')
+                ->orWhere('category_ids', 'null')
+                ->orWhereJsonLength('category_ids', 0);
             if ($categoryId) {
                 $q->orWhereJsonContains('category_ids', $categoryId);
             }
@@ -135,11 +137,14 @@ class SponsoredCard extends Model
      */
     protected static function resolveThumbUrl(?string $path): string
     {
-        if (!$path) return '';
+        if (! $path) {
+            return '';
+        }
         if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, '/')) {
             return $path;
         }
-        return '/storage/' . $path;
+
+        return '/storage/'.$path;
     }
 
     /**
@@ -166,12 +171,13 @@ class SponsoredCard extends Model
 
         $selected = [];
 
-        while (count($selected) < $limit && !empty($pool)) {
+        while (count($selected) < $limit && ! empty($pool)) {
             $totalWeight = array_sum(array_map(fn (self $c) => max(0, $c->weight), $pool));
 
             if ($totalWeight <= 0) {
                 // All weights are zero — the pool is already shuffled.
                 $selected[] = array_shift($pool)->toCardPayload();
+
                 continue;
             }
 
@@ -240,10 +246,11 @@ class SponsoredCard extends Model
      */
     public function getFormattedPriceAttribute(): ?string
     {
-        if (!$this->price) {
+        if (! $this->price) {
             return null;
         }
-        return '$' . number_format((float) $this->price, 2);
+
+        return '$'.number_format((float) $this->price, 2);
     }
 
     /**
@@ -251,10 +258,11 @@ class SponsoredCard extends Model
      */
     public function getFormattedSalePriceAttribute(): ?string
     {
-        if (!$this->sale_price) {
+        if (! $this->sale_price) {
             return null;
         }
-        return '$' . number_format((float) $this->sale_price, 2);
+
+        return '$'.number_format((float) $this->sale_price, 2);
     }
 
     /**
@@ -270,9 +278,10 @@ class SponsoredCard extends Model
      */
     public function getDiscountPercentAttribute(): ?int
     {
-        if (!$this->is_on_sale) {
+        if (! $this->is_on_sale) {
             return null;
         }
+
         return (int) round((($this->price - $this->sale_price) / $this->price) * 100);
     }
 
@@ -281,11 +290,12 @@ class SponsoredCard extends Model
      */
     public function getFormattedDurationAttribute(): ?string
     {
-        if (!$this->duration) {
+        if (! $this->duration) {
             return null;
         }
         $minutes = floor($this->duration / 60);
         $seconds = $this->duration % 60;
+
         return sprintf('%d:%02d', $minutes, $seconds);
     }
 
@@ -295,6 +305,7 @@ class SponsoredCard extends Model
     public function getResolvedPreviewImagesAttribute(): array
     {
         $images = $this->preview_images ?? [];
-        return array_map(fn($img) => static::resolveThumbUrl($img), $images);
+
+        return array_map(fn ($img) => static::resolveThumbUrl($img), $images);
     }
 }

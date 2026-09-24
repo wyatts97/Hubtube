@@ -2,10 +2,9 @@
 
 namespace App\Filament\Resources\TagResource\Pages;
 
-use Filament\Actions\DeleteAction;
 use App\Filament\Resources\TagResource;
 use App\Services\TagSyncService;
-use Filament\Actions;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditTag extends EditRecord

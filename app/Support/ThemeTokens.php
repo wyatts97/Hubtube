@@ -39,25 +39,25 @@ class ThemeTokens
      * than an input.
      */
     public const DARK = [
-        'bgPrimary'      => '#0d0d0d',
-        'bgSecondary'    => '#161616',
-        'bgCard'         => '#1c1c1c',
-        'bgElevated'     => '#242424',
-        'bgHover'        => '#2c2c2c',
-        'bgInput'        => '#202020',
-        'accent'         => '#e11d34',
-        'accentHover'    => '#f43553',
-        'accentText'     => '#f1556a',
-        'accentSubtle'   => 'rgba(225, 29, 52, 0.14)',
+        'bgPrimary' => '#0d0d0d',
+        'bgSecondary' => '#161616',
+        'bgCard' => '#1c1c1c',
+        'bgElevated' => '#242424',
+        'bgHover' => '#2c2c2c',
+        'bgInput' => '#202020',
+        'accent' => '#e11d34',
+        'accentHover' => '#f43553',
+        'accentText' => '#f1556a',
+        'accentSubtle' => 'rgba(225, 29, 52, 0.14)',
         'accentContrast' => '#ffffff',
-        'textPrimary'    => '#f4f4f4',
-        'textSecondary'  => '#a6a6a6',
-        'textMuted'      => '#8a8a8a',
-        'border'         => '#2e2e2e',
-        'borderSubtle'   => '#212121',
-        'borderStrong'   => '#3d3d3d',
-        'success'        => '#3ecf70',
-        'overlay'        => 'rgba(0, 0, 0, 0.78)',
+        'textPrimary' => '#f4f4f4',
+        'textSecondary' => '#a6a6a6',
+        'textMuted' => '#8a8a8a',
+        'border' => '#2e2e2e',
+        'borderSubtle' => '#212121',
+        'borderStrong' => '#3d3d3d',
+        'success' => '#3ecf70',
+        'overlay' => 'rgba(0, 0, 0, 0.78)',
     ];
 
     /**
@@ -76,53 +76,53 @@ class ThemeTokens
      * and anything filling a surface must use --color-accent.
      */
     public const LIGHT = [
-        'bgPrimary'      => '#faf8f7',
-        'bgSecondary'    => '#ffffff',
-        'bgCard'         => '#ffffff',
+        'bgPrimary' => '#faf8f7',
+        'bgSecondary' => '#ffffff',
+        'bgCard' => '#ffffff',
         // NOT white. "Elevated" means lighter in dark mode but DARKER in light
         // mode — it is the surface for chips, pills, avatars and secondary
         // buttons that sit on top of a card. Setting it to #ffffff made every
         // one of those invisible on a white card, and made the skeleton
         // shimmer a white-to-white gradient with nothing to see.
-        'bgElevated'     => '#efe9e5',
-        'bgHover'        => '#f1eeec',
-        'bgInput'        => '#f4f1ef',
-        'accent'         => '#c00d26',
-        'accentHover'    => '#a20a1f',
-        'accentText'     => '#c00d26',
-        'accentSubtle'   => 'rgba(192, 13, 38, 0.09)',
+        'bgElevated' => '#efe9e5',
+        'bgHover' => '#f1eeec',
+        'bgInput' => '#f4f1ef',
+        'accent' => '#c00d26',
+        'accentHover' => '#a20a1f',
+        'accentText' => '#c00d26',
+        'accentSubtle' => 'rgba(192, 13, 38, 0.09)',
         'accentContrast' => '#ffffff',
-        'textPrimary'    => '#17151a',
-        'textSecondary'  => '#5c5761',
-        'textMuted'      => '#6e6571',
-        'border'         => '#e3ded9',
-        'borderSubtle'   => '#efeae6',
-        'borderStrong'   => '#cdc5bd',
-        'success'        => '#1a8f45',
-        'overlay'        => 'rgba(0, 0, 0, 0.72)',
+        'textPrimary' => '#17151a',
+        'textSecondary' => '#5c5761',
+        'textMuted' => '#6e6571',
+        'border' => '#e3ded9',
+        'borderSubtle' => '#efeae6',
+        'borderStrong' => '#cdc5bd',
+        'success' => '#1a8f45',
+        'overlay' => 'rgba(0, 0, 0, 0.72)',
     ];
 
     /** Maps a palette key to the CSS custom property it is emitted as. */
     public const CSS_VARS = [
-        'bgPrimary'      => '--color-bg-primary',
-        'bgSecondary'    => '--color-bg-secondary',
-        'bgCard'         => '--color-bg-card',
-        'bgElevated'     => '--color-bg-elevated',
-        'bgHover'        => '--color-bg-hover',
-        'bgInput'        => '--color-bg-input',
-        'accent'         => '--color-accent',
-        'accentHover'    => '--color-accent-hover',
-        'accentText'     => '--color-accent-text',
-        'accentSubtle'   => '--color-accent-subtle',
+        'bgPrimary' => '--color-bg-primary',
+        'bgSecondary' => '--color-bg-secondary',
+        'bgCard' => '--color-bg-card',
+        'bgElevated' => '--color-bg-elevated',
+        'bgHover' => '--color-bg-hover',
+        'bgInput' => '--color-bg-input',
+        'accent' => '--color-accent',
+        'accentHover' => '--color-accent-hover',
+        'accentText' => '--color-accent-text',
+        'accentSubtle' => '--color-accent-subtle',
         'accentContrast' => '--color-accent-contrast',
-        'textPrimary'    => '--color-text-primary',
-        'textSecondary'  => '--color-text-secondary',
-        'textMuted'      => '--color-text-muted',
-        'border'         => '--color-border',
-        'borderSubtle'   => '--color-border-subtle',
-        'borderStrong'   => '--color-border-strong',
-        'success'        => '--color-success',
-        'overlay'        => '--color-overlay',
+        'textPrimary' => '--color-text-primary',
+        'textSecondary' => '--color-text-secondary',
+        'textMuted' => '--color-text-muted',
+        'border' => '--color-border',
+        'borderSubtle' => '--color-border-subtle',
+        'borderStrong' => '--color-border-strong',
+        'success' => '--color-success',
+        'overlay' => '--color-overlay',
     ];
 
     /**
@@ -189,14 +189,14 @@ class ThemeTokens
 
         foreach (self::palette($mode) as $key => $value) {
             if (isset(self::CSS_VARS[$key])) {
-                $lines[] = self::CSS_VARS[$key] . ': ' . $value . ';';
+                $lines[] = self::CSS_VARS[$key].': '.$value.';';
             }
         }
 
         // Consumed by NProgress in app.css. Kept here so the loading bar tracks
         // the accent automatically instead of needing its own fallback.
         $bar = Setting::get('progress_bar_color', '');
-        $lines[] = '--nprogress-color: ' . ($bar !== '' ? $bar : 'var(--color-accent)') . ';';
+        $lines[] = '--nprogress-color: '.($bar !== '' ? $bar : 'var(--color-accent)').';';
 
         return implode("\n            ", $lines);
     }
@@ -253,7 +253,7 @@ class ThemeTokens
     /** Settings-table key for one editable colour, e.g. ('dark', 'accent') => dark_accent_color. */
     public static function settingKey(string $mode, string $key): string
     {
-        return $mode . '_' . (self::SETTING_SUFFIX[$key] ?? self::snake($key));
+        return $mode.'_'.(self::SETTING_SUFFIX[$key] ?? self::snake($key));
     }
 
     /**
@@ -305,7 +305,7 @@ class ThemeTokens
         $hex = ltrim($hex, '#');
 
         if (strlen($hex) === 3) {
-            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
         }
 
         if (strlen($hex) !== 6 || ! ctype_xdigit($hex)) {

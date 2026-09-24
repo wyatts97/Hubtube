@@ -3,23 +3,23 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\RequiresPermission;
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Actions\Action;
-use Throwable;
-use ZipArchive;
-use RuntimeException;
 use App\Services\DataExportService;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
+use ZipArchive;
 
 class DataExport extends Page implements HasForms
 {
@@ -29,10 +29,14 @@ class DataExport extends Page implements HasForms
 
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-tray-arrow-down';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-tray-arrow-down';
+
     protected static ?string $navigationLabel = 'Data Export';
-    protected static string | \UnitEnum | null $navigationGroup = 'Tools';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Tools';
+
     protected static ?int $navigationSort = 99;
+
     protected string $view = 'filament.pages.data-export';
 
     public ?array $data = [];
@@ -110,12 +114,13 @@ class DataExport extends Page implements HasForms
         $usersFormat = $this->data['users_format'] ?? 'csv';
 
         // Validate at least one export type is selected
-        if (!$exportUsers && !$exportVideos && !$exportImages) {
+        if (! $exportUsers && ! $exportVideos && ! $exportImages) {
             Notification::make()
                 ->title('No data selected')
                 ->body('Please select at least one data type to export.')
                 ->warning()
                 ->send();
+
             return response()->noContent();
         }
 
@@ -131,7 +136,7 @@ class DataExport extends Page implements HasForms
                 $userFilePath = $service->exportUsers($usersFormat);
                 $exportedFiles[] = [
                     'path' => $userFilePath,
-                    'name' => "users_export_{$usersFormat}." . $usersFormat,
+                    'name' => "users_export_{$usersFormat}.".$usersFormat,
                 ];
             }
 
@@ -140,7 +145,7 @@ class DataExport extends Page implements HasForms
                 $videoFilePath = $service->exportVideos();
                 $exportedFiles[] = [
                     'path' => $videoFilePath,
-                    'name' => "videos_export.zip",
+                    'name' => 'videos_export.zip',
                 ];
             }
 
@@ -149,7 +154,7 @@ class DataExport extends Page implements HasForms
                 $imageFilePath = $service->exportImages();
                 $exportedFiles[] = [
                     'path' => $imageFilePath,
-                    'name' => "images_export.zip",
+                    'name' => 'images_export.zip',
                 ];
             }
 
@@ -167,18 +172,19 @@ class DataExport extends Page implements HasForms
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
+
             return response()->noContent();
         }
     }
 
     private function createMasterZip(array $files): StreamedResponse
     {
-        $filename = "hubtube_export_" . now()->format('Y-m-d_H-i-s') . '.zip';
-        $tempPath = Storage::disk('local')->path('exports/' . $filename);
+        $filename = 'hubtube_export_'.now()->format('Y-m-d_H-i-s').'.zip';
+        $tempPath = Storage::disk('local')->path('exports/'.$filename);
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         if ($zip->open($tempPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            throw new RuntimeException("Failed to create master ZIP file");
+            throw new RuntimeException('Failed to create master ZIP file');
         }
 
         foreach ($files as $file) {

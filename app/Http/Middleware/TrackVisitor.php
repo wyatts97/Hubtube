@@ -3,7 +3,6 @@
 namespace App\Http\Middleware;
 
 use App\Models\Setting;
-use App\Models\VisitorDaily;
 use App\Services\VideoViewRecorder;
 use Closure;
 use Illuminate\Http\Request;
@@ -24,7 +23,7 @@ class TrackVisitor
     {
         try {
             // Only track GET requests (real page views, not API/AJAX)
-            if (!$request->isMethod('GET') || VideoViewRecorder::isBot($request)) {
+            if (! $request->isMethod('GET') || VideoViewRecorder::isBot($request)) {
                 return;
             }
 
@@ -42,7 +41,7 @@ class TrackVisitor
             }
 
             // Skip AJAX requests that are NOT Inertia (Inertia page loads should be tracked)
-            if ($request->ajax() && !$request->hasHeader('X-Inertia')) {
+            if ($request->ajax() && ! $request->hasHeader('X-Inertia')) {
                 return;
             }
 
@@ -54,7 +53,7 @@ class TrackVisitor
 
             $ip = $request->ip() ?? '0.0.0.0';
             $ua = $request->userAgent() ?? '';
-            $hash = hash('sha256', $ip . $ua);
+            $hash = hash('sha256', $ip.$ua);
 
             $timezone = config('app.timezone');
             try {
@@ -69,15 +68,15 @@ class TrackVisitor
             DB::table('visitor_daily')->upsert(
                 [
                     'visitor_hash' => $hash,
-                    'date'         => $today,
-                    'visit_count'  => 1,
-                    'created_at'  => $now,
-                    'updated_at'  => $now,
+                    'date' => $today,
+                    'visit_count' => 1,
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ],
                 ['visitor_hash', 'date'],
                 [
                     'visit_count' => DB::raw('visit_count + 1'),
-                    'updated_at'  => $now,
+                    'updated_at' => $now,
                 ]
             );
         } catch (\Throwable) {

@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 
 class WatermarkService
 {
@@ -40,7 +40,9 @@ class WatermarkService
                 '/usr/share/fonts/truetype',
             ];
             foreach ($dirs as $dir) {
-                if (!is_dir($dir)) continue;
+                if (! is_dir($dir)) {
+                    continue;
+                }
                 $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir));
                 foreach ($iterator as $file) {
                     if (preg_match('/\.(ttf|otf)$/i', $file->getFilename())) {
@@ -53,6 +55,7 @@ class WatermarkService
 
         asort($fonts);
         static::$cachedFonts = $fonts;
+
         return $fonts;
     }
 

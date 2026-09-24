@@ -2,9 +2,9 @@
 
 namespace App\Traits;
 
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Translation;
 use App\Services\TranslationService;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 trait Translatable
 {
@@ -45,6 +45,7 @@ trait Translatable
         }
 
         $cached = Translation::getTranslation(get_class($this), $this->id, $field, $locale);
+
         return $cached ?? $this->{$field} ?? '';
     }
 }

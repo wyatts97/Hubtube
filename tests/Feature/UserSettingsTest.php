@@ -65,7 +65,7 @@ test('wordpress-hash user can update password from settings', function () {
     // WordPress 6.8 stores '$wp' followed by the bcrypt hash, which itself
     // starts with '$2y$' — so the stored value reads '$wp$2y$...'. Prefixing
     // with '$wp$' instead would double the separator and never verify.
-    $wpHash = '$wp' . password_hash($wpPreHash, PASSWORD_BCRYPT);
+    $wpHash = '$wp'.password_hash($wpPreHash, PASSWORD_BCRYPT);
 
     $user = User::factory()->create(['password' => bcrypt('TempPassword123!')]);
     DB::table('users')->where('id', $user->id)->update(['password' => $wpHash]);
@@ -87,7 +87,7 @@ test('wordpress-hash user can delete account from settings', function () {
     // WordPress 6.8 stores '$wp' followed by the bcrypt hash, which itself
     // starts with '$2y$' — so the stored value reads '$wp$2y$...'. Prefixing
     // with '$wp$' instead would double the separator and never verify.
-    $wpHash = '$wp' . password_hash($wpPreHash, PASSWORD_BCRYPT);
+    $wpHash = '$wp'.password_hash($wpPreHash, PASSWORD_BCRYPT);
 
     $user = User::factory()->create(['password' => bcrypt('TempPassword123!')]);
     DB::table('users')->where('id', $user->id)->update(['password' => $wpHash]);

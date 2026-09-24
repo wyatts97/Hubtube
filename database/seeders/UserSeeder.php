@@ -38,7 +38,7 @@ class UserSeeder extends Seeder
             ['user_id' => $admin->id],
             [
                 'name' => 'Admin',
-                'slug' => 'admin-' . $admin->id,
+                'slug' => 'admin-'.$admin->id,
                 'is_verified' => true,
             ]
         );
@@ -67,7 +67,7 @@ class UserSeeder extends Seeder
             ['user_id' => $demo->id],
             [
                 'name' => 'Demo User',
-                'slug' => 'demouser-' . $demo->id,
+                'slug' => 'demouser-'.$demo->id,
             ]
         );
     }

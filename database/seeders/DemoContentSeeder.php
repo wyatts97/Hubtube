@@ -31,9 +31,9 @@ class DemoContentSeeder extends Seeder
 
     private const TITLE_WORDS = [
         ['Late Night', 'Golden Hour', 'Backstage', 'First Take', 'Slow Burn', 'After Hours',
-         'Behind Closed Doors', 'Weekend', 'Unscripted', 'Close Up', 'Midnight', 'Off Camera'],
+            'Behind Closed Doors', 'Weekend', 'Unscripted', 'Close Up', 'Midnight', 'Off Camera'],
         ['Session', 'Cut', 'Compilation', 'Special', 'Feature', 'Short', 'Set', 'Reel',
-         'Collection', 'Take', 'Edition', 'Scene'],
+            'Collection', 'Take', 'Edition', 'Scene'],
     ];
 
     private const TAGS = [
@@ -82,7 +82,7 @@ class DemoContentSeeder extends Seeder
                 ['slug' => Str::slug($name)],
                 [
                     'name' => $name,
-                    'description' => $name . ' videos',
+                    'description' => $name.' videos',
                     'is_active' => true,
                     'sort_order' => $index,
                 ]
@@ -100,7 +100,7 @@ class DemoContentSeeder extends Seeder
 
         foreach ($names as $index => $username) {
             $users[] = User::updateOrCreate(
-                ['email' => $index === 0 ? 'demo@example.com' : $username . '@example.com'],
+                ['email' => $index === 0 ? 'demo@example.com' : $username.'@example.com'],
                 [
                     'username' => $username,
                     'first_name' => Str::headline(str_replace('_', ' ', $username)),
@@ -116,8 +116,8 @@ class DemoContentSeeder extends Seeder
     }
 
     /**
-     * @param list<Category> $categories
-     * @param list<User> $users
+     * @param  list<Category>  $categories
+     * @param  list<User>  $users
      */
     private function seedVideos(array $categories, array $users): void
     {
@@ -135,7 +135,7 @@ class DemoContentSeeder extends Seeder
             $dislikes = $hasEnoughVotes ? (int) round($likes * (mt_rand(2, 60) / 100)) : 0;
 
             Video::updateOrCreate(
-                ['slug' => Str::slug($title) . '-' . $i],
+                ['slug' => Str::slug($title).'-'.$i],
                 [
                     'user_id' => $users[$i % count($users)]->id,
                     'uuid' => (string) Str::uuid(),
@@ -165,8 +165,8 @@ class DemoContentSeeder extends Seeder
     private function title(): string
     {
         return self::TITLE_WORDS[0][array_rand(self::TITLE_WORDS[0])]
-            . ' ' . self::TITLE_WORDS[1][array_rand(self::TITLE_WORDS[1])]
-            . ' ' . mt_rand(1, 99);
+            .' '.self::TITLE_WORDS[1][array_rand(self::TITLE_WORDS[1])]
+            .' '.mt_rand(1, 99);
     }
 
     /** Weighted so all three duration filter buckets are well populated. */
@@ -221,8 +221,8 @@ class DemoContentSeeder extends Seeder
         $urls = [];
 
         for ($i = 0; $i < $count; $i++) {
-            $path = $dir . DIRECTORY_SEPARATOR . $i . '.jpg';
-            $urls[] = '/' . self::THUMB_DIR . '/' . $i . '.jpg';
+            $path = $dir.DIRECTORY_SEPARATOR.$i.'.jpg';
+            $urls[] = '/'.self::THUMB_DIR.'/'.$i.'.jpg';
 
             if (file_exists($path)) {
                 continue;

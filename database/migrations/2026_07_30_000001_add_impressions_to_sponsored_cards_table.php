@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('sponsored_cards', function (Blueprint $table) {
-            if (!Schema::hasColumn('sponsored_cards', 'impressions_count')) {
+            if (! Schema::hasColumn('sponsored_cards', 'impressions_count')) {
                 $table->unsignedBigInteger('impressions_count')->default(0)->after('clicks_count');
             }
         });

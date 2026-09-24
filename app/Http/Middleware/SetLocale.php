@@ -2,9 +2,9 @@
 
 namespace App\Http\Middleware;
 
-use Exception;
 use App\Services\TranslationService;
 use Closure;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\URL;

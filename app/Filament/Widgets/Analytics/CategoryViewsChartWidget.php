@@ -13,6 +13,7 @@ class CategoryViewsChartWidget extends ApexChartWidget
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'categoryViewsChart';
+
     protected static ?int $contentHeight = 260;
 
     protected function getHeading(): ?string
@@ -36,7 +37,7 @@ class CategoryViewsChartWidget extends ApexChartWidget
 
         return $this->mergeTheme($this->darkThemeBase(), [
             'chart' => [
-                'type'   => 'bar',
+                'type' => 'bar',
                 'height' => 260,
             ],
             'series' => [[
@@ -48,19 +49,19 @@ class CategoryViewsChartWidget extends ApexChartWidget
             ],
             'plotOptions' => [
                 'bar' => [
-                    'horizontal'   => true,
+                    'horizontal' => true,
                     'borderRadius' => 4,
-                    'barHeight'    => '70%',
+                    'barHeight' => '70%',
                 ],
             ],
             'colors' => ['#b8524d'],
             'fill' => [
                 'type' => 'gradient',
                 'gradient' => [
-                    'shade'           => 'dark',
-                    'type'            => 'horizontal',
+                    'shade' => 'dark',
+                    'type' => 'horizontal',
                     'gradientToColors' => ['#c85c56'],
-                    'stops'           => [0, 100],
+                    'stops' => [0, 100],
                 ],
             ],
         ]);

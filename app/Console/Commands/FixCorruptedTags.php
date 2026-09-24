@@ -28,17 +28,17 @@ class FixCorruptedTags extends Command
             $currentTags = $video->tags;
             $normalized = Video::normalizeTagsInput($rawTags);
 
-            $needsFix = !is_array($currentTags) || $currentTags !== $normalized;
-            if (!$needsFix) {
+            $needsFix = ! is_array($currentTags) || $currentTags !== $normalized;
+            if (! $needsFix) {
                 continue;
             }
 
             $this->info("Video #{$video->id} \"{$video->title}\":");
-            $this->line("  Before(raw): " . (string) $rawTags);
-            $this->line("  Before(cast): " . json_encode($currentTags));
-            $this->line("  After:        " . json_encode($normalized));
+            $this->line('  Before(raw): '.(string) $rawTags);
+            $this->line('  Before(cast): '.json_encode($currentTags));
+            $this->line('  After:        '.json_encode($normalized));
 
-            if (!$dryRun) {
+            if (! $dryRun) {
                 $video->tags = empty($normalized) ? null : $normalized;
                 $video->save();
             }

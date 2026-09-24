@@ -23,7 +23,7 @@ class RegisterRequest extends FormRequest
                 'min:5',
                 'max:32',
                 'regex:/^[a-zA-Z0-9_]+$/',
-                'unique:' . User::class,
+                'unique:'.User::class,
             ],
             'email' => [
                 'required',
@@ -31,8 +31,8 @@ class RegisterRequest extends FormRequest
                 'lowercase',
                 'email',
                 'max:255',
-                'unique:' . User::class,
-                new AllowedEmailDomain(),
+                'unique:'.User::class,
+                new AllowedEmailDomain,
             ],
             'password' => [
                 'required',

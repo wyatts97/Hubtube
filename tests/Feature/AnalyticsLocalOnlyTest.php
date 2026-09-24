@@ -1,6 +1,8 @@
 <?php
 
+use App\Filament\Pages\Analytics;
 use App\Models\Setting;
+use BezhanSalleh\GoogleAnalytics\GoogleAnalyticsPlugin;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,7 +19,7 @@ use App\Models\Setting;
 test('the analytics page loads without google analytics', function () {
     asAdmin();
 
-    $html = $this->get(App\Filament\Pages\Analytics::getUrl())
+    $html = $this->get(Analytics::getUrl())
         ->assertStatus(200)
         ->getContent();
 
@@ -26,8 +28,8 @@ test('the analytics page loads without google analytics', function () {
 });
 
 test('the removed google analytics packages are gone', function () {
-    expect(class_exists(\BezhanSalleh\GoogleAnalytics\GoogleAnalyticsPlugin::class))->toBeFalse();
-    expect(class_exists(\Spatie\Analytics\Analytics::class))->toBeFalse();
+    expect(class_exists(GoogleAnalyticsPlugin::class))->toBeFalse();
+    expect(class_exists(Spatie\Analytics\Analytics::class))->toBeFalse();
     expect(file_exists(config_path('analytics.php')))->toBeFalse();
     expect(file_exists(config_path('google-analytics.php')))->toBeFalse();
 });

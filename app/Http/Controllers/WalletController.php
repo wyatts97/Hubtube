@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Filament\Resources\WithdrawalRequestResource;
 use App\Models\Setting;
 use App\Models\User;
-use App\Models\WalletTransaction;
 use App\Models\WithdrawalRequest;
 use App\Services\WalletService;
 use Filament\Actions\Action as NotificationAction;
@@ -79,8 +78,8 @@ class WalletController extends Controller
             'amount' => [
                 'required',
                 'numeric',
-                'min:' . Setting::get('min_withdrawal', 50),
-                'max:' . $request->user()->wallet_balance,
+                'min:'.Setting::get('min_withdrawal', 50),
+                'max:'.$request->user()->wallet_balance,
             ],
             'payment_method' => 'required|in:paypal,bank,crypto',
             'payment_details' => 'required|array',
@@ -116,7 +115,7 @@ class WalletController extends Controller
 
             return back()->withErrors([
                 'amount' => 'Your balance changed while this request was being processed. '
-                    . 'Please check your balance and try again.',
+                    .'Please check your balance and try again.',
             ]);
         }
 
@@ -144,7 +143,7 @@ class WalletController extends Controller
     {
         $transactions = $request->user()
             ->walletTransactions()
-            ->when($request->type, fn($q, $type) => $q->where('type', $type))
+            ->when($request->type, fn ($q, $type) => $q->where('type', $type))
             ->completed()
             ->latest()
             ->paginate(20);

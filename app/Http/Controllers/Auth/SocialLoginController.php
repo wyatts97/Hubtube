@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Auth;
 
-use Exception;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Models\SocialAccount;
 use App\Models\User;
 use App\Services\ChannelService;
 use App\Services\RegistrationGuard;
+use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -22,7 +22,7 @@ class SocialLoginController extends Controller
 
     public function redirect(string $provider): RedirectResponse
     {
-        if (!$this->isProviderEnabled($provider)) {
+        if (! $this->isProviderEnabled($provider)) {
             return redirect()->route('login')->with('error', 'This login method is not available.');
         }
 
@@ -38,7 +38,7 @@ class SocialLoginController extends Controller
 
     public function callback(string $provider): RedirectResponse
     {
-        if (!$this->isProviderEnabled($provider)) {
+        if (! $this->isProviderEnabled($provider)) {
             return redirect()->route('login')->with('error', 'This login method is not available.');
         }
 
@@ -46,6 +46,7 @@ class SocialLoginController extends Controller
             $socialUser = Socialite::driver($this->resolveDriverName($provider))->user();
         } catch (Exception $e) {
             Log::warning("Social login callback failed for {$provider}", ['error' => $e->getMessage()]);
+
             return redirect()->route('login')->with('error', 'Authentication failed. Please try again.');
         }
 
@@ -74,6 +75,7 @@ class SocialLoginController extends Controller
             ]);
 
             Auth::login($socialAccount->user, true);
+
             return redirect()->intended('/');
         }
 
@@ -88,7 +90,7 @@ class SocialLoginController extends Controller
                 'avatar_url' => $avatar,
             ]);
 
-            return redirect()->route('settings')->with('success', ucfirst($provider) . ' account linked successfully.');
+            return redirect()->route('settings')->with('success', ucfirst($provider).' account linked successfully.');
         }
 
         // 3. Check if email exists in users table (link + login)
@@ -110,6 +112,7 @@ class SocialLoginController extends Controller
                 ]);
 
                 Auth::login($existingUser, true);
+
                 return redirect()->intended('/');
             }
         }
@@ -135,7 +138,7 @@ class SocialLoginController extends Controller
 
         $user = User::create([
             'username' => $username,
-            'email' => $email ?? $provider . '_' . $providerId . '@social.local',
+            'email' => $email ?? $provider.'_'.$providerId.'@social.local',
             'password' => Hash::make(Str::random(32)),
             'avatar' => $avatar,
             'email_verified_at' => $email ? now() : null,
@@ -159,7 +162,7 @@ class SocialLoginController extends Controller
 
     protected function isProviderEnabled(string $provider): bool
     {
-        if (!in_array($provider, $this->supportedProviders)) {
+        if (! in_array($provider, $this->supportedProviders)) {
             return false;
         }
 
@@ -200,7 +203,7 @@ class SocialLoginController extends Controller
         $counter = 1;
 
         while (User::where('username', $username)->exists()) {
-            $username = $base . '_' . $counter;
+            $username = $base.'_'.$counter;
             $counter++;
         }
 

@@ -114,6 +114,6 @@ class UserDataExportService
 
     public function filename(User $user): string
     {
-        return 'hubtube-data-export-' . $user->id . '-' . now()->format('Y-m-d_His') . '.json';
+        return 'hubtube-data-export-'.$user->id.'-'.now()->format('Y-m-d_His').'.json';
     }
 }

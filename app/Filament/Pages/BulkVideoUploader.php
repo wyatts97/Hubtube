@@ -3,19 +3,14 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\RequiresPermission;
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Actions\Action;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Schemas\Components\Utilities\Set;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Database\Eloquent\Collection;
 use App\Jobs\CreateBulkVideosJob;
 use App\Models\Category;
+use App\Models\Hashtag;
 use App\Models\User;
 use App\Models\Video;
 use App\Services\AdminLogger;
 use App\Services\BulkVideoCreator;
+use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
@@ -29,8 +24,15 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
 class BulkVideoUploader extends Page implements HasForms
@@ -41,9 +43,12 @@ class BulkVideoUploader extends Page implements HasForms
 
     use InteractsWithForms;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-tray-arrow-up';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-tray-arrow-up';
+
     protected static ?string $navigationLabel = 'Bulk Upload';
-    protected static string | \UnitEnum | null $navigationGroup = 'Content';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Content';
+
     protected static ?int $navigationSort = 7;
 
     public static function shouldRegisterNavigation(): bool
@@ -121,19 +126,19 @@ class BulkVideoUploader extends Page implements HasForms
     {
         return $schema
             ->components([
-            FileUpload::make('video_files')
-            ->label('Drop video files here or click to browse')
-            ->disk('public')
-            ->directory('videos/admin-uploads')
-            ->acceptedFileTypes(['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'])
-            ->maxSize(5242880) // 5GB
-            ->multiple()
-            ->maxFiles(50)
-            ->visibility('public')
-            ->storeFileNamesIn('video_file_names')
-            ->previewable(false)
-            ->columnSpanFull(),
-        ])
+                FileUpload::make('video_files')
+                    ->label('Drop video files here or click to browse')
+                    ->disk('public')
+                    ->directory('videos/admin-uploads')
+                    ->acceptedFileTypes(['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'])
+                    ->maxSize(5242880) // 5GB
+                    ->multiple()
+                    ->maxFiles(50)
+                    ->visibility('public')
+                    ->storeFileNamesIn('video_file_names')
+                    ->previewable(false)
+                    ->columnSpanFull(),
+            ])
             ->statePath('uploadData');
     }
 
@@ -165,11 +170,11 @@ class BulkVideoUploader extends Page implements HasForms
                             ->columnSpanFull(),
                         Placeholder::make('popular_tags')
                             ->hiddenLabel()
-                            ->content(fn ($component): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(view(
+                            ->content(fn ($component): HtmlString => new HtmlString(view(
                                 'filament.components.popular-tag-pills',
                                 [
-                                    'tagsPath' => $component->getContainer()->getStatePath() . '.tags',
-                                    'tags' => \App\Models\Hashtag::orderByDesc('usage_count')->limit(20)->pluck('name')->toArray(),
+                                    'tagsPath' => $component->getContainer()->getStatePath().'.tags',
+                                    'tags' => Hashtag::orderByDesc('usage_count')->limit(20)->pluck('name')->toArray(),
                                 ]
                             )->render())),
                         Toggle::make('age_restricted')
@@ -197,8 +202,7 @@ class BulkVideoUploader extends Page implements HasForms
                     ->cloneable(false)
                     ->collapsible()
                     ->collapsed(false)
-                    ->itemLabel(fn (array $state): string =>
-                        trim((string) ($state['title'] ?? '')) !== ''
+                    ->itemLabel(fn (array $state): string => trim((string) ($state['title'] ?? '')) !== ''
                             ? (string) $state['title']
                             : ((string) ($state['file_name'] ?? 'Video'))
                     )
@@ -271,11 +275,11 @@ class BulkVideoUploader extends Page implements HasForms
                                     ->columnSpanFull(),
                                 Placeholder::make('popular_tags')
                                     ->hiddenLabel()
-                                    ->content(fn ($component): \Illuminate\Support\HtmlString => new \Illuminate\Support\HtmlString(view(
+                                    ->content(fn ($component): HtmlString => new HtmlString(view(
                                         'filament.components.popular-tag-pills',
                                         [
-                                            'tagsPath' => $component->getContainer()->getStatePath() . '.tags',
-                                            'tags' => \App\Models\Hashtag::orderByDesc('usage_count')->limit(20)->pluck('name')->toArray(),
+                                            'tagsPath' => $component->getContainer()->getStatePath().'.tags',
+                                            'tags' => Hashtag::orderByDesc('usage_count')->limit(20)->pluck('name')->toArray(),
                                         ]
                                     )->render())),
                                 Toggle::make('age_restricted')
@@ -299,6 +303,7 @@ class BulkVideoUploader extends Page implements HasForms
 
         if (empty($paths)) {
             Notification::make()->title('No files selected')->warning()->send();
+
             return;
         }
 
@@ -321,7 +326,7 @@ class BulkVideoUploader extends Page implements HasForms
         // Reset the upload form
         $this->uploadForm->fill([]);
 
-        Notification::make()->title(count($paths) . ' file(s) added')->success()->send();
+        Notification::make()->title(count($paths).' file(s) added')->success()->send();
     }
 
     public function applyBulkSettings(): void
@@ -329,13 +334,13 @@ class BulkVideoUploader extends Page implements HasForms
         $settings = $this->bulkSettingsForm->getState();
 
         foreach ($this->entries as &$entry) {
-            if (!empty($settings['category_id'])) {
+            if (! empty($settings['category_id'])) {
                 $entry['category_id'] = $settings['category_id'];
             }
-            if (!empty($settings['user_id'])) {
+            if (! empty($settings['user_id'])) {
                 $entry['user_id'] = $settings['user_id'];
             }
-            if (!empty($settings['tags'])) {
+            if (! empty($settings['tags'])) {
                 $entry['tags'] = $settings['tags'];
             }
             $entry['age_restricted'] = (bool) ($settings['age_restricted'] ?? true);
@@ -349,6 +354,7 @@ class BulkVideoUploader extends Page implements HasForms
     {
         if (empty($this->entries)) {
             Notification::make()->title('No videos to create')->warning()->send();
+
             return;
         }
 
@@ -356,16 +362,18 @@ class BulkVideoUploader extends Page implements HasForms
         foreach ($this->entries as $index => $entry) {
             if (empty(trim($entry['title'] ?? ''))) {
                 Notification::make()
-                    ->title("Video #" . ($index + 1) . " needs a title")
+                    ->title('Video #'.($index + 1).' needs a title')
                     ->danger()
                     ->send();
+
                 return;
             }
             if (empty($entry['category_id'])) {
                 Notification::make()
-                    ->title("Video #" . ($index + 1) . " needs a category")
+                    ->title('Video #'.($index + 1).' needs a category')
                     ->danger()
                     ->send();
+
                 return;
             }
         }
@@ -395,12 +403,12 @@ class BulkVideoUploader extends Page implements HasForms
             }
 
             AdminLogger::settingsSaved('Bulk Video Upload', [
-                'created_' . count($this->createdVideoIds) . '_videos',
+                'created_'.count($this->createdVideoIds).'_videos',
                 'mode_sync',
             ]);
 
             Notification::make()
-                ->title('Created ' . count($this->createdVideoIds) . ' video(s) — processing will begin shortly')
+                ->title('Created '.count($this->createdVideoIds).' video(s) — processing will begin shortly')
                 ->success()
                 ->send();
 
@@ -410,7 +418,7 @@ class BulkVideoUploader extends Page implements HasForms
                     $failed = $count - count($this->createdVideoIds);
                     Notification::make()
                         ->title('Bulk video upload finished')
-                        ->body(count($this->createdVideoIds) . " video(s) processed, {$failed} failed.")
+                        ->body(count($this->createdVideoIds)." video(s) processed, {$failed} failed.")
                         ->icon('phosphor-tray-arrow-up')
                         ->success()
                         ->sendToDatabase($actor);
@@ -453,7 +461,7 @@ class BulkVideoUploader extends Page implements HasForms
      */
     public function pollBulkResults(): void
     {
-        if (!$this->bulkToken) {
+        if (! $this->bulkToken) {
             return;
         }
 
@@ -461,12 +469,12 @@ class BulkVideoUploader extends Page implements HasForms
         $key = CreateBulkVideosJob::cacheKey($actorId, $this->bulkToken);
         $payload = Cache::get($key);
 
-        if (!is_array($payload)) {
+        if (! is_array($payload)) {
             return;
         }
 
         $ids = $payload['created_ids'] ?? [];
-        if (is_array($ids) && !empty($ids)) {
+        if (is_array($ids) && ! empty($ids)) {
             $this->createdVideoIds = array_values(array_unique(array_merge($this->createdVideoIds, $ids)));
         }
 
@@ -527,13 +535,14 @@ class BulkVideoUploader extends Page implements HasForms
         $base = pathinfo($name, PATHINFO_FILENAME);
         $clean = preg_replace('/[_\-.]+/', ' ', $base) ?? $base;
         $clean = preg_replace('/\s+/', ' ', trim($clean)) ?? $clean;
+
         return $clean === '' ? '' : Str::title($clean);
     }
 
     public function getCreatedVideosProperty(): Collection
     {
         if (empty($this->createdVideoIds)) {
-            return new Collection();
+            return new Collection;
         }
 
         return Video::with('user', 'category', 'encodings')
@@ -545,8 +554,9 @@ class BulkVideoUploader extends Page implements HasForms
     public function selectThumbnail(int $videoId, int $thumbIndex): void
     {
         $video = Video::find($videoId);
-        if (!$video)
+        if (! $video) {
             return;
+        }
 
         $slug = $video->slug;
         $slugTitle = Str::slug($video->title, '_');

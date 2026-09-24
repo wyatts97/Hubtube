@@ -8,7 +8,6 @@ use Laravel\Cashier\Events\WebhookReceived;
 
 class HandleStripeSubscriptionChanges
 {
-
     public function handle(WebhookReceived $event): void
     {
         $payload = $event->payload ?? [];

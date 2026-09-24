@@ -2,15 +2,16 @@
 
 namespace App\Console\Commands;
 
-use Exception;
 use App\Models\Video;
 use App\Services\FfmpegService;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
 class BackfillPortraitFlag extends Command
 {
     protected $signature = 'videos:backfill-portrait {--dry-run : Preview changes without saving}';
+
     protected $description = 'Detect portrait videos and set the is_portrait flag based on video dimensions';
 
     public function handle(): int
@@ -33,6 +34,7 @@ class BackfillPortraitFlag extends Command
 
                 if ($isPortrait === null) {
                     $skipped++;
+
                     continue;
                 }
 
@@ -107,15 +109,15 @@ class BackfillPortraitFlag extends Command
 
     protected function probeVideoDimensions(string $path): ?array
     {
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             return null;
         }
 
         $ffprobe = FfmpegService::ffprobePath();
-        $cmd = "{$ffprobe} -v quiet -print_format json -show_streams " . escapeshellarg($path);
+        $cmd = "{$ffprobe} -v quiet -print_format json -show_streams ".escapeshellarg($path);
         $output = shell_exec($cmd);
 
-        if (!$output) {
+        if (! $output) {
             return null;
         }
 

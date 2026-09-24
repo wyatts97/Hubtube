@@ -2,20 +2,19 @@
 
 namespace App\Services;
 
-use RuntimeException;
-use RecursiveIteratorIterator;
-use RecursiveDirectoryIterator;
-use Carbon\Carbon;
-use Throwable;
 use App\Models\Category;
 use App\Models\Hashtag;
 use App\Models\Video;
-use App\Services\FfmpegService;
+use App\Support\Bytes;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use App\Support\Bytes;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use RuntimeException;
+use Throwable;
 
 class ArchiveImportService
 {
@@ -28,18 +27,29 @@ class ArchiveImportService
 
     // Meta keys used by VidMov theme
     private const META_VIDEO_URL = 'beeteam368_video_url';
+
     private const META_DURATION = 'beeteam368_video_duration';
+
     private const META_WEBP_PREVIEW = 'beeteam368_video_webp_url_preview';
+
     private const META_WEBP_PREVIEW_ALT = 'beeteam368_video_webp_preview_url';
+
     private const META_VIEWS_TOTAL = 'beeteam368_views_counter_totals';
+
     private const META_LIKES = 'beeteam368_reactions_like';
+
     private const META_THUMBNAIL_ID = '_thumbnail_id';
+
     private const META_ATTACHED_FILE = '_wp_attached_file';
 
     private array $posts = [];
+
     private array $postmeta = [];
+
     private array $terms = [];
+
     private array $termTaxonomy = [];
+
     private array $termRelationships = [];
 
     // Attachment post ID => relative file path (from _wp_attached_file)
@@ -47,10 +57,13 @@ class ArchiveImportService
 
     // In-memory caches
     private array $categoryCache = [];
+
     private array $hashtagCache = [];
 
     private ?int $importUserId = null;
+
     private string $archivePath = '';
+
     private string $storageDisk = 'public';
 
     public function setImportUserId(int $userId): void
@@ -82,7 +95,7 @@ class ArchiveImportService
         $this->attachments = [];
 
         $handle = fopen($filePath, 'r');
-        if (!$handle) {
+        if (! $handle) {
             throw new RuntimeException("Cannot open SQL file: {$filePath}");
         }
 
@@ -96,18 +109,20 @@ class ArchiveImportService
                 continue;
             }
 
-            if (preg_match('/^INSERT INTO `' . preg_quote($this->tablePrefix, '/') . '(\w+)`/', $trimmed, $m)) {
+            if (preg_match('/^INSERT INTO `'.preg_quote($this->tablePrefix, '/').'(\w+)`/', $trimmed, $m)) {
                 $tableName = $m[1];
                 $currentTable = in_array($tableName, $targetTables) ? $tableName : null;
 
                 if ($currentTable) {
                     $this->processLine($currentTable, $trimmed);
                 }
+
                 continue;
             }
 
             if ($currentTable && str_starts_with($trimmed, '(')) {
                 $this->processLine($currentTable, $trimmed);
+
                 continue;
             }
 
@@ -119,7 +134,7 @@ class ArchiveImportService
         fclose($handle);
 
         // Filter posts to only vidmov_video type with publish status
-        $videoPosts = array_filter($this->posts, fn($p) => ($p['post_type'] ?? '') === 'vidmov_video' && ($p['post_status'] ?? '') === 'publish');
+        $videoPosts = array_filter($this->posts, fn ($p) => ($p['post_type'] ?? '') === 'vidmov_video' && ($p['post_status'] ?? '') === 'publish');
 
         // Count how many have local files vs bunny embeds
         $localCount = 0;
@@ -157,7 +172,9 @@ class ArchiveImportService
     private function processLine(string $table, string $line): void
     {
         $columns = $this->getColumnsForTable($table);
-        if (empty($columns)) return;
+        if (empty($columns)) {
+            return;
+        }
 
         $colCount = count($columns);
         $offset = 0;
@@ -165,15 +182,21 @@ class ArchiveImportService
 
         while ($offset < $len) {
             $start = strpos($line, '(', $offset);
-            if ($start === false) break;
+            if ($start === false) {
+                break;
+            }
 
             $end = 0;
             $values = $this->parseTuple($line, $start, $end);
-            if ($values === null) break;
+            if ($values === null) {
+                break;
+            }
 
             $offset = $end + 1;
 
-            if (count($values) !== $colCount) continue;
+            if (count($values) !== $colCount) {
+                continue;
+            }
 
             $row = array_combine($columns, $values);
             $this->storeRow($table, $row);
@@ -261,20 +284,24 @@ class ArchiveImportService
                 if ($char === '\\' && $i + 1 < $len) {
                     $current .= $buffer[$i + 1];
                     $i += 2;
+
                     continue;
                 }
                 if ($char === $stringChar) {
                     if ($i + 1 < $len && $buffer[$i + 1] === $stringChar) {
                         $current .= $stringChar;
                         $i += 2;
+
                         continue;
                     }
                     $inString = false;
                     $i++;
+
                     continue;
                 }
                 $current .= $char;
                 $i++;
+
                 continue;
             }
 
@@ -282,6 +309,7 @@ class ArchiveImportService
                 $inString = true;
                 $stringChar = $char;
                 $i++;
+
                 continue;
             }
 
@@ -289,6 +317,7 @@ class ArchiveImportService
                 $depth++;
                 $current .= $char;
                 $i++;
+
                 continue;
             }
 
@@ -297,10 +326,12 @@ class ArchiveImportService
                     $depth--;
                     $current .= $char;
                     $i++;
+
                     continue;
                 }
                 $values[] = trim($current) === 'NULL' ? null : trim($current);
                 $end = $i;
+
                 return $values;
             }
 
@@ -308,6 +339,7 @@ class ArchiveImportService
                 $values[] = trim($current) === 'NULL' ? null : trim($current);
                 $current = '';
                 $i++;
+
                 continue;
             }
 
@@ -316,6 +348,7 @@ class ArchiveImportService
         }
 
         $end = $len;
+
         return null;
     }
 
@@ -340,7 +373,7 @@ class ArchiveImportService
      */
     public function getVideoPosts(): array
     {
-        $videoPosts = array_filter($this->posts, fn($p) => ($p['post_type'] ?? '') === 'vidmov_video' && ($p['post_status'] ?? '') === 'publish');
+        $videoPosts = array_filter($this->posts, fn ($p) => ($p['post_type'] ?? '') === 'vidmov_video' && ($p['post_status'] ?? '') === 'publish');
 
         $results = [];
         foreach ($videoPosts as $postId => $post) {
@@ -379,7 +412,7 @@ class ArchiveImportService
             $description = trim($post['post_excerpt'] ?? '');
             if (empty($description)) {
                 $content = $post['post_content'] ?? '';
-                if (!empty($content)) {
+                if (! empty($content)) {
                     $description = trim(strip_tags($content));
                 }
             }
@@ -411,8 +444,8 @@ class ArchiveImportService
      */
     public function scanArchive(): array
     {
-        if (!$this->archivePath || !is_dir($this->archivePath)) {
-            return ['error' => 'Archive directory not found: ' . $this->archivePath];
+        if (! $this->archivePath || ! is_dir($this->archivePath)) {
+            return ['error' => 'Archive directory not found: '.$this->archivePath];
         }
 
         $mp4Count = 0;
@@ -427,7 +460,9 @@ class ArchiveImportService
         );
 
         foreach ($iterator as $file) {
-            if (!$file->isFile()) continue;
+            if (! $file->isFile()) {
+                continue;
+            }
             $ext = strtolower($file->getExtension());
             $totalSize += $file->getSize();
 
@@ -466,7 +501,7 @@ class ArchiveImportService
             $thumbExists = false;
 
             if ($video['video_rel_path']) {
-                $fullPath = $this->archivePath . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $video['video_rel_path']);
+                $fullPath = $this->archivePath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $video['video_rel_path']);
                 $videoExists = file_exists($fullPath);
                 if ($videoExists) {
                     $video['video_size'] = filesize($fullPath);
@@ -474,7 +509,7 @@ class ArchiveImportService
             }
 
             if ($video['thumbnail_rel_path']) {
-                $fullPath = $this->archivePath . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $video['thumbnail_rel_path']);
+                $fullPath = $this->archivePath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $video['thumbnail_rel_path']);
                 $thumbExists = file_exists($fullPath);
             }
 
@@ -487,7 +522,7 @@ class ArchiveImportService
                 $missingVideo++;
             }
 
-            if (!$thumbExists && $video['thumbnail_rel_path']) {
+            if (! $thumbExists && $video['thumbnail_rel_path']) {
                 $missingThumb++;
             }
         }
@@ -506,18 +541,18 @@ class ArchiveImportService
      */
     public function importVideo(array $video): array
     {
-        if (!$this->importUserId) {
+        if (! $this->importUserId) {
             return ['status' => 'error', 'message' => 'No import user selected'];
         }
 
         // Skip if no local video file
-        if (!$video['video_rel_path'] || empty($video['video_found'])) {
+        if (! $video['video_rel_path'] || empty($video['video_found'])) {
             return ['status' => 'skipped', 'message' => 'No local video file found'];
         }
 
         try {
             // Check for duplicate by source_video_id
-            $sourceVideoId = 'wp_archive_' . $video['wp_id'];
+            $sourceVideoId = 'wp_archive_'.$video['wp_id'];
             if (Video::where('source_video_id', $sourceVideoId)->exists()) {
                 return ['status' => 'skipped', 'message' => 'Already imported'];
             }
@@ -527,7 +562,7 @@ class ArchiveImportService
             $slug = $baseSlug;
             $suffix = 2;
             while (Video::withTrashed()->where('slug', $slug)->exists()) {
-                $slug = $baseSlug . '-' . $suffix;
+                $slug = $baseSlug.'-'.$suffix;
                 $suffix++;
             }
 
@@ -538,8 +573,8 @@ class ArchiveImportService
             Storage::disk($this->storageDisk)->makeDirectory($videoDir);
 
             // Copy video file
-            $videoSourcePath = $this->archivePath . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $video['video_rel_path']);
-            $videoFileName = Str::slug(pathinfo($video['video_rel_path'], PATHINFO_FILENAME), '_') . '.mp4';
+            $videoSourcePath = $this->archivePath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $video['video_rel_path']);
+            $videoFileName = Str::slug(pathinfo($video['video_rel_path'], PATHINFO_FILENAME), '_').'.mp4';
             $videoStoragePath = "{$videoDir}/{$videoFileName}";
 
             $destPath = Storage::disk($this->storageDisk)->path($videoStoragePath);
@@ -553,8 +588,8 @@ class ArchiveImportService
 
             // Copy thumbnail if available
             $thumbnailStoragePath = null;
-            if (!empty($video['thumbnail_rel_path']) && !empty($video['thumb_found'])) {
-                $thumbSourcePath = $this->archivePath . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $video['thumbnail_rel_path']);
+            if (! empty($video['thumbnail_rel_path']) && ! empty($video['thumb_found'])) {
+                $thumbSourcePath = $this->archivePath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $video['thumbnail_rel_path']);
                 $thumbExt = pathinfo($video['thumbnail_rel_path'], PATHINFO_EXTENSION) ?: 'jpg';
                 $thumbnailStoragePath = "{$videoDir}/thumbnail.{$thumbExt}";
 
@@ -564,8 +599,8 @@ class ArchiveImportService
 
             // Copy preview webp if available
             $previewStoragePath = null;
-            if (!empty($video['preview_rel_path'])) {
-                $previewSourcePath = $this->archivePath . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $video['preview_rel_path']);
+            if (! empty($video['preview_rel_path'])) {
+                $previewSourcePath = $this->archivePath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $video['preview_rel_path']);
                 if (file_exists($previewSourcePath)) {
                     $previewStoragePath = "{$videoDir}/preview.webp";
                     $previewDestPath = Storage::disk($this->storageDisk)->path($previewStoragePath);
@@ -578,12 +613,12 @@ class ArchiveImportService
 
             // Resolve category
             $categoryId = null;
-            if (!empty($video['category'])) {
+            if (! empty($video['category'])) {
                 $categoryId = $this->resolveCategory($video['category']);
             }
 
             // Resolve hashtags
-            if (!empty($video['tags'])) {
+            if (! empty($video['tags'])) {
                 foreach ($video['tags'] as $tagName) {
                     $this->resolveHashtag($tagName);
                 }
@@ -597,7 +632,7 @@ class ArchiveImportService
                 'uuid' => $uuid,
                 'title' => $video['title'],
                 'slug' => $slug,
-                'description' => !empty($video['description']) ? $video['description'] : null,
+                'description' => ! empty($video['description']) ? $video['description'] : null,
                 'video_path' => $videoStoragePath,
                 'thumbnail' => $thumbnailStoragePath,
                 'preview_path' => $previewStoragePath,
@@ -612,7 +647,7 @@ class ArchiveImportService
                 'age_restricted' => true,
                 'views_count' => (int) ($video['views_total'] ?? 0),
                 'likes_count' => (int) ($video['likes'] ?? 0),
-                'tags' => !empty($video['tags']) ? $video['tags'] : null,
+                'tags' => ! empty($video['tags']) ? $video['tags'] : null,
                 'category_id' => $categoryId,
                 'source_site' => 'wedgietube_archive',
                 'source_video_id' => $sourceVideoId,
@@ -627,6 +662,7 @@ class ArchiveImportService
 
         } catch (Throwable $e) {
             Log::warning("Archive Import error for WP post {$video['wp_id']}: {$e->getMessage()}");
+
             return ['status' => 'error', 'message' => $e->getMessage()];
         }
     }
@@ -663,6 +699,7 @@ class ArchiveImportService
                 }
             }
         }
+
         return $tags;
     }
 
@@ -680,6 +717,7 @@ class ArchiveImportService
                 }
             }
         }
+
         return $actors;
     }
 
@@ -696,12 +734,15 @@ class ArchiveImportService
                 }
             }
         }
+
         return null;
     }
 
     private function parseDuration(?string $formatted): int
     {
-        if (!$formatted) return 0;
+        if (! $formatted) {
+            return 0;
+        }
         $parts = explode(':', $formatted);
         $parts = array_map('intval', $parts);
         if (count($parts) === 3) {
@@ -709,6 +750,7 @@ class ArchiveImportService
         } elseif (count($parts) === 2) {
             return $parts[0] * 60 + $parts[1];
         }
+
         return 0;
     }
 
@@ -723,15 +765,19 @@ class ArchiveImportService
             ['name' => $name, 'description' => '', 'is_active' => true]
         );
         $this->categoryCache[$slug] = $category->id;
+
         return $this->categoryCache[$slug];
     }
 
     private function resolveHashtag(string $name): void
     {
         $slug = Str::slug($name);
-        if (empty($slug)) return;
+        if (empty($slug)) {
+            return;
+        }
         if (isset($this->hashtagCache[$slug])) {
             Hashtag::where('slug', $slug)->increment('usage_count');
+
             return;
         }
         Hashtag::firstOrCreate(
@@ -749,12 +795,12 @@ class ArchiveImportService
     {
         $ffmpegPath = FfmpegService::ffmpegPath();
 
-        $tmpPath = $filePath . '.faststart.mp4';
+        $tmpPath = $filePath.'.faststart.mp4';
         $cmd = escapeshellarg($ffmpegPath)
-            . ' -i ' . escapeshellarg($filePath)
-            . ' -c copy -movflags +faststart'
-            . ' -y ' . escapeshellarg($tmpPath)
-            . ' 2>&1';
+            .' -i '.escapeshellarg($filePath)
+            .' -c copy -movflags +faststart'
+            .' -y '.escapeshellarg($tmpPath)
+            .' 2>&1';
 
         $output = shell_exec($cmd);
 

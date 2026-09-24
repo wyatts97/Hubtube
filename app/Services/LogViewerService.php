@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
-use Throwable;
+use App\Support\Bytes;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use SplFileObject;
-use App\Support\Bytes;
+use Throwable;
 
 /**
  * LogViewerService
@@ -25,7 +25,7 @@ class LogViewerService
     {
         return Cache::remember('log_viewer:files', self::CACHE_TTL, function () {
             $logPath = storage_path('logs');
-            if (!is_dir($logPath)) {
+            if (! is_dir($logPath)) {
                 return [];
             }
 
@@ -45,6 +45,7 @@ class LogViewerService
             }
 
             usort($files, fn ($a, $b) => $b['modified_at'] <=> $a['modified_at']);
+
             return $files;
         });
     }
@@ -52,11 +53,11 @@ class LogViewerService
     /**
      * Parse a log file into structured entries.
      *
-     * @param string      $filename   Filename inside storage/logs/
-     * @param int|null    $limit      Max entries to return (null = all)
-     * @param string|null $level      Filter by level (lowercase)
-     * @param string|null $search     Free-text search against message
-     * @param bool        $tail       If true, read from end of file (tail-N)
+     * @param  string  $filename  Filename inside storage/logs/
+     * @param  int|null  $limit  Max entries to return (null = all)
+     * @param  string|null  $level  Filter by level (lowercase)
+     * @param  string|null  $search  Free-text search against message
+     * @param  bool  $tail  If true, read from end of file (tail-N)
      * @return array<int, array{timestamp:string,environment:string,level:string,level_color:string,message:string,context:string,trace:string}>
      */
     public function parseLogFile(
@@ -66,8 +67,8 @@ class LogViewerService
         ?string $search = null,
         bool $tail = true,
     ): array {
-        $path = storage_path('logs/' . basename($filename));
-        if (!File::exists($path)) {
+        $path = storage_path('logs/'.basename($filename));
+        if (! File::exists($path)) {
             return [];
         }
 
@@ -81,8 +82,7 @@ class LogViewerService
 
         if ($search !== null && $search !== '') {
             $needle = mb_strtolower($search);
-            $entries = array_values(array_filter($entries, fn ($e) =>
-                str_contains(mb_strtolower($e['message']), $needle)
+            $entries = array_values(array_filter($entries, fn ($e) => str_contains(mb_strtolower($e['message']), $needle)
                 || str_contains(mb_strtolower($e['context']), $needle)
                 || str_contains(mb_strtolower($e['trace']), $needle)
             ));
@@ -111,6 +111,7 @@ class LogViewerService
                 }
             }
         }
+
         return $results;
     }
 
@@ -135,7 +136,7 @@ class LogViewerService
             return [];
         }
 
-        while (!$file->eof()) {
+        while (! $file->eof()) {
             $line = $file->fgets();
             if ($line === false) {
                 break;
@@ -210,14 +211,14 @@ class LogViewerService
         // after → trace.
         if (str_contains($rest, '[stacktrace]')) {
             [$ctxPart, $tracePart] = explode('[stacktrace]', $rest, 2);
-            $entry['context'] = trim($entry['context'] . "\n" . $ctxPart);
+            $entry['context'] = trim($entry['context']."\n".$ctxPart);
             $entry['trace'] = trim($tracePart);
         } else {
             // No explicit marker. If lines start with '#N ' assume trace.
             if (preg_match('/^#\d+\s/m', $rest)) {
                 $entry['trace'] = $rest;
             } else {
-                $entry['context'] = trim($entry['context'] . "\n" . $rest);
+                $entry['context'] = trim($entry['context']."\n".$rest);
             }
         }
 
@@ -237,27 +238,30 @@ class LogViewerService
 
     public function deleteLogFile(string $filename): bool
     {
-        $path = storage_path('logs/' . basename($filename));
-        if (!File::exists($path)) {
+        $path = storage_path('logs/'.basename($filename));
+        if (! File::exists($path)) {
             return false;
         }
         Cache::forget('log_viewer:files');
+
         return File::delete($path);
     }
 
     public function clearLogFile(string $filename): bool
     {
-        $path = storage_path('logs/' . basename($filename));
-        if (!File::exists($path)) {
+        $path = storage_path('logs/'.basename($filename));
+        if (! File::exists($path)) {
             return false;
         }
         Cache::forget('log_viewer:files');
+
         return File::put($path, '') !== false;
     }
 
     public function getFilePath(string $filename): ?string
     {
-        $path = storage_path('logs/' . basename($filename));
+        $path = storage_path('logs/'.basename($filename));
+
         return File::exists($path) ? $path : null;
     }
 

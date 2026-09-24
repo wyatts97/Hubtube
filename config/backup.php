@@ -1,5 +1,13 @@
 <?php
 
+use Spatie\Backup\Notifications\Notifiable;
+use Spatie\Backup\Notifications\Notifications\BackupHasFailedNotification;
+use Spatie\Backup\Notifications\Notifications\CleanupHasFailedNotification;
+use Spatie\Backup\Notifications\Notifications\UnhealthyBackupWasFoundNotification;
+use Spatie\Backup\Tasks\Cleanup\Strategies\DefaultStrategy;
+use Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumAgeInDays;
+use Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumStorageInMegabytes;
+
 /*
 | spatie/laravel-backup reads config('backup.backup'), 'notifications',
 | 'monitor_backups' and 'cleanup', merged shallowly over its own defaults.
@@ -96,12 +104,12 @@ return [
     'notifications' => [
         'notifications' => [
             // Failures only; a success mail every night trains you to ignore them.
-            \Spatie\Backup\Notifications\Notifications\BackupHasFailedNotification::class => ['mail'],
-            \Spatie\Backup\Notifications\Notifications\UnhealthyBackupWasFoundNotification::class => ['mail'],
-            \Spatie\Backup\Notifications\Notifications\CleanupHasFailedNotification::class => ['mail'],
+            BackupHasFailedNotification::class => ['mail'],
+            UnhealthyBackupWasFoundNotification::class => ['mail'],
+            CleanupHasFailedNotification::class => ['mail'],
         ],
 
-        'notifiable' => \Spatie\Backup\Notifications\Notifiable::class,
+        'notifiable' => Notifiable::class,
 
         // Overridden by the admin notification email when one is set in the
         // panel (DynamicConfigServiceProvider).
@@ -123,14 +131,14 @@ return [
             'name' => 'backups',
             'disks' => explode(',', env('BACKUP_DISKS', 'local')),
             'health_checks' => [
-                \Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumAgeInDays::class => 2,
-                \Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumStorageInMegabytes::class => 5000,
+                MaximumAgeInDays::class => 2,
+                MaximumStorageInMegabytes::class => 5000,
             ],
         ],
     ],
 
     'cleanup' => [
-        'strategy' => \Spatie\Backup\Tasks\Cleanup\Strategies\DefaultStrategy::class,
+        'strategy' => DefaultStrategy::class,
 
         'default_strategy' => [
             'keep_all_backups_for_days' => 3,

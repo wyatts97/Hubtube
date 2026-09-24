@@ -26,14 +26,14 @@ class ImageController extends Controller
             ->with('user')
             ->public()
             ->approved()
-            ->when($request->category, fn($q, $cat) => $q->where('category_id', $cat))
+            ->when($request->category, fn ($q, $cat) => $q->where('category_id', $cat))
             ->when(
                 $request->sort === 'popular',
-                fn($q) => $q->orderByDesc('views_count'),
-                fn($q) => $q->when(
+                fn ($q) => $q->orderByDesc('views_count'),
+                fn ($q) => $q->when(
                     $request->sort === 'oldest',
-                    fn($q) => $q->oldest('published_at'),
-                    fn($q) => $q->latest('published_at')
+                    fn ($q) => $q->oldest('published_at'),
+                    fn ($q) => $q->latest('published_at')
                 )
             )
             ->paginate(24);
@@ -54,12 +54,12 @@ class ImageController extends Controller
 
     public function show(Image $image): Response
     {
-        if (!$image->isAccessibleBy(auth()->user())) {
+        if (! $image->isAccessibleBy(auth()->user())) {
             abort(403);
         }
 
         $isOwner = auth()->check() && (auth()->id() === $image->user_id || auth()->user()->is_admin);
-        if (!$isOwner && !$image->is_approved) {
+        if (! $isOwner && ! $image->is_approved) {
             abort(404);
         }
 
@@ -69,7 +69,7 @@ class ImageController extends Controller
         $relatedImages = Image::query()
             ->with('user')
             ->where('id', '!=', $image->id)
-            ->when($image->category_id, fn($q) => $q->where('category_id', $image->category_id))
+            ->when($image->category_id, fn ($q) => $q->where('category_id', $image->category_id))
             ->public()
             ->approved()
             ->latest('published_at')

@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\User;
+use App\Filament\Pages\SeoSettings;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,11 +46,11 @@ test('expired session on Livewire request returns graceful 401', function () {
 test('SEO settings page renders with every setting the code reads', function () {
     asAdmin();
 
-    $this->get(App\Filament\Pages\SeoSettings::getUrl())->assertStatus(200);
+    $this->get(SeoSettings::getUrl())->assertStatus(200);
 
     // Spot-check keys that previously had no admin UI at all, so a schema that
     // silently drops them fails here rather than in production.
-    $state = Livewire\Livewire::test(App\Filament\Pages\SeoSettings::class)->get('data');
+    $state = Livewire\Livewire::test(SeoSettings::class)->get('data');
 
     expect($state)->toHaveKeys([
         'seo_videos_index_title',

@@ -103,7 +103,7 @@ class CCBillService
      */
     public function singleFormDigest(string $initialPrice, int $initialPeriod, int $currencyCode): string
     {
-        return md5($initialPrice . $initialPeriod . $currencyCode . $this->salt());
+        return md5($initialPrice.$initialPeriod.$currencyCode.$this->salt());
     }
 
     /**
@@ -120,12 +120,12 @@ class CCBillService
     ): string {
         return md5(
             $initialPrice
-            . $initialPeriod
-            . $recurringPrice
-            . $recurringPeriod
-            . $numRebills
-            . $currencyCode
-            . $this->salt()
+            .$initialPeriod
+            .$recurringPrice
+            .$recurringPeriod
+            .$numRebills
+            .$currencyCode
+            .$this->salt()
         );
     }
 
@@ -179,7 +179,7 @@ class CCBillService
         $params['ht_plan'] = $plan->id;
         $params['ht_sig'] = $this->passthroughSignature($user->id, $plan->id);
 
-        return self::FLEXFORMS_BASE . '/' . rawurlencode($this->flexId()) . '?' . http_build_query($params);
+        return self::FLEXFORMS_BASE.'/'.rawurlencode($this->flexId()).'?'.http_build_query($params);
     }
 
     /**
@@ -188,7 +188,7 @@ class CCBillService
      */
     public function passthroughSignature(int $userId, int $planId): string
     {
-        return hash_hmac('sha256', $userId . '|' . $planId, $this->webhookSecret());
+        return hash_hmac('sha256', $userId.'|'.$planId, $this->webhookSecret());
     }
 
     /**
@@ -211,7 +211,7 @@ class CCBillService
 
         if ($secret === '') {
             Log::error('CCBill webhook rejected: no webhook secret configured. '
-                . 'Set one in Admin → Payment Settings before enabling CCBill.', [
+                .'Set one in Admin → Payment Settings before enabling CCBill.', [
                     'ip' => $request->ip(),
                 ]);
 
@@ -233,6 +233,7 @@ class CCBillService
             $ips = array_filter(array_map('trim', explode(',', $allowlist)));
             if (! empty($ips) && ! in_array($request->ip(), $ips, true)) {
                 Log::warning('CCBill webhook rejected: IP not allowlisted', ['ip' => $request->ip()]);
+
                 return false;
             }
         }

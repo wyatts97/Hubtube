@@ -19,7 +19,9 @@ class MigrateStorageCommand extends Command
     protected $description = 'Migrate video files from one storage disk to another (e.g. local → Wasabi)';
 
     private int $uploaded = 0;
+
     private int $failed = 0;
+
     private int $skipped = 0;
 
     public function handle(): int
@@ -31,21 +33,24 @@ class MigrateStorageCommand extends Command
 
         if ($fromDisk === $toDisk) {
             $this->error('Source and target disks cannot be the same.');
+
             return self::FAILURE;
         }
 
         // Validate target disk is configured
-        if (!config("filesystems.disks.{$toDisk}")) {
+        if (! config("filesystems.disks.{$toDisk}")) {
             $this->error("Disk '{$toDisk}' is not configured in filesystems.php.");
+
             return self::FAILURE;
         }
 
         // Test connection to target
-        if (!$dryRun) {
+        if (! $dryRun) {
             $this->info("Testing connection to '{$toDisk}'...");
             $result = StorageManager::testConnection($toDisk);
-            if (!$result['success']) {
+            if (! $result['success']) {
                 $this->error("Connection test failed: {$result['message']}");
+
                 return self::FAILURE;
             }
             $this->info("✓ Connected to {$toDisk}");
@@ -65,12 +70,13 @@ class MigrateStorageCommand extends Command
 
         if ($total === 0) {
             $this->info("No videos found on '{$fromDisk}' disk.");
+
             return self::SUCCESS;
         }
 
-        $this->info(($dryRun ? '[DRY RUN] ' : '') . "Found {$total} videos to migrate from '{$fromDisk}' → '{$toDisk}'");
+        $this->info(($dryRun ? '[DRY RUN] ' : '')."Found {$total} videos to migrate from '{$fromDisk}' → '{$toDisk}'");
 
-        if (!$dryRun && !$this->confirm("Proceed with migrating {$total} videos?")) {
+        if (! $dryRun && ! $this->confirm("Proceed with migrating {$total} videos?")) {
             return self::SUCCESS;
         }
 
@@ -82,6 +88,7 @@ class MigrateStorageCommand extends Command
                 $this->newLine();
                 $this->line("  Would migrate: {$video->title} (ID: {$video->id})");
                 $bar->advance();
+
                 continue;
             }
 
@@ -92,7 +99,7 @@ class MigrateStorageCommand extends Command
         $bar->finish();
         $this->newLine(2);
 
-        $this->info("Migration complete:");
+        $this->info('Migration complete:');
         $this->line("  Uploaded: {$this->uploaded}");
         $this->line("  Failed:   {$this->failed}");
         $this->line("  Skipped:  {$this->skipped}");
@@ -123,12 +130,12 @@ class MigrateStorageCommand extends Command
         }
 
         // Upload processed directory files (current slug-based path)
-        if (!empty($video->slug)) {
+        if (! empty($video->slug)) {
             $videoDir = "videos/{$video->slug}";
             if ($localDisk->exists($videoDir)) {
                 $allFiles = $localDisk->allFiles($videoDir);
                 foreach ($allFiles as $file) {
-                    if (!in_array($file, $filesToUpload)) {
+                    if (! in_array($file, $filesToUpload)) {
                         $filesToUpload[] = $file;
                     }
                 }
@@ -136,12 +143,12 @@ class MigrateStorageCommand extends Command
         }
 
         // Legacy path cleanup (older uploads used user_id/uuid structure)
-        if (!empty($video->uuid)) {
+        if (! empty($video->uuid)) {
             $legacyDir = "videos/{$video->user_id}/{$video->uuid}";
             if ($localDisk->exists($legacyDir)) {
                 $allFiles = $localDisk->allFiles($legacyDir);
                 foreach ($allFiles as $file) {
-                    if (!in_array($file, $filesToUpload)) {
+                    if (! in_array($file, $filesToUpload)) {
                         $filesToUpload[] = $file;
                     }
                 }
@@ -150,13 +157,14 @@ class MigrateStorageCommand extends Command
 
         if (empty($filesToUpload)) {
             $this->skipped++;
+
             return;
         }
 
         $videoFailed = false;
         foreach ($filesToUpload as $filePath) {
             $localPath = $localDisk->path($filePath);
-            if (!StorageManager::uploadLocalFile($localPath, $filePath, $toDisk)) {
+            if (! StorageManager::uploadLocalFile($localPath, $filePath, $toDisk)) {
                 $this->newLine();
                 $this->warn("  Failed to upload: {$filePath}");
                 $videoFailed = true;

@@ -1,5 +1,13 @@
 <?php
 
+use App\Filament\Pages\ArchiveImporter;
+use App\Filament\Pages\EncodingSettings;
+use App\Filament\Pages\IntegrationSettings;
+use App\Filament\Pages\PaymentSettings;
+use App\Filament\Pages\SiteSettings;
+use App\Filament\Pages\StorageSettings;
+use App\Filament\Resources\UserResource;
+use App\Filament\Resources\VideoResource;
 use App\Models\Setting;
 use App\Models\User;
 
@@ -15,12 +23,12 @@ use App\Models\User;
 */
 
 dataset('superAdminOnlyPages', [
-    'site settings' => [App\Filament\Pages\SiteSettings::class],
-    'payment settings' => [App\Filament\Pages\PaymentSettings::class],
-    'storage settings' => [App\Filament\Pages\StorageSettings::class],
-    'encoding settings' => [App\Filament\Pages\EncodingSettings::class],
-    'integration settings' => [App\Filament\Pages\IntegrationSettings::class],
-    'archive importer' => [App\Filament\Pages\ArchiveImporter::class],
+    'site settings' => [SiteSettings::class],
+    'payment settings' => [PaymentSettings::class],
+    'storage settings' => [StorageSettings::class],
+    'encoding settings' => [EncodingSettings::class],
+    'integration settings' => [IntegrationSettings::class],
+    'archive importer' => [ArchiveImporter::class],
 ]);
 
 test('a plain admin cannot reach super-admin-only pages', function (string $page) {
@@ -38,14 +46,14 @@ test('a super admin can reach super-admin-only pages', function (string $page) {
 test('a plain admin cannot reach user management', function () {
     asUser(User::factory()->plainAdmin()->create());
 
-    $this->get(App\Filament\Resources\UserResource::getUrl('index'))->assertStatus(403);
+    $this->get(UserResource::getUrl('index'))->assertStatus(403);
 });
 
 test('a plain admin can still reach the dashboard and moderate content', function () {
     asUser(User::factory()->plainAdmin()->create());
 
     $this->get('/admin')->assertStatus(200);
-    $this->get(App\Filament\Resources\VideoResource::getUrl('index'))->assertStatus(200);
+    $this->get(VideoResource::getUrl('index'))->assertStatus(200);
 });
 
 test('isSuperAdmin requires both flags', function () {

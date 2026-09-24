@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
-use Throwable;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class TranslationOverride extends Model
 {

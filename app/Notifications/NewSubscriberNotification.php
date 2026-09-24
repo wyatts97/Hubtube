@@ -13,9 +13,7 @@ class NewSubscriberNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(protected Subscription $subscription)
-    {
-    }
+    public function __construct(protected Subscription $subscription) {}
 
     public function via(object $notifiable): array
     {

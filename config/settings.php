@@ -1,12 +1,24 @@
 <?php
 
+use FinityLabs\FinMail\Settings\AttachmentSettings;
+use FinityLabs\FinMail\Settings\AuthEmailSettings;
+use FinityLabs\FinMail\Settings\BrandingSettings;
+use FinityLabs\FinMail\Settings\GeneralSettings;
+use FinityLabs\FinMail\Settings\LoggingSettings;
+use Spatie\LaravelData\Data;
+use Spatie\LaravelSettings\SettingsCasts\DataCast;
+use Spatie\LaravelSettings\SettingsCasts\DateTimeInterfaceCast;
+use Spatie\LaravelSettings\SettingsCasts\DateTimeZoneCast;
+use Spatie\LaravelSettings\SettingsRepositories\DatabaseSettingsRepository;
+use Spatie\LaravelSettings\SettingsRepositories\RedisSettingsRepository;
+
 return [
     'settings' => [
-        \FinityLabs\FinMail\Settings\GeneralSettings::class,
-        \FinityLabs\FinMail\Settings\AttachmentSettings::class,
-        \FinityLabs\FinMail\Settings\BrandingSettings::class,
-        \FinityLabs\FinMail\Settings\LoggingSettings::class,
-        \FinityLabs\FinMail\Settings\AuthEmailSettings::class,
+        GeneralSettings::class,
+        AttachmentSettings::class,
+        BrandingSettings::class,
+        LoggingSettings::class,
+        AuthEmailSettings::class,
     ],
 
     'setting_class_path' => app_path('Settings'),
@@ -19,13 +31,13 @@ return [
 
     'repositories' => [
         'database' => [
-            'type' => Spatie\LaravelSettings\SettingsRepositories\DatabaseSettingsRepository::class,
+            'type' => DatabaseSettingsRepository::class,
             'model' => null,
             'table' => 'spatie_settings',
             'connection' => null,
         ],
         'redis' => [
-            'type' => Spatie\LaravelSettings\SettingsRepositories\RedisSettingsRepository::class,
+            'type' => RedisSettingsRepository::class,
             'connection' => null,
             'prefix' => null,
         ],
@@ -43,9 +55,9 @@ return [
     ],
 
     'global_casts' => [
-        DateTimeInterface::class => Spatie\LaravelSettings\SettingsCasts\DateTimeInterfaceCast::class,
-        DateTimeZone::class => Spatie\LaravelSettings\SettingsCasts\DateTimeZoneCast::class,
-        Spatie\LaravelData\Data::class => Spatie\LaravelSettings\SettingsCasts\DataCast::class,
+        DateTimeInterface::class => DateTimeInterfaceCast::class,
+        DateTimeZone::class => DateTimeZoneCast::class,
+        Data::class => DataCast::class,
     ],
 
     'auto_discover_settings' => [

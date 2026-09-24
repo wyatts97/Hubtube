@@ -19,7 +19,7 @@ class ImageFactory extends Factory
         return [
             'user_id' => User::factory(),
             'uuid' => $uuid,
-            'slug' => Str::slug($title) . '-' . Str::lower(Str::random(6)),
+            'slug' => Str::slug($title).'-'.Str::lower(Str::random(6)),
             'title' => $title,
             'description' => fake()->paragraph(),
             'file_path' => "images/{$uuid}/original.jpg",

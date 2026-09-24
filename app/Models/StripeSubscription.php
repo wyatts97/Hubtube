@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\StripeSubscriptionFactory;
 use Laravel\Cashier\Subscription as CashierSubscription;
 
 class StripeSubscription extends CashierSubscription
@@ -19,7 +20,7 @@ class StripeSubscription extends CashierSubscription
 
     protected static function newFactory()
     {
-        return \Database\Factories\StripeSubscriptionFactory::new();
+        return StripeSubscriptionFactory::new();
     }
 
     public function items()

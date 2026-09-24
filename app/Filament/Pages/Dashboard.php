@@ -10,8 +10,7 @@ use Filament\Pages\Dashboard as BaseDashboard;
 
 class Dashboard extends BaseDashboard
 {
-
-    protected static string | \UnitEnum | null $navigationGroup = 'Overview';
+    protected static string|\UnitEnum|null $navigationGroup = 'Overview';
 
     public function getGreeting(): string
     {
@@ -20,8 +19,9 @@ class Dashboard extends BaseDashboard
         $greeting = match (true) {
             $hour < 12 => 'Good morning',
             $hour < 17 => 'Good afternoon',
-            default    => 'Good evening',
+            default => 'Good evening',
         };
+
         return "{$greeting}, {$name}";
     }
 

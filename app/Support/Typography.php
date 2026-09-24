@@ -200,14 +200,14 @@ class Typography
             $slot = self::slot($name);
 
             if ($slot['stack'] !== null) {
-                $lines[] = $spec['cssVar'] . ': ' . $slot['stack'] . ';';
+                $lines[] = $spec['cssVar'].': '.$slot['stack'].';';
             }
         }
 
         // Default weight for headings, so a chosen weight applies without every
         // heading rule restating it.
         $display = self::slot('display');
-        $lines[] = '--font-display-weight: ' . $display['weight'] . ';';
+        $lines[] = '--font-display-weight: '.$display['weight'].';';
 
         return implode("\n            ", $lines);
     }

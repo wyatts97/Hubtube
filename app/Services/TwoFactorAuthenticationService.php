@@ -12,7 +12,7 @@ class TwoFactorAuthenticationService
 
     public function __construct()
     {
-        $this->engine = new Google2FA();
+        $this->engine = new Google2FA;
     }
 
     /**
@@ -64,7 +64,7 @@ class TwoFactorAuthenticationService
     public function generateRecoveryCodes(int $count = 8): array
     {
         return collect(range(1, $count))
-            ->map(fn () => Str::random(10) . '-' . Str::random(10))
+            ->map(fn () => Str::random(10).'-'.Str::random(10))
             ->all();
     }
 }

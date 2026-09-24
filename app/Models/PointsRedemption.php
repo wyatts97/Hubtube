@@ -31,7 +31,9 @@ class PointsRedemption extends Model
     }
 
     const STATUS_ACTIVE = 'active';
+
     const STATUS_EXPIRED = 'expired';
+
     const STATUS_REVOKED = 'revoked';
 
     public function user(): BelongsTo

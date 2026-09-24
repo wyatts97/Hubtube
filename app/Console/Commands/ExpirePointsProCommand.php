@@ -33,6 +33,7 @@ class ExpirePointsProCommand extends Command
             if ($hasPaidPro) {
                 // Paid sub is active; just clear the points tracking so the expiry job stops touching this user.
                 $user->forceFill(['pro_expires_at' => null, 'pro_source' => 'stripe'])->save();
+
                 continue;
             }
 

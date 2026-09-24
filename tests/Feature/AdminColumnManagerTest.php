@@ -1,6 +1,10 @@
 <?php
 
+use App\Filament\Resources\ImageResource\Pages\ListImages;
+use App\Filament\Resources\UserResource\Pages\ListUsers;
+use App\Filament\Resources\VideoResource\Pages\ListVideos;
 use Filament\Facades\Filament;
+use Filament\Tables\Enums\FiltersLayout;
 use Livewire\Livewire;
 
 /*
@@ -94,23 +98,23 @@ test('every column is toggleable except the pinned identity column', function ()
 test('the images table keeps its filters in the toolbar rather than a second bar', function () {
     asAdmin();
 
-    $table = Livewire::test(App\Filament\Resources\ImageResource\Pages\ListImages::class)
+    $table = Livewire::test(ListImages::class)
         ->instance()
         ->getTable();
 
     // Every other resource already uses the v5 default. ImageResource was the
     // one overriding it to AboveContentCollapsible, which pushed filters onto
     // their own row above the table instead of into the top bar.
-    expect($table->getFiltersLayout())->toBe(\Filament\Tables\Enums\FiltersLayout::Dropdown);
+    expect($table->getFiltersLayout())->toBe(FiltersLayout::Dropdown);
 });
 
 test('numeric columns no longer carry decorative icons', function () {
     asAdmin();
 
     $checks = [
-        [App\Filament\Resources\UserResource\Pages\ListUsers::class, ['videos_count', 'points_balance']],
-        [App\Filament\Resources\VideoResource\Pages\ListVideos::class, ['views_count', 'likes_count']],
-        [App\Filament\Resources\ImageResource\Pages\ListImages::class, ['views_count']],
+        [ListUsers::class, ['videos_count', 'points_balance']],
+        [ListVideos::class, ['views_count', 'likes_count']],
+        [ListImages::class, ['views_count']],
     ];
 
     foreach ($checks as [$page, $columns]) {

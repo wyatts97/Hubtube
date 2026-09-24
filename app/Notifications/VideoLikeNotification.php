@@ -16,9 +16,7 @@ class VideoLikeNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(protected Video $video, protected User $liker)
-    {
-    }
+    public function __construct(protected Video $video, protected User $liker) {}
 
     public function via(object $notifiable): array
     {

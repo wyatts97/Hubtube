@@ -11,8 +11,8 @@ use Illuminate\Support\Str;
 
 function createAdminStreamFixture(string $contents = '0123456789'): array
 {
-    $relativePath = 'videos/test-stream-' . Str::uuid() . '/sample.mp4';
-    $absolutePath = storage_path('app/public/' . $relativePath);
+    $relativePath = 'videos/test-stream-'.Str::uuid().'/sample.mp4';
+    $absolutePath = storage_path('app/public/'.$relativePath);
 
     File::ensureDirectoryExists(dirname($absolutePath));
     file_put_contents($absolutePath, $contents);
@@ -37,7 +37,7 @@ test('admin can stream video via query path', function () {
     try {
         $response = $this->withHeaders([
             'Range' => 'bytes=0-3',
-        ])->get('/admin/video-stream?path=' . rawurlencode($relativePath));
+        ])->get('/admin/video-stream?path='.rawurlencode($relativePath));
 
         $response->assertStatus(206);
         $response->assertHeader('Accept-Ranges', 'bytes');
@@ -56,7 +56,7 @@ test('admin can stream video via legacy path segment', function () {
     [$relativePath, $absolutePath, $directoryPath] = createAdminStreamFixture();
 
     try {
-        $response = $this->get('/admin/video-stream/' . $relativePath);
+        $response = $this->get('/admin/video-stream/'.$relativePath);
 
         $response->assertStatus(200);
         $response->assertHeader('Accept-Ranges', 'bytes');

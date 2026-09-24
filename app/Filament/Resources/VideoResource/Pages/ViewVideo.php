@@ -2,10 +2,9 @@
 
 namespace App\Filament\Resources\VideoResource\Pages;
 
-use Filament\Actions\EditAction;
-use Filament\Actions\Action;
 use App\Filament\Resources\VideoResource;
-use Filament\Actions;
+use Filament\Actions\Action;
+use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewVideo extends ViewRecord
@@ -21,7 +20,7 @@ class ViewVideo extends ViewRecord
                 ->label('View on Site')
                 ->icon('phosphor-eye')
                 ->color('gray')
-                ->url(fn () => url('/' . $this->record->slug))
+                ->url(fn () => url('/'.$this->record->slug))
                 ->openUrlInNewTab()
                 ->visible(fn () => $this->record->status === 'processed' && $this->record->is_approved),
         ];

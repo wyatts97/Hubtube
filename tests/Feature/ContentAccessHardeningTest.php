@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Category;
 use App\Models\Playlist;
 use App\Models\User;
 use App\Models\Video;
@@ -69,7 +70,7 @@ test('non-pro users cannot bulk edit video categories', function () {
     $this->post(route('studio.videos.bulk'), [
         'action' => 'category',
         'video_ids' => [$video->id],
-        'category_id' => \App\Models\Category::factory()->create()->id,
+        'category_id' => Category::factory()->create()->id,
     ])->assertForbidden();
 
     expect($video->fresh()->category_id)->toBe($original);

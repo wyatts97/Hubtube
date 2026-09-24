@@ -38,7 +38,7 @@ it('leaves no admin action falling back to the primary red', function () {
             $chain = $end === false ? $chunk : substr($chunk, 0, $end);
 
             if (! str_contains($chain, '->color(')) {
-                $offenders[] = basename($file->getPathname()) . ':' . $m[1];
+                $offenders[] = basename($file->getPathname()).':'.$m[1];
             }
         }
     }

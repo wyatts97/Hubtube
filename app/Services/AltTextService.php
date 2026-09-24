@@ -176,7 +176,7 @@ class AltTextService
     protected function substitute(string $template, array $vars): string
     {
         foreach ($vars as $key => $value) {
-            $template = str_replace('{' . $key . '}', trim((string) $value), $template);
+            $template = str_replace('{'.$key.'}', trim((string) $value), $template);
         }
 
         return preg_replace('/\{[a-z_]+\}/i', '', $template) ?? '';
@@ -208,9 +208,9 @@ class AltTextService
         do {
             $before = $text;
             $text = preg_replace('/[\s,;:._\-–—]+$/u', '', $text) ?? $text;
-            $text = preg_replace('/\s+(?:' . self::CONNECTORS . ')$/iu', '', $text) ?? $text;
+            $text = preg_replace('/\s+(?:'.self::CONNECTORS.')$/iu', '', $text) ?? $text;
             $text = preg_replace('/^[\s,;:._\-–—]+/u', '', $text) ?? $text;
-            $text = preg_replace('/^(?:' . self::CONNECTORS . ')\s+/iu', '', $text) ?? $text;
+            $text = preg_replace('/^(?:'.self::CONNECTORS.')\s+/iu', '', $text) ?? $text;
         } while ($text !== $before);
 
         // 5. Reject a result that carries no meaning of its own — no letters or
@@ -219,7 +219,7 @@ class AltTextService
         //    are empty: step 4 cannot strip a trailing "by" that has no word in
         //    front of it, so the whole-string case is caught here instead.
         //    Returning '' makes build() substitute a real fallback label.
-        if (!preg_match('/[\p{L}\p{N}]/u', $text)) {
+        if (! preg_match('/[\p{L}\p{N}]/u', $text)) {
             return '';
         }
 
@@ -259,7 +259,7 @@ class AltTextService
      */
     protected function formatTags(mixed $tags): string
     {
-        if (!is_array($tags)) {
+        if (! is_array($tags)) {
             return '';
         }
 

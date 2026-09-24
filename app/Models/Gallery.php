@@ -78,7 +78,7 @@ class Gallery extends Model
             return true;
         }
 
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -120,6 +120,7 @@ class Gallery extends Model
 
         // Fallback: get first image
         $firstImage = $this->images()->first();
+
         return $firstImage?->thumbnail_url;
     }
 }

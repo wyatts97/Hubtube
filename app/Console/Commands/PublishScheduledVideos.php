@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 class PublishScheduledVideos extends Command
 {
     protected $signature = 'videos:publish-scheduled';
+
     protected $description = 'Publish videos that have reached their scheduled publish time';
 
     public function handle(): int
@@ -24,6 +25,7 @@ class PublishScheduledVideos extends Command
 
         if ($videos->isEmpty()) {
             $this->info('No scheduled videos to publish.');
+
             return self::SUCCESS;
         }
 
@@ -47,7 +49,7 @@ class PublishScheduledVideos extends Command
                 ->where('data->video_id', $video->id)
                 ->exists();
 
-            if (!$alreadyNotified) {
+            if (! $alreadyNotified) {
                 event(new VideoProcessed($video, suppressNotifications: (bool) $video->suppress_notifications));
             }
         }
@@ -57,6 +59,7 @@ class PublishScheduledVideos extends Command
         app(VideoService::class)->recalculateScheduleQueue();
 
         $this->info("Published {$count} scheduled video(s).");
+
         return self::SUCCESS;
     }
 }

@@ -46,6 +46,6 @@ class EnsureAdminTwoFactor
         return redirect()
             ->route('settings.two-factor.status')
             ->with('warning', 'Two-factor authentication is required for admin access. '
-                . 'Please enable it to continue.');
+                .'Please enable it to continue.');
     }
 }

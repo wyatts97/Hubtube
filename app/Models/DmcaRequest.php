@@ -33,7 +33,9 @@ class DmcaRequest extends Model
     }
 
     const STATUS_PENDING = 'pending';
+
     const STATUS_ACTIONED = 'actioned';
+
     const STATUS_REJECTED = 'rejected';
 
     public function video(): BelongsTo

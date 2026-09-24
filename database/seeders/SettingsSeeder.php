@@ -23,7 +23,7 @@ class SettingsSeeder extends Seeder
             ['group' => 'general', 'key' => 'admin_require_2fa', 'value' => '0', 'type' => 'boolean', 'is_public' => false],
             ['group' => 'general', 'key' => 'age_verification_required', 'value' => '1', 'type' => 'boolean', 'is_public' => true],
             ['group' => 'general', 'key' => 'minimum_age', 'value' => '18', 'type' => 'integer', 'is_public' => true],
-            
+
             // Videos
             ['group' => 'videos', 'key' => 'max_upload_size_free', 'value' => '500', 'type' => 'integer', 'is_public' => false],
             ['group' => 'videos', 'key' => 'max_upload_size_pro', 'value' => '5000', 'type' => 'integer', 'is_public' => false],
@@ -32,7 +32,7 @@ class SettingsSeeder extends Seeder
             ['group' => 'videos', 'key' => 'video_auto_approve', 'value' => '0', 'type' => 'boolean', 'is_public' => false],
             ['group' => 'videos', 'key' => 'comments_enabled', 'value' => '1', 'type' => 'boolean', 'is_public' => true],
             ['group' => 'videos', 'key' => 'comments_require_approval', 'value' => '0', 'type' => 'boolean', 'is_public' => false],
-            
+
             // Payments
             ['group' => 'payments', 'key' => 'currency', 'value' => 'USD', 'type' => 'string', 'is_public' => true],
             ['group' => 'payments', 'key' => 'min_deposit', 'value' => '10', 'type' => 'integer', 'is_public' => true],
@@ -41,7 +41,7 @@ class SettingsSeeder extends Seeder
             ['group' => 'payments', 'key' => 'stripe_enabled', 'value' => '0', 'type' => 'boolean', 'is_public' => false],
             ['group' => 'payments', 'key' => 'paypal_enabled', 'value' => '0', 'type' => 'boolean', 'is_public' => false],
             ['group' => 'payments', 'key' => 'ccbill_enabled', 'value' => '0', 'type' => 'boolean', 'is_public' => false],
-            
+
             // Storage
             ['group' => 'storage', 'key' => 'storage_driver', 'value' => 'local', 'type' => 'string', 'is_public' => false],
             ['group' => 'storage', 'key' => 'cdn_enabled', 'value' => '0', 'type' => 'boolean', 'is_public' => false],

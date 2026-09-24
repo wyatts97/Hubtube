@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Models\Video;
 
 /*
 |--------------------------------------------------------------------------
@@ -76,7 +77,7 @@ test('channel payload does not leak private fields on any tab', function () {
 test('channel payload exposes the fields the page actually renders', function () {
     $user = User::factory()->create();
     $user->channel()->update(['description' => 'A channel description.']);
-    App\Models\Video::factory()->create(['user_id' => $user->id, 'views_count' => 1234]);
+    Video::factory()->create(['user_id' => $user->id, 'views_count' => 1234]);
 
     $this->get("/channel/{$user->username}")
         ->assertOk()
@@ -157,7 +158,7 @@ test('the owner can always see their own liked and history tabs', function () {
 test('total views reflects the channel videos, not the dead counter', function () {
     $user = User::factory()->create();
 
-    App\Models\Video::factory()->count(3)->create([
+    Video::factory()->count(3)->create([
         'user_id' => $user->id,
         'views_count' => 1_000_000,
     ]);
@@ -175,9 +176,9 @@ test('total views reflects the channel videos, not the dead counter', function (
 test('total views excludes private and unapproved videos', function () {
     $user = User::factory()->create();
 
-    App\Models\Video::factory()->create(['user_id' => $user->id, 'views_count' => 500]);
-    App\Models\Video::factory()->private()->create(['user_id' => $user->id, 'views_count' => 900]);
-    App\Models\Video::factory()->unapproved()->create(['user_id' => $user->id, 'views_count' => 900]);
+    Video::factory()->create(['user_id' => $user->id, 'views_count' => 500]);
+    Video::factory()->private()->create(['user_id' => $user->id, 'views_count' => 900]);
+    Video::factory()->unapproved()->create(['user_id' => $user->id, 'views_count' => 900]);
 
     $this->get("/channel/{$user->username}")
         ->assertOk()

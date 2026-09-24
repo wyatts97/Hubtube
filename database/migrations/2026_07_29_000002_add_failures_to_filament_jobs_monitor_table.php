@@ -10,19 +10,19 @@ return new class extends Migration
     {
         if (Schema::hasTable('queue_monitors')) {
             Schema::table('queue_monitors', function (Blueprint $table) {
-                if (!Schema::hasColumn('queue_monitors', 'exception_class')) {
+                if (! Schema::hasColumn('queue_monitors', 'exception_class')) {
                     $table->string('exception_class')->nullable()->index()->after('exception_message');
                 }
-                if (!Schema::hasColumn('queue_monitors', 'exception')) {
+                if (! Schema::hasColumn('queue_monitors', 'exception')) {
                     $table->text('exception')->nullable()->after('exception_class');
                 }
-                if (!Schema::hasColumn('queue_monitors', 'failure_signature')) {
+                if (! Schema::hasColumn('queue_monitors', 'failure_signature')) {
                     $table->string('failure_signature', 64)->nullable()->index()->after('exception');
                 }
             });
         }
 
-        if (!Schema::hasTable('queue_monitor_failure_groups')) {
+        if (! Schema::hasTable('queue_monitor_failure_groups')) {
             Schema::create('queue_monitor_failure_groups', function (Blueprint $table) {
                 $table->id();
                 $table->string('signature', 64)->unique();

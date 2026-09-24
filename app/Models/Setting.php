@@ -5,8 +5,8 @@ namespace App\Models;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
-use Throwable;
 use Illuminate\Support\Facades\Crypt;
+use Throwable;
 
 class Setting extends Model
 {
@@ -26,6 +26,7 @@ class Setting extends Model
     }
 
     protected static string $cachePrefix = 'settings:';
+
     protected static int $cacheTtl = 86400; // 24 hours
 
     public static function get(string $key, mixed $default = null): mixed
@@ -58,12 +59,12 @@ class Setting extends Model
         );
 
         // Clear specific key cache
-        Cache::forget(static::$cachePrefix . $key);
+        Cache::forget(static::$cachePrefix.$key);
         // Clear group cache
-        Cache::forget(static::$cachePrefix . 'group:' . $group);
+        Cache::forget(static::$cachePrefix.'group:'.$group);
         // Clear all settings cache
-        Cache::forget(static::$cachePrefix . 'all');
-        Cache::forget(static::$cachePrefix . 'public');
+        Cache::forget(static::$cachePrefix.'all');
+        Cache::forget(static::$cachePrefix.'public');
     }
 
     /**
@@ -72,7 +73,7 @@ class Setting extends Model
      */
     public static function setEncrypted(string $key, mixed $value, string $group = 'general'): void
     {
-        $encrypted = (!empty($value) && is_string($value)) ? Crypt::encryptString($value) : $value;
+        $encrypted = (! empty($value) && is_string($value)) ? Crypt::encryptString($value) : $value;
 
         static::updateOrCreate(
             ['key' => $key],
@@ -83,10 +84,10 @@ class Setting extends Model
             ]
         );
 
-        Cache::forget(static::$cachePrefix . $key);
-        Cache::forget(static::$cachePrefix . 'group:' . $group);
-        Cache::forget(static::$cachePrefix . 'all');
-        Cache::forget(static::$cachePrefix . 'public');
+        Cache::forget(static::$cachePrefix.$key);
+        Cache::forget(static::$cachePrefix.'group:'.$group);
+        Cache::forget(static::$cachePrefix.'all');
+        Cache::forget(static::$cachePrefix.'public');
     }
 
     /**
@@ -128,13 +129,13 @@ class Setting extends Model
 
     public static function getGroup(string $group): array
     {
-        $cacheKey = static::$cachePrefix . 'group:' . $group;
+        $cacheKey = static::$cachePrefix.'group:'.$group;
 
         return Cache::remember($cacheKey, static::$cacheTtl, function () use ($group) {
             return static::where('group', $group)
                 ->get()
                 ->mapWithKeys(fn ($setting) => [
-                    $setting->key => static::castValue($setting->value, $setting->type)
+                    $setting->key => static::castValue($setting->value, $setting->type),
                 ])
                 ->toArray();
         });
@@ -142,13 +143,13 @@ class Setting extends Model
 
     public static function getPublic(): array
     {
-        $cacheKey = static::$cachePrefix . 'public';
+        $cacheKey = static::$cachePrefix.'public';
 
         return Cache::remember($cacheKey, static::$cacheTtl, function () {
             return static::where('is_public', true)
                 ->get()
                 ->mapWithKeys(fn ($setting) => [
-                    $setting->key => static::castValue($setting->value, $setting->type)
+                    $setting->key => static::castValue($setting->value, $setting->type),
                 ])
                 ->toArray();
         });
@@ -156,12 +157,12 @@ class Setting extends Model
 
     public static function getAll(): array
     {
-        $cacheKey = static::$cachePrefix . 'all';
+        $cacheKey = static::$cachePrefix.'all';
 
         return Cache::remember($cacheKey, static::$cacheTtl, function () {
             return static::all()
                 ->mapWithKeys(fn ($setting) => [
-                    $setting->key => static::castValue($setting->value, $setting->type)
+                    $setting->key => static::castValue($setting->value, $setting->type),
                 ])
                 ->toArray();
         });
@@ -172,15 +173,15 @@ class Setting extends Model
         // Clear all settings-related cache keys
         $keys = static::pluck('key')->toArray();
         foreach ($keys as $key) {
-            Cache::forget(static::$cachePrefix . $key);
+            Cache::forget(static::$cachePrefix.$key);
         }
-        
+
         $groups = static::distinct()->pluck('group')->toArray();
         foreach ($groups as $group) {
-            Cache::forget(static::$cachePrefix . 'group:' . $group);
+            Cache::forget(static::$cachePrefix.'group:'.$group);
         }
-        
-        Cache::forget(static::$cachePrefix . 'all');
-        Cache::forget(static::$cachePrefix . 'public');
+
+        Cache::forget(static::$cachePrefix.'all');
+        Cache::forget(static::$cachePrefix.'public');
     }
 }

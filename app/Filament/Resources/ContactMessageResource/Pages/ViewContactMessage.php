@@ -2,10 +2,9 @@
 
 namespace App\Filament\Resources\ContactMessageResource\Pages;
 
+use App\Filament\Resources\ContactMessageResource;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
-use App\Filament\Resources\ContactMessageResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewContactMessage extends ViewRecord
@@ -19,7 +18,7 @@ class ViewContactMessage extends ViewRecord
                 ->color('gray')
                 ->icon(fn () => $this->record->is_read ? 'phosphor-envelope' : 'phosphor-envelope-open')
                 ->label(fn () => $this->record->is_read ? 'Mark Unread' : 'Mark Read')
-                ->action(fn () => $this->record->update(['is_read' => !$this->record->is_read])),
+                ->action(fn () => $this->record->update(['is_read' => ! $this->record->is_read])),
 
             DeleteAction::make(),
         ];
@@ -28,7 +27,7 @@ class ViewContactMessage extends ViewRecord
     protected function mutateFormDataBeforeFill(array $data): array
     {
         // Auto-mark as read when viewing
-        if (!$this->record->is_read) {
+        if (! $this->record->is_read) {
             $this->record->update(['is_read' => true]);
             $data['is_read'] = true;
         }

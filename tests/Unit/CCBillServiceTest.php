@@ -18,7 +18,7 @@ class CCBillServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new CCBillService();
+        $this->service = new CCBillService;
         // Use CCBill's documented example salt so digests match published vectors.
         Setting::set('ccbill_salt', '7d901dad245fd0ff6bc20d06', 'payments', 'string');
         Setting::set('currency', 'USD', 'payments', 'string');
@@ -80,7 +80,7 @@ class CCBillServiceTest extends TestCase
         $this->assertStringContainsString('recurringPrice=9.99', $url);
         $this->assertStringContainsString('numRebills=99', $url);
         $this->assertStringContainsString('currencyCode=840', $url);
-        $this->assertStringContainsString('ht_uid=' . $user->id, $url);
+        $this->assertStringContainsString('ht_uid='.$user->id, $url);
         $this->assertStringContainsString('ht_sig=', $url);
     }
 

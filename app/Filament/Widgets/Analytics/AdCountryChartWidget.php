@@ -22,6 +22,7 @@ class AdCountryChartWidget extends ApexChartWidget
     use DarkThemeOptions;
 
     protected static ?string $chartId = 'adCountryChart';
+
     protected static ?int $contentHeight = 260;
 
     protected function getHeading(): ?string

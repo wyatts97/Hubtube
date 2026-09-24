@@ -33,8 +33,11 @@ class WithdrawalRequest extends Model
     }
 
     const STATUS_PENDING = 'pending';
+
     const STATUS_PROCESSING = 'processing';
+
     const STATUS_COMPLETED = 'completed';
+
     const STATUS_REJECTED = 'rejected';
 
     public function user(): BelongsTo

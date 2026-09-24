@@ -25,7 +25,7 @@ class ProSubscriptionTest extends TestCase
             'type' => $type,
             'data' => [
                 'object' => [
-                    'id' => 'sub_' . uniqid(),
+                    'id' => 'sub_'.uniqid(),
                     'customer' => $customerId,
                     'status' => $status,
                 ],

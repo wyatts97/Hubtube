@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('video_ads', function (Blueprint $table) {
             // Outstream ads target the video grid rather than the player
-            if (!Schema::hasColumn('video_ads', 'outstream_thumbnail')) {
+            if (! Schema::hasColumn('video_ads', 'outstream_thumbnail')) {
                 $table->string('outstream_thumbnail')->nullable()->after('file_path');
             }
         });

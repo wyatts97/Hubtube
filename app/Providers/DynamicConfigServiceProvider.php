@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
-use Throwable;
 use App\Models\Setting;
 use Illuminate\Support\ServiceProvider;
+use Throwable;
 
 /**
  * Applies DB-driven configuration at boot time.
@@ -47,7 +47,7 @@ class DynamicConfigServiceProvider extends ServiceProvider
         $fromAddress = Setting::get('mail_from_address', '');
         $fromName = Setting::get('mail_from_name', '');
 
-        if (!empty($fromAddress)) {
+        if (! empty($fromAddress)) {
             config([
                 'mail.from.address' => $fromAddress,
                 'health.notifications.mail.from.address' => $fromAddress,
@@ -57,16 +57,16 @@ class DynamicConfigServiceProvider extends ServiceProvider
         // Health-check and backup failures go to the same inbox as other
         // admin alerts.
         $adminEmail = Setting::get('admin_notification_email', '') ?: $fromAddress;
-        if (!empty($adminEmail)) {
+        if (! empty($adminEmail)) {
             config([
                 'health.notifications.mail.to' => $adminEmail,
                 'backup.notifications.mail.to' => $adminEmail,
             ]);
         }
-        if (!empty($fromAddress)) {
+        if (! empty($fromAddress)) {
             config(['backup.notifications.mail.from.address' => $fromAddress]);
         }
-        if (!empty($fromName)) {
+        if (! empty($fromName)) {
             config(['mail.from.name' => $fromName]);
         }
 

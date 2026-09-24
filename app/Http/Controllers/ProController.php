@@ -19,8 +19,8 @@ class ProController extends Controller
 
     public function index(): Response
     {
-        if (!Setting::get('pro_enabled', true)) {
-            throw new NotFoundHttpException();
+        if (! Setting::get('pro_enabled', true)) {
+            throw new NotFoundHttpException;
         }
 
         $plans = Plan::active()->orderBy('interval')->get()->keyBy('interval');
@@ -99,18 +99,18 @@ class ProController extends Controller
 
     public function checkout(Request $request): \Symfony\Component\HttpFoundation\Response
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()->route('login');
         }
 
-        if (!Setting::get('pro_enabled', true)) {
-            throw new NotFoundHttpException();
+        if (! Setting::get('pro_enabled', true)) {
+            throw new NotFoundHttpException;
         }
 
         $interval = $request->input('plan', 'monthly');
         $plan = Plan::active()->where('slug', $interval === 'annual' ? 'pro-annual' : 'pro-monthly')->first();
 
-        if (!$plan) {
+        if (! $plan) {
             return back()->with('error', 'Pro plan is not configured yet. Please contact support.');
         }
 
@@ -125,7 +125,7 @@ class ProController extends Controller
     {
         $url = $this->ccbill->buildCheckoutUrl($plan, auth()->user());
 
-        if (!$url) {
+        if (! $url) {
             return back()->with('error', 'CCBill is not configured for this plan yet. Please contact support.');
         }
 
@@ -135,14 +135,14 @@ class ProController extends Controller
 
     protected function stripeCheckout(Plan $plan): RedirectResponse
     {
-        if (!$plan->stripe_price_id) {
+        if (! $plan->stripe_price_id) {
             return back()->with('error', 'Pro plan is not configured yet. Please contact support.');
         }
 
         $checkout = auth()->user()->newSubscription('pro', $plan->stripe_price_id)
             ->allowPromotionCodes()
             ->checkout([
-                'success_url' => URL::route('pro.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                'success_url' => URL::route('pro.success').'?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => URL::route('pro.index'),
             ]);
 
@@ -167,11 +167,11 @@ class ProController extends Controller
 
     public function portal(): RedirectResponse
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()->route('login');
         }
 
-        if (!auth()->user()->stripe_id) {
+        if (! auth()->user()->stripe_id) {
             return redirect()->route('pro.index')->with('error', 'No active subscription found.');
         }
 

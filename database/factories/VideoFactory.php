@@ -20,7 +20,7 @@ class VideoFactory extends Factory
             'user_id' => User::factory(),
             'uuid' => (string) Str::ulid(),
             'title' => $title,
-            'slug' => Str::slug($title) . '-' . Str::random(6),
+            'slug' => Str::slug($title).'-'.Str::random(6),
             'description' => fake()->paragraph(),
             'thumbnail' => 'videos/test/thumbnail.jpg',
             'video_path' => 'videos/test/video.mp4',

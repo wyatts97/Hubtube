@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use Exception;
 use App\Models\Setting;
 use App\Models\Translation;
 use App\Models\TranslationOverride;
 use App\Services\Translation\Contracts\TranslationProvider;
 use App\Services\Translation\TranslationProviderException;
 use App\Services\Translation\TranslationProviderManager;
+use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -107,17 +107,18 @@ class TranslationService
      */
     public static function getEnabledLocales(): array
     {
-        if (!(bool) Setting::get('translation_enabled', false)) {
+        if (! (bool) Setting::get('translation_enabled', false)) {
             return [static::getDefaultLocale()];
         }
 
         $enabled = Setting::get('enabled_languages');
-        if (!$enabled) {
+        if (! $enabled) {
             return [static::getDefaultLocale()];
         }
         if (is_string($enabled)) {
             $enabled = json_decode($enabled, true);
         }
+
         return is_array($enabled) ? $enabled : [static::getDefaultLocale()];
     }
 
@@ -135,6 +136,7 @@ class TranslationService
                 ];
             }
         }
+
         return $languages;
     }
 
@@ -366,6 +368,7 @@ class TranslationService
         foreach ($fields as $field => $value) {
             if (empty($value)) {
                 $result[$field] = $value;
+
                 continue;
             }
             $result[$field] = $this->translateField($modelClass, $modelId, $field, $value, $targetLocale);
@@ -475,7 +478,7 @@ class TranslationService
 
                 $row = $existing->get($item['id'])?->firstWhere('field', $field);
 
-                if (!$row) {
+                if (! $row) {
                     $incomplete = true;
 
                     continue;
@@ -651,7 +654,7 @@ class TranslationService
 
         // Translated locales use /{locale}/{translated_slug}, only if enabled
         foreach ($translations as $locale => $slug) {
-            if (!in_array($locale, $enabled, true) || $locale === $defaultLocale) {
+            if (! in_array($locale, $enabled, true) || $locale === $defaultLocale) {
                 continue;
             }
             $urls[$locale] = url("/{$locale}/{$slug}");
@@ -691,7 +694,7 @@ class TranslationService
             $base = Str::slug($originalValue);
         }
         if ($base === '') {
-            $base = $locale . '-' . $modelId;
+            $base = $locale.'-'.$modelId;
         }
 
         $base = mb_substr($base, 0, 200);
@@ -708,9 +711,9 @@ class TranslationService
                 ->exists()
         ) {
             $suffix++;
-            $slug = $base . '-' . $suffix;
+            $slug = $base.'-'.$suffix;
             if ($suffix > 50) {
-                $slug = $base . '-' . $modelId;
+                $slug = $base.'-'.$modelId;
                 break;
             }
         }
@@ -737,6 +740,7 @@ class TranslationService
             'sr' => 'sr',     'lt' => 'lt',     'lv' => 'lv',     'et' => 'et',
             'fil' => 'fil-PH',
         ];
+
         return $map[$locale] ?? $locale;
     }
 
@@ -758,7 +762,7 @@ class TranslationService
         $cleanPath = ltrim($path, '/');
 
         $map = [];
-        $defaultUrl = url('/' . $cleanPath);
+        $defaultUrl = url('/'.$cleanPath);
         $map['x-default'] = $defaultUrl;
 
         $seen = [$defaultUrl => true];
@@ -766,11 +770,11 @@ class TranslationService
         foreach ($enabled as $locale) {
             $href = $locale === $defaultLocale
                 ? $defaultUrl
-                : url('/' . $locale . ($cleanPath ? '/' . $cleanPath : ''));
+                : url('/'.$locale.($cleanPath ? '/'.$cleanPath : ''));
 
             // Avoid emitting duplicate hreflang entries pointing at the same URL.
             $tag = static::toHreflang($locale);
-            if (!isset($seen[$href]) || $tag === $locale) {
+            if (! isset($seen[$href]) || $tag === $locale) {
                 $map[$tag] = $href;
                 $seen[$href] = true;
             }
@@ -789,7 +793,7 @@ class TranslationService
             return $strings;
         }
 
-        $cacheKey = "ui_translations:{$targetLocale}:" . md5(implode('|', array_keys($strings)));
+        $cacheKey = "ui_translations:{$targetLocale}:".md5(implode('|', array_keys($strings)));
 
         return Cache::remember($cacheKey, 3600, function () use ($strings, $targetLocale, $defaultLocale) {
             $result = [];
@@ -800,6 +804,7 @@ class TranslationService
                     $result[$key] = $value;
                 }
             }
+
             return $result;
         });
     }

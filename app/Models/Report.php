@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use App\Models\ContactMessage;
 
 class Report extends Model
 {
@@ -32,15 +31,23 @@ class Report extends Model
     }
 
     const STATUS_PENDING = 'pending';
+
     const STATUS_REVIEWING = 'reviewing';
+
     const STATUS_RESOLVED = 'resolved';
+
     const STATUS_DISMISSED = 'dismissed';
 
     const REASON_SPAM = 'spam';
+
     const REASON_HARASSMENT = 'harassment';
+
     const REASON_ILLEGAL = 'illegal';
+
     const REASON_COPYRIGHT = 'copyright';
+
     const REASON_UNDERAGE = 'underage';
+
     const REASON_OTHER = 'other';
 
     public function user(): BelongsTo

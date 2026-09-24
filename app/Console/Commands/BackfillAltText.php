@@ -52,8 +52,8 @@ class BackfillAltText extends Command
         $types = $type === 'all' ? array_keys(self::TYPES) : [$type];
 
         foreach ($types as $candidate) {
-            if (!isset(self::TYPES[$candidate])) {
-                $this->error("Unsupported --type={$candidate}. Use one of: " . implode('|', array_keys(self::TYPES)) . '|all');
+            if (! isset(self::TYPES[$candidate])) {
+                $this->error("Unsupported --type={$candidate}. Use one of: ".implode('|', array_keys(self::TYPES)).'|all');
 
                 return self::FAILURE;
             }
@@ -93,7 +93,7 @@ class BackfillAltText extends Command
 
         $query = $model::query()->with($with);
 
-        if (!$force) {
+        if (! $force) {
             $query->where(fn (Builder $q) => $q->whereNull($column)->orWhere($column, ''));
         }
 
@@ -105,9 +105,9 @@ class BackfillAltText extends Command
             return [0, 0];
         }
 
-        $this->info("Found {$total} {$name} row(s) needing alt text" . ($dry ? ' [dry run]' : ''));
+        $this->info("Found {$total} {$name} row(s) needing alt text".($dry ? ' [dry run]' : ''));
 
-        $method = 'for' . match ($name) {
+        $method = 'for'.match ($name) {
             'videos' => 'Video',
             'images' => 'Image',
             'galleries' => 'Gallery',
@@ -130,6 +130,7 @@ class BackfillAltText extends Command
                 if (blank($row->{$required})) {
                     $skipped++;
                     $bar->advance();
+
                     continue;
                 }
 
@@ -138,12 +139,13 @@ class BackfillAltText extends Command
                 if ($value === $row->{$column}) {
                     $skipped++;
                     $bar->advance();
+
                     continue;
                 }
 
                 $sample ??= $value;
 
-                if (!$dry) {
+                if (! $dry) {
                     // A direct UPDATE rather than save(): this must not fire the
                     // alt text observer back at itself, and on a large library
                     // it must not emit an activity-log entry or a Scout reindex

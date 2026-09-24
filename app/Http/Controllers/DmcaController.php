@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\DmcaRequest;
 use App\Models\Video;
 use App\Services\AdminLogger;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -52,13 +52,13 @@ class DmcaController extends Controller
     protected function resolveVideoId(string $infringingUrls): ?int
     {
         $firstUrl = preg_split('/[\s,]+/', trim($infringingUrls), -1, PREG_SPLIT_NO_EMPTY)[0] ?? null;
-        if (!$firstUrl) {
+        if (! $firstUrl) {
             return null;
         }
 
         $path = trim((string) parse_url($firstUrl, PHP_URL_PATH), '/');
         $slug = explode('/', $path)[0] ?? null;
-        if (!$slug) {
+        if (! $slug) {
             return null;
         }
 

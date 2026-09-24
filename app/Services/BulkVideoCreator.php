@@ -63,14 +63,14 @@ class BulkVideoCreator
         }
 
         $tempPath = (string) ($entry['file_path'] ?? '');
-        if ($tempPath === '' || !Storage::disk('public')->exists($tempPath)) {
+        if ($tempPath === '' || ! Storage::disk('public')->exists($tempPath)) {
             return null;
         }
 
         $slug = $this->generateUniqueSlug($title);
         $extension = pathinfo($tempPath, PATHINFO_EXTENSION) ?: 'mp4';
         $directory = "videos/{$slug}";
-        $filename = Str::slug($title, '_') . '.' . $extension;
+        $filename = Str::slug($title, '_').'.'.$extension;
         $newPath = "{$directory}/{$filename}";
 
         Storage::disk('public')->makeDirectory($directory);
@@ -115,9 +115,10 @@ class BulkVideoCreator
         $slug = $baseSlug;
         $suffix = 2;
         while (Video::withTrashed()->where('slug', $slug)->exists()) {
-            $slug = $baseSlug . '-' . $suffix;
+            $slug = $baseSlug.'-'.$suffix;
             $suffix++;
         }
+
         return $slug;
     }
 }

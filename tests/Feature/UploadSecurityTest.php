@@ -1,8 +1,8 @@
 <?php
 
+use App\Http\Controllers\VideoController;
 use App\Models\Category;
 use App\Models\User;
-use App\Models\Video;
 use App\Services\VideoService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -78,7 +78,7 @@ test('finalize rejects an extension outside the video allowlist', function () {
 });
 
 test('chunk uploads from different users do not share a storage key', function () {
-    $controller = app(App\Http\Controllers\VideoController::class);
+    $controller = app(VideoController::class);
 
     $method = new ReflectionMethod($controller, 'scopedUploadId');
     $method->setAccessible(true);

@@ -15,11 +15,11 @@ class ChannelService
     {
         $channelName = $name ?? $user->username;
         $baseSlug = Str::slug($channelName) ?: 'channel';
-        $slug = $baseSlug . '-' . $user->id;
-        
+        $slug = $baseSlug.'-'.$user->id;
+
         $suffix = 2;
         while (Channel::where('slug', $slug)->exists()) {
-            $slug = $baseSlug . '-' . $user->id . '-' . $suffix;
+            $slug = $baseSlug.'-'.$user->id.'-'.$suffix;
             $suffix++;
         }
 

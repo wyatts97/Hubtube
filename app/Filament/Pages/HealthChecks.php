@@ -15,15 +15,20 @@ class HealthChecks extends Page
 
     protected static string $requiredPermission = 'view_any_user';
 
-    protected static string | \BackedEnum | null $navigationIcon = 'phosphor-heartbeat';
+    protected static string|\BackedEnum|null $navigationIcon = 'phosphor-heartbeat';
+
     protected static ?string $navigationLabel = 'Health Checks';
-    protected static string | \UnitEnum | null $navigationGroup = 'Tools';
+
+    protected static string|\UnitEnum|null $navigationGroup = 'Tools';
+
     protected static ?int $navigationSort = 91;
 
     protected string $view = 'filament.pages.health-checks';
 
     public bool $running = false;
+
     public array $checkResults = [];
+
     public string $overallStatus = 'unknown';
 
     public function mount(): void
@@ -69,9 +74,10 @@ class HealthChecks extends Page
             $store = app(EloquentHealthResultStore::class);
             $latestResults = $store->latestResults();
 
-            if (!$latestResults) {
+            if (! $latestResults) {
                 $this->checkResults = [];
                 $this->overallStatus = 'unknown';
+
                 return;
             }
 

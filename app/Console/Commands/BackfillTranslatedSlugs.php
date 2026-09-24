@@ -6,7 +6,6 @@ use App\Models\Translation;
 use App\Models\Video;
 use App\Services\TranslationService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -37,8 +36,9 @@ class BackfillTranslatedSlugs extends Command
             default => null,
         };
 
-        if (!$modelClass) {
+        if (! $modelClass) {
             $this->error("Unsupported --type={$type}");
+
             return self::FAILURE;
         }
 
@@ -50,7 +50,7 @@ class BackfillTranslatedSlugs extends Command
             $query->where('locale', $localeFilter);
         }
 
-        if (!$force) {
+        if (! $force) {
             $query->where(function ($q) {
                 $q->whereNull('translated_slug')->orWhere('translated_slug', '');
             });
@@ -59,10 +59,11 @@ class BackfillTranslatedSlugs extends Command
         $total = (clone $query)->count();
         if ($total === 0) {
             $this->info('No translations need slugs.');
+
             return self::SUCCESS;
         }
 
-        $this->info("Processing {$total} translation row(s)" . ($dry ? ' [dry run]' : ''));
+        $this->info("Processing {$total} translation row(s)".($dry ? ' [dry run]' : ''));
         $bar = $this->output->createProgressBar($total);
         $updated = 0;
         $skipped = 0;
@@ -73,6 +74,7 @@ class BackfillTranslatedSlugs extends Command
                 if (trim($value) === '') {
                     $skipped++;
                     $bar->advance();
+
                     continue;
                 }
 
@@ -90,7 +92,7 @@ class BackfillTranslatedSlugs extends Command
                 );
 
                 if ($newSlug !== $row->translated_slug) {
-                    if (!$dry) {
+                    if (! $dry) {
                         $row->translated_slug = $newSlug;
                         $row->save();
                     }

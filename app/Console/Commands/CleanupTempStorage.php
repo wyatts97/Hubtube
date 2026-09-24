@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 class CleanupTempStorage extends Command
 {
     protected $signature = 'storage:cleanup';
+
     protected $description = 'Clean up temporary files created during video processing';
 
     public function handle(): int
@@ -20,7 +21,7 @@ class CleanupTempStorage extends Command
         $watermarkDir = storage_path('app/public/watermarks');
         if (is_dir($watermarkDir)) {
             $count = 0;
-            foreach (glob($watermarkDir . '/watermark_preview*.mp4') as $file) {
+            foreach (glob($watermarkDir.'/watermark_preview*.mp4') as $file) {
                 if (filemtime($file) < now()->subDay()->timestamp) {
                     unlink($file);
                     $count++;

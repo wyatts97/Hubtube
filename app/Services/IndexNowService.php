@@ -23,7 +23,7 @@ class IndexNowService
     public function isEnabled(): bool
     {
         return (bool) Setting::get('indexnow_enabled', false)
-            && !empty($this->getKey());
+            && ! empty($this->getKey());
     }
 
     public function getKey(): string
@@ -34,6 +34,7 @@ class IndexNowService
     public function getEndpoint(): string
     {
         $endpoint = trim((string) Setting::get('indexnow_endpoint', self::DEFAULT_ENDPOINT));
+
         return $endpoint !== '' ? $endpoint : self::DEFAULT_ENDPOINT;
     }
 
@@ -43,7 +44,8 @@ class IndexNowService
         if ($custom !== '') {
             return $custom;
         }
-        return url('/' . $this->getKey() . '.txt');
+
+        return url('/'.$this->getKey().'.txt');
     }
 
     /**
@@ -74,15 +76,16 @@ class IndexNowService
             return false;
         }
 
-        if (!$this->isEnabled()) {
+        if (! $this->isEnabled()) {
             Log::info('IndexNow disabled or missing key; skipping submission', [
                 'count' => count($urls),
             ]);
+
             return false;
         }
 
         $host = parse_url($urls[0], PHP_URL_HOST);
-        if (!$host) {
+        if (! $host) {
             return false;
         }
 
@@ -129,7 +132,7 @@ class IndexNowService
                 ]);
             }
 
-            if (!$accepted) {
+            if (! $accepted) {
                 Log::warning('IndexNow submission rejected', [
                     'code' => $code,
                     'body' => Str::limit($body, 500),
@@ -150,6 +153,7 @@ class IndexNowService
                 'error' => $e->getMessage(),
                 'urls' => array_slice($urls, 0, 5),
             ]);
+
             return false;
         }
     }
@@ -161,14 +165,14 @@ class IndexNowService
     {
         $clean = [];
         foreach ($urls as $url) {
-            if (!is_string($url)) {
+            if (! is_string($url)) {
                 continue;
             }
             $url = trim($url);
             if ($url === '') {
                 continue;
             }
-            if (!preg_match('#^https?://#i', $url)) {
+            if (! preg_match('#^https?://#i', $url)) {
                 continue;
             }
             if (filter_var($url, FILTER_VALIDATE_URL) === false) {
@@ -176,6 +180,7 @@ class IndexNowService
             }
             $clean[$url] = true;
         }
+
         return array_keys($clean);
     }
 }
