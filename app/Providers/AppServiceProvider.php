@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Setting;
 use App\Http\Middleware\SetAdminTimezone;
 use App\Models\Category;
 use App\Models\Comment;
@@ -31,6 +32,7 @@ use Illuminate\Support\Facades\URL;
 use STS\FilamentImpersonate\Events\EnterImpersonation;
 use STS\FilamentImpersonate\Events\LeaveImpersonation;
 use Spatie\Health\Facades\Health;
+use Spatie\Health\Checks\Checks\BackupsCheck;
 use Spatie\Health\Checks\Checks\CacheCheck;
 use Spatie\Health\Checks\Checks\DatabaseCheck;
 use Spatie\Health\Checks\Checks\DebugModeCheck;
@@ -153,6 +155,12 @@ class AppServiceProvider extends ServiceProvider
             UsedDiskSpaceCheck::new()
                 ->warnWhenUsedSpaceIsAbovePercentage(80)
                 ->failWhenUsedSpaceIsAbovePercentage(95),
+            // The nightly backup runs quietly; this is what notices it stopped.
+            BackupsCheck::new()
+                ->onDisk('local')
+                ->locatedAt(config('backup.backup.name', 'backups').'/*.zip')
+                ->youngestBackShouldHaveBeenMadeBefore(now()->subDays(2))
+                ->if(fn () => filter_var(Setting::get('backup_enabled', true), FILTER_VALIDATE_BOOLEAN)),
         ]);
     }
 }

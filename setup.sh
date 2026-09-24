@@ -65,7 +65,14 @@ WEB_USER="www-data"
 WEB_GROUP="www-data"
 PHP_BIN="php"
 
-if [ -d "/www/server/panel" ]; then
+if [ -d "/home/clp" ] || command -v clpctl >/dev/null 2>&1; then
+    # CloudPanel runs each site as its own unprivileged user, who already owns
+    # the files — no chown, no sudo, no www-data.
+    PANEL="cloudpanel"
+    WEB_USER="$(stat -c %U . 2>/dev/null || id -un)"
+    WEB_GROUP="$(stat -c %G . 2>/dev/null || id -gn)"
+    ok "Detected: CloudPanel (site user: ${WEB_USER}) — see deployment/CLOUDPANEL.md"
+elif [ -d "/www/server/panel" ]; then
     PANEL="aapanel"
     WEB_USER="www"
     WEB_GROUP="www"
@@ -297,7 +304,11 @@ ok "Storage symlink created (public/storage → storage/app/public)"
 # ── Permissions ──────────────────────────────────────────────────────────────
 section "Permissions"
 
-if [ "$(id -u)" -eq 0 ] || sudo -n true 2>/dev/null; then
+if [ "$PANEL" = "cloudpanel" ]; then
+    chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+    chmod 640 .env 2>/dev/null || true
+    ok "Permissions set (site user ${WEB_USER} keeps ownership)"
+elif [ "$(id -u)" -eq 0 ] || sudo -n true 2>/dev/null; then
     chown -R "${WEB_USER}:${WEB_GROUP}" . 2>/dev/null || true
     chmod -R 755 . 2>/dev/null || true
     chmod -R 775 storage bootstrap/cache 2>/dev/null || true

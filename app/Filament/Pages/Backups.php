@@ -111,7 +111,7 @@ class Backups extends Page implements HasForms
     public function backups(): array
     {
         $disk = Storage::disk('local');
-        $backupDir = config('backup.directory_name', 'backups');
+        $backupDir = config('backup.backup.name', 'backups');
 
         if (!$disk->exists($backupDir)) {
             return [];

@@ -3,36 +3,18 @@
 # =============================================================================
 # HubTube — Development Server Setup for Ubuntu 22.04 / 24.04
 # =============================================================================
-# Last updated: 2026-02-15
 #
 # Tech Stack:
-#   - Laravel 11 + PHP 8.2+ + Filament 3 admin panel
+#   - Laravel 13 + PHP 8.4 + Filament 5 admin panel
 #   - Vue 3 + Inertia.js + Vite 6 + Tailwind CSS v4
 #   - Redis (sessions, cache, queues, broadcasting)
 #   - MySQL 8+ / MariaDB 10.11+
-#   - Laravel Reverb (WebSockets for live chat + real-time notifications)
+#   - Laravel Reverb (WebSockets for real-time notifications)
 #   - Laravel Horizon (Redis queue dashboard + workers)
 #   - Laravel Scout (search — database driver for dev, Meilisearch for prod)
 #   - FFmpeg (video transcoding, HLS, thumbnails, watermarks, sprites)
 #
-# App Features:
-#   - 18 Filament admin pages, 14 CRUD resources
-#   - 41 Vue pages, 15 Vue components
-#   - 33 Eloquent models, 27 controllers, 16 services
-#   - 45 database migrations, 7 artisan commands, 7 scheduled jobs
-#   - Multi-language auto-translation (stichoza/google-translate-php)
-#   - SEO (JSON-LD, OG tags, video sitemap, hreflang, translated slugs)
-#   - Video processing (multi-res transcoding, HLS, watermarks, scrubber sprites)
-#   - Cloud storage offloading (Wasabi, S3, B2) with CDN support
-#   - Social login (Google, Twitter/X, Reddit) via Laravel Socialite
-#   - Auto-tweet service (new + scheduled older videos via Twitter API v2)
-#   - Video ads (pre/mid/post-roll — MP4, VAST, VPAID, HTML)
-#   - Sponsored in-feed ad cards with targeting
-#   - Wallet system with deposits, withdrawals, gifting
-#   - Live streaming via Agora.io with real-time chat
-#   - PWA with push notifications
-#   - Content Security Policy with nonce-based scripts
-#   - All optional features configured via Admin Panel (DB-backed Setting model)
+# All optional features are configured in the Admin Panel (DB-backed Setting model).
 # =============================================================================
 
 set -e

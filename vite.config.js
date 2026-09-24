@@ -7,6 +7,10 @@ import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 export default defineConfig({
     build: {
+        // Keep the previous release's hashed files while the new build is
+        // written, so visitors mid-session never request a deleted chunk.
+        // The deploy steps prune files older than a week.
+        emptyOutDir: false,
         // Maps exist only to upload to Sentry: 'hidden' leaves no sourceMappingURL
         // comment, and the plugin deletes the files after upload so the source
         // isn't published from public/build.

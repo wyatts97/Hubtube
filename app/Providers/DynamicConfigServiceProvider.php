@@ -54,10 +54,17 @@ class DynamicConfigServiceProvider extends ServiceProvider
             ]);
         }
 
-        // Health-check failures go to the same inbox as other admin alerts.
+        // Health-check and backup failures go to the same inbox as other
+        // admin alerts.
         $adminEmail = Setting::get('admin_notification_email', '') ?: $fromAddress;
         if (!empty($adminEmail)) {
-            config(['health.notifications.mail.to' => $adminEmail]);
+            config([
+                'health.notifications.mail.to' => $adminEmail,
+                'backup.notifications.mail.to' => $adminEmail,
+            ]);
+        }
+        if (!empty($fromAddress)) {
+            config(['backup.notifications.mail.from.address' => $fromAddress]);
         }
         if (!empty($fromName)) {
             config(['mail.from.name' => $fromName]);

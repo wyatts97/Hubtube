@@ -1,6 +1,6 @@
 # HubTube — Video Sharing & Streaming CMS
 
-A self-hosted, feature-rich video-sharing platform built with Laravel 12, Vue 3, and Inertia.js. Includes video upload/processing, live streaming, monetization, multi-language support, SEO, and a comprehensive admin panel.
+A self-hosted, feature-rich video-sharing platform built with Laravel 13, Vue 3, and Inertia.js. Includes video upload/processing, monetization, multi-language support, SEO, and a comprehensive admin panel.
 
 ## Prerequisites (Check/install all server-side dependencies)
 ```bash
@@ -29,9 +29,9 @@ Then visit **http://localhost:8000/install** — the wizard walks through requir
 Handles everything: dependency install, build, migrations, seeding, and starts Laravel serve + Reverb + Horizon.
 
 ### Deployment Guides
-- **[PANEL-DEPLOY.md](./PANEL-DEPLOY.md)** — Complete step-by-step aaPanel deployment guide
-- **[nginx.example.conf](./nginx.example.conf)** — Production Nginx config with SSL, gzip, WebSocket proxy
-- **[PRODUCTION-CHECKLIST.md](./PRODUCTION-CHECKLIST.md)** — Pre-launch checklist
+- **[deployment/DEPLOY.md](./deployment/DEPLOY.md)** — Full production guide for a plain Ubuntu server
+- **[deployment/CLOUDPANEL.md](./deployment/CLOUDPANEL.md)** — Running and updating on CloudPanel as the site user
+- **[deployment/nginx/hubtube.conf](./deployment/nginx/hubtube.conf)** — Production Nginx config (SSL, private videos, WebSocket proxy)
 
 ---
 
@@ -262,8 +262,8 @@ Repeat for Reverb if you use live streaming features.
 
 For hosting panel deployments, see the dedicated guides:
 
-- **[PANEL-DEPLOY.md](./PANEL-DEPLOY.md)** — Complete aaPanel deployment guide (step-by-step with screenshots-level detail)
-- **[nginx.example.conf](./nginx.example.conf)** — Production Nginx config with SSL, gzip, WebSocket proxy, video Range support
+- **[deployment/CLOUDPANEL.md](./deployment/CLOUDPANEL.md)** — CloudPanel (site user, no root)
+- **[deployment/nginx/hubtube.conf](./deployment/nginx/hubtube.conf)** — Production Nginx config with SSL, private videos, WebSocket proxy, video Range support
 
 ### Quick Setup Script (All Panels)
 
@@ -340,8 +340,7 @@ The scheduler runs: Horizon snapshots, batch pruning, expired token cleanup, sof
 | **Queue** | Laravel Horizon + Redis |
 | **Real-time** | Laravel Reverb (WebSockets) |
 | **Search** | Laravel Scout (database driver or Meilisearch) |
-| **Video** | FFmpeg (multi-res transcode, HLS, watermarks, thumbnails), HLS.js + Plyr |
-| **Live Streaming** | Agora.io (RTC + RTM) |
+| **Video** | FFmpeg (multi-res transcode, HLS, watermarks, thumbnails), HLS.js + Fluid Player |
 | **Storage** | Local, Wasabi S3, Backblaze B2, AWS S3 (configurable via admin) |
 | **CDN** | BunnyCDN, custom CDN URL, or cloud bucket public URLs |
 | **Build** | Vite 6 |
@@ -349,9 +348,9 @@ The scheduler runs: Horizon snapshots, batch pruning, expired token cleanup, sof
 
 ## Requirements
 
-- **PHP** 8.2+ with extensions: pdo_mysql, mbstring, openssl, curl, fileinfo, gd, xml, bcmath
+- **PHP** 8.4+ with extensions: pdo_mysql, mbstring, openssl, curl, fileinfo, gd, xml, bcmath
 - **Composer** 2.x
-- **Node.js** 18+
+- **Node.js** 20+
 - **MySQL 8+** or **MariaDB 10.6+**
 - **Redis** (for queues, cache, sessions)
 - **FFmpeg** (for video processing — optional but recommended)
@@ -368,15 +367,8 @@ The scheduler runs: Horizon snapshots, batch pruning, expired token cleanup, sof
 - Full-text search with category/tag filters (database or Meilisearch)
 - Scheduled publishing for admin/pro users
 
-### Live Streaming
-- Agora.io-powered interactive live streams
-- Real-time chat via Agora RTM
-- Virtual gift system with animations and wallet integration
-- Viewer count tracking, stream moderation
-
 ### Monetization
 - Wallet system with deposit/withdrawal
-- Virtual gifts during live streams (platform cut configurable)
 - Paid videos (purchase + rental with expiry)
 - Video ad system: pre-roll, mid-roll, post-roll (MP4, VAST, VPAID, HTML)
 - Ad targeting by category and user role, weighted random selection
@@ -392,15 +384,15 @@ CCBill is the adult-friendly processor. It uses **FlexForms Dynamic Pricing** (a
 2. In **HubTube Admin → Payment Settings → CCBill**: paste those values, set a **Webhook Secret**, and toggle **Use CCBill as primary Pro gateway**. The Salt and Webhook Secret are encrypted at rest.
 3. Click **Sync Prices to CCBill** to write dynamic-pricing fields (initial/recurring price, period in **days**, rebills) onto the `pro-monthly` / `pro-annual` plans.
 4. In **CCBill Admin → Webhooks**: point events at the displayed Webhook URL (`/ccbill/webhook`) with `?secret=<your webhook secret>` appended. Handled events: `NewSaleSuccess`, `RenewalSuccess`, `RenewalFailure`, `Cancellation`, `Expiration`, `Refund`/`Void`/`Return`, `Chargeback`.
-5. Cancellations/refunds are managed in CCBill Admin for now (DataLink API automation is a future enhancement; `zenphp/obsidian` can replace this after a Laravel 12 / PHP 8.4 upgrade).
+5. Cancellations/refunds are managed in CCBill Admin for now (DataLink API automation is a future enhancement).
 
 Pro access is granted **only** by verified webhooks — never by the browser redirect — and revoked only when no other active entitlement (Stripe or another CCBill sub) remains.
 
 ### Admin Panel (`/admin`)
 - **Dashboard**: Stats overview with clickable cards, trending videos, recent uploads, system status bar
 - **Content**: Videos, categories, comments, reports, pages, contact messages
-- **Users**: User management, channels, gifts, wallet transactions
-- **Settings** (15 pages): Site, theme, storage & CDN, integrations (SMTP with test email), payments, live streaming, ads, SEO, languages, PWA
+- **Users**: User management, channels, wallet transactions
+- **Settings** (15 pages): Site, theme, storage & CDN, integrations (SMTP with test email), payments, ads, SEO, languages, PWA
 - **Tools**: WordPress importer, archive importer, Bunny Stream migrator, video embedder, menu builder, failed jobs viewer
 - **Security**: Sensitive credentials (SMTP password, API keys, cloud secrets) encrypted at rest
 
@@ -597,8 +589,7 @@ resources/
     └── filament/           # Admin panel Blade views
 database/
 ├── migrations/             # 35+ migrations
-└── seeders/                # Categories, gifts, settings, demo users
-scraper/                    # Node.js content scraping microservice (optional)
+└── seeders/                # Categories, settings, demo users
 ```
 
 ## Key Models
@@ -608,11 +599,9 @@ scraper/                    # Node.js content scraping microservice (optional)
 | `User` | Auth, wallet, admin/pro flags, channel |
 | `Video` | Uploads + embedded, multi-quality, cloud storage tracking |
 | `Channel` | User profiles with subscriber counts |
-| `LiveStream` | Agora-powered streams with viewer tracking |
 | `VideoAd` | Ad creatives (MP4/VAST/VPAID/HTML) with targeting |
 | `Setting` | Key-value store for all admin-configurable settings |
 | `WalletTransaction` | Financial ledger with balance tracking |
-| `GiftTransaction` | Live stream gift records |
 
 ## Video Processing Pipeline
 
@@ -867,10 +856,10 @@ Proprietary — All rights reserved.
 
 ## Documentation
 
-- **[PANEL-DEPLOY.md](./PANEL-DEPLOY.md)** — Complete aaPanel deployment guide
-- **[PRODUCTION-CHECKLIST.md](./PRODUCTION-CHECKLIST.md)** — Pre-launch checklist with security, performance, and operational items
-- **[nginx.example.conf](./nginx.example.conf)** — Production Nginx config template
-- **[maddy-mail-setup/README.md](./maddy-mail-setup/README.md)** — Self-hosted email server setup
+- **[deployment/DEPLOY.md](./deployment/DEPLOY.md)** — Production deployment guide
+- **[deployment/CLOUDPANEL.md](./deployment/CLOUDPANEL.md)** — CloudPanel runbook
+- **[deployment/RELEASE-NOTES.md](./deployment/RELEASE-NOTES.md)** — What changed in past releases, and what each needs on deploy
+- **[deployment/nginx/hubtube.conf](./deployment/nginx/hubtube.conf)** — Production Nginx config template
 - Admin panel at `/admin` — all settings are self-documented with helper text
 
 ## Support

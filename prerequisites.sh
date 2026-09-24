@@ -24,7 +24,7 @@
 # After running this script, see:
 #   - PANEL-DEPLOY.md  — Full aaPanel deployment guide
 #   - README.md        — General setup and configuration
-#   - nginx.example.conf — Production Nginx config template
+#   - deployment/nginx/hubtube.conf — Production Nginx config template
 # =============================================================================
 
 set -euo pipefail
@@ -585,7 +585,7 @@ echo "  4. Install PHP deps:    composer install --no-dev --optimize-autoloader"
 echo "  5. Install JS deps:     npm ci && npm run build"
 echo "  6. Generate app key:    php artisan key:generate"
 echo "  7. Create database:     See README.md Step 3"
-echo "  8. Configure Nginx:     cp nginx.example.conf /etc/nginx/sites-available/hubtube"
+echo "  8. Configure Nginx:     cp deployment/nginx/hubtube.conf /etc/nginx/sites-available/hubtube"
 echo "  9. Fix permissions:     chown -R www-data:www-data /var/www/hubtube"
 echo "  10. Run web installer:  Visit http://yourdomain.com/install"
 echo "  11. Get SSL cert:       sudo certbot --nginx -d yourdomain.com"
