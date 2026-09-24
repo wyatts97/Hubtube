@@ -1,0 +1,2425 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Access to an undefined property App\\Models\\Channel\|App\\Models\\Gallery\|App\\Models\\Image\|App\\Models\\User\|App\\Models\\Video\:\:\$alt_text\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/BackfillAltText.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Channel\|App\\Models\\Gallery\|App\\Models\\Image\|App\\Models\\User\|App\\Models\\Video\:\:\$avatar_alt_text\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/BackfillAltText.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Channel\|App\\Models\\Gallery\|App\\Models\\Image\|App\\Models\\User\|App\\Models\\Video\:\:\$banner_alt_text\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/BackfillAltText.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Channel\|App\\Models\\Gallery\|App\\Models\\Image\|App\\Models\\User\|App\\Models\\Video\:\:\$cover_alt_text\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/BackfillAltText.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Channel\|App\\Models\\Gallery\|App\\Models\\Image\|App\\Models\\User\|App\\Models\\Video\:\:\$thumbnail_alt_text\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/BackfillAltText.php
+
+		-
+			message: '#^Match expression does not handle remaining value\: string$#'
+			identifier: match.unhandled
+			count: 1
+			path: app/Console/Commands/BackfillAltText.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''App\\\\Models\\\\Video'' and ''App\\\\Models\\\\Video'' will always evaluate to true\.$#'
+			identifier: identical.alwaysTrue
+			count: 1
+			path: app/Console/Commands/BackfillTranslatedSlugs.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Console/Commands/FixCorruptedTags.php
+
+		-
+			message: '#^Comparison operation "\>" between 0 and 0 is always false\.$#'
+			identifier: greater.alwaysFalse
+			count: 1
+			path: app/Console/Commands/GenerateTranslations.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Console/Commands/GenerateTranslations.php
+
+		-
+			message: '#^Call to an undefined method App\\Services\\Translation\\Contracts\\TranslationProvider\:\:chunkTexts\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Console/Commands/RunScheduledTranslations.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$avatar_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Events/NewSubscriber.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Events/NewSubscriber.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$username\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Events/NewSubscriber.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\AdSettings\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/AdSettings.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\Backups\:\:\$settingsForm\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/Backups.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\BulkImageUploader\:\:\$bulkSettingsForm\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/BulkImageUploader.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\BulkImageUploader\:\:\$uploadForm\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Filament/Pages/BulkImageUploader.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\BulkVideoUploader\:\:\$bulkSettingsForm\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/BulkVideoUploader.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\BulkVideoUploader\:\:\$uploadForm\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Filament/Pages/BulkVideoUploader.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Pages/Dashboard.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\DataExport\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Pages/DataExport.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\EncodingSettings\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Filament/Pages/EncodingSettings.php
+
+		-
+			message: '#^Access to an undefined property Spatie\\Health\\ResultStores\\StoredCheckResults\\StoredCheckResult\:\:\$checkName\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/HealthChecks.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Filament/Pages/HealthChecks.php
+
+		-
+			message: '#^Property Spatie\\Health\\ResultStores\\StoredCheckResults\\StoredCheckResult\:\:\$shortSummary \(string\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Filament/Pages/HealthChecks.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\IntegrationSettings\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/IntegrationSettings.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>address" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Pages/IntegrationSettings.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\LanguageSettings\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/LanguageSettings.php
+
+		-
+			message: '#^Parameter \#1 \$options of method Filament\\Forms\\Components\\Select\:\:options\(\) expects array\<array\<string\>\|string\>\|Closure\|Illuminate\\Contracts\\Support\\Arrayable\|string\|null, array\{1\: 1, 2\: 2, 3\: 3, 4\: 4, 5\: 5, 6\: 6, 7\: 7, 8\: 8, \.\.\.\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Pages/LanguageSettings.php
+
+		-
+			message: '#^Cannot call method diffForHumans\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Filament/Pages/MediaLibrary.php
+
+		-
+			message: '#^Cannot call method format\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Filament/Pages/MediaLibrary.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\NotificationSettings\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/NotificationSettings.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\PaymentSettings\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/PaymentSettings.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\PointsSettings\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/PointsSettings.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\PwaSettings\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/PwaSettings.php
+
+		-
+			message: '#^Cannot call method diffForHumans\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Filament/Pages/ScheduledVideos.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\SearchIndexingSettings\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/SearchIndexingSettings.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\SeoDiagnostics\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Filament/Pages/SeoDiagnostics.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:public\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Filament/Pages/SeoDiagnostics.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\SeoSettings\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/SeoSettings.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\SiteSettings\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/SiteSettings.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\SocialNetworkSettings\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/SocialNetworkSettings.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments mixed, array\{\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Filament/Pages/SocialNetworkSettings.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\StorageSettings\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/StorageSettings.php
+
+		-
+			message: '#^Access to an undefined property App\\Filament\\Pages\\ThemeSettings\:\:\$form\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Pages/ThemeSettings.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$plan\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/CCBillSubscriptionResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/CCBillSubscriptionResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/CCBillSubscriptionResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_verified\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/ChannelResource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:totalVideoViews\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Filament/Resources/ChannelResource.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Resources/ChannelResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/CommentResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/CommentResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$video\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/CommentResource.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Services\\PointsService\:\:awardCommentPoints\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Filament/Resources/CommentResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/ContactMessageResource.php
+
+		-
+			message: '#^Cannot access property \$is_read on Illuminate\\Database\\Eloquent\\Model\|int\|string\.$#'
+			identifier: property.nonObject
+			count: 4
+			path: app/Filament/Resources/ContactMessageResource/Pages/ViewContactMessage.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$complainant_email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/DmcaRequestResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/DmcaRequestResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/DmcaRequestResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$video\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/DmcaRequestResource.php
+
+		-
+			message: '#^Call to an undefined static method Illuminate\\Database\\Eloquent\\Model\:\:pending\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: app/Filament/Resources/DmcaRequestResource.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),Illuminate\\Database\\Eloquent\\Model\>\:\:each\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\|string\)\: mixed, Closure\(App\\Models\\DmcaRequest\)\: void given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Filament/Resources/DmcaRequestResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$privacy\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/GalleryResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/GalleryResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_approved\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/ImageResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/ImageResource.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),Illuminate\\Database\\Eloquent\\Model\>\:\:each\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\|string\)\: mixed, Closure\(App\\Models\\Image\)\: bool given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/ImageResource.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),Illuminate\\Database\\Eloquent\\Model\>\:\:each\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\|string\)\: mixed, Closure\(App\\Models\\Image\)\: void given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/ImageResource.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Services\\PointsService\:\:award\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/ImageResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$label\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/MenuItemResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$location\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/MenuItemResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$parent\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/MenuItemResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/MenuItemResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_published\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/PageResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/PageResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$reason\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Resources/ReportResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/ReportResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/ReportResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/ReportResource.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),Illuminate\\Database\\Eloquent\\Model\>\:\:each\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\|string\)\: mixed, Closure\(App\\Models\\Report\)\: void given\.$#'
+			identifier: argument.type
+			count: 3
+			path: app/Filament/Resources/ReportResource.php
+
+		-
+			message: '#^Parameter \#1 \$record of static method App\\Filament\\Resources\\ReportResource\:\:contentLabel\(\) expects App\\Models\\Report, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/ReportResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_active\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/SponsoredCardResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Resources/SponsoredCardResource.php
+
+		-
+			message: '#^Cannot access property \$name on Illuminate\\Database\\Eloquent\\Model\|int\|string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Filament/Resources/TagResource/Pages/EditTag.php
+
+		-
+			message: '#^Cannot access property \$slug on Illuminate\\Database\\Eloquent\\Model\|int\|string\.$#'
+			identifier: property.nonObject
+			count: 3
+			path: app/Filament/Resources/TagResource/Pages/EditTag.php
+
+		-
+			message: '#^Parameter \#1 \$hashtag of method App\\Services\\TagSyncService\:\:deleteTag\(\) expects App\\Models\\Hashtag, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/TagResource/Pages/EditTag.php
+
+		-
+			message: '#^Parameter \#4 \$tag of method App\\Services\\TagSyncService\:\:renameTagBySlug\(\) expects App\\Models\\Hashtag\|null, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/TagResource/Pages/EditTag.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_admin\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_pro\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Support\\HigherOrderCollectionProxy\<string, Illuminate\\Database\\Eloquent\\Model, Illuminate\\Database\\Eloquent\\Collection\>\:\:\$is_admin\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/UserResource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\:\:blocked\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/UserResource.php
+
+		-
+			message: '#^Cannot call method format\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Filament/Resources/UserResource.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),Illuminate\\Database\\Eloquent\\Model\>\:\:each\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\|string\)\: mixed, Closure\(App\\Models\\User\)\: void given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/UserResource.php
+
+		-
+			message: '#^Parameter \#2 \$until of method App\\Services\\UserBanService\:\:suspend\(\) expects Illuminate\\Support\\Carbon, Carbon\\Carbon given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/UserResource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:attributesForAdminForm\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/UserResource/Pages/EditUser.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_active\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/VideoAdResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$placement\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/VideoAdResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/VideoAdResource.php
+
+		-
+			message: '#^Parameter \#1 \$value of function count expects array\|Countable, string given\.$#'
+			identifier: argument.type
+			count: 3
+			path: app/Filament/Resources/VideoAdResource.php
+
+		-
+			message: '#^Parameter \#2 \$array of function implode expects array, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/VideoAdResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$file_path\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Filament/Resources/VideoAdResource/Pages/EditVideoAd.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Resources/VideoResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$queue_order\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/VideoResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Resources/VideoResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$username\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Filament/Resources/VideoResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$views_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/VideoResource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:notify\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/VideoResource.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),Illuminate\\Database\\Eloquent\\Model\>\:\:each\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\|string\)\: mixed, Closure\(App\\Models\\Video\)\: bool given\.$#'
+			identifier: argument.type
+			count: 4
+			path: app/Filament/Resources/VideoResource.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),Illuminate\\Database\\Eloquent\\Model\>\:\:each\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\|string\)\: mixed, Closure\(App\\Models\\Video\)\: void given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Filament/Resources/VideoResource.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),Illuminate\\Database\\Eloquent\\Model\>\:\:filter\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\|string\)\: bool\)\|null, Closure\(App\\Models\\Video\)\: bool given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/VideoResource.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Services\\PointsService\:\:award\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/VideoResource.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Filament/Resources/VideoResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$video_path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/VideoResource/Pages/CreateVideo.php
+
+		-
+			message: '#^Parameter \#1 \$video of class App\\Events\\VideoUploaded constructor expects App\\Models\\Video, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/VideoResource/Pages/CreateVideo.php
+
+		-
+			message: '#^Cannot access property \$id on Illuminate\\Database\\Eloquent\\Model\|int\|string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Filament/Resources/VideoResource/Pages/EditVideo.php
+
+		-
+			message: '#^Cannot access property \$is_approved on Illuminate\\Database\\Eloquent\\Model\|int\|string\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: app/Filament/Resources/VideoResource/Pages/EditVideo.php
+
+		-
+			message: '#^Cannot access property \$slug on Illuminate\\Database\\Eloquent\\Model\|int\|string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Filament/Resources/VideoResource/Pages/EditVideo.php
+
+		-
+			message: '#^Cannot access property \$status on Illuminate\\Database\\Eloquent\\Model\|int\|string\.$#'
+			identifier: property.nonObject
+			count: 3
+			path: app/Filament/Resources/VideoResource/Pages/EditVideo.php
+
+		-
+			message: '#^Cannot access property \$user_id on Illuminate\\Database\\Eloquent\\Model\|int\|string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Filament/Resources/VideoResource/Pages/EditVideo.php
+
+		-
+			message: '#^Parameter \#1 \$video of class App\\Events\\VideoProcessed constructor expects App\\Models\\Video, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/VideoResource/Pages/EditVideo.php
+
+		-
+			message: '#^Parameter \#1 \$video of job class App\\Jobs\\ProcessVideoJob constructor expects App\\Models\\Video in App\\Jobs\\ProcessVideoJob\:\:dispatch\(\), Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/VideoResource/Pages/EditVideo.php
+
+		-
+			message: '#^Parameter \#1 \$video of static method App\\Filament\\Resources\\VideoResource\:\:awardUploadPoints\(\) expects App\\Models\\Video, Illuminate\\Database\\Eloquent\\Model\|int\|string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Filament/Resources/VideoResource/Pages/EditVideo.php
+
+		-
+			message: '#^Cannot access property \$is_approved on Illuminate\\Database\\Eloquent\\Model\|int\|string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Filament/Resources/VideoResource/Pages/ViewVideo.php
+
+		-
+			message: '#^Cannot access property \$slug on Illuminate\\Database\\Eloquent\\Model\|int\|string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Filament/Resources/VideoResource/Pages/ViewVideo.php
+
+		-
+			message: '#^Cannot access property \$status on Illuminate\\Database\\Eloquent\\Model\|int\|string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Filament/Resources/VideoResource/Pages/ViewVideo.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$amount\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/WithdrawalRequestResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/WithdrawalRequestResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/WithdrawalRequestResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/WithdrawalRequestResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$username\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Filament/Resources/WithdrawalRequestResource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:notify\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Filament/Resources/WithdrawalRequestResource.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:blockMessage\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Auth/SocialLoginController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:isBlocked\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Auth/SocialLoginController.php
+
+		-
+			message: '#^Call to an undefined method Laravel\\Socialite\\Contracts\\Provider\:\:scopes\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Auth/SocialLoginController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Auth\\SocialLoginController\:\:redirect\(\) should return Illuminate\\Http\\RedirectResponse but returns Symfony\\Component\\HttpFoundation\\RedirectResponse\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/Auth/SocialLoginController.php
+
+		-
+			message: '#^Parameter \#1 \$user of static method Illuminate\\Support\\Facades\\Auth\:\:login\(\) expects Illuminate\\Contracts\\Auth\\Authenticatable, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Auth/SocialLoginController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$ccbill_initial_period\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/CCBillController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$ccbill_recurring_period\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/CCBillController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:revokeProUnlessEntitled\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/CCBillController.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Http\\Controllers\\CCBillController\:\:grantPro\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/CCBillController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>ccbill_initial_period" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/CCBillController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>ccbill_recurring_period" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/CCBillController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$notifications_enabled\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/ChannelController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:likes\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/ChannelController.php
+
+		-
+			message: '#^Offset ''show_liked_videos'' on array\{\}\|string in empty\(\) does not exist\.$#'
+			identifier: empty.offset
+			count: 2
+			path: app/Http/Controllers/ChannelController.php
+
+		-
+			message: '#^Offset ''show_watch_history'' on array\{\}\|string in empty\(\) does not exist\.$#'
+			identifier: empty.offset
+			count: 2
+			path: app/Http/Controllers/ChannelController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>notifications_enabled" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/ChannelController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$avatar_alt\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/CommentController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$avatar_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/CommentController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/CommentController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_pro\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/CommentController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/CommentController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$username\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/CommentController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:isAccessibleBy\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/CommentController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:isViewableBy\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/CommentController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:notify\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Http/Controllers/CommentController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:topLevel\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/CommentController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:visibleTo\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/CommentController.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/CommentController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array, Closure\(App\\Models\\Comment\)\: array given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/CommentController.php
+
+		-
+			message: '#^Parameter \#1 \$comment of method App\\Http\\Controllers\\CommentController\:\:notifyAbout\(\) expects App\\Models\\Comment, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/CommentController.php
+
+		-
+			message: '#^Parameter \#1 \$comment of method App\\Http\\Controllers\\CommentController\:\:shape\(\) expects App\\Models\\Comment, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/CommentController.php
+
+		-
+			message: '#^Parameter \#2 \$video of method App\\Http\\Controllers\\CommentController\:\:shape\(\) expects App\\Models\\Video\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/CommentController.php
+
+		-
+			message: '#^Parameter \#2 \$video of method App\\Http\\Controllers\\CommentController\:\:shapeMany\(\) expects App\\Models\\Video, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/CommentController.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Http/Controllers/DmcaController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$username\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Controllers/EmbedController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\BelongsToMany\:\:approved\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/GalleryController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$video\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/HistoryController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Category\:\:\$latest_thumbnail\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/HomeController.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Http/Controllers/HomeController.php
+
+		-
+			message: '#^Match arm comparison between ''all'' and ''all'' is always true\.$#'
+			identifier: match.alwaysTrue
+			count: 2
+			path: app/Http/Controllers/HomeController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>thumbnail" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/HomeController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>thumbnail_url" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/HomeController.php
+
+		-
+			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
+			identifier: larastan.noEnvCallsOutsideOfConfig
+			count: 27
+			path: app/Http/Controllers/InstallController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:notify\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/LikeController.php
+
+		-
+			message: '#^Call to protected method decrementQuietly\(\) of class Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: method.protected
+			count: 4
+			path: app/Http/Controllers/LikeController.php
+
+		-
+			message: '#^Call to protected method incrementQuietly\(\) of class Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: method.protected
+			count: 4
+			path: app/Http/Controllers/LikeController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:unread\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: app/Http/Controllers/NotificationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/PointsController.php
+
+		-
+			message: '#^Cannot call method format\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/PointsController.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/PointsController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Pagination\\AbstractPaginator\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:through\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/PointsController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Pagination\\AbstractPaginator\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:through\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array\{id\: int, type\: string, points\: int, balance_after\: int, description\: string\|null, reference_title\: mixed, created_at\: string\}, Closure\(App\\Models\\PointsTransaction\)\: array\{id\: int, type\: string, points\: int, balance_after\: int, description\: string\|null, reference_title\: mixed, created_at\: string\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/PointsController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/PointsController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$cancelled_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/ProController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$current_period_end\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/ProController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$plan\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/ProController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/ProController.php
+
+		-
+			message: '#^Access to an undefined property Laravel\\Cashier\\Checkout\:\:\$url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/ProController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:isActive\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/ProController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:active\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/ProController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/SearchController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$username\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/SearchController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\User\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/SearchController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Video\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/SearchController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/SearchController.php
+
+		-
+			message: '#^Offset ''email_notifications'' on array\{\}\|string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Http/Controllers/SettingsController.php
+
+		-
+			message: '#^Offset ''push_notifications'' on array\{\}\|string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Http/Controllers/SettingsController.php
+
+		-
+			message: '#^Offset ''subscription…'' on array\{\}\|string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Http/Controllers/SettingsController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$file_path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/SitemapController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/SitemapController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$thumbnail_path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/SitemapController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$username\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/SitemapController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:public\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Http/Controllers/SitemapController.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: app/Http/Controllers/SitemapController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/SitemapController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/SitemapController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/StudioController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:studioStatus\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/StudioController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:studioStatus\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/StudioController.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Http/Controllers/StudioController.php
+
+		-
+			message: '#^Match expression does not handle remaining value\: mixed$#'
+			identifier: match.unhandled
+			count: 1
+			path: app/Http/Controllers/StudioController.php
+
+		-
+			message: '#^Parameter \#1 \$video of method App\\Http\\Controllers\\StudioController\:\:addTags\(\) expects App\\Models\\Video, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/StudioController.php
+
+		-
+			message: '#^Method Illuminate\\Http\\Client\\Response\:\:header\(\) invoked with 2 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: app/Http/Controllers/ThumbnailProxyController.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Playlist\:\:\$has_video\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/VideoController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$duration\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/VideoController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$formatted_duration\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/VideoController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$has_video\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/VideoController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/VideoController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_default\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/VideoController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$published_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/VideoController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/VideoController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$thumbnail_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/VideoController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/VideoController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/VideoController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/VideoController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$views_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/VideoController.php
+
+		-
+			message: '#^If condition is always true\.$#'
+			identifier: if.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/VideoController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/VideoController.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Models\\User\:\:isSubscribedTo\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/VideoController.php
+
+		-
+			message: '#^Property App\\Models\\Playlist\:\:\$videos_count is not writable\.$#'
+			identifier: assign.propertyReadOnly
+			count: 1
+			path: app/Http/Controllers/VideoController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:completed\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/WalletController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:completed\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/WalletController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between array\|string\|null and true will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Http/Middleware/AgeVerification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Middleware/HandleInertiaRequests.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$username\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Middleware/HandleInertiaRequests.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$banner_image\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Middleware/HandleInertiaRequests.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$description\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Middleware/HandleInertiaRequests.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Middleware/HandleInertiaRequests.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Middleware/HandleInertiaRequests.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$social_links\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Middleware/HandleInertiaRequests.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Middleware/HandleInertiaRequests.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ChannelProfileResource\:\:\$avatar_alt\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ChannelProfileResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ChannelProfileResource\:\:\$avatar_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ChannelProfileResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ChannelProfileResource\:\:\$bio\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ChannelProfileResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ChannelProfileResource\:\:\$channel\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ChannelProfileResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ChannelProfileResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ChannelProfileResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ChannelProfileResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Resources/ChannelProfileResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ChannelProfileResource\:\:\$is_pro\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ChannelProfileResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ChannelProfileResource\:\:\$is_verified\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ChannelProfileResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ChannelProfileResource\:\:\$subscriber_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ChannelProfileResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ChannelProfileResource\:\:\$username\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Resources/ChannelProfileResource.php
+
+		-
+			message: '#^Offset ''av1''\|''h265''\|''vp9'' on array\{h265\: bool, vp9\: bool, av1\: bool\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Jobs/CompressMediaFileJob.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$duration\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/EncodeVideoChunkJob.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$video_bitrate\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/EncodeVideoChunkJob.php
+
+		-
+			message: '#^Parameter \#1 \$video of method App\\Services\\Encoding\\RenditionCoordinator\:\:sourcePath\(\) expects App\\Models\\Video, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Jobs/EncodeVideoChunkJob.php
+
+		-
+			message: '#^Parameter \#1 \$video of method App\\Services\\Encoding\\RenditionCoordinator\:\:audioTrackPath\(\) expects App\\Models\\Video, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Jobs/FinalizeRenditionJob.php
+
+		-
+			message: '#^Parameter \#1 \$video of method App\\Services\\Encoding\\RenditionCoordinator\:\:processedDir\(\) expects App\\Models\\Video, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Jobs/FinalizeRenditionJob.php
+
+		-
+			message: '#^Property Laravel\\Cashier\\Events\\WebhookReceived\:\:\$payload \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Listeners/HandleStripeSubscriptionChanges.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:notify\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Listeners/NotifyChannelOfNewSubscriber.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:notify\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Listeners/NotifyVideoProcessed.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Listeners/SubmitVideoToIndexNowListener.php
+
+		-
+			message: '#^Cannot call method isFuture\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Listeners/SubmitVideoToIndexNowListener.php
+
+		-
+			message: '#^Cannot call method isPast\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Models/CCBillSubscription.php
+
+		-
+			message: '#^Cannot call method isPast\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Models/ComplianceRecord.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model&object\{pivot\: Illuminate\\Database\\Eloquent\\Relations\\Pivot\}\:\:\$thumbnail_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Gallery.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$thumbnail_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Gallery.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Models/MediaFolder.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model&object\{pivot\: Illuminate\\Database\\Eloquent\\Relations\\Pivot\}\:\:\$thumbnail_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Playlist.php
+
+		-
+			message: '#^Cannot call method isFuture\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Models/Subscription.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$subscriber_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:public\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Models/User.php
+
+		-
+			message: '#^Cannot call method isFuture\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Method App\\Models\\User\:\:ensureChannel\(\) should return App\\Models\\Channel but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 2
+			path: app/Models/User.php
+
+		-
+			message: '#^Offset ''private_profile'' on array\{\}\|string in empty\(\) does not exist\.$#'
+			identifier: empty.offset
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>subscriber_count" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Argument of an invalid type string supplied for foreach, only iterables are supported\.$#'
+			identifier: foreach.nonIterable
+			count: 1
+			path: app/Models/Video.php
+
+		-
+			message: '#^Call to function is_array\(\) with string\|null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Models/Video.php
+
+		-
+			message: '#^Parameter \#1 \$array \(array\{\}\|array\{0\?\: non\-falsy\-string\}\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Models/Video.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:avg\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model\)\: float\)\|int\|string\|null, Closure\(App\\Models\\VideoEncoding\)\: int\<0, max\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Models/Video.php
+
+		-
+			message: '#^Parameter \#1 \$key of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:contains\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: bool\)\|Illuminate\\Database\\Eloquent\\Model\|int\|string, Closure\(App\\Models\\VideoEncoding\)\: bool given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Models/Video.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: app/Models/Video.php
+
+		-
+			message: '#^Cannot call method isFuture\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Models/VideoTransaction.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/CommentMentionNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/CommentMentionNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/CommentMentionNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/CommentReplyNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Notifications/CommentReplyNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Notifications/CommentReplyNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Notifications/NewCommentNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Notifications/NewCommentNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Notifications/NewCommentNotification.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Channel\:\:\$banner_alt_text\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Observers/ChannelObserver.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Gallery\:\:\$cover_alt_text\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Observers/GalleryObserver.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Image\:\:\$alt_text\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Observers/ImageObserver.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\User\:\:\$avatar_alt_text\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Observers/UserObserver.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Video\:\:\$thumbnail_alt_text\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Observers/VideoObserver.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Policies/CommentPolicy.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$username\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Providers/AppServiceProvider.php
+
+		-
+			message: '#^Parameter \#1 \$model of method Spatie\\Activitylog\\ActivityLogger\:\:performedOn\(\) expects Illuminate\\Database\\Eloquent\\Model, Illuminate\\Contracts\\Auth\\Authenticatable given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Providers/AppServiceProvider.php
+
+		-
+			message: '#^Parameter \#1 \$modelOrId of method Spatie\\Activitylog\\ActivityLogger\:\:causedBy\(\) expects Illuminate\\Database\\Eloquent\\Model\|int\|string\|null, Illuminate\\Contracts\\Auth\\Authenticatable given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Providers/AppServiceProvider.php
+
+		-
+			message: '#^Call to an undefined method Filafly\\Icons\\Phosphor\\PhosphorIcons\:\:regular\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Providers/Filament/AdminPanelProvider.php
+
+		-
+			message: '#^Offset ''icon'' on array\{key\: ''Appearance'', collapsed\: false, icon\: ''phosphor\-paint\-brush''\}\|array\{key\: ''Content'', collapsed\: false, icon\: ''phosphor\-video…''\}\|array\{key\: ''Moderation'', collapsed\: false, icon\: ''phosphor\-shield…''\}\|array\{key\: ''Monetization'', collapsed\: false, icon\: ''phosphor\-currency…''\}\|array\{key\: ''Overview'', collapsed\: false, icon\: ''phosphor\-squares…''\}\|array\{key\: ''System'', collapsed\: true, icon\: ''phosphor\-gear''\}\|array\{key\: ''Tools'', collapsed\: true, icon\: ''phosphor\-wrench''\}\|array\{key\: ''Users & Email'', collapsed\: false, icon\: ''phosphor\-users''\} in empty\(\) always exists and is not falsy\.$#'
+			identifier: empty.offset
+			count: 1
+			path: app/Providers/Filament/AdminPanelProvider.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Services\\ActivityFeedService\:\:actor\(\) expects App\\Models\\User\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/ActivityFeedService.php
+
+		-
+			message: '#^Method App\\Services\\ArchiveImportService\:\:resolveCategory\(\) never returns null so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: app/Services/ArchiveImportService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between non\-empty\-string and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Services/BulkVideoCreator.php
+
+		-
+			message: '#^Offset 1 on array\{list\<string\>, list\<non\-falsy\-string\>\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/CommentMentions.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>address" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Services/EmailService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$height\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Encoding/HlsPackager.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$width\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Encoding/HlsPackager.php
+
+		-
+			message: '#^Parameter \#1 \$profile of static method App\\Services\\Encoding\\HlsPackager\:\:bandwidthFor\(\) expects App\\Models\\EncodeProfile\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Encoding/HlsPackager.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Encoding/RenditionCoordinator.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Encoding/RenditionCoordinator.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:encodings\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Encoding/RenditionCoordinator.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Support\\HigherOrderCollectionProxy\<string, Illuminate\\Database\\Eloquent\\Model, Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\>\:\:isOriginal\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Encoding/RenditionCoordinator.php
+
+		-
+			message: '#^Method App\\Services\\Encoding\\RenditionCoordinator\:\:adoptLegacyRenditions\(\) should return Illuminate\\Support\\Collection\<string, App\\Models\\VideoEncoding\> but returns Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), Illuminate\\Database\\Eloquent\\Model\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Services/Encoding/RenditionCoordinator.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:first\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: bool\)\|null, Closure\(App\\Models\\VideoEncoding\)\: bool given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Encoding/RenditionCoordinator.php
+
+		-
+			message: '#^Parameter \#1 \$encoding of method App\\Services\\Encoding\\RenditionCoordinator\:\:dispatchRendition\(\) expects App\\Models\\VideoEncoding, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/Encoding/RenditionCoordinator.php
+
+		-
+			message: '#^Parameter \#1 \$encodings of method App\\Services\\Encoding\\RenditionCoordinator\:\:availableQualities\(\) expects Illuminate\\Support\\Collection\<int, App\\Models\\VideoEncoding\>, Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Encoding/RenditionCoordinator.php
+
+		-
+			message: '#^Parameter \#1 \$key of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:contains\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: bool\)\|Illuminate\\Database\\Eloquent\\Model\|int\|string, Closure\(App\\Models\\VideoEncoding\)\: bool given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/Encoding/RenditionCoordinator.php
+
+		-
+			message: '#^Parameter \#1 \$video of method App\\Services\\Encoding\\RenditionCoordinator\:\:dispatchCompletionIfDone\(\) expects App\\Models\\Video, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Encoding/RenditionCoordinator.php
+
+		-
+			message: '#^Parameter \#1 \$video of method App\\Services\\Encoding\\RenditionCoordinator\:\:processedDir\(\) expects App\\Models\\Video, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Encoding/RenditionCoordinator.php
+
+		-
+			message: '#^Parameter \#1 \$video of method App\\Services\\Encoding\\RenditionCoordinator\:\:processedDir\(\) expects App\\Models\\Video, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 3
+			path: app/Services/Encoding/RenditionCoordinator.php
+
+		-
+			message: '#^Parameter \#1 \$video of method App\\Services\\Encoding\\RenditionCoordinator\:\:publishAvailableRenditions\(\) expects App\\Models\\Video, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Encoding/RenditionCoordinator.php
+
+		-
+			message: '#^Parameter \#2 \$completed of method App\\Services\\Encoding\\HlsPackager\:\:writeMasterPlaylist\(\) expects Illuminate\\Support\\Collection\<int, App\\Models\\VideoEncoding\>, Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Encoding/RenditionCoordinator.php
+
+		-
+			message: '#^Parameter \#2 \$encodings of method App\\Services\\Encoding\\RenditionCoordinator\:\:publishAvailableRenditions\(\) expects Illuminate\\Support\\Collection\<int, App\\Models\\VideoEncoding\>, Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Encoding/RenditionCoordinator.php
+
+		-
+			message: '#^Parameter \#2 \$original of method App\\Services\\Encoding\\RenditionCoordinator\:\:swapInWatermarkedOriginal\(\) expects App\\Models\\VideoEncoding, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Encoding/RenditionCoordinator.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>height" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Encoding/RenditionCoordinator.php
+
+		-
+			message: '#^Offset 0 on array\{0\: int\<0, max\>, 1\: int\<0, max\>, 2\: int, 3\: string, mime\: string, channels\?\: int, bits\?\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/FileManagerThumbnailService.php
+
+		-
+			message: '#^Offset 1 on array\{0\: int\<0, max\>, 1\: int\<0, max\>, 2\: int, 3\: string, mime\: string, channels\?\: int, bits\?\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/FileManagerThumbnailService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between int\<0, max\> and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 2
+			path: app/Services/FileManagerThumbnailService.php
+
+		-
+			message: '#^Call to an undefined method Intervention\\Image\\Interfaces\\ColorInterface\:\:blue\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/ImageService.php
+
+		-
+			message: '#^Call to an undefined method Intervention\\Image\\Interfaces\\ColorInterface\:\:green\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/ImageService.php
+
+		-
+			message: '#^Call to an undefined method Intervention\\Image\\Interfaces\\ColorInterface\:\:red\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/ImageService.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: app/Services/ImageService.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Services\\PointsService\:\:award\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/ImageService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and false will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/LogViewerService.php
+
+		-
+			message: '#^Cannot call method getTimestamp\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 3
+			path: app/Services/Media/MediaIndexService.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Media/MediaPathGuard.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Services/PointsService.php
+
+		-
+			message: '#^Cannot call method isFuture\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Services/PointsService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$banner_image\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$description\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$file_path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 5
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$thumbnail_path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$thumbnail_url\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$username\.$#'
+			identifier: property.notFound
+			count: 12
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:public\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^If condition is always true\.$#'
+			identifier: if.alwaysTrue
+			count: 1
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Left side of && is always true\.$#'
+			identifier: booleanAnd.leftAlwaysTrue
+			count: 1
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Parameter \#2 \$callback of function array_filter expects \(callable\(string\)\: bool\)\|null, ''strlen'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 3
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 4
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type Illuminate\\Database\\Eloquent\\Model\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/SeoService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$social_links\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/SocialLinkService.php
+
+		-
+			message: '#^Parameter \#1 \$bytes of method App\\Services\\SystemStatusBar\:\:formatBytes\(\) expects int, float given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/SystemStatusBar.php
+
+		-
+			message: '#^Match arm comparison between ''monthly'' and ''monthly'' is always true\.$#'
+			identifier: match.alwaysTrue
+			count: 1
+			path: app/Services/Translation/TranslationSchedule.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$amount\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$completed\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$content\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 7
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$description\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$message\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$privacy\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$provider\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$read_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$video_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$video_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$videos\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$watched_seconds\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 8
+			path: app/Services/UserDataExportService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\VideoView\:\:\$views\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/VideoAnalytics.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/VideoDescriptionTemplate.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$username\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/VideoDescriptionTemplate.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Services/VideoDescriptionTemplate.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/VideoDescriptionTemplate.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>username" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/VideoDescriptionTemplate.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$username\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/VideoService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:can\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/VideoService.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Services\\PointsService\:\:award\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/VideoService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/WalletService.php
+
+		-
+			message: '#^Property App\\Models\\User\:\:\$wallet_balance \(float\) does not accept string\.$#'
+			identifier: assign.propertyType
+			count: 2
+			path: app/Services/WalletService.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments null, array\{''light'', ''dark''\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Support/ThemeTokens.php
+
+		-
+			message: '#^Method App\\Support\\ThemeTokens\:\:savedUserTheme\(\) never returns string so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: app/Support/ThemeTokens.php
+
+		-
+			message: '#^Offset ''theme'' on string\|null on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Support/ThemeTokens.php
+
+		-
+			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
+			identifier: larastan.noEnvCallsOutsideOfConfig
+			count: 1
+			path: app/Support/TrustedProxies.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments ''private''\|''public''\|''unlisted'', array\{''public'', ''unlisted'', ''private''\} and true will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Support/VideoPrivacy.php

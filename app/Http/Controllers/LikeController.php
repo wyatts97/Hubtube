@@ -108,16 +108,17 @@ class LikeController extends Controller
     }
 
     /**
-     * Retry a transaction with exponential backoff on deadlock.
+     * Retry a transaction with exponential backoff on deadlock, or when a
+     * concurrent first like won the unique key (the retry then finds it).
      */
     private function retryTransaction(callable $callback, int $maxAttempts = 3): mixed
     {
-        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+        for ($attempt = 1; ; $attempt++) {
             try {
                 return DB::transaction($callback);
             } catch (QueryException $e) {
-                // Check if it's a deadlock (SQLSTATE 40001)
-                if ($e->getCode() === '40001' && $attempt < $maxAttempts) {
+                // 40001 = deadlock, 23000 = unique key violation
+                if (in_array($e->getCode(), ['40001', '23000'], true) && $attempt < $maxAttempts) {
                     // Exponential backoff: 100ms, 200ms, 400ms
                     usleep(100000 * (2 ** ($attempt - 1)));
                     continue;
