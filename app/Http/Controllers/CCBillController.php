@@ -53,7 +53,9 @@ class CCBillController extends Controller
             return response()->json(['error' => 'missing eventType'], 422);
         }
 
-        $fingerprint = hash('sha256', $subscriptionId . '|' . $eventType . '|' . $timestamp);
+        // The transaction id tells two renewals apart when CCBill omits the timestamp.
+        $transactionId = (string) ($data['transactionId'] ?? $data['transaction_id'] ?? '');
+        $fingerprint = hash('sha256', $subscriptionId . '|' . $eventType . '|' . $timestamp . '|' . $transactionId);
 
         // Idempotency: acknowledge duplicates without reprocessing.
         if (CCBillWebhookEvent::where('fingerprint', $fingerprint)->exists()) {
@@ -221,7 +223,7 @@ class CCBillController extends Controller
         ]);
 
         if ($subscription->user) {
-            $this->revokeProIfNoOtherActive($subscription->user);
+            $subscription->user->revokeProUnlessEntitled();
         }
     }
 
@@ -245,31 +247,6 @@ class CCBillController extends Controller
     {
         if (! $user->is_pro || $user->pro_source !== 'ccbill') {
             $user->forceFill(['is_pro' => true, 'pro_source' => 'ccbill', 'pro_expires_at' => null])->save();
-        }
-    }
-
-    /**
-     * Only revoke Pro if the user has no other active entitlement (Stripe or another CCBill sub).
-     */
-    protected function revokeProIfNoOtherActive(User $user): void
-    {
-        $hasStripe = false;
-        try {
-            $hasStripe = $user->subscribed('pro');
-        } catch (\Throwable) {
-            // Cashier not configured / no stripe customer — ignore.
-        }
-
-        $freshUser = $user->fresh();
-
-        if (! $hasStripe && ! $freshUser->hasActiveCCBillSubscription()) {
-            // Preserve any still-active points-granted Pro period.
-            if ($freshUser->pro_source === 'points' && $freshUser->pro_expires_at?->isFuture()) {
-                $freshUser->forceFill(['is_pro' => true])->save();
-                return;
-            }
-
-            $freshUser->forceFill(['is_pro' => false, 'pro_source' => null, 'pro_expires_at' => null])->save();
         }
     }
 }

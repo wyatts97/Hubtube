@@ -110,36 +110,12 @@ Route::middleware('installed:require')->group(function () {
             ->name("admin.legacy-settings.{$legacySlug}");
     }
 
-    // Admin: flush application caches (from Filament user menu)
-    Route::get('/admin/flush-cache', function () {
-        if (! auth()->check() || ! auth()->user()->is_admin) {
-            abort(403);
-        }
-        Artisan::call('cache:clear');
-        Artisan::call('view:clear');
-        Artisan::call('config:clear');
-        Artisan::call('route:clear');
-        Notification::make()
-            ->title('All caches flushed')
-            ->success()
-            ->send();
-
-        return redirect('/admin');
-    })->middleware(['web', 'auth'])->name('admin.flush-cache');
-
-    // ── Admin Logs: export, download, clear ─────────────────────────
-
-    /** Guard: only authenticated admins. */
-    $adminOnly = function () {
-        if (! auth()->check() || ! auth()->user()->is_admin) {
-            abort(403);
-        }
-    };
+    // ── Admin Logs: export, download ─────────────────────────────
+    // Same gate as the panel itself: admin plus the optional 2FA requirement.
+    $adminOnly = ['admin', \App\Http\Middleware\EnsureAdminTwoFactor::class];
 
     // Export a single activity log entry (json | csv | txt)
-    Route::get('/admin/logs/export/{id}', function ($id) use ($adminOnly) {
-        $adminOnly();
-
+    Route::get('/admin/logs/export/{id}', function ($id) {
         $record = Activity::with(['causer', 'subject'])->findOrFail($id);
         $format = strtolower((string) request()->query('format', 'json'));
         if (! in_array($format, ['json', 'csv', 'txt'], true)) {
@@ -192,11 +168,10 @@ Route::middleware('installed:require')->group(function () {
                 echo "Context:\n".(is_array($row['context']) ? json_encode($row['context'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) : (string) $row['context'])."\n";
             }, $filename, ['Content-Type' => 'text/plain']),
         };
-    })->middleware(['web', 'auth'])->name('admin.logs.export-entry');
+    })->middleware($adminOnly)->name('admin.logs.export-entry');
 
     // Download a raw Laravel log file
-    Route::get('/admin/logs/file/{filename}/download', function (string $filename) use ($adminOnly) {
-        $adminOnly();
+    Route::get('/admin/logs/file/{filename}/download', function (string $filename) {
         $filename = basename($filename); // prevent traversal
         $path = storage_path('logs/'.$filename);
         if (! is_file($path)) {
@@ -204,7 +179,7 @@ Route::middleware('installed:require')->group(function () {
         }
 
         return response()->download($path, $filename, ['Content-Type' => 'text/plain']);
-    })->where('filename', '[A-Za-z0-9._-]+')->middleware(['web', 'auth'])->name('admin.logs.download-file');
+    })->where('filename', '[A-Za-z0-9._-]+')->middleware($adminOnly)->name('admin.logs.download-file');
 
     // Sitemap & Robots (outside age verification)
     Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
@@ -277,11 +252,6 @@ Route::middleware('installed:require')->group(function () {
     // production nginx configs that aggressively treat *.mp4 URLs as static files
     // and return 404 before Laravel gets the request.
     Route::get('/admin/video-stream/{legacyPath?}', function (?string $legacyPath = null) {
-        // Only allow admin users
-        if (! auth()->check() || ! auth()->user()->is_admin) {
-            abort(403);
-        }
-
         // Preferred: query param (?path=videos/slug/file.mp4)
         // Legacy fallback: /admin/video-stream/videos/slug/file.mp4
         $path = request()->query('path', $legacyPath ?? '');
@@ -354,7 +324,7 @@ Route::middleware('installed:require')->group(function () {
             }
             fclose($stream);
         }, 200, $headers);
-    })->where('legacyPath', '.*')->name('admin.video-stream');
+    })->where('legacyPath', '.*')->middleware($adminOnly)->name('admin.video-stream');
 
     // Private video files. Nginx forwards /storage/videos/{slug}/… here only
     // when the video's directory holds the privacy marker (see
@@ -409,6 +379,7 @@ Route::middleware('installed:require')->group(function () {
 
     // Stripe webhook (must be outside auth + age gates)
     Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
+        ->middleware(\App\Http\Middleware\RequireStripeWebhookSecret::class)
         ->name('stripe.webhook');
 
     // CCBill webhook (must be outside auth + age gates; CSRF-exempt in bootstrap/app.php)
@@ -566,24 +537,24 @@ Route::middleware('installed:require')->group(function () {
             Route::post('/videos/{video}/dislike', [LikeController::class, 'dislike'])->middleware('throttle:30,1')->name('videos.dislike');
 
             Route::post('/videos/{video}/comments', [CommentController::class, 'store'])->middleware(['verified.if-required', 'throttle:10,1'])->name('comments.store');
-            Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
-            Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
+            Route::put('/comments/{comment}', [CommentController::class, 'update'])->middleware('throttle:20,1')->name('comments.update');
+            Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->middleware('throttle:20,1')->name('comments.destroy');
             Route::post('/comments/{comment}/like', [CommentController::class, 'like'])->middleware('throttle:30,1')->name('comments.like');
             Route::post('/comments/{comment}/dislike', [CommentController::class, 'dislike'])->middleware('throttle:30,1')->name('comments.dislike');
 
-            Route::post('/channel/{user}/subscribe', [SubscriptionController::class, 'store'])->name('subscription.store');
-            Route::delete('/channel/{user}/subscribe', [SubscriptionController::class, 'destroy'])->name('subscription.destroy');
+            Route::post('/channel/{user}/subscribe', [SubscriptionController::class, 'store'])->middleware('throttle:20,1')->name('subscription.store');
+            Route::delete('/channel/{user}/subscribe', [SubscriptionController::class, 'destroy'])->middleware('throttle:20,1')->name('subscription.destroy');
             Route::post('/channel/{user}/notifications', [SubscriptionController::class, 'toggleNotifications'])->name('subscription.notifications');
 
             Route::get('/playlists', [PlaylistController::class, 'index'])->name('playlists.index');
-            Route::post('/playlists', [PlaylistController::class, 'store'])->name('playlists.store');
-            Route::put('/playlists/{playlist}', [PlaylistController::class, 'update'])->name('playlists.update');
-            Route::delete('/playlists/{playlist}', [PlaylistController::class, 'destroy'])->name('playlists.destroy');
-            Route::post('/playlists/{playlist}/videos', [PlaylistController::class, 'addVideo'])->name('playlists.addVideo');
-            Route::delete('/playlists/{playlist}/videos', [PlaylistController::class, 'removeVideo'])->name('playlists.removeVideo');
-            Route::put('/playlists/{playlist}/order', [PlaylistController::class, 'reorder'])->name('playlists.reorder');
-            Route::post('/videos/{video}/watch-later', [PlaylistController::class, 'toggleWatchLater'])->name('playlists.watch-later');
-            Route::post('/playlists/{playlist}/favorite', [PlaylistController::class, 'toggleFavorite'])->name('playlists.toggleFavorite');
+            Route::post('/playlists', [PlaylistController::class, 'store'])->middleware('throttle:20,1')->name('playlists.store');
+            Route::put('/playlists/{playlist}', [PlaylistController::class, 'update'])->middleware('throttle:60,1')->name('playlists.update');
+            Route::delete('/playlists/{playlist}', [PlaylistController::class, 'destroy'])->middleware('throttle:20,1')->name('playlists.destroy');
+            Route::post('/playlists/{playlist}/videos', [PlaylistController::class, 'addVideo'])->middleware('throttle:60,1')->name('playlists.addVideo');
+            Route::delete('/playlists/{playlist}/videos', [PlaylistController::class, 'removeVideo'])->middleware('throttle:60,1')->name('playlists.removeVideo');
+            Route::put('/playlists/{playlist}/order', [PlaylistController::class, 'reorder'])->middleware('throttle:60,1')->name('playlists.reorder');
+            Route::post('/videos/{video}/watch-later', [PlaylistController::class, 'toggleWatchLater'])->middleware('throttle:60,1')->name('playlists.watch-later');
+            Route::post('/playlists/{playlist}/favorite', [PlaylistController::class, 'toggleFavorite'])->middleware('throttle:60,1')->name('playlists.toggleFavorite');
 
             Route::get('/history', [HistoryController::class, 'index'])->name('history.index');
             Route::delete('/history', [HistoryController::class, 'destroy'])->name('history.destroy');
@@ -629,7 +600,7 @@ Route::middleware('installed:require')->group(function () {
 
             // Push Notifications
             Route::post('/api/push/vapid-key', [PushNotificationController::class, 'vapidKey'])->name('push.vapid-key');
-            Route::post('/api/push/subscribe', [PushNotificationController::class, 'subscribe'])->name('push.subscribe');
+            Route::post('/api/push/subscribe', [PushNotificationController::class, 'subscribe'])->middleware('throttle:10,1')->name('push.subscribe');
             Route::delete('/api/push/unsubscribe', [PushNotificationController::class, 'unsubscribe'])->name('push.unsubscribe');
 
             // Subscriptions Feed

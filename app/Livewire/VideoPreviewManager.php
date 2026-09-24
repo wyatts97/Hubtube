@@ -105,7 +105,7 @@ class VideoPreviewManager extends Component
         $disk = $video->storage_disk ?? 'public';
         $directory = "videos/{$video->slug}";
         $slugTitle = Str::slug($video->title, '_') ?: 'video';
-        $extension = $this->customThumbnail->getClientOriginalExtension() ?: 'jpg';
+        $extension = \App\Services\ImageService::extensionFor($this->customThumbnail);
         $filename = "{$slugTitle}_custom_thumb.{$extension}";
 
         if (StorageManager::isCloudDisk($disk)) {
@@ -236,7 +236,7 @@ class VideoPreviewManager extends Component
 
         try {
             $directory = 'videos/admin-uploads';
-            $extension = $this->replacementVideo->getClientOriginalExtension() ?: 'mp4';
+            $extension = $this->replacementVideo->guessExtension() ?: 'mp4';
             $filename = Str::random(24) . '.' . $extension;
             $path = $this->replacementVideo->storeAs($directory, $filename, 'public');
 

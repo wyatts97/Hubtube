@@ -184,11 +184,15 @@ class Video extends Model
             // Home caches
             $cache::forget('home:featured');
             $cache::forget('home:popular');
-            // Category page caches (flush all pages for this category)
-            if ($video->category_id) {
+            // Category page caches (flush all pages for this category, and for
+            // the one it just left)
+            $categoryIds = array_filter(array_unique([$video->category_id, $video->getOriginal('category_id')]));
+            foreach ($categoryIds as $categoryId) {
                 for ($p = 1; $p <= 20; $p++) {
-                    $cache::forget("category:{$video->category_id}:page:{$p}");
+                    $cache::forget("category:{$categoryId}:page:{$p}");
                 }
+            }
+            if ($categoryIds) {
                 // Also bust categories list (video count changed)
                 $cache::forget('categories:active:with_thumbs');
             }
@@ -203,8 +207,18 @@ class Video extends Model
         };
 
         static::created($flushCaches);
-        static::updated($flushCaches);
         static::deleted($flushCaches);
+        // Counter bumps and processing bookkeeping don't change what a listing
+        // shows, so only these columns cost a flush of ~130 cache keys.
+        static::updated(function (Video $video) use ($flushCaches) {
+            if ($video->wasChanged([
+                'title', 'slug', 'thumbnail', 'external_thumbnail_url', 'preview_path', 'duration',
+                'privacy', 'is_draft', 'is_approved', 'status', 'published_at', 'category_id',
+                'is_featured', 'is_short', 'age_restricted', 'tags', 'user_id',
+            ])) {
+                $flushCaches($video);
+            }
+        });
 
         // Keep the nginx privacy marker in step with the column. See
         // ProtectedMediaService for why private files are gated this way.
@@ -649,6 +663,24 @@ class Video extends Model
         }
 
         return $this->user_id === $user->id || (bool) $user->is_admin;
+    }
+
+    /**
+     * The watch page's rule: accessible, and approved and processed unless
+     * the viewer is the owner or an admin. Interactions (comments, likes,
+     * downloads) use the same rule so nobody can act on what they can't see.
+     */
+    public function isViewableBy(?User $user): bool
+    {
+        if (! $this->isAccessibleBy($user)) {
+            return false;
+        }
+
+        if ($user && ($this->user_id === $user->id || $user->is_admin)) {
+            return true;
+        }
+
+        return $this->is_approved && $this->status === 'processed';
     }
 
     /** ISO country codes this video is blocked in, upper-cased. */

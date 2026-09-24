@@ -338,16 +338,22 @@ class ImageService
 
     protected function getExtension(UploadedFile $file): string
     {
-        $mime = $file->getMimeType();
+        return self::extensionFor($file);
+    }
 
-        return match ($mime) {
-            'image/jpeg' => 'jpg',
+    /**
+     * Extension from the file's detected content, never the client's name —
+     * a JPEG/PHP polyglot uploaded as "x.php" must not be stored as .php.
+     */
+    public static function extensionFor(UploadedFile $file): string
+    {
+        return match ($file->getMimeType()) {
             'image/png' => 'png',
             'image/gif' => 'gif',
             'image/webp' => 'webp',
             'image/bmp' => 'bmp',
             'image/svg+xml' => 'svg',
-            default => $file->getClientOriginalExtension() ?: 'jpg',
+            default => 'jpg',
         };
     }
 }

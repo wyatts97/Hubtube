@@ -43,7 +43,7 @@ class PwaSettings extends Page implements HasForms
             'pwa_background_color' => Setting::get('pwa_background_color', '#0a0a0a'),
             'push_enabled' => Setting::get('push_enabled', false),
             'vapid_public_key' => Setting::get('vapid_public_key', ''),
-            'vapid_private_key' => Setting::get('vapid_private_key', ''),
+            'vapid_private_key' => Setting::getDecrypted('vapid_private_key', ''),
             'push_subject' => Setting::get('push_subject', ''),
         ]);
     }
@@ -125,7 +125,7 @@ class PwaSettings extends Page implements HasForms
         Setting::set('pwa_background_color', $data['pwa_background_color'] ?? '#0a0a0a', 'pwa');
         Setting::set('push_enabled', $data['push_enabled'] ?? false, 'push', 'boolean');
         Setting::set('vapid_public_key', $data['vapid_public_key'] ?? '', 'push');
-        Setting::set('vapid_private_key', $data['vapid_private_key'] ?? '', 'push');
+        Setting::setEncrypted('vapid_private_key', $data['vapid_private_key'] ?? '', 'push');
         Setting::set('push_subject', $data['push_subject'] ?? '', 'push');
 
         AdminLogger::settingsSaved('PWA', array_keys($data));

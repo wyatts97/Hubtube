@@ -19,6 +19,11 @@ class EditUser extends EditRecord
         ];
     }
 
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        return [...$data, ...$this->getRecord()->attributesForAdminForm()];
+    }
+
     protected function mutateFormDataBeforeSave(array $data): array
     {
         // Extract privileged fields that aren't mass-assignable

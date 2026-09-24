@@ -16,6 +16,7 @@ use App\Models\Video;
 use App\Services\StorageManager;
 use App\Services\TranslationService;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Sitemap controller. Emits a true <sitemapindex> at /sitemap.xml
@@ -239,36 +240,42 @@ class SitemapController extends Controller
             ? ['id', 'slug', 'title', 'description', 'thumbnail', 'external_thumbnail_url', 'duration', 'views_count', 'tags', 'published_at', 'updated_at', 'user_id', 'storage_disk', 'is_embedded', 'video_path', 'age_restricted', 'category_id']
             : ['id', 'slug', 'updated_at'];
 
-        $videos = Video::query()
-            ->public()
-            ->approved()
-            ->processed()
-            ->select($columns)
-            ->when($videoSitemapEnabled, fn($q) => $q->with('user:id,username', 'category:id,name'))
-            ->latest('updated_at')
-            ->offset(($page - 1) * $chunkSize)
-            ->limit($chunkSize)
-            ->get();
+        // Crawlers walk every chunk; an hour-old sitemap is fine.
+        $urls = Cache::remember("sitemap:videos:{$page}:" . ($videoSitemapEnabled ? 'full' : 'simple'), 3600, function () use ($page, $chunkSize, $videoSitemapEnabled, $columns) {
+            $videos = Video::query()
+                ->public()
+                ->approved()
+                ->processed()
+                ->select($columns)
+                ->when($videoSitemapEnabled, fn($q) => $q->with('user:id,username', 'category:id,name'))
+                // By id, not updated_at: chunk boundaries stay put as videos change.
+                ->orderBy('id')
+                ->offset(($page - 1) * $chunkSize)
+                ->limit($chunkSize)
+                ->get();
 
-        $translatedSlugs = [];
-        if ($this->multiLang && $videos->isNotEmpty()) {
-            $translatedSlugs = Translation::where('translatable_type', Video::class)
-                ->whereIn('translatable_id', $videos->pluck('id'))
-                ->where('field', 'title')
-                ->whereNotNull('translated_slug')
-                ->get()
-                ->groupBy('translatable_id')
-                ->map(fn($group) => $group->pluck('translated_slug', 'locale')->toArray())
-                ->toArray();
-        }
+            $translatedSlugs = [];
+            if ($this->multiLang && $videos->isNotEmpty()) {
+                $translatedSlugs = Translation::where('translatable_type', Video::class)
+                    ->whereIn('translatable_id', $videos->pluck('id'))
+                    ->where('field', 'title')
+                    ->whereNotNull('translated_slug')
+                    ->get()
+                    ->groupBy('translatable_id')
+                    ->map(fn($group) => $group->pluck('translated_slug', 'locale')->toArray())
+                    ->toArray();
+            }
 
-        $urls = [];
-        foreach ($videos as $video) {
-            $slugsByLocale = $translatedSlugs[$video->id] ?? [];
-            $urls[] = $videoSitemapEnabled
-                ? $this->videoUrlEntry($video, $slugsByLocale)
-                : $this->videoSimpleEntry($video, $slugsByLocale);
-        }
+            $urls = [];
+            foreach ($videos as $video) {
+                $slugsByLocale = $translatedSlugs[$video->id] ?? [];
+                $urls[] = $videoSitemapEnabled
+                    ? $this->videoUrlEntry($video, $slugsByLocale)
+                    : $this->videoSimpleEntry($video, $slugsByLocale);
+            }
+
+            return $urls;
+        });
 
         return $this->urlsetResponse(
             $urls,

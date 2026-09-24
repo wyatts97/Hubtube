@@ -55,17 +55,31 @@ class SettingsController extends Controller
 
     public function updateProfile(Request $request): RedirectResponse
     {
+        $user = $request->user();
+        $emailChanged = strcasecmp((string) $request->input('email'), (string) $user->email) !== 0;
+        $usernameChanged = $request->input('username') !== $user->username;
+
         $validated = $request->validate([
-            'username' => ['required', 'string', 'max:50', 'unique:users,username,'.$request->user()->id],
-            'email' => ['required', 'email', 'unique:users,email,'.$request->user()->id],
+            // A new username follows the registration rules (the column is 32
+            // characters); an unchanged legacy one is left alone.
+            'username' => $usernameChanged
+                ? ['required', 'string', 'min:5', 'max:32', 'regex:/^[a-zA-Z0-9_]+$/', 'unique:users,username,'.$user->id]
+                : ['required', 'string'],
+            'email' => ['required', 'email', 'unique:users,email,'.$user->id],
             'bio' => ['nullable', 'string', 'max:500'],
+            // A hijacked session must not be able to move the account to a new address.
+            'current_password' => $emailChanged ? ['required', 'current_password'] : ['nullable'],
         ]);
 
-        $user = $request->user();
         $bio = $validated['bio'] ?? null;
-        unset($validated['bio']);
+        unset($validated['bio'], $validated['current_password']);
 
         $user->update($validated);
+
+        if ($emailChanged) {
+            $user->forceFill(['email_verified_at' => null])->save();
+            $user->sendEmailVerificationNotification();
+        }
 
         // channels.description is what the channel page renders. Editing
         // users.bio used to change nothing the visitor could see; it is still

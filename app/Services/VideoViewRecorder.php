@@ -33,7 +33,7 @@ class VideoViewRecorder
     /** @return bool Whether the visit was counted. */
     public function record(Video $video, Request $request): bool
     {
-        if ($this->isBot($request) || $this->isPrefetch($request)) {
+        if (static::isBot($request) || $this->isPrefetch($request)) {
             return false;
         }
 
@@ -71,7 +71,7 @@ class VideoViewRecorder
         return true;
     }
 
-    protected function isBot(Request $request): bool
+    public static function isBot(Request $request): bool
     {
         $agent = (string) $request->userAgent();
 

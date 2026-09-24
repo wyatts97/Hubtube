@@ -508,7 +508,11 @@ class MediaLibrary extends Page
 
         foreach ($this->uploadedFiles as $file) {
             $name = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'-'.Str::random(6);
-            $file->storeAs($directory, $name.'.'.strtolower($file->getClientOriginalExtension()), 'public');
+            $extension = strtolower($file->getClientOriginalExtension());
+            if (! in_array($extension, $this->allowedUploadExtensions(), true)) {
+                $extension = $file->guessExtension() ?: 'bin';
+            }
+            $file->storeAs($directory, $name.'.'.$extension, 'public');
             $count++;
         }
 

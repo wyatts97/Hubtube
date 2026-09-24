@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Setting;
 use App\Models\VisitorDaily;
+use App\Services\VideoViewRecorder;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,12 +14,18 @@ class TrackVisitor
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $response = $next($request);
+        return $next($request);
+    }
 
+    /**
+     * Counted after the response is sent, so the upsert never adds to page time.
+     */
+    public function terminate(Request $request, Response $response): void
+    {
         try {
             // Only track GET requests (real page views, not API/AJAX)
-            if (!$request->isMethod('GET')) {
-                return $response;
+            if (!$request->isMethod('GET') || VideoViewRecorder::isBot($request)) {
+                return;
             }
 
             // Skip API routes, Livewire, and obvious asset/XHR requests
@@ -31,18 +38,18 @@ class TrackVisitor
                 str_starts_with($path, 'storage/') ||
                 $request->hasHeader('X-Livewire')
             ) {
-                return $response;
+                return;
             }
 
             // Skip AJAX requests that are NOT Inertia (Inertia page loads should be tracked)
             if ($request->ajax() && !$request->hasHeader('X-Inertia')) {
-                return $response;
+                return;
             }
 
             // Skip static asset extensions
             $ext = pathinfo($request->path(), PATHINFO_EXTENSION);
             if (in_array(strtolower($ext), ['css', 'js', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico', 'woff', 'woff2', 'ttf', 'map', 'mp4', 'm3u8', 'ts'])) {
-                return $response;
+                return;
             }
 
             $ip = $request->ip() ?? '0.0.0.0';
@@ -76,7 +83,5 @@ class TrackVisitor
         } catch (\Throwable) {
             // Never let tracking break the request
         }
-
-        return $response;
     }
 }

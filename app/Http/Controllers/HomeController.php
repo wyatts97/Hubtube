@@ -161,7 +161,11 @@ class HomeController extends Controller
     public function trending(Request $request): Response|JsonResponse
     {
         $perPage = Setting::get('videos_per_page', 24);
-        $period = $request->get('period', 'week');
+        // Both feed the cache key, so only known values: an arbitrary period
+        // or page would let a client fill the cache and force a fresh query.
+        $period = in_array($request->get('period'), ['today', 'week', 'month', 'year', 'all'], true)
+            ? $request->get('period')
+            : 'week';
 
         // For AJAX (infinite scroll) we skip the cache and query directly with the current page
         if ($request->wantsJson()) {
@@ -183,7 +187,7 @@ class HomeController extends Controller
         }
 
         // Cached per-period (5 minutes) — busted when a video is published via model observer
-        $page = max(1, (int) $request->get('page', 1));
+        $page = min(max(1, (int) $request->get('page', 1)), 500);
         $cacheKey = "trending:{$period}:page:{$page}";
 
         $videos = Cache::remember($cacheKey, 300, function () use ($period, $perPage, $page) {
@@ -244,7 +248,7 @@ class HomeController extends Controller
 
     public function category(Category $category): Response
     {
-        $page = max(1, (int) request()->get('page', 1));
+        $page = min(max(1, (int) request()->get('page', 1)), 500);
         $cacheKey = "category:{$category->id}:page:{$page}";
 
         $videos = Cache::remember($cacheKey, 600, fn () =>
@@ -299,38 +303,41 @@ class HomeController extends Controller
 
     public function tags(): Response
     {
-        // Get all unique tags from public, approved, processed videos
-        $videos = Video::query()
-            ->public()
-            ->approved()
-            ->processed()
-            ->whereNotNull('tags')
-            ->select('tags', 'thumbnail', 'external_thumbnail_url', 'storage_disk', 'published_at')
-            ->latest('published_at')
-            ->get();
+        // Every public video's tags are read to build this page, so it is
+        // cached rather than rebuilt on each visit.
+        $tags = Cache::remember('tags:index', 600, function () {
+            $videos = Video::query()
+                ->public()
+                ->approved()
+                ->processed()
+                ->whereNotNull('tags')
+                ->select('tags', 'thumbnail', 'external_thumbnail_url', 'storage_disk', 'published_at')
+                ->latest('published_at')
+                ->get();
 
-        $tagMap = [];
-        foreach ($videos as $video) {
-            if (!is_array($video->tags)) continue;
-            foreach ($video->tags as $tag) {
-                $tag = trim($tag);
-                if (empty($tag)) continue;
-                if (!isset($tagMap[$tag])) {
-                    $tagMap[$tag] = [
-                        'name' => $tag,
-                        'count' => 0,
-                        'thumbnail' => null,
-                    ];
-                }
-                $tagMap[$tag]['count']++;
-                if (!$tagMap[$tag]['thumbnail']) {
-                    $tagMap[$tag]['thumbnail'] = $video->thumbnail_url ?? $video->thumbnail;
+            $tagMap = [];
+            foreach ($videos as $video) {
+                if (!is_array($video->tags)) continue;
+                foreach ($video->tags as $tag) {
+                    $tag = trim($tag);
+                    if (empty($tag)) continue;
+                    if (!isset($tagMap[$tag])) {
+                        $tagMap[$tag] = [
+                            'name' => $tag,
+                            'count' => 0,
+                            'thumbnail' => null,
+                        ];
+                    }
+                    $tagMap[$tag]['count']++;
+                    if (!$tagMap[$tag]['thumbnail']) {
+                        $tagMap[$tag]['thumbnail'] = $video->thumbnail_url ?? $video->thumbnail;
+                    }
                 }
             }
-        }
 
-        // Sort by count descending
-        $tags = collect(array_values($tagMap))->sortByDesc('count')->values()->all();
+            // Sort by count descending
+            return collect(array_values($tagMap))->sortByDesc('count')->values()->all();
+        });
 
         return Inertia::render('Tags/Index', [
             'tags' => $tags,
@@ -342,7 +349,7 @@ class HomeController extends Controller
 
     public function tag(string $tag): Response
     {
-        $page = max(1, (int) request()->get('page', 1));
+        $page = min(max(1, (int) request()->get('page', 1)), 500);
 
         // Cache key is case-folded along with the lookup, so /tag/Amateur and
         // /tag/amateur share one entry instead of caching two copies.

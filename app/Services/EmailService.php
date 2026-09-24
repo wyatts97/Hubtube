@@ -113,6 +113,20 @@ class EmailService
     /**
      * Check if mail has been configured beyond the default 'log' driver.
      */
+    /**
+     * Run a send once the web response is out, so the visitor doesn't wait on
+     * SMTP. Not queued: workers load mail settings once at boot and would keep
+     * using old SMTP details after an admin changes them.
+     */
+    public static function afterResponse(callable $send): void
+    {
+        if (app()->runningInConsole()) {
+            $send();
+        } else {
+            app()->terminating($send);
+        }
+    }
+
     public static function isMailConfigured(): bool
     {
         $mailer = Setting::get('mail_mailer', config('mail.default', 'log'));

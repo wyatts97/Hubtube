@@ -14,6 +14,8 @@ class LikeController extends Controller
 {
     public function like(Request $request, Video $video): JsonResponse
     {
+        abort_unless($video->isViewableBy($request->user()), 404);
+
         return $this->retryTransaction(function () use ($request, $video) {
             $existing = Like::where([
                 'user_id' => $request->user()->id,
@@ -23,7 +25,7 @@ class LikeController extends Controller
             if ($existing) {
                 if ($existing->type === 'like') {
                     $existing->delete();
-                    $video->decrement('likes_count');
+                    $video->decrementQuietly('likes_count');
                     $video = $video->fresh();
                     return response()->json([
                         'liked' => false,
@@ -33,8 +35,8 @@ class LikeController extends Controller
                     ]);
                 } else {
                     $existing->update(['type' => 'like']);
-                    $video->increment('likes_count');
-                    $video->decrement('dislikes_count');
+                    $video->incrementQuietly('likes_count');
+                    $video->decrementQuietly('dislikes_count');
                 }
             } else {
                 Like::create([
@@ -42,7 +44,7 @@ class LikeController extends Controller
                     'video_id' => $video->id,
                     'type' => 'like',
                 ]);
-                $video->increment('likes_count');
+                $video->incrementQuietly('likes_count');
 
                 if ($video->user_id !== $request->user()->id) {
                     $video->loadMissing('user');
@@ -63,6 +65,8 @@ class LikeController extends Controller
 
     public function dislike(Request $request, Video $video): JsonResponse
     {
+        abort_unless($video->isViewableBy($request->user()), 404);
+
         return $this->retryTransaction(function () use ($request, $video) {
             $existing = Like::where([
                 'user_id' => $request->user()->id,
@@ -72,7 +76,7 @@ class LikeController extends Controller
             if ($existing) {
                 if ($existing->type === 'dislike') {
                     $existing->delete();
-                    $video->decrement('dislikes_count');
+                    $video->decrementQuietly('dislikes_count');
                     $video = $video->fresh();
                     return response()->json([
                         'liked' => false,
@@ -82,8 +86,8 @@ class LikeController extends Controller
                     ]);
                 } else {
                     $existing->update(['type' => 'dislike']);
-                    $video->decrement('likes_count');
-                    $video->increment('dislikes_count');
+                    $video->decrementQuietly('likes_count');
+                    $video->incrementQuietly('dislikes_count');
                 }
             } else {
                 Like::create([
@@ -91,7 +95,7 @@ class LikeController extends Controller
                     'video_id' => $video->id,
                     'type' => 'dislike',
                 ]);
-                $video->increment('dislikes_count');
+                $video->incrementQuietly('dislikes_count');
             }
 
             return response()->json([

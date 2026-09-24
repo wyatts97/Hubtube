@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Exception;
 use App\Models\User;
 use App\Models\WalletTransaction;
@@ -25,7 +27,7 @@ class WalletService
             // same user to race. Locking the freshly-fetched row closes that gap.
             $locked = User::whereKey($user->id)->lockForUpdate()->first();
 
-            $newBalance = $locked->wallet_balance + $amount;
+            $newBalance = self::money($locked->wallet_balance)->plus(self::money($amount))->__toString();
             $locked->forceFill(['wallet_balance' => $newBalance])->save();
             $user->wallet_balance = $newBalance;
 
@@ -52,11 +54,11 @@ class WalletService
         return DB::transaction(function () use ($user, $amount, $type, $description, $reference) {
             $locked = User::whereKey($user->id)->lockForUpdate()->first();
 
-            if ($locked->wallet_balance < $amount) {
+            if (self::money($locked->wallet_balance)->isLessThan(self::money($amount))) {
                 throw new Exception('Insufficient balance');
             }
 
-            $newBalance = $locked->wallet_balance - $amount;
+            $newBalance = self::money($locked->wallet_balance)->minus(self::money($amount))->__toString();
             $locked->forceFill(['wallet_balance' => $newBalance])->save();
             $user->wallet_balance = $newBalance;
 
@@ -93,6 +95,16 @@ class WalletService
                 'platformCut' => $platformCut,
             ];
         });
+    }
+
+    /**
+     * Balances are decimal(12,2); doing the arithmetic in exact decimals keeps
+     * float rounding out of balance_after and the "insufficient" check.
+     */
+    private static function money(float|int|string|null $amount): BigDecimal
+    {
+        return BigDecimal::of(is_float($amount) ? number_format($amount, 2, '.', '') : (string) ($amount ?? '0'))
+            ->toScale(2, RoundingMode::HalfUp);
     }
 
     public function getBalance(User $user): float

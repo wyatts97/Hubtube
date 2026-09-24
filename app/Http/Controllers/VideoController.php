@@ -22,6 +22,7 @@ use App\Services\VideoService;
 use App\Services\VideoViewRecorder;
 use App\Support\VideoPrivacy;
 use App\Support\VisitorCountry;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -440,11 +441,11 @@ class VideoController extends Controller
 
         $video = $this->videoService->create($request->validated(), $request->user());
 
-        EmailService::sendToAdmin('admin-new-video', [
+        EmailService::afterResponse(fn () => EmailService::sendToAdmin('admin-new-video', [
             'username' => $request->user()->username,
             'video_title' => $video->title,
             'video_url' => url("/{$video->slug}"),
-        ]);
+        ]));
 
         // Admin/Pro users go to the full edit page; default users go to the status page
         if ($request->user()->canEditVideo()) {
@@ -523,8 +524,19 @@ class VideoController extends Controller
         // Store the chunk
         $request->file('chunk')->move($chunkDir, "chunk_{$chunkIndex}");
 
+        // The size check above trusts the declared fileSize; hold the bytes
+        // actually received to it so a client can't fill the disk first.
+        $chunkPaths = glob("{$chunkDir}/chunk_*");
+        $receivedBytes = array_sum(array_map('filesize', $chunkPaths));
+        if ($receivedBytes > $fileSize) {
+            array_map('unlink', $chunkPaths);
+            @rmdir($chunkDir);
+
+            return response()->json(['error' => 'Upload is larger than the declared file size.'], 422);
+        }
+
         // Check if all chunks have been received
-        $receivedChunks = count(glob("{$chunkDir}/chunk_*"));
+        $receivedChunks = count($chunkPaths);
 
         if ($receivedChunks < $totalChunks) {
             return response()->json([
@@ -539,22 +551,44 @@ class VideoController extends Controller
         // assembled path cannot differ from what finalize() will look for.
         $assembledPath = storage_path("app/chunks/{$uploadId}.{$extension}");
 
-        $output = fopen($assembledPath, 'wb');
-        for ($i = 0; $i < $totalChunks; $i++) {
-            $chunkPath = "{$chunkDir}/chunk_{$i}";
-            if (!file_exists($chunkPath)) {
-                fclose($output);
-                return response()->json(['error' => "Missing chunk {$i}"], 422);
-            }
-            $chunk = fopen($chunkPath, 'rb');
-            stream_copy_to_stream($chunk, $output);
-            fclose($chunk);
-        }
-        fclose($output);
+        // Parallel uploads can deliver the last two chunks at once. Only one
+        // request assembles; the other waits for it, then reports completion.
+        $lock = Cache::lock("chunk-assemble:{$uploadId}", 600);
 
-        // Clean up chunk directory
-        array_map('unlink', glob("{$chunkDir}/chunk_*"));
-        rmdir($chunkDir);
+        try {
+            $lock->block(300);
+        } catch (LockTimeoutException) {
+            return response()->json(['error' => 'Upload is still being assembled.'], 409);
+        }
+
+        try {
+            if (! is_dir($chunkDir) && file_exists($assembledPath)) {
+                return response()->json([
+                    'status' => 'complete',
+                    'uploadId' => $uploadId,
+                    'extension' => $extension,
+                ]);
+            }
+
+            $output = fopen($assembledPath, 'wb');
+            for ($i = 0; $i < $totalChunks; $i++) {
+                $chunkPath = "{$chunkDir}/chunk_{$i}";
+                if (!file_exists($chunkPath)) {
+                    fclose($output);
+                    return response()->json(['error' => "Missing chunk {$i}"], 422);
+                }
+                $chunk = fopen($chunkPath, 'rb');
+                stream_copy_to_stream($chunk, $output);
+                fclose($chunk);
+            }
+            fclose($output);
+
+            // Clean up chunk directory
+            array_map('unlink', glob("{$chunkDir}/chunk_*"));
+            rmdir($chunkDir);
+        } finally {
+            $lock->release();
+        }
 
         return response()->json([
             'status' => 'complete',
@@ -632,11 +666,11 @@ class VideoController extends Controller
             @unlink($assembledPath);
         }
 
-        EmailService::sendToAdmin('admin-new-video', [
+        EmailService::afterResponse(fn () => EmailService::sendToAdmin('admin-new-video', [
             'username' => $request->user()->username,
             'video_title' => $video->title,
             'video_url' => url("/{$video->slug}"),
-        ]);
+        ]));
 
         $redirectUrl = $request->user()->canEditVideo()
             ? route('videos.edit', $video)
@@ -844,7 +878,7 @@ class VideoController extends Controller
             abort(403);
         }
 
-        if (!$video->isAccessibleBy($user)) {
+        if (!$video->isViewableBy($user)) {
             abort(403);
         }
 

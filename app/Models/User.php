@@ -65,12 +65,53 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
      * points_balance, pro_expires_at, pro_source
      * must only be set via forceFill()/explicit assignment or admin panel.
      */
+    /**
+     * Uploaders are serialized onto public pages (watch, embed, feeds, search),
+     * so anything private stays out of toArray(). The signed-in user's own
+     * data is shared explicitly by HandleInertiaRequests, not through here.
+     */
     protected $hidden = [
         'password',
         'remember_token',
         'two_factor_secret',
         'two_factor_recovery_codes',
+        'two_factor_enabled',
+        'two_factor_confirmed_at',
+        'email',
+        'email_verified_at',
+        'first_name',
+        'last_name',
+        'gender',
+        'country',
+        'settings',
+        'age_verified_at',
+        'last_active_at',
+        'wallet_balance',
+        'points_balance',
+        'stripe_id',
+        'pm_type',
+        'pm_last_four',
+        'trial_ends_at',
+        'pro_expires_at',
+        'pro_source',
+        'is_admin',
+        'is_super_admin',
+        'ban_reason',
+        'banned_at',
+        'banned_by',
+        'suspended_until',
     ];
+
+    /**
+     * Every attribute except credentials. Filament fills its edit forms from
+     * attributesToArray(), which would otherwise drop the private columns above.
+     */
+    public function attributesForAdminForm(): array
+    {
+        return (clone $this)
+            ->setHidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])
+            ->attributesToArray();
+    }
 
     protected $appends = [
         'avatar_url',
@@ -281,6 +322,39 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
                     ->orWhere('current_period_end', '>', now());
             })
             ->exists();
+    }
+
+    /**
+     * Drop Pro unless another source still grants it: a Stripe or CCBill
+     * subscription, or an unexpired points redemption.
+     *
+     * Pass $checkStripe = false from Stripe's own cancellation webhook: Cashier
+     * fires it before updating its subscription row, which still reads active.
+     */
+    public function revokeProUnlessEntitled(bool $checkStripe = true): void
+    {
+        $fresh = $this->fresh();
+
+        $hasStripe = false;
+        if ($checkStripe) {
+            try {
+                $hasStripe = $fresh->subscribed('pro');
+            } catch (\Throwable) {
+                // Cashier not configured / no Stripe customer.
+            }
+        }
+
+        if ($hasStripe || $fresh->hasActiveCCBillSubscription()) {
+            return;
+        }
+
+        if ($fresh->pro_source === 'points' && $fresh->pro_expires_at?->isFuture()) {
+            $fresh->forceFill(['is_pro' => true])->save();
+        } else {
+            $fresh->forceFill(['is_pro' => false, 'pro_source' => null, 'pro_expires_at' => null])->save();
+        }
+
+        $this->setRawAttributes($fresh->getAttributes(), true);
     }
 
     public function complianceRecords(): HasMany

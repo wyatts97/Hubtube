@@ -140,7 +140,8 @@ test('a bulk privacy change cannot use a privacy the admin switched off', functi
 });
 
 test('a bulk category change applies', function () {
-    $user = asUser();
+    // Category and tag edits need full edit rights (Pro).
+    $user = asUser(User::factory()->pro()->create());
     $category = Category::factory()->create();
     $video = Video::factory()->create(['user_id' => $user->id, 'category_id' => null]);
 
@@ -154,7 +155,8 @@ test('a bulk category change applies', function () {
 });
 
 test('bulk tagging adds to the tags a video already has', function () {
-    $user = asUser();
+    // Category and tag edits need full edit rights (Pro).
+    $user = asUser(User::factory()->pro()->create());
     Hashtag::factory()->create(['name' => 'sunset', 'slug' => 'sunset']);
     Hashtag::factory()->create(['name' => 'timelapse', 'slug' => 'timelapse']);
 

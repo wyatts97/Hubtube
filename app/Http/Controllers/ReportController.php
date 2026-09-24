@@ -86,13 +86,13 @@ class ReportController extends Controller
             'is_read' => false,
         ]);
 
-        EmailService::sendToAdmin('admin-new-report', [
+        EmailService::afterResponse(fn () => EmailService::sendToAdmin('admin-new-report', [
             'reporter' => $request->user()->username,
             'report_type' => $validated['reportable_type'],
             'report_reason' => $validated['reason'],
             'reported_content' => $reportedContent,
             'description' => $validated['description'] ?? '(No additional details)',
-        ]);
+        ]));
 
         User::where('is_admin', true)->get()->each(
             fn (User $admin) => $admin->notify(new ReportSubmittedNotification($report, $reportedContent))

@@ -27,12 +27,12 @@ class ContactController extends Controller
         ContactMessage::create($validated);
 
         // Notify admin via email (if configured and enabled)
-        EmailService::sendToAdmin('contact-form-admin', [
+        EmailService::afterResponse(fn () => EmailService::sendToAdmin('contact-form-admin', [
             'sender_name' => $validated['name'],
             'sender_email' => $validated['email'],
             'subject' => $validated['subject'] ?? '(No subject)',
             'message' => nl2br(e($validated['message'])),
-        ], $validated['email'], $validated['name']);
+        ], $validated['email'], $validated['name']));
 
         return back()->with('success', 'Your message has been sent. We\'ll get back to you soon!');
     }

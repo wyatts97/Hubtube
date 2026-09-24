@@ -112,6 +112,12 @@ class StudioController extends Controller
             'tags.*' => 'string|max:50',
         ]);
 
+        // Category and tags are metadata edits, which VideoPolicy::update
+        // limits to users who may edit videos; privacy and delete are not.
+        if (in_array($validated['action'], ['category', 'tags'], true) && ! $user->is_admin && ! $user->canEditVideo()) {
+            abort(403);
+        }
+
         $videos = $user->videos()->whereIn('id', $validated['video_ids'])->get();
 
         if ($videos->isEmpty()) {

@@ -95,23 +95,24 @@ class Setting extends Model
      */
     public static function getDecrypted(string $key, mixed $default = ''): string
     {
-        $setting = static::where('key', $key)->first();
+        // Read from the cached map like get(): service providers call this on
+        // every request, and a query per key added up to nine per page.
+        $value = static::get($key);
 
-        if (!$setting || empty($setting->value)) {
+        if (empty($value)) {
             return $default;
         }
 
-        if ($setting->type === 'encrypted') {
-            try {
-                return Crypt::decryptString($setting->value);
-            } catch (DecryptException $e) {
-                // Value may have been stored before encryption was added — return raw
-                return (string) $setting->value;
-            }
+        if (! is_string($value)) {
+            return is_scalar($value) ? (string) $value : $default;
         }
 
-        // Backwards-compatible: return raw value if not yet encrypted
-        return (string) $setting->value;
+        try {
+            return Crypt::decryptString($value);
+        } catch (DecryptException $e) {
+            // Stored before encryption was added — return raw
+            return $value;
+        }
     }
 
     protected static function castValue(mixed $value, string $type): mixed

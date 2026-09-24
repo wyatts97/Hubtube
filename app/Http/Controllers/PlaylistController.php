@@ -78,7 +78,17 @@ class PlaylistController extends Controller
         // exists to someone who cannot open it.
         abort_unless($playlist->isVisibleTo($request->user()), 404);
 
-        $playlist->load(['user', 'videos.user']);
+        // Videos later made private, rejected or unpublished drop out of the
+        // list for everyone but the playlist's owner.
+        $isOwner = $request->user()?->id === $playlist->user_id;
+
+        $playlist->load([
+            'user',
+            'videos' => fn ($q) => $q->with('user')->when(! $isOwner, fn ($q) => $q
+                ->whereIn('privacy', ['public', 'unlisted'])
+                ->approved()
+                ->processed()),
+        ]);
         $playlist->loadCount(['videos', 'favoritedBy']);
 
         return Inertia::render('Playlists/Show', [

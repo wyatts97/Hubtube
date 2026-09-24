@@ -33,6 +33,10 @@ class PointsService
         }
 
         return DB::transaction(function () use ($user, $type, $points, $reference, $description) {
+            // Lock the user row first: it serializes concurrent awards to this
+            // user, so the check below can't pass twice for the same reference.
+            $freshUser = User::lockForUpdate()->find($user->id);
+
             // Idempotency guard: never award twice for the same reference + type
             if ($reference) {
                 $alreadyAwarded = PointsTransaction::where('type', $type)
@@ -44,9 +48,6 @@ class PointsService
                     return null;
                 }
             }
-
-            $user->lockForUpdate();
-            $freshUser = User::lockForUpdate()->find($user->id);
 
             $newBalance = $freshUser->points_balance + $points;
             $freshUser->forceFill(['points_balance' => $newBalance])->save();

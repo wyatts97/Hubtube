@@ -1,102 +1,66 @@
-const CACHE_NAME = 'hubtube-v1';
-const API_CACHE_NAME = 'hubtube-api-v1';
+// v2 drops the v1 caches, which held user-specific JSON and pages.
+const CACHE_NAME = 'hubtube-v2';
 const OFFLINE_URL = '/offline';
+// Hashed build files pile up across deploys; keep only the most recent ones.
+const MAX_ASSET_ENTRIES = 150;
 
-const PRECACHE_URLS = [
-    '/',
-    '/offline',
-];
-
-// Install: precache essential assets
+// Install: precache the offline page only. Never precache '/', which would
+// store the signed-in user's page (and their props) on the device.
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(PRECACHE_URLS).catch(() => {
-                // Silently fail if precaching fails (e.g., offline install)
-            });
-        })
+        caches.open(CACHE_NAME).then((cache) => cache.add(OFFLINE_URL)).catch(() => {})
     );
     self.skipWaiting();
 });
 
-// Activate: clean old caches
+// Activate: delete every other cache, including the old API cache
 self.addEventListener('activate', (event) => {
-    const keepCaches = [CACHE_NAME, API_CACHE_NAME];
     event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames
-                    .filter((name) => !keepCaches.includes(name))
-                    .map((name) => caches.delete(name))
-            );
-        })
+        caches.keys().then((cacheNames) => Promise.all(
+            cacheNames.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name))
+        ))
     );
     self.clients.claim();
 });
 
-// Fetch: network-first with offline fallback
+async function trimCache(cache) {
+    const keys = await cache.keys();
+    const excess = keys.length - MAX_ASSET_ENTRIES;
+    for (let i = 0; i < excess; i++) {
+        if (!keys[i].url.endsWith(OFFLINE_URL)) await cache.delete(keys[i]);
+    }
+}
+
+// Fetch: only the offline fallback and immutable /build/ assets are handled.
+// Everything else (pages, JSON, thumbnails, media) goes straight to the
+// network so nothing user-specific or unbounded is stored.
 self.addEventListener('fetch', (event) => {
-    // Skip non-GET requests and chrome-extension requests
-    if (event.request.method !== 'GET') return;
-    if (event.request.url.startsWith('chrome-extension://')) return;
+    const request = event.request;
+    if (request.method !== 'GET') return;
 
-    // For navigation requests, try network first then offline page
-    if (event.request.mode === 'navigate') {
+    const url = new URL(request.url);
+    if (url.origin !== self.location.origin) return;
+
+    if (request.mode === 'navigate') {
         event.respondWith(
-            fetch(event.request).catch(() => {
-                return caches.match(OFFLINE_URL) || caches.match('/');
-            })
+            fetch(request).catch(async () => (await caches.match(OFFLINE_URL)) || Response.error())
         );
         return;
     }
 
-    // For static assets, try cache first then network
-    if (event.request.url.match(/\.(css|js|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|webp|ico)$/)) {
+    if (url.pathname.startsWith('/build/')) {
         event.respondWith(
-            caches.match(event.request).then((cached) => {
+            caches.open(CACHE_NAME).then(async (cache) => {
+                const cached = await cache.match(request);
                 if (cached) return cached;
-                return fetch(event.request).then((response) => {
-                    if (response.ok) {
-                        const clone = response.clone();
-                        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-                    }
-                    return response;
-                }).catch(() => new Response('', { status: 408 }));
+
+                const response = await fetch(request);
+                if (response.ok) {
+                    cache.put(request, response.clone()).then(() => trimCache(cache));
+                }
+                return response;
             })
         );
-        return;
-    }
-
-    // For API/JSON responses: stale-while-revalidate strategy
-    // Serve cached response immediately, then update cache in background
-    const acceptHeader = event.request.headers.get('Accept') || '';
-    const isApiRequest = acceptHeader.includes('application/json') ||
-        event.request.url.includes('/api/') ||
-        event.request.url.includes('/notifications/unread-count');
-
-    if (isApiRequest) {
-        event.respondWith(
-            caches.open(API_CACHE_NAME).then((cache) => {
-                return cache.match(event.request).then((cached) => {
-                    const fetchPromise = fetch(event.request).then((response) => {
-                        if (response.ok) {
-                            cache.put(event.request, response.clone());
-                        }
-                        return response;
-                    }).catch(() => {
-                        // Network failed, return cached if available
-                        return cached || new Response(JSON.stringify({ error: 'offline' }), {
-                            status: 503,
-                            headers: { 'Content-Type': 'application/json' },
-                        });
-                    });
-
-                    // Return cached immediately if available, otherwise wait for network
-                    return cached || fetchPromise;
-                });
-            })
-        );
-        return;
     }
 });
 

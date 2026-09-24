@@ -47,8 +47,8 @@ class CommentController extends Controller
     {
         $viewer = $request->user();
 
-        // A private or draft video's comments are as private as the video.
-        if (! $video->isAccessibleBy($viewer)) {
+        // A private, draft or unapproved video's comments are as private as the video.
+        if (! $video->isViewableBy($viewer)) {
             abort(404);
         }
 
@@ -132,6 +132,7 @@ class CommentController extends Controller
     public function store(Request $request, Video $video): JsonResponse
     {
         abort_unless(self::commentsEnabled(), 403, 'Comments are turned off.');
+        abort_unless($video->isViewableBy($request->user()), 404);
 
         $validated = $request->validate([
             'content' => 'required|string|max:5000',
@@ -237,6 +238,8 @@ class CommentController extends Controller
      */
     protected function react(Request $request, Comment $comment, string $type): JsonResponse
     {
+        abort_unless($comment->video?->isViewableBy($request->user()), 404);
+
         return DB::transaction(function () use ($request, $comment, $type) {
             $existing = $comment->likes()
                 ->where('user_id', $request->user()->id)

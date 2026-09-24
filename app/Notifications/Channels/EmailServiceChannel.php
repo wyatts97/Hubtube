@@ -34,6 +34,6 @@ class EmailServiceChannel
             return;
         }
 
-        EmailService::sendToUser($payload['template'], $to, $payload['data'] ?? []);
+        EmailService::afterResponse(fn () => EmailService::sendToUser($payload['template'], $to, $payload['data'] ?? []));
     }
 }

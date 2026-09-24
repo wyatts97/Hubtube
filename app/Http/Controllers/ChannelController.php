@@ -6,6 +6,7 @@ use App\Http\Resources\ChannelProfileResource;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\Video;
+use App\Models\WatchHistory;
 use App\Services\SeoService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -150,7 +151,7 @@ class ChannelController extends Controller
 
         return $this->renderTab($user, 'LikedVideos', 'liked', [
             'videos' => fn () => Video::query()
-                ->whereIn('id', $user->likes()->likes()->pluck('video_id'))
+                ->whereIn('id', $user->likes()->likes()->select('video_id'))
                 ->public()
                 ->approved()
                 ->processed()
@@ -170,10 +171,18 @@ class ChannelController extends Controller
 
         return $this->renderTab($user, 'WatchHistory', 'history', [
             'videos' => fn () => Video::query()
-                ->whereIn('id', $user->watchHistory()->latest()->pluck('video_id')->unique())
+                ->whereIn('id', $user->watchHistory()->select('video_id'))
                 ->public()
                 ->approved()
                 ->processed()
+                // Most recently watched first.
+                ->orderByDesc(
+                    WatchHistory::select('updated_at')
+                        ->whereColumn('video_id', 'videos.id')
+                        ->where('user_id', $user->id)
+                        ->latest('updated_at')
+                        ->limit(1)
+                )
                 ->paginate(24)
                 ->withQueryString(),
         ]);

@@ -24,6 +24,10 @@ class VideoService
 
     public function create(array $data, User $user): Video
     {
+        // A scheduled upload stays an unpublished draft until
+        // videos:publish-scheduled releases it at scheduled_at.
+        $scheduledAt = ! empty($data['scheduled_at']) ? Carbon::parse($data['scheduled_at']) : null;
+
         $video = Video::create([
             'user_id' => $user->id,
             'uuid' => Str::uuid(),
@@ -35,7 +39,9 @@ class VideoService
             'age_restricted' => $data['age_restricted'] ?? true,
             'tags' => $data['tags'] ?? [],
             'status' => 'pending',
-            'published_at' => now(),
+            'published_at' => $scheduledAt ? null : now(),
+            'scheduled_at' => $scheduledAt,
+            'is_draft' => $scheduledAt !== null,
         ]);
 
         if (isset($data['video_file'])) {
@@ -51,18 +57,12 @@ class VideoService
 
     public function update(Video $video, array $data): Video
     {
-        $video->update([
-            'title' => $data['title'] ?? $video->title,
-            'description' => $data['description'] ?? $video->description,
-            'category_id' => $data['category_id'] ?? $video->category_id,
-            'privacy' => $data['privacy'] ?? $video->privacy,
-            'age_restricted' => $data['age_restricted'] ?? $video->age_restricted,
-            'tags' => $data['tags'] ?? $video->tags,
-            'geo_blocked_countries' => $data['geo_blocked_countries'] ?? $video->geo_blocked_countries,
-            'monetization_enabled' => $data['monetization_enabled'] ?? $video->monetization_enabled,
-            'price' => $data['price'] ?? $video->price,
-            'rent_price' => $data['rent_price'] ?? $video->rent_price,
-        ]);
+        // Only the fields that were sent; a sent null clears the field (an
+        // emptied description, category or geo-block list).
+        $video->update(array_intersect_key($data, array_flip([
+            'title', 'description', 'category_id', 'privacy', 'age_restricted', 'tags',
+            'geo_blocked_countries', 'monetization_enabled', 'price', 'rent_price',
+        ])));
 
         if (isset($data['thumbnail'])) {
             $this->handleThumbnailUpload($video, $data['thumbnail']);
@@ -165,7 +165,7 @@ class VideoService
 
         // Store custom thumbnail in the video's directory
         $directory = "videos/{$video->slug}";
-        $extension = $file->getClientOriginalExtension() ?: 'jpg';
+        $extension = ImageService::extensionFor($file);
         $filename = Str::slug($video->title, '_') . '_custom_thumb.' . $extension;
 
         if (StorageManager::isCloudDisk($disk)) {

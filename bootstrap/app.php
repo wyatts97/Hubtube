@@ -29,9 +29,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Trust Cloudflare proxy IPs for correct client IP detection and HTTPS
+        // Trust loopback and Cloudflare for client IP and HTTPS detection
         $middleware->trustProxies(
-            at: '*',
+            at: \App\Support\TrustedProxies::list(),
             headers: Request::HEADER_X_FORWARDED_FOR |
                      Request::HEADER_X_FORWARDED_HOST |
                      Request::HEADER_X_FORWARDED_PORT |

@@ -14,7 +14,10 @@ use Croustibat\FilamentJobsMonitor\FilamentJobsMonitorPlugin;
 use Filafly\Icons\Phosphor\PhosphorIcons;
 use App\Filament\Pages\ThemeSettings;
 use App\Support\GoogleFonts;
+use Filament\Actions\Action;
 use Filament\Contracts\Plugin;
+use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Artisan;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\MenuItem;
@@ -294,17 +297,30 @@ class AdminPanelProvider extends PanelProvider
 
         return $builder
             ->login()
-            ->profile()
+            ->profile(\App\Filament\Pages\Auth\EditProfile::class)
             ->userMenuItems([
                 MenuItem::make()
                     ->label('View Site')
                     ->url('/')
                     ->icon('phosphor-globe'),
-                MenuItem::make()
+                Action::make('flushCache')
                     ->label('Flush Cache')
                     ->icon('phosphor-arrows-clockwise')
-                    ->url('/admin/flush-cache')
-                    ->color('warning'),
+                    ->color('warning')
+                    ->action(function (): void {
+                        Artisan::call('cache:clear');
+                        Artisan::call('view:clear');
+
+                        // Rebuild rather than drop: production runs from cached config and routes.
+                        if (app()->configurationIsCached()) {
+                            Artisan::call('config:cache');
+                        }
+                        if (app()->routesAreCached()) {
+                            Artisan::call('route:cache');
+                        }
+
+                        Notification::make()->title('All caches flushed')->success()->send();
+                    }),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->resources(array_filter([

@@ -34,11 +34,11 @@ class RegisterController extends Controller
 
         event(new Registered($user));
 
-        EmailService::sendToAdmin('admin-new-user', [
+        EmailService::afterResponse(fn () => EmailService::sendToAdmin('admin-new-user', [
             'username' => $user->username,
             'email' => $user->email,
             'registered_at' => now()->toDateTimeString(),
-        ]);
+        ]));
 
         Auth::login($user);
 

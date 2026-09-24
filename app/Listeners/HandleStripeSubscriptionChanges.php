@@ -36,26 +36,21 @@ class HandleStripeSubscriptionChanges
             return;
         }
 
-        if ($type === 'customer.subscription.deleted') {
-            if ($user->is_pro) {
-                // Preserve any still-active points-granted Pro period.
-                if ($user->pro_source === 'points' && $user->pro_expires_at?->isFuture()) {
-                    return;
-                }
+        $shouldBePro = $type !== 'customer.subscription.deleted'
+            && in_array($status, ['active', 'trialing', 'past_due'], true);
 
-                $user->forceFill(['is_pro' => false, 'pro_source' => null, 'pro_expires_at' => null])->save();
+        if ($shouldBePro) {
+            if (! $user->is_pro || $user->pro_source !== 'stripe') {
+                $user->forceFill(['is_pro' => true, 'pro_source' => 'stripe', 'pro_expires_at' => null])->save();
             }
+
             return;
         }
 
-        $shouldBePro = in_array($status, ['active', 'trialing', 'past_due'], true);
-
-        if ($user->is_pro !== $shouldBePro || ($shouldBePro && $user->pro_source !== 'stripe')) {
-            $user->forceFill([
-                'is_pro' => $shouldBePro,
-                'pro_source' => $shouldBePro ? 'stripe' : $user->pro_source,
-                'pro_expires_at' => $shouldBePro ? null : $user->pro_expires_at,
-            ])->save();
+        // A cancelled or lapsed Stripe subscription must not take Pro away from
+        // an active CCBill subscription or points redemption.
+        if ($user->is_pro) {
+            $user->revokeProUnlessEntitled(checkStripe: false);
         }
     }
 

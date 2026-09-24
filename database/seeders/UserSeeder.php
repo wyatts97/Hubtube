@@ -12,6 +12,14 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
+        // These accounts use the password "password". In production the admin
+        // comes from the installer instead.
+        if (app()->isProduction()) {
+            $this->command?->warn('Skipping UserSeeder in production (demo accounts use a known password).');
+
+            return;
+        }
+
         $admin = User::firstOrCreate(
             ['email' => 'admin@hubtube.com'],
             [
