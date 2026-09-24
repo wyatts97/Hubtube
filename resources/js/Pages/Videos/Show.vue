@@ -20,6 +20,8 @@ import EmbeddedVideoPlayer from '@/Components/EmbeddedVideoPlayer.vue';
 import EmbedPreRollGate from '@/Components/EmbedPreRollGate.vue';
 import { ThumbsUp, ThumbsDown, Share2, Flag, Bell, BellOff, Eye, ListVideo, Plus, Check, Loader2, Folder, Hash, Play, Shuffle, Repeat, SkipBack, SkipForward, ChevronLeft, ChevronRight, Download, Clock } from 'lucide-vue-next';
 
+defineOptions({ layout: AppLayout });
+
 const props = defineProps({
     video: Object,
     translatedTags: { type: Array, default: null },
@@ -444,441 +446,439 @@ const getRelatedTitle = (video) => {
 <template>
     <SeoHead :seo="seo" />
 
-    <AppLayout>
-        <div class="flex flex-col xl:flex-row gap-6">
-            <!-- Main Content -->
-            <div class="flex-1 min-w-0">
-                <!-- Banner Ad Above Player -->
-                <BannerAd
-                    :config="bannerAbovePlayer"
-                    :breakpoint="768"
-                    wrapper-class="flex justify-center mb-2"
-                    placement="banner_above_player"
-                    :lazy="false"
-                />
+    <div class="flex flex-col xl:flex-row gap-6">
+        <!-- Main Content -->
+        <div class="flex-1 min-w-0">
+            <!-- Banner Ad Above Player -->
+            <BannerAd
+                :config="bannerAbovePlayer"
+                :breakpoint="768"
+                wrapper-class="flex justify-center mb-2"
+                placement="banner_above_player"
+                :lazy="false"
+            />
 
-                <!-- Video Player -->
-                <!--
-                    Embedded videos are third-party iframes: we cannot pause or
-                    resume them, so a pre-roll cannot be overlaid the way it is
-                    on our own player. Instead the embed is gated behind a
-                    click-to-play poster — the ad runs on that click, and the
-                    iframe is mounted with autoplay once the ad finishes. This
-                    is the only way embedded videos can carry a pre-roll at all;
-                    until now they were completely unmonetized.
-                -->
-                <div v-if="video.is_embedded" class="aspect-video bg-black rounded-xl overflow-hidden relative">
-                    <EmbeddedVideoPlayer
-                        v-if="embedGateOpen"
-                        :video="video"
-                        :autoplay="true"
-                        :show-info="false"
+            <!-- Video Player -->
+            <!--
+                Embedded videos are third-party iframes: we cannot pause or
+                resume them, so a pre-roll cannot be overlaid the way it is
+                on our own player. Instead the embed is gated behind a
+                click-to-play poster — the ad runs on that click, and the
+                iframe is mounted with autoplay once the ad finishes. This
+                is the only way embedded videos can carry a pre-roll at all;
+                until now they were completely unmonetized.
+            -->
+            <div v-if="video.is_embedded" class="aspect-video bg-black rounded-xl overflow-hidden relative">
+                <EmbeddedVideoPlayer
+                    v-if="embedGateOpen"
+                    :video="video"
+                    :autoplay="true"
+                    :show-info="false"
+                />
+                <button
+                    v-else
+                    type="button"
+                    class="absolute inset-0 w-full h-full group"
+                    :aria-label="t('video.play')"
+                    @click="startEmbeddedPlayback"
+                >
+                    <img
+                        v-if="video.thumbnail_url"
+                        :src="video.thumbnail_url"
+                        :alt="seo.thumbnailAlt || video.title"
+                        class="w-full h-full object-cover"
                     />
-                    <button
-                        v-else
-                        type="button"
-                        class="absolute inset-0 w-full h-full group"
-                        :aria-label="t('video.play')"
-                        @click="startEmbeddedPlayback"
-                    >
-                        <img
-                            v-if="video.thumbnail_url"
-                            :src="video.thumbnail_url"
-                            :alt="seo.thumbnailAlt || video.title"
-                            class="w-full h-full object-cover"
-                        />
-                        <span class="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors group-hover:bg-black/40">
-                            <span class="flex h-16 w-16 items-center justify-center rounded-full bg-black/60">
-                                <Play class="w-8 h-8 text-white" />
-                            </span>
+                    <span class="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors group-hover:bg-black/40">
+                        <span class="flex h-16 w-16 items-center justify-center rounded-full bg-black/60">
+                            <Play class="w-8 h-8 text-white" />
                         </span>
-                    </button>
-                    <EmbedPreRollGate
-                        v-if="videoAdsEnabled"
-                        ref="embedGateRef"
-                        :ad-list="preRollAdList"
-                        @finished="onEmbedAdFinished"
-                    />
-                </div>
-                <div v-else class="aspect-video bg-black rounded-xl overflow-hidden relative">
-                    <VideoPlayer
-                        ref="videoPlayerRef"
-                        :src="video.video_url"
-                        :poster="video.thumbnail_url"
-                        :title="seo.thumbnailAlt || video.title"
-                        :hls-playlist="hlsPlaylistUrl"
-                        :quality-sources="video.quality_urls || []"
-                        :autoplay="false"
-                        :preview-thumbnails="video.preview_thumbnails_url || ''"
-                        :ad-list="playerAdList"
-                        @ended="onPlayerEnded"
-                        @progress="watchProgress.onProgress"
-                        @paused="watchProgress.onPaused"
-                    />
-                </div>
-
-                <!-- Banner Ad Below Player -->
-                <BannerAd
-                    :config="bannerBelowPlayer"
-                    :breakpoint="768"
-                    wrapper-class="flex justify-center mt-2"
-                    placement="banner_below_player"
+                    </span>
+                </button>
+                <EmbedPreRollGate
+                    v-if="videoAdsEnabled"
+                    ref="embedGateRef"
+                    :ad-list="preRollAdList"
+                    @finished="onEmbedAdFinished"
                 />
+            </div>
+            <div v-else class="aspect-video bg-black rounded-xl overflow-hidden relative">
+                <VideoPlayer
+                    ref="videoPlayerRef"
+                    :src="video.video_url"
+                    :poster="video.thumbnail_url"
+                    :title="seo.thumbnailAlt || video.title"
+                    :hls-playlist="hlsPlaylistUrl"
+                    :quality-sources="video.quality_urls || []"
+                    :autoplay="false"
+                    :preview-thumbnails="video.preview_thumbnails_url || ''"
+                    :ad-list="playerAdList"
+                    @ended="onPlayerEnded"
+                    @progress="watchProgress.onProgress"
+                    @paused="watchProgress.onPaused"
+                />
+            </div>
 
-                <div v-if="hasPlaylistContext" class="card p-3 sm:p-4 mt-4">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-                        <div>
-                            <p class="text-xs sm:text-sm text-text-muted">{{ t('playlist.label') }}</p>
-                            <h3 class="font-semibold text-sm sm:text-base text-text-primary">
-                                {{ playlistContext.title }}
-                                <span class="text-text-muted">({{ currentPlaylistIndex + 1 }}/{{ playlistContext.videoCount }})</span>
-                            </h3>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <button
-                                @click="playAllFromStart"
-                                class="btn btn-secondary gap-1.5 text-xs sm:text-sm px-2.5 py-1.5"
-                                :title="t('playlist.play_all')"
-                                :aria-label="t('playlist.play_all')"
-                            >
-                                <Play class="w-3.5 h-3.5" />
-                                <span>{{ t('playlist.play_all') }}</span>
-                            </button>
-                            <button
-                                @click="toggleShuffleMode"
-                                class="btn gap-1.5 text-xs sm:text-sm px-2.5 py-1.5"
-                                :class="playlistMode === 'shuffle' ? 'btn-primary' : 'btn-secondary'"
-                                :title="t('playlist.shuffle')"
-                                :aria-label="t('playlist.shuffle')"
-                            >
-                                <Shuffle class="w-3.5 h-3.5" />
-                                <span>{{ t('playlist.shuffle') }}</span>
-                            </button>
-                            <button
-                                @click="toggleLoopMode"
-                                class="btn gap-1.5 text-xs sm:text-sm px-2.5 py-1.5"
-                                :class="playlistMode === 'loop' ? 'btn-primary' : 'btn-secondary'"
-                                :title="t('playlist.loop')"
-                                :aria-label="t('playlist.loop')"
-                            >
-                                <Repeat class="w-3.5 h-3.5" />
-                                <span>{{ t('playlist.loop') }}</span>
-                            </button>
-                            <button
-                                @click="goToPreviousPlaylistVideo"
-                                :disabled="currentPlaylistIndex <= 0"
-                                class="btn btn-secondary p-2"
-                                :title="t('playlist.previous')"
-                                :aria-label="t('playlist.previous')"
-                            >
-                                <SkipBack class="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                                @click="goToNextPlaylistVideo"
-                                :disabled="getNextPlaylistIndex() === null"
-                                class="btn btn-secondary p-2"
-                                :title="t('playlist.next')"
-                                :aria-label="t('playlist.next')"
-                            >
-                                <SkipForward class="w-3.5 h-3.5" />
-                            </button>
-                        </div>
+            <!-- Banner Ad Below Player -->
+            <BannerAd
+                :config="bannerBelowPlayer"
+                :breakpoint="768"
+                wrapper-class="flex justify-center mt-2"
+                placement="banner_below_player"
+            />
+
+            <div v-if="hasPlaylistContext" class="card p-3 sm:p-4 mt-4">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                    <div>
+                        <p class="text-xs sm:text-sm text-text-muted">{{ t('playlist.label') }}</p>
+                        <h3 class="font-semibold text-sm sm:text-base text-text-primary">
+                            {{ playlistContext.title }}
+                            <span class="text-text-muted">({{ currentPlaylistIndex + 1 }}/{{ playlistContext.videoCount }})</span>
+                        </h3>
                     </div>
-
-                    <div class="relative">
+                    <div class="flex flex-wrap items-center gap-2">
                         <button
-                            v-if="canScrollLeft"
-                            type="button"
-                            class="absolute start-1 top-1/2 -translate-y-1/2 z-10 btn btn-secondary p-2 shadow"
-                            @click="scrollPlaylistRail('left')"
-                            :title="t('playlist.scroll_left')"
-                            :aria-label="t('playlist.scroll_left')"
+                            @click="playAllFromStart"
+                            class="btn btn-secondary gap-1.5 text-xs sm:text-sm px-2.5 py-1.5"
+                            :title="t('playlist.play_all')"
+                            :aria-label="t('playlist.play_all')"
                         >
-                            <ChevronLeft class="w-4 h-4" />
+                            <Play class="w-3.5 h-3.5" />
+                            <span>{{ t('playlist.play_all') }}</span>
                         </button>
-
-                        <div
-                            ref="playlistRailRef"
-                            class="flex gap-3 overflow-x-auto pb-1 px-8 sm:px-10 scrollbar-hide scroll-smooth"
-                            @scroll.passive="updatePlaylistRailButtons"
-                            @touchstart.passive="onPlaylistRailTouchStart"
-                            @touchmove.passive="onPlaylistRailTouchMove"
-                            @touchend.passive="updatePlaylistRailButtons"
-                        >
-                            <Link
-                                v-for="(playlistVideo, idx) in playlistVideos"
-                                :key="playlistVideo.id"
-                                :href="buildPlaylistVideoHref(playlistVideo, idx)"
-                                class="group shrink-0 w-56 sm:w-64 rounded-lg overflow-hidden border transition-all"
-                                :style="idx === currentPlaylistIndex
-                                    ? { borderColor: 'var(--color-accent)', boxShadow: '0 0 0 1px var(--color-accent) inset' }
-                                    : { borderColor: 'var(--color-border)' }"
-                                :title="playlistVideo.title"
-                                :aria-label="getPlaylistItemAriaLabel(playlistVideo, idx)"
-                            >
-                                <div class="relative aspect-video bg-black">
-                                    <img
-                                        :src="playlistVideo.thumbnail_url || '/assets/default_avatar.webp'"
-                                        :alt="playlistVideo.thumbnail_alt || playlistVideo.title"
-                                        class="w-full h-full object-cover"
-                                        loading="lazy"
-                                        decoding="async"
-                                    />
-                                    <span class="absolute top-2 start-2 text-[11px] px-1.5 py-0.5 rounded bg-black/80 text-white">{{ idx + 1 }}</span>
-                                    <span v-if="playlistVideo.duration_formatted" class="absolute bottom-2 end-2 text-[11px] px-1.5 py-0.5 rounded bg-black/80 text-white">{{ playlistVideo.duration_formatted }}</span>
-                                </div>
-                                <div class="p-2.5">
-                                    <p class="text-xs font-medium line-clamp-2 text-text-primary">{{ playlistVideo.title }}</p>
-                                    <p class="text-[11px] mt-1 text-text-muted">{{ playlistVideo.user?.username || t('playlist.unknown_creator') }}</p>
-                                </div>
-                            </Link>
-                        </div>
-
                         <button
-                            v-if="canScrollRight"
-                            type="button"
-                            class="absolute end-1 top-1/2 -translate-y-1/2 z-10 btn btn-secondary p-2 shadow"
-                            @click="scrollPlaylistRail('right')"
-                            :title="t('playlist.scroll_right')"
-                            :aria-label="t('playlist.scroll_right')"
+                            @click="toggleShuffleMode"
+                            class="btn gap-1.5 text-xs sm:text-sm px-2.5 py-1.5"
+                            :class="playlistMode === 'shuffle' ? 'btn-primary' : 'btn-secondary'"
+                            :title="t('playlist.shuffle')"
+                            :aria-label="t('playlist.shuffle')"
                         >
-                            <ChevronRight class="w-4 h-4" />
+                            <Shuffle class="w-3.5 h-3.5" />
+                            <span>{{ t('playlist.shuffle') }}</span>
+                        </button>
+                        <button
+                            @click="toggleLoopMode"
+                            class="btn gap-1.5 text-xs sm:text-sm px-2.5 py-1.5"
+                            :class="playlistMode === 'loop' ? 'btn-primary' : 'btn-secondary'"
+                            :title="t('playlist.loop')"
+                            :aria-label="t('playlist.loop')"
+                        >
+                            <Repeat class="w-3.5 h-3.5" />
+                            <span>{{ t('playlist.loop') }}</span>
+                        </button>
+                        <button
+                            @click="goToPreviousPlaylistVideo"
+                            :disabled="currentPlaylistIndex <= 0"
+                            class="btn btn-secondary p-2"
+                            :title="t('playlist.previous')"
+                            :aria-label="t('playlist.previous')"
+                        >
+                            <SkipBack class="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                            @click="goToNextPlaylistVideo"
+                            :disabled="getNextPlaylistIndex() === null"
+                            class="btn btn-secondary p-2"
+                            :title="t('playlist.next')"
+                            :aria-label="t('playlist.next')"
+                        >
+                            <SkipForward class="w-3.5 h-3.5" />
                         </button>
                     </div>
                 </div>
 
-                <!-- Video Info -->
-                <div class="mt-4">
-                    <div class="flex items-start justify-between gap-2 sm:gap-4">
-                        <h1 class="text-base sm:text-xl font-bold flex-1 line-clamp-2 sm:line-clamp-none text-text-primary">{{ translatedTitle }}</h1>
-                        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0 text-xs sm:text-sm font-medium whitespace-nowrap text-text-secondary">
-                            <Eye class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                            <span>{{ t('video.views', { count: formattedViews, n: video.views_count }) }}</span>
-                            <span class="text-text-muted">•</span>
-                            <span>{{ video.published_at ? new Date(video.published_at).toLocaleDateString() : new Date(video.created_at).toLocaleDateString() }}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-4 mt-3 sm:mt-4">
-                        <!-- Channel Info -->
-                        <div class="flex items-center gap-2 sm:gap-4 min-w-0">
-                            <Link :href="`/channel/${video.user.username}`" class="flex items-center gap-2 sm:gap-3 min-w-0">
-                                <div class="w-8 h-8 sm:w-10 sm:h-10 avatar shrink-0">
-                                    <img :src="video.user.avatar_url || video.user.avatar || '/assets/default_avatar.webp'" :alt="video.user.avatar_alt || video.user.username" class="w-full h-full object-cover" loading="lazy" decoding="async" />
-                                </div>
-                                <div class="min-w-0">
-                                    <p class="font-medium text-xs sm:text-base truncate text-text-primary">{{ video.user.username }}</p>
-                                    <p class="text-[10px] sm:text-sm hidden sm:block text-text-muted">{{ video.user.subscriber_count }} {{ t('common.subscribers') }}</p>
-                                </div>
-                            </Link>
-                            
-                            <button
-                                v-if="user && user.id !== video.user.id"
-                                @click="handleSubscribe"
-                                :disabled="subscribing"
-                                :class="[
-                                    'btn text-xs sm:text-base px-2.5 py-1.5 sm:px-4 sm:py-2',
-                                    subscribed ? 'btn-secondary' : 'btn-primary'
-                                ]"
-                            >
-                                <Loader2 v-if="subscribing" class="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
-                                <template v-else>{{ subscribed ? (t('common.subscribed')) : (t('common.subscribe')) }}</template>
-                            </button>
-                        </div>
+                <div class="relative">
+                    <button
+                        v-if="canScrollLeft"
+                        type="button"
+                        class="absolute start-1 top-1/2 -translate-y-1/2 z-10 btn btn-secondary p-2 shadow"
+                        @click="scrollPlaylistRail('left')"
+                        :title="t('playlist.scroll_left')"
+                        :aria-label="t('playlist.scroll_left')"
+                    >
+                        <ChevronLeft class="w-4 h-4" />
+                    </button>
 
-                        <!-- Actions -->
-                        <div class="flex items-center gap-1 sm:gap-2 overflow-x-auto sm:overflow-visible scrollbar-hide">
-                            <button
-                                @click="handleLike"
-                                class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
-                                :style="{ color: liked ? '#22c55e' : undefined }"
-                            >
-                                <ThumbsUp class="w-3.5 h-3.5 sm:w-5 sm:h-5" :fill="liked ? 'currentColor' : 'none'" />
-                                <span>{{ likesCount }}</span>
-                            </button>
-                            <button
-                                @click="handleDislike"
-                                class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
-                                :style="{ color: disliked ? '#ef4444' : undefined }"
-                            >
-                                <ThumbsDown class="w-3.5 h-3.5 sm:w-5 sm:h-5" :fill="disliked ? 'currentColor' : 'none'" />
-                                <span>{{ dislikesCount }}</span>
-                            </button>
-
-                            <button @click="handleShare" class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
-                                <Share2 class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                <span class="hidden sm:inline">{{ t('common.share') }}</span>
-                            </button>
-
-                            <!-- One click to the Watch Later list, which every
-                                 account has. The Save menu below can reach the
-                                 same list, but not in one click. -->
-                            <button
-                                v-if="user"
-                                @click="toggleWatchLater"
-                                :disabled="savingWatchLater"
-                                class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
-                                :style="{ color: inWatchLater ? 'var(--color-accent)' : undefined }"
-                                :title="t('playlist.watch_later')"
-                            >
-                                <Clock class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                <span class="hidden sm:inline">{{ t('playlist.watch_later') }}</span>
-                            </button>
-
-                            <a
-                                v-if="canDownload"
-                                :href="`/videos/${props.video.id}/download`"
-                                class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
-                                download
-                            >
-                                <Download class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                <span class="hidden sm:inline">{{ t('common.download') }}</span>
-                            </a>
-
-                            <!--
-                                Save to Playlist. Every row uses `@select.prevent`:
-                                Reka closes a menu on item-select by default, but this
-                                panel is a multi-toggle checklist plus an inline create
-                                form, so no interaction inside it should close the menu.
-                            -->
-                            <div class="shrink-0">
-                                <BaseDropdown
-                                    v-if="user"
-                                    :side-offset="8"
-                                    content-class="w-[calc(100vw-2rem)] sm:w-72 max-w-72 rounded-xl shadow-xl overflow-hidden"
-                                >
-                                    <template #trigger>
-                                        <button class="btn btn-secondary gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
-                                            <ListVideo class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                            <span class="hidden sm:inline">{{ t('common.save') }}</span>
-                                        </button>
-                                    </template>
-
-                                    <div class="p-3 font-medium text-sm border-b border-border text-text-primary">{{ t('video.save_to_playlist') }}</div>
-                                    <div class="max-h-60 overflow-y-auto scrollbar-hide">
-                                        <DropdownMenuItem
-                                            v-for="pl in playlists"
-                                            :key="pl.id"
-                                            :disabled="savingPlaylist === pl.id"
-                                            class="flex items-center gap-3 w-full px-3 py-2.5 text-start text-sm transition-colors text-text-secondary cursor-pointer outline-none data-[highlighted]:bg-bg-secondary data-[disabled]:opacity-60"
-                                            @select.prevent="toggleVideoInPlaylist(pl)"
-                                        >
-                                            <div
-                                                class="w-5 h-5 rounded flex items-center justify-center shrink-0"
-                                                :style="pl.has_video
-                                                    ? { backgroundColor: 'var(--color-accent)', color: 'white' }
-                                                    : { border: '2px solid var(--color-border)' }"
-                                            >
-                                                <Check v-if="pl.has_video" class="w-3.5 h-3.5" />
-                                            </div>
-                                            <span class="truncate flex-1">{{ pl.title }}</span>
-                                            <Loader2 v-if="savingPlaylist === pl.id" class="w-4 h-4 animate-spin shrink-0" />
-                                            <span v-else class="text-xs shrink-0 text-text-muted">{{ pl.videos_count }} videos</span>
-                                        </DropdownMenuItem>
-                                        <div v-if="!playlists.length" class="px-3 py-4 text-center text-sm text-text-muted">{{ t('playlist.no_playlists') }}</div>
-                                    </div>
-                                    <!--
-                                        Reka's menu typeahead ignores keydowns whose target is an
-                                        input/textarea, so typing a playlist name here does not
-                                        hijack focus into the list above.
-                                    -->
-                                    <DropdownMenuItem
-                                        class="p-2 border-t border-border outline-none"
-                                        @select.prevent
-                                    >
-                                        <div class="flex items-center gap-2">
-                                            <input
-                                                v-model="newPlaylistTitle"
-                                                type="text"
-                                                :placeholder="t('playlist.new_name')"
-                                                class="input text-sm flex-1"
-                                                @keydown.enter.prevent="createAndAddPlaylist"
-                                            />
-                                            <button
-                                                @click="createAndAddPlaylist"
-                                                :disabled="!newPlaylistTitle.trim() || creatingPlaylist"
-                                                class="btn btn-primary p-2"
-                                            >
-                                                <Loader2 v-if="creatingPlaylist" class="w-4 h-4 animate-spin" />
-                                                <Plus v-else class="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </DropdownMenuItem>
-                                </BaseDropdown>
-
-                                <button v-else @click="router.visit('/login')" class="btn btn-secondary gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
-                                    <ListVideo class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                    <span class="hidden sm:inline">{{ t('common.save') }}</span>
-                                </button>
-                            </div>
-
-                            <button @click="user ? (showReportModal = true) : router.visit('/login')" class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
-                                <Flag class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                <span class="hidden sm:inline">{{ t('common.report') }}</span>
-                            </button>
-
-                        </div>
-                    </div>
-
-                    <!-- Description -->
-                    <div class="card p-4 mt-4">
-                        <p class="whitespace-pre-wrap text-text-secondary">{{ translatedDescription }}</p>
-                    </div>
-
-                    <!-- Category & Tags -->
-                    <div v-if="video.category || (video.tags && video.tags.length)" class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 px-1">
-                        <!-- Category -->
+                    <div
+                        ref="playlistRailRef"
+                        class="flex gap-3 overflow-x-auto pb-1 px-8 sm:px-10 scrollbar-hide scroll-smooth"
+                        @scroll.passive="updatePlaylistRailButtons"
+                        @touchstart.passive="onPlaylistRailTouchStart"
+                        @touchmove.passive="onPlaylistRailTouchMove"
+                        @touchend.passive="updatePlaylistRailButtons"
+                    >
                         <Link
-                            v-if="video.category"
-                            :href="localizedUrl(`/category/${video.category.slug}`)"
-                            class="inline-flex items-center gap-1.5 text-sm hover:opacity-80 transition-opacity text-text-secondary"
+                            v-for="(playlistVideo, idx) in playlistVideos"
+                            :key="playlistVideo.id"
+                            :href="buildPlaylistVideoHref(playlistVideo, idx)"
+                            class="group shrink-0 w-56 sm:w-64 rounded-lg overflow-hidden border transition-all"
+                            :style="idx === currentPlaylistIndex
+                                ? { borderColor: 'var(--color-accent)', boxShadow: '0 0 0 1px var(--color-accent) inset' }
+                                : { borderColor: 'var(--color-border)' }"
+                            :title="playlistVideo.title"
+                            :aria-label="getPlaylistItemAriaLabel(playlistVideo, idx)"
                         >
-                            <Folder class="w-3.5 h-3.5 text-accent-text" />
-                            <span>{{ video.category.name }}</span>
+                            <div class="relative aspect-video bg-black">
+                                <img
+                                    :src="playlistVideo.thumbnail_url || '/assets/default_avatar.webp'"
+                                    :alt="playlistVideo.thumbnail_alt || playlistVideo.title"
+                                    class="w-full h-full object-cover"
+                                    loading="lazy"
+                                    decoding="async"
+                                />
+                                <span class="absolute top-2 start-2 text-[11px] px-1.5 py-0.5 rounded bg-black/80 text-white">{{ idx + 1 }}</span>
+                                <span v-if="playlistVideo.duration_formatted" class="absolute bottom-2 end-2 text-[11px] px-1.5 py-0.5 rounded bg-black/80 text-white">{{ playlistVideo.duration_formatted }}</span>
+                            </div>
+                            <div class="p-2.5">
+                                <p class="text-xs font-medium line-clamp-2 text-text-primary">{{ playlistVideo.title }}</p>
+                                <p class="text-[11px] mt-1 text-text-muted">{{ playlistVideo.user?.username || t('playlist.unknown_creator') }}</p>
+                            </div>
                         </Link>
-
-                        <!-- Separator -->
-                        <span v-if="video.category && video.tags?.length" class="text-xs" style="color: var(--color-border);">|</span>
-
-                        <!-- Tags -->
-                        <div v-if="video.tags && video.tags.length" class="flex flex-wrap items-center gap-1.5">
-                            <Link
-                                v-for="(tag, idx) in video.tags"
-                                :key="tag"
-                                :href="localizedUrl(`/tag/${encodeURIComponent(tag)}`)"
-                                class="tag-label inline-flex items-center gap-0.5 text-sm transition-colors text-text-secondary hover:text-accent-text"
-                            >
-                                <Hash class="w-3 h-3" /><span>{{ translatedTags?.[idx] || tag }}</span>
-                            </Link>
-                        </div>
                     </div>
 
-                    <!-- Comments Section -->
-                    <CommentSection v-if="commentsEnabled" :video-id="video.id" @seek="seekTo" />
+                    <button
+                        v-if="canScrollRight"
+                        type="button"
+                        class="absolute end-1 top-1/2 -translate-y-1/2 z-10 btn btn-secondary p-2 shadow"
+                        @click="scrollPlaylistRail('right')"
+                        :title="t('playlist.scroll_right')"
+                        :aria-label="t('playlist.scroll_right')"
+                    >
+                        <ChevronRight class="w-4 h-4" />
+                    </button>
                 </div>
             </div>
 
-            <!-- Sidebar -->
-            <div class="w-full xl:w-80 xl:shrink-0">
-                <!-- Ad Space - Only show if enabled and has code -->
-                <BannerAd
-                    :config="sidebarAd"
-                    wrapper-class="ad-container flex items-center justify-center mb-6"
-                    placement="video_sidebar"
-                    format="rectangle"
-                />
-
-                <h3 class="font-medium mb-4 text-text-primary">{{ t('video.related') }}</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
-                    <VideoCard
-                        v-for="relatedVideo in relatedVideos"
-                        :key="relatedVideo.id"
-                        :video="relatedVideo"
-                    />
+            <!-- Video Info -->
+            <div class="mt-4">
+                <div class="flex items-start justify-between gap-2 sm:gap-4">
+                    <h1 class="text-base sm:text-xl font-bold flex-1 line-clamp-2 sm:line-clamp-none text-text-primary">{{ translatedTitle }}</h1>
+                    <div class="flex items-center gap-1.5 sm:gap-2 shrink-0 text-xs sm:text-sm font-medium whitespace-nowrap text-text-secondary">
+                        <Eye class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <span>{{ t('video.views', { count: formattedViews, n: video.views_count }) }}</span>
+                        <span class="text-text-muted">•</span>
+                        <span>{{ video.published_at ? new Date(video.published_at).toLocaleDateString() : new Date(video.created_at).toLocaleDateString() }}</span>
+                    </div>
                 </div>
+                    
+                <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-4 mt-3 sm:mt-4">
+                    <!-- Channel Info -->
+                    <div class="flex items-center gap-2 sm:gap-4 min-w-0">
+                        <Link :href="`/channel/${video.user.username}`" class="flex items-center gap-2 sm:gap-3 min-w-0">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 avatar shrink-0">
+                                <img :src="video.user.avatar_url || video.user.avatar || '/assets/default_avatar.webp'" :alt="video.user.avatar_alt || video.user.username" class="w-full h-full object-cover" loading="lazy" decoding="async" />
+                            </div>
+                            <div class="min-w-0">
+                                <p class="font-medium text-xs sm:text-base truncate text-text-primary">{{ video.user.username }}</p>
+                                <p class="text-[10px] sm:text-sm hidden sm:block text-text-muted">{{ video.user.subscriber_count }} {{ t('common.subscribers') }}</p>
+                            </div>
+                        </Link>
+                            
+                        <button
+                            v-if="user && user.id !== video.user.id"
+                            @click="handleSubscribe"
+                            :disabled="subscribing"
+                            :class="[
+                                'btn text-xs sm:text-base px-2.5 py-1.5 sm:px-4 sm:py-2',
+                                subscribed ? 'btn-secondary' : 'btn-primary'
+                            ]"
+                        >
+                            <Loader2 v-if="subscribing" class="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
+                            <template v-else>{{ subscribed ? (t('common.subscribed')) : (t('common.subscribe')) }}</template>
+                        </button>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center gap-1 sm:gap-2 overflow-x-auto sm:overflow-visible scrollbar-hide">
+                        <button
+                            @click="handleLike"
+                            class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
+                            :style="{ color: liked ? '#22c55e' : undefined }"
+                        >
+                            <ThumbsUp class="w-3.5 h-3.5 sm:w-5 sm:h-5" :fill="liked ? 'currentColor' : 'none'" />
+                            <span>{{ likesCount }}</span>
+                        </button>
+                        <button
+                            @click="handleDislike"
+                            class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
+                            :style="{ color: disliked ? '#ef4444' : undefined }"
+                        >
+                            <ThumbsDown class="w-3.5 h-3.5 sm:w-5 sm:h-5" :fill="disliked ? 'currentColor' : 'none'" />
+                            <span>{{ dislikesCount }}</span>
+                        </button>
+
+                        <button @click="handleShare" class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
+                            <Share2 class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                            <span class="hidden sm:inline">{{ t('common.share') }}</span>
+                        </button>
+
+                        <!-- One click to the Watch Later list, which every
+                             account has. The Save menu below can reach the
+                             same list, but not in one click. -->
+                        <button
+                            v-if="user"
+                            @click="toggleWatchLater"
+                            :disabled="savingWatchLater"
+                            class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
+                            :style="{ color: inWatchLater ? 'var(--color-accent)' : undefined }"
+                            :title="t('playlist.watch_later')"
+                        >
+                            <Clock class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                            <span class="hidden sm:inline">{{ t('playlist.watch_later') }}</span>
+                        </button>
+
+                        <a
+                            v-if="canDownload"
+                            :href="`/videos/${props.video.id}/download`"
+                            class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
+                            download
+                        >
+                            <Download class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                            <span class="hidden sm:inline">{{ t('common.download') }}</span>
+                        </a>
+
+                        <!--
+                            Save to Playlist. Every row uses `@select.prevent`:
+                            Reka closes a menu on item-select by default, but this
+                            panel is a multi-toggle checklist plus an inline create
+                            form, so no interaction inside it should close the menu.
+                        -->
+                        <div class="shrink-0">
+                            <BaseDropdown
+                                v-if="user"
+                                :side-offset="8"
+                                content-class="w-[calc(100vw-2rem)] sm:w-72 max-w-72 rounded-xl shadow-xl overflow-hidden"
+                            >
+                                <template #trigger>
+                                    <button class="btn btn-secondary gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
+                                        <ListVideo class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                                        <span class="hidden sm:inline">{{ t('common.save') }}</span>
+                                    </button>
+                                </template>
+
+                                <div class="p-3 font-medium text-sm border-b border-border text-text-primary">{{ t('video.save_to_playlist') }}</div>
+                                <div class="max-h-60 overflow-y-auto scrollbar-hide">
+                                    <DropdownMenuItem
+                                        v-for="pl in playlists"
+                                        :key="pl.id"
+                                        :disabled="savingPlaylist === pl.id"
+                                        class="flex items-center gap-3 w-full px-3 py-2.5 text-start text-sm transition-colors text-text-secondary cursor-pointer outline-none data-[highlighted]:bg-bg-secondary data-[disabled]:opacity-60"
+                                        @select.prevent="toggleVideoInPlaylist(pl)"
+                                    >
+                                        <div
+                                            class="w-5 h-5 rounded flex items-center justify-center shrink-0"
+                                            :style="pl.has_video
+                                                ? { backgroundColor: 'var(--color-accent)', color: 'white' }
+                                                : { border: '2px solid var(--color-border)' }"
+                                        >
+                                            <Check v-if="pl.has_video" class="w-3.5 h-3.5" />
+                                        </div>
+                                        <span class="truncate flex-1">{{ pl.title }}</span>
+                                        <Loader2 v-if="savingPlaylist === pl.id" class="w-4 h-4 animate-spin shrink-0" />
+                                        <span v-else class="text-xs shrink-0 text-text-muted">{{ pl.videos_count }} videos</span>
+                                    </DropdownMenuItem>
+                                    <div v-if="!playlists.length" class="px-3 py-4 text-center text-sm text-text-muted">{{ t('playlist.no_playlists') }}</div>
+                                </div>
+                                <!--
+                                    Reka's menu typeahead ignores keydowns whose target is an
+                                    input/textarea, so typing a playlist name here does not
+                                    hijack focus into the list above.
+                                -->
+                                <DropdownMenuItem
+                                    class="p-2 border-t border-border outline-none"
+                                    @select.prevent
+                                >
+                                    <div class="flex items-center gap-2">
+                                        <input
+                                            v-model="newPlaylistTitle"
+                                            type="text"
+                                            :placeholder="t('playlist.new_name')"
+                                            class="input text-sm flex-1"
+                                            @keydown.enter.prevent="createAndAddPlaylist"
+                                        />
+                                        <button
+                                            @click="createAndAddPlaylist"
+                                            :disabled="!newPlaylistTitle.trim() || creatingPlaylist"
+                                            class="btn btn-primary p-2"
+                                        >
+                                            <Loader2 v-if="creatingPlaylist" class="w-4 h-4 animate-spin" />
+                                            <Plus v-else class="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </DropdownMenuItem>
+                            </BaseDropdown>
+
+                            <button v-else @click="router.visit('/login')" class="btn btn-secondary gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
+                                <ListVideo class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                                <span class="hidden sm:inline">{{ t('common.save') }}</span>
+                            </button>
+                        </div>
+
+                        <button @click="user ? (showReportModal = true) : router.visit('/login')" class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
+                            <Flag class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                            <span class="hidden sm:inline">{{ t('common.report') }}</span>
+                        </button>
+
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="card p-4 mt-4">
+                    <p class="whitespace-pre-wrap text-text-secondary">{{ translatedDescription }}</p>
+                </div>
+
+                <!-- Category & Tags -->
+                <div v-if="video.category || (video.tags && video.tags.length)" class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 px-1">
+                    <!-- Category -->
+                    <Link
+                        v-if="video.category"
+                        :href="localizedUrl(`/category/${video.category.slug}`)"
+                        class="inline-flex items-center gap-1.5 text-sm hover:opacity-80 transition-opacity text-text-secondary"
+                    >
+                        <Folder class="w-3.5 h-3.5 text-accent-text" />
+                        <span>{{ video.category.name }}</span>
+                    </Link>
+
+                    <!-- Separator -->
+                    <span v-if="video.category && video.tags?.length" class="text-xs" style="color: var(--color-border);">|</span>
+
+                    <!-- Tags -->
+                    <div v-if="video.tags && video.tags.length" class="flex flex-wrap items-center gap-1.5">
+                        <Link
+                            v-for="(tag, idx) in video.tags"
+                            :key="tag"
+                            :href="localizedUrl(`/tag/${encodeURIComponent(tag)}`)"
+                            class="tag-label inline-flex items-center gap-0.5 text-sm transition-colors text-text-secondary hover:text-accent-text"
+                        >
+                            <Hash class="w-3 h-3" /><span>{{ translatedTags?.[idx] || tag }}</span>
+                        </Link>
+                    </div>
+                </div>
+
+                <!-- Comments Section -->
+                <CommentSection v-if="commentsEnabled" :video-id="video.id" @seek="seekTo" />
             </div>
         </div>
-    </AppLayout>
+
+        <!-- Sidebar -->
+        <div class="w-full xl:w-80 xl:shrink-0">
+            <!-- Ad Space - Only show if enabled and has code -->
+            <BannerAd
+                :config="sidebarAd"
+                wrapper-class="ad-container flex items-center justify-center mb-6"
+                placement="video_sidebar"
+                format="rectangle"
+            />
+
+            <h3 class="font-medium mb-4 text-text-primary">{{ t('video.related') }}</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
+                <VideoCard
+                    v-for="relatedVideo in relatedVideos"
+                    :key="relatedVideo.id"
+                    :video="relatedVideo"
+                />
+            </div>
+        </div>
+    </div>
 
     <ShareModal
         v-model="showShareModal"

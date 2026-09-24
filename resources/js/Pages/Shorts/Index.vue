@@ -313,7 +313,7 @@ watch(currentIndex, async (newIndex, oldIndex) => {
     
     if (newIndex >= items.value.length - 3 && hasMore.value) await loadMore();
     if (activeShort.value && showComments.value) await loadComments(activeShort.value.id);
-});
+}, { flush: 'post' }); // after the DOM update that gives the new slide its src
 
 watch(muted, (value) => {
     const video = slides.value[currentIndex.value]?.querySelector('video');
@@ -350,8 +350,10 @@ const goBack = () => router.visit(localizedUrl('/'));
                 class="relative w-full h-full shrink-0 snap-start overflow-hidden"
             >
                 <template v-if="item.type === 'short'">
+                    <!-- Only the current short and its neighbours get a source, so a
+                         long feed doesn't keep a preloading video per slide. -->
                     <video
-                        :src="item.data.video_url"
+                        :src="Math.abs(index - currentIndex) <= 1 ? item.data.video_url : undefined"
                         class="w-full h-full object-contain bg-black"
                         loop
                         playsinline

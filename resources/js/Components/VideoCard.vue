@@ -28,6 +28,8 @@ const page = usePage();
 const props = defineProps({
     video: { type: Object, required: true },
     href: { type: String, default: '' },
+    // '' (lazy), 'eager' or 'high' — see cardPriority() in useOptimizedImage.
+    priority: { type: String, default: '' },
 });
 
 const vc = computed(() => page.props.theme?.videoCard || {});
@@ -125,9 +127,6 @@ const onPreviewLoad = (event) => {
         above it with .video-card-overlink.
     -->
     <div
-        v-motion
-        :initial="{ opacity: 0, y: 6 }"
-        :enter="{ opacity: 1, y: 0, transition: { duration: 0.18 } }"
         class="video-card group relative"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
@@ -135,7 +134,7 @@ const onPreviewLoad = (event) => {
         <Link :href="cardHref" class="thumbnail block" tabindex="-1" aria-hidden="true" :style="{ borderRadius: thumbRadius }">
             <!-- Static Thumbnail -->
             <img
-                v-bind="thumbnailProps(video.thumbnail_url || video.thumbnail || placeholderImg, video.thumbnail_alt || video.title)"
+                v-bind="thumbnailProps(video.thumbnail_url || video.thumbnail || placeholderImg, video.thumbnail_alt || video.title, priority)"
                 class="w-full h-full object-cover transition-[opacity,transform] duration-200 group-hover:scale-[1.03]"
                 :class="{ 'opacity-0': isHovering && video.preview_url && previewLoaded }"
                 @error="(e) => e.target.src = placeholderImg"

@@ -6,6 +6,8 @@ import { Upload, X, ImageIcon, FileImage, CheckCircle, AlertCircle } from 'lucid
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
 
+defineOptions({ layout: AppLayout });
+
 const { t } = useI18n();
 
 const props = defineProps({
@@ -132,185 +134,183 @@ onUnmounted(() => {
 <template>
     <SeoHead title="Upload Image" />
 
-    <AppLayout>
-        <div class="max-w-4xl mx-auto">
-            <div class="flex items-center gap-3 mb-6">
-                <div>
-                    <h1 class="page-title">Upload Image</h1>
+    <div class="max-w-4xl mx-auto">
+        <div class="flex items-center gap-3 mb-6">
+            <div>
+                <h1 class="page-title">Upload Image</h1>
+            </div>
+        </div>
+
+        <form @submit.prevent="submit" class="space-y-6">
+            <!-- Image Upload Area -->
+            <div
+                v-if="!form.image_file"
+                @dragover.prevent="dragActive = true"
+                @dragleave.prevent="dragActive = false"
+                @drop.prevent="handleDrop"
+                class="card border-2 border-dashed p-6 sm:p-12 text-center transition-colors"
+                :style="{ borderColor: dragActive ? 'var(--color-accent)' : 'var(--color-border)' }"
+            >
+                <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-bg-secondary">
+                    <ImageIcon class="w-8 h-8 text-text-muted" />
+                </div>
+                <p class="text-lg font-medium mb-2 text-text-primary">Drag and drop image file</p>
+                <p class="mb-4 text-text-muted">or click to browse</p>
+                <label class="btn btn-primary cursor-pointer">
+                    Select File
+                    <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp,image/bmp"
+                        class="hidden"
+                        @change="handleFileSelect"
+                    />
+                </label>
+                <p class="text-sm mt-4 text-text-muted">
+                    Supported formats: JPG, PNG, GIF, WebP, BMP — Max 50MB
+                </p>
+            </div>
+
+            <!-- Image Preview -->
+            <div v-else class="card p-4">
+                <div class="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+                    <div class="w-full sm:w-48 aspect-square rounded-lg overflow-hidden shrink-0 relative bg-bg-secondary">
+                        <img :src="imagePreview" alt="Preview of the image you selected" class="w-full h-full object-cover" />
+                    </div>
+                    <div class="flex-1 min-w-0 w-full">
+                        <div class="flex items-center gap-2">
+                            <FileImage class="w-5 h-5 shrink-0 text-accent-text" />
+                            <p class="font-medium truncate text-text-primary">{{ form.image_file.name }}</p>
+                        </div>
+                        <p class="text-sm mt-1 text-text-muted">
+                            {{ fileSizeFormatted }}
+                        </p>
+
+                        <!-- Upload Progress Bar -->
+                        <div v-if="uploadStatus === 'uploading'" class="mt-3">
+                            <div class="flex items-center justify-between text-sm mb-1">
+                                <span class="text-text-secondary">Uploading...</span>
+                                <span class="text-accent-text">{{ uploadProgress }}%</span>
+                            </div>
+                            <div class="h-2 rounded-full overflow-hidden bg-bg-secondary">
+                                <div
+                                    class="h-full rounded-full transition-all duration-300 ease-out"
+                                    :style="{ width: uploadProgress + '%', backgroundColor: 'var(--color-accent)' }"
+                                ></div>
+                            </div>
+                        </div>
+
+                        <!-- Success Status -->
+                        <div v-else-if="uploadStatus === 'success'" class="mt-3 flex items-center gap-2 text-green-500">
+                            <CheckCircle class="w-4 h-4" />
+                            <span class="text-sm">Upload complete!</span>
+                        </div>
+
+                        <!-- Error Status -->
+                        <div v-else-if="uploadStatus === 'error'" class="mt-3 flex items-center gap-2 text-red-500">
+                            <AlertCircle class="w-4 h-4" />
+                            <span class="text-sm">{{ uploadError || 'Upload failed' }}</span>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        @click="removeImage"
+                        :disabled="uploadStatus === 'uploading'"
+                        class="p-2 rounded-full hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed bg-bg-secondary"
+                    >
+                        <X class="w-5 h-5 text-text-muted" />
+                    </button>
+                </div>
+                <p v-if="form.errors.image_file" class="text-red-500 text-sm mt-2">{{ form.errors.image_file }}</p>
+            </div>
+
+            <!-- Upload Error Message -->
+            <div v-if="uploadError && !form.image_file" class="p-4 rounded-lg border border-red-500/30 bg-red-500/10">
+                <div class="flex items-center gap-2 text-red-500">
+                    <AlertCircle class="w-5 h-5" />
+                    <span>{{ uploadError }}</span>
                 </div>
             </div>
 
-            <form @submit.prevent="submit" class="space-y-6">
-                <!-- Image Upload Area -->
-                <div
-                    v-if="!form.image_file"
-                    @dragover.prevent="dragActive = true"
-                    @dragleave.prevent="dragActive = false"
-                    @drop.prevent="handleDrop"
-                    class="card border-2 border-dashed p-6 sm:p-12 text-center transition-colors"
-                    :style="{ borderColor: dragActive ? 'var(--color-accent)' : 'var(--color-border)' }"
-                >
-                    <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-bg-secondary">
-                        <ImageIcon class="w-8 h-8 text-text-muted" />
-                    </div>
-                    <p class="text-lg font-medium mb-2 text-text-primary">Drag and drop image file</p>
-                    <p class="mb-4 text-text-muted">or click to browse</p>
-                    <label class="btn btn-primary cursor-pointer">
-                        Select File
-                        <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/gif,image/webp,image/bmp"
-                            class="hidden"
-                            @change="handleFileSelect"
-                        />
-                    </label>
-                    <p class="text-sm mt-4 text-text-muted">
-                        Supported formats: JPG, PNG, GIF, WebP, BMP — Max 50MB
-                    </p>
+            <!-- Image Details -->
+            <div class="card p-6 space-y-4">
+                <div>
+                    <label for="title" class="block text-sm font-medium mb-1 text-text-secondary">Title</label>
+                    <input
+                        id="title"
+                        v-model="form.title"
+                        type="text"
+                        class="input"
+                        maxlength="200"
+                    />
+                    <p v-if="form.errors.title" class="text-red-500 text-sm mt-1">{{ form.errors.title }}</p>
                 </div>
 
-                <!-- Image Preview -->
-                <div v-else class="card p-4">
-                    <div class="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-                        <div class="w-full sm:w-48 aspect-square rounded-lg overflow-hidden shrink-0 relative bg-bg-secondary">
-                            <img :src="imagePreview" alt="Preview of the image you selected" class="w-full h-full object-cover" />
-                        </div>
-                        <div class="flex-1 min-w-0 w-full">
-                            <div class="flex items-center gap-2">
-                                <FileImage class="w-5 h-5 shrink-0 text-accent-text" />
-                                <p class="font-medium truncate text-text-primary">{{ form.image_file.name }}</p>
-                            </div>
-                            <p class="text-sm mt-1 text-text-muted">
-                                {{ fileSizeFormatted }}
-                            </p>
+                <div>
+                    <label for="description" class="block text-sm font-medium mb-1 text-text-secondary">Description</label>
+                    <textarea
+                        id="description"
+                        v-model="form.description"
+                        rows="4"
+                        class="input resize-none"
+                        maxlength="5000"
+                    ></textarea>
+                </div>
 
-                            <!-- Upload Progress Bar -->
-                            <div v-if="uploadStatus === 'uploading'" class="mt-3">
-                                <div class="flex items-center justify-between text-sm mb-1">
-                                    <span class="text-text-secondary">Uploading...</span>
-                                    <span class="text-accent-text">{{ uploadProgress }}%</span>
-                                </div>
-                                <div class="h-2 rounded-full overflow-hidden bg-bg-secondary">
-                                    <div
-                                        class="h-full rounded-full transition-all duration-300 ease-out"
-                                        :style="{ width: uploadProgress + '%', backgroundColor: 'var(--color-accent)' }"
-                                    ></div>
-                                </div>
-                            </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="category" class="block text-sm font-medium mb-1 text-text-secondary">Category</label>
+                        <select id="category" v-model="form.category_id" class="input">
+                            <option value="">Select category</option>
+                            <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                                {{ cat.name }}
+                            </option>
+                        </select>
+                    </div>
 
-                            <!-- Success Status -->
-                            <div v-else-if="uploadStatus === 'success'" class="mt-3 flex items-center gap-2 text-green-500">
-                                <CheckCircle class="w-4 h-4" />
-                                <span class="text-sm">Upload complete!</span>
-                            </div>
+                    <div>
+                        <label for="privacy" class="block text-sm font-medium mb-1 text-text-secondary">Privacy</label>
+                        <select id="privacy" v-model="form.privacy" class="input">
+                            <option value="public">Public</option>
+                            <option value="unlisted">Unlisted</option>
+                            <option value="private">Private</option>
+                        </select>
+                    </div>
+                </div>
 
-                            <!-- Error Status -->
-                            <div v-else-if="uploadStatus === 'error'" class="mt-3 flex items-center gap-2 text-red-500">
-                                <AlertCircle class="w-4 h-4" />
-                                <span class="text-sm">{{ uploadError || 'Upload failed' }}</span>
-                            </div>
-                        </div>
-                        <button
-                            type="button"
-                            @click="removeImage"
-                            :disabled="uploadStatus === 'uploading'"
-                            class="p-2 rounded-full hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed bg-bg-secondary"
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-secondary">Tags</label>
+                    <div class="flex flex-wrap gap-2 mb-2">
+                        <span
+                            v-for="(tag, index) in form.tags"
+                            :key="index"
+                            class="flex items-center gap-1 px-2 py-1 rounded text-sm bg-bg-secondary text-text-primary"
                         >
-                            <X class="w-5 h-5 text-text-muted" />
-                        </button>
+                            #{{ tag }}
+                            <button type="button" @click="removeTag(index)" class="hover:text-red-400">
+                                <X class="w-3 h-3" />
+                            </button>
+                        </span>
                     </div>
-                    <p v-if="form.errors.image_file" class="text-red-500 text-sm mt-2">{{ form.errors.image_file }}</p>
+                    <input
+                        v-model="tagInput"
+                        type="text"
+                        class="input"
+                        placeholder="Add tag and press Enter"
+                        @keydown.enter.prevent="addTag"
+                    />
                 </div>
+            </div>
 
-                <!-- Upload Error Message -->
-                <div v-if="uploadError && !form.image_file" class="p-4 rounded-lg border border-red-500/30 bg-red-500/10">
-                    <div class="flex items-center gap-2 text-red-500">
-                        <AlertCircle class="w-5 h-5" />
-                        <span>{{ uploadError }}</span>
-                    </div>
-                </div>
-
-                <!-- Image Details -->
-                <div class="card p-6 space-y-4">
-                    <div>
-                        <label for="title" class="block text-sm font-medium mb-1 text-text-secondary">Title</label>
-                        <input
-                            id="title"
-                            v-model="form.title"
-                            type="text"
-                            class="input"
-                            maxlength="200"
-                        />
-                        <p v-if="form.errors.title" class="text-red-500 text-sm mt-1">{{ form.errors.title }}</p>
-                    </div>
-
-                    <div>
-                        <label for="description" class="block text-sm font-medium mb-1 text-text-secondary">Description</label>
-                        <textarea
-                            id="description"
-                            v-model="form.description"
-                            rows="4"
-                            class="input resize-none"
-                            maxlength="5000"
-                        ></textarea>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="category" class="block text-sm font-medium mb-1 text-text-secondary">Category</label>
-                            <select id="category" v-model="form.category_id" class="input">
-                                <option value="">Select category</option>
-                                <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                                    {{ cat.name }}
-                                </option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label for="privacy" class="block text-sm font-medium mb-1 text-text-secondary">Privacy</label>
-                            <select id="privacy" v-model="form.privacy" class="input">
-                                <option value="public">Public</option>
-                                <option value="unlisted">Unlisted</option>
-                                <option value="private">Private</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-text-secondary">Tags</label>
-                        <div class="flex flex-wrap gap-2 mb-2">
-                            <span
-                                v-for="(tag, index) in form.tags"
-                                :key="index"
-                                class="flex items-center gap-1 px-2 py-1 rounded text-sm bg-bg-secondary text-text-primary"
-                            >
-                                #{{ tag }}
-                                <button type="button" @click="removeTag(index)" class="hover:text-red-400">
-                                    <X class="w-3 h-3" />
-                                </button>
-                            </span>
-                        </div>
-                        <input
-                            v-model="tagInput"
-                            type="text"
-                            class="input"
-                            placeholder="Add tag and press Enter"
-                            @keydown.enter.prevent="addTag"
-                        />
-                    </div>
-                </div>
-
-                <div class="flex justify-end gap-4">
-                    <button
-                        type="submit"
-                        :disabled="form.processing || !form.image_file"
-                        class="btn btn-primary"
-                    >
-                        <span v-if="form.processing">Uploading...</span>
-                        <span v-else>Upload Image</span>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </AppLayout>
+            <div class="flex justify-end gap-4">
+                <button
+                    type="submit"
+                    :disabled="form.processing || !form.image_file"
+                    class="btn btn-primary"
+                >
+                    <span v-if="form.processing">Uploading...</span>
+                    <span v-else>Upload Image</span>
+                </button>
+            </div>
+        </form>
+    </div>
 </template>

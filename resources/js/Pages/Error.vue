@@ -6,6 +6,8 @@ import { AlertTriangle, RefreshCw, Home, Clock } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
 
+defineOptions({ layout: AppLayout });
+
 const { t } = useI18n();
 
 const props = defineProps({
@@ -62,34 +64,32 @@ const refresh = () => {
 <template>
     <SeoHead :title="title" />
 
-    <AppLayout>
-        <div class="flex items-center justify-center py-20 px-4">
-            <div class="w-full max-w-md text-center">
-                <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style="background-color: color-mix(in srgb, var(--color-accent) 20%, transparent);">
-                    <AlertTriangle class="w-10 h-10 text-accent-text" />
-                </div>
+    <div class="flex items-center justify-center py-20 px-4">
+        <div class="w-full max-w-md text-center">
+            <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style="background-color: color-mix(in srgb, var(--color-accent) 20%, transparent);">
+                <AlertTriangle class="w-10 h-10 text-accent-text" />
+            </div>
 
-                <h1 class="text-5xl font-bold mb-2 text-text-primary">{{ status }}</h1>
-                <h2 class="text-xl font-semibold mb-4 text-text-primary">{{ title }}</h2>
-                <p class="mb-6 text-text-secondary">{{ description }}</p>
+            <h1 class="text-5xl font-bold mb-2 text-text-primary">{{ status }}</h1>
+            <h2 class="text-xl font-semibold mb-4 text-text-primary">{{ title }}</h2>
+            <p class="mb-6 text-text-secondary">{{ description }}</p>
 
-                <!-- 404 Countdown -->
-                <div v-if="is404" class="mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-bg-secondary text-text-muted border border-border">
-                    <Clock class="w-4 h-4" />
-                    {{ t('errors.redirecting', { count: countdown, n: countdown }) }}
-                </div>
+            <!-- 404 Countdown -->
+            <div v-if="is404" class="mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-bg-secondary text-text-muted border border-border">
+                <Clock class="w-4 h-4" />
+                {{ t('errors.redirecting', { count: countdown, n: countdown }) }}
+            </div>
 
-                <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                    <a href="/" class="btn btn-primary inline-flex items-center gap-2">
-                        <Home class="w-4 h-4" />
-                        {{ t('errors.go_home') }}
-                    </a>
-                    <button v-if="!is404" @click="refresh" class="btn btn-secondary inline-flex items-center gap-2">
-                        <RefreshCw class="w-4 h-4" />
-                        {{ t('errors.refresh') }}
-                    </button>
-                </div>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="/" class="btn btn-primary inline-flex items-center gap-2">
+                    <Home class="w-4 h-4" />
+                    {{ t('errors.go_home') }}
+                </a>
+                <button v-if="!is404" @click="refresh" class="btn btn-secondary inline-flex items-center gap-2">
+                    <RefreshCw class="w-4 h-4" />
+                    {{ t('errors.refresh') }}
+                </button>
             </div>
         </div>
-    </AppLayout>
+    </div>
 </template>

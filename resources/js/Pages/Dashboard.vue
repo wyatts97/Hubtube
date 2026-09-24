@@ -7,6 +7,8 @@ import { timeAgo, formatViews } from '@/Composables/useFormatters';
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
 
+defineOptions({ layout: AppLayout });
+
 const { t, locale } = useI18n();
 
 const formatNumber = (n) => {
@@ -51,125 +53,123 @@ const statsGridCols = computed(() => monetizationEnabled.value ? 'grid-cols-2 sm
 <template>
     <SeoHead :title="t('dashboard.title')" />
 
-    <AppLayout>
-        <div class="max-w-6xl mx-auto">
-            <div class="flex items-center justify-between gap-3 mb-6">
-                <div class="min-w-0">
-                    <h1 class="page-title">{{ t('dashboard.title') }}</h1>
-                    <p class="mt-1 text-sm sm:text-base text-text-secondary">{{ t('dashboard.overview') }}</p>
-                </div>
-                <Link href="/upload" class="btn btn-primary gap-2 flex-shrink-0 text-sm sm:text-base">
-                    <Video class="w-4 h-4" />
-                    <span class="hidden sm:inline">{{ t('dashboard.upload_video') }}</span>
-                    <span class="sm:hidden">{{ t('nav.upload') }}</span>
-                </Link>
+    <div class="max-w-6xl mx-auto">
+        <div class="flex items-center justify-between gap-3 mb-6">
+            <div class="min-w-0">
+                <h1 class="page-title">{{ t('dashboard.title') }}</h1>
+                <p class="mt-1 text-sm sm:text-base text-text-secondary">{{ t('dashboard.overview') }}</p>
             </div>
+            <Link href="/upload" class="btn btn-primary gap-2 flex-shrink-0 text-sm sm:text-base">
+                <Video class="w-4 h-4" />
+                <span class="hidden sm:inline">{{ t('dashboard.upload_video') }}</span>
+                <span class="sm:hidden">{{ t('nav.upload') }}</span>
+            </Link>
+        </div>
 
-            <!-- Stats Grid -->
-            <div class="grid gap-2 sm:gap-4 mb-6 sm:mb-8" :class="statsGridCols">
-                <component
-                    v-for="stat in statCards"
-                    :key="stat.label"
-                    :is="stat.href ? Link : 'div'"
-                    :href="stat.href"
-                    class="card p-3 sm:p-4 transition-opacity"
-                    :class="stat.href ? 'hover:opacity-80 cursor-pointer' : ''"
-                >
-                    <div class="flex items-center gap-2 sm:gap-3">
-                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0" :style="{ backgroundColor: stat.color + '15' }">
-                            <component :is="stat.icon" class="w-4 h-4 sm:w-5 sm:h-5" :style="{ color: stat.color }" />
-                        </div>
-                        <div class="min-w-0">
-                            <p class="text-xs truncate text-text-muted">{{ stat.label }}</p>
-                            <p class="text-sm sm:text-lg font-bold truncate text-text-primary">{{ stat.value() }}</p>
-                        </div>
+        <!-- Stats Grid -->
+        <div class="grid gap-2 sm:gap-4 mb-6 sm:mb-8" :class="statsGridCols">
+            <component
+                v-for="stat in statCards"
+                :key="stat.label"
+                :is="stat.href ? Link : 'div'"
+                :href="stat.href"
+                class="card p-3 sm:p-4 transition-opacity"
+                :class="stat.href ? 'hover:opacity-80 cursor-pointer' : ''"
+            >
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0" :style="{ backgroundColor: stat.color + '15' }">
+                        <component :is="stat.icon" class="w-4 h-4 sm:w-5 sm:h-5" :style="{ color: stat.color }" />
                     </div>
-                </component>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Recent Videos -->
-                <div class="card">
-                    <div class="p-4 border-b flex items-center justify-between border-border">
-                        <h2 class="font-semibold text-text-primary">{{ t('dashboard.recent_videos') }}</h2>
-                        <!-- Manage used to point at account settings, which has
-                             nothing to do with managing videos. -->
-                        <Link href="/studio/videos" class="text-sm text-accent-text">{{ t('common.manage') }}</Link>
-                    </div>
-                    <div v-if="recentVideos?.length">
-                        <div
-                            v-for="video in recentVideos"
-                            :key="video.id"
-                            class="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 border-b last:border-b-0 hover:opacity-90 border-border"
-                        >
-                            <div class="w-20 h-12 sm:w-24 sm:h-14 rounded-lg overflow-hidden flex-shrink-0 bg-bg-secondary">
-                                <img v-if="video.thumbnail_url" :src="video.thumbnail_url" :alt="video.title" class="w-full h-full object-cover" />
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <Link :href="`/${video.slug}`" class="text-sm font-medium truncate block text-text-primary">{{ video.title }}</Link>
-                                <div class="flex items-center gap-2 sm:gap-3 mt-1 flex-wrap">
-                                    <span class="text-xs text-text-muted">{{ t('video.views', { count: formatNumber(video.views_count), n: video.views_count }) }}</span>
-                                    <span class="text-xs hidden sm:inline text-text-muted">{{ timeAgo(video.created_at, locale) }}</span>
-                                    <span
-                                        class="text-xs px-1.5 py-0.5 rounded"
-                                        :style="{
-                                            backgroundColor: video.status === 'processed' && video.is_approved ? 'rgba(34,197,94,0.1)' : video.status === 'processed' && !video.is_approved ? 'rgba(249,115,22,0.1)' : 'rgba(234,179,8,0.1)',
-                                            color: video.status === 'processed' && video.is_approved ? '#22c55e' : video.status === 'processed' && !video.is_approved ? '#f97316' : '#eab308',
-                                        }"
-                                    >{{ video.status === 'processed' && video.is_approved ? 'Published' : video.status === 'processed' && !video.is_approved ? 'Needs Moderation' : video.status }}</span>
-                                </div>
-                            </div>
-                            <Link v-if="canEdit" :href="`/videos/${video.id}/edit`" class="p-2 rounded-lg hover:opacity-80 text-text-muted" title="Edit video">
-                                <Edit class="w-4 h-4" />
-                            </Link>
-                            <Link v-else :href="`/videos/${video.id}/status`" class="p-2 rounded-lg hover:opacity-80 text-text-muted" title="View status">
-                                <Clock class="w-4 h-4" />
-                            </Link>
-                        </div>
-                    </div>
-                    <div v-else class="p-8 text-center">
-                        <Video class="w-10 h-10 mx-auto mb-2 text-text-muted" />
-                        <p class="text-sm text-text-secondary">{{ t('dashboard.no_videos') }}</p>
+                    <div class="min-w-0">
+                        <p class="text-xs truncate text-text-muted">{{ stat.label }}</p>
+                        <p class="text-sm sm:text-lg font-bold truncate text-text-primary">{{ stat.value() }}</p>
                     </div>
                 </div>
+            </component>
+        </div>
 
-                <!-- Top Videos -->
-                <div class="card">
-                    <div class="p-4 border-b border-border">
-                        <h2 class="font-semibold flex items-center gap-2 text-text-primary">
-                            <TrendingUp class="w-4 h-4 text-accent-text" />
-                            {{ t('dashboard.top_performing') }}
-                        </h2>
-                    </div>
-                    <div v-if="topVideos?.length">
-                        <div
-                            v-for="(video, index) in topVideos"
-                            :key="video.id"
-                            class="flex items-center gap-3 p-3 border-b last:border-b-0 border-border"
-                        >
-                            <span class="text-lg font-bold w-6 text-center text-text-muted">{{ index + 1 }}</span>
-                            <div class="w-20 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-bg-secondary">
-                                <img v-if="video.thumbnail_url" :src="video.thumbnail_url" :alt="video.title" class="w-full h-full object-cover" />
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Recent Videos -->
+            <div class="card">
+                <div class="p-4 border-b flex items-center justify-between border-border">
+                    <h2 class="font-semibold text-text-primary">{{ t('dashboard.recent_videos') }}</h2>
+                    <!-- Manage used to point at account settings, which has
+                         nothing to do with managing videos. -->
+                    <Link href="/studio/videos" class="text-sm text-accent-text">{{ t('common.manage') }}</Link>
+                </div>
+                <div v-if="recentVideos?.length">
+                    <div
+                        v-for="video in recentVideos"
+                        :key="video.id"
+                        class="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 border-b last:border-b-0 hover:opacity-90 border-border"
+                    >
+                        <div class="w-20 h-12 sm:w-24 sm:h-14 rounded-lg overflow-hidden flex-shrink-0 bg-bg-secondary">
+                            <img v-if="video.thumbnail_url" :src="video.thumbnail_url" :alt="video.title" class="w-full h-full object-cover" />
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <Link :href="`/${video.slug}`" class="text-sm font-medium truncate block text-text-primary">{{ video.title }}</Link>
+                            <div class="flex items-center gap-2 sm:gap-3 mt-1 flex-wrap">
+                                <span class="text-xs text-text-muted">{{ t('video.views', { count: formatNumber(video.views_count), n: video.views_count }) }}</span>
+                                <span class="text-xs hidden sm:inline text-text-muted">{{ timeAgo(video.created_at, locale) }}</span>
+                                <span
+                                    class="text-xs px-1.5 py-0.5 rounded"
+                                    :style="{
+                                        backgroundColor: video.status === 'processed' && video.is_approved ? 'rgba(34,197,94,0.1)' : video.status === 'processed' && !video.is_approved ? 'rgba(249,115,22,0.1)' : 'rgba(234,179,8,0.1)',
+                                        color: video.status === 'processed' && video.is_approved ? '#22c55e' : video.status === 'processed' && !video.is_approved ? '#f97316' : '#eab308',
+                                    }"
+                                >{{ video.status === 'processed' && video.is_approved ? 'Published' : video.status === 'processed' && !video.is_approved ? 'Needs Moderation' : video.status }}</span>
                             </div>
-                            <div class="flex-1 min-w-0">
-                                <Link :href="`/${video.slug}`" class="text-sm font-medium truncate block text-text-primary">{{ video.title }}</Link>
-                                <div class="flex items-center gap-3 mt-1">
-                                    <span class="text-xs flex items-center gap-1 text-text-muted">
-                                        <Eye class="w-3 h-3" /> {{ formatNumber(video.views_count) }}
-                                    </span>
-                                    <span class="text-xs flex items-center gap-1 text-text-muted">
-                                        <ThumbsUp class="w-3 h-3" /> {{ formatNumber(video.likes_count) }}
-                                    </span>
-                                </div>
+                        </div>
+                        <Link v-if="canEdit" :href="`/videos/${video.id}/edit`" class="p-2 rounded-lg hover:opacity-80 text-text-muted" title="Edit video">
+                            <Edit class="w-4 h-4" />
+                        </Link>
+                        <Link v-else :href="`/videos/${video.id}/status`" class="p-2 rounded-lg hover:opacity-80 text-text-muted" title="View status">
+                            <Clock class="w-4 h-4" />
+                        </Link>
+                    </div>
+                </div>
+                <div v-else class="p-8 text-center">
+                    <Video class="w-10 h-10 mx-auto mb-2 text-text-muted" />
+                    <p class="text-sm text-text-secondary">{{ t('dashboard.no_videos') }}</p>
+                </div>
+            </div>
+
+            <!-- Top Videos -->
+            <div class="card">
+                <div class="p-4 border-b border-border">
+                    <h2 class="font-semibold flex items-center gap-2 text-text-primary">
+                        <TrendingUp class="w-4 h-4 text-accent-text" />
+                        {{ t('dashboard.top_performing') }}
+                    </h2>
+                </div>
+                <div v-if="topVideos?.length">
+                    <div
+                        v-for="(video, index) in topVideos"
+                        :key="video.id"
+                        class="flex items-center gap-3 p-3 border-b last:border-b-0 border-border"
+                    >
+                        <span class="text-lg font-bold w-6 text-center text-text-muted">{{ index + 1 }}</span>
+                        <div class="w-20 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-bg-secondary">
+                            <img v-if="video.thumbnail_url" :src="video.thumbnail_url" :alt="video.title" class="w-full h-full object-cover" />
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <Link :href="`/${video.slug}`" class="text-sm font-medium truncate block text-text-primary">{{ video.title }}</Link>
+                            <div class="flex items-center gap-3 mt-1">
+                                <span class="text-xs flex items-center gap-1 text-text-muted">
+                                    <Eye class="w-3 h-3" /> {{ formatNumber(video.views_count) }}
+                                </span>
+                                <span class="text-xs flex items-center gap-1 text-text-muted">
+                                    <ThumbsUp class="w-3 h-3" /> {{ formatNumber(video.likes_count) }}
+                                </span>
                             </div>
                         </div>
                     </div>
-                    <div v-else class="p-8 text-center">
-                        <BarChart3 class="w-10 h-10 mx-auto mb-2 text-text-muted" />
-                        <p class="text-sm text-text-secondary">{{ t('dashboard.upload_to_see') }}</p>
-                    </div>
+                </div>
+                <div v-else class="p-8 text-center">
+                    <BarChart3 class="w-10 h-10 mx-auto mb-2 text-text-muted" />
+                    <p class="text-sm text-text-secondary">{{ t('dashboard.upload_to_see') }}</p>
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </div>
 </template>

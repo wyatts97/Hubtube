@@ -8,6 +8,8 @@ import { useChunkedUpload } from '@/Composables/useChunkedUpload';
 import SeoHead from '@/Components/SeoHead.vue';
 import VideoPrivacySelect from '@/Components/VideoPrivacySelect.vue';
 
+defineOptions({ layout: AppLayout });
+
 const { t } = useI18n();
 
 const props = defineProps({
@@ -447,401 +449,399 @@ watch(fieldErrors, (errs) => {
 <template>
     <SeoHead :title="t('upload.title')" />
 
-    <AppLayout>
-        <div class="max-w-4xl mx-auto">
-            <div class="flex items-center gap-3 mb-6">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex items-center gap-3 mb-6">
+            <div>
+                <h1 class="page-title">{{ t('upload.title') }}</h1>
+            </div>
+        </div>
+
+        <!-- Upload limit reached banner -->
+        <div v-if="uploadLimitReached" class="card p-6 mb-6 border bg-bg-card" style="border-color: var(--color-accent);">
+            <div class="flex items-start gap-4">
+                <AlertCircle class="w-8 h-8 shrink-0 mt-0.5 text-accent-text" />
                 <div>
-                    <h1 class="page-title">{{ t('upload.title') }}</h1>
-                </div>
-            </div>
-
-            <!-- Upload limit reached banner -->
-            <div v-if="uploadLimitReached" class="card p-6 mb-6 border bg-bg-card" style="border-color: var(--color-accent);">
-                <div class="flex items-start gap-4">
-                    <AlertCircle class="w-8 h-8 shrink-0 mt-0.5 text-accent-text" />
-                    <div>
-                        <h2 class="text-lg font-semibold mb-1 text-text-primary">Daily Upload Limit Reached</h2>
-                        <p class="text-sm text-text-secondary">
-                            You've reached your maximum number of uploads for today. Your limit resets at midnight.
-                        </p>
-                        <a
-                            v-if="proEnabled && !currentUser?.is_pro"
-                            href="/pro"
-                            class="inline-block mt-2 text-sm font-medium text-accent-text hover:underline"
-                        >
-                            Upgrade to Pro for up to {{ maxDailyPro }} uploads/day →
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Full-page drag overlay -->
-            <Teleport to="body">
-                <div
-                    v-if="fullPageDrag && !videoFile && !uploadLimitReached"
-                    class="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none"
-                    style="background-color: rgba(0,0,0,0.7); backdrop-filter: blur(4px);"
-                >
-                    <div class="text-center">
-                        <Upload class="w-20 h-20 mx-auto mb-4 text-accent-text" />
-                        <p class="text-2xl font-bold text-white">Drop your video anywhere</p>
-                    </div>
-                </div>
-            </Teleport>
-
-            <form v-if="!uploadLimitReached" @submit.prevent="submit" class="space-y-6">
-                <!-- Video Upload Area -->
-                <div
-                    v-if="!videoFile"
-                    @dragover.prevent="dragActive = true"
-                    @dragleave.prevent="dragActive = false"
-                    @drop.prevent="handleDrop"
-                    class="card border-2 border-dashed p-6 sm:p-12 text-center transition-colors"
-                    :style="{ borderColor: dragActive ? 'var(--color-accent)' : 'var(--color-border)' }"
-                >
-                    <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-bg-secondary">
-                        <Upload class="w-8 h-8 text-text-muted" />
-                    </div>
-                    <p class="text-lg font-medium mb-2 text-text-primary">{{ t('upload.drag_drop') }}</p>
-                    <p class="mb-4 text-text-muted">{{ t('upload.or_browse') }}</p>
-                    <label class="btn btn-primary cursor-pointer">
-                        {{ t('upload.select_file') }}
-                        <input
-                            type="file"
-                            accept="video/*"
-                            class="hidden"
-                            @change="handleFileSelect"
-                        />
-                    </label>
-                    <p class="text-sm mt-4 text-text-muted">
-                        Supported: {{ allowedExtensions.join(', ').toUpperCase() }} · max {{ formatBytes(maxUploadBytes) }}
+                    <h2 class="text-lg font-semibold mb-1 text-text-primary">Daily Upload Limit Reached</h2>
+                    <p class="text-sm text-text-secondary">
+                        You've reached your maximum number of uploads for today. Your limit resets at midnight.
                     </p>
-                    <p class="text-xs mt-2 text-text-muted">
-                        Free: {{ maxSizeFreeMb }} MB / {{ maxDailyFree }} uploads/day · Pro: {{ maxSizeProMb }} MB / {{ maxDailyPro }} uploads/day
-                    </p>
-                    <p v-if="fileError" class="text-red-500 text-sm mt-3 field-error">{{ fileError }}</p>
                     <a
-                        v-if="proEnabled && !currentUser?.is_pro && fileError && videoFile && videoFile.size > maxUploadBytes"
+                        v-if="proEnabled && !currentUser?.is_pro"
                         href="/pro"
                         class="inline-block mt-2 text-sm font-medium text-accent-text hover:underline"
                     >
-                        Upgrade to Pro to upload up to {{ maxSizeProMb }} MB →
+                        Upgrade to Pro for up to {{ maxDailyPro }} uploads/day →
                     </a>
                 </div>
+            </div>
+        </div>
 
-                <!-- Video Preview + Upload Progress -->
-                <div v-else class="card p-4">
-                    <div class="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-                        <div class="w-full sm:w-48 aspect-video rounded-lg overflow-hidden shrink-0 relative bg-bg-secondary">
-                            <img v-if="previewThumb" :src="previewThumb" class="w-full h-full object-cover" alt="Video preview" />
-                            <video v-else :src="videoPreview" preload="metadata" class="w-full h-full object-cover" muted></video>
-                            <div v-if="durationFormatted" class="absolute bottom-2 end-2 px-1.5 py-0.5 rounded text-xs font-medium bg-black/80 text-white">
-                                {{ durationFormatted }}
-                            </div>
-                        </div>
-                        <div class="flex-1 min-w-0 w-full">
-                            <div class="flex items-center gap-2">
-                                <FileVideo class="w-5 h-5 shrink-0 text-accent-text" />
-                                <p class="font-medium truncate text-text-primary">{{ videoFile.name }}</p>
-                            </div>
-                            <p class="text-sm mt-1 text-text-muted">
-                                {{ fileSizeFormatted }}
-                                <span v-if="durationFormatted"> · {{ durationFormatted }}</span>
-                                <span v-if="videoWidth && videoHeight"> · {{ videoWidth }}×{{ videoHeight }}</span>
-                            </p>
-
-                            <!-- Upload Progress Bar -->
-                            <div v-if="upload.status.value === 'uploading' || upload.status.value === 'paused'" class="mt-3">
-                                <div class="flex items-center justify-between text-sm mb-1">
-                                    <span class="text-text-secondary">
-                                        {{ upload.status.value === 'paused' ? 'Paused' : (t('video.uploading')) }}
-                                        <span v-if="speedFormatted && upload.status.value === 'uploading'" class="text-text-muted"> · {{ speedFormatted }}</span>
-                                        <span v-if="etaFormatted && upload.status.value === 'uploading'" class="text-text-muted"> · {{ etaFormatted }}</span>
-                                    </span>
-                                    <span class="text-accent-text">{{ upload.percent.value }}%</span>
-                                </div>
-                                <div class="h-2 rounded-full overflow-hidden bg-bg-secondary">
-                                    <div
-                                        class="h-full rounded-full transition-all duration-300 ease-out"
-                                        :style="{ width: upload.percent.value + '%', backgroundColor: 'var(--color-accent)' }"
-                                    ></div>
-                                </div>
-                                <div class="flex items-center gap-2 mt-2">
-                                    <button
-                                        type="button"
-                                        v-if="upload.status.value === 'uploading'"
-                                        @click="upload.pause()"
-                                        class="text-xs px-2 py-1 rounded bg-bg-secondary text-text-secondary hover:opacity-80 inline-flex items-center gap-1"
-                                    >
-                                        <Pause class="w-3 h-3" /> Pause
-                                    </button>
-                                    <button
-                                        type="button"
-                                        v-else-if="upload.status.value === 'paused'"
-                                        @click="upload.resume()"
-                                        class="text-xs px-2 py-1 rounded bg-accent text-white hover:opacity-80 inline-flex items-center gap-1"
-                                    >
-                                        <Play class="w-3 h-3" /> Resume
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Complete -->
-                            <div v-else-if="upload.status.value === 'complete'" class="mt-3 flex items-center gap-2 text-green-500">
-                                <CheckCircle class="w-4 h-4" />
-                                <span class="text-sm">Upload complete · ready to publish</span>
-                            </div>
-
-                            <!-- Error -->
-                            <div v-else-if="upload.status.value === 'error'" class="mt-3 flex items-center gap-2 text-red-500 field-error">
-                                <AlertCircle class="w-4 h-4" />
-                                <span class="text-sm">{{ upload.error.value || 'Upload failed' }}</span>
-                            </div>
-                        </div>
-                        <button
-                            type="button"
-                            @click="removeVideo"
-                            class="p-2 rounded-full hover:opacity-80 bg-bg-secondary"
-                            :title="t('common.remove')"
-                        >
-                            <X class="w-5 h-5 text-text-muted" />
-                        </button>
-                    </div>
-                    <p v-if="fieldErrors.video_file" class="text-red-500 text-sm mt-2 field-error">{{ fieldErrors.video_file }}</p>
-                    <p v-if="fieldErrors.upload" class="text-red-500 text-sm mt-2 field-error">{{ fieldErrors.upload }}</p>
+        <!-- Full-page drag overlay -->
+        <Teleport to="body">
+            <div
+                v-if="fullPageDrag && !videoFile && !uploadLimitReached"
+                class="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none"
+                style="background-color: rgba(0,0,0,0.7); backdrop-filter: blur(4px);"
+            >
+                <div class="text-center">
+                    <Upload class="w-20 h-20 mx-auto mb-4 text-accent-text" />
+                    <p class="text-2xl font-bold text-white">Drop your video anywhere</p>
                 </div>
+            </div>
+        </Teleport>
 
-                <!-- Video Details -->
-                <div class="card p-6 space-y-4">
-                    <!-- Title -->
-                    <div>
-                        <label for="title" class="block text-sm font-medium mb-1 text-text-secondary">
-                            {{ t('upload.video_title') }} <span class="text-red-500">*</span>
-                        </label>
-                        <input
-                            id="title"
-                            v-model="form.title"
-                            type="text"
-                            class="input"
-                            :class="{ 'border-red-500': submitAttempted && !titleValid }"
-                            maxlength="200"
-                            required
-                            aria-required="true"
-                            :aria-invalid="submitAttempted && !titleValid"
-                        />
-                        <div class="flex items-center justify-between mt-1">
-                            <p v-if="submitAttempted && !titleValid" class="text-red-500 text-xs field-error">
-                                Title must be at least 3 characters.
-                            </p>
-                            <p v-else-if="fieldErrors.title" class="text-red-500 text-xs field-error">{{ fieldErrors.title }}</p>
-                            <span v-else></span>
-                            <span class="text-xs text-text-muted" :class="{ 'text-amber-500': form.title.length > 180, 'text-red-500': form.title.length >= 200 }">
-                                {{ form.title.length }}/200
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Description -->
-                    <div>
-                        <label for="description" class="block text-sm font-medium mb-1 text-text-secondary">
-                            {{ t('upload.video_description') }} <span class="text-red-500">*</span>
-                        </label>
-                        <textarea
-                            id="description"
-                            v-model="form.description"
-                            rows="4"
-                            class="input resize-none"
-                            :class="{ 'border-red-500': submitAttempted && !descValid }"
-                            maxlength="5000"
-                            required
-                            aria-required="true"
-                            :aria-invalid="submitAttempted && !descValid"
-                        ></textarea>
-                        <div class="flex items-center justify-between mt-1">
-                            <p v-if="submitAttempted && !descValid" class="text-red-500 text-xs field-error">
-                                Description must be at least 10 characters.
-                            </p>
-                            <p v-else-if="fieldErrors.description" class="text-red-500 text-xs field-error">{{ fieldErrors.description }}</p>
-                            <span v-else></span>
-                            <span class="text-xs text-text-muted" :class="{ 'text-amber-500': form.description.length > 4500, 'text-red-500': form.description.length >= 5000 }">
-                                {{ form.description.length }}/5000
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Privacy: only shown when the admin has enabled more than public -->
-                    <VideoPrivacySelect
-                        v-if="privacyOptions.length > 1"
-                        v-model="form.privacy"
-                        :options="privacyOptions"
-                        :error="fieldErrors.privacy || ''"
+        <form v-if="!uploadLimitReached" @submit.prevent="submit" class="space-y-6">
+            <!-- Video Upload Area -->
+            <div
+                v-if="!videoFile"
+                @dragover.prevent="dragActive = true"
+                @dragleave.prevent="dragActive = false"
+                @drop.prevent="handleDrop"
+                class="card border-2 border-dashed p-6 sm:p-12 text-center transition-colors"
+                :style="{ borderColor: dragActive ? 'var(--color-accent)' : 'var(--color-border)' }"
+            >
+                <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-bg-secondary">
+                    <Upload class="w-8 h-8 text-text-muted" />
+                </div>
+                <p class="text-lg font-medium mb-2 text-text-primary">{{ t('upload.drag_drop') }}</p>
+                <p class="mb-4 text-text-muted">{{ t('upload.or_browse') }}</p>
+                <label class="btn btn-primary cursor-pointer">
+                    {{ t('upload.select_file') }}
+                    <input
+                        type="file"
+                        accept="video/*"
+                        class="hidden"
+                        @change="handleFileSelect"
                     />
+                </label>
+                <p class="text-sm mt-4 text-text-muted">
+                    Supported: {{ allowedExtensions.join(', ').toUpperCase() }} · max {{ formatBytes(maxUploadBytes) }}
+                </p>
+                <p class="text-xs mt-2 text-text-muted">
+                    Free: {{ maxSizeFreeMb }} MB / {{ maxDailyFree }} uploads/day · Pro: {{ maxSizeProMb }} MB / {{ maxDailyPro }} uploads/day
+                </p>
+                <p v-if="fileError" class="text-red-500 text-sm mt-3 field-error">{{ fileError }}</p>
+                <a
+                    v-if="proEnabled && !currentUser?.is_pro && fileError && videoFile && videoFile.size > maxUploadBytes"
+                    href="/pro"
+                    class="inline-block mt-2 text-sm font-medium text-accent-text hover:underline"
+                >
+                    Upgrade to Pro to upload up to {{ maxSizeProMb }} MB →
+                </a>
+            </div>
 
-                    <!-- Category -->
-                    <div>
-                        <label for="category" class="block text-sm font-medium mb-1 text-text-secondary">
-                            {{ t('video.category') }} <span class="text-red-500">*</span>
-                        </label>
-                        <select
-                            id="category"
-                            v-model="form.category_id"
-                            class="input"
-                            :class="{ 'border-red-500': submitAttempted && !categoryValid }"
-                            required
-                            aria-required="true"
-                        >
-                            <option value="">Select a category</option>
-                            <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
-                        </select>
-                        <p v-if="submitAttempted && !categoryValid" class="text-red-500 text-xs mt-1 field-error">Please select a category.</p>
-                        <p v-else-if="fieldErrors.category_id" class="text-red-500 text-xs mt-1 field-error">{{ fieldErrors.category_id }}</p>
+            <!-- Video Preview + Upload Progress -->
+            <div v-else class="card p-4">
+                <div class="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+                    <div class="w-full sm:w-48 aspect-video rounded-lg overflow-hidden shrink-0 relative bg-bg-secondary">
+                        <img v-if="previewThumb" :src="previewThumb" class="w-full h-full object-cover" alt="Video preview" />
+                        <video v-else :src="videoPreview" preload="metadata" class="w-full h-full object-cover" muted></video>
+                        <div v-if="durationFormatted" class="absolute bottom-2 end-2 px-1.5 py-0.5 rounded text-xs font-medium bg-black/80 text-white">
+                            {{ durationFormatted }}
+                        </div>
                     </div>
-
-                    <!-- Tags -->
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-text-secondary">
-                            {{ t('video.tags') }} <span class="text-red-500">*</span>
-                            <span class="ms-1 text-xs font-normal text-text-muted">(at least 3, up to 20)</span>
-                        </label>
-                        <div
-                            class="flex flex-wrap gap-2 mb-2 min-h-[2rem] p-2 rounded-md bg-bg-secondary"
-                            :class="{ 'ring-1 ring-red-500': submitAttempted && !tagsValid }"
-                        >
-                            <span
-                                v-for="(tag, index) in form.tags"
-                                :key="index"
-                                draggable="true"
-                                @dragstart="onTagDragStart(index)"
-                                @dragover="onTagDragOver"
-                                @drop="onTagDrop(index)"
-                                class="tag-label flex items-center gap-1 px-2 py-1 rounded text-sm bg-bg-card text-text-primary cursor-move select-none"
-                            >
-                                #{{ tag }}
-                                <button type="button" @click="removeTag(index)" class="hover:text-red-400" :aria-label="`Remove tag ${tag}`">
-                                    <X class="w-3 h-3" />
-                                </button>
-                            </span>
-                            <span v-if="!form.tags.length" class="text-xs text-text-muted self-center">No tags yet — add some below</span>
+                    <div class="flex-1 min-w-0 w-full">
+                        <div class="flex items-center gap-2">
+                            <FileVideo class="w-5 h-5 shrink-0 text-accent-text" />
+                            <p class="font-medium truncate text-text-primary">{{ videoFile.name }}</p>
                         </div>
-                        <div class="relative">
-                            <input
-                                v-model="tagInput"
-                                type="text"
-                                class="input"
-                                placeholder="Search existing tags"
-                                @keydown="handleTagKeydown"
-                                @focus="showTagSuggestions = true"
-                                @blur="setTimeout(() => showTagSuggestions = false, 200)"
-                                autocomplete="off"
-                                aria-describedby="tags-help"
-                            />
-                            <div v-if="showTagSuggestions && filteredTags.length" class="absolute z-50 w-full mt-1 rounded-lg shadow-xl overflow-hidden max-h-48 overflow-y-auto bg-bg-card border border-border">
-                                <button
-                                    v-for="suggestion in filteredTags"
-                                    :key="suggestion"
-                                    type="button"
-                                    class="w-full text-start px-3 py-2 text-sm hover:opacity-80 transition-opacity text-text-primary"
-                                    @mousedown.prevent="addTag(suggestion)"
-                                >
-                                    #{{ suggestion }}
-                                </button>
-                            </div>
-                        </div>
-                        <p v-if="tagNotice" class="text-xs text-accent-text mt-1">{{ tagNotice }}</p>
-                        <!--
-                            Popular tags — a boxed, alphabetical palette that wraps
-                            instead of scrolling sideways. A single horizontal row hid
-                            most of the 200 available tags behind a scrollbar nobody
-                            found, and each pill was add-only, so an accidental pick had
-                            to be undone up in the chip list.
-                        -->
-                        <div v-if="popularTags.length" class="mt-3">
-                            <div class="flex items-baseline justify-between mb-1.5">
-                                <p class="text-xs text-text-muted">Popular tags</p>
-                                <p class="text-xs" :class="tagLimitReached ? 'text-accent-text' : 'text-text-muted'">
-                                    {{ form.tags.length }}/20
-                                </p>
-                            </div>
-                            <div class="rounded-lg border border-border bg-bg-secondary p-2 max-h-44 overflow-y-auto">
-                                <div class="flex flex-wrap gap-1.5">
-                                    <button
-                                        v-for="pt in popularTags"
-                                        :key="pt"
-                                        type="button"
-                                        :aria-pressed="isTagSelected(pt)"
-                                        :disabled="!isTagSelected(pt) && tagLimitReached"
-                                        class="tag-label px-2 py-1 rounded-full border text-[11px] font-semibold leading-none transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                        :class="isTagSelected(pt)
-                                            ? 'bg-accent border-accent text-accent-contrast'
-                                            : 'bg-bg-card border-border text-text-secondary hover:text-text-primary hover:border-text-muted'"
-                                        @click="toggleTag(pt)"
-                                    >
-                                        {{ pt }}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <p v-if="submitAttempted && !tagsValid" class="text-red-500 text-xs mt-2 field-error">
-                            Please add at least 3 tags ({{ form.tags.length }}/3).
+                        <p class="text-sm mt-1 text-text-muted">
+                            {{ fileSizeFormatted }}
+                            <span v-if="durationFormatted"> · {{ durationFormatted }}</span>
+                            <span v-if="videoWidth && videoHeight"> · {{ videoWidth }}×{{ videoHeight }}</span>
                         </p>
-                        <p v-else-if="fieldErrors.tags" class="text-red-500 text-xs mt-2 field-error">{{ fieldErrors.tags }}</p>
-                    </div>
-                </div>
 
-                <!-- Validation checklist -->
-                <div v-if="submitAttempted && !formValid" class="card p-4 border" style="border-color: var(--color-accent);">
-                    <p class="text-sm font-medium mb-2 text-text-primary">Before you can publish, please fix:</p>
-                    <ul class="text-sm space-y-1">
-                        <li v-if="!fileChosen" class="flex items-center gap-2 text-red-500"><AlertCircle class="w-4 h-4" /> Select a video file</li>
-                        <li v-if="!titleValid" class="flex items-center gap-2 text-red-500"><AlertCircle class="w-4 h-4" /> Title (3+ characters)</li>
-                        <li v-if="!descValid" class="flex items-center gap-2 text-red-500"><AlertCircle class="w-4 h-4" /> Description (10+ characters)</li>
-                        <li v-if="!categoryValid" class="flex items-center gap-2 text-red-500"><AlertCircle class="w-4 h-4" /> Category</li>
-                        <li v-if="!tagsValid" class="flex items-center gap-2 text-red-500"><AlertCircle class="w-4 h-4" /> At least 3 tags ({{ form.tags.length }}/3)</li>
-                    </ul>
-                </div>
-
-                <!-- Scheduling (Admin/Pro only) -->
-                <div v-if="canSchedule" class="card p-6">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <Calendar class="w-5 h-5 text-accent-text" />
-                            <div>
-                                <p class="font-medium text-text-primary">{{ t('upload.schedule') }}</p>
-                                <p class="text-sm text-text-muted">{{ t('upload.schedule_desc') }}</p>
+                        <!-- Upload Progress Bar -->
+                        <div v-if="upload.status.value === 'uploading' || upload.status.value === 'paused'" class="mt-3">
+                            <div class="flex items-center justify-between text-sm mb-1">
+                                <span class="text-text-secondary">
+                                    {{ upload.status.value === 'paused' ? 'Paused' : (t('video.uploading')) }}
+                                    <span v-if="speedFormatted && upload.status.value === 'uploading'" class="text-text-muted"> · {{ speedFormatted }}</span>
+                                    <span v-if="etaFormatted && upload.status.value === 'uploading'" class="text-text-muted"> · {{ etaFormatted }}</span>
+                                </span>
+                                <span class="text-accent-text">{{ upload.percent.value }}%</span>
+                            </div>
+                            <div class="h-2 rounded-full overflow-hidden bg-bg-secondary">
+                                <div
+                                    class="h-full rounded-full transition-all duration-300 ease-out"
+                                    :style="{ width: upload.percent.value + '%', backgroundColor: 'var(--color-accent)' }"
+                                ></div>
+                            </div>
+                            <div class="flex items-center gap-2 mt-2">
+                                <button
+                                    type="button"
+                                    v-if="upload.status.value === 'uploading'"
+                                    @click="upload.pause()"
+                                    class="text-xs px-2 py-1 rounded bg-bg-secondary text-text-secondary hover:opacity-80 inline-flex items-center gap-1"
+                                >
+                                    <Pause class="w-3 h-3" /> Pause
+                                </button>
+                                <button
+                                    type="button"
+                                    v-else-if="upload.status.value === 'paused'"
+                                    @click="upload.resume()"
+                                    class="text-xs px-2 py-1 rounded bg-accent text-white hover:opacity-80 inline-flex items-center gap-1"
+                                >
+                                    <Play class="w-3 h-3" /> Resume
+                                </button>
                             </div>
                         </div>
-                        <input
-                            v-model="enableScheduling"
-                            type="checkbox"
-                            class="w-5 h-5 rounded"
-                            @change="!enableScheduling && (form.scheduled_at = '')"
-                        />
-                    </div>
-                    <div v-if="enableScheduling" class="mt-4">
-                        <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('upload.publish_date') }}</label>
-                        <input
-                            v-model="form.scheduled_at"
-                            type="datetime-local"
-                            :min="minScheduleDate"
-                            class="input"
-                            required
-                        />
-                        <p v-if="fieldErrors.scheduled_at" class="text-red-500 text-sm mt-1 field-error">{{ fieldErrors.scheduled_at }}</p>
-                        <p class="text-xs mt-1 text-text-muted">The video will be processed immediately but published at the scheduled time.</p>
-                    </div>
-                </div>
 
-                <div class="flex justify-end gap-4 items-center">
-                    <Loader2 v-if="submitting" class="w-4 h-4 animate-spin text-accent-text" />
+                        <!-- Complete -->
+                        <div v-else-if="upload.status.value === 'complete'" class="mt-3 flex items-center gap-2 text-green-500">
+                            <CheckCircle class="w-4 h-4" />
+                            <span class="text-sm">Upload complete · ready to publish</span>
+                        </div>
+
+                        <!-- Error -->
+                        <div v-else-if="upload.status.value === 'error'" class="mt-3 flex items-center gap-2 text-red-500 field-error">
+                            <AlertCircle class="w-4 h-4" />
+                            <span class="text-sm">{{ upload.error.value || 'Upload failed' }}</span>
+                        </div>
+                    </div>
                     <button
-                        type="submit"
-                        :disabled="submitDisabled"
-                        class="btn btn-primary"
+                        type="button"
+                        @click="removeVideo"
+                        class="p-2 rounded-full hover:opacity-80 bg-bg-secondary"
+                        :title="t('common.remove')"
                     >
-                        {{ submitLabel }}
+                        <X class="w-5 h-5 text-text-muted" />
                     </button>
                 </div>
-            </form>
-        </div>
-    </AppLayout>
+                <p v-if="fieldErrors.video_file" class="text-red-500 text-sm mt-2 field-error">{{ fieldErrors.video_file }}</p>
+                <p v-if="fieldErrors.upload" class="text-red-500 text-sm mt-2 field-error">{{ fieldErrors.upload }}</p>
+            </div>
+
+            <!-- Video Details -->
+            <div class="card p-6 space-y-4">
+                <!-- Title -->
+                <div>
+                    <label for="title" class="block text-sm font-medium mb-1 text-text-secondary">
+                        {{ t('upload.video_title') }} <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                        id="title"
+                        v-model="form.title"
+                        type="text"
+                        class="input"
+                        :class="{ 'border-red-500': submitAttempted && !titleValid }"
+                        maxlength="200"
+                        required
+                        aria-required="true"
+                        :aria-invalid="submitAttempted && !titleValid"
+                    />
+                    <div class="flex items-center justify-between mt-1">
+                        <p v-if="submitAttempted && !titleValid" class="text-red-500 text-xs field-error">
+                            Title must be at least 3 characters.
+                        </p>
+                        <p v-else-if="fieldErrors.title" class="text-red-500 text-xs field-error">{{ fieldErrors.title }}</p>
+                        <span v-else></span>
+                        <span class="text-xs text-text-muted" :class="{ 'text-amber-500': form.title.length > 180, 'text-red-500': form.title.length >= 200 }">
+                            {{ form.title.length }}/200
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label for="description" class="block text-sm font-medium mb-1 text-text-secondary">
+                        {{ t('upload.video_description') }} <span class="text-red-500">*</span>
+                    </label>
+                    <textarea
+                        id="description"
+                        v-model="form.description"
+                        rows="4"
+                        class="input resize-none"
+                        :class="{ 'border-red-500': submitAttempted && !descValid }"
+                        maxlength="5000"
+                        required
+                        aria-required="true"
+                        :aria-invalid="submitAttempted && !descValid"
+                    ></textarea>
+                    <div class="flex items-center justify-between mt-1">
+                        <p v-if="submitAttempted && !descValid" class="text-red-500 text-xs field-error">
+                            Description must be at least 10 characters.
+                        </p>
+                        <p v-else-if="fieldErrors.description" class="text-red-500 text-xs field-error">{{ fieldErrors.description }}</p>
+                        <span v-else></span>
+                        <span class="text-xs text-text-muted" :class="{ 'text-amber-500': form.description.length > 4500, 'text-red-500': form.description.length >= 5000 }">
+                            {{ form.description.length }}/5000
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Privacy: only shown when the admin has enabled more than public -->
+                <VideoPrivacySelect
+                    v-if="privacyOptions.length > 1"
+                    v-model="form.privacy"
+                    :options="privacyOptions"
+                    :error="fieldErrors.privacy || ''"
+                />
+
+                <!-- Category -->
+                <div>
+                    <label for="category" class="block text-sm font-medium mb-1 text-text-secondary">
+                        {{ t('video.category') }} <span class="text-red-500">*</span>
+                    </label>
+                    <select
+                        id="category"
+                        v-model="form.category_id"
+                        class="input"
+                        :class="{ 'border-red-500': submitAttempted && !categoryValid }"
+                        required
+                        aria-required="true"
+                    >
+                        <option value="">Select a category</option>
+                        <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                    </select>
+                    <p v-if="submitAttempted && !categoryValid" class="text-red-500 text-xs mt-1 field-error">Please select a category.</p>
+                    <p v-else-if="fieldErrors.category_id" class="text-red-500 text-xs mt-1 field-error">{{ fieldErrors.category_id }}</p>
+                </div>
+
+                <!-- Tags -->
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-secondary">
+                        {{ t('video.tags') }} <span class="text-red-500">*</span>
+                        <span class="ms-1 text-xs font-normal text-text-muted">(at least 3, up to 20)</span>
+                    </label>
+                    <div
+                        class="flex flex-wrap gap-2 mb-2 min-h-[2rem] p-2 rounded-md bg-bg-secondary"
+                        :class="{ 'ring-1 ring-red-500': submitAttempted && !tagsValid }"
+                    >
+                        <span
+                            v-for="(tag, index) in form.tags"
+                            :key="index"
+                            draggable="true"
+                            @dragstart="onTagDragStart(index)"
+                            @dragover="onTagDragOver"
+                            @drop="onTagDrop(index)"
+                            class="tag-label flex items-center gap-1 px-2 py-1 rounded text-sm bg-bg-card text-text-primary cursor-move select-none"
+                        >
+                            #{{ tag }}
+                            <button type="button" @click="removeTag(index)" class="hover:text-red-400" :aria-label="`Remove tag ${tag}`">
+                                <X class="w-3 h-3" />
+                            </button>
+                        </span>
+                        <span v-if="!form.tags.length" class="text-xs text-text-muted self-center">No tags yet — add some below</span>
+                    </div>
+                    <div class="relative">
+                        <input
+                            v-model="tagInput"
+                            type="text"
+                            class="input"
+                            placeholder="Search existing tags"
+                            @keydown="handleTagKeydown"
+                            @focus="showTagSuggestions = true"
+                            @blur="setTimeout(() => showTagSuggestions = false, 200)"
+                            autocomplete="off"
+                            aria-describedby="tags-help"
+                        />
+                        <div v-if="showTagSuggestions && filteredTags.length" class="absolute z-50 w-full mt-1 rounded-lg shadow-xl overflow-hidden max-h-48 overflow-y-auto bg-bg-card border border-border">
+                            <button
+                                v-for="suggestion in filteredTags"
+                                :key="suggestion"
+                                type="button"
+                                class="w-full text-start px-3 py-2 text-sm hover:opacity-80 transition-opacity text-text-primary"
+                                @mousedown.prevent="addTag(suggestion)"
+                            >
+                                #{{ suggestion }}
+                            </button>
+                        </div>
+                    </div>
+                    <p v-if="tagNotice" class="text-xs text-accent-text mt-1">{{ tagNotice }}</p>
+                    <!--
+                        Popular tags — a boxed, alphabetical palette that wraps
+                        instead of scrolling sideways. A single horizontal row hid
+                        most of the 200 available tags behind a scrollbar nobody
+                        found, and each pill was add-only, so an accidental pick had
+                        to be undone up in the chip list.
+                    -->
+                    <div v-if="popularTags.length" class="mt-3">
+                        <div class="flex items-baseline justify-between mb-1.5">
+                            <p class="text-xs text-text-muted">Popular tags</p>
+                            <p class="text-xs" :class="tagLimitReached ? 'text-accent-text' : 'text-text-muted'">
+                                {{ form.tags.length }}/20
+                            </p>
+                        </div>
+                        <div class="rounded-lg border border-border bg-bg-secondary p-2 max-h-44 overflow-y-auto">
+                            <div class="flex flex-wrap gap-1.5">
+                                <button
+                                    v-for="pt in popularTags"
+                                    :key="pt"
+                                    type="button"
+                                    :aria-pressed="isTagSelected(pt)"
+                                    :disabled="!isTagSelected(pt) && tagLimitReached"
+                                    class="tag-label px-2 py-1 rounded-full border text-[11px] font-semibold leading-none transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    :class="isTagSelected(pt)
+                                        ? 'bg-accent border-accent text-accent-contrast'
+                                        : 'bg-bg-card border-border text-text-secondary hover:text-text-primary hover:border-text-muted'"
+                                    @click="toggleTag(pt)"
+                                >
+                                    {{ pt }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <p v-if="submitAttempted && !tagsValid" class="text-red-500 text-xs mt-2 field-error">
+                        Please add at least 3 tags ({{ form.tags.length }}/3).
+                    </p>
+                    <p v-else-if="fieldErrors.tags" class="text-red-500 text-xs mt-2 field-error">{{ fieldErrors.tags }}</p>
+                </div>
+            </div>
+
+            <!-- Validation checklist -->
+            <div v-if="submitAttempted && !formValid" class="card p-4 border" style="border-color: var(--color-accent);">
+                <p class="text-sm font-medium mb-2 text-text-primary">Before you can publish, please fix:</p>
+                <ul class="text-sm space-y-1">
+                    <li v-if="!fileChosen" class="flex items-center gap-2 text-red-500"><AlertCircle class="w-4 h-4" /> Select a video file</li>
+                    <li v-if="!titleValid" class="flex items-center gap-2 text-red-500"><AlertCircle class="w-4 h-4" /> Title (3+ characters)</li>
+                    <li v-if="!descValid" class="flex items-center gap-2 text-red-500"><AlertCircle class="w-4 h-4" /> Description (10+ characters)</li>
+                    <li v-if="!categoryValid" class="flex items-center gap-2 text-red-500"><AlertCircle class="w-4 h-4" /> Category</li>
+                    <li v-if="!tagsValid" class="flex items-center gap-2 text-red-500"><AlertCircle class="w-4 h-4" /> At least 3 tags ({{ form.tags.length }}/3)</li>
+                </ul>
+            </div>
+
+            <!-- Scheduling (Admin/Pro only) -->
+            <div v-if="canSchedule" class="card p-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <Calendar class="w-5 h-5 text-accent-text" />
+                        <div>
+                            <p class="font-medium text-text-primary">{{ t('upload.schedule') }}</p>
+                            <p class="text-sm text-text-muted">{{ t('upload.schedule_desc') }}</p>
+                        </div>
+                    </div>
+                    <input
+                        v-model="enableScheduling"
+                        type="checkbox"
+                        class="w-5 h-5 rounded"
+                        @change="!enableScheduling && (form.scheduled_at = '')"
+                    />
+                </div>
+                <div v-if="enableScheduling" class="mt-4">
+                    <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('upload.publish_date') }}</label>
+                    <input
+                        v-model="form.scheduled_at"
+                        type="datetime-local"
+                        :min="minScheduleDate"
+                        class="input"
+                        required
+                    />
+                    <p v-if="fieldErrors.scheduled_at" class="text-red-500 text-sm mt-1 field-error">{{ fieldErrors.scheduled_at }}</p>
+                    <p class="text-xs mt-1 text-text-muted">The video will be processed immediately but published at the scheduled time.</p>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-4 items-center">
+                <Loader2 v-if="submitting" class="w-4 h-4 animate-spin text-accent-text" />
+                <button
+                    type="submit"
+                    :disabled="submitDisabled"
+                    class="btn btn-primary"
+                >
+                    {{ submitLabel }}
+                </button>
+            </div>
+        </form>
+    </div>
 </template>

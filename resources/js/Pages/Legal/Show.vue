@@ -4,6 +4,8 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import { sanitizeHtml } from '@/Composables/useSanitize';
 import SeoHead from '@/Components/SeoHead.vue';
 
+defineOptions({ layout: AppLayout });
+
 const props = defineProps({
     page: Object,
 });
@@ -14,22 +16,20 @@ const sanitizedContent = computed(() => sanitizeHtml(props.page?.content ?? ''))
 <template>
     <SeoHead />
 
-    <AppLayout>
-        <div class="max-w-4xl mx-auto">
-            <div class="card p-6 md:p-10">
-                <h1 class="text-2xl md:text-3xl font-bold mb-2 text-text-primary">
-                    {{ page.title }}
-                </h1>
-                <p class="text-sm mb-8 text-text-muted">
-                    Last updated: {{ page.updated_at }}
-                </p>
-                <div
-                    class="prose prose-invert max-w-none legal-content text-text-secondary"
-                    v-html="sanitizedContent"
-                ></div>
-            </div>
+    <div class="max-w-4xl mx-auto">
+        <div class="card p-6 md:p-10">
+            <h1 class="text-2xl md:text-3xl font-bold mb-2 text-text-primary">
+                {{ page.title }}
+            </h1>
+            <p class="text-sm mb-8 text-text-muted">
+                Last updated: {{ page.updated_at }}
+            </p>
+            <div
+                class="prose prose-invert max-w-none legal-content text-text-secondary"
+                v-html="sanitizedContent"
+            ></div>
         </div>
-    </AppLayout>
+    </div>
 </template>
 
 <style scoped>

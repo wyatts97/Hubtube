@@ -4,6 +4,7 @@ import SeoHead from '@/Components/SeoHead.vue';
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
+import { cardPriority } from '@/Composables/useOptimizedImage';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import ShortsRail from '@/Components/ShortsRail.vue';
 import ImagesRail from '@/Components/ImagesRail.vue';
@@ -15,6 +16,8 @@ import { useI18n } from '@/Composables/useI18n';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 import { useVideoGrid } from '@/Composables/useVideoGrid';
 import { useGridAds } from '@/Composables/useGridAds';
+
+defineOptions({ layout: AppLayout });
 
 const { t, localizedUrl } = useI18n();
 const { translateVideos, tr } = useAutoTranslate(['title']);
@@ -145,96 +148,94 @@ const { getSponsoredCard, sponsoredCellClass } = useGridAds(props);
 <template>
     <SeoHead :seo="seo" />
 
-    <AppLayout>
-        <!-- Featured Videos -->
-        <section v-if="featuredVideos.length > 0" class="mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="section-title">{{ t('home.featured') }}</h2>
-            </div>
-            <div :class="gridClass">
-                <VideoCard v-for="video in featuredVideos" :key="video.id" :video="withTranslation(video)" />
-            </div>
-        </section>
+    <!-- Featured Videos -->
+    <section v-if="featuredVideos.length > 0" class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="section-title">{{ t('home.featured') }}</h2>
+        </div>
+        <div :class="gridClass">
+            <VideoCard v-for="(video, index) in featuredVideos" :key="video.id" :video="withTranslation(video)" :priority="cardPriority(index)" />
+        </div>
+    </section>
 
-        <BannerAd :config="adSettings?.rail1" placement="home_rail_1" />
+    <BannerAd :config="adSettings?.rail1" placement="home_rail_1" />
 
-        <!-- Shorts Preview Rail -->
-        <ShortsRail v-if="shortsPreview?.length" :shorts="shortsPreview" />
+    <!-- Shorts Preview Rail -->
+    <ShortsRail v-if="shortsPreview?.length" :shorts="shortsPreview" />
 
-        <BannerAd :config="adSettings?.rail2" placement="home_rail_2" />
+    <BannerAd :config="adSettings?.rail2" placement="home_rail_2" />
 
-        <!-- Latest Videos -->
-        <section class="mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="section-title">{{ t('home.latest') }}</h2>
-                <a :href="localizedUrl('/videos')" class="text-sm font-medium text-accent-text">{{ t('common.view_all') }}</a>
-            </div>
+    <!-- Latest Videos -->
+    <section class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="section-title">{{ t('home.latest') }}</h2>
+            <a :href="localizedUrl('/videos')" class="text-sm font-medium text-accent-text">{{ t('common.view_all') }}</a>
+        </div>
             
-            <!-- Infinite Scroll Mode -->
-            <template v-if="infiniteScrollEnabled">
-                <div :class="gridClass">
-                    <template v-for="(video, index) in videos" :key="'scroll-' + video.id">
-                        <VideoCard :video="withTranslation(video)" />
-                        <SponsoredVideoCard
-                            v-if="getSponsoredCard(index)"
-                            :card="getSponsoredCard(index)"
-                            :class="sponsoredCellClass(getSponsoredCard(index))"
-                        />
-                    </template>
-                </div>
-                
-                <!-- Load More Trigger -->
-                <div ref="loadMoreTrigger" class="flex justify-center py-8">
-                    <div v-if="loading" class="flex items-center gap-2 text-text-secondary">
-                        <Loader2 class="w-5 h-5 animate-spin" />
-                        <span>{{ t('home.loading_more') }}</span>
-                    </div>
-                    <p v-else-if="!hasMore && videos.length > 0" class="text-sm text-text-muted">
-                        {{ t('home.reached_end') }}
-                    </p>
-                </div>
-            </template>
-            
-            <!-- Pagination Mode -->
-            <template v-else>
-                <div :class="gridClass">
-                    <template v-for="(video, index) in latestVideos.data" :key="'page-' + video.id">
-                        <VideoCard :video="withTranslation(video)" />
-                        <SponsoredVideoCard
-                            v-if="getSponsoredCard(index)"
-                            :card="getSponsoredCard(index)"
-                            :class="sponsoredCellClass(getSponsoredCard(index))"
-                        />
-                    </template>
-                </div>
-                
-                <Pagination
-                    :current-page="latestVideos.current_page"
-                    :last-page="latestVideos.last_page"
-                    @page-change="goToPage"
-                />
-            </template>
-        </section>
-
-        <BannerAd :config="adSettings?.rail3" placement="home_rail_3" />
-
-        <!-- Latest Playlists Rail -->
-        <PlaylistsRail v-if="latestPlaylists?.length" :playlists="latestPlaylists" />
-
-        <!-- Latest Images Rail -->
-        <ImagesRail v-if="latestImages?.length" :images="latestImages" />
-
-        <BannerAd :config="adSettings?.rail4" placement="home_rail_4" />
-
-        <!-- Popular Videos -->
-        <section v-if="popularVideos.length > 0" class="mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="section-title">{{ t('home.popular') }}</h2>
-                <a :href="localizedUrl('/trending')" class="text-sm font-medium text-accent-text">{{ t('common.view_all') }}</a>
-            </div>
+        <!-- Infinite Scroll Mode -->
+        <template v-if="infiniteScrollEnabled">
             <div :class="gridClass">
-                <VideoCard v-for="video in popularVideos" :key="video.id" :video="withTranslation(video)" />
+                <template v-for="(video, index) in videos" :key="'scroll-' + video.id">
+                    <VideoCard :video="withTranslation(video)" :priority="featuredVideos.length ? '' : cardPriority(index)" />
+                    <SponsoredVideoCard
+                        v-if="getSponsoredCard(index)"
+                        :card="getSponsoredCard(index)"
+                        :class="sponsoredCellClass(getSponsoredCard(index))"
+                    />
+                </template>
             </div>
-        </section>
-    </AppLayout>
+                
+            <!-- Load More Trigger -->
+            <div ref="loadMoreTrigger" class="flex justify-center py-8">
+                <div v-if="loading" class="flex items-center gap-2 text-text-secondary">
+                    <Loader2 class="w-5 h-5 animate-spin" />
+                    <span>{{ t('home.loading_more') }}</span>
+                </div>
+                <p v-else-if="!hasMore && videos.length > 0" class="text-sm text-text-muted">
+                    {{ t('home.reached_end') }}
+                </p>
+            </div>
+        </template>
+            
+        <!-- Pagination Mode -->
+        <template v-else>
+            <div :class="gridClass">
+                <template v-for="(video, index) in latestVideos.data" :key="'page-' + video.id">
+                    <VideoCard :video="withTranslation(video)" :priority="featuredVideos.length ? '' : cardPriority(index)" />
+                    <SponsoredVideoCard
+                        v-if="getSponsoredCard(index)"
+                        :card="getSponsoredCard(index)"
+                        :class="sponsoredCellClass(getSponsoredCard(index))"
+                    />
+                </template>
+            </div>
+                
+            <Pagination
+                :current-page="latestVideos.current_page"
+                :last-page="latestVideos.last_page"
+                @page-change="goToPage"
+            />
+        </template>
+    </section>
+
+    <BannerAd :config="adSettings?.rail3" placement="home_rail_3" />
+
+    <!-- Latest Playlists Rail -->
+    <PlaylistsRail v-if="latestPlaylists?.length" :playlists="latestPlaylists" />
+
+    <!-- Latest Images Rail -->
+    <ImagesRail v-if="latestImages?.length" :images="latestImages" />
+
+    <BannerAd :config="adSettings?.rail4" placement="home_rail_4" />
+
+    <!-- Popular Videos -->
+    <section v-if="popularVideos.length > 0" class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="section-title">{{ t('home.popular') }}</h2>
+            <a :href="localizedUrl('/trending')" class="text-sm font-medium text-accent-text">{{ t('common.view_all') }}</a>
+        </div>
+        <div :class="gridClass">
+            <VideoCard v-for="video in popularVideos" :key="video.id" :video="withTranslation(video)" />
+        </div>
+    </section>
 </template>

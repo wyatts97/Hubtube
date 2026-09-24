@@ -6,6 +6,8 @@ import { Folder } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
 
+defineOptions({ layout: AppLayout });
+
 const { t, localizedUrl } = useI18n();
 
 const props = defineProps({
@@ -26,53 +28,51 @@ const titleStyle = computed(() => ({
 <template>
     <SeoHead />
 
-    <AppLayout>
-        <div class="mb-6">
-            <h1 class="page-title">{{ t('categories.title') }}</h1>
-            <p class="text-sm mt-1 text-text-muted">{{ t('categories.browse') }}</p>
-        </div>
+    <div class="mb-6">
+        <h1 class="page-title">{{ t('categories.title') }}</h1>
+        <p class="text-sm mt-1 text-text-muted">{{ t('categories.browse') }}</p>
+    </div>
 
-        <div v-if="categories.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            <Link
-                v-for="category in categories"
-                :key="category.id"
-                :href="localizedUrl(`/category/${category.slug}`)"
-                class="group relative rounded-xl overflow-hidden cursor-pointer"
-                style="aspect-ratio: 16/9;"
+    <div v-if="categories.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <Link
+            v-for="category in categories"
+            :key="category.id"
+            :href="localizedUrl(`/category/${category.slug}`)"
+            class="group relative rounded-xl overflow-hidden cursor-pointer"
+            style="aspect-ratio: 16/9;"
+        >
+            <!-- Thumbnail from latest video -->
+            <img
+                v-if="category.latest_thumbnail"
+                :src="category.latest_thumbnail"
+                :alt="category.name"
+                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+            <div
+                v-else
+                class="w-full h-full flex items-center justify-center bg-bg-card"
             >
-                <!-- Thumbnail from latest video -->
-                <img
-                    v-if="category.latest_thumbnail"
-                    :src="category.latest_thumbnail"
-                    :alt="category.name"
-                    class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-                <div
-                    v-else
-                    class="w-full h-full flex items-center justify-center bg-bg-card"
+                <Folder class="w-12 h-12 text-text-muted" />
+            </div>
+
+            <!-- Dark overlay -->
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent transition-opacity group-hover:from-black/90"></div>
+
+            <!-- Category title overlay -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center p-3">
+                <span
+                    class="font-bold text-center drop-shadow-lg"
+                    :style="titleStyle"
                 >
-                    <Folder class="w-12 h-12 text-text-muted" />
-                </div>
+                    {{ category.name }}
+                </span>
+                <span class="text-xs mt-1 text-white/70">{{ category.videos_count }} {{ t('common.videos') }}</span>
+            </div>
+        </Link>
+    </div>
 
-                <!-- Dark overlay -->
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent transition-opacity group-hover:from-black/90"></div>
-
-                <!-- Category title overlay -->
-                <div class="absolute inset-0 flex flex-col items-center justify-center p-3">
-                    <span
-                        class="font-bold text-center drop-shadow-lg"
-                        :style="titleStyle"
-                    >
-                        {{ category.name }}
-                    </span>
-                    <span class="text-xs mt-1 text-white/70">{{ category.videos_count }} {{ t('common.videos') }}</span>
-                </div>
-            </Link>
-        </div>
-
-        <div v-else class="text-center py-12">
-            <Folder class="w-12 h-12 mx-auto mb-3 text-text-muted" />
-            <p class="text-lg text-text-secondary">{{ t('categories.no_categories') }}</p>
-        </div>
-    </AppLayout>
+    <div v-else class="text-center py-12">
+        <Folder class="w-12 h-12 mx-auto mb-3 text-text-muted" />
+        <p class="text-lg text-text-secondary">{{ t('categories.no_categories') }}</p>
+    </div>
 </template>

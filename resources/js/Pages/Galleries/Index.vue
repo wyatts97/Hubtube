@@ -8,6 +8,8 @@ import { useI18n } from '@/Composables/useI18n';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { useGridAds } from '@/Composables/useGridAds';
 
+defineOptions({ layout: AppLayout });
+
 const { t } = useI18n();
 
 const props = defineProps({
@@ -44,108 +46,106 @@ const formatViews = (count) => {
 <template>
     <SeoHead :seo="seo" />
 
-    <AppLayout>
-        <div class="mb-5">
-            <div class="flex items-center justify-between gap-3 flex-wrap">
-                <h1 class="page-title">Galleries</h1>
+    <div class="mb-5">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+            <h1 class="page-title">Galleries</h1>
 
-                <div class="flex items-center gap-2">
-                    <!-- Sort Buttons -->
-                    <div class="flex items-center gap-1">
-                        <button
-                            @click="setSort('')"
-                            class="chip"
-                            :class="{ 'chip-active': !sort }"
-                        >
-                            <Clock class="w-3.5 h-3.5 inline -mt-0.5 me-1" />Latest
-                        </button>
-                        <button
-                            @click="setSort('popular')"
-                            class="chip"
-                            :class="{ 'chip-active': sort === 'popular' }"
-                        >
-                            <Flame class="w-3.5 h-3.5 inline -mt-0.5 me-1" />Popular
-                        </button>
-                    </div>
-
-                    <Link href="/galleries/create" class="btn btn-primary flex items-center gap-1.5 text-sm">
-                        <Plus class="w-4 h-4" />
-                        {{ t('gallery.create') }}
-                    </Link>
+            <div class="flex items-center gap-2">
+                <!-- Sort Buttons -->
+                <div class="flex items-center gap-1">
+                    <button
+                        @click="setSort('')"
+                        class="chip"
+                        :class="{ 'chip-active': !sort }"
+                    >
+                        <Clock class="w-3.5 h-3.5 inline -mt-0.5 me-1" />Latest
+                    </button>
+                    <button
+                        @click="setSort('popular')"
+                        class="chip"
+                        :class="{ 'chip-active': sort === 'popular' }"
+                    >
+                        <Flame class="w-3.5 h-3.5 inline -mt-0.5 me-1" />Popular
+                    </button>
                 </div>
+
+                <Link href="/galleries/create" class="btn btn-primary flex items-center gap-1.5 text-sm">
+                    <Plus class="w-4 h-4" />
+                    {{ t('gallery.create') }}
+                </Link>
             </div>
         </div>
+    </div>
 
-        <div v-if="galleries.data.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <template v-for="(gallery, index) in galleries.data" :key="gallery.id">
-            <Link
-                :href="`/gallery/${gallery.slug}`"
-                class="group block"
-            >
-                <div class="card rounded-xl overflow-hidden">
-                    <!-- Cover Image -->
-                    <div class="aspect-video relative bg-bg-secondary">
-                        <img
-                            v-if="gallery.cover_url"
-                            :src="gallery.cover_url"
-                            :alt="gallery.title"
-                            class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                            loading="lazy"
-                        />
-                        <div v-else class="w-full h-full flex items-center justify-center">
-                            <ImageIcon class="w-10 h-10 text-text-muted" />
-                        </div>
-                        <div class="absolute bottom-2 end-2 flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-black/70 text-white">
-                            <ImageIcon class="w-3 h-3" />
-                            {{ gallery.images_count || 0 }}
-                        </div>
+    <div v-if="galleries.data.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <template v-for="(gallery, index) in galleries.data" :key="gallery.id">
+        <Link
+            :href="`/gallery/${gallery.slug}`"
+            class="group block"
+        >
+            <div class="card rounded-xl overflow-hidden">
+                <!-- Cover Image -->
+                <div class="aspect-video relative bg-bg-secondary">
+                    <img
+                        v-if="gallery.cover_url"
+                        :src="gallery.cover_url"
+                        :alt="gallery.title"
+                        class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                    />
+                    <div v-else class="w-full h-full flex items-center justify-center">
+                        <ImageIcon class="w-10 h-10 text-text-muted" />
                     </div>
-                    <!-- Info -->
-                    <div class="p-3">
-                        <h3 class="font-medium text-sm line-clamp-1 text-text-primary">{{ gallery.title }}</h3>
-                        <div class="flex items-center gap-3 mt-1">
-                            <span v-if="gallery.user" class="text-xs text-text-muted">{{ gallery.user.username }}</span>
-                            <span class="text-xs flex items-center gap-1 text-text-muted">
-                                <Eye class="w-3 h-3" />
-                                {{ formatViews(gallery.views_count) }}
-                            </span>
-                        </div>
+                    <div class="absolute bottom-2 end-2 flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-black/70 text-white">
+                        <ImageIcon class="w-3 h-3" />
+                        {{ gallery.images_count || 0 }}
                     </div>
                 </div>
-            </Link>
-            <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" :class="sponsoredCellClass(getSponsoredCard(index))" />
-            </template>
-        </div>
+                <!-- Info -->
+                <div class="p-3">
+                    <h3 class="font-medium text-sm line-clamp-1 text-text-primary">{{ gallery.title }}</h3>
+                    <div class="flex items-center gap-3 mt-1">
+                        <span v-if="gallery.user" class="text-xs text-text-muted">{{ gallery.user.username }}</span>
+                        <span class="text-xs flex items-center gap-1 text-text-muted">
+                            <Eye class="w-3 h-3" />
+                            {{ formatViews(gallery.views_count) }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </Link>
+        <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" :class="sponsoredCellClass(getSponsoredCard(index))" />
+        </template>
+    </div>
 
-        <div v-else class="text-center py-16">
-            <ImageIcon class="w-12 h-12 mx-auto mb-3 text-text-muted" />
-            <p class="text-lg text-text-secondary">{{ t('gallery.none_yet') }}</p>
-            <p class="mt-2 text-sm text-text-muted">{{ t('gallery.be_first') }}</p>
-            <Link href="/galleries/create" class="btn btn-primary mt-4 inline-flex items-center gap-1.5">
-                <Plus class="w-4 h-4" />
-                Create Gallery
-            </Link>
-        </div>
+    <div v-else class="text-center py-16">
+        <ImageIcon class="w-12 h-12 mx-auto mb-3 text-text-muted" />
+        <p class="text-lg text-text-secondary">{{ t('gallery.none_yet') }}</p>
+        <p class="mt-2 text-sm text-text-muted">{{ t('gallery.be_first') }}</p>
+        <Link href="/galleries/create" class="btn btn-primary mt-4 inline-flex items-center gap-1.5">
+            <Plus class="w-4 h-4" />
+            Create Gallery
+        </Link>
+    </div>
 
-        <!-- Pagination -->
-        <div v-if="galleries.links && galleries.links.length > 3" class="mt-8 flex justify-center gap-1.5">
-            <template v-for="link in galleries.links" :key="link.label">
-                <Link
-                    v-if="link.url"
-                    :href="link.url"
-                    :class="['px-3 py-1.5 rounded-lg text-sm transition-colors']"
-                    :style="link.active
-                        ? 'background-color: var(--color-accent); color: #fff;'
-                        : 'background-color: var(--color-bg-secondary); color: var(--color-text-secondary); border: 1px solid var(--color-border);'"
-                    v-html="link.label"
-                    preserve-scroll
-                />
-                <span
-                    v-else
-                    class="px-3 py-1.5 rounded-lg text-sm text-text-muted"
-                    v-html="link.label"
-                />
-            </template>
-        </div>
-    </AppLayout>
+    <!-- Pagination -->
+    <div v-if="galleries.links && galleries.links.length > 3" class="mt-8 flex justify-center gap-1.5">
+        <template v-for="link in galleries.links" :key="link.label">
+            <Link
+                v-if="link.url"
+                :href="link.url"
+                :class="['px-3 py-1.5 rounded-lg text-sm transition-colors']"
+                :style="link.active
+                    ? 'background-color: var(--color-accent); color: #fff;'
+                    : 'background-color: var(--color-bg-secondary); color: var(--color-text-secondary); border: 1px solid var(--color-border);'"
+                v-html="link.label"
+                preserve-scroll
+            />
+            <span
+                v-else
+                class="px-3 py-1.5 rounded-lg text-sm text-text-muted"
+                v-html="link.label"
+            />
+        </template>
+    </div>
 </template>

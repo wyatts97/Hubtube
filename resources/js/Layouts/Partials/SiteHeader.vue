@@ -10,7 +10,7 @@
  * what this site ships. The sidebar toggle is still a compact control rather
  * than a full-size hamburger next to the logo.
  */
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { ComboboxAnchor, ComboboxContent, ComboboxInput, ComboboxRoot, DropdownMenuItem, DropdownMenuLabel } from 'reka-ui';
 import {
@@ -97,13 +97,26 @@ const onNotificationsOpenChange = async (open) => {
     if (unreadCount.value > 0) markAllRead();
 };
 
+let unreadCheckedAt = 0;
+
 const loadUnreadCount = async () => {
     if (!user.value) return;
+    unreadCheckedAt = Date.now();
     const { ok, data } = await get('/notifications/unread-count');
     if (ok && data) unreadCount.value = data.count || 0;
 };
 
 nextTick(loadUnreadCount);
+
+// The header stays mounted between pages, so refresh the badge after a login
+// or logout, and on navigation at most once a minute.
+watch(() => user.value?.id, () => {
+    unreadCount.value = 0;
+    loadUnreadCount();
+});
+watch(() => page.url, () => {
+    if (Date.now() - unreadCheckedAt > 60_000) loadUnreadCount();
+});
 </script>
 
 <template>

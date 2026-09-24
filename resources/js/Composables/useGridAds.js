@@ -9,9 +9,8 @@ import { useVideoGrid } from '@/Composables/useVideoGrid';
  * had its own frequency, and the two collided whenever the frequencies lined
  * up. One list and one frequency removes that whole class of problem.
  *
- * Takes props rather than reading usePage(), matching useVirtualGrid(items,
- * options): the ad data arrives as per-page props, and passing them in keeps
- * this testable.
+ * Takes props rather than reading usePage(): the ad data arrives as per-page
+ * props, and passing them in keeps this testable.
  *
  * @param {object} props Page props carrying `sponsoredCards`, `sponsoredFrequency`
  *   and, on /videos, `adSettings.outstreamFrequency` + `outstreamAds`.

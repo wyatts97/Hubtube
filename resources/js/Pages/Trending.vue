@@ -4,6 +4,7 @@ import SeoHead from '@/Components/SeoHead.vue';
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
+import { cardPriority } from '@/Composables/useOptimizedImage';
 import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { Loader2 } from 'lucide-vue-next';
@@ -12,6 +13,8 @@ import { useI18n } from '@/Composables/useI18n';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 import { useVideoGrid } from '@/Composables/useVideoGrid';
 import { useGridAds } from '@/Composables/useGridAds';
+
+defineOptions({ layout: AppLayout });
 
 const { t, localizedUrl } = useI18n();
 const { translateVideos, tr } = useAutoTranslate(['title']);
@@ -154,75 +157,73 @@ const { getSponsoredCard, sponsoredCellClass } = useGridAds(props);
 <template>
     <SeoHead :seo="seo" />
 
-    <AppLayout>
-        <div class="mb-6">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                    <h1 class="page-title">{{ t('nav.trending') }}</h1>
-                    <p class="mt-1 text-text-secondary">{{ t('home.popular') }}</p>
-                </div>
-                <div class="flex gap-1 flex-wrap">
-                    <button
-                        v-for="p in periods"
-                        :key="p.value"
-                        @click="changePeriod(p.value)"
-                        class="px-3 py-1.5 text-sm rounded-full transition-colors"
-                        :style="{
-                            backgroundColor: activePeriod === p.value ? 'var(--color-primary)' : 'var(--color-bg-card)',
-                            color: activePeriod === p.value ? '#fff' : 'var(--color-text-secondary)',
-                            border: activePeriod === p.value ? 'none' : '1px solid var(--color-border)',
-                        }"
-                    >
-                        {{ p.label }}
-                    </button>
-                </div>
+    <div class="mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <h1 class="page-title">{{ t('nav.trending') }}</h1>
+                <p class="mt-1 text-text-secondary">{{ t('home.popular') }}</p>
+            </div>
+            <div class="flex gap-1 flex-wrap">
+                <button
+                    v-for="p in periods"
+                    :key="p.value"
+                    @click="changePeriod(p.value)"
+                    class="px-3 py-1.5 text-sm rounded-full transition-colors"
+                    :style="{
+                        backgroundColor: activePeriod === p.value ? 'var(--color-primary)' : 'var(--color-bg-card)',
+                        color: activePeriod === p.value ? '#fff' : 'var(--color-text-secondary)',
+                        border: activePeriod === p.value ? 'none' : '1px solid var(--color-border)',
+                    }"
+                >
+                    {{ p.label }}
+                </button>
             </div>
         </div>
+    </div>
 
-        <!-- Skeleton Loading -->
-        <div v-if="isInitialLoad" :class="gridClass">
-            <VideoCardSkeleton v-for="i in 8" :key="'skeleton-' + i" />
+    <!-- Skeleton Loading -->
+    <div v-if="isInitialLoad" :class="gridClass">
+        <VideoCardSkeleton v-for="i in 8" :key="'skeleton-' + i" />
+    </div>
+
+    <!-- Infinite Scroll Mode -->
+    <template v-else-if="infiniteScrollEnabled">
+        <div v-if="videoList.length" :class="gridClass">
+            <template v-for="(video, index) in videoList" :key="video.id">
+                <VideoCard :video="withTranslation(video)" :priority="cardPriority(index)" />
+                <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" :class="sponsoredCellClass(getSponsoredCard(index))" />
+            </template>
         </div>
-
-        <!-- Infinite Scroll Mode -->
-        <template v-else-if="infiniteScrollEnabled">
-            <div v-if="videoList.length" :class="gridClass">
-                <template v-for="(video, index) in videoList" :key="video.id">
-                    <VideoCard :video="withTranslation(video)" />
-                    <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" :class="sponsoredCellClass(getSponsoredCard(index))" />
-                </template>
-            </div>
             
-            <div ref="loadMoreTrigger" class="flex justify-center py-8">
-                <div v-if="loading" class="flex items-center gap-2 text-text-secondary">
-                    <Loader2 class="w-5 h-5 animate-spin" />
-                    <span>{{ t('home.loading_more') }}</span>
-                </div>
-                <p v-else-if="!hasMore && videoList.length > 0" class="text-sm text-text-muted">
-                    {{ t('home.reached_end') }}
-                </p>
+        <div ref="loadMoreTrigger" class="flex justify-center py-8">
+            <div v-if="loading" class="flex items-center gap-2 text-text-secondary">
+                <Loader2 class="w-5 h-5 animate-spin" />
+                <span>{{ t('home.loading_more') }}</span>
             </div>
-        </template>
+            <p v-else-if="!hasMore && videoList.length > 0" class="text-sm text-text-muted">
+                {{ t('home.reached_end') }}
+            </p>
+        </div>
+    </template>
 
-        <!-- Pagination Mode -->
-        <template v-else>
-            <div v-if="videos.data?.length" :class="gridClass">
-                <template v-for="(video, index) in videos.data" :key="video.id">
-                    <VideoCard :video="withTranslation(video)" />
-                    <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" :class="sponsoredCellClass(getSponsoredCard(index))" />
-                </template>
-            </div>
+    <!-- Pagination Mode -->
+    <template v-else>
+        <div v-if="videos.data?.length" :class="gridClass">
+            <template v-for="(video, index) in videos.data" :key="video.id">
+                <VideoCard :video="withTranslation(video)" :priority="cardPriority(index)" />
+                <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" :class="sponsoredCellClass(getSponsoredCard(index))" />
+            </template>
+        </div>
 
-            <div v-else class="text-center py-12">
-                <p class="text-lg text-text-secondary">{{ t('trending.no_videos') }}</p>
-                <p class="mt-2 text-text-muted">{{ t('trending.check_back') }}</p>
-            </div>
+        <div v-else class="text-center py-12">
+            <p class="text-lg text-text-secondary">{{ t('trending.no_videos') }}</p>
+            <p class="mt-2 text-text-muted">{{ t('trending.check_back') }}</p>
+        </div>
 
-            <Pagination
-                :current-page="videos.current_page"
-                :last-page="videos.last_page"
-                @page-change="goToPage"
-            />
-        </template>
-    </AppLayout>
+        <Pagination
+            :current-page="videos.current_page"
+            :last-page="videos.last_page"
+            @page-change="goToPage"
+        />
+    </template>
 </template>

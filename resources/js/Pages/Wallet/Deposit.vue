@@ -5,6 +5,8 @@ import { ArrowLeft, CreditCard, Bitcoin } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
 
+defineOptions({ layout: AppLayout });
+
 const { t } = useI18n();
 
 const props = defineProps({
@@ -36,78 +38,76 @@ const formatCurrency = (amount) => {
 <template>
     <SeoHead title="Deposit Funds" />
 
-    <AppLayout>
-        <div class="max-w-lg mx-auto">
-            <Link href="/wallet" class="flex items-center gap-2 mb-6 text-sm hover:opacity-80 text-text-secondary">
-                <ArrowLeft class="w-4 h-4" />
-                {{ t('wallet.back_to_wallet') }}
-            </Link>
+    <div class="max-w-lg mx-auto">
+        <Link href="/wallet" class="flex items-center gap-2 mb-6 text-sm hover:opacity-80 text-text-secondary">
+            <ArrowLeft class="w-4 h-4" />
+            {{ t('wallet.back_to_wallet') }}
+        </Link>
 
-            <h1 class="text-2xl font-bold mb-2 text-text-primary">{{ t('wallet.deposit_funds') }}</h1>
-            <p class="mb-6 text-text-secondary">Current balance: {{ formatCurrency(balance) }}</p>
+        <h1 class="text-2xl font-bold mb-2 text-text-primary">{{ t('wallet.deposit_funds') }}</h1>
+        <p class="mb-6 text-text-secondary">Current balance: {{ formatCurrency(balance) }}</p>
 
-            <div class="card p-6">
-                <div v-if="!depositEnabled" class="mb-4 rounded-lg border p-3 text-sm border-border text-text-secondary">
-                    Deposits are temporarily unavailable.
+        <div class="card p-6">
+            <div v-if="!depositEnabled" class="mb-4 rounded-lg border p-3 text-sm border-border text-text-secondary">
+                Deposits are temporarily unavailable.
+            </div>
+
+            <form @submit.prevent="submit" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('wallet.amount') }}</label>
+                    <input
+                        v-model="form.amount"
+                        type="number"
+                        min="5"
+                        max="10000"
+                        step="0.01"
+                        placeholder="Enter amount (min $5)"
+                        class="input"
+                        :disabled="!depositEnabled"
+                        required
+                    />
+                    <p v-if="form.errors.amount" class="text-red-500 text-sm mt-1">{{ form.errors.amount }}</p>
                 </div>
 
-                <form @submit.prevent="submit" class="space-y-5">
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('wallet.amount') }}</label>
-                        <input
-                            v-model="form.amount"
-                            type="number"
-                            min="5"
-                            max="10000"
-                            step="0.01"
-                            placeholder="Enter amount (min $5)"
-                            class="input"
+                <div>
+                    <label class="block text-sm font-medium mb-2 text-text-secondary">{{ t('wallet.payment_method') }}</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button
+                            type="button"
+                            @click="form.payment_method = 'ccbill'"
+                            class="p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-colors"
                             :disabled="!depositEnabled"
-                            required
-                        />
-                        <p v-if="form.errors.amount" class="text-red-500 text-sm mt-1">{{ form.errors.amount }}</p>
+                            :style="{
+                                borderColor: form.payment_method === 'ccbill' ? 'var(--color-accent)' : 'var(--color-border)',
+                                backgroundColor: form.payment_method === 'ccbill' ? 'rgba(var(--color-accent-rgb, 220, 38, 38), 0.05)' : 'transparent',
+                            }"
+                        >
+                            <CreditCard class="w-6 h-6" :style="{ color: form.payment_method === 'ccbill' ? 'var(--color-accent)' : 'var(--color-text-muted)' }" />
+                            <span class="text-sm font-medium" :style="{ color: form.payment_method === 'ccbill' ? 'var(--color-accent)' : 'var(--color-text-secondary)' }">CCBill</span>
+                        </button>
+                        <button
+                            type="button"
+                            @click="form.payment_method = 'crypto'"
+                            class="p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-colors"
+                            :disabled="!depositEnabled"
+                            :style="{
+                                borderColor: form.payment_method === 'crypto' ? 'var(--color-accent)' : 'var(--color-border)',
+                                backgroundColor: form.payment_method === 'crypto' ? 'rgba(var(--color-accent-rgb, 220, 38, 38), 0.05)' : 'transparent',
+                            }"
+                        >
+                            <Bitcoin class="w-6 h-6" :style="{ color: form.payment_method === 'crypto' ? 'var(--color-accent)' : 'var(--color-text-muted)' }" />
+                            <span class="text-sm font-medium" :style="{ color: form.payment_method === 'crypto' ? 'var(--color-accent)' : 'var(--color-text-secondary)' }">Crypto</span>
+                        </button>
                     </div>
+                    <p v-if="form.errors.payment_method" class="text-red-500 text-sm mt-1">{{ form.errors.payment_method }}</p>
+                </div>
 
-                    <div>
-                        <label class="block text-sm font-medium mb-2 text-text-secondary">{{ t('wallet.payment_method') }}</label>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button
-                                type="button"
-                                @click="form.payment_method = 'ccbill'"
-                                class="p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-colors"
-                                :disabled="!depositEnabled"
-                                :style="{
-                                    borderColor: form.payment_method === 'ccbill' ? 'var(--color-accent)' : 'var(--color-border)',
-                                    backgroundColor: form.payment_method === 'ccbill' ? 'rgba(var(--color-accent-rgb, 220, 38, 38), 0.05)' : 'transparent',
-                                }"
-                            >
-                                <CreditCard class="w-6 h-6" :style="{ color: form.payment_method === 'ccbill' ? 'var(--color-accent)' : 'var(--color-text-muted)' }" />
-                                <span class="text-sm font-medium" :style="{ color: form.payment_method === 'ccbill' ? 'var(--color-accent)' : 'var(--color-text-secondary)' }">CCBill</span>
-                            </button>
-                            <button
-                                type="button"
-                                @click="form.payment_method = 'crypto'"
-                                class="p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-colors"
-                                :disabled="!depositEnabled"
-                                :style="{
-                                    borderColor: form.payment_method === 'crypto' ? 'var(--color-accent)' : 'var(--color-border)',
-                                    backgroundColor: form.payment_method === 'crypto' ? 'rgba(var(--color-accent-rgb, 220, 38, 38), 0.05)' : 'transparent',
-                                }"
-                            >
-                                <Bitcoin class="w-6 h-6" :style="{ color: form.payment_method === 'crypto' ? 'var(--color-accent)' : 'var(--color-text-muted)' }" />
-                                <span class="text-sm font-medium" :style="{ color: form.payment_method === 'crypto' ? 'var(--color-accent)' : 'var(--color-text-secondary)' }">Crypto</span>
-                            </button>
-                        </div>
-                        <p v-if="form.errors.payment_method" class="text-red-500 text-sm mt-1">{{ form.errors.payment_method }}</p>
-                    </div>
-
-                    <button type="submit" :disabled="form.processing || !depositEnabled" class="btn btn-primary w-full">
-                        <span v-if="form.processing">{{ t('common.loading') }}</span>
-                        <span v-else-if="depositEnabled">{{ t('wallet.continue_payment') }}</span>
-                        <span v-else>Deposits Unavailable</span>
-                    </button>
-                </form>
-            </div>
+                <button type="submit" :disabled="form.processing || !depositEnabled" class="btn btn-primary w-full">
+                    <span v-if="form.processing">{{ t('common.loading') }}</span>
+                    <span v-else-if="depositEnabled">{{ t('wallet.continue_payment') }}</span>
+                    <span v-else>Deposits Unavailable</span>
+                </button>
+            </form>
         </div>
-    </AppLayout>
+    </div>
 </template>

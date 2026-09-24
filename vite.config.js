@@ -7,7 +7,10 @@ import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 export default defineConfig({
     build: {
-        sourcemap: true, // Required for Sentry source map uploads
+        // Maps exist only to upload to Sentry: 'hidden' leaves no sourceMappingURL
+        // comment, and the plugin deletes the files after upload so the source
+        // isn't published from public/build.
+        sourcemap: process.env.SENTRY_AUTH_TOKEN ? 'hidden' : false,
         rollupOptions: {
             output: {
                 // Split heavy, rarely-co-loaded vendor deps into their own chunks so a
@@ -19,6 +22,13 @@ export default defineConfig({
                 // Rollup; naming the hls.js chunk here just keeps it stable and
                 // recognisable in the build output.
                 manualChunks(id) {
+                    // Vite's preload helper and Rollup's CommonJS helpers are used by
+                    // the entry. Left alone they land in the first chunk that needs
+                    // them — Fluid Player — and every page then downloaded the
+                    // whole player just to get those few lines.
+                    if (id.includes('vite/preload-helper') || id.includes('commonjsHelpers')) {
+                        return 'vendor-runtime';
+                    }
                     if (!id.includes('node_modules')) return;
                     // Only carve out the few large, rarely-co-loaded deps we actually care
                     // about splitting. Leaving everything else undefined lets Rollup's
@@ -61,6 +71,9 @@ export default defineConfig({
             project: process.env.SENTRY_PROJECT,
             authToken: process.env.SENTRY_AUTH_TOKEN,
             disable: !process.env.SENTRY_AUTH_TOKEN,
+            sourcemaps: {
+                filesToDeleteAfterUpload: ['./public/build/**/*.map'],
+            },
         }),
     ],
     resolve: {

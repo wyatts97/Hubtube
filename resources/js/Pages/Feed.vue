@@ -23,6 +23,8 @@ import { useVideoGrid } from '@/Composables/useVideoGrid';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { useGridAds } from '@/Composables/useGridAds';
 
+defineOptions({ layout: AppLayout });
+
 const props = defineProps({
     activity: { type: Array, default: () => [] },
     sponsoredCards: { type: Array, default: () => [] },
@@ -83,89 +85,87 @@ const { getSponsoredCard } = useGridAds(props, { frequency: 3 });
 <template>
     <SeoHead :title="t('feed.title')" />
 
-    <AppLayout>
-        <div class="mb-6">
-            <h1 class="page-title">{{ t('feed.title') }}</h1>
-            <p class="mt-1 text-text-secondary">{{ t('feed.description') }}</p>
-        </div>
+    <div class="mb-6">
+        <h1 class="page-title">{{ t('feed.title') }}</h1>
+        <p class="mt-1 text-text-secondary">{{ t('feed.description') }}</p>
+    </div>
 
-        <div v-if="!isEmpty" class="space-y-8">
-            <template v-for="(entry, index) in entries" :key="`${entry.type}-${index}`">
-            <section>
-                <!-- Actor line -->
-                <div class="flex items-center gap-3 mb-3">
-                    <Link :href="localizedUrl(`/channel/${entry.actor.username}`)" class="w-9 h-9 avatar shrink-0">
-                        <img
-                            :src="entry.actor.avatar_url || '/assets/default_avatar.webp'"
-                            :alt="entry.actor.username"
-                            class="w-full h-full object-cover"
-                            loading="lazy"
-                        />
-                    </Link>
-                    <div class="min-w-0">
-                        <p class="text-sm text-text-secondary">
-                            <Link
-                                :href="localizedUrl(`/channel/${entry.actor.username}`)"
-                                class="font-medium text-text-primary hover:underline"
-                            >{{ entry.actor.username }}</Link>
-                            <span v-if="entry.actor.is_verified" class="text-accent-text ms-1">&#10003;</span>
-                            <span class="ms-1">
-                                {{
-                                    entry.type === 'video'
-                                        ? t('feed.posted_videos', { count: entry.videos.length })
-                                        : t('feed.created_playlist')
-                                }}
-                            </span>
-                        </p>
-                        <p class="text-xs text-text-muted">{{ timeAgo(entry.occurred_at, locale) }}</p>
-                    </div>
-                </div>
-
-                <div v-if="entry.type === 'video'" :class="gridClass">
-                    <VideoCard v-for="video in entry.videos" :key="video.id" :video="video" />
-                </div>
-
-                <Link
-                    v-else
-                    :href="localizedUrl(`/playlist/${entry.subject.slug}`)"
-                    class="card flex items-center gap-4 p-4 hover:ring-2 transition-all"
-                    style="--tw-ring-color: var(--color-accent);"
-                >
-                    <div class="flex h-16 w-28 shrink-0 items-center justify-center rounded-lg bg-bg-secondary">
-                        <ListVideo class="w-7 h-7 text-text-muted" />
-                    </div>
-                    <div class="min-w-0">
-                        <h3 class="truncate font-medium text-text-primary">{{ entry.subject.title }}</h3>
-                        <p class="text-sm text-text-muted">
-                            {{ entry.subject.videos_count }} {{ t('common.videos') }}
-                        </p>
-                    </div>
+    <div v-if="!isEmpty" class="space-y-8">
+        <template v-for="(entry, index) in entries" :key="`${entry.type}-${index}`">
+        <section>
+            <!-- Actor line -->
+            <div class="flex items-center gap-3 mb-3">
+                <Link :href="localizedUrl(`/channel/${entry.actor.username}`)" class="w-9 h-9 avatar shrink-0">
+                    <img
+                        :src="entry.actor.avatar_url || '/assets/default_avatar.webp'"
+                        :alt="entry.actor.username"
+                        class="w-full h-full object-cover"
+                        loading="lazy"
+                    />
                 </Link>
-            </section>
-
-            <div v-if="getSponsoredCard(index)" :class="gridClass">
-                <SponsoredVideoCard :card="getSponsoredCard(index)" />
+                <div class="min-w-0">
+                    <p class="text-sm text-text-secondary">
+                        <Link
+                            :href="localizedUrl(`/channel/${entry.actor.username}`)"
+                            class="font-medium text-text-primary hover:underline"
+                        >{{ entry.actor.username }}</Link>
+                        <span v-if="entry.actor.is_verified" class="text-accent-text ms-1">&#10003;</span>
+                        <span class="ms-1">
+                            {{
+                                entry.type === 'video'
+                                    ? t('feed.posted_videos', { count: entry.videos.length })
+                                    : t('feed.created_playlist')
+                            }}
+                        </span>
+                    </p>
+                    <p class="text-xs text-text-muted">{{ timeAgo(entry.occurred_at, locale) }}</p>
+                </div>
             </div>
-            </template>
 
-            <div ref="sentinel" class="h-px" aria-hidden="true"></div>
-
-            <div v-if="loading" class="flex justify-center py-6">
-                <Loader2 class="w-6 h-6 animate-spin text-text-muted" />
+            <div v-if="entry.type === 'video'" :class="gridClass">
+                <VideoCard v-for="video in entry.videos" :key="video.id" :video="video" />
             </div>
+
+            <Link
+                v-else
+                :href="localizedUrl(`/playlist/${entry.subject.slug}`)"
+                class="card flex items-center gap-4 p-4 hover:ring-2 transition-all"
+                style="--tw-ring-color: var(--color-accent);"
+            >
+                <div class="flex h-16 w-28 shrink-0 items-center justify-center rounded-lg bg-bg-secondary">
+                    <ListVideo class="w-7 h-7 text-text-muted" />
+                </div>
+                <div class="min-w-0">
+                    <h3 class="truncate font-medium text-text-primary">{{ entry.subject.title }}</h3>
+                    <p class="text-sm text-text-muted">
+                        {{ entry.subject.videos_count }} {{ t('common.videos') }}
+                    </p>
+                </div>
+            </Link>
+        </section>
+
+        <div v-if="getSponsoredCard(index)" :class="gridClass">
+            <SponsoredVideoCard :card="getSponsoredCard(index)" />
         </div>
+        </template>
 
-        <EmptyState
-            v-else
-            :icon="Rss"
-            :title="hasSubscriptions ? t('feed.empty') : t('feed.no_subscriptions')"
-            :description="hasSubscriptions ? t('feed.empty_desc') : t('feed.no_subscriptions_desc')"
-        >
-            <template v-if="!hasSubscriptions" #action>
-                <Link :href="localizedUrl('/trending')" class="btn btn-primary">
-                    {{ t('feed.discover') }}
-                </Link>
-            </template>
-        </EmptyState>
-    </AppLayout>
+        <div ref="sentinel" class="h-px" aria-hidden="true"></div>
+
+        <div v-if="loading" class="flex justify-center py-6">
+            <Loader2 class="w-6 h-6 animate-spin text-text-muted" />
+        </div>
+    </div>
+
+    <EmptyState
+        v-else
+        :icon="Rss"
+        :title="hasSubscriptions ? t('feed.empty') : t('feed.no_subscriptions')"
+        :description="hasSubscriptions ? t('feed.empty_desc') : t('feed.no_subscriptions_desc')"
+    >
+        <template v-if="!hasSubscriptions" #action>
+            <Link :href="localizedUrl('/trending')" class="btn btn-primary">
+                {{ t('feed.discover') }}
+            </Link>
+        </template>
+    </EmptyState>
 </template>

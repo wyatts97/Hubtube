@@ -6,6 +6,8 @@ import { ArrowLeft, ImageIcon, Check, X } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
 
+defineOptions({ layout: AppLayout });
+
 const { t } = useI18n();
 
 const props = defineProps({
@@ -54,132 +56,130 @@ const submit = () => {
 <template>
     <SeoHead title="Create Gallery" />
 
-    <AppLayout>
-        <div class="max-w-4xl mx-auto">
-            <Link href="/galleries" class="inline-flex items-center gap-1.5 mb-4 text-sm hover:opacity-80 text-text-secondary">
-                <ArrowLeft class="w-4 h-4" />
-                Back to Galleries
-            </Link>
+    <div class="max-w-4xl mx-auto">
+        <Link href="/galleries" class="inline-flex items-center gap-1.5 mb-4 text-sm hover:opacity-80 text-text-secondary">
+            <ArrowLeft class="w-4 h-4" />
+            Back to Galleries
+        </Link>
 
-            <h1 class="text-xl sm:text-2xl font-bold mb-6 text-text-primary">Create Gallery</h1>
+        <h1 class="text-xl sm:text-2xl font-bold mb-6 text-text-primary">Create Gallery</h1>
 
-            <form @submit.prevent="submit" class="space-y-6">
-                <!-- Gallery Details -->
-                <div class="card p-6 space-y-4">
+        <form @submit.prevent="submit" class="space-y-6">
+            <!-- Gallery Details -->
+            <div class="card p-6 space-y-4">
+                <div>
+                    <label for="title" class="block text-sm font-medium mb-1 text-text-secondary">Title</label>
+                    <input
+                        id="title"
+                        v-model="form.title"
+                        type="text"
+                        class="input"
+                        maxlength="200"
+                        required
+                    />
+                    <p v-if="form.errors.title" class="text-red-500 text-sm mt-1">{{ form.errors.title }}</p>
+                </div>
+
+                <div>
+                    <label for="description" class="block text-sm font-medium mb-1 text-text-secondary">Description</label>
+                    <textarea
+                        id="description"
+                        v-model="form.description"
+                        rows="3"
+                        class="input resize-none"
+                        maxlength="5000"
+                    ></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label for="title" class="block text-sm font-medium mb-1 text-text-secondary">Title</label>
-                        <input
-                            id="title"
-                            v-model="form.title"
-                            type="text"
-                            class="input"
-                            maxlength="200"
-                            required
-                        />
-                        <p v-if="form.errors.title" class="text-red-500 text-sm mt-1">{{ form.errors.title }}</p>
+                        <label for="privacy" class="block text-sm font-medium mb-1 text-text-secondary">Privacy</label>
+                        <select id="privacy" v-model="form.privacy" class="input">
+                            <option value="public">Public</option>
+                            <option value="unlisted">Unlisted</option>
+                            <option value="private">Private</option>
+                        </select>
                     </div>
-
                     <div>
-                        <label for="description" class="block text-sm font-medium mb-1 text-text-secondary">Description</label>
-                        <textarea
-                            id="description"
-                            v-model="form.description"
-                            rows="3"
-                            class="input resize-none"
-                            maxlength="5000"
-                        ></textarea>
+                        <label for="sort_order" class="block text-sm font-medium mb-1 text-text-secondary">Sort Order</label>
+                        <select id="sort_order" v-model="form.sort_order" class="input">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="manual">Manual</option>
+                        </select>
                     </div>
+                </div>
+            </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="privacy" class="block text-sm font-medium mb-1 text-text-secondary">Privacy</label>
-                            <select id="privacy" v-model="form.privacy" class="input">
-                                <option value="public">Public</option>
-                                <option value="unlisted">Unlisted</option>
-                                <option value="private">Private</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="sort_order" class="block text-sm font-medium mb-1 text-text-secondary">Sort Order</label>
-                            <select id="sort_order" v-model="form.sort_order" class="input">
-                                <option value="newest">Newest First</option>
-                                <option value="oldest">Oldest First</option>
-                                <option value="manual">Manual</option>
-                            </select>
-                        </div>
+            <!-- Image Picker -->
+            <div class="card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="font-medium text-text-primary">Select Images</h2>
+                        <p class="text-sm text-text-muted">
+                            {{ selectedIds.size }} selected
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="button" @click="selectAll" class="text-xs px-3 py-1 rounded-lg bg-bg-secondary text-text-secondary border border-border">
+                            Select All
+                        </button>
+                        <button type="button" @click="deselectAll" class="text-xs px-3 py-1 rounded-lg bg-bg-secondary text-text-secondary border border-border">
+                            Deselect All
+                        </button>
                     </div>
                 </div>
 
-                <!-- Image Picker -->
-                <div class="card p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div>
-                            <h2 class="font-medium text-text-primary">Select Images</h2>
-                            <p class="text-sm text-text-muted">
-                                {{ selectedIds.size }} selected
-                            </p>
-                        </div>
-                        <div class="flex gap-2">
-                            <button type="button" @click="selectAll" class="text-xs px-3 py-1 rounded-lg bg-bg-secondary text-text-secondary border border-border">
-                                Select All
-                            </button>
-                            <button type="button" @click="deselectAll" class="text-xs px-3 py-1 rounded-lg bg-bg-secondary text-text-secondary border border-border">
-                                Deselect All
-                            </button>
-                        </div>
-                    </div>
-
-                    <div v-if="userImages && userImages.length" class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-                        <div
-                            v-for="image in userImages"
-                            :key="image.id"
-                            @click="toggleImage(image.id)"
-                            class="relative cursor-pointer rounded-lg overflow-hidden transition-all"
-                            :style="{
-                                border: isSelected(image.id) ? '3px solid var(--color-accent)' : '3px solid transparent',
-                                opacity: isSelected(image.id) ? 1 : 0.7,
-                            }"
-                        >
-                            <div class="aspect-square">
-                                <img
-                                    :src="image.thumbnail_url || image.image_url"
-                                    :alt="image.title || 'Image'"
-                                    class="w-full h-full object-cover"
-                                    loading="lazy"
-                                />
-                            </div>
-                            <div
-                                v-if="isSelected(image.id)"
-                                class="absolute top-1 end-1 w-5 h-5 rounded-full flex items-center justify-center bg-accent"
-                            >
-                                <Check class="w-3 h-3 text-white" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div v-else class="text-center py-10">
-                        <ImageIcon class="w-10 h-10 mx-auto mb-2 text-text-muted" />
-                        <p class="text-sm text-text-secondary">You haven't uploaded any images yet.</p>
-                        <Link href="/image-upload" class="btn btn-primary mt-3 inline-block text-sm">Upload Images</Link>
-                    </div>
-
-                    <p v-if="form.errors.image_ids" class="text-red-500 text-sm mt-2">{{ form.errors.image_ids }}</p>
-                </div>
-
-                <div class="flex justify-end gap-4">
-                    <Link href="/galleries" class="btn bg-bg-secondary text-text-secondary border border-border">
-                        Cancel
-                    </Link>
-                    <button
-                        type="submit"
-                        :disabled="form.processing || form.image_ids.length === 0"
-                        class="btn btn-primary"
+                <div v-if="userImages && userImages.length" class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                    <div
+                        v-for="image in userImages"
+                        :key="image.id"
+                        @click="toggleImage(image.id)"
+                        class="relative cursor-pointer rounded-lg overflow-hidden transition-all"
+                        :style="{
+                            border: isSelected(image.id) ? '3px solid var(--color-accent)' : '3px solid transparent',
+                            opacity: isSelected(image.id) ? 1 : 0.7,
+                        }"
                     >
-                        <span v-if="form.processing">Creating...</span>
-                        <span v-else>Create Gallery</span>
-                    </button>
+                        <div class="aspect-square">
+                            <img
+                                :src="image.thumbnail_url || image.image_url"
+                                :alt="image.title || 'Image'"
+                                class="w-full h-full object-cover"
+                                loading="lazy"
+                            />
+                        </div>
+                        <div
+                            v-if="isSelected(image.id)"
+                            class="absolute top-1 end-1 w-5 h-5 rounded-full flex items-center justify-center bg-accent"
+                        >
+                            <Check class="w-3 h-3 text-white" />
+                        </div>
+                    </div>
                 </div>
-            </form>
-        </div>
-    </AppLayout>
+
+                <div v-else class="text-center py-10">
+                    <ImageIcon class="w-10 h-10 mx-auto mb-2 text-text-muted" />
+                    <p class="text-sm text-text-secondary">You haven't uploaded any images yet.</p>
+                    <Link href="/image-upload" class="btn btn-primary mt-3 inline-block text-sm">Upload Images</Link>
+                </div>
+
+                <p v-if="form.errors.image_ids" class="text-red-500 text-sm mt-2">{{ form.errors.image_ids }}</p>
+            </div>
+
+            <div class="flex justify-end gap-4">
+                <Link href="/galleries" class="btn bg-bg-secondary text-text-secondary border border-border">
+                    Cancel
+                </Link>
+                <button
+                    type="submit"
+                    :disabled="form.processing || form.image_ids.length === 0"
+                    class="btn btn-primary"
+                >
+                    <span v-if="form.processing">Creating...</span>
+                    <span v-else>Create Gallery</span>
+                </button>
+            </div>
+        </form>
+    </div>
 </template>

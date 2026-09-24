@@ -9,6 +9,8 @@ import MasonryGrid from '@/Components/MasonryGrid.vue';
 import { Eye, Calendar, User, Trash2, ArrowLeft, ImageIcon, Grid3x3 } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 
+defineOptions({ layout: AppLayout });
+
 const { t } = useI18n();
 
 const props = defineProps({
@@ -53,149 +55,147 @@ const deleteGallery = () => {
 <template>
     <SeoHead :seo="seo" />
 
-    <AppLayout>
-        <div class="max-w-7xl mx-auto">
-            <!-- Back -->
-            <Link href="/galleries" class="inline-flex items-center gap-1.5 mb-4 text-sm hover:opacity-80 text-text-secondary">
-                <ArrowLeft class="w-4 h-4" />
-                Back to Galleries
-            </Link>
+    <div class="max-w-7xl mx-auto">
+        <!-- Back -->
+        <Link href="/galleries" class="inline-flex items-center gap-1.5 mb-4 text-sm hover:opacity-80 text-text-secondary">
+            <ArrowLeft class="w-4 h-4" />
+            Back to Galleries
+        </Link>
 
-            <!-- Gallery Header -->
-            <div class="card p-5 mb-6">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <h1 class="page-title">{{ gallery.title }}</h1>
-                        <p v-if="gallery.description" class="text-sm mt-1 whitespace-pre-wrap text-text-secondary">
-                            {{ gallery.description }}
-                        </p>
-                        <div class="flex items-center gap-4 mt-3">
-                            <Link v-if="gallery.user" :href="`/channel/${gallery.user.username}`" class="flex items-center gap-2 hover:opacity-80">
-                                <div class="w-6 h-6 avatar">
-                                    <img :src="gallery.user.avatar || '/assets/default_avatar.webp'" :alt="gallery.user.avatar_alt || gallery.user.username" class="w-full h-full object-cover" />
-                                </div>
-                                <span class="text-sm text-text-secondary">{{ gallery.user.username }}</span>
-                            </Link>
-                            <span class="text-sm flex items-center gap-1 text-text-muted">
-                                <ImageIcon class="w-3.5 h-3.5" />
-                                {{ gallery.images_count || 0 }} images
-                            </span>
-                            <span class="text-sm flex items-center gap-1 text-text-muted">
-                                <Eye class="w-3.5 h-3.5" />
-                                {{ formatViews(gallery.views_count) }}
-                            </span>
-                            <span class="text-sm flex items-center gap-1 text-text-muted">
-                                <Calendar class="w-3.5 h-3.5" />
-                                {{ formatDate(gallery.created_at) }}
-                            </span>
-                        </div>
+        <!-- Gallery Header -->
+        <div class="card p-5 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 class="page-title">{{ gallery.title }}</h1>
+                    <p v-if="gallery.description" class="text-sm mt-1 whitespace-pre-wrap text-text-secondary">
+                        {{ gallery.description }}
+                    </p>
+                    <div class="flex items-center gap-4 mt-3">
+                        <Link v-if="gallery.user" :href="`/channel/${gallery.user.username}`" class="flex items-center gap-2 hover:opacity-80">
+                            <div class="w-6 h-6 avatar">
+                                <img :src="gallery.user.avatar || '/assets/default_avatar.webp'" :alt="gallery.user.avatar_alt || gallery.user.username" class="w-full h-full object-cover" />
+                            </div>
+                            <span class="text-sm text-text-secondary">{{ gallery.user.username }}</span>
+                        </Link>
+                        <span class="text-sm flex items-center gap-1 text-text-muted">
+                            <ImageIcon class="w-3.5 h-3.5" />
+                            {{ gallery.images_count || 0 }} images
+                        </span>
+                        <span class="text-sm flex items-center gap-1 text-text-muted">
+                            <Eye class="w-3.5 h-3.5" />
+                            {{ formatViews(gallery.views_count) }}
+                        </span>
+                        <span class="text-sm flex items-center gap-1 text-text-muted">
+                            <Calendar class="w-3.5 h-3.5" />
+                            {{ formatDate(gallery.created_at) }}
+                        </span>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <!-- View Mode Toggle -->
-                        <div class="flex items-center gap-1">
-                            <button
-                                @click="viewMode = 'grid'"
-                                class="chip"
-                                :class="{ 'chip-active': viewMode === 'grid' }"
-                            >
-                                Grid
-                            </button>
-                            <button
-                                @click="viewMode = 'masonry'"
-                                class="chip"
-                                :class="{ 'chip-active': viewMode === 'masonry' }"
-                            >
-                                Masonry
-                            </button>
-                        </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <!-- View Mode Toggle -->
+                    <div class="flex items-center gap-1">
                         <button
-                            v-if="canEdit"
-                            @click="deleteGallery"
-                            class="p-2 rounded-lg text-red-500 hover:opacity-80 bg-bg-secondary border border-border"
-                            title="Delete Gallery"
+                            @click="viewMode = 'grid'"
+                            class="chip"
+                            :class="{ 'chip-active': viewMode === 'grid' }"
                         >
-                            <Trash2 class="w-4 h-4" />
+                            Grid
+                        </button>
+                        <button
+                            @click="viewMode = 'masonry'"
+                            class="chip"
+                            :class="{ 'chip-active': viewMode === 'masonry' }"
+                        >
+                            Masonry
                         </button>
                     </div>
+                    <button
+                        v-if="canEdit"
+                        @click="deleteGallery"
+                        class="p-2 rounded-lg text-red-500 hover:opacity-80 bg-bg-secondary border border-border"
+                        title="Delete Gallery"
+                    >
+                        <Trash2 class="w-4 h-4" />
+                    </button>
                 </div>
-            </div>
-
-            <!-- Grid View -->
-            <div v-if="viewMode === 'grid' && images.data.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                <div
-                    v-for="(image, index) in images.data"
-                    :key="image.id"
-                    class="cursor-pointer group"
-                    @click="openLightbox(index)"
-                >
-                    <div class="relative rounded-xl overflow-hidden bg-bg-secondary">
-                        <div class="aspect-square">
-                            <img
-                                :src="image.thumbnail_url || image.image_url"
-                                :alt="image.alt || image.title || 'Image'"
-                                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                loading="lazy"
-                            />
-                        </div>
-                        <div v-if="image.is_animated" class="absolute top-2 start-2 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-600 text-white">
-                            GIF
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Masonry View -->
-            <MasonryGrid v-else-if="viewMode === 'masonry' && images.data.length" :columns="4" :gap="16">
-                <div
-                    v-for="(image, index) in images.data"
-                    :key="image.id"
-                    class="cursor-pointer group"
-                    @click="openLightbox(index)"
-                >
-                    <div class="rounded-xl overflow-hidden bg-bg-secondary">
-                        <img
-                            :src="image.thumbnail_url || image.image_url"
-                            :alt="image.alt || image.title || 'Image'"
-                            class="w-full h-auto transition-transform duration-300 group-hover:scale-105"
-                            loading="lazy"
-                        />
-                    </div>
-                </div>
-            </MasonryGrid>
-
-            <!-- Empty State -->
-            <div v-else class="text-center py-16">
-                <ImageIcon class="w-12 h-12 mx-auto mb-3 text-text-muted" />
-                <p class="text-lg text-text-secondary">This gallery is empty</p>
-            </div>
-
-            <!-- Pagination -->
-            <div v-if="images.links && images.links.length > 3" class="mt-8 flex justify-center gap-1.5">
-                <template v-for="link in images.links" :key="link.label">
-                    <Link
-                        v-if="link.url"
-                        :href="link.url"
-                        :class="['px-3 py-1.5 rounded-lg text-sm transition-colors']"
-                        :style="link.active
-                            ? 'background-color: var(--color-accent); color: #fff;'
-                            : 'background-color: var(--color-bg-secondary); color: var(--color-text-secondary); border: 1px solid var(--color-border);'"
-                        v-html="link.label"
-                        preserve-scroll
-                    />
-                    <span
-                        v-else
-                        class="px-3 py-1.5 rounded-lg text-sm text-text-muted"
-                        v-html="link.label"
-                    />
-                </template>
             </div>
         </div>
 
-        <!-- Lightbox -->
-        <Lightbox
-            v-model="showLightbox"
-            :images="images.data"
-            :start-index="lightboxIndex"
-        />
-    </AppLayout>
+        <!-- Grid View -->
+        <div v-if="viewMode === 'grid' && images.data.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div
+                v-for="(image, index) in images.data"
+                :key="image.id"
+                class="cursor-pointer group"
+                @click="openLightbox(index)"
+            >
+                <div class="relative rounded-xl overflow-hidden bg-bg-secondary">
+                    <div class="aspect-square">
+                        <img
+                            :src="image.thumbnail_url || image.image_url"
+                            :alt="image.alt || image.title || 'Image'"
+                            class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            loading="lazy"
+                        />
+                    </div>
+                    <div v-if="image.is_animated" class="absolute top-2 start-2 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-600 text-white">
+                        GIF
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Masonry View -->
+        <MasonryGrid v-else-if="viewMode === 'masonry' && images.data.length" :columns="4" :gap="16">
+            <div
+                v-for="(image, index) in images.data"
+                :key="image.id"
+                class="cursor-pointer group"
+                @click="openLightbox(index)"
+            >
+                <div class="rounded-xl overflow-hidden bg-bg-secondary">
+                    <img
+                        :src="image.thumbnail_url || image.image_url"
+                        :alt="image.alt || image.title || 'Image'"
+                        class="w-full h-auto transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                    />
+                </div>
+            </div>
+        </MasonryGrid>
+
+        <!-- Empty State -->
+        <div v-else class="text-center py-16">
+            <ImageIcon class="w-12 h-12 mx-auto mb-3 text-text-muted" />
+            <p class="text-lg text-text-secondary">This gallery is empty</p>
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="images.links && images.links.length > 3" class="mt-8 flex justify-center gap-1.5">
+            <template v-for="link in images.links" :key="link.label">
+                <Link
+                    v-if="link.url"
+                    :href="link.url"
+                    :class="['px-3 py-1.5 rounded-lg text-sm transition-colors']"
+                    :style="link.active
+                        ? 'background-color: var(--color-accent); color: #fff;'
+                        : 'background-color: var(--color-bg-secondary); color: var(--color-text-secondary); border: 1px solid var(--color-border);'"
+                    v-html="link.label"
+                    preserve-scroll
+                />
+                <span
+                    v-else
+                    class="px-3 py-1.5 rounded-lg text-sm text-text-muted"
+                    v-html="link.label"
+                />
+            </template>
+        </div>
+    </div>
+
+    <!-- Lightbox -->
+    <Lightbox
+        v-model="showLightbox"
+        :images="images.data"
+        :start-index="lightboxIndex"
+    />
 </template>

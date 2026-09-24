@@ -8,6 +8,8 @@ import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
 import VideoPrivacySelect from '@/Components/VideoPrivacySelect.vue';
 
+defineOptions({ layout: AppLayout });
+
 const { t } = useI18n();
 
 const props = defineProps({
@@ -149,318 +151,316 @@ const statusColors = {
 <template>
     <SeoHead :title="`Edit: ${video.title}`" />
 
-    <AppLayout>
-        <div class="max-w-4xl mx-auto">
-            <div class="flex items-center justify-between mb-6">
-                <h1 class="page-title">{{ t('video.edit_video') }}</h1>
-                <span :class="['px-3 py-1 rounded-full text-sm font-medium', statusColors[video.status]]">
-                    {{ video.status.charAt(0).toUpperCase() + video.status.slice(1) }}
-                </span>
-            </div>
+    <div class="max-w-4xl mx-auto">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="page-title">{{ t('video.edit_video') }}</h1>
+            <span :class="['px-3 py-1 rounded-full text-sm font-medium', statusColors[video.status]]">
+                {{ video.status.charAt(0).toUpperCase() + video.status.slice(1) }}
+            </span>
+        </div>
 
-            <form @submit.prevent="submit" class="space-y-6">
-                <!-- Processing Status Banner -->
-                <div v-if="videoStatus === 'pending' || videoStatus === 'processing'" class="card p-4">
-                    <div class="flex items-center gap-3">
-                        <Loader2 class="w-5 h-5 animate-spin text-accent-text" />
-                        <div class="flex-1">
-                            <p class="font-medium text-text-primary">
-                                {{ videoStatus === 'pending' ? 'Waiting to process...' : 'Processing video...' }}
-                            </p>
-                            <p class="text-sm mt-0.5 text-text-muted">
-                                Your video is being processed. Thumbnails will appear below when ready.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="mt-3 w-full rounded-full h-2 overflow-hidden bg-bg-secondary">
-                        <div
-                            class="h-full rounded-full transition-all duration-500"
-                            :class="videoStatus === 'processing' ? 'animate-pulse' : ''"
-                            :style="{
-                                width: videoStatus === 'processing' ? '60%' : '10%',
-                                backgroundColor: 'var(--color-accent)',
-                            }"
-                        ></div>
-                    </div>
-                </div>
-
-                <!-- Moderation Notice -->
-                <div v-if="requiresModeration && (videoStatus === 'pending' || videoStatus === 'processing')" class="card p-4">
-                    <div class="flex items-center gap-3">
-                        <ShieldCheck class="w-5 h-5 shrink-0 text-text-secondary" />
-                        <p class="text-sm text-text-secondary">
-                            Your video will be posted after moderation and approval.
+        <form @submit.prevent="submit" class="space-y-6">
+            <!-- Processing Status Banner -->
+            <div v-if="videoStatus === 'pending' || videoStatus === 'processing'" class="card p-4">
+                <div class="flex items-center gap-3">
+                    <Loader2 class="w-5 h-5 animate-spin text-accent-text" />
+                    <div class="flex-1">
+                        <p class="font-medium text-text-primary">
+                            {{ videoStatus === 'pending' ? 'Waiting to process...' : 'Processing video...' }}
+                        </p>
+                        <p class="text-sm mt-0.5 text-text-muted">
+                            Your video is being processed. Thumbnails will appear below when ready.
                         </p>
                     </div>
                 </div>
+                <div class="mt-3 w-full rounded-full h-2 overflow-hidden bg-bg-secondary">
+                    <div
+                        class="h-full rounded-full transition-all duration-500"
+                        :class="videoStatus === 'processing' ? 'animate-pulse' : ''"
+                        :style="{
+                            width: videoStatus === 'processing' ? '60%' : '10%',
+                            backgroundColor: 'var(--color-accent)',
+                        }"
+                    ></div>
+                </div>
+            </div>
 
-                <!-- Video Preview -->
-                <div class="card p-4">
-                    <div class="flex flex-col sm:flex-row items-start gap-4">
-                        <div class="w-full sm:w-64 aspect-video rounded-lg overflow-hidden shrink-0 bg-bg-secondary">
-                            <img 
-                                v-if="thumbnailPreview" 
-                                :src="thumbnailPreview" 
-                                :alt="video.title"
-                                class="w-full h-full object-cover"
-                            />
-                            <video
-                                v-else-if="video.video_url"
-                                :src="video.video_url"
-                                class="w-full h-full object-cover"
-                                preload="metadata"
-                                muted
-                            ></video>
-                            <div v-else class="w-full h-full flex items-center justify-center text-text-muted">
-                                No thumbnail
-                            </div>
-                        </div>
-                        <div class="flex-1 w-full">
-                            <p class="font-medium text-lg text-text-primary">{{ video.title }}</p>
-                            <p class="text-sm mt-1 text-text-muted">
-                                {{ video.views_count.toLocaleString() }} views
-                            </p>
-                            <p class="text-sm text-text-muted">
-                                Uploaded {{ new Date(video.created_at).toLocaleDateString() }}
-                            </p>
-                            <span :class="['mt-2 inline-block px-3 py-1 rounded-full text-xs font-medium', statusColors[videoStatus]]">
-                                {{ videoStatus.charAt(0).toUpperCase() + videoStatus.slice(1) }}
-                            </span>
+            <!-- Moderation Notice -->
+            <div v-if="requiresModeration && (videoStatus === 'pending' || videoStatus === 'processing')" class="card p-4">
+                <div class="flex items-center gap-3">
+                    <ShieldCheck class="w-5 h-5 shrink-0 text-text-secondary" />
+                    <p class="text-sm text-text-secondary">
+                        Your video will be posted after moderation and approval.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Video Preview -->
+            <div class="card p-4">
+                <div class="flex flex-col sm:flex-row items-start gap-4">
+                    <div class="w-full sm:w-64 aspect-video rounded-lg overflow-hidden shrink-0 bg-bg-secondary">
+                        <img 
+                            v-if="thumbnailPreview" 
+                            :src="thumbnailPreview" 
+                            :alt="video.title"
+                            class="w-full h-full object-cover"
+                        />
+                        <video
+                            v-else-if="video.video_url"
+                            :src="video.video_url"
+                            class="w-full h-full object-cover"
+                            preload="metadata"
+                            muted
+                        ></video>
+                        <div v-else class="w-full h-full flex items-center justify-center text-text-muted">
+                            No thumbnail
                         </div>
                     </div>
+                    <div class="flex-1 w-full">
+                        <p class="font-medium text-lg text-text-primary">{{ video.title }}</p>
+                        <p class="text-sm mt-1 text-text-muted">
+                            {{ video.views_count.toLocaleString() }} views
+                        </p>
+                        <p class="text-sm text-text-muted">
+                            Uploaded {{ new Date(video.created_at).toLocaleDateString() }}
+                        </p>
+                        <span :class="['mt-2 inline-block px-3 py-1 rounded-full text-xs font-medium', statusColors[videoStatus]]">
+                            {{ videoStatus.charAt(0).toUpperCase() + videoStatus.slice(1) }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thumbnail Selection -->
+            <div class="card p-6">
+                <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('video.thumbnail') }}</h2>
+                    
+                <!-- Generated Thumbnails -->
+                <div v-if="generatedThumbnails.length" class="mb-6">
+                    <p class="text-sm mb-2 text-text-secondary">Choose from generated thumbnails:</p>
+                    <div class="grid grid-cols-2 gap-3" style="max-width: 32rem;">
+                        <button
+                            v-for="(thumb, index) in generatedThumbnails.slice(0, 4)"
+                            :key="index"
+                            type="button"
+                            @click="selectThumbnail(index)"
+                            :disabled="selectingThumb"
+                            class="relative aspect-video rounded-lg overflow-hidden border-2 transition-all hover:opacity-90"
+                            :style="{
+                                borderColor: selectedThumbIndex === index ? 'var(--color-accent)' : 'var(--color-border)',
+                            }"
+                        >
+                            <img :src="thumb" :alt="`Thumbnail option ${index + 1}`" class="w-full h-full object-cover" />
+                            <div
+                                v-if="selectedThumbIndex === index"
+                                class="absolute inset-0 flex items-center justify-center"
+                                style="background-color: rgba(0,0,0,0.4);"
+                            >
+                                <CheckCircle class="w-6 h-6 text-white" />
+                            </div>
+                        </button>
+                    </div>
+                </div>
+                <div v-else-if="videoStatus === 'pending' || videoStatus === 'processing'" class="mb-6">
+                    <p class="text-sm text-text-muted">
+                        Thumbnails will be generated once processing completes...
+                    </p>
                 </div>
 
-                <!-- Thumbnail Selection -->
-                <div class="card p-6">
-                    <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('video.thumbnail') }}</h2>
+                <!-- Custom Upload -->
+                <div class="pt-4 border-t border-border">
+                    <p class="text-sm mb-3 text-text-secondary">Or upload your own image:</p>
+                    <label class="flex items-center gap-4 cursor-pointer group">
+                        <div class="w-32 aspect-video rounded-lg overflow-hidden shrink-0 group-hover:opacity-80 transition-opacity bg-bg-secondary">
+                            <img 
+                                v-if="customThumbnailPreview" 
+                                :src="customThumbnailPreview" 
+                                alt="Preview of the thumbnail you selected"
+                                class="w-full h-full object-cover"
+                            />
+                            <div v-else class="w-full h-full flex items-center justify-center">
+                                <Image class="w-6 h-6 text-text-muted" />
+                            </div>
+                        </div>
+                        <div>
+                            <span class="btn btn-secondary text-sm">{{ t('video.upload_thumbnail') }}</span>
+                            <p class="text-xs mt-1 text-text-muted">JPG, PNG or WebP, max 5MB</p>
+                        </div>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            class="hidden"
+                            @change="handleThumbnailSelect"
+                        />
+                    </label>
+                </div>
+                <p v-if="form.errors.thumbnail" class="text-red-500 text-sm mt-2">{{ form.errors.thumbnail }}</p>
+            </div>
+
+            <!-- Video Details -->
+            <div class="card p-6 space-y-4">
+                <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('video.video_details') }}</h2>
                     
-                    <!-- Generated Thumbnails -->
-                    <div v-if="generatedThumbnails.length" class="mb-6">
-                        <p class="text-sm mb-2 text-text-secondary">Choose from generated thumbnails:</p>
-                        <div class="grid grid-cols-2 gap-3" style="max-width: 32rem;">
+                <div>
+                    <label for="title" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('upload.video_title') }}</label>
+                    <input
+                        id="title"
+                        v-model="form.title"
+                        type="text"
+                        class="input"
+                        maxlength="200"
+                        required
+                    />
+                    <p v-if="form.errors.title" class="text-red-500 text-sm mt-1">{{ form.errors.title }}</p>
+                </div>
+
+                <div>
+                    <label for="description" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('upload.video_description') }}</label>
+                    <textarea
+                        id="description"
+                        v-model="form.description"
+                        rows="4"
+                        class="input resize-none"
+                        maxlength="5000"
+                    ></textarea>
+                </div>
+
+                <div>
+                    <label for="category" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('video.category') }}</label>
+                    <select id="category" v-model="form.category_id" class="input">
+                        <option value="">Select category</option>
+                        <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                            {{ cat.name }}
+                        </option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('video.tags') }}</label>
+                    <div class="flex flex-wrap gap-2 mb-2">
+                        <span
+                            v-for="(tag, index) in form.tags"
+                            :key="index"
+                            class="flex items-center gap-1 px-2 py-1 rounded text-sm bg-bg-secondary text-text-secondary"
+                        >
+                            #{{ tag }}
+                            <button type="button" @click="removeTag(index)" class="hover:text-red-400">
+                                <X class="w-3 h-3" />
+                            </button>
+                        </span>
+                    </div>
+                    <div class="relative">
+                        <input
+                            v-model="tagInput"
+                            type="text"
+                            class="input"
+                            placeholder="Search existing tags"
+                            @keydown.enter.prevent="addTag(filteredTags[0] ?? tagInput)"
+                            @focus="showTagSuggestions = true"
+                            @blur="setTimeout(() => showTagSuggestions = false, 200)"
+                            autocomplete="off"
+                        />
+                        <div v-if="showTagSuggestions && filteredTags.length" class="absolute z-50 w-full mt-1 rounded-lg shadow-xl overflow-hidden max-h-48 overflow-y-auto bg-bg-card border border-border">
                             <button
-                                v-for="(thumb, index) in generatedThumbnails.slice(0, 4)"
-                                :key="index"
+                                v-for="suggestion in filteredTags"
+                                :key="suggestion"
                                 type="button"
-                                @click="selectThumbnail(index)"
-                                :disabled="selectingThumb"
-                                class="relative aspect-video rounded-lg overflow-hidden border-2 transition-all hover:opacity-90"
-                                :style="{
-                                    borderColor: selectedThumbIndex === index ? 'var(--color-accent)' : 'var(--color-border)',
-                                }"
+                                class="w-full text-start px-3 py-2 text-sm hover:opacity-80 transition-opacity text-text-primary"
+                                @mousedown.prevent="addTag(suggestion)"
                             >
-                                <img :src="thumb" :alt="`Thumbnail option ${index + 1}`" class="w-full h-full object-cover" />
-                                <div
-                                    v-if="selectedThumbIndex === index"
-                                    class="absolute inset-0 flex items-center justify-center"
-                                    style="background-color: rgba(0,0,0,0.4);"
-                                >
-                                    <CheckCircle class="w-6 h-6 text-white" />
-                                </div>
+                                #{{ suggestion }}
                             </button>
                         </div>
                     </div>
-                    <div v-else-if="videoStatus === 'pending' || videoStatus === 'processing'" class="mb-6">
-                        <p class="text-sm text-text-muted">
-                            Thumbnails will be generated once processing completes...
-                        </p>
-                    </div>
+                    <p v-if="tagNotice" class="text-xs text-accent-text mt-1">{{ tagNotice }}</p>
+                </div>
+            </div>
 
-                    <!-- Custom Upload -->
-                    <div class="pt-4 border-t border-border">
-                        <p class="text-sm mb-3 text-text-secondary">Or upload your own image:</p>
-                        <label class="flex items-center gap-4 cursor-pointer group">
-                            <div class="w-32 aspect-video rounded-lg overflow-hidden shrink-0 group-hover:opacity-80 transition-opacity bg-bg-secondary">
-                                <img 
-                                    v-if="customThumbnailPreview" 
-                                    :src="customThumbnailPreview" 
-                                    alt="Preview of the thumbnail you selected"
-                                    class="w-full h-full object-cover"
-                                />
-                                <div v-else class="w-full h-full flex items-center justify-center">
-                                    <Image class="w-6 h-6 text-text-muted" />
-                                </div>
-                            </div>
-                            <div>
-                                <span class="btn btn-secondary text-sm">{{ t('video.upload_thumbnail') }}</span>
-                                <p class="text-xs mt-1 text-text-muted">JPG, PNG or WebP, max 5MB</p>
-                            </div>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                class="hidden"
-                                @change="handleThumbnailSelect"
-                            />
-                        </label>
-                    </div>
-                    <p v-if="form.errors.thumbnail" class="text-red-500 text-sm mt-2">{{ form.errors.thumbnail }}</p>
+            <!-- Publishing: who can see it, and when -->
+            <div v-if="privacyOptions.length > 1 || video.is_draft" class="card p-6 space-y-4">
+                <h2 class="text-lg font-semibold text-text-primary">{{ t('video.publishing') }}</h2>
+
+                <div
+                    v-if="video.is_draft"
+                    class="flex items-start gap-3 p-3 rounded-lg bg-bg-secondary"
+                >
+                    <FileClock class="w-5 h-5 mt-0.5 flex-shrink-0 text-text-secondary" aria-hidden="true" />
+                    <p class="text-sm text-text-secondary">{{ t('video.draft_notice') }}</p>
                 </div>
 
-                <!-- Video Details -->
-                <div class="card p-6 space-y-4">
-                    <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('video.video_details') }}</h2>
+                <VideoPrivacySelect
+                    v-if="privacyOptions.length > 1"
+                    v-model="form.privacy"
+                    :options="privacyOptions"
+                    :error="form.errors.privacy || ''"
+                />
+            </div>
+
+            <!-- Monetization -->
+            <div v-if="page.props.app?.monetization_enabled !== false" class="card p-6 space-y-4">
+                <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('video.monetization') }}</h2>
                     
-                    <div>
-                        <label for="title" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('upload.video_title') }}</label>
-                        <input
-                            id="title"
-                            v-model="form.title"
-                            type="text"
-                            class="input"
-                            maxlength="200"
-                            required
-                        />
-                        <p v-if="form.errors.title" class="text-red-500 text-sm mt-1">{{ form.errors.title }}</p>
-                    </div>
-
-                    <div>
-                        <label for="description" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('upload.video_description') }}</label>
-                        <textarea
-                            id="description"
-                            v-model="form.description"
-                            rows="4"
-                            class="input resize-none"
-                            maxlength="5000"
-                        ></textarea>
-                    </div>
-
-                    <div>
-                        <label for="category" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('video.category') }}</label>
-                        <select id="category" v-model="form.category_id" class="input">
-                            <option value="">Select category</option>
-                            <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                                {{ cat.name }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('video.tags') }}</label>
-                        <div class="flex flex-wrap gap-2 mb-2">
-                            <span
-                                v-for="(tag, index) in form.tags"
-                                :key="index"
-                                class="flex items-center gap-1 px-2 py-1 rounded text-sm bg-bg-secondary text-text-secondary"
-                            >
-                                #{{ tag }}
-                                <button type="button" @click="removeTag(index)" class="hover:text-red-400">
-                                    <X class="w-3 h-3" />
-                                </button>
-                            </span>
-                        </div>
-                        <div class="relative">
-                            <input
-                                v-model="tagInput"
-                                type="text"
-                                class="input"
-                                placeholder="Search existing tags"
-                                @keydown.enter.prevent="addTag(filteredTags[0] ?? tagInput)"
-                                @focus="showTagSuggestions = true"
-                                @blur="setTimeout(() => showTagSuggestions = false, 200)"
-                                autocomplete="off"
-                            />
-                            <div v-if="showTagSuggestions && filteredTags.length" class="absolute z-50 w-full mt-1 rounded-lg shadow-xl overflow-hidden max-h-48 overflow-y-auto bg-bg-card border border-border">
-                                <button
-                                    v-for="suggestion in filteredTags"
-                                    :key="suggestion"
-                                    type="button"
-                                    class="w-full text-start px-3 py-2 text-sm hover:opacity-80 transition-opacity text-text-primary"
-                                    @mousedown.prevent="addTag(suggestion)"
-                                >
-                                    #{{ suggestion }}
-                                </button>
-                            </div>
-                        </div>
-                        <p v-if="tagNotice" class="text-xs text-accent-text mt-1">{{ tagNotice }}</p>
-                    </div>
-                </div>
-
-                <!-- Publishing: who can see it, and when -->
-                <div v-if="privacyOptions.length > 1 || video.is_draft" class="card p-6 space-y-4">
-                    <h2 class="text-lg font-semibold text-text-primary">{{ t('video.publishing') }}</h2>
-
-                    <div
-                        v-if="video.is_draft"
-                        class="flex items-start gap-3 p-3 rounded-lg bg-bg-secondary"
-                    >
-                        <FileClock class="w-5 h-5 mt-0.5 flex-shrink-0 text-text-secondary" aria-hidden="true" />
-                        <p class="text-sm text-text-secondary">{{ t('video.draft_notice') }}</p>
-                    </div>
-
-                    <VideoPrivacySelect
-                        v-if="privacyOptions.length > 1"
-                        v-model="form.privacy"
-                        :options="privacyOptions"
-                        :error="form.errors.privacy || ''"
+                <div class="flex items-center gap-3">
+                    <input
+                        id="monetization"
+                        v-model="form.monetization_enabled"
+                        type="checkbox"
+                        class="w-4 h-4 rounded bg-dark-700 border-dark-600"
                     />
+                    <label for="monetization" class="text-text-secondary">Enable monetization for this video</label>
                 </div>
 
-                <!-- Monetization -->
-                <div v-if="page.props.app?.monetization_enabled !== false" class="card p-6 space-y-4">
-                    <h2 class="text-lg font-semibold mb-4 text-text-primary">{{ t('video.monetization') }}</h2>
-                    
-                    <div class="flex items-center gap-3">
+                <div v-if="form.monetization_enabled" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="price" class="block text-sm font-medium mb-1 text-text-secondary">Purchase Price ($)</label>
                         <input
-                            id="monetization"
-                            v-model="form.monetization_enabled"
-                            type="checkbox"
-                            class="w-4 h-4 rounded bg-dark-700 border-dark-600"
+                            id="price"
+                            v-model="form.price"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max="1000"
+                            class="input"
+                            placeholder="0.00"
                         />
-                        <label for="monetization" class="text-text-secondary">Enable monetization for this video</label>
                     </div>
 
-                    <div v-if="form.monetization_enabled" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="price" class="block text-sm font-medium mb-1 text-text-secondary">Purchase Price ($)</label>
-                            <input
-                                id="price"
-                                v-model="form.price"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                max="1000"
-                                class="input"
-                                placeholder="0.00"
-                            />
-                        </div>
-
-                        <div>
-                            <label for="rent_price" class="block text-sm font-medium mb-1 text-text-secondary">Rent Price ($)</label>
-                            <input
-                                id="rent_price"
-                                v-model="form.rent_price"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                max="100"
-                                class="input"
-                                placeholder="0.00"
-                            />
-                        </div>
+                    <div>
+                        <label for="rent_price" class="block text-sm font-medium mb-1 text-text-secondary">Rent Price ($)</label>
+                        <input
+                            id="rent_price"
+                            v-model="form.rent_price"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max="100"
+                            class="input"
+                            placeholder="0.00"
+                        />
                     </div>
                 </div>
+            </div>
 
-                <div class="flex justify-between">
-                    <button
-                        type="button"
-                        @click="deleteVideo"
-                        class="btn bg-red-600 hover:bg-red-700 text-white"
-                    >
-                        <Trash2 class="w-4 h-4 me-2" />
-                        {{ t('video.delete_video') }}
-                    </button>
+            <div class="flex justify-between">
+                <button
+                    type="button"
+                    @click="deleteVideo"
+                    class="btn bg-red-600 hover:bg-red-700 text-white"
+                >
+                    <Trash2 class="w-4 h-4 me-2" />
+                    {{ t('video.delete_video') }}
+                </button>
                     
-                    <button
-                        type="submit"
-                        :disabled="form.processing"
-                        class="btn btn-primary"
-                    >
-                        <Save class="w-4 h-4 me-2" />
-                        <span v-if="form.processing">{{ t('common.loading') }}</span>
-                        <span v-else>{{ t('settings.save_changes') }}</span>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </AppLayout>
+                <button
+                    type="submit"
+                    :disabled="form.processing"
+                    class="btn btn-primary"
+                >
+                    <Save class="w-4 h-4 me-2" />
+                    <span v-if="form.processing">{{ t('common.loading') }}</span>
+                    <span v-else>{{ t('settings.save_changes') }}</span>
+                </button>
+            </div>
+        </form>
+    </div>
 </template>

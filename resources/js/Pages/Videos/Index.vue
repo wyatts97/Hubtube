@@ -3,6 +3,7 @@ import { Link, router } from '@inertiajs/vue3';
 import { ref, watch, computed, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
+import { cardPriority } from '@/Composables/useOptimizedImage';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import FilterRail from '@/Components/UI/FilterRail.vue';
 import EmptyState from '@/Components/UI/EmptyState.vue';
@@ -13,6 +14,8 @@ import { useI18n } from '@/Composables/useI18n';
 import { useVideoGrid } from '@/Composables/useVideoGrid';
 import SeoHead from '@/Components/SeoHead.vue';
 import { useGridAds } from '@/Composables/useGridAds';
+
+defineOptions({ layout: AppLayout });
 
 const { t } = useI18n();
 
@@ -98,59 +101,57 @@ const { getSponsoredCard, getOutstreamAd, sponsoredCellClass } = useGridAds(prop
 <template>
     <SeoHead />
 
-    <AppLayout>
-        <!-- Top Ad Banner -->
-        <BannerAd :config="bannerAd" placement="browse_banner" />
+    <!-- Top Ad Banner -->
+    <BannerAd :config="bannerAd" placement="browse_banner" />
 
-        <div class="mb-4">
-            <div class="flex items-baseline justify-between gap-3 mb-3">
-                <h1 class="page-title">{{ t('common.browse_videos') }}</h1>
-                <span class="text-xs tabular-nums text-text-muted">
-                    {{ videos.total?.toLocaleString?.() ?? videos.data.length }}
-                </span>
-            </div>
-
-            <FilterRail
-                :model-value="activeFilters"
-                :categories="categories || []"
-                @update:model-value="applyFilters"
-            />
+    <div class="mb-4">
+        <div class="flex items-baseline justify-between gap-3 mb-3">
+            <h1 class="page-title">{{ t('common.browse_videos') }}</h1>
+            <span class="text-xs tabular-nums text-text-muted">
+                {{ videos.total?.toLocaleString?.() ?? videos.data.length }}
+            </span>
         </div>
 
-        <div v-if="videos.data.length" :class="gridClass">
-            <template v-for="(video, index) in videos.data" :key="video.id">
-                <VideoCard :video="withTranslation(video)" />
-                <SponsoredVideoCard
-                    v-if="getSponsoredCard(index)"
-                    :card="getSponsoredCard(index)"
-                    :class="sponsoredCellClass(getSponsoredCard(index))"
-                />
-                <OutstreamAd
-                    v-if="getOutstreamAd(index)"
-                    :ad="getOutstreamAd(index)"
-                />
-            </template>
-        </div>
-
-        <EmptyState
-            v-else
-            :title="hasActiveFilters ? t('filters.no_results_title') : t('common.no_videos_found')"
-            :description="hasActiveFilters ? t('filters.no_results_body') : t('common.try_different')"
+        <FilterRail
+            :model-value="activeFilters"
+            :categories="categories || []"
+            @update:model-value="applyFilters"
         />
+    </div>
 
-        <!-- Pagination -->
-        <div v-if="videos.links && videos.links.length > 3" class="mt-8 flex justify-center gap-1.5">
-            <template v-for="link in videos.links" :key="link.label">
-                <Link
-                    v-if="link.url"
-                    :href="link.url"
-                    class="chip"
-                    :class="{ 'chip-active': link.active }"
-                    v-html="link.label"
-                    preserve-scroll
-                />
-                <span v-else class="chip opacity-50" v-html="link.label" />
-            </template>
-        </div>
-    </AppLayout>
+    <div v-if="videos.data.length" :class="gridClass">
+        <template v-for="(video, index) in videos.data" :key="video.id">
+            <VideoCard :video="withTranslation(video)" :priority="cardPriority(index)" />
+            <SponsoredVideoCard
+                v-if="getSponsoredCard(index)"
+                :card="getSponsoredCard(index)"
+                :class="sponsoredCellClass(getSponsoredCard(index))"
+            />
+            <OutstreamAd
+                v-if="getOutstreamAd(index)"
+                :ad="getOutstreamAd(index)"
+            />
+        </template>
+    </div>
+
+    <EmptyState
+        v-else
+        :title="hasActiveFilters ? t('filters.no_results_title') : t('common.no_videos_found')"
+        :description="hasActiveFilters ? t('filters.no_results_body') : t('common.try_different')"
+    />
+
+    <!-- Pagination -->
+    <div v-if="videos.links && videos.links.length > 3" class="mt-8 flex justify-center gap-1.5">
+        <template v-for="link in videos.links" :key="link.label">
+            <Link
+                v-if="link.url"
+                :href="link.url"
+                class="chip"
+                :class="{ 'chip-active': link.active }"
+                v-html="link.label"
+                preserve-scroll
+            />
+            <span v-else class="chip opacity-50" v-html="link.label" />
+        </template>
+    </div>
 </template>

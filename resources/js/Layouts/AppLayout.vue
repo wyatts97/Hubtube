@@ -58,8 +58,13 @@ watch(flash, (next) => {
     if (next.info) toast.info(next.info);
 }, { immediate: true, deep: true });
 
-// Stale autocomplete results must not survive a navigation.
-watch(() => page.url, () => headerRef.value?.clearSuggestions?.());
+// The layout persists across pages, so nothing transient may survive a
+// navigation: stale autocomplete results or an open overlay.
+watch(() => page.url, () => {
+    headerRef.value?.clearSuggestions?.();
+    showMobileSearch.value = false;
+    showLogin.value = false;
+});
 </script>
 
 <template>

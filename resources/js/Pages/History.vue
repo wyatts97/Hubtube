@@ -1,9 +1,7 @@
 <script setup>
 import { Link, router } from '@inertiajs/vue3';
-import { ref, onMounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
-import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
 import { History, Trash2 } from 'lucide-vue-next';
 import { useFetch } from '@/Composables/useFetch';
 import { useI18n } from '@/Composables/useI18n';
@@ -11,6 +9,8 @@ import { useToast } from '@/Composables/useToast';
 import SeoHead from '@/Components/SeoHead.vue';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { useGridAds } from '@/Composables/useGridAds';
+
+defineOptions({ layout: AppLayout });
 
 const { t } = useI18n();
 const toast = useToast();
@@ -23,8 +23,6 @@ const props = defineProps({
 
 const { getSponsoredCard, sponsoredCellClass } = useGridAds(props);
 
-const isInitialLoad = ref(true);
-onMounted(() => { setTimeout(() => { isInitialLoad.value = false; }, 100); });
 
 const { del } = useFetch();
 
@@ -43,52 +41,45 @@ const clearHistory = async () => {
 <template>
     <SeoHead :title="t('history.title')" />
 
-    <AppLayout>
-        <div class="flex items-center justify-between mb-6">
-            <div>
-                <h1 class="page-title">{{ t('history.title') }}</h1>
-                <p class="mt-1 text-text-secondary">{{ t('history.description') }}</p>
-            </div>
-            <button v-if="videos?.data?.length" @click="clearHistory" class="btn btn-ghost text-red-400 gap-2">
-                <Trash2 class="w-4 h-4" />
-                {{ t('history.clear') }}
-            </button>
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="page-title">{{ t('history.title') }}</h1>
+            <p class="mt-1 text-text-secondary">{{ t('history.description') }}</p>
         </div>
+        <button v-if="videos?.data?.length" @click="clearHistory" class="btn btn-ghost text-red-400 gap-2">
+            <Trash2 class="w-4 h-4" />
+            {{ t('history.clear') }}
+        </button>
+    </div>
 
-        <!-- Skeleton Loading -->
-        <div v-if="isInitialLoad" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <VideoCardSkeleton v-for="i in 8" :key="'skeleton-' + i" />
-        </div>
+    <div v-if="videos?.data?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <template v-for="(video, index) in videos.data" :key="video.id">
+            <VideoCard :video="video" />
+            <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" :class="sponsoredCellClass(getSponsoredCard(index))" />
+        </template>
+    </div>
 
-        <div v-else-if="videos?.data?.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <template v-for="(video, index) in videos.data" :key="video.id">
-                <VideoCard :video="video" />
-                <SponsoredVideoCard v-if="getSponsoredCard(index)" :card="getSponsoredCard(index)" :class="sponsoredCellClass(getSponsoredCard(index))" />
-            </template>
-        </div>
+    <div v-else class="text-center py-12">
+        <History class="w-16 h-16 mx-auto mb-4 text-text-muted" />
+        <p class="text-lg text-text-secondary">{{ t('history.empty') }}</p>
+        <p class="mt-2 text-text-muted">{{ t('history.empty_desc') }}</p>
+        <Link href="/" class="btn btn-primary mt-4">
+            {{ t('common.browse_videos') }}
+        </Link>
+    </div>
 
-        <div v-else class="text-center py-12">
-            <History class="w-16 h-16 mx-auto mb-4 text-text-muted" />
-            <p class="text-lg text-text-secondary">{{ t('history.empty') }}</p>
-            <p class="mt-2 text-text-muted">{{ t('history.empty_desc') }}</p>
-            <Link href="/" class="btn btn-primary mt-4">
-                {{ t('common.browse_videos') }}
-            </Link>
-        </div>
-
-        <!-- Pagination -->
-        <div v-if="videos?.links?.length > 3" class="mt-8 flex justify-center gap-2">
-            <template v-for="link in videos.links" :key="link.label">
-                <a
-                    v-if="link.url"
-                    :href="link.url"
-                    class="px-4 py-2 rounded-lg text-sm"
-                    :style="link.active 
-                        ? { backgroundColor: 'var(--color-accent)', color: 'white' } 
-                        : { backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }"
-                    v-html="link.label"
-                />
-            </template>
-        </div>
-    </AppLayout>
+    <!-- Pagination -->
+    <div v-if="videos?.links?.length > 3" class="mt-8 flex justify-center gap-2">
+        <template v-for="link in videos.links" :key="link.label">
+            <a
+                v-if="link.url"
+                :href="link.url"
+                class="px-4 py-2 rounded-lg text-sm"
+                :style="link.active 
+                    ? { backgroundColor: 'var(--color-accent)', color: 'white' } 
+                    : { backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }"
+                v-html="link.label"
+            />
+        </template>
+    </div>
 </template>

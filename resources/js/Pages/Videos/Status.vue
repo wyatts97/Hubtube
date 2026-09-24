@@ -8,6 +8,8 @@ import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
 import VideoPrivacySelect from '@/Components/VideoPrivacySelect.vue';
 
+defineOptions({ layout: AppLayout });
+
 const { t } = useI18n();
 
 const props = defineProps({
@@ -140,143 +142,141 @@ const scheduledFor = computed(() => {
 <template>
     <SeoHead :title="`Video Status: ${video.title}`" />
 
-    <AppLayout>
-        <div class="max-w-2xl mx-auto">
-            <h1 class="text-2xl font-bold mb-6 text-text-primary">{{ t('video.video_status') }}</h1>
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6 text-text-primary">{{ t('video.video_status') }}</h1>
 
-            <!-- Video Info Card -->
-            <div class="card p-4 mb-6">
-                <div class="flex items-start gap-4">
-                    <div class="w-48 aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-bg-secondary">
-                        <img
-                            v-if="thumbnailUrl"
-                            :src="thumbnailUrl"
-                            :alt="video.title"
-                            class="w-full h-full object-cover"
-                        />
-                        <div v-else class="w-full h-full flex items-center justify-center text-text-muted">
-                            <Loader2 v-if="videoStatus === 'pending' || videoStatus === 'processing'" class="w-8 h-8 animate-spin" />
-                            <span v-else class="text-sm">No thumbnail</span>
-                        </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <h2 class="font-semibold text-lg truncate text-text-primary">{{ video.title }}</h2>
-                        <p v-if="video.description" class="text-sm mt-1 line-clamp-2 text-text-muted">{{ video.description }}</p>
-                        <p class="text-sm mt-2 text-text-muted">
-                            Uploaded {{ new Date(video.created_at).toLocaleDateString() }}
-                        </p>
+        <!-- Video Info Card -->
+        <div class="card p-4 mb-6">
+            <div class="flex items-start gap-4">
+                <div class="w-48 aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-bg-secondary">
+                    <img
+                        v-if="thumbnailUrl"
+                        :src="thumbnailUrl"
+                        :alt="video.title"
+                        class="w-full h-full object-cover"
+                    />
+                    <div v-else class="w-full h-full flex items-center justify-center text-text-muted">
+                        <Loader2 v-if="videoStatus === 'pending' || videoStatus === 'processing'" class="w-8 h-8 animate-spin" />
+                        <span v-else class="text-sm">No thumbnail</span>
                     </div>
                 </div>
-            </div>
-
-            <!-- Status Card -->
-            <div class="card p-6 mb-6">
-                <div class="flex items-start gap-4">
-                    <div
-                        class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
-                        :style="{ backgroundColor: statusConfig.bgColor }"
-                    >
-                        <component
-                            :is="statusConfig.icon"
-                            class="w-6 h-6"
-                            :class="{ 'animate-spin': statusConfig.animate }"
-                            :style="{ color: statusConfig.color }"
-                        />
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="font-semibold text-lg" :style="{ color: statusConfig.color }">
-                            {{ statusConfig.title }}
-                        </h3>
-                        <p class="mt-1 text-text-secondary">
-                            {{ statusConfig.description }}
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Progress bar for pending/processing -->
-                <div v-if="videoStatus === 'pending' || videoStatus === 'processing'" class="mt-4">
-                    <div class="w-full rounded-full h-2 overflow-hidden bg-bg-secondary">
-                        <div
-                            class="h-full rounded-full transition-all duration-500"
-                            :class="videoStatus === 'processing' ? 'animate-pulse' : ''"
-                            :style="{
-                                width: videoStatus === 'processing' ? '60%' : '10%',
-                                backgroundColor: statusConfig.color,
-                            }"
-                        ></div>
-                    </div>
-                    <p class="text-xs mt-2 text-text-muted">
-                        This page updates automatically. You can safely leave and come back later.
+                <div class="flex-1 min-w-0">
+                    <h2 class="font-semibold text-lg truncate text-text-primary">{{ video.title }}</h2>
+                    <p v-if="video.description" class="text-sm mt-1 line-clamp-2 text-text-muted">{{ video.description }}</p>
+                    <p class="text-sm mt-2 text-text-muted">
+                        Uploaded {{ new Date(video.created_at).toLocaleDateString() }}
                     </p>
                 </div>
-            </div>
-
-            <!-- Moderation Notice -->
-            <div v-if="videoStatus === 'processed' && !video.is_approved && !video.is_draft" class="card p-4 mb-6">
-                <div class="flex items-center gap-3">
-                    <ShieldCheck class="w-5 h-5 flex-shrink-0 text-text-secondary" />
-                    <p class="text-sm text-text-secondary">
-                        Your video will be visible to others after it has been reviewed and approved by a moderator. This usually happens within 24 hours.
-                    </p>
-                </div>
-            </div>
-
-            <!-- Published Notice -->
-            <div v-if="isPublished" class="card p-4 mb-6" style="border: 1px solid rgba(34, 197, 94, 0.3);">
-                <div class="flex items-center gap-3">
-                    <CheckCircle class="w-5 h-5 flex-shrink-0 text-green-500" />
-                    <div class="flex-1">
-                        <p class="text-sm font-medium text-green-500">Your video is live!</p>
-                        <a
-                            :href="`/${video.slug}`"
-                            class="text-sm mt-0.5 inline-flex items-center gap-1 hover:opacity-80 text-accent-text"
-                        >
-                            <Eye class="w-3.5 h-3.5" />
-                            View your video
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Privacy -->
-            <form v-if="privacyOptions.length > 1" class="card p-4 mb-6" @submit.prevent="savePrivacy">
-                <VideoPrivacySelect
-                    v-model="privacyForm.privacy"
-                    :options="privacyOptions"
-                    :error="privacyForm.errors.privacy || ''"
-                    :disabled="privacyForm.processing"
-                />
-                <div class="flex justify-end mt-3">
-                    <button
-                        type="submit"
-                        class="btn btn-primary"
-                        :disabled="privacyForm.processing || !privacyForm.isDirty"
-                    >
-                        {{ t('video.privacy_save') }}
-                    </button>
-                </div>
-            </form>
-
-            <!-- Actions -->
-            <div class="flex items-center justify-between">
-                <button
-                    @click="deleteVideo"
-                    class="btn bg-red-600 hover:bg-red-700 text-white"
-                >
-                    <Trash2 class="w-4 h-4 me-2" />
-                    {{ t('video.delete_video') }}
-                </button>
-
-                <!-- If user gets upgraded to pro/admin later, show edit link -->
-                <a
-                    v-if="canEdit"
-                    :href="`/videos/${video.id}/edit`"
-                    class="btn btn-primary"
-                >
-                    <Edit class="w-4 h-4 me-2" />
-                    {{ t('video.edit_video') }}
-                </a>
             </div>
         </div>
-    </AppLayout>
+
+        <!-- Status Card -->
+        <div class="card p-6 mb-6">
+            <div class="flex items-start gap-4">
+                <div
+                    class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+                    :style="{ backgroundColor: statusConfig.bgColor }"
+                >
+                    <component
+                        :is="statusConfig.icon"
+                        class="w-6 h-6"
+                        :class="{ 'animate-spin': statusConfig.animate }"
+                        :style="{ color: statusConfig.color }"
+                    />
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-semibold text-lg" :style="{ color: statusConfig.color }">
+                        {{ statusConfig.title }}
+                    </h3>
+                    <p class="mt-1 text-text-secondary">
+                        {{ statusConfig.description }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Progress bar for pending/processing -->
+            <div v-if="videoStatus === 'pending' || videoStatus === 'processing'" class="mt-4">
+                <div class="w-full rounded-full h-2 overflow-hidden bg-bg-secondary">
+                    <div
+                        class="h-full rounded-full transition-all duration-500"
+                        :class="videoStatus === 'processing' ? 'animate-pulse' : ''"
+                        :style="{
+                            width: videoStatus === 'processing' ? '60%' : '10%',
+                            backgroundColor: statusConfig.color,
+                        }"
+                    ></div>
+                </div>
+                <p class="text-xs mt-2 text-text-muted">
+                    This page updates automatically. You can safely leave and come back later.
+                </p>
+            </div>
+        </div>
+
+        <!-- Moderation Notice -->
+        <div v-if="videoStatus === 'processed' && !video.is_approved && !video.is_draft" class="card p-4 mb-6">
+            <div class="flex items-center gap-3">
+                <ShieldCheck class="w-5 h-5 flex-shrink-0 text-text-secondary" />
+                <p class="text-sm text-text-secondary">
+                    Your video will be visible to others after it has been reviewed and approved by a moderator. This usually happens within 24 hours.
+                </p>
+            </div>
+        </div>
+
+        <!-- Published Notice -->
+        <div v-if="isPublished" class="card p-4 mb-6" style="border: 1px solid rgba(34, 197, 94, 0.3);">
+            <div class="flex items-center gap-3">
+                <CheckCircle class="w-5 h-5 flex-shrink-0 text-green-500" />
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-green-500">Your video is live!</p>
+                    <a
+                        :href="`/${video.slug}`"
+                        class="text-sm mt-0.5 inline-flex items-center gap-1 hover:opacity-80 text-accent-text"
+                    >
+                        <Eye class="w-3.5 h-3.5" />
+                        View your video
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Privacy -->
+        <form v-if="privacyOptions.length > 1" class="card p-4 mb-6" @submit.prevent="savePrivacy">
+            <VideoPrivacySelect
+                v-model="privacyForm.privacy"
+                :options="privacyOptions"
+                :error="privacyForm.errors.privacy || ''"
+                :disabled="privacyForm.processing"
+            />
+            <div class="flex justify-end mt-3">
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                    :disabled="privacyForm.processing || !privacyForm.isDirty"
+                >
+                    {{ t('video.privacy_save') }}
+                </button>
+            </div>
+        </form>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-between">
+            <button
+                @click="deleteVideo"
+                class="btn bg-red-600 hover:bg-red-700 text-white"
+            >
+                <Trash2 class="w-4 h-4 me-2" />
+                {{ t('video.delete_video') }}
+            </button>
+
+            <!-- If user gets upgraded to pro/admin later, show edit link -->
+            <a
+                v-if="canEdit"
+                :href="`/videos/${video.id}/edit`"
+                class="btn btn-primary"
+            >
+                <Edit class="w-4 h-4 me-2" />
+                {{ t('video.edit_video') }}
+            </a>
+        </div>
+    </div>
 </template>

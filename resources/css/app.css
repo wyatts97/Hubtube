@@ -236,6 +236,15 @@
 
     .video-card {
         @apply cursor-pointer block;
+        /* Transform only: fading from opacity 0 would hide the first
+           thumbnails from LCP until the animation ran. */
+        animation: video-card-in 0.18s ease-out;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .video-card {
+            animation: none;
+        }
     }
 
     .video-card .thumbnail {
@@ -670,4 +679,10 @@ button:disabled,
 input:disabled,
 select:disabled {
     cursor: not-allowed;
+}
+
+@keyframes video-card-in {
+    from {
+        transform: translateY(6px);
+    }
 }

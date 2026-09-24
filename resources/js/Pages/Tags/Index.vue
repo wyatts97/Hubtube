@@ -6,6 +6,8 @@ import { Hash } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
 
+defineOptions({ layout: AppLayout });
+
 const { t, localizedUrl } = useI18n();
 
 const props = defineProps({
@@ -28,55 +30,53 @@ const placeholderImg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/
 <template>
     <SeoHead />
 
-    <AppLayout>
-        <div class="mb-6">
-            <h1 class="page-title">{{ t('tags.title') }}</h1>
-            <p class="text-sm mt-1 text-text-muted">{{ t('tags.browse') }}</p>
-        </div>
+    <div class="mb-6">
+        <h1 class="page-title">{{ t('tags.title') }}</h1>
+        <p class="text-sm mt-1 text-text-muted">{{ t('tags.browse') }}</p>
+    </div>
 
-        <div v-if="tags.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            <Link
-                v-for="tag in tags"
-                :key="tag.name"
-                :href="localizedUrl(`/tag/${encodeURIComponent(tag.name)}`)"
-                class="group relative rounded-xl overflow-hidden cursor-pointer"
-                style="aspect-ratio: 16/9;"
+    <div v-if="tags.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <Link
+            v-for="tag in tags"
+            :key="tag.name"
+            :href="localizedUrl(`/tag/${encodeURIComponent(tag.name)}`)"
+            class="group relative rounded-xl overflow-hidden cursor-pointer"
+            style="aspect-ratio: 16/9;"
+        >
+            <!-- Thumbnail from latest video -->
+            <img
+                v-if="tag.thumbnail"
+                :src="tag.thumbnail"
+                :alt="tag.name"
+                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                loading="lazy"
+                @error="(e) => e.target.src = placeholderImg"
+            />
+            <div
+                v-else
+                class="w-full h-full flex items-center justify-center bg-bg-card"
             >
-                <!-- Thumbnail from latest video -->
-                <img
-                    v-if="tag.thumbnail"
-                    :src="tag.thumbnail"
-                    :alt="tag.name"
-                    class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    loading="lazy"
-                    @error="(e) => e.target.src = placeholderImg"
-                />
-                <div
-                    v-else
-                    class="w-full h-full flex items-center justify-center bg-bg-card"
+                <Hash class="w-12 h-12 text-text-muted" />
+            </div>
+
+            <!-- Dark overlay -->
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent transition-opacity group-hover:from-black/90"></div>
+
+            <!-- Tag title overlay -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center p-3">
+                <span
+                    class="tag-label font-bold text-center drop-shadow-lg"
+                    :style="titleStyle"
                 >
-                    <Hash class="w-12 h-12 text-text-muted" />
-                </div>
+                    #{{ tag.name }}
+                </span>
+                <span class="text-xs mt-1 text-white/70">{{ tag.count }} {{ t('common.videos') }}</span>
+            </div>
+        </Link>
+    </div>
 
-                <!-- Dark overlay -->
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent transition-opacity group-hover:from-black/90"></div>
-
-                <!-- Tag title overlay -->
-                <div class="absolute inset-0 flex flex-col items-center justify-center p-3">
-                    <span
-                        class="tag-label font-bold text-center drop-shadow-lg"
-                        :style="titleStyle"
-                    >
-                        #{{ tag.name }}
-                    </span>
-                    <span class="text-xs mt-1 text-white/70">{{ tag.count }} {{ t('common.videos') }}</span>
-                </div>
-            </Link>
-        </div>
-
-        <div v-else class="text-center py-12">
-            <Hash class="w-12 h-12 mx-auto mb-3 text-text-muted" />
-            <p class="text-lg text-text-secondary">{{ t('tags.no_tags') }}</p>
-        </div>
-    </AppLayout>
+    <div v-else class="text-center py-12">
+        <Hash class="w-12 h-12 mx-auto mb-3 text-text-muted" />
+        <p class="text-lg text-text-secondary">{{ t('tags.no_tags') }}</p>
+    </div>
 </template>

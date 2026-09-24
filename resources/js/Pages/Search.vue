@@ -5,14 +5,16 @@ import FilterRail from '@/Components/UI/FilterRail.vue';
 import { ref, watch, onMounted, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import VideoCard from '@/Components/VideoCard.vue';
-import VideoCardSkeleton from '@/Components/VideoCardSkeleton.vue';
+import { cardPriority } from '@/Composables/useOptimizedImage';
 import SponsoredVideoCard from '@/Components/SponsoredVideoCard.vue';
 import { Search as SearchIcon, Users, Hash } from 'lucide-vue-next';
 import Pagination from '@/Components/Pagination.vue';
 import { useAutoTranslate } from '@/Composables/useAutoTranslate';
 import { useI18n } from '@/Composables/useI18n';
-import { useVirtualGrid } from '@/Composables/useVirtualGrid';
+import { useVideoGrid } from '@/Composables/useVideoGrid';
 import BannerAd from '@/Components/UI/BannerAd.vue';
+
+defineOptions({ layout: AppLayout });
 
 const { t, localizedUrl } = useI18n();
 
@@ -28,9 +30,6 @@ const props = defineProps({
     bannerAd: { type: Object, default: () => ({}) },
     sponsoredCards: { type: Array, default: () => [] },
 });
-
-const isInitialLoad = ref(true);
-onMounted(() => { setTimeout(() => { isInitialLoad.value = false; }, 100); });
 
 const searchQuery = ref(props.query || '');
 const activeType = ref(props.type || 'videos');
@@ -143,164 +142,145 @@ const withTranslation = (video) => {
 };
 
 const videoItems = computed(() => resultsList().map(withTranslation));
-const { virtualRows, containerProps, wrapperProps, gridStyle } = useVirtualGrid(videoItems, {
-    itemHeight: 320,
-    overscan: 6,
-});
+const { gridClass } = useVideoGrid();
 </script>
 
 <template>
     <SeoHead :seo="seo" />
 
-    <AppLayout>
-        <!-- Top Ad Banner -->
-        <BannerAd :config="bannerAd" placement="search_banner" />
+    <!-- Top Ad Banner -->
+    <BannerAd :config="bannerAd" placement="search_banner" />
 
-        <div class="mb-4 sm:mb-6">
-            <h1 class="page-title">{{ t('search.title') }}</h1>
-        </div>
+    <div class="mb-4 sm:mb-6">
+        <h1 class="page-title">{{ t('search.title') }}</h1>
+    </div>
 
-        <!-- Search Bar -->
-        <form @submit.prevent="submitSearch" class="mb-4 sm:mb-6">
-            <div class="relative max-w-2xl">
-                <input
-                    v-model="searchQuery"
-                    type="text"
-                    :placeholder="t('search.placeholder')"
-                    class="input pe-12"
-                />
-                <button type="submit" class="absolute end-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80 text-text-muted">
-                    <SearchIcon class="w-5 h-5" />
-                </button>
-            </div>
-        </form>
-
-        <!-- Tabs -->
-        <div class="tab-strip mb-3 border-b border-border">
-            <button
-                v-for="tab in tabs"
-                :key="tab.key"
-                class="flex items-center gap-2 px-3 sm:px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors"
-                :class="activeType === tab.key
-                    ? 'border-accent text-accent-text'
-                    : 'border-transparent text-text-secondary hover:text-text-primary'"
-                :aria-current="activeType === tab.key ? 'page' : undefined"
-                @click="switchTab(tab.key)"
-            >
-                <component :is="tab.icon" class="w-4 h-4" />
-                {{ tab.label }}
+    <!-- Search Bar -->
+    <form @submit.prevent="submitSearch" class="mb-4 sm:mb-6">
+        <div class="relative max-w-2xl">
+            <input
+                v-model="searchQuery"
+                type="text"
+                :placeholder="t('search.placeholder')"
+                class="input pe-12"
+            />
+            <button type="submit" class="absolute end-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80 text-text-muted">
+                <SearchIcon class="w-5 h-5" />
             </button>
         </div>
+    </form>
 
-        <!-- Filters apply to video results only; channels and hashtags have no
-             duration or quality to filter on. -->
-        <FilterRail
-            v-if="activeType === 'videos'"
-            :model-value="activeFilters"
-            :categories="categories"
-            class="mb-4"
-            @update:model-value="applyFilters"
-        />
+    <!-- Tabs -->
+    <div class="tab-strip mb-3 border-b border-border">
+        <button
+            v-for="tab in tabs"
+            :key="tab.key"
+            class="flex items-center gap-2 px-3 sm:px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors"
+            :class="activeType === tab.key
+                ? 'border-accent text-accent-text'
+                : 'border-transparent text-text-secondary hover:text-text-primary'"
+            :aria-current="activeType === tab.key ? 'page' : undefined"
+            @click="switchTab(tab.key)"
+        >
+            <component :is="tab.icon" class="w-4 h-4" />
+            {{ tab.label }}
+        </button>
+    </div>
 
-        <!-- Results -->
-        <div v-if="query">
-            <p class="text-sm mb-4 text-text-secondary">
-                {{ t('common.results_for') }} "<span class="font-medium text-text-primary">{{ query }}</span>"
-            </p>
+    <!-- Filters apply to video results only; channels and hashtags have no
+         duration or quality to filter on. -->
+    <FilterRail
+        v-if="activeType === 'videos'"
+        :model-value="activeFilters"
+        :categories="categories"
+        class="mb-4"
+        @update:model-value="applyFilters"
+    />
 
-            <!-- Skeleton Loading -->
-            <div v-if="isInitialLoad && activeType === 'videos'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                <VideoCardSkeleton v-for="i in 8" :key="'skeleton-' + i" />
+    <!-- Results -->
+    <div v-if="query">
+        <p class="text-sm mb-4 text-text-secondary">
+            {{ t('common.results_for') }} "<span class="font-medium text-text-primary">{{ query }}</span>"
+        </p>
+
+        <!-- Video Results -->
+        <template v-if="activeType === 'videos'">
+            <!-- Sponsored Cards (above video results) -->
+            <div v-if="sponsoredCards.length && videoItems.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
+                <SponsoredVideoCard v-for="card in sponsoredCards.slice(0, 2)" :key="'sp-' + card.id" :card="card" />
             </div>
+            <div v-if="videoItems.length" :class="gridClass">
+                <VideoCard v-for="(video, index) in videoItems" :key="video.id" :video="video" :priority="cardPriority(index)" />
+            </div>
+            <div v-else class="text-center py-12">
+                <SearchIcon class="w-12 h-12 mx-auto mb-4 text-text-muted" />
+                <p class="text-lg text-text-secondary">{{ t('common.no_videos_found') }}</p>
+                <p class="mt-1 text-text-muted">{{ t('common.try_different') }}</p>
+            </div>
+        </template>
 
-            <!-- Video Results -->
-            <template v-if="!isInitialLoad && activeType === 'videos'">
-                <!-- Sponsored Cards (above video results) -->
-                <div v-if="sponsoredCards.length && videoItems.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
-                    <SponsoredVideoCard v-for="card in sponsoredCards.slice(0, 2)" :key="'sp-' + card.id" :card="card" />
-                </div>
-                <div
-                    v-if="videoItems.length"
-                    v-bind="containerProps"
-                    :style="[containerProps.style, { height: '70vh' }]"
-                    class="rounded-xl border overflow-auto border-border"
+        <!-- Channel Results -->
+        <template v-if="activeType === 'channels'">
+            <div v-if="resultsList().length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <a
+                    v-for="channel in resultsList()"
+                    :key="channel.id"
+                    :href="`/channel/${channel.username}`"
+                    class="card p-4 flex items-center gap-4 hover:opacity-90 transition-opacity"
                 >
-                    <div v-bind="wrapperProps">
-                        <div v-for="row in virtualRows" :key="row.index" :style="gridStyle" class="px-2 pb-4">
-                            <VideoCard v-for="video in row.data" :key="video.id" :video="video" />
-                        </div>
+                    <div class="w-14 h-14 rounded-full overflow-hidden shrink-0 bg-bg-secondary">
+                        <img :src="channel.avatar_url || channel.avatar || '/assets/default_avatar.webp'" :alt="channel.username" class="w-full h-full object-cover" loading="lazy" decoding="async" />
                     </div>
-                </div>
-                <div v-else class="text-center py-12">
-                    <SearchIcon class="w-12 h-12 mx-auto mb-4 text-text-muted" />
-                    <p class="text-lg text-text-secondary">{{ t('common.no_videos_found') }}</p>
-                    <p class="mt-1 text-text-muted">{{ t('common.try_different') }}</p>
-                </div>
-            </template>
+                    <div class="min-w-0">
+                        <h3 class="font-medium truncate text-text-primary">
+                            {{ channel.username }}
+                            <span v-if="channel.is_verified" class="ms-1">✓</span>
+                        </h3>
+                        <p class="text-sm text-text-secondary">
+                            {{ channel.channel?.name || channel.username }}
+                        </p>
+                        <p class="text-sm text-text-muted">
+                            {{ channel.subscriber_count || 0 }} {{ t('common.subscribers') }}
+                        </p>
+                    </div>
+                </a>
+            </div>
+            <div v-else class="text-center py-12">
+                <Users class="w-12 h-12 mx-auto mb-4 text-text-muted" />
+                <p class="text-lg text-text-secondary">{{ t('common.no_channels_found') }}</p>
+            </div>
+        </template>
 
-            <!-- Channel Results -->
-            <template v-if="activeType === 'channels'">
-                <div v-if="resultsList().length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <a
-                        v-for="channel in resultsList()"
-                        :key="channel.id"
-                        :href="`/channel/${channel.username}`"
-                        class="card p-4 flex items-center gap-4 hover:opacity-90 transition-opacity"
-                    >
-                        <div class="w-14 h-14 rounded-full overflow-hidden shrink-0 bg-bg-secondary">
-                            <img :src="channel.avatar_url || channel.avatar || '/assets/default_avatar.webp'" :alt="channel.username" class="w-full h-full object-cover" loading="lazy" decoding="async" />
-                        </div>
-                        <div class="min-w-0">
-                            <h3 class="font-medium truncate text-text-primary">
-                                {{ channel.username }}
-                                <span v-if="channel.is_verified" class="ms-1">✓</span>
-                            </h3>
-                            <p class="text-sm text-text-secondary">
-                                {{ channel.channel?.name || channel.username }}
-                            </p>
-                            <p class="text-sm text-text-muted">
-                                {{ channel.subscriber_count || 0 }} {{ t('common.subscribers') }}
-                            </p>
-                        </div>
-                    </a>
-                </div>
-                <div v-else class="text-center py-12">
-                    <Users class="w-12 h-12 mx-auto mb-4 text-text-muted" />
-                    <p class="text-lg text-text-secondary">{{ t('common.no_channels_found') }}</p>
-                </div>
-            </template>
+        <!-- Hashtag Results -->
+        <template v-if="activeType === 'hashtags'">
+            <div v-if="resultsList().length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Link
+                    v-for="hashtag in resultsList()"
+                    :key="hashtag.id"
+                    :href="localizedUrl(`/tag/${encodeURIComponent(hashtag.name)}`)"
+                    class="card p-4 hover:opacity-90 transition-opacity"
+                >
+                    <h3 class="tag-label font-semibold text-accent-text">#{{ hashtag.name }}</h3>
+                    <p class="text-sm mt-1 text-text-muted">{{ hashtag.usage_count || 0 }} {{ t('common.videos') }}</p>
+                </Link>
+            </div>
+            <div v-else class="text-center py-12">
+                <Hash class="w-12 h-12 mx-auto mb-4 text-text-muted" />
+                <p class="text-lg text-text-secondary">{{ t('common.no_hashtags_found') }}</p>
+            </div>
+        </template>
 
-            <!-- Hashtag Results -->
-            <template v-if="activeType === 'hashtags'">
-                <div v-if="resultsList().length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Link
-                        v-for="hashtag in resultsList()"
-                        :key="hashtag.id"
-                        :href="localizedUrl(`/tag/${encodeURIComponent(hashtag.name)}`)"
-                        class="card p-4 hover:opacity-90 transition-opacity"
-                    >
-                        <h3 class="tag-label font-semibold text-accent-text">#{{ hashtag.name }}</h3>
-                        <p class="text-sm mt-1 text-text-muted">{{ hashtag.usage_count || 0 }} {{ t('common.videos') }}</p>
-                    </Link>
-                </div>
-                <div v-else class="text-center py-12">
-                    <Hash class="w-12 h-12 mx-auto mb-4 text-text-muted" />
-                    <p class="text-lg text-text-secondary">{{ t('common.no_hashtags_found') }}</p>
-                </div>
-            </template>
+        <Pagination
+            v-if="hasPages()"
+            :current-page="results.current_page"
+            :last-page="results.last_page"
+            @page-change="goToPage"
+        />
+    </div>
 
-            <Pagination
-                v-if="hasPages()"
-                :current-page="results.current_page"
-                :last-page="results.last_page"
-                @page-change="goToPage"
-            />
-        </div>
-
-        <!-- No Query State -->
-        <div v-else class="text-center py-16">
-            <SearchIcon class="w-16 h-16 mx-auto mb-4 text-text-muted" />
-            <p class="text-lg text-text-secondary">{{ t('common.search_prompt') }}</p>
-        </div>
-    </AppLayout>
+    <!-- No Query State -->
+    <div v-else class="text-center py-16">
+        <SearchIcon class="w-16 h-16 mx-auto mb-4 text-text-muted" />
+        <p class="text-lg text-text-secondary">{{ t('common.search_prompt') }}</p>
+    </div>
 </template>
