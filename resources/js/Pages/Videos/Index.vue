@@ -19,7 +19,7 @@ defineOptions({ layout: AppLayout });
 
 const { t } = useI18n();
 
-const { translateVideos, tr } = useAutoTranslate(['title']);
+const { translateVideos, tr } = useAutoTranslate();
 const { gridClass } = useVideoGrid();
 
 const props = defineProps({

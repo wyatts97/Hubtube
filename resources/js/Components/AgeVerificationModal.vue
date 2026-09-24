@@ -5,7 +5,7 @@ import { ShieldAlert, Loader2 } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 import BaseDialog from '@/Components/UI/BaseDialog.vue';
 
-const { t } = useI18n();
+const { t, localizedUrl } = useI18n();
 
 const page = usePage();
 const ageSettings = computed(() => page.props.theme?.ageVerification || {});
@@ -73,12 +73,12 @@ const decline = () => {
 // Customization settings with defaults
 const overlayColor = computed(() => ageSettings.value.overlayColor || 'rgba(0, 0, 0, 0.85)');
 const overlayBlur = computed(() => ageSettings.value.overlayBlur || 8);
-const headerText = computed(() => ageSettings.value.headerText || 'Age Verification Required');
-const descriptionText = computed(() => ageSettings.value.descriptionText || 'This website contains age-restricted content. You must be at least 18 years old to enter.');
-const confirmText = computed(() => ageSettings.value.confirmText || 'I am 18 or older');
-const declineText = computed(() => ageSettings.value.declineText || 'Exit');
-const disclaimerText = computed(() => ageSettings.value.disclaimerText || 'By clicking "{confirm}", you confirm that you are at least 18 years of age and consent to viewing adult content.');
-const termsText = computed(() => ageSettings.value.termsText || 'By entering this site, you agree to our');
+const headerText = computed(() => ageSettings.value.headerText || t('age.title'));
+const descriptionText = computed(() => ageSettings.value.descriptionText || t('age.description'));
+const confirmText = computed(() => ageSettings.value.confirmText || t('age.confirm'));
+const declineText = computed(() => ageSettings.value.declineText || t('age.exit'));
+const disclaimerText = computed(() => ageSettings.value.disclaimerText || t('age.disclaimer'));
+const termsText = computed(() => ageSettings.value.termsText || t('age.terms_intro'));
 const showLogo = computed(() => ageSettings.value.showLogo !== false);
 const logoUrl = computed(() => ageSettings.value.logoUrl || '');
 const fontFamily = computed(() => ageSettings.value.fontFamily || 'inherit');
@@ -166,9 +166,9 @@ const buttonColor = computed(() => ageSettings.value.buttonColor || 'var(--color
 
             <p class="text-sm mt-6" :style="{ color: 'var(--color-text-muted)' }">
                 {{ termsText }}
-                <a href="/terms" :style="{ color: buttonColor }" class="hover:opacity-80">Terms of Service</a>
-                and
-                <a href="/privacy" :style="{ color: buttonColor }" class="hover:opacity-80">Privacy Policy</a>.
+                <a :href="localizedUrl('/terms')" :style="{ color: buttonColor }" class="hover:opacity-80">{{ t('age.terms') }}</a>
+                {{ t('age.and') }}
+                <a :href="localizedUrl('/privacy')" :style="{ color: buttonColor }" class="hover:opacity-80">{{ t('age.privacy') }}</a>.
             </p>
         </div>
     </BaseDialog>

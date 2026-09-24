@@ -1,5 +1,6 @@
 <script setup>
 import { Link, router, usePage } from '@inertiajs/vue3';
+import { useLoginDialog } from '@/Composables/useLoginDialog';
 import { ref, computed } from 'vue';
 import SeoHead from '@/Components/SeoHead.vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -18,6 +19,7 @@ import { useGridAds } from '@/Composables/useGridAds';
 defineOptions({ layout: AppLayout });
 
 const { t, localizedUrl } = useI18n();
+const { openLogin } = useLoginDialog();
 
 const props = defineProps({
     playlist: Object,
@@ -65,7 +67,7 @@ const firstVideoHref = computed(() => {
 });
 
 const toggleFavorite = async () => {
-    if (!user.value) { router.visit('/login'); return; }
+    if (!user.value) { openLogin(); return; }
     if (isOwner.value) return;
     favoriting.value = true;
     const { ok, data } = await post(`/playlists/${props.playlist.id}/favorite`);

@@ -1,81 +1,82 @@
 import { computed, ref, reactive } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 
+/**
+ * Content translation (video titles and descriptions) for non-default locales.
+ *
+ * One shared cache, keyed "type:id:locale". useGlobalAutoTranslate fills it
+ * from every page's props, useAutoTranslate from videos loaded later (infinite
+ * scroll), and VideoCard reads it. Interface strings live in useI18n instead.
+ */
 const translationCache = reactive({});
 
-// Expose cache for useGlobalAutoTranslate to populate directly
-export { translationCache as _translationCache };
+/** "id:locale" pairs with a title request in flight, so two callers don't ask twice. */
+const pendingTitles = new Set();
+
+const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+/**
+ * Fetch translated titles for any of these videos not already cached or
+ * requested. The server only returns stored translations (it queues the
+ * rest), so this is quick and never blocks the page.
+ */
+export async function fetchVideoTitles(ids, locale) {
+    const wanted = [...new Set(ids)].filter((id) =>
+        id && !translationCache[`video:${id}:${locale}`] && !pendingTitles.has(`${id}:${locale}`)
+    );
+    if (!wanted.length) return;
+
+    wanted.forEach((id) => pendingTitles.add(`${id}:${locale}`));
+    try {
+        const response = await fetch('/api/translate/batch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken(),
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ type: 'video', ids: wanted, fields: ['title'], locale }),
+        });
+        if (!response.ok) return;
+
+        const data = await response.json();
+        for (const t of data.translations || []) {
+            const entry = {};
+            if (t.title) entry.title = t.title;
+            if (t.translated_slug) entry.translated_slug = t.translated_slug;
+            if (Object.keys(entry).length) {
+                translationCache[`video:${t.id}:${locale}`] = { id: t.id, ...entry };
+            }
+        }
+    } catch (e) {
+        // Show the original titles.
+    } finally {
+        wanted.forEach((id) => pendingTitles.delete(`${id}:${locale}`));
+    }
+}
 
 export function useTranslation() {
     const page = usePage();
     const translating = ref(false);
 
-    const localeData = computed(() => page.props.locale || {
-        current: 'en',
-        default: 'en',
-        languages: {},
-        enabled: false,
-    });
-
-    const currentLocale = computed(() => localeData.value.current);
-    const defaultLocale = computed(() => localeData.value.default);
-    const languages = computed(() => localeData.value.languages);
-    const isTranslationEnabled = computed(() => localeData.value.enabled);
-    const isTranslated = computed(() => currentLocale.value !== defaultLocale.value);
-
-    /**
-     * Get the locale prefix for URLs (empty string for default locale).
-     */
-    const localePrefix = computed(() => {
-        if (currentLocale.value === defaultLocale.value) return '';
-        return `/${currentLocale.value}`;
+    const currentLocale = computed(() => page.props.locale?.current || 'en');
+    const isTranslated = computed(() => {
+        const loc = page.props.locale;
+        return !!loc && loc.current !== loc.default;
     });
 
     /**
-     * Build a localized URL.
-     */
-    function localizedUrl(path) {
-        if (!isTranslated.value) return path;
-        // Don't prefix API routes, admin routes, or already-prefixed routes
-        if (path.startsWith('/api/') || path.startsWith('/admin') || path.startsWith('/livewire')) {
-            return path;
-        }
-        return `/${currentLocale.value}${path}`;
-    }
-
-    /**
-     * Switch to a different language.
-     */
-    async function switchLanguage(locale) {
-        try {
-            const currentPath = window.location.pathname;
-            const response = await fetch('/api/locale', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': page.props.csrf_token,
-                },
-                body: JSON.stringify({ locale, current_path: currentPath }),
-            });
-            const data = await response.json();
-            if (data.redirect) {
-                // Use full page navigation to apply the new locale
-                window.location.href = data.redirect;
-            }
-        } catch (e) {
-            console.error('Failed to switch language:', e);
-        }
-    }
-
-    /**
-     * Translate a single item's fields on-demand.
+     * Translate one item's fields on demand. A cached entry only counts if it
+     * holds every requested field: the title-only batch cache must not stop a
+     * watch page from getting its description translated.
      */
     async function translateItem(type, id, fields) {
         if (!isTranslated.value) return null;
 
         const cacheKey = `${type}:${id}:${currentLocale.value}`;
-        if (translationCache[cacheKey]) {
-            return translationCache[cacheKey];
+        const cached = translationCache[cacheKey];
+        if (cached && fields.every((field) => field in cached)) {
+            return cached;
         }
 
         translating.value = true;
@@ -84,94 +85,39 @@ export function useTranslation() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': page.props.csrf_token,
+                    'X-CSRF-TOKEN': csrfToken(),
                 },
-                body: JSON.stringify({
-                    type,
-                    id,
-                    fields,
-                    locale: currentLocale.value,
-                }),
+                body: JSON.stringify({ type, id, fields, locale: currentLocale.value }),
             });
             const data = await response.json();
             if (data.translations) {
-                translationCache[cacheKey] = data.translations;
-                return data.translations;
+                translationCache[cacheKey] = { ...cached, ...data.translations };
+                return translationCache[cacheKey];
             }
         } catch (e) {
-            console.error('Translation failed:', e);
+            // Show the original text.
         } finally {
             translating.value = false;
         }
         return null;
     }
 
-    /**
-     * Batch translate multiple items.
-     */
-    async function translateBatch(type, ids, fields) {
-        if (!isTranslated.value || !ids.length) return {};
-
-        // Filter out already-cached items
-        const uncachedIds = ids.filter(id => !translationCache[`${type}:${id}:${currentLocale.value}`]);
-
-        if (uncachedIds.length > 0) {
-            translating.value = true;
-            try {
-                const response = await fetch('/api/translate/batch', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': page.props.csrf_token,
-                    },
-                    body: JSON.stringify({
-                        type,
-                        ids: uncachedIds,
-                        fields,
-                        locale: currentLocale.value,
-                    }),
-                });
-                const data = await response.json();
-                if (data.translations) {
-                    data.translations.forEach(item => {
-                        translationCache[`${type}:${item.id}:${currentLocale.value}`] = item;
-                    });
-                }
-            } catch (e) {
-                console.error('Batch translation failed:', e);
-            } finally {
-                translating.value = false;
-            }
-        }
-
-        // Return all from cache
-        const result = {};
-        ids.forEach(id => {
-            const cached = translationCache[`${type}:${id}:${currentLocale.value}`];
-            if (cached) result[id] = cached;
-        });
-        return result;
+    /** Translated titles for a list of videos, into the shared cache. */
+    async function translateBatch(type, ids) {
+        if (!isTranslated.value || !ids.length || type !== 'video') return;
+        await fetchVideoTitles(ids, currentLocale.value);
     }
 
-    /**
-     * Get a translated field value for a cached item.
-     */
+    /** A cached translated field, or the fallback. */
     function getTranslated(type, id, field, fallback) {
         if (!isTranslated.value) return fallback;
-        const cached = translationCache[`${type}:${id}:${currentLocale.value}`];
-        return cached?.[field] || fallback;
+        return translationCache[`${type}:${id}:${currentLocale.value}`]?.[field] || fallback;
     }
 
     return {
         currentLocale,
-        defaultLocale,
-        languages,
-        isTranslationEnabled,
         isTranslated,
-        localePrefix,
         translating,
-        localizedUrl,
-        switchLanguage,
         translateItem,
         translateBatch,
         getTranslated,

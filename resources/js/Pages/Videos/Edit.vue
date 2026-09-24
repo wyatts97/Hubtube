@@ -2,6 +2,7 @@
 import { useForm, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ConfirmDialog from '@/Components/UI/ConfirmDialog.vue';
 import { useFetch } from '@/Composables/useFetch';
 import { X, Save, Trash2, Image, Loader2, CheckCircle, ShieldCheck, FileClock } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
@@ -134,11 +135,8 @@ const submit = () => {
     });
 };
 
-const deleteVideo = () => {
-    if (confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
-        router.delete(`/videos/${props.video.id}`);
-    }
-};
+const confirmingDelete = ref(false);
+const deleteVideo = () => { confirmingDelete.value = true; };
 
 const statusColors = {
     pending: 'bg-yellow-500/20 text-yellow-400',
@@ -463,4 +461,11 @@ const statusColors = {
             </div>
         </form>
     </div>
+
+    <ConfirmDialog
+        v-model="confirmingDelete"
+        :title="t('video.delete_title')"
+        :message="t('video.delete_body')"
+        @confirm="router.delete(`/videos/${video.id}`)"
+    />
 </template>

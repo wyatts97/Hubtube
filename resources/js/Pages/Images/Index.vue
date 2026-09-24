@@ -144,7 +144,7 @@ onClickOutside(filterRef, () => {
         <div v-if="activeCategory" class="mt-3 flex items-center gap-2">
             <span class="text-xs px-3 py-1 rounded-full inline-flex items-center gap-1.5 bg-bg-secondary text-text-primary border border-border">
                 {{ activeCategory.name }}
-                <button @click="clearCategory" class="hover:opacity-70">
+                <button @click="clearCategory" class="hover:opacity-70" :aria-label="t('common.clear_filter')">
                     <X class="w-3 h-3" />
                 </button>
             </span>

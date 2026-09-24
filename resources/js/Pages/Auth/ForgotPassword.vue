@@ -54,8 +54,11 @@ const onSubmit = () => {
                             class="input"
                             required
                             autofocus
+                            autocomplete="email"
+                            :aria-invalid="!!form.errors.email"
+                            :aria-describedby="form.errors.email ? 'email-error' : undefined"
                         />
-                        <p v-if="form.errors.email" class="text-red-500 text-sm mt-1">{{ form.errors.email }}</p>
+                        <p v-if="form.errors.email" id="email-error" class="text-red-500 text-sm mt-1">{{ form.errors.email }}</p>
                     </div>
 
                     <button type="submit" :disabled="form.processing" class="btn btn-primary w-full">

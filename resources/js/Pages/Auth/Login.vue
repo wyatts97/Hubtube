@@ -74,8 +74,11 @@ const providerMeta = {
                             class="input"
                             required
                             autofocus
+                            autocomplete="username"
+                            :aria-invalid="!!form.errors.login"
+                            :aria-describedby="form.errors.login ? 'login-error' : undefined"
                         />
-                        <p v-if="form.errors.login" class="text-red-500 text-sm mt-1">{{ form.errors.login }}</p>
+                        <p v-if="form.errors.login" id="login-error" class="text-red-500 text-sm mt-1">{{ form.errors.login }}</p>
                     </div>
 
                     <div>
@@ -89,17 +92,22 @@ const providerMeta = {
                                 :type="showPassword ? 'text' : 'password'"
                                 class="input pe-10"
                                 required
+                                autocomplete="current-password"
+                                :aria-invalid="!!form.errors.password"
+                                :aria-describedby="form.errors.password ? 'password-error' : undefined"
                             />
                             <button
                                 type="button"
                                 @click="showPassword = !showPassword"
                                 class="absolute end-3 top-1/2 -translate-y-1/2 text-text-secondary"
+                                :aria-label="showPassword ? t('auth.hide_password') : t('auth.show_password')"
+                                :aria-pressed="showPassword"
                             >
                                 <EyeOff v-if="showPassword" class="w-5 h-5" />
                                 <Eye v-else class="w-5 h-5" />
                             </button>
                         </div>
-                        <p v-if="form.errors.password" class="text-red-500 text-sm mt-1">{{ form.errors.password }}</p>
+                        <p v-if="form.errors.password" id="password-error" class="text-red-500 text-sm mt-1">{{ form.errors.password }}</p>
                     </div>
 
                     <div class="flex items-center justify-between">
@@ -108,6 +116,8 @@ const providerMeta = {
                                 v-model="form.remember"
                                 type="checkbox"
                                 class="w-4 h-4 rounded border-dark-600 bg-dark-800 text-primary-600 focus:ring-primary-500"
+                                :aria-invalid="!!form.errors.remember"
+                                :aria-describedby="form.errors.remember ? 'remember-error' : undefined"
                             />
                             <span class="text-sm text-text-secondary">{{ t('auth.remember_me') }}</span>
                         </label>

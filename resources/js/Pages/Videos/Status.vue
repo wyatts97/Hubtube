@@ -2,6 +2,7 @@
 import { router, usePage, useForm } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ConfirmDialog from '@/Components/UI/ConfirmDialog.vue';
 import { useFetch } from '@/Composables/useFetch';
 import { Loader2, CheckCircle, ShieldCheck, Trash2, Clock, XCircle, Edit, Eye, FileClock } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
@@ -59,11 +60,8 @@ onUnmounted(() => {
     if (pollTimer) clearInterval(pollTimer);
 });
 
-const deleteVideo = () => {
-    if (confirm('Are you sure you want to delete this video? This action cannot be undone.')) {
-        router.delete(`/videos/${props.video.id}`);
-    }
-};
+const confirmingDelete = ref(false);
+const deleteVideo = () => { confirmingDelete.value = true; };
 
 const statusConfig = computed(() => {
     switch (videoStatus.value) {
@@ -279,4 +277,11 @@ const scheduledFor = computed(() => {
             </a>
         </div>
     </div>
+
+    <ConfirmDialog
+        v-model="confirmingDelete"
+        :title="t('video.delete_title')"
+        :message="t('video.delete_body')"
+        @confirm="router.delete(`/videos/${video.id}`)"
+    />
 </template>

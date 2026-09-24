@@ -1,14 +1,13 @@
 <script setup>
-import { router } from '@inertiajs/vue3';
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { AlertTriangle, RefreshCw, Home, Clock } from 'lucide-vue-next';
+import { AlertTriangle, RefreshCw, Home, Search, TrendingUp } from 'lucide-vue-next';
 import { useI18n } from '@/Composables/useI18n';
 import SeoHead from '@/Components/SeoHead.vue';
 
 defineOptions({ layout: AppLayout });
 
-const { t } = useI18n();
+const { t, localizedUrl } = useI18n();
 
 const props = defineProps({
     status: Number,
@@ -35,26 +34,9 @@ const title = computed(() => t(`errors.title_${suffix.value}`));
 // this far.
 const description = computed(() => props.message || t(`errors.body_${suffix.value}`));
 
-const countdown = ref(10);
-let timer = null;
-
+// A missing page offers a way on instead of redirecting after a countdown,
+// which took the visitor away before they could read why.
 const is404 = computed(() => props.status === 404);
-
-onMounted(() => {
-    if (is404.value) {
-        timer = setInterval(() => {
-            countdown.value--;
-            if (countdown.value <= 0) {
-                clearInterval(timer);
-                window.location.href = '/';
-            }
-        }, 1000);
-    }
-});
-
-onUnmounted(() => {
-    if (timer) clearInterval(timer);
-});
 
 const refresh = () => {
     window.location.reload();
@@ -74,18 +56,23 @@ const refresh = () => {
             <h2 class="text-xl font-semibold mb-4 text-text-primary">{{ title }}</h2>
             <p class="mb-6 text-text-secondary">{{ description }}</p>
 
-            <!-- 404 Countdown -->
-            <div v-if="is404" class="mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-bg-secondary text-text-muted border border-border">
-                <Clock class="w-4 h-4" />
-                {{ t('errors.redirecting', { count: countdown, n: countdown }) }}
-            </div>
+            <form v-if="is404" :action="localizedUrl('/search')" method="get" role="search" class="relative mb-6">
+                <input name="q" type="search" class="input pe-12" :placeholder="t('common.search_placeholder')" :aria-label="t('common.search')" />
+                <button type="submit" class="absolute end-2 top-1/2 -translate-y-1/2 p-2 text-text-muted" :aria-label="t('common.search')">
+                    <Search class="w-5 h-5" />
+                </button>
+            </form>
 
             <div class="flex flex-col sm:flex-row gap-3 justify-center">
                 <a href="/" class="btn btn-primary inline-flex items-center gap-2">
                     <Home class="w-4 h-4" />
                     {{ t('errors.go_home') }}
                 </a>
-                <button v-if="!is404" @click="refresh" class="btn btn-secondary inline-flex items-center gap-2">
+                <a v-if="is404" :href="localizedUrl('/trending')" class="btn btn-secondary inline-flex items-center gap-2">
+                    <TrendingUp class="w-4 h-4" />
+                    {{ t('nav.trending') }}
+                </a>
+                <button v-else @click="refresh" class="btn btn-secondary inline-flex items-center gap-2">
                     <RefreshCw class="w-4 h-4" />
                     {{ t('errors.refresh') }}
                 </button>

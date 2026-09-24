@@ -54,7 +54,7 @@ const availableBalance = () => {
 </script>
 
 <template>
-    <SeoHead title="Withdraw Funds" />
+    <SeoHead :title="t('wallet.withdraw_funds')" />
 
     <div class="max-w-lg mx-auto">
         <Link href="/wallet" class="flex items-center gap-2 mb-6 text-sm hover:opacity-80 text-text-secondary">
@@ -109,7 +109,7 @@ const availableBalance = () => {
                             }"
                         >
                             <Building2 class="w-5 h-5" :style="{ color: form.payment_method === 'bank' ? 'var(--color-accent)' : 'var(--color-text-muted)' }" />
-                            <span class="text-xs font-medium" :style="{ color: form.payment_method === 'bank' ? 'var(--color-accent)' : 'var(--color-text-secondary)' }">Bank</span>
+                            <span class="text-xs font-medium" :style="{ color: form.payment_method === 'bank' ? 'var(--color-accent)' : 'var(--color-text-secondary)' }">{{ t('wallet.bank') }}</span>
                         </button>
                         <button
                             type="button"
@@ -120,37 +120,37 @@ const availableBalance = () => {
                             }"
                         >
                             <Bitcoin class="w-5 h-5" :style="{ color: form.payment_method === 'crypto' ? 'var(--color-accent)' : 'var(--color-text-muted)' }" />
-                            <span class="text-xs font-medium" :style="{ color: form.payment_method === 'crypto' ? 'var(--color-accent)' : 'var(--color-text-secondary)' }">Crypto</span>
+                            <span class="text-xs font-medium" :style="{ color: form.payment_method === 'crypto' ? 'var(--color-accent)' : 'var(--color-text-secondary)' }">{{ t('wallet.crypto') }}</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- PayPal Details -->
                 <div v-if="form.payment_method === 'paypal'">
-                    <label class="block text-sm font-medium mb-1 text-text-secondary">PayPal Email</label>
+                    <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('wallet.paypal_email') }}</label>
                     <input v-model="form.payment_details.email" type="email" placeholder="your@email.com" class="input" required />
                 </div>
 
                 <!-- Bank Details -->
                 <template v-if="form.payment_method === 'bank'">
                     <div>
-                        <label class="block text-sm font-medium mb-1 text-text-secondary">Bank Name</label>
+                        <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('wallet.bank_name') }}</label>
                         <input v-model="form.payment_details.bank_name" type="text" class="input" required />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1 text-text-secondary">Account Number</label>
+                        <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('wallet.account_number') }}</label>
                         <input v-model="form.payment_details.account_number" type="text" class="input" required />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1 text-text-secondary">Routing Number</label>
+                        <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('wallet.routing_number') }}</label>
                         <input v-model="form.payment_details.routing_number" type="text" class="input" required />
                     </div>
                 </template>
 
                 <!-- Crypto Details -->
                 <div v-if="form.payment_method === 'crypto'">
-                    <label class="block text-sm font-medium mb-1 text-text-secondary">Wallet Address</label>
-                    <input v-model="form.payment_details.wallet_address" type="text" placeholder="Enter wallet address" class="input" required />
+                    <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('wallet.wallet_address') }}</label>
+                    <input v-model="form.payment_details.wallet_address" type="text" :placeholder="t('wallet.enter_wallet_address')" class="input" required />
                 </div>
 
                 <p v-if="form.errors.payment_details" class="text-red-500 text-sm">{{ form.errors.payment_details }}</p>

@@ -64,7 +64,7 @@ const pageStyle = (pageNum) =>
     <nav
         v-if="lastPage > 1"
         class="flex justify-center items-center gap-2 mt-8"
-        :aria-label="'Pagination'"
+        :aria-label="t('common.pagination')"
     >
         <!-- Previous -->
         <component
@@ -76,7 +76,7 @@ const pageStyle = (pageNum) =>
             class="p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             :class="{ 'opacity-50 pointer-events-none': asLinks && currentPage === 1 }"
             :style="stepStyle"
-            aria-label="Previous page"
+            :aria-label="t('common.previous_page')"
         >
             <ChevronLeft class="w-5 h-5" />
         </component>
@@ -110,7 +110,7 @@ const pageStyle = (pageNum) =>
             class="p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             :class="{ 'opacity-50 pointer-events-none': asLinks && currentPage === lastPage }"
             :style="stepStyle"
-            aria-label="Next page"
+            :aria-label="t('common.next_page')"
         >
             <ChevronRight class="w-5 h-5" />
         </component>

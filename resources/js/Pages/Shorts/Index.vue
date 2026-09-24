@@ -42,6 +42,13 @@ const nextCursor = ref(2);
 const muted = ref(true);
 const showComments = ref(false);
 const showFilters = ref(false);
+const commentsCloseRef = ref(null);
+const filtersCloseRef = ref(null);
+
+// Move focus into a panel when it opens, so keyboard and screen-reader users
+// land in it rather than behind it.
+watch(showComments, (open) => open && nextTick(() => commentsCloseRef.value?.focus()));
+watch(showFilters, (open) => open && nextTick(() => filtersCloseRef.value?.focus()));
 const showShareModal = ref(false);
 const showReportModal = ref(false);
 const comments = ref([]);
@@ -205,6 +212,11 @@ const goPrev = () => {
 };
 
 const handleKeydown = (e) => {
+    if (e.key === 'Escape' && (showComments.value || showFilters.value)) {
+        showComments.value = false;
+        showFilters.value = false;
+        return;
+    }
     if (showComments.value || showFilters.value) return;
     if (e.key === 'ArrowDown' || e.key === ' ') {
         e.preventDefault();
@@ -333,7 +345,7 @@ const goBack = () => router.visit(localizedUrl('/'));
             class="hidden lg:flex absolute top-4 start-4 z-50 items-center gap-2 px-3 py-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
         >
             <ChevronLeft class="w-5 h-5" />
-            <span class="text-sm font-medium">Back</span>
+            <span class="text-sm font-medium">{{ t('common.back') }}</span>
         </button>
 
         <!-- Main swipe feed -->
@@ -369,12 +381,12 @@ const goBack = () => router.visit(localizedUrl('/'));
                             </div>
                         </Link>
 
-                        <button @click="likeShort" class="flex flex-col items-center gap-1 text-white">
+                        <button @click="likeShort" class="flex flex-col items-center gap-1 text-white" :aria-label="t('video.like')" :aria-pressed="!!item.data.user_liked">
                             <Heart class="w-7 h-7" :fill="item.data.user_liked ? 'currentColor' : 'none'" />
                             <span class="text-xs font-medium">{{ formatViews(item.data.likes_count || 0) }}</span>
                         </button>
 
-                        <button @click="openComments" class="flex flex-col items-center gap-1 text-white">
+                        <button @click="openComments" class="flex flex-col items-center gap-1 text-white" :aria-label="t('shorts.comments')">
                             <MessageCircle class="w-7 h-7" />
                             <span class="text-xs font-medium">{{ item.data.comments_count || 0 }}</span>
                         </button>
@@ -386,7 +398,7 @@ const goBack = () => router.visit(localizedUrl('/'));
                             content-class="bg-black/80 backdrop-blur-sm rounded-xl p-2 min-w-[140px] border-white/10"
                         >
                             <template #trigger>
-                                <button class="text-white relative">
+                                <button class="text-white relative" :aria-label="t('common.more')">
                                     <MoreVertical class="w-7 h-7" />
                                 </button>
                             </template>
@@ -419,15 +431,15 @@ const goBack = () => router.visit(localizedUrl('/'));
 
                     <!-- Top controls -->
                     <div class="absolute top-4 start-0 lg:start-auto lg:end-4 end-0 px-4 lg:px-0 z-[60] flex items-center justify-between lg:justify-end gap-3">
-                        <button @click="goBack" class="lg:hidden text-white/80 hover:text-white">
+                        <button @click="goBack" class="lg:hidden text-white/80 hover:text-white" :aria-label="t('common.back')">
                             <ChevronLeft class="w-6 h-6" />
                         </button>
                         <div class="flex items-center gap-3">
-                            <button @click="toggleMute" class="text-white/80 hover:text-white p-2 rounded-full bg-black/40 hover:bg-black/60">
+                            <button @click="toggleMute" class="text-white/80 hover:text-white p-2 rounded-full bg-black/40 hover:bg-black/60" :aria-label="muted ? t('shorts.unmute') : t('shorts.mute')">
                                 <VolumeX v-if="muted" class="w-6 h-6" />
                                 <Volume2 v-else class="w-6 h-6" />
                             </button>
-                            <button @click="showFilters = true" class="text-white/80 hover:text-white p-2 rounded-full bg-black/40 hover:bg-black/60">
+                            <button @click="showFilters = true" class="text-white/80 hover:text-white p-2 rounded-full bg-black/40 hover:bg-black/60" :aria-label="t('shorts.filter_title')">
                                 <Filter class="w-6 h-6" />
                             </button>
                         </div>
@@ -454,6 +466,7 @@ const goBack = () => router.visit(localizedUrl('/'));
             <button
                 @click="goPrev"
                 :disabled="currentIndex === 0"
+                :aria-label="t('common.previous')"
                 class="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
                 <ChevronUp class="w-7 h-7" />
@@ -461,6 +474,7 @@ const goBack = () => router.visit(localizedUrl('/'));
             <button
                 @click="goNext"
                 :disabled="currentIndex >= items.length - 1 && !hasMore"
+                :aria-label="t('common.next')"
                 class="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
                 <ChevronDown class="w-7 h-7" />
@@ -471,11 +485,14 @@ const goBack = () => router.visit(localizedUrl('/'));
         <Transition name="slide-up">
             <div
                 v-if="showComments"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="shorts-comments-title"
                 class="fixed inset-x-0 bottom-0 z-50 bg-bg-card rounded-t-2xl border-t border-border max-h-[70vh] flex flex-col"
             >
                 <div class="flex items-center justify-between p-4 border-b border-border">
-                    <h3 class="text-lg font-semibold text-text-primary">{{ comments.length }} Comments</h3>
-                    <button @click="showComments = false" class="text-text-secondary hover:text-text-primary">
+                    <h3 id="shorts-comments-title" class="text-lg font-semibold text-text-primary">{{ t('shorts.comments_count', { count: comments.length }) }}</h3>
+                    <button ref="commentsCloseRef" @click="showComments = false" class="text-text-secondary hover:text-text-primary" :aria-label="t('common.close')">
                         <X class="w-6 h-6" />
                     </button>
                 </div>
@@ -493,13 +510,14 @@ const goBack = () => router.visit(localizedUrl('/'));
                             <p class="text-sm text-text-secondary mt-0.5">{{ comment.content }}</p>
                         </div>
                     </div>
-                    <div v-if="!loadingComments && !comments.length" class="text-center text-text-muted py-8">No comments yet</div>
+                    <div v-if="!loadingComments && !comments.length" class="text-center text-text-muted py-8">{{ t('shorts.no_comments') }}</div>
                 </div>
 
                 <div v-if="user" class="p-4 border-t border-border flex gap-2">
                     <input
                         type="text"
-                        placeholder="Add a comment..."
+                        :placeholder="t('shorts.add_comment')"
+                        :aria-label="t('shorts.add_comment')"
                         class="input flex-1"
                         @keydown.enter="submitComment($event.target.value); $event.target.value = ''"
                     />
@@ -511,51 +529,54 @@ const goBack = () => router.visit(localizedUrl('/'));
         <Transition name="slide-up">
             <div
                 v-if="showFilters"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="shorts-filters-title"
                 class="fixed inset-x-0 bottom-0 z-50 bg-bg-card rounded-t-2xl border-t border-border p-4 max-h-[80vh] overflow-y-auto"
             >
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-text-primary">Filter Shorts</h3>
-                    <button @click="showFilters = false" class="text-text-secondary hover:text-text-primary">
+                    <h3 id="shorts-filters-title" class="text-lg font-semibold text-text-primary">{{ t('shorts.filter_title') }}</h3>
+                    <button ref="filtersCloseRef" @click="showFilters = false" class="text-text-secondary hover:text-text-primary" :aria-label="t('common.close')">
                         <X class="w-6 h-6" />
                     </button>
                 </div>
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-text-secondary mb-1">Category</label>
-                        <select v-model="activeFilters.category_id" class="input w-full">
-                            <option :value="null">All categories</option>
+                        <label for="shorts-filter-category" class="block text-sm font-medium text-text-secondary mb-1">{{ t('shorts.category') }}</label>
+                        <select id="shorts-filter-category" v-model="activeFilters.category_id" class="input w-full">
+                            <option :value="null">{{ t('shorts.all_categories') }}</option>
                             <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-text-secondary mb-1">Tag</label>
-                        <input v-model="activeFilters.tag" type="text" placeholder="e.g. funny" class="input w-full" />
+                        <label for="shorts-filter-tag" class="block text-sm font-medium text-text-secondary mb-1">{{ t('shorts.tag') }}</label>
+                        <input id="shorts-filter-tag" v-model="activeFilters.tag" type="text" class="input w-full" />
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-text-secondary mb-1">Date</label>
-                        <select v-model="activeFilters.date" class="input w-full">
-                            <option :value="null">Any time</option>
-                            <option value="today">Today</option>
-                            <option value="week">This week</option>
-                            <option value="month">This month</option>
-                            <option value="year">This year</option>
+                        <label for="shorts-filter-date" class="block text-sm font-medium text-text-secondary mb-1">{{ t('shorts.date') }}</label>
+                        <select id="shorts-filter-date" v-model="activeFilters.date" class="input w-full">
+                            <option :value="null">{{ t('shorts.any_time') }}</option>
+                            <option value="today">{{ t('shorts.today') }}</option>
+                            <option value="week">{{ t('shorts.this_week') }}</option>
+                            <option value="month">{{ t('shorts.this_month') }}</option>
+                            <option value="year">{{ t('shorts.this_year') }}</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-text-secondary mb-1">Sort</label>
-                        <select v-model="activeFilters.sort" class="input w-full">
-                            <option value="latest">Latest</option>
-                            <option value="popular">Most popular</option>
+                        <label for="shorts-filter-sort" class="block text-sm font-medium text-text-secondary mb-1">{{ t('shorts.sort') }}</label>
+                        <select id="shorts-filter-sort" v-model="activeFilters.sort" class="input w-full">
+                            <option value="latest">{{ t('shorts.latest') }}</option>
+                            <option value="popular">{{ t('shorts.most_popular') }}</option>
                         </select>
                     </div>
 
                     <div class="flex gap-2 pt-2">
-                        <button @click="clearFilters" class="btn btn-ghost flex-1">Clear</button>
-                        <button @click="applyFilters" class="btn btn-primary flex-1">Apply</button>
+                        <button @click="clearFilters" class="btn btn-ghost flex-1">{{ t('shorts.clear') }}</button>
+                        <button @click="applyFilters" class="btn btn-primary flex-1">{{ t('shorts.apply') }}</button>
                     </div>
                 </div>
             </div>

@@ -13,6 +13,8 @@ import { usePage } from '@inertiajs/vue3';
 import { useTheme } from '@/Composables/useTheme';
 import { useToast } from '@/Composables/useToast';
 import { useGlobalAutoTranslate } from '@/Composables/useGlobalAutoTranslate';
+import { useLoginDialog } from '@/Composables/useLoginDialog';
+import { useI18n } from '@/Composables/useI18n';
 import SiteHeader from '@/Layouts/Partials/SiteHeader.vue';
 import CategoryBar from '@/Layouts/Partials/CategoryBar.vue';
 import SiteSidebar from '@/Layouts/Partials/SiteSidebar.vue';
@@ -28,13 +30,14 @@ import StickyBannerAd from '@/Components/StickyBannerAd.vue';
 
 const page = usePage();
 const toast = useToast();
+const { t } = useI18n();
 
 useTheme();
 useGlobalAutoTranslate();
 
 const sidebarCollapsed = ref(false);
 const showMobileSearch = ref(false);
-const showLogin = ref(false);
+const { loginOpen: showLogin } = useLoginDialog();
 const footerRef = ref(null);
 const headerRef = ref(null);
 
@@ -69,6 +72,8 @@ watch(() => page.url, () => {
 
 <template>
     <div class="min-h-screen bg-bg-primary">
+        <a href="#main-content" class="skip-link">{{ t('common.skip_to_content') }}</a>
+
         <SiteHeader
             ref="headerRef"
             @open-mobile-search="showMobileSearch = true"
@@ -85,6 +90,8 @@ watch(() => page.url, () => {
         <!-- Top padding clears the fixed header: the bar alone on mobile, the bar
              plus the category strip from md up, where that strip is visible. -->
         <main
+            id="main-content"
+            tabindex="-1"
             class="pt-header md:pt-[calc(var(--spacing-header)+var(--spacing-catbar))] transition-[padding] duration-200"
             :class="contentInset"
         >

@@ -224,11 +224,14 @@ class SeoService
     /**
      * Generate SEO data for a video page.
      */
-    public function forVideo(Video $video): array
+    /**
+     * @param array{title?: string, description?: string} $translated Cached translations for the current locale
+     */
+    public function forVideo(Video $video, array $translated = []): array
     {
         $vars = [
-            'title' => $video->title,
-            'description' => $video->description ?? '',
+            'title' => $translated['title'] ?? $video->title,
+            'description' => $translated['description'] ?? $video->description ?? '',
             'site_name' => $this->siteName(),
             'uploader' => $video->user?->username ?? 'Unknown',
             'category' => $video->category?->name ?? '',
@@ -242,7 +245,7 @@ class SeoService
         $title = $this->template($titleTemplate, $vars);
 
         // Description
-        $description = $video->description;
+        $description = $translated['description'] ?? $video->description;
         if (empty($description) && $this->s('seo_video_auto_description', true)) {
             $fallbackTemplate = $this->s('seo_video_description_fallback', 'Watch {title} on {site_name}.');
             $description = $this->template($fallbackTemplate, $vars);
@@ -335,23 +338,17 @@ class SeoService
                 $schema['keywords'] = implode(', ', $video->tags);
             }
 
-            if ($video->likes_count > 0 || $video->dislikes_count > 0) {
-                $total = $video->likes_count + $video->dislikes_count;
-                $rating = $total > 0 ? round(($video->likes_count / $total) * 5, 1) : 0;
-                $schema['aggregateRating'] = [
-                    '@type' => 'AggregateRating',
-                    'ratingValue' => (string) $rating,
-                    'bestRating' => '5',
-                    'worstRating' => '1',
-                    'ratingCount' => (string) $total,
-                ];
-            }
+            // No aggregateRating: a like/dislike ratio isn't a 1-5 rating (an
+            // all-dislike video came out as 0, below worstRating), and Google
+            // ignores self-served ratings on VideoObject anyway.
 
             if ($video->comments_count > 0) {
                 $schema['commentCount'] = $video->comments_count;
             }
 
-            $schema['isFamilyFriendly'] = ! $video->age_restricted;
+            // Every video on an adult site is adult content, whatever its
+            // per-video age_restricted flag says.
+            $schema['isFamilyFriendly'] = false;
 
             // Add language annotation
             $schema['inLanguage'] = App::getLocale();

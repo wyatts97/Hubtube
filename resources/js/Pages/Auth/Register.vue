@@ -71,8 +71,11 @@ const onSubmit = () => {
                             class="input"
                             required
                             autofocus
+                            autocomplete="username"
+                            :aria-invalid="!!form.errors.username"
+                            :aria-describedby="form.errors.username ? 'username-error' : undefined"
                         />
-                        <p v-if="form.errors.username" class="text-red-500 text-sm mt-1">{{ form.errors.username }}</p>
+                        <p v-if="form.errors.username" id="username-error" class="text-red-500 text-sm mt-1">{{ form.errors.username }}</p>
                     </div>
 
                     <div>
@@ -85,8 +88,11 @@ const onSubmit = () => {
                             type="email"
                             class="input"
                             required
+                            autocomplete="email"
+                            :aria-invalid="!!form.errors.email"
+                            :aria-describedby="form.errors.email ? 'email-error' : undefined"
                         />
-                        <p v-if="form.errors.email" class="text-red-500 text-sm mt-1">{{ form.errors.email }}</p>
+                        <p v-if="form.errors.email" id="email-error" class="text-red-500 text-sm mt-1">{{ form.errors.email }}</p>
                     </div>
 
                     <div>
@@ -100,17 +106,22 @@ const onSubmit = () => {
                                 :type="showPassword ? 'text' : 'password'"
                                 class="input pe-10"
                                 required
+                                autocomplete="new-password"
+                                :aria-invalid="!!form.errors.password"
+                                :aria-describedby="form.errors.password ? 'password-error' : undefined"
                             />
                             <button
                                 type="button"
                                 @click="showPassword = !showPassword"
                                 class="absolute end-3 top-1/2 -translate-y-1/2 text-text-secondary"
+                                :aria-label="showPassword ? t('auth.hide_password') : t('auth.show_password')"
+                                :aria-pressed="showPassword"
                             >
                                 <EyeOff v-if="showPassword" class="w-5 h-5" />
                                 <Eye v-else class="w-5 h-5" />
                             </button>
                         </div>
-                        <p v-if="form.errors.password" class="text-red-500 text-sm mt-1">{{ form.errors.password }}</p>
+                        <p v-if="form.errors.password" id="password-error" class="text-red-500 text-sm mt-1">{{ form.errors.password }}</p>
                     </div>
 
                     <div>
@@ -123,8 +134,11 @@ const onSubmit = () => {
                             type="password"
                             class="input"
                             required
+                            autocomplete="new-password"
+                            :aria-invalid="!!form.errors.password_confirmation"
+                            :aria-describedby="form.errors.password_confirmation ? 'password_confirmation-error' : undefined"
                         />
-                        <p v-if="form.errors.password_confirmation" class="text-red-500 text-sm mt-1">{{ form.errors.password_confirmation }}</p>
+                        <p v-if="form.errors.password_confirmation" id="password_confirmation-error" class="text-red-500 text-sm mt-1">{{ form.errors.password_confirmation }}</p>
                     </div>
 
                     <div class="text-sm text-text-secondary">

@@ -110,7 +110,8 @@ const submit = () => {
                     <button
                         type="button"
                         class="absolute end-3 top-1/2 -translate-y-1/2 text-text-secondary"
-                        :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                        :aria-label="showPassword ? t('auth.hide_password') : t('auth.show_password')"
+                        :aria-pressed="showPassword"
                         @click="showPassword = !showPassword"
                     >
                         <EyeOff v-if="showPassword" class="w-5 h-5" />

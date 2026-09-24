@@ -15,9 +15,7 @@ import { usePage, router } from '@inertiajs/vue3';
  * is nothing to block the page for.
  */
 
-// Module-level shared cache (same shape as useTranslation's translationCache)
-// We import and populate the SAME cache that useTranslation reads from.
-import { _translationCache } from '@/Composables/useTranslation';
+import { fetchVideoTitles } from '@/Composables/useTranslation';
 
 const isTranslating = ref(false);
 
@@ -62,65 +60,13 @@ function extractVideos(obj, depth = 0, seen = new Set()) {
     return videos;
 }
 
-/**
- * Deduplicate videos by ID and filter out already-cached ones.
- */
-function getUncachedIds(videos, locale) {
-    const seen = new Set();
-    const ids = [];
-    for (const v of videos) {
-        if (!seen.has(v.id) && !_translationCache[`video:${v.id}:${locale}`]) {
-            seen.add(v.id);
-            ids.push(v.id);
-        }
-    }
-    return ids;
-}
-
 async function translatePageVideos(page) {
     const loc = page.props.locale;
     if (!loc?.enabled || loc.current === loc.default) return;
 
-    const locale = loc.current;
-    const videos = extractVideos(page.props);
-    const ids = getUncachedIds(videos, locale);
-
-    if (!ids.length) return;
-
     isTranslating.value = true;
-
     try {
-        const response = await fetch('/api/translate/batch', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': page.props.csrf_token,
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-                type: 'video',
-                ids,
-                fields: ['title'],
-                locale,
-            }),
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            if (data.translations?.length) {
-                for (const t of data.translations) {
-                    const entry = {};
-                    if (t.title) entry.title = t.title;
-                    if (t.translated_slug) entry.translated_slug = t.translated_slug;
-                    if (Object.keys(entry).length) {
-                        entry.id = t.id;
-                        _translationCache[`video:${t.id}:${locale}`] = entry;
-                    }
-                }
-            }
-        }
-    } catch (e) {
-        // Silently fail — show original content
+        await fetchVideoTitles(extractVideos(page.props).map((v) => v.id), loc.current);
     } finally {
         isTranslating.value = false;
     }

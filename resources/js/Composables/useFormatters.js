@@ -60,3 +60,30 @@ export function formatViews(views) {
     }
     return String(views);
 }
+
+/**
+ * Formats a wallet amount. Balances are held in US dollars.
+ * @param {number|string} amount
+ * @param {string} [locale='en'] - BCP 47 locale code
+ */
+export function formatMoney(amount, locale = 'en') {
+    const value = Number(amount) || 0;
+    try {
+        return new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD' }).format(value);
+    } catch (e) {
+        return `$${value.toFixed(2)}`;
+    }
+}
+
+/**
+ * Formats a calendar date in the site's language.
+ * @param {string|Date} date
+ * @param {string} [locale='en'] - BCP 47 locale code
+ */
+export function formatDate(date, locale = 'en') {
+    try {
+        return new Date(date).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch (e) {
+        return new Date(date).toLocaleDateString();
+    }
+}

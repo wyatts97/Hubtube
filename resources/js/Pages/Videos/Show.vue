@@ -1,5 +1,7 @@
 <script setup>
 import { Link, router, usePage } from '@inertiajs/vue3';
+import { useLoginDialog } from '@/Composables/useLoginDialog';
+import { formatDate } from '@/Composables/useFormatters';
 import SeoHead from '@/Components/SeoHead.vue';
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { DropdownMenuItem } from 'reka-ui';
@@ -25,6 +27,8 @@ defineOptions({ layout: AppLayout });
 const props = defineProps({
     video: Object,
     translatedTags: { type: Array, default: null },
+    translatedTitle: { type: String, default: null },
+    translatedDescription: { type: String, default: null },
     relatedVideos: Array,
     userLike: String,
     isSubscribed: Boolean,
@@ -41,7 +45,8 @@ const props = defineProps({
 });
 
 const toast = useToast();
-const { t, localizedUrl } = useI18n();
+const { t, localizedUrl, locale } = useI18n();
+const { openLogin } = useLoginDialog();
 
 // Embedded-video pre-roll gate. The iframe is only mounted once the gate is
 // open, so the ad is never competing with a third-party player for the frame.
@@ -263,34 +268,50 @@ const subscribing = ref(false);
 
 const { post, del } = useFetch();
 
-const handleLike = async () => {
-    if (!user.value) { router.visit('/login'); return; }
-    const { ok, data } = await post(`/videos/${props.video.id}/like`);
+const reacting = ref(false);
+
+/**
+ * Like or dislike, updated on screen straight away and corrected from the
+ * server's counts. A second click while the first is in flight is ignored.
+ */
+const react = async (type) => {
+    if (!user.value) { openLogin(); return; }
+    if (reacting.value) return;
+    reacting.value = true;
+
+    const before = {
+        liked: liked.value, disliked: disliked.value,
+        likes: likesCount.value, dislikes: dislikesCount.value,
+    };
+    const turningOn = type === 'like' ? !liked.value : !disliked.value;
+    if (liked.value) likesCount.value--;
+    if (disliked.value) dislikesCount.value--;
+    liked.value = type === 'like' && turningOn;
+    disliked.value = type === 'dislike' && turningOn;
+    if (liked.value) likesCount.value++;
+    if (disliked.value) dislikesCount.value++;
+
+    const { ok, data } = await post(`/videos/${props.video.id}/${type}`);
     if (ok && data) {
         liked.value = data.liked;
         disliked.value = data.disliked;
         likesCount.value = data.likesCount;
         dislikesCount.value = data.dislikesCount;
-    } else if (!ok) {
+    } else {
+        liked.value = before.liked;
+        disliked.value = before.disliked;
+        likesCount.value = before.likes;
+        dislikesCount.value = before.dislikes;
         toast.error(data?.message || t('common.error'));
     }
+    reacting.value = false;
 };
 
-const handleDislike = async () => {
-    if (!user.value) { router.visit('/login'); return; }
-    const { ok, data } = await post(`/videos/${props.video.id}/dislike`);
-    if (ok && data) {
-        liked.value = data.liked;
-        disliked.value = data.disliked;
-        likesCount.value = data.likesCount;
-        dislikesCount.value = data.dislikesCount;
-    } else if (!ok) {
-        toast.error(data?.message || t('common.error'));
-    }
-};
+const handleLike = () => react('like');
+const handleDislike = () => react('dislike');
 
 const handleSubscribe = async () => {
-    if (!user.value) { router.visit('/login'); return; }
+    if (!user.value) { openLogin(); return; }
     subscribing.value = true;
     const fn = subscribed.value ? (url) => del(url, null) : (url) => post(url, {});
     const { ok, data } = await fn(`/channel/${props.video.user.id}/subscribe`);
@@ -318,7 +339,7 @@ const toggleVideoInPlaylist = async (playlist) => {
             if (idx !== -1) {
                 playlists.value[idx] = { ...playlists.value[idx], has_video: false, videos_count: Math.max(0, (playlist.videos_count || 0) - 1) };
             }
-            toast.success(`Removed from "${playlist.title}"`);
+            toast.success(t('playlist.removed', { name: playlist.title }));
         }
     } else {
         const { ok } = await post(`/playlists/${playlist.id}/videos`, { video_id: props.video.id });
@@ -326,7 +347,7 @@ const toggleVideoInPlaylist = async (playlist) => {
             if (idx !== -1) {
                 playlists.value[idx] = { ...playlists.value[idx], has_video: true, videos_count: (playlist.videos_count || 0) + 1 };
             }
-            toast.success(`Added to "${playlist.title}"`);
+            toast.success(t('playlist.added', { name: playlist.title }));
         }
     }
     savingPlaylist.value = null;
@@ -414,16 +435,19 @@ const formattedViews = computed(() => {
 });
 
 // ── Translation ──
-const { isTranslated, translateItem, translateBatch, getTranslated } = useTranslation();
+const { isTranslated, translateItem, translateBatch } = useTranslation();
 
-const translatedTitle = ref(props.video.title);
-const translatedDescription = ref(props.video.description);
+// The server sends cached translations; the browser only fills what it lacks.
+const translatedTitle = ref(props.translatedTitle || props.video.title);
+const translatedDescription = ref(props.translatedDescription || props.video.description);
 
 // Auto-translate video content when locale is non-default
 onMounted(async () => {
     if (isTranslated.value) {
         // Translate main video
-        const result = await translateItem('video', props.video.id, ['title', 'description']);
+        const result = props.translatedTitle
+            ? null
+            : await translateItem('video', props.video.id, ['title', 'description']);
         if (result) {
             if (result.title) translatedTitle.value = result.title;
             if (result.description) translatedDescription.value = result.description;
@@ -437,10 +461,6 @@ onMounted(async () => {
     }
 });
 
-const getRelatedTitle = (video) => {
-    if (!isTranslated.value) return video.title;
-    return getTranslated('video', video.id, 'title', video.title);
-};
 </script>
 
 <template>
@@ -656,7 +676,7 @@ const getRelatedTitle = (video) => {
                         <Eye class="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         <span>{{ t('video.views', { count: formattedViews, n: video.views_count }) }}</span>
                         <span class="text-text-muted">•</span>
-                        <span>{{ video.published_at ? new Date(video.published_at).toLocaleDateString() : new Date(video.created_at).toLocaleDateString() }}</span>
+                        <span>{{ formatDate(video.published_at || video.created_at, locale) }}</span>
                     </div>
                 </div>
                     
@@ -693,6 +713,8 @@ const getRelatedTitle = (video) => {
                             @click="handleLike"
                             class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
                             :style="{ color: liked ? '#22c55e' : undefined }"
+                            :aria-label="t('video.like')"
+                            :aria-pressed="liked"
                         >
                             <ThumbsUp class="w-3.5 h-3.5 sm:w-5 sm:h-5" :fill="liked ? 'currentColor' : 'none'" />
                             <span>{{ likesCount }}</span>
@@ -701,6 +723,8 @@ const getRelatedTitle = (video) => {
                             @click="handleDislike"
                             class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2"
                             :style="{ color: disliked ? '#ef4444' : undefined }"
+                            :aria-label="t('video.dislike')"
+                            :aria-pressed="disliked"
                         >
                             <ThumbsDown class="w-3.5 h-3.5 sm:w-5 sm:h-5" :fill="disliked ? 'currentColor' : 'none'" />
                             <span>{{ dislikesCount }}</span>
@@ -708,7 +732,7 @@ const getRelatedTitle = (video) => {
 
                         <button @click="handleShare" class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
                             <Share2 class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                            <span class="hidden sm:inline">{{ t('common.share') }}</span>
+                            <span class="sr-only sm:not-sr-only">{{ t('common.share') }}</span>
                         </button>
 
                         <!-- One click to the Watch Later list, which every
@@ -723,7 +747,7 @@ const getRelatedTitle = (video) => {
                             :title="t('playlist.watch_later')"
                         >
                             <Clock class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                            <span class="hidden sm:inline">{{ t('playlist.watch_later') }}</span>
+                            <span class="sr-only sm:not-sr-only">{{ t('playlist.watch_later') }}</span>
                         </button>
 
                         <a
@@ -733,7 +757,7 @@ const getRelatedTitle = (video) => {
                             download
                         >
                             <Download class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                            <span class="hidden sm:inline">{{ t('common.download') }}</span>
+                            <span class="sr-only sm:not-sr-only">{{ t('common.download') }}</span>
                         </a>
 
                         <!--
@@ -751,7 +775,7 @@ const getRelatedTitle = (video) => {
                                 <template #trigger>
                                     <button class="btn btn-secondary gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
                                         <ListVideo class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                        <span class="hidden sm:inline">{{ t('common.save') }}</span>
+                                        <span class="sr-only sm:not-sr-only">{{ t('common.save') }}</span>
                                     </button>
                                 </template>
 
@@ -774,7 +798,7 @@ const getRelatedTitle = (video) => {
                                         </div>
                                         <span class="truncate flex-1">{{ pl.title }}</span>
                                         <Loader2 v-if="savingPlaylist === pl.id" class="w-4 h-4 animate-spin shrink-0" />
-                                        <span v-else class="text-xs shrink-0 text-text-muted">{{ pl.videos_count }} videos</span>
+                                        <span v-else class="text-xs shrink-0 text-text-muted">{{ t('playlist.videos_count', { count: pl.videos_count, n: pl.videos_count }) }}</span>
                                     </DropdownMenuItem>
                                     <div v-if="!playlists.length" class="px-3 py-4 text-center text-sm text-text-muted">{{ t('playlist.no_playlists') }}</div>
                                 </div>
@@ -792,6 +816,7 @@ const getRelatedTitle = (video) => {
                                             v-model="newPlaylistTitle"
                                             type="text"
                                             :placeholder="t('playlist.new_name')"
+                                            :aria-label="t('playlist.new_name')"
                                             class="input text-sm flex-1"
                                             @keydown.enter.prevent="createAndAddPlaylist"
                                         />
@@ -799,6 +824,7 @@ const getRelatedTitle = (video) => {
                                             @click="createAndAddPlaylist"
                                             :disabled="!newPlaylistTitle.trim() || creatingPlaylist"
                                             class="btn btn-primary p-2"
+                                            :aria-label="t('playlist.create')"
                                         >
                                             <Loader2 v-if="creatingPlaylist" class="w-4 h-4 animate-spin" />
                                             <Plus v-else class="w-4 h-4" />
@@ -807,15 +833,15 @@ const getRelatedTitle = (video) => {
                                 </DropdownMenuItem>
                             </BaseDropdown>
 
-                            <button v-else @click="router.visit('/login')" class="btn btn-secondary gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
+                            <button v-else @click="openLogin" class="btn btn-secondary gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
                                 <ListVideo class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                                <span class="hidden sm:inline">{{ t('common.save') }}</span>
+                                <span class="sr-only sm:not-sr-only">{{ t('common.save') }}</span>
                             </button>
                         </div>
 
-                        <button @click="user ? (showReportModal = true) : router.visit('/login')" class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
+                        <button @click="user ? (showReportModal = true) : openLogin()" class="btn btn-secondary gap-1 sm:gap-2 shrink-0 text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
                             <Flag class="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-                            <span class="hidden sm:inline">{{ t('common.report') }}</span>
+                            <span class="sr-only sm:not-sr-only">{{ t('common.report') }}</span>
                         </button>
 
                     </div>

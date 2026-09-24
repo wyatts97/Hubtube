@@ -18,7 +18,7 @@ defineOptions({ layout: AppLayout });
 
 const { t, localizedUrl } = useI18n();
 
-const { translateVideos, tr } = useAutoTranslate(['title']);
+const { translateVideos, tr } = useAutoTranslate();
 
 const props = defineProps({
     query: String,
@@ -162,9 +162,10 @@ const { gridClass } = useVideoGrid();
                 v-model="searchQuery"
                 type="text"
                 :placeholder="t('search.placeholder')"
+                :aria-label="t('search.placeholder')"
                 class="input pe-12"
             />
-            <button type="submit" class="absolute end-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80 text-text-muted">
+            <button type="submit" class="absolute end-2 top-1/2 -translate-y-1/2 p-2 rounded-full hover:opacity-80 text-text-muted" :aria-label="t('common.search')">
                 <SearchIcon class="w-5 h-5" />
             </button>
         </div>

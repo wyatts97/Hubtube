@@ -1,6 +1,8 @@
 <script setup>
+import { ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ConfirmDialog from '@/Components/UI/ConfirmDialog.vue';
 import VideoCard from '@/Components/VideoCard.vue';
 import { History, Trash2 } from 'lucide-vue-next';
 import { useFetch } from '@/Composables/useFetch';
@@ -26,9 +28,9 @@ const { getSponsoredCard, sponsoredCellClass } = useGridAds(props);
 
 const { del } = useFetch();
 
+const confirmingClear = ref(false);
+
 const clearHistory = async () => {
-    if (!confirm(t('history.clear_confirm'))) return;
-    
     const { ok, data } = await del('/history', null);
     if (ok) {
         router.reload();
@@ -46,7 +48,7 @@ const clearHistory = async () => {
             <h1 class="page-title">{{ t('history.title') }}</h1>
             <p class="mt-1 text-text-secondary">{{ t('history.description') }}</p>
         </div>
-        <button v-if="videos?.data?.length" @click="clearHistory" class="btn btn-ghost text-red-400 gap-2">
+        <button v-if="videos?.data?.length" @click="confirmingClear = true" class="btn btn-ghost text-red-400 gap-2">
             <Trash2 class="w-4 h-4" />
             {{ t('history.clear') }}
         </button>
@@ -82,4 +84,12 @@ const clearHistory = async () => {
             />
         </template>
     </div>
+
+    <ConfirmDialog
+        v-model="confirmingClear"
+        :title="t('history.clear')"
+        :message="t('history.clear_confirm')"
+        :confirm-label="t('history.clear')"
+        @confirm="clearHistory"
+    />
 </template>

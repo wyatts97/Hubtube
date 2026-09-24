@@ -50,7 +50,7 @@ const handleDrop = (e) => {
     const files = e.dataTransfer.files;
 
     if (files.length > 1) {
-        uploadError.value = 'Please drop only one image file at a time.';
+        uploadError.value = t('images.one_at_a_time');
         return;
     }
 
@@ -132,12 +132,12 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <SeoHead title="Upload Image" />
+    <SeoHead :title="t('images.upload_title')" />
 
     <div class="max-w-4xl mx-auto">
         <div class="flex items-center gap-3 mb-6">
             <div>
-                <h1 class="page-title">Upload Image</h1>
+                <h1 class="page-title">{{ t('images.upload_title') }}</h1>
             </div>
         </div>
 
@@ -154,7 +154,7 @@ onUnmounted(() => {
                 <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-bg-secondary">
                     <ImageIcon class="w-8 h-8 text-text-muted" />
                 </div>
-                <p class="text-lg font-medium mb-2 text-text-primary">Drag and drop image file</p>
+                <p class="text-lg font-medium mb-2 text-text-primary">{{ t('images.drag_drop') }}</p>
                 <p class="mb-4 text-text-muted">or click to browse</p>
                 <label class="btn btn-primary cursor-pointer">
                     Select File
@@ -188,7 +188,7 @@ onUnmounted(() => {
                         <!-- Upload Progress Bar -->
                         <div v-if="uploadStatus === 'uploading'" class="mt-3">
                             <div class="flex items-center justify-between text-sm mb-1">
-                                <span class="text-text-secondary">Uploading...</span>
+                                <span class="text-text-secondary">{{ t('video.uploading') }}</span>
                                 <span class="text-accent-text">{{ uploadProgress }}%</span>
                             </div>
                             <div class="h-2 rounded-full overflow-hidden bg-bg-secondary">
@@ -202,13 +202,13 @@ onUnmounted(() => {
                         <!-- Success Status -->
                         <div v-else-if="uploadStatus === 'success'" class="mt-3 flex items-center gap-2 text-green-500">
                             <CheckCircle class="w-4 h-4" />
-                            <span class="text-sm">Upload complete!</span>
+                            <span class="text-sm">{{ t('video.upload_complete') }}</span>
                         </div>
 
                         <!-- Error Status -->
                         <div v-else-if="uploadStatus === 'error'" class="mt-3 flex items-center gap-2 text-red-500">
                             <AlertCircle class="w-4 h-4" />
-                            <span class="text-sm">{{ uploadError || 'Upload failed' }}</span>
+                            <span class="text-sm">{{ uploadError || t('video.upload_failed') }}</span>
                         </div>
                     </div>
                     <button
@@ -234,7 +234,7 @@ onUnmounted(() => {
             <!-- Image Details -->
             <div class="card p-6 space-y-4">
                 <div>
-                    <label for="title" class="block text-sm font-medium mb-1 text-text-secondary">Title</label>
+                    <label for="title" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('common.title') }}</label>
                     <input
                         id="title"
                         v-model="form.title"
@@ -246,7 +246,7 @@ onUnmounted(() => {
                 </div>
 
                 <div>
-                    <label for="description" class="block text-sm font-medium mb-1 text-text-secondary">Description</label>
+                    <label for="description" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('common.description') }}</label>
                     <textarea
                         id="description"
                         v-model="form.description"
@@ -258,9 +258,9 @@ onUnmounted(() => {
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label for="category" class="block text-sm font-medium mb-1 text-text-secondary">Category</label>
+                        <label for="category" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('common.category') }}</label>
                         <select id="category" v-model="form.category_id" class="input">
-                            <option value="">Select category</option>
+                            <option value="">{{ t('common.select_category') }}</option>
                             <option v-for="cat in categories" :key="cat.id" :value="cat.id">
                                 {{ cat.name }}
                             </option>
@@ -268,17 +268,17 @@ onUnmounted(() => {
                     </div>
 
                     <div>
-                        <label for="privacy" class="block text-sm font-medium mb-1 text-text-secondary">Privacy</label>
+                        <label for="privacy" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('common.privacy') }}</label>
                         <select id="privacy" v-model="form.privacy" class="input">
-                            <option value="public">Public</option>
-                            <option value="unlisted">Unlisted</option>
-                            <option value="private">Private</option>
+                            <option value="public">{{ t('common.public') }}</option>
+                            <option value="unlisted">{{ t('common.unlisted') }}</option>
+                            <option value="private">{{ t('common.private') }}</option>
                         </select>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium mb-1 text-text-secondary">Tags</label>
+                    <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('common.tags') }}</label>
                     <div class="flex flex-wrap gap-2 mb-2">
                         <span
                             v-for="(tag, index) in form.tags"
@@ -295,7 +295,7 @@ onUnmounted(() => {
                         v-model="tagInput"
                         type="text"
                         class="input"
-                        placeholder="Add tag and press Enter"
+                        :placeholder="t('upload.add_tag')"
                         @keydown.enter.prevent="addTag"
                     />
                 </div>
@@ -307,8 +307,8 @@ onUnmounted(() => {
                     :disabled="form.processing || !form.image_file"
                     class="btn btn-primary"
                 >
-                    <span v-if="form.processing">Uploading...</span>
-                    <span v-else>Upload Image</span>
+                    <span v-if="form.processing">{{ t('video.uploading') }}</span>
+                    <span v-else>{{ t('images.upload_title') }}</span>
                 </button>
             </div>
         </form>

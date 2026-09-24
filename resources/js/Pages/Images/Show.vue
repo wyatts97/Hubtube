@@ -2,6 +2,7 @@
 import { Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ConfirmDialog from '@/Components/UI/ConfirmDialog.vue';
 import SeoHead from '@/Components/SeoHead.vue';
 import ImageCard from '@/Components/ImageCard.vue';
 import Lightbox from '@/Components/Lightbox.vue';
@@ -37,11 +38,8 @@ const formatViews = (count) => {
     return count.toString();
 };
 
-const deleteImage = () => {
-    if (confirm('Are you sure you want to delete this image?')) {
-        router.delete(`/images/${props.image.slug}`);
-    }
-};
+const confirmingDelete = ref(false);
+const deleteImage = () => { confirmingDelete.value = true; };
 
 const downloadImage = () => {
     const a = document.createElement('a');
@@ -181,5 +179,11 @@ const lightboxImages = computed(() => {
         v-model="showLightbox"
         :images="lightboxImages"
         :start-index="0"
+    />
+
+    <ConfirmDialog
+        v-model="confirmingDelete"
+        :title="t('images.delete_title')"
+        @confirm="router.delete(`/images/${image.slug}`)"
     />
 </template>

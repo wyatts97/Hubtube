@@ -245,7 +245,7 @@ const apiPost = async (url, body = {}) => {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-        const message = data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Something went wrong.');
+        const message = data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || t('common.error'));
         throw new Error(message);
     }
     return data;
@@ -449,7 +449,7 @@ const tabs = computed(() => {
                     <div class="card p-6 border border-red-500/20">
                         <div class="flex items-center gap-3 mb-3">
                             <AlertTriangle class="w-5 h-5 text-red-500" />
-                            <h2 class="text-lg font-semibold text-text-primary">Delete Account</h2>
+                            <h2 class="text-lg font-semibold text-text-primary">{{ t('settings.delete_account') }}</h2>
                         </div>
                         <p class="text-sm mb-4 text-text-secondary">
                             This action is irreversible. All your data, videos, comments, playlists, and uploads will be permanently deleted.
@@ -633,7 +633,7 @@ const tabs = computed(() => {
                 <div class="card p-6 mt-6">
                     <div class="flex items-center gap-3 mb-4">
                         <ShieldCheck class="w-5 h-5 text-accent-text" />
-                        <h2 class="text-lg font-semibold text-text-primary">Two-Factor Authentication</h2>
+                        <h2 class="text-lg font-semibold text-text-primary">{{ t('settings.two_factor') }}</h2>
                     </div>
 
                     <!-- Idle: show status -->
@@ -642,7 +642,7 @@ const tabs = computed(() => {
                             Add an extra layer of security to your account by requiring an authentication code from your phone in addition to your password.
                         </p>
                         <div v-if="twoFactorEnabled" class="flex items-center gap-3 flex-wrap">
-                            <span class="px-3 py-1 rounded-full text-sm font-medium bg-accent" style="color: white;">Enabled</span>
+                            <span class="px-3 py-1 rounded-full text-sm font-medium bg-accent" style="color: white;">{{ t('common.enabled') }}</span>
                             <button @click="regenerateRecoveryCodes" :disabled="twoFactorProcessing" class="btn btn-secondary text-sm">
                                 Regenerate Recovery Codes
                             </button>
@@ -690,10 +690,10 @@ const tabs = computed(() => {
                                 />
                                 <p v-if="twoFactorError" class="text-red-500 text-sm text-center">{{ twoFactorError }}</p>
                                 <div class="flex gap-2">
-                                    <button type="button" @click="twoFactorStep = 'idle'" class="btn btn-ghost flex-1 text-sm">Cancel</button>
+                                    <button type="button" @click="twoFactorStep = 'idle'" class="btn btn-ghost flex-1 text-sm">{{ t('common.cancel') }}</button>
                                     <button type="submit" :disabled="twoFactorProcessing" class="btn btn-primary flex-1 text-sm">
                                         <Loader2 v-if="twoFactorProcessing" class="w-4 h-4 animate-spin" />
-                                        <span v-else>Confirm</span>
+                                        <span v-else>{{ t('common.confirm') }}</span>
                                     </button>
                                 </div>
                             </form>
@@ -704,7 +704,7 @@ const tabs = computed(() => {
                     <template v-else-if="twoFactorStep === 'recovery'">
                         <div class="flex items-center gap-2 mb-3">
                             <KeyRound class="w-4 h-4 text-accent-text" />
-                            <p class="font-medium text-text-primary">Save your recovery codes</p>
+                            <p class="font-medium text-text-primary">{{ t('settings.save_recovery_codes') }}</p>
                         </div>
                         <p class="text-sm mb-3 text-text-secondary">
                             Store these codes somewhere safe. Each one can be used once to sign in if you lose access to your authenticator app.
@@ -712,7 +712,7 @@ const tabs = computed(() => {
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-4 rounded-lg bg-bg-secondary font-mono text-sm mb-4">
                             <span v-for="rc in recoveryCodes" :key="rc" class="text-text-primary text-center py-1">{{ rc }}</span>
                         </div>
-                        <button @click="finishTwoFactorSetup" class="btn btn-primary text-sm">I've saved these codes</button>
+                        <button @click="finishTwoFactorSetup" class="btn btn-primary text-sm">{{ t('settings.saved_codes') }}</button>
                     </template>
                 </div>
                 </TabsContent>
@@ -784,7 +784,7 @@ const tabs = computed(() => {
                             <div>
                                 <p class="text-text-primary">{{ t('settings.browser_push') }}</p>
                                 <p class="text-sm text-text-secondary">
-                                    {{ pushSubscribed ? 'This browser is receiving push notifications' : 'Enable push notifications for this browser' }}
+                                    {{ pushSubscribed ? t('settings.push_receiving') : t('settings.push_enable') }}
                                 </p>
                             </div>
                             <button 
@@ -853,7 +853,7 @@ const tabs = computed(() => {
                     </form>
 
                     <div class="mt-6 pt-6 border-t border-border">
-                        <h3 class="font-medium mb-1 text-text-primary">Download My Data</h3>
+                        <h3 class="font-medium mb-1 text-text-primary">{{ t('settings.download_data') }}</h3>
                         <p class="text-sm mb-3 text-text-secondary">
                             Export a copy of your profile, videos, comments, playlists, watch history, and wallet transactions as a JSON file.
                         </p>
@@ -901,7 +901,7 @@ const tabs = computed(() => {
                             </div>
                         </div>
                         <div class="p-4 rounded-lg bg-bg-secondary">
-                            <p class="font-medium mb-3 text-text-primary">Pro Benefits</p>
+                            <p class="font-medium mb-3 text-text-primary">{{ t('settings.pro_benefits') }}</p>
                             <ul class="space-y-2 text-sm text-text-secondary">
                                 <li class="flex items-center gap-2">
                                     <span class="text-accent-text">✓</span>
@@ -936,17 +936,17 @@ const tabs = computed(() => {
     <BaseDialog
         v-model="showDisable2fa"
         variant="alert"
-        title="Disable Two-Factor Authentication"
+        :title="t('settings.disable_two_factor')"
     >
         <form @submit.prevent="disableTwoFactor">
             <div class="mb-4">
-                <label class="block text-sm font-medium mb-1 text-text-secondary">Password</label>
+                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('common.password') }}</label>
                 <input
                     v-model="disable2faPassword"
                     type="password"
                     autocomplete="current-password"
                     class="w-full px-3 py-2 rounded-lg border text-sm bg-bg-secondary border-border text-text-primary"
-                    placeholder="Enter your password"
+                    :placeholder="t('common.enter_password')"
                     required
                 />
                 <p v-if="disable2faError" class="text-red-500 text-sm mt-1">{{ disable2faError }}</p>
@@ -957,7 +957,7 @@ const tabs = computed(() => {
                 </button>
                 <button type="submit" :disabled="twoFactorProcessing || !disable2faPassword" class="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
                     <Loader2 v-if="twoFactorProcessing" class="w-4 h-4 animate-spin inline" />
-                    <span v-else>Disable</span>
+                    <span v-else>{{ t('common.disable') }}</span>
                 </button>
             </div>
         </form>
@@ -974,8 +974,8 @@ const tabs = computed(() => {
                 <AlertTriangle class="w-5 h-5 text-red-500" />
             </div>
             <div>
-                <h3 class="text-lg font-semibold text-text-primary">Are you sure?</h3>
-                <p class="text-sm text-text-secondary">This action is permanent and cannot be undone.</p>
+                <h3 class="text-lg font-semibold text-text-primary">{{ t('common.are_you_sure') }}</h3>
+                <p class="text-sm text-text-secondary">{{ t('common.permanent') }}</p>
             </div>
         </div>
 
@@ -986,13 +986,13 @@ const tabs = computed(() => {
 
         <form @submit.prevent="confirmDeleteAccount">
             <div class="mb-4">
-                <label class="block text-sm font-medium mb-1 text-text-secondary">Password</label>
+                <label class="block text-sm font-medium mb-1 text-text-secondary">{{ t('common.password') }}</label>
                 <input
                     v-model="deleteForm.password"
                     type="password"
                     autocomplete="current-password"
                     class="w-full px-3 py-2 rounded-lg border text-sm bg-bg-secondary border-border text-text-primary"
-                    placeholder="Enter your password"
+                    :placeholder="t('common.enter_password')"
                     required
                 />
                 <p v-if="deleteForm.errors.password" class="text-red-500 text-sm mt-1">{{ deleteForm.errors.password }}</p>

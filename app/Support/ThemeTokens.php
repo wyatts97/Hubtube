@@ -94,7 +94,7 @@ class ThemeTokens
         'accentContrast' => '#ffffff',
         'textPrimary'    => '#17151a',
         'textSecondary'  => '#5c5761',
-        'textMuted'      => '#7b727e',
+        'textMuted'      => '#6e6571',
         'border'         => '#e3ded9',
         'borderSubtle'   => '#efeae6',
         'borderStrong'   => '#cdc5bd',

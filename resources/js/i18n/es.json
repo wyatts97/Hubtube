@@ -2,7 +2,13 @@
   "age": {
     "confirm": "Tengo 18 años o más",
     "exit": "Salir",
-    "title": "Verificación de Edad Requerida"
+    "title": "Verificación de Edad Requerida",
+    "description": "Este sitio contiene contenido restringido por edad. Debes tener al menos 18 años para entrar.",
+    "disclaimer": "Al hacer clic en \"{confirm}\", confirmas que tienes al menos 18 años y aceptas ver contenido para adultos.",
+    "terms_intro": "Al entrar en este sitio, aceptas nuestros",
+    "terms": "Términos del servicio",
+    "and": "y",
+    "privacy": "Política de privacidad"
   },
   "auth": {
     "back_to_login": "Volver a Iniciar Sesión",
@@ -26,7 +32,11 @@
     "sign_up": "Registrarse",
     "signing_in": "Iniciando sesión...",
     "verify_email": "Verifica tu Correo",
-    "welcome_back": "Bienvenido de nuevo"
+    "welcome_back": "Bienvenido de nuevo",
+    "show_password": "Mostrar contraseña",
+    "hide_password": "Ocultar contraseña",
+    "continue_with": "Continuar con",
+    "or": "o"
   },
   "categories": {
     "all": "Todas las Categorías",
@@ -108,7 +118,31 @@
     "verified": "Verificado",
     "videos": "videos",
     "view_all": "Ver Todo",
-    "views": "visualizaciones"
+    "views": "visualizaciones",
+    "skip_to_content": "Saltar al contenido",
+    "clear_filter": "Quitar filtro",
+    "pagination": "Paginación",
+    "previous_page": "Página anterior",
+    "next_page": "Página siguiente",
+    "search_videos": "Buscar videos",
+    "user_menu": "Menú de usuario",
+    "logo": "Logotipo",
+    "avatar": "Avatar",
+    "public": "Público",
+    "unlisted": "No listado",
+    "private": "Privado",
+    "privacy": "Privacidad",
+    "category": "Categoría",
+    "select_category": "Selecciona una categoría",
+    "tags": "Etiquetas",
+    "enabled": "Activado",
+    "password": "Contraseña",
+    "enter_password": "Introduce tu contraseña",
+    "are_you_sure": "¿Estás seguro?",
+    "permanent": "Esta acción es permanente y no se puede deshacer.",
+    "disable": "Desactivar",
+    "channels": "Canales",
+    "search": "Buscar"
   },
   "contact": {
     "email": "Correo Electrónico",
@@ -131,7 +165,20 @@
     "total_views": "Total de Vistas",
     "upload_to_see": "Sube videos para ver analíticas",
     "upload_video": "Subir Video",
-    "wallet_balance": "Saldo de Billetera"
+    "wallet_balance": "Saldo de Billetera",
+    "points_balance": "Puntos de recompensa"
+  },
+  "dmca": {
+    "accuracy": "Juro, bajo pena de perjurio, que la información de esta notificación es exacta y que soy el titular de los derechos de autor o estoy autorizado para actuar en su nombre.",
+    "company": "Empresa / agencia (opcional)",
+    "email": "Correo electrónico",
+    "good_faith": "Creo de buena fe que el uso del material protegido descrito arriba no está autorizado por el titular de los derechos, su agente ni la ley.",
+    "infringing_urls": "URL(s) del contenido infractor",
+    "name": "Nombre completo",
+    "signature": "Firma electrónica (escribe tu nombre legal completo)",
+    "submit": "Enviar solicitud",
+    "title": "Solicitud de retirada DMCA",
+    "work_description": "Descripción de la obra protegida"
   },
   "errors": {
     "body_403": "No tienes permiso para acceder a este recurso.",
@@ -146,7 +193,6 @@
     "generic": "Algo salió mal. Por favor intenta de nuevo.",
     "go_home": "Ir al Inicio",
     "not_found": "Página no encontrada",
-    "redirecting": "Redirigiendo al inicio en {count}s",
     "refresh": "Actualizar Página",
     "title_403": "Acceso denegado",
     "title_404": "Página no encontrada",
@@ -206,12 +252,24 @@
     "dmca": "DMCA",
     "guidelines": "Normas de la Comunidad",
     "privacy": "Política de Privacidad",
-    "terms": "Términos de Servicio"
+    "terms": "Términos de Servicio",
+    "dmca_request": "Enviar solicitud de retirada"
   },
   "gallery": {
     "be_first": "Sé el primero en crear una galería",
     "create": "Crear galería",
-    "none_yet": "Aún no hay galerías"
+    "none_yet": "Aún no hay galerías",
+    "delete_title": "¿Eliminar esta galería?",
+    "delete_body": "Las imágenes que contiene no se eliminan.",
+    "title": "Título",
+    "sort_order": "Orden",
+    "newest_first": "Más recientes primero",
+    "oldest_first": "Más antiguas primero",
+    "manual": "Manual",
+    "select_images": "Seleccionar imágenes",
+    "no_images": "Aún no has subido ninguna imagen.",
+    "upload_images": "Subir imágenes",
+    "creating": "Creando..."
   },
   "history": {
     "clear": "Limpiar Historial",
@@ -227,11 +285,17 @@
     "loading_more": "Cargando más videos...",
     "playlists": "Listas de Reproducción",
     "popular": "Populares",
-    "reached_end": "Has llegado al final"
+    "reached_end": "Has llegado al final",
+    "images": "Imágenes recientes",
+    "shorts": "Shorts"
   },
   "images": {
     "adjust_filters": "Prueba a ajustar los filtros",
-    "none_found": "No se encontraron imágenes"
+    "none_found": "No se encontraron imágenes",
+    "delete_title": "¿Eliminar esta imagen?",
+    "upload_title": "Subir imagen",
+    "drag_drop": "Arrastra y suelta un archivo de imagen",
+    "one_at_a_time": "Suelta solo una imagen a la vez."
   },
   "nav": {
     "admin_panel": "Panel de Admin",
@@ -266,7 +330,10 @@
     "upload_image": "Imagen",
     "upload_video": "Subir Video",
     "wallet": "Billetera",
-    "your_channel": "Tu Canal"
+    "your_channel": "Tu Canal",
+    "images": "Imágenes",
+    "rewards": "Recompensas",
+    "shorts": "Shorts"
   },
   "playlist": {
     "add_videos": "Agrega videos para comenzar",
@@ -312,7 +379,27 @@
     "unknown_creator": "Creador desconocido",
     "videos_count": "{count} videos",
     "watch_later": "Ver más tarde",
-    "your_playlists": "Tus Listas"
+    "your_playlists": "Tus Listas",
+    "browse_all": "Explora listas de todos los creadores",
+    "no_public_playlists": "Aún no hay listas",
+    "no_public_playlists_desc": "¡Sé el primero en crear una lista!",
+    "public_playlists": "Listas públicas"
+  },
+  "pro": {
+    "title": "Hazte Pro",
+    "ad_free": "Sin anuncios",
+    "ad_free_desc": "Mira todos los videos sin interrupciones.",
+    "upload_cap": "Más subidas diarias",
+    "upload_cap_desc": "Publica más videos cada día.",
+    "downloads": "Descarga de videos",
+    "downloads_desc": "Descarga tus videos favoritos para verlos sin conexión.",
+    "badge": "Insignia Pro",
+    "badge_desc": "Destaca con una insignia dorada en tu canal y comentarios.",
+    "monthly": "Mensual",
+    "monthly_desc": "Flexible, cancela cuando quieras.",
+    "best_value": "Mejor precio",
+    "annual": "Anual",
+    "sign_in_to_upgrade": "Inicia sesión para mejorar tu cuenta."
   },
   "report": {
     "copyright": "Violación de derechos de autor",
@@ -330,12 +417,23 @@
     "title": "Reportar Video",
     "underage": "Contenido de menores"
   },
+  "rewards": {
+    "history": "Historial de puntos",
+    "how_to_earn": "Cómo ganar puntos",
+    "no_activity": "Aún no hay actividad de puntos",
+    "no_activity_desc": "Sube videos o imágenes, o publica comentarios para empezar a ganar",
+    "points_balance": "Saldo de puntos",
+    "redeem": "Canjear puntos",
+    "subtitle": "Gana puntos aportando contenido y canjéalos por Pro sin anuncios.",
+    "title": "Recompensas"
+  },
   "search": {
     "channels": "Canales",
     "hashtags": "Hashtags",
     "placeholder": "Buscar videos, canales, hashtags...",
     "title": "Buscar",
-    "videos": "Videos"
+    "videos": "Videos",
+    "no_results": "No se encontraron resultados"
   },
   "settings": {
     "allow_comments": "Permitir Comentarios",
@@ -393,7 +491,16 @@
     "upgrade_pro": "Mejorar a Pro",
     "username": "Nombre de usuario",
     "wallet_balance": "Saldo de Billetera",
-    "withdraw": "Retirar"
+    "withdraw": "Retirar",
+    "delete_account": "Eliminar cuenta",
+    "two_factor": "Autenticación en dos pasos",
+    "save_recovery_codes": "Guarda tus códigos de recuperación",
+    "saved_codes": "He guardado estos códigos",
+    "push_receiving": "Este navegador recibe notificaciones push",
+    "push_enable": "Activa las notificaciones push en este navegador",
+    "download_data": "Descargar mis datos",
+    "pro_benefits": "Ventajas Pro",
+    "disable_two_factor": "Desactivar la autenticación en dos pasos"
   },
   "share": {
     "embed": "Insertar",
@@ -402,6 +509,29 @@
     "copy_failed": "Error al copiar enlace",
     "copy_link": "Enlace copiado al portapapeles",
     "title": "Compartir Video"
+  },
+  "shorts": {
+    "comments": "Comentarios",
+    "comments_count": "{count} comentario | {count} comentarios",
+    "no_comments": "Aún no hay comentarios",
+    "add_comment": "Añade un comentario...",
+    "mute": "Silenciar",
+    "unmute": "Activar sonido",
+    "filter_title": "Filtrar Shorts",
+    "category": "Categoría",
+    "all_categories": "Todas las categorías",
+    "tag": "Etiqueta",
+    "date": "Fecha",
+    "any_time": "Cualquier fecha",
+    "today": "Hoy",
+    "this_week": "Esta semana",
+    "this_month": "Este mes",
+    "this_year": "Este año",
+    "sort": "Ordenar",
+    "latest": "Más recientes",
+    "most_popular": "Más populares",
+    "clear": "Limpiar",
+    "apply": "Aplicar"
   },
   "studio": {
     "analytics": "Estadísticas",
@@ -466,7 +596,9 @@
   "tags": {
     "no_videos": "No hay videos con esta etiqueta aún",
     "title": "Etiquetas",
-    "video_count": "{count} videos"
+    "video_count": "{count} videos",
+    "browse": "Explorar videos por etiqueta",
+    "no_tags": "Aún no hay etiquetas"
   },
   "theme": {
     "appearance": "Apariencia",
@@ -502,7 +634,17 @@
     "title": "Subir Video",
     "title_short": "Subir Short",
     "video_description": "Descripción",
-    "video_title": "Título"
+    "video_title": "Título",
+    "one_video_at_a_time": "Suelta solo un video a la vez.",
+    "did_not_complete": "La subida no se completó correctamente.",
+    "publish_failed": "No se pudo publicar el video.",
+    "complete_required": "Completa los campos obligatorios",
+    "daily_limit": "Límite diario de subidas alcanzado",
+    "drop_anywhere": "Suelta tu video en cualquier lugar",
+    "select_category_error": "Selecciona una categoría.",
+    "search_tags": "Buscar etiquetas existentes",
+    "popular_tags": "Etiquetas populares",
+    "select_video_file": "Selecciona un archivo de video"
   },
   "video": {
     "add_comment": "Agregar un comentario...",
@@ -545,7 +687,8 @@
     "reply": "Responder",
     "save_to_playlist": "Guardar en lista",
     "shortcuts": {
-      "label": "Atajos"
+      "label": "Atajos",
+      "title": "Atajos de teclado (?)"
     },
     "show_more_comments": "Ver más comentarios",
     "show_more_replies": "Ver {count} respuesta más | Ver {count} respuestas más",
@@ -561,7 +704,13 @@
     "uploading": "Subiendo...",
     "video_details": "Detalles del Video",
     "video_status": "Estado del Video",
-    "views": "{count} vistas"
+    "views": "{count} vistas",
+    "like": "Me gusta",
+    "dislike": "No me gusta",
+    "delete_title": "¿Eliminar este video?",
+    "delete_body": "No se puede deshacer.",
+    "play": "Reproducir",
+    "tap_play_to_resume": "Toca reproducir para continuar el video"
   },
   "wallet": {
     "amount": "Monto (USD)",
@@ -572,6 +721,15 @@
     "payment_method": "Método de Pago",
     "request_withdrawal": "Solicitar Retiro",
     "transaction_history": "Historial de Transacciones",
-    "withdraw_funds": "Retirar Fondos"
+    "withdraw_funds": "Retirar Fondos",
+    "paypal_email": "Correo de PayPal",
+    "bank": "Banco",
+    "crypto": "Cripto",
+    "bank_name": "Nombre del banco",
+    "account_number": "Número de cuenta",
+    "routing_number": "Número de ruta",
+    "wallet_address": "Dirección de la billetera",
+    "enter_wallet_address": "Introduce la dirección de la billetera",
+    "no_transactions_desc": "Tus ganancias y pagos aparecerán aquí"
   }
 }

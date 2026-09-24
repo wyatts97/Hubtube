@@ -54,7 +54,7 @@ const submit = () => {
 </script>
 
 <template>
-    <SeoHead title="Create Gallery" />
+    <SeoHead :title="t('gallery.create')" />
 
     <div class="max-w-4xl mx-auto">
         <Link href="/galleries" class="inline-flex items-center gap-1.5 mb-4 text-sm hover:opacity-80 text-text-secondary">
@@ -62,13 +62,13 @@ const submit = () => {
             Back to Galleries
         </Link>
 
-        <h1 class="text-xl sm:text-2xl font-bold mb-6 text-text-primary">Create Gallery</h1>
+        <h1 class="text-xl sm:text-2xl font-bold mb-6 text-text-primary">{{ t('gallery.create') }}</h1>
 
         <form @submit.prevent="submit" class="space-y-6">
             <!-- Gallery Details -->
             <div class="card p-6 space-y-4">
                 <div>
-                    <label for="title" class="block text-sm font-medium mb-1 text-text-secondary">Title</label>
+                    <label for="title" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('gallery.title') }}</label>
                     <input
                         id="title"
                         v-model="form.title"
@@ -81,7 +81,7 @@ const submit = () => {
                 </div>
 
                 <div>
-                    <label for="description" class="block text-sm font-medium mb-1 text-text-secondary">Description</label>
+                    <label for="description" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('common.description') }}</label>
                     <textarea
                         id="description"
                         v-model="form.description"
@@ -93,19 +93,19 @@ const submit = () => {
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label for="privacy" class="block text-sm font-medium mb-1 text-text-secondary">Privacy</label>
+                        <label for="privacy" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('common.privacy') }}</label>
                         <select id="privacy" v-model="form.privacy" class="input">
-                            <option value="public">Public</option>
-                            <option value="unlisted">Unlisted</option>
-                            <option value="private">Private</option>
+                            <option value="public">{{ t('common.public') }}</option>
+                            <option value="unlisted">{{ t('common.unlisted') }}</option>
+                            <option value="private">{{ t('common.private') }}</option>
                         </select>
                     </div>
                     <div>
-                        <label for="sort_order" class="block text-sm font-medium mb-1 text-text-secondary">Sort Order</label>
+                        <label for="sort_order" class="block text-sm font-medium mb-1 text-text-secondary">{{ t('gallery.sort_order') }}</label>
                         <select id="sort_order" v-model="form.sort_order" class="input">
-                            <option value="newest">Newest First</option>
-                            <option value="oldest">Oldest First</option>
-                            <option value="manual">Manual</option>
+                            <option value="newest">{{ t('gallery.newest_first') }}</option>
+                            <option value="oldest">{{ t('gallery.oldest_first') }}</option>
+                            <option value="manual">{{ t('gallery.manual') }}</option>
                         </select>
                     </div>
                 </div>
@@ -115,7 +115,7 @@ const submit = () => {
             <div class="card p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h2 class="font-medium text-text-primary">Select Images</h2>
+                        <h2 class="font-medium text-text-primary">{{ t('gallery.select_images') }}</h2>
                         <p class="text-sm text-text-muted">
                             {{ selectedIds.size }} selected
                         </p>
@@ -160,8 +160,8 @@ const submit = () => {
 
                 <div v-else class="text-center py-10">
                     <ImageIcon class="w-10 h-10 mx-auto mb-2 text-text-muted" />
-                    <p class="text-sm text-text-secondary">You haven't uploaded any images yet.</p>
-                    <Link href="/image-upload" class="btn btn-primary mt-3 inline-block text-sm">Upload Images</Link>
+                    <p class="text-sm text-text-secondary">{{ t('gallery.no_images') }}</p>
+                    <Link href="/image-upload" class="btn btn-primary mt-3 inline-block text-sm">{{ t('gallery.upload_images') }}</Link>
                 </div>
 
                 <p v-if="form.errors.image_ids" class="text-red-500 text-sm mt-2">{{ form.errors.image_ids }}</p>
@@ -176,8 +176,8 @@ const submit = () => {
                     :disabled="form.processing || form.image_ids.length === 0"
                     class="btn btn-primary"
                 >
-                    <span v-if="form.processing">Creating...</span>
-                    <span v-else>Create Gallery</span>
+                    <span v-if="form.processing">{{ t('gallery.creating') }}</span>
+                    <span v-else>{{ t('gallery.create') }}</span>
                 </button>
             </div>
         </form>

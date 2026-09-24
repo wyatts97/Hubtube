@@ -29,11 +29,11 @@ const annualPrice = computed(() => annual.value ? (annual.value.amount_cents / 1
 const annualMonthly = computed(() => annual.value ? (annual.value.amount_cents / 100 / 12).toFixed(2) : '0.00');
 
 const features = [
-    { icon: Infinity, title: 'Ad-free viewing', description: 'Watch every video without interruptions.' },
+    { icon: Infinity, title: t('pro.ad_free'), description: t('pro.ad_free_desc') },
     { icon: Upload, title: 'Up to 1 GB uploads', description: 'Upload larger, higher-quality videos.' },
-    { icon: Zap, title: 'Higher daily upload cap', description: 'Publish more videos every day.' },
-    { icon: Download, title: 'Video downloads', description: 'Download your favorite videos to watch offline.' },
-    { icon: Crown, title: 'Pro badge', description: 'Stand out with a gold badge on your channel and comments.' },
+    { icon: Zap, title: t('pro.upload_cap'), description: t('pro.upload_cap_desc') },
+    { icon: Download, title: t('pro.downloads'), description: t('pro.downloads_desc') },
+    { icon: Crown, title: t('pro.badge'), description: t('pro.badge_desc') },
 ];
 
 const checkout = (plan) => {
@@ -48,14 +48,14 @@ const goToPortal = () => {
 </script>
 
 <template>
-    <SeoHead title="Go Pro" />
+    <SeoHead :title="t('pro.title')" />
 
     <div class="max-w-5xl mx-auto px-4 py-8 sm:py-12">
         <div class="text-center mb-10 sm:mb-14">
             <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-yellow-500/10 mb-4">
                 <Crown class="w-7 h-7 text-yellow-500" />
             </div>
-            <h1 class="text-2xl sm:text-4xl font-bold mb-3 text-text-primary">Go Pro</h1>
+            <h1 class="text-2xl sm:text-4xl font-bold mb-3 text-text-primary">{{ t('pro.title') }}</h1>
             <p class="text-base sm:text-lg text-text-secondary max-w-2xl mx-auto">
                 Unlock the best HubTube experience with ad-free viewing, bigger uploads, and exclusive features.
             </p>
@@ -89,8 +89,8 @@ const goToPortal = () => {
             <!-- Monthly -->
             <div class="card p-6 sm:p-8 flex flex-col">
                 <div class="mb-4">
-                    <h2 class="text-xl font-semibold text-text-primary">Monthly</h2>
-                    <p class="text-sm text-text-secondary">Flexible, cancel anytime.</p>
+                    <h2 class="text-xl font-semibold text-text-primary">{{ t('pro.monthly') }}</h2>
+                    <p class="text-sm text-text-secondary">{{ t('pro.monthly_desc') }}</p>
                 </div>
                 <div class="mb-6">
                     <span class="text-3xl sm:text-4xl font-bold text-text-primary">${{ monthlyPrice }}</span>
@@ -121,10 +121,10 @@ const goToPortal = () => {
             <!-- Annual -->
             <div class="card p-6 sm:p-8 flex flex-col relative border-2" style="border-color: var(--color-accent);">
                 <div class="absolute -top-3 start-1/2 -translate-x-1/2">
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-accent text-white">Best Value</span>
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-accent text-white">{{ t('pro.best_value') }}</span>
                 </div>
                 <div class="mb-4">
-                    <h2 class="text-xl font-semibold text-text-primary">Annual</h2>
+                    <h2 class="text-xl font-semibold text-text-primary">{{ t('pro.annual') }}</h2>
                     <p class="text-sm text-text-secondary">
                         Save {{ annualSavings ? `${annualSavings}%` : 'with yearly billing' }}.
                     </p>
@@ -170,8 +170,8 @@ const goToPortal = () => {
 
         <!-- Non-auth CTA -->
         <div v-if="!user" class="text-center mt-10">
-            <p class="text-text-secondary mb-3">Sign in to upgrade your account.</p>
-            <a href="/login" class="btn btn-primary">Sign In</a>
+            <p class="text-text-secondary mb-3">{{ t('pro.sign_in_to_upgrade') }}</p>
+            <a href="/login" class="btn btn-primary">{{ t('nav.sign_in') }}</a>
         </div>
     </div>
 </template>

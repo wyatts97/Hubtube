@@ -198,7 +198,7 @@ const handleDrop = (e) => {
     fullPageDrag.value = false;
     const files = e.dataTransfer.files;
     if (files.length > 1) {
-        fileError.value = 'Please drop only one video file at a time.';
+        fileError.value = t('upload.one_video_at_a_time');
         return;
     }
     const file = files[0];
@@ -319,7 +319,7 @@ const submit = async () => {
 
     if (upload.status.value !== 'complete') {
         submitting.value = false;
-        fieldErrors.value = { upload: upload.error.value || 'Upload did not complete successfully.' };
+        fieldErrors.value = { upload: upload.error.value || t('upload.did_not_complete') };
         return;
     }
 
@@ -343,7 +343,7 @@ const submit = async () => {
             router.visit(result.redirect);
         }
     } else {
-        fieldErrors.value = result.errors || { upload: 'Failed to publish video.' };
+        fieldErrors.value = result.errors || { upload: t('upload.publish_failed') };
     }
 };
 
@@ -388,7 +388,7 @@ const submitLabel = computed(() => {
     if (upload.status.value === 'uploading' && formValid.value) return `Publish when ready (${upload.percent.value}%)`;
     if (upload.status.value === 'uploading') return `Uploading… ${upload.percent.value}%`;
     if (upload.status.value === 'paused') return 'Paused — Resume to continue';
-    if (upload.status.value === 'complete' && !formValid.value) return 'Complete required fields';
+    if (upload.status.value === 'complete' && !formValid.value) return t('upload.complete_required');
     if (enableScheduling.value && form.scheduled_at) return 'Schedule';
     return t('upload.title');
 });
@@ -461,7 +461,7 @@ watch(fieldErrors, (errs) => {
             <div class="flex items-start gap-4">
                 <AlertCircle class="w-8 h-8 shrink-0 mt-0.5 text-accent-text" />
                 <div>
-                    <h2 class="text-lg font-semibold mb-1 text-text-primary">Daily Upload Limit Reached</h2>
+                    <h2 class="text-lg font-semibold mb-1 text-text-primary">{{ t('upload.daily_limit') }}</h2>
                     <p class="text-sm text-text-secondary">
                         You've reached your maximum number of uploads for today. Your limit resets at midnight.
                     </p>
@@ -485,7 +485,7 @@ watch(fieldErrors, (errs) => {
             >
                 <div class="text-center">
                     <Upload class="w-20 h-20 mx-auto mb-4 text-accent-text" />
-                    <p class="text-2xl font-bold text-white">Drop your video anywhere</p>
+                    <p class="text-2xl font-bold text-white">{{ t('upload.drop_anywhere') }}</p>
                 </div>
             </div>
         </Teleport>
@@ -596,7 +596,7 @@ watch(fieldErrors, (errs) => {
                         <!-- Error -->
                         <div v-else-if="upload.status.value === 'error'" class="mt-3 flex items-center gap-2 text-red-500 field-error">
                             <AlertCircle class="w-4 h-4" />
-                            <span class="text-sm">{{ upload.error.value || 'Upload failed' }}</span>
+                            <span class="text-sm">{{ upload.error.value || t('video.upload_failed') }}</span>
                         </div>
                     </div>
                     <button
@@ -691,10 +691,10 @@ watch(fieldErrors, (errs) => {
                         required
                         aria-required="true"
                     >
-                        <option value="">Select a category</option>
+                        <option value="">{{ t('common.select_category') }}</option>
                         <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
                     </select>
-                    <p v-if="submitAttempted && !categoryValid" class="text-red-500 text-xs mt-1 field-error">Please select a category.</p>
+                    <p v-if="submitAttempted && !categoryValid" class="text-red-500 text-xs mt-1 field-error">{{ t('upload.select_category_error') }}</p>
                     <p v-else-if="fieldErrors.category_id" class="text-red-500 text-xs mt-1 field-error">{{ fieldErrors.category_id }}</p>
                 </div>
 
@@ -729,7 +729,7 @@ watch(fieldErrors, (errs) => {
                             v-model="tagInput"
                             type="text"
                             class="input"
-                            placeholder="Search existing tags"
+                            :placeholder="t('upload.search_tags')"
                             @keydown="handleTagKeydown"
                             @focus="showTagSuggestions = true"
                             @blur="setTimeout(() => showTagSuggestions = false, 200)"
@@ -758,7 +758,7 @@ watch(fieldErrors, (errs) => {
                     -->
                     <div v-if="popularTags.length" class="mt-3">
                         <div class="flex items-baseline justify-between mb-1.5">
-                            <p class="text-xs text-text-muted">Popular tags</p>
+                            <p class="text-xs text-text-muted">{{ t('upload.popular_tags') }}</p>
                             <p class="text-xs" :class="tagLimitReached ? 'text-accent-text' : 'text-text-muted'">
                                 {{ form.tags.length }}/20
                             </p>
@@ -793,10 +793,10 @@ watch(fieldErrors, (errs) => {
             <div v-if="submitAttempted && !formValid" class="card p-4 border" style="border-color: var(--color-accent);">
                 <p class="text-sm font-medium mb-2 text-text-primary">Before you can publish, please fix:</p>
                 <ul class="text-sm space-y-1">
-                    <li v-if="!fileChosen" class="flex items-center gap-2 text-red-500"><AlertCircle class="w-4 h-4" /> Select a video file</li>
+                    <li v-if="!fileChosen" class="flex items-center gap-2 text-red-500"><AlertCircle class="w-4 h-4" /> {{ t('upload.select_video_file') }}</li>
                     <li v-if="!titleValid" class="flex items-center gap-2 text-red-500"><AlertCircle class="w-4 h-4" /> Title (3+ characters)</li>
                     <li v-if="!descValid" class="flex items-center gap-2 text-red-500"><AlertCircle class="w-4 h-4" /> Description (10+ characters)</li>
-                    <li v-if="!categoryValid" class="flex items-center gap-2 text-red-500"><AlertCircle class="w-4 h-4" /> Category</li>
+                    <li v-if="!categoryValid" class="flex items-center gap-2 text-red-500"><AlertCircle class="w-4 h-4" /> {{ t('common.category') }}</li>
                     <li v-if="!tagsValid" class="flex items-center gap-2 text-red-500"><AlertCircle class="w-4 h-4" /> At least 3 tags ({{ form.tags.length }}/3)</li>
                 </ul>
             </div>
@@ -828,7 +828,7 @@ watch(fieldErrors, (errs) => {
                         required
                     />
                     <p v-if="fieldErrors.scheduled_at" class="text-red-500 text-sm mt-1 field-error">{{ fieldErrors.scheduled_at }}</p>
-                    <p class="text-xs mt-1 text-text-muted">The video will be processed immediately but published at the scheduled time.</p>
+                    <p class="text-xs mt-1 text-text-muted">{{ t('upload.schedule_note') }}</p>
                 </div>
             </div>
 

@@ -10,6 +10,7 @@
  */
 import { computed, ref } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
+import { useLoginDialog } from '@/Composables/useLoginDialog';
 import { Bell, BellRing, Flag, Loader2, MoreVertical, Share2 } from 'lucide-vue-next';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import BannerAd from '@/Components/UI/BannerAd.vue';
@@ -46,6 +47,7 @@ const props = defineProps({
 });
 
 const { t, localizedUrl } = useI18n();
+const { openLogin } = useLoginDialog();
 const toast = useToast();
 const { post, del } = useFetch();
 const page = usePage();
@@ -67,7 +69,7 @@ const subscribing = ref(false);
 
 const handleSubscribe = async () => {
     if (!authUser.value) {
-        router.visit(localizedUrl('/login'));
+        openLogin();
         return;
     }
 

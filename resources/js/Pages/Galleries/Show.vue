@@ -2,6 +2,7 @@
 import { Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ConfirmDialog from '@/Components/UI/ConfirmDialog.vue';
 import SeoHead from '@/Components/SeoHead.vue';
 import ImageCard from '@/Components/ImageCard.vue';
 import Lightbox from '@/Components/Lightbox.vue';
@@ -45,11 +46,8 @@ const formatViews = (count) => {
     return count.toString();
 };
 
-const deleteGallery = () => {
-    if (confirm('Are you sure you want to delete this gallery? Images will not be deleted.')) {
-        router.delete(`/gallery/${props.gallery.id}`);
-    }
-};
+const confirmingDelete = ref(false);
+const deleteGallery = () => { confirmingDelete.value = true; };
 </script>
 
 <template>
@@ -197,5 +195,12 @@ const deleteGallery = () => {
         v-model="showLightbox"
         :images="images.data"
         :start-index="lightboxIndex"
+    />
+
+    <ConfirmDialog
+        v-model="confirmingDelete"
+        :title="t('gallery.delete_title')"
+        :message="t('gallery.delete_body')"
+        @confirm="router.delete(`/gallery/${gallery.id}`)"
     />
 </template>

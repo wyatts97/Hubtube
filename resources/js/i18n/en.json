@@ -2,7 +2,13 @@
   "age": {
     "confirm": "I am 18 or older",
     "exit": "Exit",
-    "title": "Age Verification Required"
+    "title": "Age Verification Required",
+    "description": "This website contains age-restricted content. You must be at least 18 years old to enter.",
+    "disclaimer": "By clicking \"{confirm}\", you confirm that you are at least 18 years of age and consent to viewing adult content.",
+    "terms_intro": "By entering this site, you agree to our",
+    "terms": "Terms of Service",
+    "and": "and",
+    "privacy": "Privacy Policy"
   },
   "auth": {
     "back_to_login": "Back to Sign In",
@@ -28,7 +34,9 @@
     "sign_up": "Sign Up",
     "signing_in": "Signing in...",
     "verify_email": "Verify Your Email",
-    "welcome_back": "Welcome back"
+    "welcome_back": "Welcome back",
+    "show_password": "Show password",
+    "hide_password": "Hide password"
   },
   "categories": {
     "all": "All Categories",
@@ -112,7 +120,29 @@
     "verified": "Verified",
     "videos": "videos",
     "view_all": "View All",
-    "views": "views"
+    "views": "views",
+    "skip_to_content": "Skip to content",
+    "clear_filter": "Clear filter",
+    "pagination": "Pagination",
+    "previous_page": "Previous page",
+    "next_page": "Next page",
+    "search_videos": "Search videos",
+    "user_menu": "User menu",
+    "logo": "Logo",
+    "avatar": "Avatar",
+    "public": "Public",
+    "unlisted": "Unlisted",
+    "private": "Private",
+    "privacy": "Privacy",
+    "category": "Category",
+    "select_category": "Select a category",
+    "tags": "Tags",
+    "enabled": "Enabled",
+    "password": "Password",
+    "enter_password": "Enter your password",
+    "are_you_sure": "Are you sure?",
+    "permanent": "This action is permanent and cannot be undone.",
+    "disable": "Disable"
   },
   "contact": {
     "email": "Email",
@@ -163,7 +193,6 @@
     "generic": "Something went wrong. Please try again.",
     "go_home": "Go Home",
     "not_found": "Page not found",
-    "redirecting": "Redirecting to the homepage in {count}s",
     "refresh": "Refresh Page",
     "title_403": "Forbidden",
     "title_404": "Page Not Found",
@@ -229,7 +258,18 @@
   "gallery": {
     "be_first": "Be the first to create a gallery",
     "create": "Create gallery",
-    "none_yet": "No galleries yet"
+    "none_yet": "No galleries yet",
+    "delete_title": "Delete this gallery?",
+    "delete_body": "The images in it are not deleted.",
+    "title": "Title",
+    "sort_order": "Sort order",
+    "newest_first": "Newest first",
+    "oldest_first": "Oldest first",
+    "manual": "Manual",
+    "select_images": "Select images",
+    "no_images": "You haven't uploaded any images yet.",
+    "upload_images": "Upload images",
+    "creating": "Creating..."
   },
   "history": {
     "clear": "Clear History",
@@ -251,7 +291,11 @@
   },
   "images": {
     "adjust_filters": "Try adjusting your filters",
-    "none_found": "No images found"
+    "none_found": "No images found",
+    "delete_title": "Delete this image?",
+    "upload_title": "Upload image",
+    "drag_drop": "Drag and drop image file",
+    "one_at_a_time": "Please drop only one image file at a time."
   },
   "nav": {
     "admin_panel": "Admin Panel",
@@ -340,6 +384,22 @@
     "videos_count": "{count} video | {count} videos",
     "watch_later": "Watch Later",
     "your_playlists": "Your Playlists"
+  },
+  "pro": {
+    "title": "Go Pro",
+    "ad_free": "Ad-free viewing",
+    "ad_free_desc": "Watch every video without interruptions.",
+    "upload_cap": "Higher daily upload cap",
+    "upload_cap_desc": "Publish more videos every day.",
+    "downloads": "Video downloads",
+    "downloads_desc": "Download your favorite videos to watch offline.",
+    "badge": "Pro badge",
+    "badge_desc": "Stand out with a gold badge on your channel and comments.",
+    "monthly": "Monthly",
+    "monthly_desc": "Flexible, cancel anytime.",
+    "best_value": "Best value",
+    "annual": "Annual",
+    "sign_in_to_upgrade": "Sign in to upgrade your account."
   },
   "report": {
     "copyright": "Copyright violation",
@@ -431,7 +491,16 @@
     "upgrade_pro": "Upgrade to Pro",
     "username": "Username",
     "wallet_balance": "Wallet Balance",
-    "withdraw": "Withdraw"
+    "withdraw": "Withdraw",
+    "delete_account": "Delete Account",
+    "two_factor": "Two-Factor Authentication",
+    "save_recovery_codes": "Save your recovery codes",
+    "saved_codes": "I've saved these codes",
+    "push_receiving": "This browser is receiving push notifications",
+    "push_enable": "Enable push notifications for this browser",
+    "download_data": "Download My Data",
+    "pro_benefits": "Pro Benefits",
+    "disable_two_factor": "Disable Two-Factor Authentication"
   },
   "share": {
     "copy_failed": "Failed to copy link",
@@ -440,6 +509,29 @@
     "embed_hint": "Paste this into any web page to show the player.",
     "copy_link": "Link copied to clipboard",
     "title": "Share Video"
+  },
+  "shorts": {
+    "comments": "Comments",
+    "comments_count": "{count} comment | {count} comments",
+    "no_comments": "No comments yet",
+    "add_comment": "Add a comment...",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "filter_title": "Filter Shorts",
+    "category": "Category",
+    "all_categories": "All categories",
+    "tag": "Tag",
+    "date": "Date",
+    "any_time": "Any time",
+    "today": "Today",
+    "this_week": "This week",
+    "this_month": "This month",
+    "this_year": "This year",
+    "sort": "Sort",
+    "latest": "Latest",
+    "most_popular": "Most popular",
+    "clear": "Clear",
+    "apply": "Apply"
   },
   "studio": {
     "analytics": "Analytics",
@@ -542,7 +634,17 @@
     "title": "Upload Video",
     "title_short": "Upload Short",
     "video_description": "Description",
-    "video_title": "Title"
+    "video_title": "Title",
+    "one_video_at_a_time": "Please drop only one video file at a time.",
+    "did_not_complete": "Upload did not complete successfully.",
+    "publish_failed": "Failed to publish video.",
+    "complete_required": "Complete required fields",
+    "daily_limit": "Daily upload limit reached",
+    "drop_anywhere": "Drop your video anywhere",
+    "select_category_error": "Please select a category.",
+    "search_tags": "Search existing tags",
+    "popular_tags": "Popular tags",
+    "select_video_file": "Select a video file"
   },
   "video": {
     "add_comment": "Add a comment...",
@@ -604,7 +706,11 @@
     "uploading": "Uploading...",
     "video_details": "Video Details",
     "video_status": "Video Status",
-    "views": "{count} view | {count} views"
+    "views": "{count} view | {count} views",
+    "like": "Like",
+    "dislike": "Dislike",
+    "delete_title": "Delete this video?",
+    "delete_body": "This cannot be undone."
   },
   "wallet": {
     "amount": "Amount (USD)",
@@ -616,6 +722,14 @@
     "payment_method": "Payment Method",
     "request_withdrawal": "Request Withdrawal",
     "transaction_history": "Transaction History",
-    "withdraw_funds": "Withdraw Funds"
+    "withdraw_funds": "Withdraw Funds",
+    "paypal_email": "PayPal email",
+    "bank": "Bank",
+    "crypto": "Crypto",
+    "bank_name": "Bank name",
+    "account_number": "Account number",
+    "routing_number": "Routing number",
+    "wallet_address": "Wallet address",
+    "enter_wallet_address": "Enter wallet address"
   }
 }

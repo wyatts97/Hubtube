@@ -339,8 +339,23 @@ class VideoController extends Controller
 
         // Translate tags for non-default locales
         $translatedTags = null;
+        $translatedFields = [];
         $locale = App::getLocale();
         $defaultLocale = TranslationService::getDefaultLocale();
+
+        // Title and description from the translation cache, so a /{locale}
+        // page's HTML and SEO title are already translated. Anything not
+        // cached yet is still translated in the browser.
+        if ($locale !== $defaultLocale) {
+            $cached = app(TranslationService::class)->modelFromCache(
+                Video::class,
+                $video->id,
+                array_filter(['title' => $video->title, 'description' => $video->description]),
+                $locale,
+            );
+            // Missing fields come back untranslated; leave those to the browser.
+            $translatedFields = $cached['complete'] ? $cached['fields'] : [];
+        }
 
         if ($locale !== $defaultLocale && !empty($video->tags)) {
             // Cache-only: translateText() is an uncached, throttled provider
@@ -356,6 +371,8 @@ class VideoController extends Controller
 
         return Inertia::render('Videos/Show', [
             'video' => $video,
+            'translatedTitle' => $translatedFields['title'] ?? null,
+            'translatedDescription' => $translatedFields['description'] ?? null,
             'translatedTags' => $translatedTags,
             'relatedVideos' => $relatedVideos,
             'userLike' => auth()->check() 
@@ -372,7 +389,7 @@ class VideoController extends Controller
             // The Enable Comments switch used to be shown in the admin without
             // being read anywhere; turning it off now really does hide them.
             'commentsEnabled' => (bool) Setting::get('comments_enabled', true),
-            'seo' => $this->seoService->forVideo($video),
+            'seo' => $this->seoService->forVideo($video, $translatedFields),
             // Ready-made iframe for the share dialog; empty when embedding is
             // off or the video cannot be embedded (private, draft, unapproved).
             'embedCode' => $this->embedCodeFor($video),

@@ -19,6 +19,7 @@ import {
 } from 'lucide-vue-next';
 import { useFetch } from '@/Composables/useFetch';
 import { useI18n } from '@/Composables/useI18n';
+import { formatMoney } from '@/Composables/useFormatters';
 import { useSearchSuggestions } from '@/Composables/useSearchSuggestions';
 import BaseDropdown from '@/Components/UI/BaseDropdown.vue';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
@@ -30,7 +31,7 @@ const emit = defineEmits(['open-mobile-search', 'open-login', 'toggle-sidebar'])
 
 const page = usePage();
 const { get, post } = useFetch();
-const { localizedUrl, t } = useI18n();
+const { localizedUrl, t, locale } = useI18n();
 
 const user = computed(() => page.props.auth?.user);
 const themeSettings = computed(() => page.props.theme || {});
@@ -179,7 +180,7 @@ watch(() => page.url, () => {
                             v-model="searchQuery"
                             :placeholder="t('common.search_placeholder')"
                             class="input ps-9 pe-3 w-full"
-                            aria-label="Search videos"
+                            :aria-label="t('common.search_videos')"
                             autocomplete="off"
                             autocapitalize="off"
                             @input="searchSuggest($event.target.value)"
@@ -299,7 +300,7 @@ watch(() => page.url, () => {
 
                     <BaseDropdown content-class="w-60 p-2">
                         <template #trigger>
-                            <button class="flex items-center ms-1" aria-label="User menu">
+                            <button class="flex items-center ms-1" :aria-label="t('common.user_menu')">
                                 <div class="w-8 h-8 avatar">
                                     <img :src="user.avatar || '/assets/default_avatar.webp'" :alt="user.username" class="w-full h-full object-cover" />
                                 </div>
@@ -344,7 +345,7 @@ watch(() => page.url, () => {
                             <DropdownMenuItem v-if="monetizationEnabled" as-child>
                                 <Link href="/wallet" class="nav-item cursor-pointer">
                                     <Wallet class="w-4 h-4" />
-                                    <span>{{ t('nav.wallet') }}: ${{ user.wallet_balance }}</span>
+                                    <span>{{ t('nav.wallet') }}: {{ formatMoney(user.wallet_balance, locale) }}</span>
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem v-if="pointsEnabled" as-child>

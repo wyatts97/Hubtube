@@ -194,7 +194,6 @@ const onPreviewLoad = (event) => {
                     <Link
                         :href="cardHref"
                         class="video-card-title video-card-stretch transition-colors"
-                        :aria-label="`${video.title} — ${video.user?.username || 'Unknown'} — ${formattedViews} views`"
                     >{{ isTranslated ? getTranslated('video', video.id, 'title', video.title) : video.title }}</Link>
                 </h3>
 
