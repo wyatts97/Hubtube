@@ -39,7 +39,7 @@ const onSubmit = () => {
 
             <div class="card p-6">
                 <div v-if="sent" class="mb-4 p-3 rounded-lg text-sm text-green-400" style="background-color: rgba(34,197,94,0.1);">
-                    A password reset link has been sent to your email.
+                    {{ t('auth.reset_link_sent') }}
                 </div>
 
                 <form @submit.prevent="onSubmit" class="space-y-4">

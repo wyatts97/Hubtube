@@ -19,9 +19,6 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use FinityLabs\FinMail\Enums\EmailStatus;
-use FinityLabs\FinMail\Mail\TemplateMail as FinMailTemplateMail;
-use FinityLabs\FinMail\Models\SentEmail;
 use FinityLabs\FinMail\Settings\GeneralSettings;
 use Illuminate\Mail\MailManager;
 use Illuminate\Support\Facades\Mail;
@@ -231,28 +228,13 @@ class IntegrationSettings extends Page implements HasForms
         $user = auth()->user();
 
         try {
-            $mail = FinMailTemplateMail::make('welcome')
-                ->models([
-                    'username' => $user->username,
-                    'site_name' => config('app.name'),
-                    'login_url' => url('/login'),
-                ]);
-
-            $mail = $mail->extraData(['theme' => EmailService::resolveEmailThemeColors($mail->getTemplate())]);
-
-            $envelope = $mail->envelope();
-            $sentEmail = SentEmail::create([
-                'email_template_id' => $mail->getTemplate()->id,
-                'sender' => $envelope->from?->address ?? config('mail.from.address'),
-                'to' => [$user->email],
-                'subject' => $envelope->subject,
-                'status' => EmailStatus::Queued,
-                'sent_by' => $user->id,
+            // The password reset template, sent exactly as a real reset is: if
+            // this arrives, users can recover their accounts.
+            EmailService::deliver('reset-password', $user->email, [
+                'username' => $user->username,
+                'reset_url' => url('/forgot-password'),
+                'expiry_minutes' => config('auth.passwords.users.expire', 60),
             ]);
-
-            Mail::to($user->email)->sendNow(
-                $mail->withLogging($sentEmail)
-            );
 
             Notification::make()
                 ->title('Test email sent!')

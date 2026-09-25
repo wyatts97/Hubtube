@@ -36,7 +36,8 @@
     "verify_email": "Verify Your Email",
     "welcome_back": "Welcome back",
     "show_password": "Show password",
-    "hide_password": "Hide password"
+    "hide_password": "Hide password",
+    "reset_link_sent": "If an account exists for that email, a reset link is on its way. Check your spam folder too."
   },
   "categories": {
     "all": "All Categories",

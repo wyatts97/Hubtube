@@ -15,6 +15,22 @@ use Throwable;
 class EmailService
 {
     /**
+     * Account emails. They can't be switched off in Notification Settings:
+     * without them nobody can verify or recover an account.
+     */
+    public const ACCOUNT_TEMPLATES = ['verify-email', 'reset-password'];
+
+    /**
+     * Templates the app sends. Each must exist and be active, or its send
+     * fails (see the EmailCheck health check).
+     */
+    public const CORE_TEMPLATES = [
+        'verify-email', 'reset-password', 'welcome', 'video-published', 'new-subscriber',
+        'contact-form-admin', 'video-approved', 'video-rejected', 'withdrawal-approved',
+        'withdrawal-rejected', 'admin-new-user', 'admin-new-video', 'admin-new-report',
+    ];
+
+    /**
      * Send a FinMail template email to a user.
      */
     public static function sendToUser(string $templateKey, string $toEmail, array $data = []): bool
@@ -23,35 +39,18 @@ class EmailService
             return false;
         }
 
-        $settingKey = "email_notify_{$templateKey}";
-        $enabled = Setting::get($settingKey, 'true');
-        if (! filter_var($enabled, FILTER_VALIDATE_BOOLEAN)) {
+        if (! in_array($templateKey, self::ACCOUNT_TEMPLATES, true)
+            && ! filter_var(Setting::get("email_notify_{$templateKey}", 'true'), FILTER_VALIDATE_BOOLEAN)) {
             return false;
         }
 
         try {
-            $mail = FinMailTemplateMail::make($templateKey)
-                ->models(self::prepareData($data));
-
-            $envelope = $mail->envelope();
-            $sentEmail = SentEmail::create([
-                'email_template_id' => $mail->getTemplate()->id,
-                'sender' => $envelope->from?->address ?? config('mail.from.address'),
-                'to' => [$toEmail],
-                'subject' => $envelope->subject,
-                'status' => EmailStatus::Queued,
-                'sent_by' => auth()->id(),
-            ]);
-
-            $mail = $mail->extraData(['theme' => static::resolveEmailThemeColors($mail->getTemplate())]);
-
-            Mail::to($toEmail)->sendNow(
-                $mail->withLogging($sentEmail)
-            );
+            static::deliver($templateKey, $toEmail, $data);
 
             return true;
         } catch (Throwable $e) {
             Log::error("EmailService: failed to send '{$templateKey}' to {$toEmail}: {$e->getMessage()}");
+            report($e);
 
             return false;
         }
@@ -84,40 +83,52 @@ class EmailService
         }
 
         try {
-            $mail = FinMailTemplateMail::make($templateKey)
-                ->models(self::prepareData($data));
-
-            if ($replyTo) {
-                $mail->overrideReplyTo($replyTo, $replyToName);
-            }
-
-            $envelope = $mail->envelope();
-            $sentEmail = SentEmail::create([
-                'email_template_id' => $mail->getTemplate()->id,
-                'sender' => $envelope->from?->address ?? config('mail.from.address'),
-                'to' => [$adminEmail],
-                'subject' => $envelope->subject,
-                'status' => EmailStatus::Queued,
-                'sent_by' => auth()->id(),
-            ]);
-
-            $mail = $mail->extraData(['theme' => static::resolveEmailThemeColors($mail->getTemplate())]);
-
-            Mail::to($adminEmail)->sendNow(
-                $mail->withLogging($sentEmail)
-            );
+            static::deliver($templateKey, $adminEmail, $data, $replyTo, $replyToName);
 
             return true;
         } catch (Throwable $e) {
             Log::error("EmailService: failed to send admin notification '{$templateKey}': {$e->getMessage()}");
+            report($e);
 
             return false;
         }
     }
 
     /**
-     * Check if mail has been configured beyond the default 'log' driver.
+     * Render and send one template now, logged in FinMail's Sent Emails.
+     * Throws on failure; the callers above decide how to report it.
      */
+    public static function deliver(string $templateKey, string $toEmail, array $data = [], ?string $replyTo = null, ?string $replyToName = null): void
+    {
+        $mail = FinMailTemplateMail::make($templateKey)
+            ->models(self::prepareData($data));
+
+        // FinMail keeps its own copy of the sender address, which drifted from
+        // the SMTP settings. Unless a template sets its own, send from the
+        // address the SMTP account is allowed to send for.
+        if (empty($mail->getTemplate()->from['address'] ?? null) && config('mail.from.address')) {
+            $mail->overrideFrom(config('mail.from.address'), config('mail.from.name'));
+        }
+
+        if ($replyTo) {
+            $mail->overrideReplyTo($replyTo, $replyToName);
+        }
+
+        $envelope = $mail->envelope();
+        $sentEmail = SentEmail::create([
+            'email_template_id' => $mail->getTemplate()->id,
+            'sender' => $envelope->from?->address ?? config('mail.from.address'),
+            'to' => [$toEmail],
+            'subject' => $envelope->subject,
+            'status' => EmailStatus::Queued,
+            'sent_by' => auth()->id(),
+        ]);
+
+        $mail = $mail->extraData(['theme' => static::resolveEmailThemeColors($mail->getTemplate())]);
+
+        Mail::to($toEmail)->sendNow($mail->withLogging($sentEmail));
+    }
+
     /**
      * Run a send once the web response is out, so the visitor doesn't wait on
      * SMTP. Not queued: workers load mail settings once at boot and would keep
@@ -132,6 +143,9 @@ class EmailService
         }
     }
 
+    /**
+     * Check if mail has been configured beyond the default 'log' driver.
+     */
     public static function isMailConfigured(): bool
     {
         $mailer = Setting::get('mail_mailer', config('mail.default', 'log'));

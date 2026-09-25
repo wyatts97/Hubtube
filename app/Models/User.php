@@ -639,11 +639,6 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
      */
     public function sendEmailVerificationNotification(): void
     {
-        $enabled = Setting::get('email_notify_verify-email', 'true');
-        if ($enabled === 'false' || $enabled === '0') {
-            return;
-        }
-
         if (! EmailService::isMailConfigured()) {
             // Fall back to Laravel's default if mail isn't configured via admin panel
             parent::sendEmailVerificationNotification();
@@ -669,11 +664,6 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
      */
     public function sendPasswordResetNotification($token): void
     {
-        $enabled = Setting::get('email_notify_reset-password', 'true');
-        if ($enabled === 'false' || $enabled === '0') {
-            return;
-        }
-
         if (! EmailService::isMailConfigured()) {
             parent::sendPasswordResetNotification($token);
 

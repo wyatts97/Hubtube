@@ -32,9 +32,13 @@ class PasswordResetController extends Controller
             $request->only('email')
         );
 
-        return $status === Password::RESET_LINK_SENT
-            ? back()->with('success', __($status))
-            : back()->withErrors(['email' => __($status)]);
+        // An unknown address gets the same answer as a real one, so the form
+        // can't be used to find out who has an account.
+        if ($status === Password::RESET_THROTTLED) {
+            return back()->withErrors(['email' => __($status)]);
+        }
+
+        return back()->with('success', __('If an account exists for that email, a reset link is on its way.'));
     }
 
     public function resetForm(Request $request, string $token): Response

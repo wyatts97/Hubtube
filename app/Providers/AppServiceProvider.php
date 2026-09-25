@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Health\Checks\EmailCheck;
 use App\Health\Checks\TranslationQueueCheck;
 use App\Http\Middleware\SetAdminTimezone;
 use App\Models\Category;
@@ -152,6 +153,8 @@ class AppServiceProvider extends ServiceProvider
             // Content translation is queued, so a stalled worker fails silently
             // — pages keep rendering the source language.
             TranslationQueueCheck::new(),
+            // Sends fail quietly (logged, visitor still told it went); this surfaces it.
+            EmailCheck::new(),
             UsedDiskSpaceCheck::new()
                 ->warnWhenUsedSpaceIsAbovePercentage(80)
                 ->failWhenUsedSpaceIsAbovePercentage(95),

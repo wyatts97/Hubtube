@@ -41,8 +41,6 @@ class NotificationSettings extends Page implements HasForms
             'admin_notify_admin-new-video' => (bool) filter_var(Setting::get('admin_notify_admin-new-video', false), FILTER_VALIDATE_BOOLEAN),
             'admin_notify_admin-new-report' => (bool) filter_var(Setting::get('admin_notify_admin-new-report', true), FILTER_VALIDATE_BOOLEAN),
             // User email notifications
-            'email_notify_verify-email' => (bool) filter_var(Setting::get('email_notify_verify-email', true), FILTER_VALIDATE_BOOLEAN),
-            'email_notify_reset-password' => (bool) filter_var(Setting::get('email_notify_reset-password', true), FILTER_VALIDATE_BOOLEAN),
             'email_notify_welcome' => (bool) filter_var(Setting::get('email_notify_welcome', true), FILTER_VALIDATE_BOOLEAN),
             'email_notify_video-published' => (bool) filter_var(Setting::get('email_notify_video-published', true), FILTER_VALIDATE_BOOLEAN),
             'email_notify_new-subscriber' => (bool) filter_var(Setting::get('email_notify_new-subscriber', true), FILTER_VALIDATE_BOOLEAN),
@@ -81,14 +79,8 @@ class NotificationSettings extends Page implements HasForms
                     ])->columns(2),
 
                 Section::make('User Email Notifications')
-                    ->description('Emails sent to users. Turning one off stops it for everyone.')
+                    ->description('Turning one off stops it for everyone. Verification and password reset emails are always sent.')
                     ->schema([
-                        Toggle::make('email_notify_verify-email')
-                            ->label('Email Verification')
-                            ->helperText('Sent after registration to verify email address'),
-                        Toggle::make('email_notify_reset-password')
-                            ->label('Password Reset')
-                            ->helperText('Sent when user requests a password reset'),
                         Toggle::make('email_notify_welcome')
                             ->label('Welcome Email')
                             ->helperText('Sent after email verification is complete'),

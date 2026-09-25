@@ -36,7 +36,8 @@
     "show_password": "Mostrar contraseña",
     "hide_password": "Ocultar contraseña",
     "continue_with": "Continuar con",
-    "or": "o"
+    "or": "o",
+    "reset_link_sent": "Si existe una cuenta con ese correo, te enviamos un enlace para restablecer la contraseña. Revisa también la carpeta de spam."
   },
   "categories": {
     "all": "Todas las Categorías",
